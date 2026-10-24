@@ -1,0 +1,1 @@
+Use \:badge[x] here.

@@ -1,0 +1,37 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentDefinition",
+      "name": "title-page",
+      "language": "compmd",
+      "signature": {
+        "params": [
+          {
+            "name": "title",
+            "type": "string",
+            "optional": false,
+            "default": null,
+            "doc": null
+          }
+        ],
+        "slots": null,
+        "headings": "absolute"
+      },
+      "params": [],
+      "children": [
+        {
+          "type": "heading",
+          "depth": 1,
+          "children": [
+            {
+              "type": "interpolation",
+              "path": "title",
+              "block": false
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

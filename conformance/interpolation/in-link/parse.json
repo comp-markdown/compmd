@@ -1,0 +1,49 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "See "
+        },
+        {
+          "type": "link",
+          "title": null,
+          "url": "https://x.dev/{{md.doc.v}}/notes",
+          "urlParts": [
+            {
+              "type": "text",
+              "value": "https://x.dev/"
+            },
+            {
+              "type": "interpolation",
+              "path": "md.doc.v",
+              "block": false
+            },
+            {
+              "type": "text",
+              "value": "/notes"
+            }
+          ],
+          "children": [
+            {
+              "type": "text",
+              "value": "v"
+            },
+            {
+              "type": "interpolation",
+              "path": "md.doc.v",
+              "block": false
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "value": "."
+        }
+      ]
+    }
+  ]
+}

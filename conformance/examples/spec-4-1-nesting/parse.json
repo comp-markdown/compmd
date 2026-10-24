@@ -1,0 +1,95 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "list",
+      "ordered": false,
+      "start": null,
+      "spread": false,
+      "children": [
+        {
+          "type": "listItem",
+          "spread": true,
+          "checked": null,
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Install"
+                }
+              ]
+            },
+            {
+              "type": "componentContainer",
+              "name": "card",
+              "params": [
+                {
+                  "key": "title",
+                  "breakpoint": null,
+                  "kind": "string",
+                  "value": [
+                    {
+                      "type": "text",
+                      "value": "Setup"
+                    }
+                  ]
+                }
+              ],
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Run "
+                    },
+                    {
+                      "type": "inlineCode",
+                      "value": "rayplay init"
+                    },
+                    {
+                      "type": "text",
+                      "value": "."
+                    }
+                  ]
+                }
+              ],
+              "slots": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "blockquote",
+      "children": [
+        {
+          "type": "componentContainer",
+          "name": "callout",
+          "params": [
+            {
+              "key": "kind",
+              "breakpoint": null,
+              "kind": "bare",
+              "value": "tip"
+            }
+          ],
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "A callout in a quote."
+                }
+              ]
+            }
+          ],
+          "slots": []
+        }
+      ]
+    }
+  ]
+}

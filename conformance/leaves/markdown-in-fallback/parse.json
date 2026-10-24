@@ -1,0 +1,32 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentLeaf",
+      "name": "chart",
+      "fallback": [
+        {
+          "type": "text",
+          "value": "Up "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "value": "18%"
+            }
+          ]
+        }
+      ],
+      "params": [
+        {
+          "key": "src",
+          "breakpoint": null,
+          "kind": "bare",
+          "value": "a.csv"
+        }
+      ]
+    }
+  ]
+}

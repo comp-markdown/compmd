@@ -1,0 +1,30 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "yaml",
+      "value": "version: \"1.4\"",
+      "parsed": {
+        "version": "1.4"
+      }
+    },
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "RayPlay "
+        },
+        {
+          "type": "interpolation",
+          "path": "md.doc.version",
+          "block": false
+        },
+        {
+          "type": "text",
+          "value": "."
+        }
+      ]
+    }
+  ]
+}

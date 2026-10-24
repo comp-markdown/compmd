@@ -1,0 +1,23 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentLeaf",
+      "name": "x",
+      "fallback": [
+        {
+          "type": "text",
+          "value": "X"
+        }
+      ],
+      "params": [
+        {
+          "key": "rows",
+          "breakpoint": null,
+          "kind": "expr",
+          "value": "f(s, s.note == \"x)\")"
+        }
+      ]
+    }
+  ]
+}

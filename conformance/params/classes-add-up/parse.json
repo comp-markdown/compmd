@@ -1,0 +1,41 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentLeaf",
+      "name": "chart",
+      "fallback": [
+        {
+          "type": "text",
+          "value": "Sales"
+        }
+      ],
+      "params": [
+        {
+          "key": null,
+          "breakpoint": null,
+          "kind": "class",
+          "value": "person"
+        },
+        {
+          "key": "class",
+          "breakpoint": null,
+          "kind": "expr",
+          "value": "p.team"
+        },
+        {
+          "key": null,
+          "breakpoint": null,
+          "kind": "class",
+          "value": "wide"
+        },
+        {
+          "key": null,
+          "breakpoint": null,
+          "kind": "class",
+          "value": "person"
+        }
+      ]
+    }
+  ]
+}

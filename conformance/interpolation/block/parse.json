@@ -1,0 +1,10 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "interpolation",
+      "path": "md.doc.summary",
+      "block": true
+    }
+  ]
+}

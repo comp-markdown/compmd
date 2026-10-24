@@ -1,0 +1,29 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "A "
+        },
+        {
+          "type": "componentInline",
+          "name": "badge",
+          "fallback": [
+            {
+              "type": "text",
+              "value": "beta"
+            }
+          ],
+          "params": []
+        },
+        {
+          "type": "text",
+          "value": " {tone=info} release."
+        }
+      ]
+    }
+  ]
+}

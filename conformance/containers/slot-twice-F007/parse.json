@@ -1,0 +1,47 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentContainer",
+      "name": "card",
+      "params": [],
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "Body."
+            }
+          ]
+        }
+      ],
+      "slots": [
+        {
+          "type": "componentSlot",
+          "name": "footer",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "One."
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Two."
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

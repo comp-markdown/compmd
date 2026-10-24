@@ -1,0 +1,254 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentDefinition",
+      "name": "card",
+      "language": "compmd",
+      "signature": {
+        "params": [],
+        "slots": [
+          "default"
+        ],
+        "headings": "relative"
+      },
+      "params": [
+        {
+          "key": null,
+          "breakpoint": null,
+          "kind": "class",
+          "value": "card",
+          "position": {
+            "start": {
+              "line": 1,
+              "column": 27,
+              "offset": 26
+            },
+            "end": {
+              "line": 1,
+              "column": 32,
+              "offset": 31
+            }
+          }
+        },
+        {
+          "key": "padding",
+          "breakpoint": null,
+          "kind": "bare",
+          "value": "s",
+          "position": {
+            "start": {
+              "line": 1,
+              "column": 33,
+              "offset": 32
+            },
+            "end": {
+              "line": 1,
+              "column": 42,
+              "offset": 41
+            }
+          }
+        },
+        {
+          "key": "padding",
+          "breakpoint": "md",
+          "kind": "bare",
+          "value": "m",
+          "position": {
+            "start": {
+              "line": 1,
+              "column": 43,
+              "offset": 42
+            },
+            "end": {
+              "line": 1,
+              "column": 55,
+              "offset": 54
+            }
+          }
+        }
+      ],
+      "children": [
+        {
+          "type": "interpolation",
+          "path": "md.slot",
+          "block": true,
+          "position": {
+            "start": {
+              "line": 4,
+              "column": 1,
+              "offset": 77
+            },
+            "end": {
+              "line": 4,
+              "column": 12,
+              "offset": 88
+            }
+          }
+        }
+      ],
+      "position": {
+        "start": {
+          "line": 1,
+          "column": 1,
+          "offset": 0
+        },
+        "end": {
+          "line": 5,
+          "column": 4,
+          "offset": 92
+        }
+      }
+    },
+    {
+      "type": "componentDefinition",
+      "name": "chart",
+      "language": "jsx",
+      "signature": null,
+      "params": [
+        {
+          "key": "height",
+          "breakpoint": null,
+          "kind": "bare",
+          "value": "16rem",
+          "position": {
+            "start": {
+              "line": 7,
+              "column": 42,
+              "offset": 135
+            },
+            "end": {
+              "line": 7,
+              "column": 54,
+              "offset": 147
+            }
+          }
+        }
+      ],
+      "source": "export default function Chart() { return null; }",
+      "runtime": "react@19",
+      "position": {
+        "start": {
+          "line": 7,
+          "column": 1,
+          "offset": 94
+        },
+        "end": {
+          "line": 9,
+          "column": 4,
+          "offset": 201
+        }
+      }
+    },
+    {
+      "type": "componentSignature",
+      "name": "chart",
+      "signature": {
+        "params": [],
+        "slots": null,
+        "headings": "relative"
+      },
+      "position": {
+        "start": {
+          "line": 11,
+          "column": 1,
+          "offset": 203
+        },
+        "end": {
+          "line": 13,
+          "column": 4,
+          "offset": 268
+        }
+      }
+    },
+    {
+      "type": "componentDefinition",
+      "name": "broken",
+      "language": "compmd",
+      "signature": {
+        "params": [],
+        "slots": null,
+        "headings": "relative"
+      },
+      "params": [
+        {
+          "key": "padding",
+          "breakpoint": null,
+          "kind": "bare",
+          "value": "s",
+          "position": {
+            "start": {
+              "line": 15,
+              "column": 29,
+              "offset": 298
+            },
+            "end": {
+              "line": 15,
+              "column": 38,
+              "offset": 307
+            }
+          }
+        }
+      ],
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "Text.",
+              "position": {
+                "start": {
+                  "line": 17,
+                  "column": 1,
+                  "offset": 332
+                },
+                "end": {
+                  "line": 17,
+                  "column": 6,
+                  "offset": 337
+                }
+              }
+            }
+          ],
+          "position": {
+            "start": {
+              "line": 17,
+              "column": 1,
+              "offset": 332
+            },
+            "end": {
+              "line": 17,
+              "column": 6,
+              "offset": 337
+            }
+          }
+        }
+      ],
+      "position": {
+        "start": {
+          "line": 15,
+          "column": 1,
+          "offset": 270
+        },
+        "end": {
+          "line": 18,
+          "column": 4,
+          "offset": 341
+        }
+      }
+    }
+  ],
+  "position": {
+    "start": {
+      "line": 1,
+      "column": 1,
+      "offset": 0
+    },
+    "end": {
+      "line": 19,
+      "column": 1,
+      "offset": 342
+    }
+  }
+}

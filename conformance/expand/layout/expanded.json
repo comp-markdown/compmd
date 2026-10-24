@@ -1,0 +1,167 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [
+        {
+          "key": "display",
+          "breakpoint": null,
+          "value": "grid"
+        },
+        {
+          "key": "gap",
+          "breakpoint": null,
+          "value": "m"
+        },
+        {
+          "key": "align-items",
+          "breakpoint": null,
+          "value": "stretch"
+        },
+        {
+          "key": "grid-template-columns",
+          "breakpoint": null,
+          "value": "repeat(auto-fill, minmax(14rem, 1fr))"
+        }
+      ],
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "Card one."
+            }
+          ]
+        },
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "Card two."
+            }
+          ]
+        }
+      ],
+      "slots": []
+    },
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [
+        {
+          "key": "display",
+          "breakpoint": null,
+          "value": "flex"
+        },
+        {
+          "key": "flex-direction",
+          "breakpoint": null,
+          "value": "row"
+        },
+        {
+          "key": "gap",
+          "breakpoint": null,
+          "value": "none"
+        },
+        {
+          "key": "gap",
+          "breakpoint": "md",
+          "value": "l"
+        },
+        {
+          "key": "align-items",
+          "breakpoint": null,
+          "value": "stretch"
+        },
+        {
+          "key": "justify-content",
+          "breakpoint": null,
+          "value": "between"
+        },
+        {
+          "key": "flex-wrap",
+          "breakpoint": null,
+          "value": "wrap"
+        },
+        {
+          "key": "class",
+          "breakpoint": null,
+          "value": "toolbar"
+        }
+      ],
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "Left."
+            }
+          ]
+        },
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "Right."
+            }
+          ]
+        }
+      ],
+      "slots": []
+    },
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [
+        {
+          "key": "display",
+          "breakpoint": null,
+          "value": "flex"
+        },
+        {
+          "key": "flex-direction",
+          "breakpoint": null,
+          "value": "column"
+        },
+        {
+          "key": "gap",
+          "breakpoint": null,
+          "value": "none"
+        },
+        {
+          "key": "align-items",
+          "breakpoint": null,
+          "value": "stretch"
+        },
+        {
+          "key": "width",
+          "breakpoint": null,
+          "value": "40%"
+        },
+        {
+          "key": "id",
+          "breakpoint": null,
+          "value": "intro"
+        }
+      ],
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "Stacked."
+            }
+          ]
+        }
+      ],
+      "slots": []
+    }
+  ]
+}

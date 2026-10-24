@@ -1,0 +1,29 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentContainer",
+      "name": "card",
+      "params": [
+        {
+          "key": "meta",
+          "breakpoint": null,
+          "kind": "json",
+          "value": "{\"title\": \"a } b\"}"
+        }
+      ],
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "Text."
+            }
+          ]
+        }
+      ],
+      "slots": []
+    }
+  ]
+}

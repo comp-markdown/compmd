@@ -1,0 +1,30 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "New "
+        },
+        {
+          "type": "componentInline",
+          "name": "badge",
+          "fallback": [
+            {
+              "type": "text",
+              "value": "beta"
+            }
+          ],
+          "params": [],
+          "recovered": true
+        },
+        {
+          "type": "text",
+          "value": "{tone=\"info} renderer."
+        }
+      ]
+    }
+  ]
+}

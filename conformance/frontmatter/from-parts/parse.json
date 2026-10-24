@@ -1,0 +1,33 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "yaml",
+      "value": "md:\n  data:\n    - from: ./sales-{{md.input.year}}.csv\n      as: sales",
+      "parsed": {
+        "md": {
+          "data": [
+            {
+              "from": [
+                {
+                  "type": "text",
+                  "value": "./sales-"
+                },
+                {
+                  "type": "interpolation",
+                  "path": "md.input.year",
+                  "block": false
+                },
+                {
+                  "type": "text",
+                  "value": ".csv"
+                }
+              ],
+              "as": "sales"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

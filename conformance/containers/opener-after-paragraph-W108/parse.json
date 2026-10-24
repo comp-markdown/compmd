@@ -1,0 +1,31 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "Intro line"
+        }
+      ]
+    },
+    {
+      "type": "componentContainer",
+      "name": "card",
+      "params": [],
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "Text."
+            }
+          ]
+        }
+      ],
+      "slots": []
+    }
+  ]
+}

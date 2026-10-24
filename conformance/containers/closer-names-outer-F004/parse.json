@@ -1,0 +1,31 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentContainer",
+      "name": "row",
+      "params": [],
+      "children": [
+        {
+          "type": "componentContainer",
+          "name": "card",
+          "params": [],
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Text."
+                }
+              ]
+            }
+          ],
+          "slots": [],
+          "autoClosed": true
+        }
+      ],
+      "slots": []
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "blockquote",
+      "children": [
+        {
+          "type": "componentContainer",
+          "name": "callout",
+          "params": [],
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Quoted."
+                }
+              ]
+            }
+          ],
+          "slots": []
+        }
+      ]
+    }
+  ]
+}

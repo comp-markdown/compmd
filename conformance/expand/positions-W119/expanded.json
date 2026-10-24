@@ -1,0 +1,184 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [],
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "Its height comes from this paragraph only."
+            }
+          ]
+        },
+        {
+          "type": "componentContainer",
+          "name": "box",
+          "params": [
+            {
+              "key": "inset-block-start",
+              "breakpoint": null,
+              "value": "1rem"
+            }
+          ],
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Positioned in a box without a height."
+                }
+              ]
+            }
+          ],
+          "slots": []
+        }
+      ],
+      "slots": []
+    },
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [
+        {
+          "key": "height",
+          "breakpoint": "md",
+          "value": "10rem"
+        }
+      ],
+      "children": [
+        {
+          "type": "componentContainer",
+          "name": "box",
+          "params": [
+            {
+              "key": "inset-inline-start",
+              "breakpoint": "md",
+              "value": "50%"
+            }
+          ],
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Positioned from md up, where the box has a height: no warning."
+                }
+              ]
+            }
+          ],
+          "slots": []
+        }
+      ],
+      "slots": []
+    },
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [
+        {
+          "key": "height",
+          "breakpoint": "md",
+          "value": "10rem"
+        }
+      ],
+      "children": [
+        {
+          "type": "componentContainer",
+          "name": "box",
+          "params": [
+            {
+              "key": "inset-inline-start",
+              "breakpoint": null,
+              "value": "50%"
+            }
+          ],
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Positioned below md too, where the box has no height."
+                }
+              ]
+            }
+          ],
+          "slots": []
+        }
+      ],
+      "slots": []
+    },
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [
+        {
+          "key": "aspect-ratio",
+          "breakpoint": null,
+          "value": "16/9"
+        }
+      ],
+      "children": [
+        {
+          "type": "componentContainer",
+          "name": "box",
+          "params": [
+            {
+              "key": "inset-inline-end",
+              "breakpoint": null,
+              "value": "0"
+            },
+            {
+              "key": "inset-block-end",
+              "breakpoint": null,
+              "value": "0"
+            }
+          ],
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Sized by its aspect ratio: no warning."
+                }
+              ]
+            }
+          ],
+          "slots": []
+        }
+      ],
+      "slots": []
+    },
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [
+        {
+          "key": "inset-inline-start",
+          "breakpoint": null,
+          "value": "1rem"
+        }
+      ],
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "Positioned at the top level."
+            }
+          ]
+        }
+      ],
+      "slots": []
+    }
+  ]
+}

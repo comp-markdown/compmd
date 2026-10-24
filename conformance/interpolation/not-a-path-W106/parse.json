@@ -1,0 +1,14 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "Sum {{ 1 + 2 }} here."
+        }
+      ]
+    }
+  ]
+}

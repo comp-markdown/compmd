@@ -1,0 +1,17 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentLeaf",
+      "name": "grid",
+      "fallback": [
+        {
+          "type": "text",
+          "value": "G"
+        }
+      ],
+      "params": [],
+      "recovered": true
+    }
+  ]
+}

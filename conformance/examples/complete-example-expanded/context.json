@@ -1,0 +1,7 @@
+{
+  "now": "2026-10-22T09:00:00Z",
+  "registry": {"@acme/charts": [{"version": "1.4.2", "path": "registry/acme-charts-1.4.2", "integrity": "sha512-3q9wHVm8bVY3oEhTyWJOR4kUqMVfF0Pn3eW0v1jYQ2Q1…"}]},
+  "allowedOrigins": ["https://status.rayplay.dev"],
+  "urls": {"https://status.rayplay.dev/today.json?region=all": "status-today.json"},
+  "host": {"tasks?project=rayplay": "tasks.json"}
+}

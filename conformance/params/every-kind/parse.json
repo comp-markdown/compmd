@@ -1,0 +1,82 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentLeaf",
+      "name": "x",
+      "fallback": [
+        {
+          "type": "text",
+          "value": "X"
+        }
+      ],
+      "params": [
+        {
+          "key": "s",
+          "breakpoint": null,
+          "kind": "string",
+          "value": [
+            {
+              "type": "text",
+              "value": "a b"
+            }
+          ]
+        },
+        {
+          "key": "b",
+          "breakpoint": null,
+          "kind": "bare",
+          "value": "bare"
+        },
+        {
+          "key": "n",
+          "breakpoint": null,
+          "kind": "bare",
+          "value": "3"
+        },
+        {
+          "key": "f",
+          "breakpoint": null,
+          "kind": "flag",
+          "value": null
+        },
+        {
+          "key": "a",
+          "breakpoint": null,
+          "kind": "json",
+          "value": "[1,\"x\"]"
+        },
+        {
+          "key": "o",
+          "breakpoint": null,
+          "kind": "json",
+          "value": "{\"k\":1}"
+        },
+        {
+          "key": "e",
+          "breakpoint": null,
+          "kind": "expr",
+          "value": "1 + 2"
+        },
+        {
+          "key": null,
+          "breakpoint": null,
+          "kind": "class",
+          "value": "wide"
+        },
+        {
+          "key": null,
+          "breakpoint": null,
+          "kind": "id",
+          "value": "main"
+        },
+        {
+          "key": "gap",
+          "breakpoint": "md",
+          "kind": "bare",
+          "value": "l"
+        }
+      ]
+    }
+  ]
+}

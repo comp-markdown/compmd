@@ -1,0 +1,29 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentLeaf",
+      "name": "x",
+      "fallback": [
+        {
+          "type": "text",
+          "value": "X"
+        }
+      ],
+      "params": [
+        {
+          "key": "label",
+          "breakpoint": null,
+          "kind": "bare",
+          "value": "Café"
+        },
+        {
+          "key": "icon",
+          "breakpoint": null,
+          "kind": "bare",
+          "value": "✓"
+        }
+      ]
+    }
+  ]
+}

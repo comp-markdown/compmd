@@ -1,0 +1,30 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "Version "
+        },
+        {
+          "type": "componentInline",
+          "name": "badge",
+          "fallback": [
+            {
+              "type": "text",
+              "value": "beta"
+            }
+          ],
+          "params": []
+        },
+        {
+          "type": "interpolation",
+          "path": "md.doc.v",
+          "block": false
+        }
+      ]
+    }
+  ]
+}

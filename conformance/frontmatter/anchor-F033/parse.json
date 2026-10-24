@@ -1,0 +1,9 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "yaml",
+      "value": "base: &b 1\ncopy: *b"
+    }
+  ]
+}

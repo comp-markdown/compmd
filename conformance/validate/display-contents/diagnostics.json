@@ -1,0 +1,42 @@
+[
+  {
+    "code": "W120",
+    "line": 1,
+    "column": 45
+  },
+  {
+    "code": "F009",
+    "line": 7,
+    "column": 38
+  },
+  {
+    "code": "W105",
+    "line": 13,
+    "column": 1
+  },
+  {
+    "code": "F008",
+    "line": 13,
+    "column": 25
+  },
+  {
+    "code": "W120",
+    "line": 17,
+    "column": 12
+  },
+  {
+    "code": "W120",
+    "line": 17,
+    "column": 18
+  },
+  {
+    "code": "W120",
+    "line": 17,
+    "column": 28
+  },
+  {
+    "code": "F009",
+    "line": 21,
+    "column": 18
+  }
+]

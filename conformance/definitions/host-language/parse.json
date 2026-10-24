@@ -1,0 +1,14 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentDefinition",
+      "name": "chart",
+      "language": "jsx",
+      "signature": null,
+      "params": [],
+      "source": "export default function Chart() { return null; }",
+      "runtime": null
+    }
+  ]
+}

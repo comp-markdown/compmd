@@ -1,0 +1,27 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "definition",
+      "identifier": "docs",
+      "label": "docs",
+      "title": null,
+      "url": "https://x.dev/{{md.doc.v}}/",
+      "urlParts": [
+        {
+          "type": "text",
+          "value": "https://x.dev/"
+        },
+        {
+          "type": "interpolation",
+          "path": "md.doc.v",
+          "block": false
+        },
+        {
+          "type": "text",
+          "value": "/"
+        }
+      ]
+    }
+  ]
+}

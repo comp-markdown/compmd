@@ -1,0 +1,86 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentDefinition",
+      "name": "note",
+      "language": "compmd",
+      "signature": {
+        "params": [],
+        "slots": null,
+        "headings": "relative"
+      },
+      "params": [],
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "See the note"
+            },
+            {
+              "type": "footnoteReference",
+              "identifier": "1",
+              "label": "1"
+            },
+            {
+              "type": "text",
+              "value": ", but not[^2]."
+            }
+          ]
+        },
+        {
+          "type": "footnoteDefinition",
+          "identifier": "1",
+          "label": "1",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Inside the definition."
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "Outside"
+        },
+        {
+          "type": "footnoteReference",
+          "identifier": "2",
+          "label": "2"
+        },
+        {
+          "type": "text",
+          "value": ", but not[^1]."
+        }
+      ]
+    },
+    {
+      "type": "footnoteDefinition",
+      "identifier": "2",
+      "label": "2",
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "Outside the definition."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

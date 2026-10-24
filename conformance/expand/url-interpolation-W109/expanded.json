@@ -1,0 +1,25 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "link",
+          "title": null,
+          "url": "https://github.com/acme/rayplay",
+          "children": [
+            {
+              "type": "text",
+              "value": "Repository"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "value": " and a trap."
+        }
+      ]
+    }
+  ]
+}

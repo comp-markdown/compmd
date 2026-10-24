@@ -1,0 +1,55 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "table",
+      "align": [
+        null
+      ],
+      "children": [
+        {
+          "type": "tableRow",
+          "children": [
+            {
+              "type": "tableCell",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Status"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "tableRow",
+          "children": [
+            {
+              "type": "tableCell",
+              "children": [
+                {
+                  "type": "componentInline",
+                  "name": "badge",
+                  "fallback": [
+                    {
+                      "type": "text",
+                      "value": "ok"
+                    }
+                  ],
+                  "params": [
+                    {
+                      "key": "show",
+                      "breakpoint": null,
+                      "kind": "expr",
+                      "value": "a || b"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

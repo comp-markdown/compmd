@@ -1,0 +1,32 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentDefinition",
+      "name": "snippet",
+      "language": "compmd",
+      "signature": {
+        "params": [
+          {
+            "name": "code",
+            "type": "string",
+            "optional": false,
+            "default": null,
+            "doc": null
+          }
+        ],
+        "slots": null,
+        "headings": "relative"
+      },
+      "params": [],
+      "children": [
+        {
+          "type": "code",
+          "lang": "sh",
+          "meta": null,
+          "value": "{{code}}"
+        }
+      ]
+    }
+  ]
+}

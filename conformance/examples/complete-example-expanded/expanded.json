@@ -1,0 +1,913 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "heading",
+      "depth": 1,
+      "children": [
+        {
+          "type": "text",
+          "value": "RayPlay 1.4"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "RayPlay 1.4 ships on November 2, 2026. Read the "
+        },
+        {
+          "type": "wikiLink",
+          "target": "Upgrade guide",
+          "label": "upgrade guide"
+        },
+        {
+          "type": "text",
+          "value": " first."
+        },
+        {
+          "type": "footnoteReference",
+          "identifier": "migrate",
+          "label": "migrate"
+        }
+      ]
+    },
+    {
+      "type": "footnoteDefinition",
+      "identifier": "migrate",
+      "label": "migrate",
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "Config files from 1.3 need "
+            },
+            {
+              "type": "inlineCode",
+              "value": "rayplay migrate"
+            },
+            {
+              "type": "text",
+              "value": "."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "blockquote",
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "This page renders live data. Write "
+            },
+            {
+              "type": "inlineCode",
+              "value": "\\{{name}}"
+            },
+            {
+              "type": "text",
+              "value": " to show braces in prose."
+            }
+          ]
+        }
+      ],
+      "alert": "note"
+    },
+    {
+      "type": "heading",
+      "depth": 2,
+      "children": [
+        {
+          "type": "text",
+          "value": "What changed"
+        }
+      ]
+    },
+    {
+      "type": "list",
+      "ordered": false,
+      "start": null,
+      "spread": false,
+      "children": [
+        {
+          "type": "listItem",
+          "spread": false,
+          "checked": null,
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "New wgpu renderer ("
+                },
+                {
+                  "type": "link",
+                  "title": null,
+                  "url": "https://github.com/acme/rayplay/pull/412",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "#412"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": ")"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "listItem",
+          "spread": false,
+          "checked": null,
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Config format 2 ("
+                },
+                {
+                  "type": "link",
+                  "title": null,
+                  "url": "https://github.com/acme/rayplay/pull/398",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "#398"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": ")"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [
+        {
+          "key": "padding",
+          "breakpoint": null,
+          "value": "m"
+        },
+        {
+          "key": "border",
+          "breakpoint": null,
+          "value": "1px solid"
+        },
+        {
+          "key": "border-radius",
+          "breakpoint": null,
+          "value": "8px"
+        },
+        {
+          "key": "class",
+          "breakpoint": null,
+          "value": "card-warning"
+        }
+      ],
+      "children": [
+        {
+          "type": "heading",
+          "depth": 3,
+          "children": [
+            {
+              "type": "text",
+              "value": "Breaking changes"
+            }
+          ]
+        },
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "Run "
+            },
+            {
+              "type": "inlineCode",
+              "value": "rayplay migrate"
+            },
+            {
+              "type": "text",
+              "value": " before starting 1.4."
+            }
+          ]
+        },
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "It takes about two minutes."
+            }
+          ]
+        }
+      ],
+      "slots": []
+    },
+    {
+      "type": "heading",
+      "depth": 2,
+      "children": [
+        {
+          "type": "text",
+          "value": "Installs"
+        }
+      ]
+    },
+    {
+      "type": "componentLeaf",
+      "name": "select-input",
+      "params": [
+        {
+          "key": "bind",
+          "breakpoint": null,
+          "value": "all",
+          "input": "region"
+        }
+      ],
+      "fallback": [
+        {
+          "type": "text",
+          "value": "Region: all"
+        }
+      ]
+    },
+    {
+      "type": "componentLeaf",
+      "name": "date-input",
+      "params": [
+        {
+          "key": "bind",
+          "breakpoint": null,
+          "value": "2026-09-22",
+          "input": "since"
+        }
+      ],
+      "fallback": [
+        {
+          "type": "text",
+          "value": "Since: 30 days ago"
+        }
+      ]
+    },
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [
+        {
+          "key": "display",
+          "breakpoint": null,
+          "value": "grid"
+        },
+        {
+          "key": "gap",
+          "breakpoint": null,
+          "value": "m"
+        },
+        {
+          "key": "gap",
+          "breakpoint": "lg",
+          "value": "l"
+        },
+        {
+          "key": "align-items",
+          "breakpoint": null,
+          "value": "stretch"
+        },
+        {
+          "key": "grid-template-columns",
+          "breakpoint": "md",
+          "value": "2fr 1fr"
+        },
+        {
+          "key": "id",
+          "breakpoint": null,
+          "value": "installs"
+        }
+      ],
+      "children": [
+        {
+          "type": "componentLeaf",
+          "name": "chart",
+          "params": [
+            {
+              "key": "rows",
+              "breakpoint": null,
+              "value": [
+                {
+                  "date": "2026-10-20",
+                  "region": "eu",
+                  "count": 410
+                },
+                {
+                  "date": "2026-10-20",
+                  "region": "us",
+                  "count": 388
+                },
+                {
+                  "date": "2026-10-21",
+                  "region": "eu",
+                  "count": 436
+                },
+                {
+                  "date": "2026-10-21",
+                  "region": "us",
+                  "count": 402
+                }
+              ]
+            },
+            {
+              "key": "type",
+              "breakpoint": null,
+              "value": "bar"
+            },
+            {
+              "key": "selected",
+              "breakpoint": null,
+              "value": "",
+              "input": "highlight"
+            }
+          ],
+          "fallback": [
+            {
+              "type": "text",
+              "value": "Daily installs since "
+            },
+            {
+              "type": "text",
+              "value": "2026-09-22"
+            }
+          ]
+        },
+        {
+          "type": "componentContainer",
+          "name": "box",
+          "params": [
+            {
+              "key": "display",
+              "breakpoint": null,
+              "value": "flex"
+            },
+            {
+              "key": "flex-direction",
+              "breakpoint": null,
+              "value": "column"
+            },
+            {
+              "key": "gap",
+              "breakpoint": null,
+              "value": "s"
+            },
+            {
+              "key": "align-items",
+              "breakpoint": null,
+              "value": "stretch"
+            },
+            {
+              "key": "sticky",
+              "breakpoint": null,
+              "value": "top"
+            },
+            {
+              "key": "show",
+              "breakpoint": null,
+              "value": "md"
+            }
+          ],
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "strong",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Total:"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": " 1,636 "
+                },
+                {
+                  "type": "componentInline",
+                  "name": "sparkline",
+                  "params": [
+                    {
+                      "key": "values",
+                      "breakpoint": null,
+                      "value": [
+                        3,
+                        5,
+                        8,
+                        13
+                      ]
+                    }
+                  ],
+                  "fallback": [
+                    {
+                      "type": "text",
+                      "value": "rising"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "strong",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Status:"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": " All systems normal"
+                }
+              ]
+            }
+          ],
+          "slots": []
+        }
+      ],
+      "slots": []
+    },
+    {
+      "type": "table",
+      "align": [
+        null,
+        null
+      ],
+      "children": [
+        {
+          "type": "tableRow",
+          "children": [
+            {
+              "type": "tableCell",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Region"
+                }
+              ]
+            },
+            {
+              "type": "tableCell",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Since"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "tableRow",
+          "children": [
+            {
+              "type": "tableCell",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "all"
+                }
+              ]
+            },
+            {
+              "type": "tableCell",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "2026-09-22"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "depth": 2,
+      "children": [
+        {
+          "type": "text",
+          "value": "Team"
+        }
+      ]
+    },
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [
+        {
+          "key": "display",
+          "breakpoint": null,
+          "value": "grid"
+        },
+        {
+          "key": "gap",
+          "breakpoint": null,
+          "value": "m"
+        },
+        {
+          "key": "align-items",
+          "breakpoint": null,
+          "value": "stretch"
+        },
+        {
+          "key": "grid-template-columns",
+          "breakpoint": null,
+          "value": "repeat(auto-fill, minmax(14rem, 1fr))"
+        }
+      ],
+      "children": [
+        {
+          "type": "componentContainer",
+          "name": "box",
+          "params": [
+            {
+              "key": "padding",
+              "breakpoint": null,
+              "value": "m"
+            },
+            {
+              "key": "border",
+              "breakpoint": null,
+              "value": "1px solid"
+            },
+            {
+              "key": "border-radius",
+              "breakpoint": null,
+              "value": "8px"
+            },
+            {
+              "key": "class",
+              "breakpoint": null,
+              "value": "card-note person"
+            }
+          ],
+          "children": [
+            {
+              "type": "heading",
+              "depth": 3,
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Ana Lima"
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Renderer, since 2024"
+                }
+              ]
+            }
+          ],
+          "slots": []
+        },
+        {
+          "type": "componentContainer",
+          "name": "box",
+          "params": [
+            {
+              "key": "padding",
+              "breakpoint": null,
+              "value": "m"
+            },
+            {
+              "key": "border",
+              "breakpoint": null,
+              "value": "1px solid"
+            },
+            {
+              "key": "border-radius",
+              "breakpoint": null,
+              "value": "8px"
+            },
+            {
+              "key": "class",
+              "breakpoint": null,
+              "value": "card-note person"
+            }
+          ],
+          "children": [
+            {
+              "type": "heading",
+              "depth": 3,
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Kenji Sato"
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Config and CLI, since 2025"
+                }
+              ]
+            }
+          ],
+          "slots": []
+        }
+      ],
+      "slots": []
+    },
+    {
+      "type": "heading",
+      "depth": 2,
+      "children": [
+        {
+          "type": "text",
+          "value": "Tasks"
+        }
+      ]
+    },
+    {
+      "type": "componentContainer",
+      "name": "board",
+      "params": [
+        {
+          "key": "rows",
+          "breakpoint": null,
+          "value": [
+            {
+              "title": "Ship 1.4",
+              "status": "doing",
+              "due": "2026-11-02"
+            },
+            {
+              "title": "Write notes",
+              "status": "done",
+              "due": "2026-10-30"
+            }
+          ]
+        },
+        {
+          "key": "by",
+          "breakpoint": null,
+          "value": "status"
+        },
+        {
+          "key": "as",
+          "breakpoint": null,
+          "value": "t"
+        }
+      ],
+      "children": [],
+      "instances": [
+        {
+          "value": {
+            "title": "Ship 1.4",
+            "status": "doing",
+            "due": "2026-11-02"
+          },
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "strong",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Ship 1.4"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": ", due Nov 2, 2026"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "value": {
+            "title": "Write notes",
+            "status": "done",
+            "due": "2026-10-30"
+          },
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "strong",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Write notes"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": ", due Oct 30, 2026"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "slots": []
+    },
+    {
+      "type": "heading",
+      "depth": 2,
+      "children": [
+        {
+          "type": "text",
+          "value": "Built with"
+        }
+      ]
+    },
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [
+        {
+          "key": "display",
+          "breakpoint": null,
+          "value": "flex"
+        },
+        {
+          "key": "flex-direction",
+          "breakpoint": null,
+          "value": "row"
+        },
+        {
+          "key": "gap",
+          "breakpoint": null,
+          "value": "s"
+        },
+        {
+          "key": "align-items",
+          "breakpoint": null,
+          "value": "center"
+        },
+        {
+          "key": "justify-content",
+          "breakpoint": null,
+          "value": "space-between"
+        },
+        {
+          "key": "flex-wrap",
+          "breakpoint": null,
+          "value": "wrap"
+        }
+      ],
+      "children": [
+        {
+          "type": "componentContainer",
+          "name": "box",
+          "params": [],
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "link",
+                  "title": null,
+                  "url": "https://www.rust-lang.org",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Rust"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": ", "
+                },
+                {
+                  "type": "link",
+                  "title": null,
+                  "url": "https://wgpu.rs",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "wgpu"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": " and "
+                },
+                {
+                  "type": "link",
+                  "title": null,
+                  "url": "https://webassembly.org",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "WebAssembly"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "slots": []
+        },
+        {
+          "type": "componentContainer",
+          "name": "box",
+          "params": [
+            {
+              "key": "lang",
+              "breakpoint": null,
+              "value": "de"
+            },
+            {
+              "key": "justify-self",
+              "breakpoint": null,
+              "value": "end"
+            }
+          ],
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "„Endlich flüssig.“ Frame time "
+                },
+                {
+                  "type": "inlineMath",
+                  "value": "p_{95} < 16\\,\\text{ms}"
+                },
+                {
+                  "type": "text",
+                  "value": "."
+                }
+              ]
+            }
+          ],
+          "slots": []
+        }
+      ],
+      "slots": []
+    }
+  ],
+  "inputs": {
+    "region": {
+      "type": "enum",
+      "members": [
+        "all",
+        "eu",
+        "us"
+      ],
+      "value": "all"
+    },
+    "since": {
+      "type": "date",
+      "value": "2026-09-22"
+    },
+    "highlight": {
+      "type": "string",
+      "value": ""
+    }
+  }
+}

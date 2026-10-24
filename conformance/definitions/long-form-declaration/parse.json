@@ -1,0 +1,42 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentSignature",
+      "name": "chart",
+      "signature": {
+        "params": [
+          {
+            "name": "meta",
+            "type": "object",
+            "optional": false,
+            "default": {
+              "kind": "yaml",
+              "value": {
+                "a": 1
+              }
+            },
+            "doc": "Extra data passed to the chart"
+          },
+          {
+            "name": "label",
+            "type": "string",
+            "optional": false,
+            "default": {
+              "kind": "string",
+              "value": [
+                {
+                  "type": "text",
+                  "value": "Click here"
+                }
+              ]
+            },
+            "doc": null
+          }
+        ],
+        "slots": null,
+        "headings": "relative"
+      }
+    }
+  ]
+}

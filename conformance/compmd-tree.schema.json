@@ -1,0 +1,362 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/comp-markdown/compmd/schema/v1/compmd-tree.schema.json",
+  "title": "CompMD document trees, version 1",
+  "description": "The parse tree (spec §12.1, §12.2) and the expanded tree (spec §12.3) as JSON (§12.4). CompMD's own nodes are checked strictly; other nodes are mdast nodes (https://github.com/syntax-tree/mdast), checked only as unist nodes. Positions are optional, since conformance cases may compare trees without them (§13.2).",
+  "anyOf": [{ "$ref": "#/$defs/parseRoot" }, { "$ref": "#/$defs/expandedRoot" }],
+  "$defs": {
+    "point": {
+      "type": "object",
+      "required": ["line", "column"],
+      "properties": {
+        "line": { "type": "integer", "minimum": 1 },
+        "column": { "type": "integer", "minimum": 1 },
+        "offset": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "position": {
+      "type": "object",
+      "required": ["start", "end"],
+      "properties": { "start": { "$ref": "#/$defs/point" }, "end": { "$ref": "#/$defs/point" } },
+      "additionalProperties": false
+    },
+    "origin": {
+      "description": "The range of the processed document that made an expanded node, and its occurrence among the nodes before it with the same range (§12.3).",
+      "type": "object",
+      "required": ["start", "end", "occurrence"],
+      "properties": {
+        "start": { "$ref": "#/$defs/point" },
+        "end": { "$ref": "#/$defs/point" },
+        "occurrence": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "nodeType": {
+      "type": "string",
+      "minLength": 1
+    },
+
+    "parseRoot": {
+      "type": "object",
+      "required": ["type", "children"],
+      "properties": {
+        "type": { "const": "root" },
+        "children": { "type": "array", "items": { "$ref": "#/$defs/parseNode" } },
+        "position": { "$ref": "#/$defs/position" }
+      },
+      "additionalProperties": false
+    },
+    "parseNode": {
+      "type": "object",
+      "required": ["type"],
+      "properties": { "type": { "$ref": "#/$defs/nodeType" }, "position": { "$ref": "#/$defs/position" } },
+      "allOf": [
+        { "if": { "properties": { "type": { "const": "componentContainer" } } }, "then": { "$ref": "#/$defs/parseContainer" } },
+        { "if": { "properties": { "type": { "const": "componentSlot" } } }, "then": { "$ref": "#/$defs/parseSlot" } },
+        { "if": { "properties": { "type": { "enum": ["componentLeaf", "componentInline"] } } }, "then": { "$ref": "#/$defs/parseLeaf" } },
+        { "if": { "properties": { "type": { "const": "componentDefinition" } } }, "then": { "$ref": "#/$defs/definition" } },
+        { "if": { "properties": { "type": { "const": "componentSignature" } } }, "then": { "$ref": "#/$defs/signatureFence" } },
+        { "if": { "properties": { "type": { "const": "interpolation" } } }, "then": { "$ref": "#/$defs/interpolation" } },
+        { "if": { "properties": { "type": { "const": "yaml" } } }, "then": { "$ref": "#/$defs/yaml" } },
+        { "if": { "required": ["urlParts"] }, "then": { "properties": { "urlParts": { "$ref": "#/$defs/stringParts" } } } },
+        {
+          "if": { "properties": { "type": { "not": { "enum": ["componentContainer", "componentSlot", "componentLeaf", "componentInline", "componentDefinition", "componentSignature", "interpolation", "yaml"] } } } },
+          "then": { "$ref": "#/$defs/mdastParseNode" }
+        }
+      ]
+    },
+    "mdastParseNode": {
+      "description": "An mdast node: its children are parse nodes; a node made by a recovery rule has recovered: true (§12.2).",
+      "properties": {
+        "children": { "type": "array", "items": { "$ref": "#/$defs/parseNode" } },
+        "recovered": { "const": true }
+      }
+    },
+    "parseContainer": {
+      "required": ["name", "params", "children", "slots"],
+      "properties": {
+        "type": true,
+        "position": true,
+        "name": { "type": "string" },
+        "params": { "type": "array", "items": { "$ref": "#/$defs/param" } },
+        "children": { "type": "array", "items": { "$ref": "#/$defs/parseNode" } },
+        "slots": { "type": "array", "items": { "$ref": "#/$defs/parseSlot" } },
+        "closePosition": { "$ref": "#/$defs/position" },
+        "autoClosed": { "const": true },
+        "recovered": { "const": true }
+      },
+      "additionalProperties": false
+    },
+    "parseSlot": {
+      "required": ["type", "name", "children"],
+      "properties": {
+        "type": { "const": "componentSlot" },
+        "position": true,
+        "name": { "type": "string" },
+        "children": { "type": "array", "items": { "$ref": "#/$defs/parseNode" } }
+      },
+      "additionalProperties": false
+    },
+    "parseLeaf": {
+      "required": ["name", "fallback", "params"],
+      "properties": {
+        "type": true,
+        "position": true,
+        "name": { "type": "string" },
+        "fallback": { "type": "array", "items": { "$ref": "#/$defs/parseNode" } },
+        "params": { "type": "array", "items": { "$ref": "#/$defs/param" } },
+        "recovered": { "const": true }
+      },
+      "additionalProperties": false
+    },
+    "param": {
+      "description": "A param as written (§12.1).",
+      "type": "object",
+      "required": ["key", "breakpoint", "kind", "value"],
+      "properties": {
+        "key": { "type": ["string", "null"] },
+        "breakpoint": { "type": ["string", "null"] },
+        "kind": { "enum": ["bare", "string", "json", "expr", "flag", "class", "id"] },
+        "value": { "oneOf": [{ "type": "string" }, { "type": "null" }, { "$ref": "#/$defs/stringParts" }] },
+        "position": { "$ref": "#/$defs/position" }
+      },
+      "additionalProperties": false
+    },
+    "stringParts": {
+      "description": "Text and interpolation parts of a quoted param, a URL or a data from (§12.1, §12.2).",
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["type", "value"],
+            "properties": { "type": { "const": "text" }, "value": { "type": "string" }, "position": { "$ref": "#/$defs/position" } },
+            "additionalProperties": false
+          },
+          { "$ref": "#/$defs/interpolation" }
+        ]
+      }
+    },
+    "interpolation": {
+      "type": "object",
+      "required": ["type", "path", "block"],
+      "properties": {
+        "type": { "const": "interpolation" },
+        "path": { "type": "string" },
+        "block": { "type": "boolean" },
+        "position": { "$ref": "#/$defs/position" }
+      },
+      "additionalProperties": false
+    },
+    "definition": {
+      "description": "A definition fence (§7, §12.1): children for compmd, source and runtime for host languages.",
+      "required": ["name", "language", "signature", "params"],
+      "properties": {
+        "type": true,
+        "position": true,
+        "name": { "type": "string" },
+        "language": { "type": "string" },
+        "signature": { "oneOf": [{ "$ref": "#/$defs/signature" }, { "type": "null" }] },
+        "params": { "type": "array", "items": { "$ref": "#/$defs/param" } },
+        "children": { "type": "array", "items": { "$ref": "#/$defs/parseNode" } },
+        "source": { "type": "string" },
+        "runtime": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "signatureFence": {
+      "required": ["name", "signature"],
+      "properties": {
+        "type": true,
+        "position": true,
+        "name": { "type": "string" },
+        "signature": { "oneOf": [{ "$ref": "#/$defs/signature" }, { "type": "null" }] }
+      },
+      "additionalProperties": false
+    },
+    "signature": {
+      "type": "object",
+      "required": ["params", "slots", "headings"],
+      "properties": {
+        "params": { "type": "array", "items": { "$ref": "#/$defs/declaration" } },
+        "slots": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "array",
+              "items": {
+                "oneOf": [
+                  { "type": "string" },
+                  {
+                    "type": "object",
+                    "required": ["name", "each", "as"],
+                    "properties": { "name": { "type": "string" }, "each": { "type": "string" }, "as": { "type": "string" } },
+                    "additionalProperties": false
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "headings": { "enum": ["relative", "absolute"] }
+      },
+      "additionalProperties": false
+    },
+    "declaration": {
+      "type": "object",
+      "required": ["name", "type", "optional", "default", "doc"],
+      "properties": {
+        "name": { "type": "string" },
+        "type": { "$ref": "#/$defs/declaredType" },
+        "optional": { "type": "boolean" },
+        "default": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "required": ["kind", "value"],
+              "properties": { "kind": { "enum": ["bare", "string", "json", "expr", "flag", "yaml"] }, "value": true },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "doc": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "declaredType": {
+      "oneOf": [
+        { "type": "string" },
+        {
+          "type": "object",
+          "required": ["enum"],
+          "properties": { "enum": { "type": "array", "items": { "type": "string" } } },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["input"],
+          "properties": { "input": { "$ref": "#/$defs/declaredType" } },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "yaml": {
+      "required": ["value"],
+      "properties": {
+        "type": true,
+        "position": true,
+        "value": { "type": "string" },
+        "parsed": { "type": "object" }
+      },
+      "additionalProperties": false
+    },
+
+    "expandedRoot": {
+      "type": "object",
+      "required": ["type", "children"],
+      "properties": {
+        "type": { "const": "root" },
+        "children": { "type": "array", "items": { "$ref": "#/$defs/expandedNode" } },
+        "inputs": {
+          "description": "The document's inputs: type, an enum's members, and the value the render used (§12.3).",
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "required": ["type", "value"],
+            "properties": {
+              "type": { "type": "string" },
+              "members": { "type": "array", "items": { "type": "string" } },
+              "value": true
+            },
+            "additionalProperties": false
+          }
+        },
+        "position": { "$ref": "#/$defs/position" }
+      },
+      "additionalProperties": false
+    },
+    "expandedNode": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "not": { "enum": ["componentDefinition", "componentSignature", "interpolation", "yaml", "root"] } },
+        "position": { "$ref": "#/$defs/position" },
+        "origin": { "$ref": "#/$defs/origin" }
+      },
+      "allOf": [
+        { "if": { "properties": { "type": { "const": "componentContainer" } } }, "then": { "$ref": "#/$defs/expandedContainer" } },
+        { "if": { "properties": { "type": { "enum": ["componentLeaf", "componentInline"] } } }, "then": { "$ref": "#/$defs/expandedLeaf" } },
+        { "if": { "properties": { "type": { "const": "componentSlot" } } }, "then": { "$ref": "#/$defs/expandedSlot" } },
+        {
+          "if": { "properties": { "type": { "not": { "enum": ["componentContainer", "componentLeaf", "componentInline", "componentSlot"] } } } },
+          "then": {
+            "properties": { "children": { "type": "array", "items": { "$ref": "#/$defs/expandedNode" } }, "urlParts": false }
+          }
+        }
+      ]
+    },
+    "expandedParam": {
+      "description": "An evaluated param (§12.3): an input-bound param also names its input.",
+      "type": "object",
+      "required": ["key", "breakpoint", "value"],
+      "properties": {
+        "key": { "type": "string" },
+        "breakpoint": { "type": ["string", "null"] },
+        "value": true,
+        "input": { "type": "string" },
+        "position": { "$ref": "#/$defs/position" }
+      },
+      "additionalProperties": false
+    },
+    "instances": {
+      "description": "A template slot's elements, each with the slot content expanded for it (§7.5, §12.3).",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["value", "children"],
+        "properties": { "value": true, "children": { "type": "array", "items": { "$ref": "#/$defs/expandedNode" } } },
+        "additionalProperties": false
+      }
+    },
+    "expandedContainer": {
+      "required": ["name", "params", "children", "slots"],
+      "properties": {
+        "type": true,
+        "position": true,
+        "origin": true,
+        "name": { "type": "string" },
+        "params": { "type": "array", "items": { "$ref": "#/$defs/expandedParam" } },
+        "children": { "type": "array", "items": { "$ref": "#/$defs/expandedNode" } },
+        "instances": { "$ref": "#/$defs/instances" },
+        "slots": { "type": "array", "items": { "$ref": "#/$defs/expandedSlot" } }
+      },
+      "additionalProperties": false
+    },
+    "expandedSlot": {
+      "required": ["type", "name", "children"],
+      "properties": {
+        "type": { "const": "componentSlot" },
+        "position": true,
+        "origin": true,
+        "name": { "type": "string" },
+        "children": { "type": "array", "items": { "$ref": "#/$defs/expandedNode" } },
+        "instances": { "$ref": "#/$defs/instances" }
+      },
+      "additionalProperties": false
+    },
+    "expandedLeaf": {
+      "required": ["name", "params", "fallback"],
+      "properties": {
+        "type": true,
+        "position": true,
+        "origin": true,
+        "name": { "type": "string" },
+        "params": { "type": "array", "items": { "$ref": "#/$defs/expandedParam" } },
+        "fallback": { "type": "array", "items": { "$ref": "#/$defs/expandedNode" } }
+      },
+      "additionalProperties": false
+    }
+  }
+}

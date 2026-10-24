@@ -1,0 +1,79 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentDefinition",
+      "name": "callout",
+      "language": "compmd",
+      "signature": {
+        "params": [
+          {
+            "name": "kind",
+            "type": {
+              "enum": [
+                "tip",
+                "warning"
+              ]
+            },
+            "optional": false,
+            "default": {
+              "kind": "bare",
+              "value": "tip"
+            },
+            "doc": null
+          }
+        ],
+        "slots": [
+          "default"
+        ],
+        "headings": "relative"
+      },
+      "params": [],
+      "children": [
+        {
+          "type": "componentContainer",
+          "name": "box",
+          "params": [
+            {
+              "key": "pad",
+              "breakpoint": null,
+              "kind": "bare",
+              "value": "1rem"
+            },
+            {
+              "key": "radius",
+              "breakpoint": null,
+              "kind": "bare",
+              "value": "8px"
+            },
+            {
+              "key": "border",
+              "breakpoint": null,
+              "kind": "string",
+              "value": [
+                {
+                  "type": "text",
+                  "value": "1px solid"
+                }
+              ]
+            },
+            {
+              "key": "class",
+              "breakpoint": null,
+              "kind": "expr",
+              "value": "\"callout-\" + kind"
+            }
+          ],
+          "children": [
+            {
+              "type": "interpolation",
+              "path": "md.slot",
+              "block": true
+            }
+          ],
+          "slots": []
+        }
+      ]
+    }
+  ]
+}

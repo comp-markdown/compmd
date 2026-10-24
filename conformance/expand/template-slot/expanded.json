@@ -1,0 +1,49 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [],
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "strong",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Write spec"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "value": ": done, 1"
+            }
+          ]
+        },
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "strong",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Build parser"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "value": ": doing, 2"
+            }
+          ]
+        }
+      ],
+      "slots": []
+    }
+  ]
+}

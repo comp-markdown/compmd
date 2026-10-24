@@ -1,0 +1,29 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentLeaf",
+      "name": "chart",
+      "fallback": [
+        {
+          "type": "text",
+          "value": "Weekly installs"
+        }
+      ],
+      "params": [
+        {
+          "key": "src",
+          "breakpoint": null,
+          "kind": "bare",
+          "value": "installs.csv"
+        },
+        {
+          "key": "type",
+          "breakpoint": null,
+          "kind": "bare",
+          "value": "bar"
+        }
+      ]
+    }
+  ]
+}

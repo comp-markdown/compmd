@@ -1,0 +1,57 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "blockquote",
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "Run "
+            },
+            {
+              "type": "inlineCode",
+              "value": "rayplay migrate"
+            },
+            {
+              "type": "text",
+              "value": " first."
+            }
+          ]
+        }
+      ],
+      "alert": "warning"
+    },
+    {
+      "type": "blockquote",
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "Lower case works too."
+            }
+          ]
+        }
+      ],
+      "alert": "note"
+    },
+    {
+      "type": "blockquote",
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "[!TIP] on the same line is not an alert."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

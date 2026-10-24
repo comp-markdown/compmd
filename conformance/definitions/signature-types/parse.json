@@ -1,0 +1,80 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentSignature",
+      "name": "chart",
+      "signature": {
+        "params": [
+          {
+            "name": "rows",
+            "type": "array",
+            "optional": false,
+            "default": null,
+            "doc": null
+          },
+          {
+            "name": "as",
+            "type": "name",
+            "optional": false,
+            "default": null,
+            "doc": null
+          },
+          {
+            "name": "since",
+            "type": "date",
+            "optional": false,
+            "default": {
+              "kind": "expr",
+              "value": "md.today()"
+            },
+            "doc": null
+          },
+          {
+            "name": "gap",
+            "type": "space",
+            "optional": false,
+            "default": {
+              "kind": "bare",
+              "value": "m"
+            },
+            "doc": null
+          },
+          {
+            "name": "width",
+            "type": "length",
+            "optional": true,
+            "default": null,
+            "doc": null
+          },
+          {
+            "name": "selected",
+            "type": {
+              "input": "string"
+            },
+            "optional": false,
+            "default": null,
+            "doc": null
+          },
+          {
+            "name": "tone",
+            "type": {
+              "enum": [
+                "info",
+                "warn"
+              ]
+            },
+            "optional": false,
+            "default": {
+              "kind": "bare",
+              "value": "info"
+            },
+            "doc": null
+          }
+        ],
+        "slots": null,
+        "headings": "relative"
+      }
+    }
+  ]
+}

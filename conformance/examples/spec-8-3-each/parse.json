@@ -1,0 +1,182 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentContainer",
+      "name": "each",
+      "params": [
+        {
+          "key": "in",
+          "breakpoint": null,
+          "kind": "expr",
+          "value": "md.doc.changes.filter(c, c.type == \"breaking\")"
+        },
+        {
+          "key": "as",
+          "breakpoint": null,
+          "kind": "bare",
+          "value": "c"
+        },
+        {
+          "key": "join",
+          "breakpoint": null,
+          "kind": "bare",
+          "value": "list"
+        }
+      ],
+      "children": [
+        {
+          "type": "list",
+          "ordered": false,
+          "start": null,
+          "spread": false,
+          "children": [
+            {
+              "type": "listItem",
+              "spread": false,
+              "checked": null,
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "interpolation",
+                      "path": "c.text",
+                      "block": false
+                    },
+                    {
+                      "type": "text",
+                      "value": " ("
+                    },
+                    {
+                      "type": "link",
+                      "title": null,
+                      "url": "https://github.com/acme/rayplay/pull/{{c.pr}}",
+                      "urlParts": [
+                        {
+                          "type": "text",
+                          "value": "https://github.com/acme/rayplay/pull/"
+                        },
+                        {
+                          "type": "interpolation",
+                          "path": "c.pr",
+                          "block": false
+                        }
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "#"
+                        },
+                        {
+                          "type": "interpolation",
+                          "path": "c.pr",
+                          "block": false
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "value": ")"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "slots": [
+        {
+          "type": "componentSlot",
+          "name": "before",
+          "children": [
+            {
+              "type": "heading",
+              "depth": 2,
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Breaking changes"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "componentContainer",
+      "name": "each",
+      "params": [
+        {
+          "key": "in",
+          "breakpoint": null,
+          "kind": "expr",
+          "value": "md.doc.stack"
+        },
+        {
+          "key": "as",
+          "breakpoint": null,
+          "kind": "bare",
+          "value": "s"
+        },
+        {
+          "key": "join",
+          "breakpoint": null,
+          "kind": "bare",
+          "value": "inline"
+        },
+        {
+          "key": "sep",
+          "breakpoint": null,
+          "kind": "string",
+          "value": [
+            {
+              "type": "text",
+              "value": ", "
+            }
+          ]
+        },
+        {
+          "key": "last",
+          "breakpoint": null,
+          "kind": "string",
+          "value": [
+            {
+              "type": "text",
+              "value": " and "
+            }
+          ]
+        }
+      ],
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "link",
+              "title": null,
+              "url": "{{s.url}}",
+              "urlParts": [
+                {
+                  "type": "interpolation",
+                  "path": "s.url",
+                  "block": false
+                }
+              ],
+              "children": [
+                {
+                  "type": "interpolation",
+                  "path": "s.name",
+                  "block": false
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "slots": []
+    }
+  ]
+}

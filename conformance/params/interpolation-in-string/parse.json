@@ -1,0 +1,42 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentLeaf",
+      "name": "step",
+      "fallback": [
+        {
+          "type": "text",
+          "value": "Step"
+        }
+      ],
+      "params": [
+        {
+          "key": "title",
+          "breakpoint": null,
+          "kind": "string",
+          "value": [
+            {
+              "type": "text",
+              "value": "Step "
+            },
+            {
+              "type": "interpolation",
+              "path": "n",
+              "block": false
+            },
+            {
+              "type": "text",
+              "value": " of "
+            },
+            {
+              "type": "interpolation",
+              "path": "md.loop.count",
+              "block": false
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentLeaf",
+      "name": "chart",
+      "params": [
+        {
+          "key": "height",
+          "breakpoint": null,
+          "value": "16rem"
+        },
+        {
+          "key": "height",
+          "breakpoint": "md",
+          "value": "20rem"
+        },
+        {
+          "key": "class",
+          "breakpoint": null,
+          "value": "chart"
+        }
+      ],
+      "fallback": [
+        {
+          "type": "text",
+          "value": "Sales by month"
+        }
+      ]
+    },
+    {
+      "type": "componentLeaf",
+      "name": "chart",
+      "params": [
+        {
+          "key": "height",
+          "breakpoint": null,
+          "value": "12rem"
+        },
+        {
+          "key": "class",
+          "breakpoint": null,
+          "value": "chart wide"
+        }
+      ],
+      "fallback": [
+        {
+          "type": "text",
+          "value": "Sales by region"
+        }
+      ]
+    }
+  ]
+}

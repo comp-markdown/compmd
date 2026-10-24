@@ -1,0 +1,36 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentLeaf",
+      "name": "weekly-sales",
+      "params": [
+        {
+          "key": "rows",
+          "breakpoint": null,
+          "value": [
+            {
+              "week": 1,
+              "total": 120
+            },
+            {
+              "week": 2,
+              "total": 135
+            }
+          ]
+        },
+        {
+          "key": "width",
+          "breakpoint": null,
+          "value": "50%"
+        }
+      ],
+      "fallback": [
+        {
+          "type": "text",
+          "value": "Weekly sales: 120, then 135"
+        }
+      ]
+    }
+  ]
+}

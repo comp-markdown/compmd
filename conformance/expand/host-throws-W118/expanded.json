@@ -1,0 +1,47 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "Total: "
+        },
+        {
+          "type": "componentInline",
+          "name": "total",
+          "params": [
+            {
+              "key": "rows",
+              "breakpoint": null,
+              "value": [
+                {
+                  "amount": 1000
+                },
+                {
+                  "amount": 234
+                }
+              ]
+            }
+          ],
+          "fallback": [
+            {
+              "type": "text",
+              "value": "1,234"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "Total unknown"
+        }
+      ]
+    }
+  ]
+}

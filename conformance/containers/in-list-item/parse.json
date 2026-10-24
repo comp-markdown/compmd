@@ -1,0 +1,46 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "list",
+      "ordered": false,
+      "start": null,
+      "spread": false,
+      "children": [
+        {
+          "type": "listItem",
+          "spread": true,
+          "checked": null,
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Install"
+                }
+              ]
+            },
+            {
+              "type": "componentContainer",
+              "name": "card",
+              "params": [],
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Run it."
+                    }
+                  ]
+                }
+              ],
+              "slots": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

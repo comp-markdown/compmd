@@ -1,0 +1,14 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentDefinition",
+      "name": "card",
+      "language": "svelte",
+      "signature": null,
+      "params": [],
+      "source": "<script>\n  let { title } = $props();\n</script>\n<h3>{title}</h3>",
+      "runtime": "svelte@5"
+    }
+  ]
+}

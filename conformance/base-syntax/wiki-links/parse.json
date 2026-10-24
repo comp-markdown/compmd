@@ -1,0 +1,99 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "yaml",
+      "value": "md:\n  syntax: [wiki-links]",
+      "parsed": {
+        "md": {
+          "syntax": [
+            "wiki-links"
+          ]
+        }
+      }
+    },
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "See "
+        },
+        {
+          "type": "wikiLink",
+          "target": "Upgrade guide",
+          "label": "Upgrade guide"
+        },
+        {
+          "type": "text",
+          "value": " and "
+        },
+        {
+          "type": "wikiLink",
+          "target": "Upgrade guide",
+          "label": "the guide"
+        },
+        {
+          "type": "text",
+          "value": "."
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "align": [
+        null,
+        null
+      ],
+      "children": [
+        {
+          "type": "tableRow",
+          "children": [
+            {
+              "type": "tableCell",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Page"
+                }
+              ]
+            },
+            {
+              "type": "tableCell",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Note"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "tableRow",
+          "children": [
+            {
+              "type": "tableCell",
+              "children": [
+                {
+                  "type": "wikiLink",
+                  "target": "Setup",
+                  "label": "setup"
+                }
+              ]
+            },
+            {
+              "type": "tableCell",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "escaped bar"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

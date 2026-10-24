@@ -1,0 +1,17 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "yaml",
+      "value": "md:\n  version: 1\n  inptus:\n    region: all | eu = all",
+      "parsed": {
+        "md": {
+          "version": 1,
+          "inptus": {
+            "region": "all | eu = all"
+          }
+        }
+      }
+    }
+  ]
+}

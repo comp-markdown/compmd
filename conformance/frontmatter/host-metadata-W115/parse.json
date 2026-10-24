@@ -1,0 +1,12 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "yaml",
+      "value": "title: In text",
+      "parsed": {
+        "title": "In text"
+      }
+    }
+  ]
+}

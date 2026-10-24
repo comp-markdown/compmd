@@ -1,0 +1,50 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "componentInline",
+          "name": "tip",
+          "fallback": [
+            {
+              "type": "text",
+              "value": "Press "
+            },
+            {
+              "type": "componentInline",
+              "name": "kbd",
+              "fallback": [
+                {
+                  "type": "text",
+                  "value": "Ctrl"
+                }
+              ],
+              "params": [
+                {
+                  "key": "os",
+                  "breakpoint": null,
+                  "kind": "bare",
+                  "value": "mac"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "value": " now"
+            }
+          ],
+          "params": [
+            {
+              "key": "level",
+              "breakpoint": null,
+              "kind": "bare",
+              "value": "2"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

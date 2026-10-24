@@ -1,0 +1,530 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [
+        {
+          "key": "border",
+          "breakpoint": null,
+          "value": "subtle"
+        },
+        {
+          "key": "padding",
+          "breakpoint": null,
+          "value": "l"
+        },
+        {
+          "key": "background",
+          "breakpoint": null,
+          "value": "subtle"
+        },
+        {
+          "key": "class",
+          "breakpoint": null,
+          "value": "card wide"
+        }
+      ],
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "strong",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Wide"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "The caller's padding wins at every width, the classes add up."
+            }
+          ]
+        }
+      ],
+      "slots": []
+    },
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [
+        {
+          "key": "padding",
+          "breakpoint": null,
+          "value": "s"
+        },
+        {
+          "key": "border",
+          "breakpoint": null,
+          "value": "subtle"
+        },
+        {
+          "key": "padding",
+          "breakpoint": "md",
+          "value": "l"
+        },
+        {
+          "key": "class",
+          "breakpoint": null,
+          "value": "card"
+        }
+      ],
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "strong",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "From md"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "The definition's padding below md, the caller's from md up."
+            }
+          ]
+        }
+      ],
+      "slots": []
+    },
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [
+        {
+          "key": "padding",
+          "breakpoint": null,
+          "value": "s"
+        }
+      ],
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "The caller's padding covers the definition's padding-inline."
+            }
+          ]
+        }
+      ],
+      "slots": []
+    },
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [
+        {
+          "key": "padding-inline-end",
+          "breakpoint": null,
+          "value": "l"
+        },
+        {
+          "key": "padding-inline-start",
+          "breakpoint": null,
+          "value": "m"
+        }
+      ],
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "The definition's padding-inline is split; its start side is the caller's."
+            }
+          ]
+        }
+      ],
+      "slots": []
+    },
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [
+        {
+          "key": "display",
+          "breakpoint": null,
+          "value": "flex"
+        },
+        {
+          "key": "flex-direction",
+          "breakpoint": null,
+          "value": "row"
+        },
+        {
+          "key": "gap",
+          "breakpoint": null,
+          "value": "none"
+        },
+        {
+          "key": "align-items",
+          "breakpoint": null,
+          "value": "stretch"
+        },
+        {
+          "key": "justify-content",
+          "breakpoint": null,
+          "value": "start"
+        },
+        {
+          "key": "flex-wrap",
+          "breakpoint": null,
+          "value": "wrap"
+        },
+        {
+          "key": "height",
+          "breakpoint": null,
+          "value": "8rem"
+        }
+      ],
+      "children": [
+        {
+          "type": "componentContainer",
+          "name": "box",
+          "params": [
+            {
+              "key": "inset-inline-start",
+              "breakpoint": null,
+              "value": "16px"
+            }
+          ],
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Placed in the row's own box, which has the height."
+                }
+              ]
+            }
+          ],
+          "slots": []
+        }
+      ],
+      "slots": []
+    },
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [],
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "strong",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Changes"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "A box, with or without params."
+            }
+          ]
+        }
+      ],
+      "slots": []
+    },
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [
+        {
+          "key": "class",
+          "breakpoint": null,
+          "value": "list"
+        }
+      ],
+      "children": [
+        {
+          "type": "componentContainer",
+          "name": "box",
+          "params": [
+            {
+              "key": "padding",
+              "breakpoint": null,
+              "value": "s"
+            },
+            {
+              "key": "border",
+              "breakpoint": null,
+              "value": "subtle"
+            },
+            {
+              "key": "padding",
+              "breakpoint": "md",
+              "value": "m"
+            },
+            {
+              "key": "class",
+              "breakpoint": null,
+              "value": "card"
+            }
+          ],
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "strong",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "One"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "slots": []
+        }
+      ],
+      "slots": []
+    },
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [
+        {
+          "key": "class",
+          "breakpoint": null,
+          "value": "list"
+        }
+      ],
+      "children": [
+        {
+          "type": "componentContainer",
+          "name": "box",
+          "params": [
+            {
+              "key": "padding",
+              "breakpoint": null,
+              "value": "s"
+            },
+            {
+              "key": "border",
+              "breakpoint": null,
+              "value": "subtle"
+            },
+            {
+              "key": "padding",
+              "breakpoint": "md",
+              "value": "m"
+            },
+            {
+              "key": "class",
+              "breakpoint": null,
+              "value": "card"
+            }
+          ],
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "strong",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "One"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "slots": []
+        },
+        {
+          "type": "componentContainer",
+          "name": "box",
+          "params": [
+            {
+              "key": "padding",
+              "breakpoint": null,
+              "value": "s"
+            },
+            {
+              "key": "border",
+              "breakpoint": null,
+              "value": "subtle"
+            },
+            {
+              "key": "padding",
+              "breakpoint": "md",
+              "value": "m"
+            },
+            {
+              "key": "class",
+              "breakpoint": null,
+              "value": "card"
+            }
+          ],
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "strong",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Two"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "slots": []
+        }
+      ],
+      "slots": []
+    },
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [
+        {
+          "key": "display",
+          "breakpoint": null,
+          "value": "grid"
+        },
+        {
+          "key": "gap",
+          "breakpoint": null,
+          "value": "none"
+        },
+        {
+          "key": "align-items",
+          "breakpoint": null,
+          "value": "stretch"
+        },
+        {
+          "key": "grid-template-columns",
+          "breakpoint": null,
+          "value": "repeat(auto-fill, minmax(10rem, 1fr))"
+        }
+      ],
+      "children": [
+        {
+          "type": "componentContainer",
+          "name": "box",
+          "params": [
+            {
+              "key": "padding",
+              "breakpoint": null,
+              "value": "s"
+            },
+            {
+              "key": "border",
+              "breakpoint": null,
+              "value": "subtle"
+            },
+            {
+              "key": "padding",
+              "breakpoint": "md",
+              "value": "m"
+            },
+            {
+              "key": "class",
+              "breakpoint": null,
+              "value": "card"
+            }
+          ],
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "strong",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "One"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "slots": []
+        },
+        {
+          "type": "componentContainer",
+          "name": "box",
+          "params": [
+            {
+              "key": "padding",
+              "breakpoint": null,
+              "value": "s"
+            },
+            {
+              "key": "border",
+              "breakpoint": null,
+              "value": "subtle"
+            },
+            {
+              "key": "padding",
+              "breakpoint": "md",
+              "value": "m"
+            },
+            {
+              "key": "class",
+              "breakpoint": null,
+              "value": "card"
+            }
+          ],
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "strong",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Two"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "slots": []
+        }
+      ],
+      "slots": []
+    }
+  ]
+}

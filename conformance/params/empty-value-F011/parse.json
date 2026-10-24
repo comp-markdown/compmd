@@ -1,0 +1,17 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentLeaf",
+      "name": "x",
+      "fallback": [
+        {
+          "type": "text",
+          "value": "X"
+        }
+      ],
+      "params": [],
+      "recovered": true
+    }
+  ]
+}

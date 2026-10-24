@@ -1,0 +1,44 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentSignature",
+      "name": "chart",
+      "signature": {
+        "params": [
+          {
+            "name": "src",
+            "type": "string",
+            "optional": false,
+            "default": null,
+            "doc": null
+          },
+          {
+            "name": "type",
+            "type": {
+              "enum": [
+                "bar",
+                "line"
+              ]
+            },
+            "optional": false,
+            "default": {
+              "kind": "bare",
+              "value": "bar"
+            },
+            "doc": null
+          },
+          {
+            "name": "title",
+            "type": "string",
+            "optional": true,
+            "default": null,
+            "doc": null
+          }
+        ],
+        "slots": null,
+        "headings": "relative"
+      }
+    }
+  ]
+}

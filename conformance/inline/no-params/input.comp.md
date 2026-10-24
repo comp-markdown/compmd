@@ -1,0 +1,1 @@
+A :kbd[Ctrl] key.

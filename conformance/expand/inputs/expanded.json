@@ -1,0 +1,69 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentLeaf",
+      "name": "select-input",
+      "params": [
+        {
+          "key": "bind",
+          "breakpoint": null,
+          "value": "eu",
+          "input": "region"
+        }
+      ],
+      "fallback": [
+        {
+          "type": "text",
+          "value": "Region: all"
+        }
+      ]
+    },
+    {
+      "type": "componentLeaf",
+      "name": "date-input",
+      "params": [
+        {
+          "key": "bind",
+          "breakpoint": null,
+          "value": "2026-10-15",
+          "input": "since"
+        }
+      ],
+      "fallback": [
+        {
+          "type": "text",
+          "value": "Since"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "Region eu, since 2026-10-15, limit 5: 7"
+        }
+      ]
+    }
+  ],
+  "inputs": {
+    "region": {
+      "type": "enum",
+      "members": [
+        "all",
+        "eu",
+        "us"
+      ],
+      "value": "eu"
+    },
+    "since": {
+      "type": "date",
+      "value": "2026-10-15"
+    },
+    "limit": {
+      "type": "number",
+      "value": 5
+    }
+  }
+}

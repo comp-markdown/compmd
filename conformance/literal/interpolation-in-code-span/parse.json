@@ -1,0 +1,22 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "Write "
+        },
+        {
+          "type": "inlineCode",
+          "value": "{{md.doc.v}}"
+        },
+        {
+          "type": "text",
+          "value": " to insert it."
+        }
+      ]
+    }
+  ]
+}

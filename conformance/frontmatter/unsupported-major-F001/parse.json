@@ -1,0 +1,18 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "yaml",
+      "value": "md:\n  version: 2"
+    },
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": ":badge[x]{a=b}"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "Area "
+        },
+        {
+          "type": "inlineMath",
+          "value": "x^2"
+        },
+        {
+          "type": "text",
+          "value": ", and it costs $5 and $10."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "Not math: $a$5."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "Not math either: $ b$."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "yaml",
+      "value": "title: Norway\npublished: no\nwhen: 2026-10-21",
+      "parsed": {
+        "title": "Norway",
+        "published": "no",
+        "when": "2026-10-21"
+      }
+    }
+  ]
+}

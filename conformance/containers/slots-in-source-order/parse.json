@@ -1,0 +1,53 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentContainer",
+      "name": "panel",
+      "params": [],
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "Main."
+            }
+          ]
+        }
+      ],
+      "slots": [
+        {
+          "type": "componentSlot",
+          "name": "side",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Side."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "componentSlot",
+          "name": "footer",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Foot."
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

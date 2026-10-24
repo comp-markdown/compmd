@@ -1,0 +1,28 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentContainer",
+      "name": "card",
+      "params": [],
+      "children": [
+        {
+          "type": "blockquote",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Quote."
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "slots": [],
+      "autoClosed": true
+    }
+  ]
+}

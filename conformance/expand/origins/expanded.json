@@ -1,0 +1,173 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "Intro.",
+          "origin": {
+            "start": {
+              "line": 14,
+              "column": 1,
+              "offset": 112
+            },
+            "end": {
+              "line": 14,
+              "column": 7,
+              "offset": 118
+            },
+            "occurrence": 0
+          }
+        }
+      ],
+      "origin": {
+        "start": {
+          "line": 14,
+          "column": 1,
+          "offset": 112
+        },
+        "end": {
+          "line": 14,
+          "column": 7,
+          "offset": 118
+        },
+        "occurrence": 0
+      }
+    },
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [],
+      "children": [
+        {
+          "type": "componentContainer",
+          "name": "box",
+          "params": [],
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Tag a.",
+                  "origin": {
+                    "start": {
+                      "line": 18,
+                      "column": 1,
+                      "offset": 162
+                    },
+                    "end": {
+                      "line": 18,
+                      "column": 26,
+                      "offset": 187
+                    },
+                    "occurrence": 0
+                  }
+                }
+              ],
+              "origin": {
+                "start": {
+                  "line": 18,
+                  "column": 1,
+                  "offset": 162
+                },
+                "end": {
+                  "line": 18,
+                  "column": 26,
+                  "offset": 187
+                },
+                "occurrence": 0
+              }
+            }
+          ],
+          "slots": [],
+          "origin": {
+            "start": {
+              "line": 18,
+              "column": 1,
+              "offset": 162
+            },
+            "end": {
+              "line": 18,
+              "column": 26,
+              "offset": 187
+            },
+            "occurrence": 0
+          }
+        },
+        {
+          "type": "componentContainer",
+          "name": "box",
+          "params": [],
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Tag b.",
+                  "origin": {
+                    "start": {
+                      "line": 18,
+                      "column": 1,
+                      "offset": 162
+                    },
+                    "end": {
+                      "line": 18,
+                      "column": 26,
+                      "offset": 187
+                    },
+                    "occurrence": 0
+                  }
+                }
+              ],
+              "origin": {
+                "start": {
+                  "line": 18,
+                  "column": 1,
+                  "offset": 162
+                },
+                "end": {
+                  "line": 18,
+                  "column": 26,
+                  "offset": 187
+                },
+                "occurrence": 0
+              }
+            }
+          ],
+          "slots": [],
+          "origin": {
+            "start": {
+              "line": 18,
+              "column": 1,
+              "offset": 162
+            },
+            "end": {
+              "line": 18,
+              "column": 26,
+              "offset": 187
+            },
+            "occurrence": 1
+          }
+        }
+      ],
+      "slots": [],
+      "origin": {
+        "start": {
+          "line": 16,
+          "column": 1,
+          "offset": 120
+        },
+        "end": {
+          "line": 20,
+          "column": 9,
+          "offset": 206
+        },
+        "occurrence": 0
+      }
+    }
+  ]
+}

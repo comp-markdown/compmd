@@ -1,0 +1,50 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentSignature",
+      "name": "box",
+      "signature": {
+        "params": [
+          {
+            "name": "display",
+            "type": {
+              "enum": [
+                "block",
+                "flex",
+                "grid"
+              ]
+            },
+            "optional": false,
+            "default": {
+              "kind": "bare",
+              "value": "block"
+            },
+            "doc": null
+          },
+          {
+            "name": "gap",
+            "type": "space",
+            "optional": false,
+            "default": {
+              "kind": "bare",
+              "value": "none"
+            },
+            "doc": null
+          },
+          {
+            "name": "grid-template-columns",
+            "type": "tracks",
+            "optional": true,
+            "default": null,
+            "doc": null
+          }
+        ],
+        "slots": [
+          "default"
+        ],
+        "headings": "relative"
+      }
+    }
+  ]
+}

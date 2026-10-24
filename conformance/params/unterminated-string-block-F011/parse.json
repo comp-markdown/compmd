@@ -1,0 +1,30 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentContainer",
+      "name": "card",
+      "params": [
+        {
+          "key": "icon",
+          "breakpoint": null,
+          "kind": "bare",
+          "value": "rocket"
+        }
+      ],
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "Text."
+            }
+          ]
+        }
+      ],
+      "slots": [],
+      "recovered": true
+    }
+  ]
+}

@@ -1,0 +1,289 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [
+        {
+          "key": "height",
+          "breakpoint": null,
+          "value": "12rem"
+        },
+        {
+          "key": "padding",
+          "breakpoint": null,
+          "value": "m"
+        }
+      ],
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "This week's notes, pinned where they matter."
+            }
+          ]
+        },
+        {
+          "type": "componentContainer",
+          "name": "box",
+          "params": [
+            {
+              "key": "inset-inline-start",
+              "breakpoint": null,
+              "value": "60%"
+            },
+            {
+              "key": "inset-block-start",
+              "breakpoint": null,
+              "value": "3rem"
+            },
+            {
+              "key": "width",
+              "breakpoint": null,
+              "value": "30%"
+            }
+          ],
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "A note placed at 60% across and 3rem down."
+                }
+              ]
+            }
+          ],
+          "slots": []
+        },
+        {
+          "type": "componentContainer",
+          "name": "box",
+          "params": [
+            {
+              "key": "inset-inline-end",
+              "breakpoint": null,
+              "value": "8px"
+            },
+            {
+              "key": "inset-block-start",
+              "breakpoint": null,
+              "value": "8px"
+            },
+            {
+              "key": "class",
+              "breakpoint": null,
+              "value": "badge"
+            }
+          ],
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "3 new"
+                }
+              ]
+            }
+          ],
+          "slots": []
+        },
+        {
+          "type": "componentContainer",
+          "name": "box",
+          "params": [
+            {
+              "key": "inset-inline-start",
+              "breakpoint": null,
+              "value": "0"
+            },
+            {
+              "key": "inset-inline-end",
+              "breakpoint": null,
+              "value": "0"
+            },
+            {
+              "key": "inset-block-end",
+              "breakpoint": null,
+              "value": "0"
+            },
+            {
+              "key": "inset-inline-start",
+              "breakpoint": "md",
+              "value": "auto"
+            },
+            {
+              "key": "inset-inline-end",
+              "breakpoint": "md",
+              "value": "auto"
+            },
+            {
+              "key": "inset-block-end",
+              "breakpoint": "md",
+              "value": "auto"
+            }
+          ],
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "A bar along the bottom on a phone; in the flow from md up."
+                }
+              ]
+            }
+          ],
+          "slots": []
+        }
+      ],
+      "slots": []
+    },
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [
+        {
+          "key": "height",
+          "breakpoint": null,
+          "value": "4rem"
+        }
+      ],
+      "children": [
+        {
+          "type": "componentContainer",
+          "name": "box",
+          "params": [
+            {
+              "key": "inset-inline-start",
+              "breakpoint": null,
+              "value": "10%"
+            },
+            {
+              "key": "inset-block-start",
+              "breakpoint": null,
+              "value": "0"
+            }
+          ],
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Skipped Tuesday"
+                }
+              ]
+            }
+          ],
+          "slots": []
+        },
+        {
+          "type": "componentContainer",
+          "name": "box",
+          "params": [
+            {
+              "key": "inset-inline-start",
+              "breakpoint": null,
+              "value": "55%"
+            },
+            {
+              "key": "inset-block-start",
+              "breakpoint": null,
+              "value": "0"
+            }
+          ],
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Best streak"
+                }
+              ]
+            }
+          ],
+          "slots": []
+        }
+      ],
+      "slots": []
+    },
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [
+        {
+          "key": "height",
+          "breakpoint": null,
+          "value": "6rem"
+        },
+        {
+          "key": "border",
+          "breakpoint": null,
+          "value": "subtle"
+        }
+      ],
+      "children": [
+        {
+          "type": "componentContainer",
+          "name": "box",
+          "params": [
+            {
+              "key": "display",
+              "breakpoint": null,
+              "value": "flex"
+            },
+            {
+              "key": "flex-direction",
+              "breakpoint": null,
+              "value": "column"
+            },
+            {
+              "key": "gap",
+              "breakpoint": null,
+              "value": "none"
+            },
+            {
+              "key": "align-items",
+              "breakpoint": null,
+              "value": "stretch"
+            },
+            {
+              "key": "inset-inline-start",
+              "breakpoint": null,
+              "value": "1rem"
+            },
+            {
+              "key": "inset-block-start",
+              "breakpoint": null,
+              "value": "1rem"
+            },
+            {
+              "key": "class",
+              "breakpoint": null,
+              "value": "pin"
+            }
+          ],
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Placed in the board's box, through its slot."
+                }
+              ]
+            }
+          ],
+          "slots": []
+        }
+      ],
+      "slots": []
+    }
+  ]
+}

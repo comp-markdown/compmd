@@ -1,0 +1,1 @@
+{"allowedOrigins": ["https://status.example.com"], "urls": {"https://status.example.com/today.json": "today.json"}, "host": {"tasks": "tasks.json"}}

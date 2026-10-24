@@ -1,0 +1,23 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentLeaf",
+      "name": "chart",
+      "fallback": [
+        {
+          "type": "text",
+          "value": "Sales"
+        }
+      ],
+      "params": [
+        {
+          "key": null,
+          "breakpoint": null,
+          "kind": "id",
+          "value": "intro"
+        }
+      ]
+    }
+  ]
+}

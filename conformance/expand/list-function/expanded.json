@@ -1,0 +1,14 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "Ana Lima, Kenji Sato, and Priya Nair contributed. Ask Ana Lima or Kenji Sato. Ana Lima wrote it."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,109 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "Costs $5 and $10"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "An open brace group: $x{y$ z"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "The group closes before the dollar: "
+        },
+        {
+          "type": "inlineMath",
+          "value": "x{y$ z}"
+        },
+        {
+          "type": "text",
+          "value": " w"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "An escaped brace: "
+        },
+        {
+          "type": "inlineMath",
+          "value": "x\\{y"
+        },
+        {
+          "type": "text",
+          "value": " w"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "A closing brace with no group: "
+        },
+        {
+          "type": "inlineMath",
+          "value": "x}"
+        },
+        {
+          "type": "text",
+          "value": " w"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "A letter after the closing dollar: "
+        },
+        {
+          "type": "inlineMath",
+          "value": "x"
+        },
+        {
+          "type": "text",
+          "value": "y"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "A space before the dollar: $x $ y"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "{{$doc.title}} by {{$doc.author}}"
+        }
+      ]
+    }
+  ]
+}

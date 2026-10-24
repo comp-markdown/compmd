@@ -1,0 +1,12 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentContainer",
+      "name": "divider",
+      "params": [],
+      "children": [],
+      "slots": []
+    }
+  ]
+}

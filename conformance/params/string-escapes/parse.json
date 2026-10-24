@@ -1,0 +1,39 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentLeaf",
+      "name": "x",
+      "fallback": [
+        {
+          "type": "text",
+          "value": "X"
+        }
+      ],
+      "params": [
+        {
+          "key": "p",
+          "breakpoint": null,
+          "kind": "string",
+          "value": [
+            {
+              "type": "text",
+              "value": "C:\\dir"
+            }
+          ]
+        },
+        {
+          "key": "q",
+          "breakpoint": null,
+          "kind": "string",
+          "value": [
+            {
+              "type": "text",
+              "value": "say \"hi\""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

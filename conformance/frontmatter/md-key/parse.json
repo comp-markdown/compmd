@@ -1,0 +1,24 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "yaml",
+      "value": "md:\n  version: 1\ntitle: Notes",
+      "parsed": {
+        "md": {
+          "version": 1
+        },
+        "title": "Notes"
+      }
+    },
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "Text."
+        }
+      ]
+    }
+  ]
+}

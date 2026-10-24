@@ -1,0 +1,14 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "0.5 3 true [] 2026-10-21 {{md.doc.tags}}"
+        }
+      ]
+    }
+  ]
+}

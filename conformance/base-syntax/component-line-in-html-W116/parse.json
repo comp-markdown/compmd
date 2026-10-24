@@ -1,0 +1,9 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "html",
+      "value": "<div class=\"note\">\n:: chart[Sales]\n</div>"
+    }
+  ]
+}

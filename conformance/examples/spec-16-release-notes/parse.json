@@ -1,0 +1,422 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "yaml",
+      "value": "md:\n  version: 1\n  import:\n    - from: \"@myorg/ui@1\"\n      names: [card, badge]\n    - from: ./chart.jsx\n      names: [chart]\ntitle: Release notes\nversion: \"1.4\"\nchanges:\n  - {text: \"New wgpu renderer\", pr: 412, breaking: false}\n  - {text: \"Config format 2\", pr: 398, breaking: true}",
+      "parsed": {
+        "md": {
+          "version": 1,
+          "import": [
+            {
+              "from": "@myorg/ui@1",
+              "names": [
+                "card",
+                "badge"
+              ]
+            },
+            {
+              "from": "./chart.jsx",
+              "names": [
+                "chart"
+              ]
+            }
+          ]
+        },
+        "title": "Release notes",
+        "version": "1.4",
+        "changes": [
+          {
+            "text": "New wgpu renderer",
+            "pr": 412,
+            "breaking": false
+          },
+          {
+            "text": "Config format 2",
+            "pr": 398,
+            "breaking": true
+          }
+        ]
+      }
+    },
+    {
+      "type": "heading",
+      "depth": 1,
+      "children": [
+        {
+          "type": "interpolation",
+          "path": "md.doc.title",
+          "block": false
+        },
+        {
+          "type": "text",
+          "value": " "
+        },
+        {
+          "type": "componentInline",
+          "name": "badge",
+          "fallback": [
+            {
+              "type": "text",
+              "value": "beta"
+            }
+          ],
+          "params": [
+            {
+              "key": "tone",
+              "breakpoint": null,
+              "kind": "bare",
+              "value": "info"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "RayPlay "
+        },
+        {
+          "type": "interpolation",
+          "path": "md.doc.version",
+          "block": false
+        },
+        {
+          "type": "text",
+          "value": " ships a new renderer."
+        }
+      ]
+    },
+    {
+      "type": "componentDefinition",
+      "name": "callout",
+      "language": "compmd",
+      "signature": {
+        "params": [
+          {
+            "name": "kind",
+            "type": {
+              "enum": [
+                "tip",
+                "warning"
+              ]
+            },
+            "optional": false,
+            "default": {
+              "kind": "bare",
+              "value": "tip"
+            },
+            "doc": null
+          }
+        ],
+        "slots": [
+          "default"
+        ],
+        "headings": "relative"
+      },
+      "params": [
+        {
+          "key": "padding",
+          "breakpoint": null,
+          "kind": "bare",
+          "value": "m"
+        },
+        {
+          "key": "border-radius",
+          "breakpoint": null,
+          "kind": "bare",
+          "value": "m"
+        },
+        {
+          "key": "border",
+          "breakpoint": null,
+          "kind": "bare",
+          "value": "subtle"
+        },
+        {
+          "key": "background",
+          "breakpoint": null,
+          "kind": "bare",
+          "value": "subtle"
+        },
+        {
+          "key": "class",
+          "breakpoint": null,
+          "kind": "expr",
+          "value": "\"callout-\" + kind"
+        }
+      ],
+      "children": [
+        {
+          "type": "interpolation",
+          "path": "md.slot",
+          "block": true
+        }
+      ]
+    },
+    {
+      "type": "componentContainer",
+      "name": "grid",
+      "params": [
+        {
+          "key": "gap",
+          "breakpoint": null,
+          "kind": "bare",
+          "value": "l"
+        },
+        {
+          "key": "grid-template-columns",
+          "breakpoint": "md",
+          "kind": "string",
+          "value": [
+            {
+              "type": "text",
+              "value": "2fr 1fr"
+            }
+          ]
+        }
+      ],
+      "children": [
+        {
+          "type": "componentContainer",
+          "name": "card",
+          "params": [
+            {
+              "key": "title",
+              "breakpoint": null,
+              "kind": "string",
+              "value": [
+                {
+                  "type": "text",
+                  "value": "Setup"
+                }
+              ]
+            },
+            {
+              "key": "icon",
+              "breakpoint": null,
+              "kind": "bare",
+              "value": "rocket"
+            }
+          ],
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Install with "
+                },
+                {
+                  "type": "inlineCode",
+                  "value": "cargo install rayplay"
+                },
+                {
+                  "type": "text",
+                  "value": ", then run "
+                },
+                {
+                  "type": "inlineCode",
+                  "value": "rayplay init"
+                },
+                {
+                  "type": "text",
+                  "value": "."
+                }
+              ]
+            }
+          ],
+          "slots": [
+            {
+              "type": "componentSlot",
+              "name": "footer",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Takes about 2 minutes."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "componentLeaf",
+          "name": "chart",
+          "fallback": [
+            {
+              "type": "text",
+              "value": "Weekly installs: up 18% since 1.3"
+            }
+          ],
+          "params": [
+            {
+              "key": "src",
+              "breakpoint": null,
+              "kind": "bare",
+              "value": "installs.csv"
+            },
+            {
+              "key": "type",
+              "breakpoint": null,
+              "kind": "bare",
+              "value": "bar"
+            }
+          ]
+        }
+      ],
+      "slots": []
+    },
+    {
+      "type": "heading",
+      "depth": 2,
+      "children": [
+        {
+          "type": "text",
+          "value": "What changed"
+        }
+      ]
+    },
+    {
+      "type": "componentContainer",
+      "name": "each",
+      "params": [
+        {
+          "key": "in",
+          "breakpoint": null,
+          "kind": "expr",
+          "value": "md.doc.changes"
+        },
+        {
+          "key": "as",
+          "breakpoint": null,
+          "kind": "bare",
+          "value": "c"
+        },
+        {
+          "key": "join",
+          "breakpoint": null,
+          "kind": "bare",
+          "value": "list"
+        }
+      ],
+      "children": [
+        {
+          "type": "list",
+          "ordered": false,
+          "start": null,
+          "spread": false,
+          "children": [
+            {
+              "type": "listItem",
+              "spread": false,
+              "checked": null,
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "interpolation",
+                      "path": "c.text",
+                      "block": false
+                    },
+                    {
+                      "type": "text",
+                      "value": " ("
+                    },
+                    {
+                      "type": "link",
+                      "title": null,
+                      "url": "https://github.com/acme/rayplay/pull/{{c.pr}}",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "#"
+                        },
+                        {
+                          "type": "interpolation",
+                          "path": "c.pr",
+                          "block": false
+                        }
+                      ],
+                      "urlParts": [
+                        {
+                          "type": "text",
+                          "value": "https://github.com/acme/rayplay/pull/"
+                        },
+                        {
+                          "type": "interpolation",
+                          "path": "c.pr",
+                          "block": false
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "value": ")"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "slots": []
+    },
+    {
+      "type": "componentContainer",
+      "name": "if",
+      "params": [
+        {
+          "key": "when",
+          "breakpoint": null,
+          "kind": "expr",
+          "value": "md.doc.changes.exists(c, c.breaking)"
+        }
+      ],
+      "children": [
+        {
+          "type": "componentContainer",
+          "name": "callout",
+          "params": [
+            {
+              "key": "kind",
+              "breakpoint": null,
+              "kind": "bare",
+              "value": "warning"
+            }
+          ],
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "The 1.3 config format is no longer read. Run "
+                },
+                {
+                  "type": "inlineCode",
+                  "value": "rayplay migrate"
+                },
+                {
+                  "type": "text",
+                  "value": " first."
+                }
+              ]
+            }
+          ],
+          "slots": []
+        }
+      ],
+      "slots": []
+    }
+  ]
+}

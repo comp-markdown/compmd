@@ -1,0 +1,13 @@
+[
+  {
+    "code": "F032",
+    "line": 4,
+    "column": 3,
+    "related": [
+      {
+        "line": 1,
+        "column": 1
+      }
+    ]
+  }
+]

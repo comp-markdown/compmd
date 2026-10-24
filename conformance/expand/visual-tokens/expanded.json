@@ -1,0 +1,102 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [
+        {
+          "key": "padding",
+          "breakpoint": null,
+          "value": "m"
+        },
+        {
+          "key": "background",
+          "breakpoint": null,
+          "value": "subtle"
+        },
+        {
+          "key": "border",
+          "breakpoint": null,
+          "value": "subtle"
+        },
+        {
+          "key": "border-radius",
+          "breakpoint": null,
+          "value": "m"
+        }
+      ],
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "strong",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Heads up:"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "value": " the API changes in 2.0."
+            }
+          ]
+        }
+      ],
+      "slots": []
+    },
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [
+        {
+          "key": "background",
+          "breakpoint": null,
+          "value": "#f6f8fa"
+        },
+        {
+          "key": "border",
+          "breakpoint": null,
+          "value": "1px dashed #d0d7de"
+        },
+        {
+          "key": "border-radius",
+          "breakpoint": null,
+          "value": "6px"
+        }
+      ],
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "Exact values still work."
+            }
+          ]
+        }
+      ],
+      "slots": []
+    },
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [],
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "Not tokens and not CSS values."
+            }
+          ]
+        }
+      ],
+      "slots": []
+    }
+  ]
+}

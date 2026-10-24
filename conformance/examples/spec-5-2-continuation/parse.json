@@ -1,0 +1,42 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentContainer",
+      "name": "grid",
+      "params": [
+        {
+          "key": "gap",
+          "breakpoint": null,
+          "kind": "bare",
+          "value": "l"
+        },
+        {
+          "key": "align-items",
+          "breakpoint": null,
+          "kind": "bare",
+          "value": "start"
+        },
+        {
+          "key": "grid-template-columns",
+          "breakpoint": "md",
+          "kind": "string",
+          "value": [
+            {
+              "type": "text",
+              "value": "2fr 1fr"
+            }
+          ]
+        },
+        {
+          "key": "gap",
+          "breakpoint": "lg",
+          "kind": "bare",
+          "value": "2.5rem"
+        }
+      ],
+      "children": [],
+      "slots": []
+    }
+  ]
+}

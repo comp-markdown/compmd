@@ -1,0 +1,24 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "yaml",
+      "value": "md:\n  lang: ar\n  dir: rtl",
+      "parsed": {
+        "md": {
+          "lang": "ar",
+          "dir": "rtl"
+        }
+      }
+    },
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "مرحبا"
+        }
+      ]
+    }
+  ]
+}

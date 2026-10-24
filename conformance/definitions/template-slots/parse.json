@@ -1,0 +1,43 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentSignature",
+      "name": "board",
+      "signature": {
+        "params": [
+          {
+            "name": "rows",
+            "type": "array",
+            "optional": false,
+            "default": null,
+            "doc": null
+          },
+          {
+            "name": "by",
+            "type": "string",
+            "optional": false,
+            "default": null,
+            "doc": null
+          },
+          {
+            "name": "as",
+            "type": "name",
+            "optional": false,
+            "default": null,
+            "doc": null
+          }
+        ],
+        "slots": [
+          {
+            "name": "default",
+            "each": "rows",
+            "as": "as"
+          },
+          "footer"
+        ],
+        "headings": "relative"
+      }
+    }
+  ]
+}

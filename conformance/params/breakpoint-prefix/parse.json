@@ -1,0 +1,41 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentLeaf",
+      "name": "chart",
+      "fallback": [
+        {
+          "type": "text",
+          "value": "Sales"
+        }
+      ],
+      "params": [
+        {
+          "key": "gap",
+          "breakpoint": null,
+          "kind": "bare",
+          "value": "s"
+        },
+        {
+          "key": "gap",
+          "breakpoint": "md",
+          "kind": "bare",
+          "value": "m"
+        },
+        {
+          "key": "gap",
+          "breakpoint": "lg",
+          "kind": "bare",
+          "value": "l"
+        },
+        {
+          "key": "padding",
+          "breakpoint": "md",
+          "kind": "bare",
+          "value": "s"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentLeaf",
+      "name": "chart",
+      "fallback": [
+        {
+          "type": "text",
+          "value": "Sales"
+        }
+      ],
+      "params": [],
+      "recovered": true
+    }
+  ]
+}

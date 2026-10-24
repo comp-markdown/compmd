@@ -1,0 +1,26 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "yaml",
+      "value": "md:\n  syntax: [wiki-links, emoji-shortcodes]",
+      "parsed": {
+        "md": {
+          "syntax": [
+            "wiki-links",
+            "emoji-shortcodes"
+          ]
+        }
+      }
+    },
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "Text."
+        }
+      ]
+    }
+  ]
+}

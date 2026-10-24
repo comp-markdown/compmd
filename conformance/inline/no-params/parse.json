@@ -1,0 +1,29 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "A "
+        },
+        {
+          "type": "componentInline",
+          "name": "kbd",
+          "fallback": [
+            {
+              "type": "text",
+              "value": "Ctrl"
+            }
+          ],
+          "params": []
+        },
+        {
+          "type": "text",
+          "value": " key."
+        }
+      ]
+    }
+  ]
+}
