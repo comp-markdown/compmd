@@ -1,0 +1,2337 @@
+{
+ "name": "Type a new container above others (unclosed until its closer is typed)",
+ "setup": 0,
+ "renders": [
+  {
+   "text": "---\nmd:\n  version: 1\nitems: [Apples, Pears, Plums]\n---\n\n# Groceries\n\nIntro paragraph.\n\n:: counter[Counter A] {label=A}\n\n:: notes[Notes]\n\n::: card {title=\"Card\"}\nText in the card.\n\n:: counter[Counter B] {label=B}\n::: /card\n\n::: each {in=(md.doc.items) as=i}\n:: counter[{{i}}] {label=(i)}\n::: /each\n\n```compmd component=tile {padding=m}\nparams:\n  label: string\n---\nTile {{label}}.\n\n:: counter[Counter in tile] {label=(label)}\n```\n\n:: tile[Tile T] {label=T}\n\n::: board {rows=(md.doc.items) as=r}\n:: counter[Board {{r}}] {label=(\"board \" + r)}\n::: /board\n",
+   "tree": {
+    "type": "root",
+    "children": [
+     {
+      "type": "heading",
+      "depth": 1,
+      "children": [
+       {
+        "type": "text",
+        "value": "Groceries",
+        "origin": {
+         "start": {
+          "line": 7,
+          "column": 3,
+          "offset": 58
+         },
+         "end": {
+          "line": 7,
+          "column": 12,
+          "offset": 67
+         },
+         "occurrence": 0
+        }
+       }
+      ],
+      "origin": {
+       "start": {
+        "line": 7,
+        "column": 1,
+        "offset": 56
+       },
+       "end": {
+        "line": 7,
+        "column": 12,
+        "offset": 67
+       },
+       "occurrence": 0
+      }
+     },
+     {
+      "type": "paragraph",
+      "children": [
+       {
+        "type": "text",
+        "value": "Intro paragraph.",
+        "origin": {
+         "start": {
+          "line": 9,
+          "column": 1,
+          "offset": 69
+         },
+         "end": {
+          "line": 9,
+          "column": 17,
+          "offset": 85
+         },
+         "occurrence": 0
+        }
+       }
+      ],
+      "origin": {
+       "start": {
+        "line": 9,
+        "column": 1,
+        "offset": 69
+       },
+       "end": {
+        "line": 9,
+        "column": 17,
+        "offset": 85
+       },
+       "occurrence": 0
+      }
+     },
+     {
+      "type": "componentLeaf",
+      "name": "counter",
+      "params": [
+       {
+        "key": "label",
+        "breakpoint": null,
+        "value": "A"
+       }
+      ],
+      "fallback": [
+       {
+        "type": "text",
+        "value": "Counter A",
+        "origin": {
+         "start": {
+          "line": 11,
+          "column": 12,
+          "offset": 98
+         },
+         "end": {
+          "line": 11,
+          "column": 21,
+          "offset": 107
+         },
+         "occurrence": 0
+        }
+       }
+      ],
+      "origin": {
+       "start": {
+        "line": 11,
+        "column": 1,
+        "offset": 87
+       },
+       "end": {
+        "line": 11,
+        "column": 32,
+        "offset": 118
+       },
+       "occurrence": 0
+      }
+     },
+     {
+      "type": "componentLeaf",
+      "name": "notes",
+      "params": [],
+      "fallback": [
+       {
+        "type": "text",
+        "value": "Notes",
+        "origin": {
+         "start": {
+          "line": 13,
+          "column": 10,
+          "offset": 129
+         },
+         "end": {
+          "line": 13,
+          "column": 15,
+          "offset": 134
+         },
+         "occurrence": 0
+        }
+       }
+      ],
+      "origin": {
+       "start": {
+        "line": 13,
+        "column": 1,
+        "offset": 120
+       },
+       "end": {
+        "line": 13,
+        "column": 16,
+        "offset": 135
+       },
+       "occurrence": 0
+      }
+     },
+     {
+      "type": "componentContainer",
+      "name": "card",
+      "params": [
+       {
+        "key": "title",
+        "breakpoint": null,
+        "value": "Card"
+       }
+      ],
+      "children": [
+       {
+        "type": "paragraph",
+        "children": [
+         {
+          "type": "text",
+          "value": "Text in the card.",
+          "origin": {
+           "start": {
+            "line": 16,
+            "column": 1,
+            "offset": 161
+           },
+           "end": {
+            "line": 16,
+            "column": 18,
+            "offset": 178
+           },
+           "occurrence": 0
+          }
+         }
+        ],
+        "origin": {
+         "start": {
+          "line": 16,
+          "column": 1,
+          "offset": 161
+         },
+         "end": {
+          "line": 16,
+          "column": 18,
+          "offset": 178
+         },
+         "occurrence": 0
+        }
+       },
+       {
+        "type": "componentLeaf",
+        "name": "counter",
+        "params": [
+         {
+          "key": "label",
+          "breakpoint": null,
+          "value": "B"
+         }
+        ],
+        "fallback": [
+         {
+          "type": "text",
+          "value": "Counter B",
+          "origin": {
+           "start": {
+            "line": 18,
+            "column": 12,
+            "offset": 191
+           },
+           "end": {
+            "line": 18,
+            "column": 21,
+            "offset": 200
+           },
+           "occurrence": 0
+          }
+         }
+        ],
+        "origin": {
+         "start": {
+          "line": 18,
+          "column": 1,
+          "offset": 180
+         },
+         "end": {
+          "line": 18,
+          "column": 32,
+          "offset": 211
+         },
+         "occurrence": 0
+        }
+       }
+      ],
+      "slots": [],
+      "origin": {
+       "start": {
+        "line": 15,
+        "column": 1,
+        "offset": 137
+       },
+       "end": {
+        "line": 19,
+        "column": 10,
+        "offset": 221
+       },
+       "occurrence": 0
+      }
+     },
+     {
+      "type": "componentLeaf",
+      "name": "counter",
+      "params": [
+       {
+        "key": "label",
+        "breakpoint": null,
+        "value": "Apples"
+       }
+      ],
+      "fallback": [
+       {
+        "type": "text",
+        "value": "Apples",
+        "origin": {
+         "start": {
+          "line": 22,
+          "column": 1,
+          "offset": 257
+         },
+         "end": {
+          "line": 22,
+          "column": 30,
+          "offset": 286
+         },
+         "occurrence": 0
+        }
+       }
+      ],
+      "origin": {
+       "start": {
+        "line": 22,
+        "column": 1,
+        "offset": 257
+       },
+       "end": {
+        "line": 22,
+        "column": 30,
+        "offset": 286
+       },
+       "occurrence": 0
+      }
+     },
+     {
+      "type": "componentLeaf",
+      "name": "counter",
+      "params": [
+       {
+        "key": "label",
+        "breakpoint": null,
+        "value": "Pears"
+       }
+      ],
+      "fallback": [
+       {
+        "type": "text",
+        "value": "Pears",
+        "origin": {
+         "start": {
+          "line": 22,
+          "column": 1,
+          "offset": 257
+         },
+         "end": {
+          "line": 22,
+          "column": 30,
+          "offset": 286
+         },
+         "occurrence": 0
+        }
+       }
+      ],
+      "origin": {
+       "start": {
+        "line": 22,
+        "column": 1,
+        "offset": 257
+       },
+       "end": {
+        "line": 22,
+        "column": 30,
+        "offset": 286
+       },
+       "occurrence": 1
+      }
+     },
+     {
+      "type": "componentLeaf",
+      "name": "counter",
+      "params": [
+       {
+        "key": "label",
+        "breakpoint": null,
+        "value": "Plums"
+       }
+      ],
+      "fallback": [
+       {
+        "type": "text",
+        "value": "Plums",
+        "origin": {
+         "start": {
+          "line": 22,
+          "column": 1,
+          "offset": 257
+         },
+         "end": {
+          "line": 22,
+          "column": 30,
+          "offset": 286
+         },
+         "occurrence": 0
+        }
+       }
+      ],
+      "origin": {
+       "start": {
+        "line": 22,
+        "column": 1,
+        "offset": 257
+       },
+       "end": {
+        "line": 22,
+        "column": 30,
+        "offset": 286
+       },
+       "occurrence": 2
+      }
+     },
+     {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [
+       {
+        "key": "padding",
+        "breakpoint": null,
+        "value": "m"
+       }
+      ],
+      "children": [
+       {
+        "type": "paragraph",
+        "children": [
+         {
+          "type": "text",
+          "value": "Tile T.",
+          "origin": {
+           "start": {
+            "line": 34,
+            "column": 1,
+            "offset": 429
+           },
+           "end": {
+            "line": 34,
+            "column": 26,
+            "offset": 454
+           },
+           "occurrence": 0
+          }
+         }
+        ],
+        "origin": {
+         "start": {
+          "line": 34,
+          "column": 1,
+          "offset": 429
+         },
+         "end": {
+          "line": 34,
+          "column": 26,
+          "offset": 454
+         },
+         "occurrence": 0
+        }
+       },
+       {
+        "type": "componentLeaf",
+        "name": "counter",
+        "params": [
+         {
+          "key": "label",
+          "breakpoint": null,
+          "value": "T"
+         }
+        ],
+        "fallback": [
+         {
+          "type": "text",
+          "value": "Counter in tile",
+          "origin": {
+           "start": {
+            "line": 34,
+            "column": 1,
+            "offset": 429
+           },
+           "end": {
+            "line": 34,
+            "column": 26,
+            "offset": 454
+           },
+           "occurrence": 0
+          }
+         }
+        ],
+        "origin": {
+         "start": {
+          "line": 34,
+          "column": 1,
+          "offset": 429
+         },
+         "end": {
+          "line": 34,
+          "column": 26,
+          "offset": 454
+         },
+         "occurrence": 1
+        }
+       }
+      ],
+      "slots": [],
+      "origin": {
+       "start": {
+        "line": 34,
+        "column": 1,
+        "offset": 429
+       },
+       "end": {
+        "line": 34,
+        "column": 26,
+        "offset": 454
+       },
+       "occurrence": 0
+      }
+     },
+     {
+      "type": "componentContainer",
+      "name": "board",
+      "params": [
+       {
+        "key": "rows",
+        "breakpoint": null,
+        "value": [
+         "Apples",
+         "Pears",
+         "Plums"
+        ]
+       },
+       {
+        "key": "as",
+        "breakpoint": null,
+        "value": "r"
+       }
+      ],
+      "children": [],
+      "instances": [
+       {
+        "value": "Apples",
+        "children": [
+         {
+          "type": "componentLeaf",
+          "name": "counter",
+          "params": [
+           {
+            "key": "label",
+            "breakpoint": null,
+            "value": "board Apples"
+           }
+          ],
+          "fallback": [
+           {
+            "type": "text",
+            "value": "Board ",
+            "origin": {
+             "start": {
+              "line": 37,
+              "column": 12,
+              "offset": 504
+             },
+             "end": {
+              "line": 37,
+              "column": 18,
+              "offset": 510
+             },
+             "occurrence": 0
+            }
+           },
+           {
+            "type": "text",
+            "value": "Apples",
+            "origin": {
+             "start": {
+              "line": 37,
+              "column": 1,
+              "offset": 493
+             },
+             "end": {
+              "line": 37,
+              "column": 47,
+              "offset": 539
+             },
+             "occurrence": 0
+            }
+           }
+          ],
+          "origin": {
+           "start": {
+            "line": 37,
+            "column": 1,
+            "offset": 493
+           },
+           "end": {
+            "line": 37,
+            "column": 47,
+            "offset": 539
+           },
+           "occurrence": 0
+          }
+         }
+        ]
+       },
+       {
+        "value": "Pears",
+        "children": [
+         {
+          "type": "componentLeaf",
+          "name": "counter",
+          "params": [
+           {
+            "key": "label",
+            "breakpoint": null,
+            "value": "board Pears"
+           }
+          ],
+          "fallback": [
+           {
+            "type": "text",
+            "value": "Board ",
+            "origin": {
+             "start": {
+              "line": 37,
+              "column": 12,
+              "offset": 504
+             },
+             "end": {
+              "line": 37,
+              "column": 18,
+              "offset": 510
+             },
+             "occurrence": 0
+            }
+           },
+           {
+            "type": "text",
+            "value": "Pears",
+            "origin": {
+             "start": {
+              "line": 37,
+              "column": 1,
+              "offset": 493
+             },
+             "end": {
+              "line": 37,
+              "column": 47,
+              "offset": 539
+             },
+             "occurrence": 0
+            }
+           }
+          ],
+          "origin": {
+           "start": {
+            "line": 37,
+            "column": 1,
+            "offset": 493
+           },
+           "end": {
+            "line": 37,
+            "column": 47,
+            "offset": 539
+           },
+           "occurrence": 1
+          }
+         }
+        ]
+       },
+       {
+        "value": "Plums",
+        "children": [
+         {
+          "type": "componentLeaf",
+          "name": "counter",
+          "params": [
+           {
+            "key": "label",
+            "breakpoint": null,
+            "value": "board Plums"
+           }
+          ],
+          "fallback": [
+           {
+            "type": "text",
+            "value": "Board ",
+            "origin": {
+             "start": {
+              "line": 37,
+              "column": 12,
+              "offset": 504
+             },
+             "end": {
+              "line": 37,
+              "column": 18,
+              "offset": 510
+             },
+             "occurrence": 0
+            }
+           },
+           {
+            "type": "text",
+            "value": "Plums",
+            "origin": {
+             "start": {
+              "line": 37,
+              "column": 1,
+              "offset": 493
+             },
+             "end": {
+              "line": 37,
+              "column": 47,
+              "offset": 539
+             },
+             "occurrence": 0
+            }
+           }
+          ],
+          "origin": {
+           "start": {
+            "line": 37,
+            "column": 1,
+            "offset": 493
+           },
+           "end": {
+            "line": 37,
+            "column": 47,
+            "offset": 539
+           },
+           "occurrence": 2
+          }
+         }
+        ]
+       }
+      ],
+      "slots": [],
+      "origin": {
+       "start": {
+        "line": 36,
+        "column": 1,
+        "offset": 456
+       },
+       "end": {
+        "line": 38,
+        "column": 11,
+        "offset": 550
+       },
+       "occurrence": 0
+      }
+     }
+    ]
+   },
+   "diagnostics": []
+  },
+  {
+   "text": "---\nmd:\n  version: 1\nitems: [Apples, Pears, Plums]\n---\n\n# Groceries\n\nIntro paragraph.\n\n::: card {title=\"New\"}\nA new card.\n\n:: counter[Counter A] {label=A}\n\n:: notes[Notes]\n\n::: card {title=\"Card\"}\nText in the card.\n\n:: counter[Counter B] {label=B}\n::: /card\n\n::: each {in=(md.doc.items) as=i}\n:: counter[{{i}}] {label=(i)}\n::: /each\n\n```compmd component=tile {padding=m}\nparams:\n  label: string\n---\nTile {{label}}.\n\n:: counter[Counter in tile] {label=(label)}\n```\n\n:: tile[Tile T] {label=T}\n\n::: board {rows=(md.doc.items) as=r}\n:: counter[Board {{r}}] {label=(\"board \" + r)}\n::: /board\n",
+   "tree": {
+    "type": "root",
+    "children": [
+     {
+      "type": "heading",
+      "depth": 1,
+      "children": [
+       {
+        "type": "text",
+        "value": "Groceries",
+        "origin": {
+         "start": {
+          "line": 7,
+          "column": 3,
+          "offset": 58
+         },
+         "end": {
+          "line": 7,
+          "column": 12,
+          "offset": 67
+         },
+         "occurrence": 0
+        }
+       }
+      ],
+      "origin": {
+       "start": {
+        "line": 7,
+        "column": 1,
+        "offset": 56
+       },
+       "end": {
+        "line": 7,
+        "column": 12,
+        "offset": 67
+       },
+       "occurrence": 0
+      }
+     },
+     {
+      "type": "paragraph",
+      "children": [
+       {
+        "type": "text",
+        "value": "Intro paragraph.",
+        "origin": {
+         "start": {
+          "line": 9,
+          "column": 1,
+          "offset": 69
+         },
+         "end": {
+          "line": 9,
+          "column": 17,
+          "offset": 85
+         },
+         "occurrence": 0
+        }
+       }
+      ],
+      "origin": {
+       "start": {
+        "line": 9,
+        "column": 1,
+        "offset": 69
+       },
+       "end": {
+        "line": 9,
+        "column": 17,
+        "offset": 85
+       },
+       "occurrence": 0
+      }
+     },
+     {
+      "type": "componentContainer",
+      "name": "card",
+      "params": [
+       {
+        "key": "title",
+        "breakpoint": null,
+        "value": "New"
+       }
+      ],
+      "children": [
+       {
+        "type": "paragraph",
+        "children": [
+         {
+          "type": "text",
+          "value": "A new card.",
+          "origin": {
+           "start": {
+            "line": 12,
+            "column": 1,
+            "offset": 110
+           },
+           "end": {
+            "line": 12,
+            "column": 12,
+            "offset": 121
+           },
+           "occurrence": 0
+          }
+         }
+        ],
+        "origin": {
+         "start": {
+          "line": 12,
+          "column": 1,
+          "offset": 110
+         },
+         "end": {
+          "line": 12,
+          "column": 12,
+          "offset": 121
+         },
+         "occurrence": 0
+        }
+       },
+       {
+        "type": "componentLeaf",
+        "name": "counter",
+        "params": [
+         {
+          "key": "label",
+          "breakpoint": null,
+          "value": "A"
+         }
+        ],
+        "fallback": [
+         {
+          "type": "text",
+          "value": "Counter A",
+          "origin": {
+           "start": {
+            "line": 14,
+            "column": 12,
+            "offset": 134
+           },
+           "end": {
+            "line": 14,
+            "column": 21,
+            "offset": 143
+           },
+           "occurrence": 0
+          }
+         }
+        ],
+        "origin": {
+         "start": {
+          "line": 14,
+          "column": 1,
+          "offset": 123
+         },
+         "end": {
+          "line": 14,
+          "column": 32,
+          "offset": 154
+         },
+         "occurrence": 0
+        }
+       },
+       {
+        "type": "componentLeaf",
+        "name": "notes",
+        "params": [],
+        "fallback": [
+         {
+          "type": "text",
+          "value": "Notes",
+          "origin": {
+           "start": {
+            "line": 16,
+            "column": 10,
+            "offset": 165
+           },
+           "end": {
+            "line": 16,
+            "column": 15,
+            "offset": 170
+           },
+           "occurrence": 0
+          }
+         }
+        ],
+        "origin": {
+         "start": {
+          "line": 16,
+          "column": 1,
+          "offset": 156
+         },
+         "end": {
+          "line": 16,
+          "column": 16,
+          "offset": 171
+         },
+         "occurrence": 0
+        }
+       },
+       {
+        "type": "componentContainer",
+        "name": "card",
+        "params": [
+         {
+          "key": "title",
+          "breakpoint": null,
+          "value": "Card"
+         }
+        ],
+        "children": [
+         {
+          "type": "paragraph",
+          "children": [
+           {
+            "type": "text",
+            "value": "Text in the card.",
+            "origin": {
+             "start": {
+              "line": 19,
+              "column": 1,
+              "offset": 197
+             },
+             "end": {
+              "line": 19,
+              "column": 18,
+              "offset": 214
+             },
+             "occurrence": 0
+            }
+           }
+          ],
+          "origin": {
+           "start": {
+            "line": 19,
+            "column": 1,
+            "offset": 197
+           },
+           "end": {
+            "line": 19,
+            "column": 18,
+            "offset": 214
+           },
+           "occurrence": 0
+          }
+         },
+         {
+          "type": "componentLeaf",
+          "name": "counter",
+          "params": [
+           {
+            "key": "label",
+            "breakpoint": null,
+            "value": "B"
+           }
+          ],
+          "fallback": [
+           {
+            "type": "text",
+            "value": "Counter B",
+            "origin": {
+             "start": {
+              "line": 21,
+              "column": 12,
+              "offset": 227
+             },
+             "end": {
+              "line": 21,
+              "column": 21,
+              "offset": 236
+             },
+             "occurrence": 0
+            }
+           }
+          ],
+          "origin": {
+           "start": {
+            "line": 21,
+            "column": 1,
+            "offset": 216
+           },
+           "end": {
+            "line": 21,
+            "column": 32,
+            "offset": 247
+           },
+           "occurrence": 0
+          }
+         }
+        ],
+        "slots": [],
+        "origin": {
+         "start": {
+          "line": 18,
+          "column": 1,
+          "offset": 173
+         },
+         "end": {
+          "line": 22,
+          "column": 10,
+          "offset": 257
+         },
+         "occurrence": 0
+        }
+       },
+       {
+        "type": "componentLeaf",
+        "name": "counter",
+        "params": [
+         {
+          "key": "label",
+          "breakpoint": null,
+          "value": "Apples"
+         }
+        ],
+        "fallback": [
+         {
+          "type": "text",
+          "value": "Apples",
+          "origin": {
+           "start": {
+            "line": 25,
+            "column": 1,
+            "offset": 293
+           },
+           "end": {
+            "line": 25,
+            "column": 30,
+            "offset": 322
+           },
+           "occurrence": 0
+          }
+         }
+        ],
+        "origin": {
+         "start": {
+          "line": 25,
+          "column": 1,
+          "offset": 293
+         },
+         "end": {
+          "line": 25,
+          "column": 30,
+          "offset": 322
+         },
+         "occurrence": 0
+        }
+       },
+       {
+        "type": "componentLeaf",
+        "name": "counter",
+        "params": [
+         {
+          "key": "label",
+          "breakpoint": null,
+          "value": "Pears"
+         }
+        ],
+        "fallback": [
+         {
+          "type": "text",
+          "value": "Pears",
+          "origin": {
+           "start": {
+            "line": 25,
+            "column": 1,
+            "offset": 293
+           },
+           "end": {
+            "line": 25,
+            "column": 30,
+            "offset": 322
+           },
+           "occurrence": 0
+          }
+         }
+        ],
+        "origin": {
+         "start": {
+          "line": 25,
+          "column": 1,
+          "offset": 293
+         },
+         "end": {
+          "line": 25,
+          "column": 30,
+          "offset": 322
+         },
+         "occurrence": 1
+        }
+       },
+       {
+        "type": "componentLeaf",
+        "name": "counter",
+        "params": [
+         {
+          "key": "label",
+          "breakpoint": null,
+          "value": "Plums"
+         }
+        ],
+        "fallback": [
+         {
+          "type": "text",
+          "value": "Plums",
+          "origin": {
+           "start": {
+            "line": 25,
+            "column": 1,
+            "offset": 293
+           },
+           "end": {
+            "line": 25,
+            "column": 30,
+            "offset": 322
+           },
+           "occurrence": 0
+          }
+         }
+        ],
+        "origin": {
+         "start": {
+          "line": 25,
+          "column": 1,
+          "offset": 293
+         },
+         "end": {
+          "line": 25,
+          "column": 30,
+          "offset": 322
+         },
+         "occurrence": 2
+        }
+       },
+       {
+        "type": "componentContainer",
+        "name": "box",
+        "params": [
+         {
+          "key": "padding",
+          "breakpoint": null,
+          "value": "m"
+         }
+        ],
+        "children": [
+         {
+          "type": "paragraph",
+          "children": [
+           {
+            "type": "text",
+            "value": "Tile T.",
+            "origin": {
+             "start": {
+              "line": 37,
+              "column": 1,
+              "offset": 465
+             },
+             "end": {
+              "line": 37,
+              "column": 26,
+              "offset": 490
+             },
+             "occurrence": 0
+            }
+           }
+          ],
+          "origin": {
+           "start": {
+            "line": 37,
+            "column": 1,
+            "offset": 465
+           },
+           "end": {
+            "line": 37,
+            "column": 26,
+            "offset": 490
+           },
+           "occurrence": 0
+          }
+         },
+         {
+          "type": "componentLeaf",
+          "name": "counter",
+          "params": [
+           {
+            "key": "label",
+            "breakpoint": null,
+            "value": "T"
+           }
+          ],
+          "fallback": [
+           {
+            "type": "text",
+            "value": "Counter in tile",
+            "origin": {
+             "start": {
+              "line": 37,
+              "column": 1,
+              "offset": 465
+             },
+             "end": {
+              "line": 37,
+              "column": 26,
+              "offset": 490
+             },
+             "occurrence": 0
+            }
+           }
+          ],
+          "origin": {
+           "start": {
+            "line": 37,
+            "column": 1,
+            "offset": 465
+           },
+           "end": {
+            "line": 37,
+            "column": 26,
+            "offset": 490
+           },
+           "occurrence": 1
+          }
+         }
+        ],
+        "slots": [],
+        "origin": {
+         "start": {
+          "line": 37,
+          "column": 1,
+          "offset": 465
+         },
+         "end": {
+          "line": 37,
+          "column": 26,
+          "offset": 490
+         },
+         "occurrence": 0
+        }
+       },
+       {
+        "type": "componentContainer",
+        "name": "board",
+        "params": [
+         {
+          "key": "rows",
+          "breakpoint": null,
+          "value": [
+           "Apples",
+           "Pears",
+           "Plums"
+          ]
+         },
+         {
+          "key": "as",
+          "breakpoint": null,
+          "value": "r"
+         }
+        ],
+        "children": [],
+        "instances": [
+         {
+          "value": "Apples",
+          "children": [
+           {
+            "type": "componentLeaf",
+            "name": "counter",
+            "params": [
+             {
+              "key": "label",
+              "breakpoint": null,
+              "value": "board Apples"
+             }
+            ],
+            "fallback": [
+             {
+              "type": "text",
+              "value": "Board ",
+              "origin": {
+               "start": {
+                "line": 40,
+                "column": 12,
+                "offset": 540
+               },
+               "end": {
+                "line": 40,
+                "column": 18,
+                "offset": 546
+               },
+               "occurrence": 0
+              }
+             },
+             {
+              "type": "text",
+              "value": "Apples",
+              "origin": {
+               "start": {
+                "line": 40,
+                "column": 1,
+                "offset": 529
+               },
+               "end": {
+                "line": 40,
+                "column": 47,
+                "offset": 575
+               },
+               "occurrence": 0
+              }
+             }
+            ],
+            "origin": {
+             "start": {
+              "line": 40,
+              "column": 1,
+              "offset": 529
+             },
+             "end": {
+              "line": 40,
+              "column": 47,
+              "offset": 575
+             },
+             "occurrence": 0
+            }
+           }
+          ]
+         },
+         {
+          "value": "Pears",
+          "children": [
+           {
+            "type": "componentLeaf",
+            "name": "counter",
+            "params": [
+             {
+              "key": "label",
+              "breakpoint": null,
+              "value": "board Pears"
+             }
+            ],
+            "fallback": [
+             {
+              "type": "text",
+              "value": "Board ",
+              "origin": {
+               "start": {
+                "line": 40,
+                "column": 12,
+                "offset": 540
+               },
+               "end": {
+                "line": 40,
+                "column": 18,
+                "offset": 546
+               },
+               "occurrence": 0
+              }
+             },
+             {
+              "type": "text",
+              "value": "Pears",
+              "origin": {
+               "start": {
+                "line": 40,
+                "column": 1,
+                "offset": 529
+               },
+               "end": {
+                "line": 40,
+                "column": 47,
+                "offset": 575
+               },
+               "occurrence": 0
+              }
+             }
+            ],
+            "origin": {
+             "start": {
+              "line": 40,
+              "column": 1,
+              "offset": 529
+             },
+             "end": {
+              "line": 40,
+              "column": 47,
+              "offset": 575
+             },
+             "occurrence": 1
+            }
+           }
+          ]
+         },
+         {
+          "value": "Plums",
+          "children": [
+           {
+            "type": "componentLeaf",
+            "name": "counter",
+            "params": [
+             {
+              "key": "label",
+              "breakpoint": null,
+              "value": "board Plums"
+             }
+            ],
+            "fallback": [
+             {
+              "type": "text",
+              "value": "Board ",
+              "origin": {
+               "start": {
+                "line": 40,
+                "column": 12,
+                "offset": 540
+               },
+               "end": {
+                "line": 40,
+                "column": 18,
+                "offset": 546
+               },
+               "occurrence": 0
+              }
+             },
+             {
+              "type": "text",
+              "value": "Plums",
+              "origin": {
+               "start": {
+                "line": 40,
+                "column": 1,
+                "offset": 529
+               },
+               "end": {
+                "line": 40,
+                "column": 47,
+                "offset": 575
+               },
+               "occurrence": 0
+              }
+             }
+            ],
+            "origin": {
+             "start": {
+              "line": 40,
+              "column": 1,
+              "offset": 529
+             },
+             "end": {
+              "line": 40,
+              "column": 47,
+              "offset": 575
+             },
+             "occurrence": 2
+            }
+           }
+          ]
+         }
+        ],
+        "slots": [],
+        "origin": {
+         "start": {
+          "line": 39,
+          "column": 1,
+          "offset": 492
+         },
+         "end": {
+          "line": 41,
+          "column": 11,
+          "offset": 586
+         },
+         "occurrence": 0
+        }
+       }
+      ],
+      "slots": [],
+      "origin": {
+       "start": {
+        "line": 11,
+        "column": 1,
+        "offset": 87
+       },
+       "end": {
+        "line": 42,
+        "column": 1,
+        "offset": 587
+       },
+       "occurrence": 0
+      }
+     }
+    ]
+   },
+   "diagnostics": [
+    {
+     "code": "F004",
+     "line": 11,
+     "column": 1
+    }
+   ],
+   "edit": {
+    "start": 69,
+    "end": 87
+   }
+  },
+  {
+   "text": "---\nmd:\n  version: 1\nitems: [Apples, Pears, Plums]\n---\n\n# Groceries\n\nIntro paragraph.\n\n::: card {title=\"New\"}\nA new card.\n::: /card\n\n:: counter[Counter A] {label=A}\n\n:: notes[Notes]\n\n::: card {title=\"Card\"}\nText in the card.\n\n:: counter[Counter B] {label=B}\n::: /card\n\n::: each {in=(md.doc.items) as=i}\n:: counter[{{i}}] {label=(i)}\n::: /each\n\n```compmd component=tile {padding=m}\nparams:\n  label: string\n---\nTile {{label}}.\n\n:: counter[Counter in tile] {label=(label)}\n```\n\n:: tile[Tile T] {label=T}\n\n::: board {rows=(md.doc.items) as=r}\n:: counter[Board {{r}}] {label=(\"board \" + r)}\n::: /board\n",
+   "tree": {
+    "type": "root",
+    "children": [
+     {
+      "type": "heading",
+      "depth": 1,
+      "children": [
+       {
+        "type": "text",
+        "value": "Groceries",
+        "origin": {
+         "start": {
+          "line": 7,
+          "column": 3,
+          "offset": 58
+         },
+         "end": {
+          "line": 7,
+          "column": 12,
+          "offset": 67
+         },
+         "occurrence": 0
+        }
+       }
+      ],
+      "origin": {
+       "start": {
+        "line": 7,
+        "column": 1,
+        "offset": 56
+       },
+       "end": {
+        "line": 7,
+        "column": 12,
+        "offset": 67
+       },
+       "occurrence": 0
+      }
+     },
+     {
+      "type": "paragraph",
+      "children": [
+       {
+        "type": "text",
+        "value": "Intro paragraph.",
+        "origin": {
+         "start": {
+          "line": 9,
+          "column": 1,
+          "offset": 69
+         },
+         "end": {
+          "line": 9,
+          "column": 17,
+          "offset": 85
+         },
+         "occurrence": 0
+        }
+       }
+      ],
+      "origin": {
+       "start": {
+        "line": 9,
+        "column": 1,
+        "offset": 69
+       },
+       "end": {
+        "line": 9,
+        "column": 17,
+        "offset": 85
+       },
+       "occurrence": 0
+      }
+     },
+     {
+      "type": "componentContainer",
+      "name": "card",
+      "params": [
+       {
+        "key": "title",
+        "breakpoint": null,
+        "value": "New"
+       }
+      ],
+      "children": [
+       {
+        "type": "paragraph",
+        "children": [
+         {
+          "type": "text",
+          "value": "A new card.",
+          "origin": {
+           "start": {
+            "line": 12,
+            "column": 1,
+            "offset": 110
+           },
+           "end": {
+            "line": 12,
+            "column": 12,
+            "offset": 121
+           },
+           "occurrence": 0
+          }
+         }
+        ],
+        "origin": {
+         "start": {
+          "line": 12,
+          "column": 1,
+          "offset": 110
+         },
+         "end": {
+          "line": 12,
+          "column": 12,
+          "offset": 121
+         },
+         "occurrence": 0
+        }
+       }
+      ],
+      "slots": [],
+      "origin": {
+       "start": {
+        "line": 11,
+        "column": 1,
+        "offset": 87
+       },
+       "end": {
+        "line": 13,
+        "column": 10,
+        "offset": 131
+       },
+       "occurrence": 0
+      }
+     },
+     {
+      "type": "componentLeaf",
+      "name": "counter",
+      "params": [
+       {
+        "key": "label",
+        "breakpoint": null,
+        "value": "A"
+       }
+      ],
+      "fallback": [
+       {
+        "type": "text",
+        "value": "Counter A",
+        "origin": {
+         "start": {
+          "line": 15,
+          "column": 12,
+          "offset": 144
+         },
+         "end": {
+          "line": 15,
+          "column": 21,
+          "offset": 153
+         },
+         "occurrence": 0
+        }
+       }
+      ],
+      "origin": {
+       "start": {
+        "line": 15,
+        "column": 1,
+        "offset": 133
+       },
+       "end": {
+        "line": 15,
+        "column": 32,
+        "offset": 164
+       },
+       "occurrence": 0
+      }
+     },
+     {
+      "type": "componentLeaf",
+      "name": "notes",
+      "params": [],
+      "fallback": [
+       {
+        "type": "text",
+        "value": "Notes",
+        "origin": {
+         "start": {
+          "line": 17,
+          "column": 10,
+          "offset": 175
+         },
+         "end": {
+          "line": 17,
+          "column": 15,
+          "offset": 180
+         },
+         "occurrence": 0
+        }
+       }
+      ],
+      "origin": {
+       "start": {
+        "line": 17,
+        "column": 1,
+        "offset": 166
+       },
+       "end": {
+        "line": 17,
+        "column": 16,
+        "offset": 181
+       },
+       "occurrence": 0
+      }
+     },
+     {
+      "type": "componentContainer",
+      "name": "card",
+      "params": [
+       {
+        "key": "title",
+        "breakpoint": null,
+        "value": "Card"
+       }
+      ],
+      "children": [
+       {
+        "type": "paragraph",
+        "children": [
+         {
+          "type": "text",
+          "value": "Text in the card.",
+          "origin": {
+           "start": {
+            "line": 20,
+            "column": 1,
+            "offset": 207
+           },
+           "end": {
+            "line": 20,
+            "column": 18,
+            "offset": 224
+           },
+           "occurrence": 0
+          }
+         }
+        ],
+        "origin": {
+         "start": {
+          "line": 20,
+          "column": 1,
+          "offset": 207
+         },
+         "end": {
+          "line": 20,
+          "column": 18,
+          "offset": 224
+         },
+         "occurrence": 0
+        }
+       },
+       {
+        "type": "componentLeaf",
+        "name": "counter",
+        "params": [
+         {
+          "key": "label",
+          "breakpoint": null,
+          "value": "B"
+         }
+        ],
+        "fallback": [
+         {
+          "type": "text",
+          "value": "Counter B",
+          "origin": {
+           "start": {
+            "line": 22,
+            "column": 12,
+            "offset": 237
+           },
+           "end": {
+            "line": 22,
+            "column": 21,
+            "offset": 246
+           },
+           "occurrence": 0
+          }
+         }
+        ],
+        "origin": {
+         "start": {
+          "line": 22,
+          "column": 1,
+          "offset": 226
+         },
+         "end": {
+          "line": 22,
+          "column": 32,
+          "offset": 257
+         },
+         "occurrence": 0
+        }
+       }
+      ],
+      "slots": [],
+      "origin": {
+       "start": {
+        "line": 19,
+        "column": 1,
+        "offset": 183
+       },
+       "end": {
+        "line": 23,
+        "column": 10,
+        "offset": 267
+       },
+       "occurrence": 0
+      }
+     },
+     {
+      "type": "componentLeaf",
+      "name": "counter",
+      "params": [
+       {
+        "key": "label",
+        "breakpoint": null,
+        "value": "Apples"
+       }
+      ],
+      "fallback": [
+       {
+        "type": "text",
+        "value": "Apples",
+        "origin": {
+         "start": {
+          "line": 26,
+          "column": 1,
+          "offset": 303
+         },
+         "end": {
+          "line": 26,
+          "column": 30,
+          "offset": 332
+         },
+         "occurrence": 0
+        }
+       }
+      ],
+      "origin": {
+       "start": {
+        "line": 26,
+        "column": 1,
+        "offset": 303
+       },
+       "end": {
+        "line": 26,
+        "column": 30,
+        "offset": 332
+       },
+       "occurrence": 0
+      }
+     },
+     {
+      "type": "componentLeaf",
+      "name": "counter",
+      "params": [
+       {
+        "key": "label",
+        "breakpoint": null,
+        "value": "Pears"
+       }
+      ],
+      "fallback": [
+       {
+        "type": "text",
+        "value": "Pears",
+        "origin": {
+         "start": {
+          "line": 26,
+          "column": 1,
+          "offset": 303
+         },
+         "end": {
+          "line": 26,
+          "column": 30,
+          "offset": 332
+         },
+         "occurrence": 0
+        }
+       }
+      ],
+      "origin": {
+       "start": {
+        "line": 26,
+        "column": 1,
+        "offset": 303
+       },
+       "end": {
+        "line": 26,
+        "column": 30,
+        "offset": 332
+       },
+       "occurrence": 1
+      }
+     },
+     {
+      "type": "componentLeaf",
+      "name": "counter",
+      "params": [
+       {
+        "key": "label",
+        "breakpoint": null,
+        "value": "Plums"
+       }
+      ],
+      "fallback": [
+       {
+        "type": "text",
+        "value": "Plums",
+        "origin": {
+         "start": {
+          "line": 26,
+          "column": 1,
+          "offset": 303
+         },
+         "end": {
+          "line": 26,
+          "column": 30,
+          "offset": 332
+         },
+         "occurrence": 0
+        }
+       }
+      ],
+      "origin": {
+       "start": {
+        "line": 26,
+        "column": 1,
+        "offset": 303
+       },
+       "end": {
+        "line": 26,
+        "column": 30,
+        "offset": 332
+       },
+       "occurrence": 2
+      }
+     },
+     {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [
+       {
+        "key": "padding",
+        "breakpoint": null,
+        "value": "m"
+       }
+      ],
+      "children": [
+       {
+        "type": "paragraph",
+        "children": [
+         {
+          "type": "text",
+          "value": "Tile T.",
+          "origin": {
+           "start": {
+            "line": 38,
+            "column": 1,
+            "offset": 475
+           },
+           "end": {
+            "line": 38,
+            "column": 26,
+            "offset": 500
+           },
+           "occurrence": 0
+          }
+         }
+        ],
+        "origin": {
+         "start": {
+          "line": 38,
+          "column": 1,
+          "offset": 475
+         },
+         "end": {
+          "line": 38,
+          "column": 26,
+          "offset": 500
+         },
+         "occurrence": 0
+        }
+       },
+       {
+        "type": "componentLeaf",
+        "name": "counter",
+        "params": [
+         {
+          "key": "label",
+          "breakpoint": null,
+          "value": "T"
+         }
+        ],
+        "fallback": [
+         {
+          "type": "text",
+          "value": "Counter in tile",
+          "origin": {
+           "start": {
+            "line": 38,
+            "column": 1,
+            "offset": 475
+           },
+           "end": {
+            "line": 38,
+            "column": 26,
+            "offset": 500
+           },
+           "occurrence": 0
+          }
+         }
+        ],
+        "origin": {
+         "start": {
+          "line": 38,
+          "column": 1,
+          "offset": 475
+         },
+         "end": {
+          "line": 38,
+          "column": 26,
+          "offset": 500
+         },
+         "occurrence": 1
+        }
+       }
+      ],
+      "slots": [],
+      "origin": {
+       "start": {
+        "line": 38,
+        "column": 1,
+        "offset": 475
+       },
+       "end": {
+        "line": 38,
+        "column": 26,
+        "offset": 500
+       },
+       "occurrence": 0
+      }
+     },
+     {
+      "type": "componentContainer",
+      "name": "board",
+      "params": [
+       {
+        "key": "rows",
+        "breakpoint": null,
+        "value": [
+         "Apples",
+         "Pears",
+         "Plums"
+        ]
+       },
+       {
+        "key": "as",
+        "breakpoint": null,
+        "value": "r"
+       }
+      ],
+      "children": [],
+      "instances": [
+       {
+        "value": "Apples",
+        "children": [
+         {
+          "type": "componentLeaf",
+          "name": "counter",
+          "params": [
+           {
+            "key": "label",
+            "breakpoint": null,
+            "value": "board Apples"
+           }
+          ],
+          "fallback": [
+           {
+            "type": "text",
+            "value": "Board ",
+            "origin": {
+             "start": {
+              "line": 41,
+              "column": 12,
+              "offset": 550
+             },
+             "end": {
+              "line": 41,
+              "column": 18,
+              "offset": 556
+             },
+             "occurrence": 0
+            }
+           },
+           {
+            "type": "text",
+            "value": "Apples",
+            "origin": {
+             "start": {
+              "line": 41,
+              "column": 1,
+              "offset": 539
+             },
+             "end": {
+              "line": 41,
+              "column": 47,
+              "offset": 585
+             },
+             "occurrence": 0
+            }
+           }
+          ],
+          "origin": {
+           "start": {
+            "line": 41,
+            "column": 1,
+            "offset": 539
+           },
+           "end": {
+            "line": 41,
+            "column": 47,
+            "offset": 585
+           },
+           "occurrence": 0
+          }
+         }
+        ]
+       },
+       {
+        "value": "Pears",
+        "children": [
+         {
+          "type": "componentLeaf",
+          "name": "counter",
+          "params": [
+           {
+            "key": "label",
+            "breakpoint": null,
+            "value": "board Pears"
+           }
+          ],
+          "fallback": [
+           {
+            "type": "text",
+            "value": "Board ",
+            "origin": {
+             "start": {
+              "line": 41,
+              "column": 12,
+              "offset": 550
+             },
+             "end": {
+              "line": 41,
+              "column": 18,
+              "offset": 556
+             },
+             "occurrence": 0
+            }
+           },
+           {
+            "type": "text",
+            "value": "Pears",
+            "origin": {
+             "start": {
+              "line": 41,
+              "column": 1,
+              "offset": 539
+             },
+             "end": {
+              "line": 41,
+              "column": 47,
+              "offset": 585
+             },
+             "occurrence": 0
+            }
+           }
+          ],
+          "origin": {
+           "start": {
+            "line": 41,
+            "column": 1,
+            "offset": 539
+           },
+           "end": {
+            "line": 41,
+            "column": 47,
+            "offset": 585
+           },
+           "occurrence": 1
+          }
+         }
+        ]
+       },
+       {
+        "value": "Plums",
+        "children": [
+         {
+          "type": "componentLeaf",
+          "name": "counter",
+          "params": [
+           {
+            "key": "label",
+            "breakpoint": null,
+            "value": "board Plums"
+           }
+          ],
+          "fallback": [
+           {
+            "type": "text",
+            "value": "Board ",
+            "origin": {
+             "start": {
+              "line": 41,
+              "column": 12,
+              "offset": 550
+             },
+             "end": {
+              "line": 41,
+              "column": 18,
+              "offset": 556
+             },
+             "occurrence": 0
+            }
+           },
+           {
+            "type": "text",
+            "value": "Plums",
+            "origin": {
+             "start": {
+              "line": 41,
+              "column": 1,
+              "offset": 539
+             },
+             "end": {
+              "line": 41,
+              "column": 47,
+              "offset": 585
+             },
+             "occurrence": 0
+            }
+           }
+          ],
+          "origin": {
+           "start": {
+            "line": 41,
+            "column": 1,
+            "offset": 539
+           },
+           "end": {
+            "line": 41,
+            "column": 47,
+            "offset": 585
+           },
+           "occurrence": 2
+          }
+         }
+        ]
+       }
+      ],
+      "slots": [],
+      "origin": {
+       "start": {
+        "line": 40,
+        "column": 1,
+        "offset": 502
+       },
+       "end": {
+        "line": 42,
+        "column": 11,
+        "offset": 596
+       },
+       "occurrence": 0
+      }
+     }
+    ]
+   },
+   "diagnostics": [],
+   "edit": {
+    "start": 110,
+    "end": 123
+   }
+  }
+ ]
+}

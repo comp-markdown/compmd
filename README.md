@@ -11,6 +11,7 @@ CompMD (Component Markdown) is a Markdown flavor that adds components, container
 | [llms.txt](llms.txt) | The AI authoring guide: what an AI agent reads before writing CompMD (measured below) |
 | [conformance/](conformance/README.md) | Test cases any implementation can run (spec §13.2) |
 | [examples/](examples/complete/release.comp.md) | A complete document that uses every construct, with its data files |
+| [render/](render/README.md) | `@compmd/render`: an expanded tree as a live page, with the host contract's bindings; the reference rendering of the built-ins |
 | [existing-specs-comparison.md](existing-specs-comparison.md) | The spec compared with MDX, Markdoc, Nuxt MDC and Comark, MyST, Quarto, Livebook's Live Markdown and Active Markdown |
 
 The spec is a document format of its own and doesn't depend on any application.

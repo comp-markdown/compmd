@@ -1,0 +1,14 @@
+{
+  "name": "compmd",
+  "private": true,
+  "description": "The CompMD repository's pnpm workspace: the renderer, and later the editor.",
+  "devEngines": {
+    "packageManager": { "name": "pnpm", "version": "12.14.0", "onFail": "download" },
+    "runtime": { "name": "node", "version": "24", "onFail": "download" }
+  },
+  "scripts": {
+    "lint": "pnpm -r --if-present lint",
+    "build": "pnpm -r --if-present build",
+    "test": "pnpm -r --if-present test"
+  }
+}
