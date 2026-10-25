@@ -40,46 +40,115 @@
         {
           "type": "componentContainer",
           "name": "box",
+          "params": [],
+          "children": [
+            {
+              "type": "componentContainer",
+              "name": "box",
+              "params": [
+                {
+                  "key": "display",
+                  "breakpoint": null,
+                  "value": "grid"
+                },
+                {
+                  "key": "gap",
+                  "breakpoint": null,
+                  "value": "none"
+                },
+                {
+                  "key": "align-items",
+                  "breakpoint": null,
+                  "value": "stretch"
+                },
+                {
+                  "key": "grid-template-columns",
+                  "breakpoint": "md",
+                  "value": "1fr 1fr"
+                }
+              ],
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "A"
+                    }
+                  ]
+                },
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "B"
+                    }
+                  ]
+                }
+              ],
+              "slots": []
+            }
+          ],
+          "slots": []
+        },
+        {
+          "type": "componentContainer",
+          "name": "box",
           "params": [
             {
-              "key": "display",
+              "key": "width",
               "breakpoint": null,
-              "value": "grid"
-            },
-            {
-              "key": "gap",
-              "breakpoint": null,
-              "value": "none"
-            },
-            {
-              "key": "align-items",
-              "breakpoint": null,
-              "value": "stretch"
-            },
-            {
-              "key": "grid-template-columns",
-              "breakpoint": "md",
-              "value": "1fr 1fr"
+              "value": "50%"
             }
           ],
           "children": [
             {
-              "type": "paragraph",
+              "type": "componentContainer",
+              "name": "box",
+              "params": [
+                {
+                  "key": "display",
+                  "breakpoint": null,
+                  "value": "grid"
+                },
+                {
+                  "key": "gap",
+                  "breakpoint": null,
+                  "value": "none"
+                },
+                {
+                  "key": "align-items",
+                  "breakpoint": null,
+                  "value": "stretch"
+                },
+                {
+                  "key": "grid-template-columns",
+                  "breakpoint": "md",
+                  "value": "1fr 1fr"
+                }
+              ],
               "children": [
                 {
-                  "type": "text",
-                  "value": "A"
-                }
-              ]
-            },
-            {
-              "type": "paragraph",
-              "children": [
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "C"
+                    }
+                  ]
+                },
                 {
-                  "type": "text",
-                  "value": "B"
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "D"
+                    }
+                  ]
                 }
-              ]
+              ],
+              "slots": []
             }
           ],
           "slots": []
@@ -107,11 +176,6 @@
               "key": "grid-template-columns",
               "breakpoint": "md",
               "value": "1fr 1fr"
-            },
-            {
-              "key": "width",
-              "breakpoint": null,
-              "value": "50%"
             }
           ],
           "children": [
@@ -120,7 +184,7 @@
               "children": [
                 {
                   "type": "text",
-                  "value": "C"
+                  "value": "E"
                 }
               ]
             },
@@ -129,7 +193,7 @@
               "children": [
                 {
                   "type": "text",
-                  "value": "D"
+                  "value": "F"
                 }
               ]
             }

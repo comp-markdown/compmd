@@ -1110,9 +1110,9 @@ Any container or leaf (built-in or not) accepts these params, applied to its out
 
 A layout or common param MAY carry a breakpoint prefix: `md:gap=l` overrides `gap` from the `md` breakpoint up. The breakpoints are fixed: `sm` is 480 px, `md` 768 px and `lg` 1024 px. Documents start from the narrowest layout and override upwards.
 
-- **Breakpoints follow a block's container, not the window.** How a block lays out its children follows the block's own width; the params about the block itself (its size, padding, `show`, `hide`, `order`, `sticky`, self-alignment) follow its parent's width. A document shown in a narrow column lays out as on a phone. A processor whose output has no width that changes (a PDF page) uses the width it has.
+- **Breakpoints follow a block's container, not the window.** Every param of a block follows its parent's width: its layout (`md:gap`, `md:grid-template-columns`) as well as its size, padding, `show`, `hide`, `order`, `sticky` and self-alignment. At the top level, the parent is the area the processor renders into. A document shown in a narrow column lays out as on a phone. A processor whose output has no width that changes (a PDF page) uses the width it has. In HTML this is a CSS container query on the parent's box, since CSS lets an element's styles follow an ancestor's width, not its own.
 - `grid-area`, `scroll`, `fill`, `show` and `hide` take no breakpoint. Positions do: `md:inset-inline-start=60%` places a block from `md` up and leaves it in the flow below, and `md:inset-inline-start=auto` does the reverse. W119 is checked at each breakpoint. A breakpoint on a param that takes none (`md:show=md`, or a param of a host-language component), or a breakpoint other than `sm`, `md` and `lg`, is F008, and the param is ignored.
-- A block whose children's layout uses breakpoints doesn't take its width from its content, so in a `row` it would shrink to nothing. Such a block in a `row` needs a `width`; without one it is W114.
+- A block whose children use breakpoints (a breakpoint prefix on any of their params, or `show` or `hide`) is the container they follow, so it doesn't take its width from its content, and in a `row` it would shrink to nothing. Such a block in a `row` needs a `width`; without one it is W114. A block whose own params use breakpoints follows its parent and needs nothing.
 - A breakpoint value given to a param of a component defined in CompMD applies wherever the definition passes that param on: `md:gap=l` on a `row` reaches its `box`. When an expression in the definition's body uses such a param, the processor evaluates it once per breakpoint, mobile-first (at `md`, the `md` value, or else the `sm` one, or else the base), and each result that differs from the base value becomes a param with that breakpoint: `::: grid {min=14rem md:min=20rem}` gives `grid-template-columns` and `md:grid-template-columns`.
 
 ### 9.4 Values and spacing
@@ -1195,7 +1195,7 @@ Every diagnostic MUST name its code, the line and column where it was detected, 
 | W111 | Unknown key under `md`; ignored                                                                                                       | the key, naming the nearest known key                                |
 | W112 | Local definition or explicit import shadows a `@compmd/core` component                                                                       | the definition or `names` entry                                      |
 | W113 | Name from an ambient pack, or a `host:` data source, used (optional; for portable documents)                                           | the use, or the data entry                                           |
-| W114 | Block in a `row` whose children's layout uses breakpoints, without a `width` (section 9.3)                                              | the block                                                            |
+| W114 | Block in a `row` whose children use breakpoints, without a `width` (section 9.3)                                                        | the block                                                            |
 | W115 | Host metadata given for a document that has its own frontmatter; the host's metadata is ignored                                        | line 1                                                               |
 | W116 | Line starting with `::` inside an HTML block, which makes it HTML, not CompMD                                                            | the line                                                             |
 | W117 | Exported host-language component without `runtime`                                                                                        | the definition fence                                                 |
@@ -1372,7 +1372,7 @@ A claim names the class and its features, for example "compmd/1 processor with j
 
 What a processor that renders MUST do (render fallbacks, escape interpolated text, show inputs statically when it isn't interactive) is required by this spec, but not tested by the conformance set.
 
-**Layout.** The meaning of each layout param is the CSS property it names (section 9). Conformance is tested on the expanded tree, not on output. A reference HTML and CSS rendering of the built-ins is informative.
+**Layout.** The meaning of each layout param is the CSS property it names (section 9). Conformance is tested on the expanded tree, not on output. A reference HTML and CSS rendering of the built-ins, `@compmd/render`'s ([README](render/README.md#the-reference-rendering-of-the-built-ins)), is informative.
 
 ### 13.2 The conformance set
 

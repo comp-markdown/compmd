@@ -1,13 +1,23 @@
 ::: row {gap=m}
+::: box
 ::: grid {md:grid-template-columns="1fr 1fr"}
 A
 
 B
 ::: /grid
+::: /box
 
-::: grid {width=50% md:grid-template-columns="1fr 1fr"}
+::: box {width=50%}
+::: grid {md:grid-template-columns="1fr 1fr"}
 C
 
 D
+::: /grid
+::: /box
+
+::: grid {md:grid-template-columns="1fr 1fr"}
+E
+
+F
 ::: /grid
 ::: /row

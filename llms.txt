@@ -295,9 +295,9 @@ Common params, on any container or leaf (they style its outer box):
 - Each top-level block in a layout container is one item. Wrap several blocks in `::: box` to make one item.
 - `justify-content` takes `start center end between around`.
 - Directions are logical only: `inline`/`block`, `start`/`end`. There is no `left`, `top`, `margin`, `color`, `font-size` or `style`. Unknown params are errors (F008); the vocabulary is closed, so raw CSS never passes.
-- Breakpoints follow the container's width, not the window. Write the narrow layout first and override up: `::: grid {gap=s md:gap=l md:grid-template-columns="2fr 1fr"}`.
+- Breakpoints follow the width of the block's parent (its container), not the window. Write the narrow layout first and override up: `::: grid {gap=s md:gap=l md:grid-template-columns="2fr 1fr"}`.
 - A block with an `inset-*` is placed over its nearest box, which needs `height`, `aspect-ratio` or `fill` (W119).
-- In a `row`, a child whose own layout uses breakpoints needs a `width` (W114).
+- In a `row`, a child that holds blocks with breakpoints (`md:…`, `show`, `hide`) needs a `width` (W114).
 
 ```md
 ::: grid {min=14rem gap=m}
@@ -491,7 +491,7 @@ F codes are errors, W codes warnings. Each line: what it means → how to fix it
 - W111 unknown key under `md` → fix its spelling; author keys go outside `md`.
 - W112 local name shadows a `@compmd/core` component → rename unless intended.
 - W113 name from an ambient pack or `host:` data used → fine in that processor; not portable.
-- W114 block in a `row` with breakpoint layout and no `width` → give it a `width`.
+- W114 block in a `row` whose children use breakpoints, and no `width` → give it a `width`.
 - W115 host metadata ignored because the text has frontmatter → keep metadata in one place.
 - W116 `::` line inside an HTML block → put a blank line after the HTML tag, or drop the HTML.
 - W117 exported host component without `runtime` → add `runtime=react@19` (or `svelte@5`).

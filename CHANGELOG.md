@@ -6,6 +6,8 @@ Changes to the [CompMD specification](compmd-spec-v1.md), newest first. Every ch
 
 ### 2026-10-24
 
+- **The reference rendering (§13.1).** The informative HTML and CSS rendering of the built-ins is `@compmd/render`'s, in [`render/`](render/README.md#the-reference-rendering-of-the-built-ins). The spec itself is unchanged.
+- **Breakpoints follow the parent's width (§9.3, §10.2; W114).** Every param of a block, its layout among them, follows its parent's width; before, a block's own layout followed its own width, which CSS can't express (an element's styles follow an ancestor's width, not its own). The two differ only for a block much narrower than its parent: `::: grid {width=40% md:grid-template-columns="1fr 1fr"}` on a wide page now has two columns. W114 is for a block in a `row` whose *children* use breakpoints, as §9.3 said; a block whose own layout uses breakpoints no longer gets it. Case `expand/row-child-width-W114` is updated.
 - **Origins (§12.3, §13.1, §13.2, §17).** A new optional feature, `origins`: every expanded node has `origin`, the range of the processed document that made it, with its `occurrence` among the nodes before it with the same range. A node from a definition's body takes its invocation's origin, so an editor can keep what it rendered for a node through an edit. Keys for matching nodes across edits are the editor's, not the format's. The tree schema has `origin`, and a new case is `expand/origins`.
 - **Record keys, an open issue (§17).** `each` iterations and template slot instances are told apart by index, not by record, so state shown for one record moves to another when records are added in front. A record key is to be decided.
 - **Author.** The spec names its author.
