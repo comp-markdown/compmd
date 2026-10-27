@@ -2,7 +2,7 @@
 
 CompMD (Component Markdown) is a Markdown flavor that adds components, containers, slots and CSS-like layout to CommonMark + GFM, while staying readable in any plain Markdown renderer.
 
-**Version 1, draft. Last changed 2026-10-24.** Every change is listed in the [changelog](CHANGELOG.md).
+**Version 1, draft. Last changed 2026-10-27.** Every change is listed in the [changelog](CHANGELOG.md).
 
 **Author:** Hakan Serce.
 
@@ -11,10 +11,32 @@ CompMD (Component Markdown) is a Markdown flavor that adds components, container
 This is a working draft of CompMD version 1. It specifies document format only; parser and renderer implementations are out of scope.
 
 - The key words MUST, MUST NOT, SHOULD and MAY are used as in RFC 2119.
-- A **CompMD processor** is any tool that parses CompMD (renderer, linter, formatter). Section 13 defines what conforming parsers and processors implement. A **plain renderer** is any CommonMark or GFM renderer without CompMD support.
-- A **component** is a named, reusable piece of content invoked from a document: a container, a leaf or an inline component (section 4), defined in CompMD or in a host language (section 7). A **built-in** is a component defined by this spec (section 9).
+- Terms are defined where they are introduced, and listed in section 1.1.
 - Grammar uses ABNF-style notation: `SP` is one space, `EOL` is end of line, `"x"` is a literal, `[ ]` is optional, `*` is zero or more.
 - "Line" means a source line after CommonMark tab expansion; a component line MAY be indented up to 3 spaces, as CommonMark fences are.
+
+### 1.1 Terms
+
+- **Binding.** The host contract mapped to one framework: plain JavaScript, React and Svelte 5 in version 1 ([section 7.6](#76-bindings)).
+- **Box.** The rectangle a block is laid out in. Every component invocation that is a block has one *outer box* ([section 9.2](#92-common-params)): a host-language component's `target`, or the box holding a `compmd` component's body. A `display=contents` component has none.
+- **Breakpoint.** One of the widths `sm` (480 px), `md` (768 px) and `lg` (1024 px). A param with a breakpoint prefix, such as `md:gap=l`, applies from that width up, measured on the block's nearest box ([section 9.3](#93-breakpoints)).
+- **Built-in.** A component defined by this spec, in the `@compmd/core` pack ([section 9](#9-built-ins-the-compmdcore-pack)).
+- **Component.** A named, reusable piece of content invoked from a document: a container, a leaf or an inline component ([section 4](#4-containers-leaves-inline-components-and-slots)), defined in CompMD or in a host language ([section 7](#7-defining-components)).
+- **CompMD processor.** Any tool that parses CompMD: a renderer, a linter, a formatter. Section 13 defines what conforming parsers and processors implement ([section 13](#13-conformance)).
+- **Container.** A component written as `::: name` … `::: /name`, with a body ([section 4.1](#41-containers)). The box a block's breakpoints follow is its *nearest box*, not a container.
+- **Expanded tree.** The result of stage 4b: the document's content, with definitions, `if`, `each`, `value` and interpolations replaced by what they produce ([section 12.3](#123-the-expanded-tree)).
+- **Fallback.** What shows in place of a component that can't be rendered: a leaf's or inline component's text in `[…]`, a container's slots as plain Markdown ([section 4.5](#45-fallback-rendering)).
+- **Host contract.** How a processor that renders HTML runs a host-language component, whatever its framework: `mount`, `update` and `destroy` ([section 7.4](#74-the-host-contract)).
+- **Host language.** A programming language a component can be defined in, other than CompMD: `js`, `ts`, `jsx`, `tsx` and `svelte` in version 1 ([section 7](#7-defining-components)).
+- **Input.** A typed value the reader can change, declared in the frontmatter's `inputs` key under `md`, and read as `md.input.<name>` ([section 8.7](#87-inputs)).
+- **Item.** One top-level block in a layout container's default slot ([section 9.1](#91-items)) or in a host-language component's slot ([section 7.4](#74-the-host-contract)).
+- **Nearest box** (of a block). The closest box around it in the expanded tree ([section 12.3](#123-the-expanded-tree)): a `box` (a `compmd` component's box among them), a host-language component's outer box, or one item of a host-language component's slot. List items, quotes, table cells, `each`, `if`, the slots of `compmd` components and `display=contents` components don't count. At the top level, it is the area the processor renders into. A positioned block is placed in its nearest box ([section 9.2](#92-common-params)), and its breakpoints follow its nearest box's width ([section 9.3](#93-breakpoints)).
+- **Origin.** The range of the processed document that made an expanded node, with its occurrence ([section 12.3](#123-the-expanded-tree)).
+- **Pack.** A document or published package that exports components ([section 6](#6-imports-and-exports)).
+- **Parse tree.** The result of stage 1: the document as written, as mdast nodes and CompMD's own ([section 12](#12-document-tree)).
+- **Plain renderer.** Any CommonMark or GFM renderer without CompMD support ([section 14](#14-degradation-contract)).
+- **Slot.** A named part of a container's body, started by `:: #name`. Content before the first slot line is the *default slot* ([section 4.2](#42-slots)).
+- **Template slot.** A slot rendered once per element of an array param ([section 7.5](#75-template-slots)).
 
 ## 2. Documents
 
@@ -515,6 +537,7 @@ type SlotInstance = { value: unknown; items: SlotItem[] }   // a template slot: 
 - **The outer box is the processor's.** It creates `target`, applies the common params and `class`, `id`, `lang` and `dir` to it (the definition fence's, overridden by the invocation's), and lays it out (section 9.2). The component owns what is inside `target` and doesn't receive those params.
 - **Slots are rendered by the processor**, into elements the component places in its own DOM. Components inside a slot are mounted by the processor and stay live, whatever framework the parent uses.
 - **A slot is a list of items**, one per top-level block (section 9.1): its element, and, when the block is a component, its name and params. A tabs component reads its tabs' labels from the items' params. An item's element is a box the processor makes around the block, so a block placed by position (section 9.2) is placed in its item, whatever the component's own markup; the component sizes it.
+- **An item's width is the component's to give.** An item is the nearest box of the block in it, so when that block uses breakpoints, the item is the box they follow and doesn't take its width from its content (section 9.3). A component that lays its items out by their content, such as a toolbar that puts them side by side, gives such an item a width. A processor can't check this, since only the component knows its layout.
 - **Every slot is rendered up front**, including content the component hides; hiding is the component's own styling. A component may be laid out while hidden or at zero width, and SHOULD lay itself out again when it's resized.
 - **Updates, not remounts.** When params or slots change (an input or data changes, section 8.5), the processor calls `update`; the component keeps its state. `destroy` is called before `target` is removed.
 - **A component that throws** while mounting or updating renders its fallback, with W118.
@@ -1110,9 +1133,16 @@ Any container or leaf (built-in or not) accepts these params, applied to its out
 
 A layout or common param MAY carry a breakpoint prefix: `md:gap=l` overrides `gap` from the `md` breakpoint up. The breakpoints are fixed: `sm` is 480 px, `md` 768 px and `lg` 1024 px. Documents start from the narrowest layout and override upwards.
 
-- **Breakpoints follow a block's container, not the window.** Every param of a block follows its parent's width: its layout (`md:gap`, `md:grid-template-columns`) as well as its size, padding, `show`, `hide`, `order`, `sticky` and self-alignment. At the top level, the parent is the area the processor renders into. A document shown in a narrow column lays out as on a phone. A processor whose output has no width that changes (a PDF page) uses the width it has. In HTML this is a CSS container query on the parent's box, since CSS lets an element's styles follow an ancestor's width, not its own.
+- **Breakpoints follow a block's nearest box, not the window.** Every param of a block follows the width of its nearest box (section 9.2): its layout (`md:gap`, `md:grid-template-columns`) as well as its size, padding, `show`, `hide`, `order`, `sticky` and self-alignment. At the top level, that is the area the processor renders into. A document shown in a narrow column lays out as on a phone. A processor whose output has no width that changes (a PDF page) uses the width it has. In HTML this is a CSS container query on the nearest box, since CSS lets an element's styles follow an ancestor's width, not its own.
+- **A component follows the box it is in, not its own width.** A `card` fenced `{padding=s md:padding=m}`, in `::: grid {min=14rem}` on a page 1000 px wide, has `m` in every card: the grid is 1000 px wide, though each card is about 320 px.
 - `grid-area`, `scroll`, `fill`, `show` and `hide` take no breakpoint. Positions do: `md:inset-inline-start=60%` places a block from `md` up and leaves it in the flow below, and `md:inset-inline-start=auto` does the reverse. W119 is checked at each breakpoint. A breakpoint on a param that takes none (`md:show=md`, or a param of a host-language component), or a breakpoint other than `sm`, `md` and `lg`, is F008, and the param is ignored.
-- A block whose children use breakpoints (a breakpoint prefix on any of their params, or `show` or `hide`) is the container they follow, so it doesn't take its width from its content, and in a `row` it would shrink to nothing. Such a block in a `row` needs a `width`; without one it is W114. A block whose own params use breakpoints follows its parent and needs nothing.
+- **A box that blocks follow has no width from its content.** A box whose blocks use breakpoints (a breakpoint prefix on any of their params, or `show` or `hide`) is the box they follow, so where its width would come from its content, it shrinks to nothing. Such a box needs a `width` when it is:
+  - in a `row` (any box with `display=flex` and `flex-direction=row`);
+  - in a `stack` (any box with `display=flex` and `flex-direction=column`) and not stretched across it: its `align-self`, or else the stack's `align-items`, isn't `stretch`, or its `justify-self` is `center` or `end`;
+  - in a `grid` (any box with `display=grid`), with a `justify-self`;
+  - positioned (section 9.2), without both `inset-inline-start` and `inset-inline-end`.
+
+  Without a `width` it is W114, checked at each breakpoint. In a box with `display=block`, self-alignment doesn't change a block's width. A block whose own params use breakpoints follows its nearest box and needs nothing.
 - A breakpoint value given to a param of a component defined in CompMD applies wherever the definition passes that param on: `md:gap=l` on a `row` reaches its `box`. When an expression in the definition's body uses such a param, the processor evaluates it once per breakpoint, mobile-first (at `md`, the `md` value, or else the `sm` one, or else the base), and each result that differs from the base value becomes a param with that breakpoint: `::: grid {min=14rem md:min=20rem}` gives `grid-template-columns` and `md:grid-template-columns`.
 
 ### 9.4 Values and spacing
@@ -1132,6 +1162,19 @@ A layout or common param MAY carry a breakpoint prefix: `md:gap=l` overrides `ga
 - **The vocabulary is closed.** The params in this section are all the layout and styling a document can write. An unknown param is F008 and a value outside its grammar is F009, so no param can pass raw CSS through.
 - **Directions are logical.** Every param says `start` and `end`, `inline` and `block`, never left, right, top or bottom, so a document laid out for a left-to-right language reads correctly right to left.
 - **Meaning.** Each param means what the CSS property it names means (section 13.1). An HTML processor emits that CSS. A processor for another output (PDF, terminal) implements the same meaning, as far as its output allows.
+
+### 9.5 Which box breakpoints follow (informative)
+
+Each example says which box a block's breakpoints follow (section 9.3), on a page 1000 px wide.
+
+- **At the top level.** `::: grid {md:grid-template-columns="1fr 1fr"}` follows the page: two columns.
+- **In a narrow box.** The same grid inside `::: stack {width=50%}` follows the stack, 500 px wide: one column. The stack is the box the grid follows.
+- **Only its own params.** `::: box {md:padding=l}` at the top level follows the page. It isn't a box anything follows, since no block in it uses breakpoints.
+- **A card in a card grid.** Each card follows the grid, not its own width (section 9.3).
+- **In a list item, a quote or an alert.** `:: chart[Sales] {md:height=20rem}` in a list item inside a `box` follows the box: list items and quotes aren't boxes.
+- **In a `display=contents` component.** It has no box, so its blocks follow the caller's box.
+- **In a host-language component's slot.** A grid in a `tabs` component's slot follows its item, whose width the component gives (section 7.4).
+- **In `each` and `if`.** They expand to their content, so its blocks follow the box around the `each` or `if`.
 
 ## 10. Errors, diagnostics and recovery
 
@@ -1195,7 +1238,7 @@ Every diagnostic MUST name its code, the line and column where it was detected, 
 | W111 | Unknown key under `md`; ignored                                                                                                       | the key, naming the nearest known key                                |
 | W112 | Local definition or explicit import shadows a `@compmd/core` component                                                                       | the definition or `names` entry                                      |
 | W113 | Name from an ambient pack, or a `host:` data source, used (optional; for portable documents)                                           | the use, or the data entry                                           |
-| W114 | Block in a `row` whose children use breakpoints, without a `width` (section 9.3)                                                        | the block                                                            |
+| W114 | Box whose blocks use breakpoints, without a `width` where its width would come from its content (section 9.3)                           | the box                                                              |
 | W115 | Host metadata given for a document that has its own frontmatter; the host's metadata is ignored                                        | line 1                                                               |
 | W116 | Line starting with `::` inside an HTML block, which makes it HTML, not CompMD                                                            | the line                                                             |
 | W117 | Exported host-language component without `runtime`                                                                                        | the definition fence                                                 |

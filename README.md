@@ -23,16 +23,16 @@ The spec is a document format of its own and doesn't depend on any application.
 
 **When.** Publishing needs an outside reason: another implementer, users asking, or a partner. Until then the spec stays a draft in this repository, with its own changelog and conformance set.
 
-**Checklist** (status as of 2026-10-24):
+**Checklist** (status as of 2026-10-27):
 
 | | Item | Status |
 |---|---|---|
 | 1 | No open issues: every item in §17 is decided or deferred with a reason | To do: record keys are open |
 | 2 | The tree schema (§12.4), and every expected tree in the conformance set fits it | Done |
 | 3 | The changelog, with a version line in the spec | Done |
-| 4 | The conformance set covers every construct and every diagnostic code | Done: 168 cases, all 56 codes |
-| 5 | An implementation passes the whole set, including the `js` case (the plain binding) | Partly: the prototype passes all 166 cases it can run; the `js` case needs a plain-JavaScript runner, and the `origins` case an implementation of the `origins` feature |
-| 6 | Plain renderers: every case degrades cleanly in a CommonMark and a GFM renderer | Done (the prototype's degradation report: 167/167 each, before the `origins` case) |
+| 4 | The conformance set covers every construct and every diagnostic code | Done: 172 cases, all 56 codes |
+| 5 | An implementation passes the whole set, including the `js` case (the plain binding) | Partly: the prototype passes all 170 cases it can run; the `js` case needs a plain-JavaScript runner, and the `origins` case an implementation of the `origins` feature |
+| 6 | Plain renderers: every case degrades cleanly in a CommonMark and a GFM renderer | Done (the prototype's degradation report: 172/172 each) |
 | 7 | The AI authoring guide, `llms.txt`, measured with an AI writing documents | Done (see below) |
 | 8 | A review of the whole spec, start to end, with its editor | To do |
 | 9 | License files: [`LICENSE`](LICENSE) (CC BY 4.0) for the text, [`LICENSE-CODE`](LICENSE-CODE) (MIT) for the conformance set and code | Done |

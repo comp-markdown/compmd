@@ -4,6 +4,13 @@ Changes to the [CompMD specification](compmd-spec-v1.md), newest first. Every ch
 
 ## Version 1 (draft)
 
+### 2026-10-27
+
+- **Terms (§1.1).** A glossary of the spec's terms, each with its section. "Container" means only a `:::` component; the box a block's breakpoints follow is its *nearest box*.
+- **Breakpoints follow the nearest box (§9.3).** A block's params follow the width of its nearest box, the term §9.2 uses for positions, rather than its parent's: list items, quotes and alerts don't count, so a component in a list item inside a box follows the box. A new informative §9.5 shows which box breakpoints follow in each case. Only the wording changes, since list items and quotes were never boxes.
+- **W114 wherever a box's width comes from its content (§9.3, §10.2).** A box whose blocks use breakpoints shrinks to nothing wherever its width would come from its content. W114 was only for a box in a `row`; it now also covers a box in a `stack` that isn't stretched across it, a box in a `grid` with `justify-self`, and a positioned box without both inline insets. A document may now have W114 where it had none. New cases: `expand/column-child-width-W114`, `expand/grid-child-width-W114`, `expand/positioned-width-W114`, and `expand/block-child-width` with none.
+- **Slot items and their width (§7.4).** A host-language component that lays its items out by their content gives an item a width when the block in it uses breakpoints.
+
 ### 2026-10-24
 
 - **The reference rendering (§13.1).** The informative HTML and CSS rendering of the built-ins is `@compmd/render`'s, in [`render/`](render/README.md#the-reference-rendering-of-the-built-ins). The spec itself is unchanged.
