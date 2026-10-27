@@ -99,7 +99,7 @@ YAML between `---` lines at the very top. Keys CompMD reads, all under `md:`:
 
 `:name[fallback]{params}`, inside paragraphs, headings, list items and table cells.
 
-- The fallback is required and is inline Markdown (it may contain other inline components).
+- The fallback is required and is inline Markdown (it may contain other inline components). It ends at its matching `]`; a `]` inside a code span doesn't count: `:key[Press `]`]`.
 - Params follow `]` with no space; `:badge[beta] {tone=info}` is a badge without params followed by text (W107).
 - The `:` must start the line or follow white space or punctuation, so `10:30[x]` stays text.
 - In a GFM table cell, write `|` as `\|`: `:badge[x]{show=(a \|\| b)}`.
@@ -409,7 +409,7 @@ md:
 
 A plain renderer shows each component line as one literal line, container bodies as normal Markdown, leaf and inline fallbacks as text, definitions as code blocks, and `each` templates once. So: write fallbacks people can read, keep real content in container bodies rather than params, and keep a blank line around component lines so lists and paragraphs don't merge.
 
-Base syntax is CommonMark + GFM (tables, task lists, strikethrough, footnotes, autolinks), alerts (`> [!NOTE]`), math (`$x$`, `$$…$$`, ```` ```math ````) and, opted in, wiki links. Raw HTML is sanitized; prefer Markdown and components. For a literal dollar amount next to another `$`, put a space or punctuation after the closing one, or escape it: `\$5`.
+Base syntax is CommonMark + GFM (tables, task lists, strikethrough, footnotes, autolinks), alerts (`> [!NOTE]`), math (`$x$`, `$$…$$`, ```` ```math ````) and, opted in, wiki links. Raw HTML is sanitized; prefer Markdown and components. Math follows Pandoc's rule, so dollar amounts stay text: a `$` after a space never closes or continues math, and `It costs $5 and $6` is text. Escape a dollar that could still read as math: `\$5`.
 
 ## Habits from other formats
 

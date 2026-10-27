@@ -113,7 +113,8 @@ CompMD's base syntax is what GitHub renders, plus math. Each part is common in r
 - **Math** follows Pandoc's rule (`tex_math_dollars`), in full:
   - An opening `$` is unescaped and has a non-space character on its right.
   - A closing `$` is unescaped, has a non-space character on its left and no digit after it, and is outside braces: in the math, an unescaped `{` opens a group and `}` closes one, and a `$` inside an open group doesn't close the math. A `}` with no group open is ordinary content.
-  - So "costs $5 and $10" is text, `$x{y$ z}$` is the math `x{y$ z}`, and in `{{$doc.title}} by {{$doc.author}}` no `$` closes, since the second one is inside the `{{` that follows the first.
+  - Outside a group, an unescaped `$` with white space on its left (a space, a tab or a line break) ends the attempt: the opening `$` is text, and the next `$` may open math again. So a later valid closer never reaches back past a `$` that follows white space.
+  - So "costs $5 and $10" is text; in "It costs $5 and $6. Math $x^2$", only `$x^2$` is math; `$x{y$ z}$` is the math `x{y$ z}`, and `$x{y $ z}$` the math `x{y $ z}`; and in `{{$doc.title}} by {{$doc.author}}` no `$` closes, since the second one is inside the `{{` that follows the first.
   - GitHub differs: it doesn't close math before a letter or digit, and it ignores braces, so `$x$y` is math here and text there. Authors who want the same result everywhere put a space or punctuation after a closing `$`.
 
   Every parser makes math nodes, so trees agree; a renderer without a math engine shows the TeX source. A fenced code block whose language is `math` is display math, as on GitHub.
@@ -147,7 +148,7 @@ leaf            = "::" 1*WSP name [ fallback ] [ *WSP param-list ]
 slot            = "::" 1*WSP "#" name
 inline          = ":" name fallback [ param-list ]          ; no space before "{"
 
-fallback        = "[" inline-markdown "]"
+fallback        = "[" inline-markdown "]"                  ; ends at its matching "]" (section 3.2)
 param-list      = "{" *WSP [ param-body ] *WSP "}"
 param-body      = param *( 1*WSP param )
 param           = key "=" value / "." name / "#" name / key
@@ -189,6 +190,7 @@ bare-char       = any Unicode character except white space, DQUOTE, "(", ")", "[
 6. In a GFM table, a `|` inside an inline component or a wiki link is written `\|`, as GFM requires inside code spans, because GFM splits rows into cells first: `:badge[x]{show=(a \|\| b)}`, `[[Home\|start here]]`. Unescaped, the row gets an extra cell, which GFM drops when the table has fewer columns.
 7. A line that begins (after its indentation) with `::` but matches no CompMD form, such as `:::card` or `:: /card`, is a **malformed component line**. Processors MUST report F016 for it rather than render it silently as text.
 8. A backslash escapes CompMD syntax: `\::: card` and `\:badge[x]` are literal text, and the backslash is not rendered by CompMD processors.
+9. A fallback ends at the `]` that matches its `[`: brackets nest, and `\[` and `\]` don't count. As in CommonMark's link text, a code span binds tighter than the brackets, so a `]` inside one doesn't end the fallback: `:a[b `c]` d]` has the fallback ``b `c]` d``, with the code span `c]`, as plain renderers show it. A run of backticks that no run of the same length closes is text, and its brackets count.
 
 ### 3.3 Canonical form (informative)
 

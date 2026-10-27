@@ -1,0 +1,107 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "It costs $5 and $6. Math "
+        },
+        {
+          "type": "inlineMath",
+          "value": "x^2"
+        },
+        {
+          "type": "text",
+          "value": " here."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "Money then math: $20 and "
+        },
+        {
+          "type": "inlineMath",
+          "value": "x"
+        },
+        {
+          "type": "text",
+          "value": " and $30."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "Three: $a "
+        },
+        {
+          "type": "inlineMath",
+          "value": "b"
+        },
+        {
+          "type": "text",
+          "value": " c"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "In a group: "
+        },
+        {
+          "type": "inlineMath",
+          "value": "x{y $ z}"
+        },
+        {
+          "type": "text",
+          "value": " w"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "Escaped: "
+        },
+        {
+          "type": "inlineMath",
+          "value": "a \\$ b"
+        },
+        {
+          "type": "text",
+          "value": " c"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "A line break: $a\n"
+        },
+        {
+          "type": "inlineMath",
+          "value": "b"
+        },
+        {
+          "type": "text",
+          "value": " c"
+        }
+      ]
+    }
+  ]
+}

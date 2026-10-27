@@ -1,0 +1,117 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "See "
+        },
+        {
+          "type": "componentInline",
+          "name": "a",
+          "fallback": [
+            {
+              "type": "text",
+              "value": "b "
+            },
+            {
+              "type": "inlineCode",
+              "value": "c]"
+            },
+            {
+              "type": "text",
+              "value": " d"
+            }
+          ],
+          "params": []
+        },
+        {
+          "type": "text",
+          "value": " and "
+        },
+        {
+          "type": "componentInline",
+          "name": "b",
+          "fallback": [
+            {
+              "type": "text",
+              "value": "x "
+            },
+            {
+              "type": "inlineCode",
+              "value": "y]z"
+            },
+            {
+              "type": "text",
+              "value": " w"
+            }
+          ],
+          "params": [
+            {
+              "key": "k",
+              "breakpoint": null,
+              "kind": "bare",
+              "value": "v"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "value": "."
+        }
+      ]
+    },
+    {
+      "type": "componentLeaf",
+      "name": "chart",
+      "fallback": [
+        {
+          "type": "text",
+          "value": "A "
+        },
+        {
+          "type": "inlineCode",
+          "value": "]"
+        },
+        {
+          "type": "text",
+          "value": " in code"
+        }
+      ],
+      "params": [
+        {
+          "key": "kind",
+          "breakpoint": null,
+          "kind": "bare",
+          "value": "bar"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "Unclosed: "
+        },
+        {
+          "type": "componentInline",
+          "name": "c",
+          "fallback": [
+            {
+              "type": "text",
+              "value": "`d"
+            }
+          ],
+          "params": []
+        },
+        {
+          "type": "text",
+          "value": " e"
+        }
+      ]
+    }
+  ]
+}
