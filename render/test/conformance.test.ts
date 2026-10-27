@@ -3,7 +3,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import type { Mount } from "../src/contract.ts";
+import type { Mount, RenderError } from "../src/contract.ts";
 import { definitionsOf, footnotesOf } from "../src/document.ts";
 import { createPage } from "../src/page.ts";
 import { createRegion } from "../src/region.ts";
@@ -53,7 +53,7 @@ describe("the conformance set's expanded trees", () => {
   for (const { name, tree } of TREES) {
     it(`${name}: renders as a page, and as a region per block with the same text`, () => {
       const errors: string[] = [];
-      const options = { components: stubs(tree), onError: ({ component, reason }: { component: string; reason: string }) => void errors.push(`${component} ${reason}`) };
+      const options = { components: stubs(tree), onError: (error: RenderError) => void errors.push(JSON.stringify(error)) };
       const pageRoot = document.body.appendChild(document.createElement("main"));
       const page = createPage(pageRoot, options);
       page.render(tree);

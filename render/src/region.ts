@@ -1,9 +1,9 @@
 // The region layer: any list of expanded nodes rendered into a target and updated in place by key, with
 // components through the component layer. A page is the region at the root; an editor can put regions in its widgets.
-import type { ComponentError, Mount } from "./contract.ts";
+import type { ComponentError, Mount, RenderError } from "./contract.ts";
 import type { LinkDefinition } from "./document.ts";
 import type { KeyOf } from "./keys.ts";
-import { destroyAll, patch, type CodeRenderer, type MathRenderer, type Surface, type View } from "./render.ts";
+import { destroyAll, needsContainer, patch, type CodeRenderer, type MathRenderer, type Surface, type View } from "./render.ts";
 import { Stylesheet, type ParentLayout } from "./styles.ts";
 import type { ExpandedInput, ExpandedNode } from "./tree.ts";
 
@@ -13,8 +13,11 @@ export interface SurfaceOptions {
   components?: Record<string, Mount>;
   /** A component or an input component changed an input; the caller processes the document again with it. */
   onSet?(input: string, value: unknown): void;
-  /** A component shows its fallback: it isn't in `components`, or it threw (W118). */
-  onError?(error: ComponentError): void;
+  /**
+   * A component shows its fallback: it isn't in `components`, or it threw (W118). Or a region's breakpoints have no
+   * container to follow (`no-container`), reported once.
+   */
+  onError?(error: RenderError): void;
   /** What components get as `host` (spec §7.4). */
   host?: unknown;
   /** Renderers for fenced code blocks by language, such as `mermaid`; others show their source. */
@@ -68,9 +71,21 @@ export function surfaceOf(document: Document, stylesheet: Stylesheet, options: S
   };
 }
 
+/** Whether `element`, or an element around it, is a container that breakpoints can query. */
+function insideContainer(element: Element): boolean {
+  const view = element.ownerDocument.defaultView;
+  for (let at: Element | null = element; at; at = at.parentElement) {
+    if (at.classList.contains("compmd-page") || at.classList.contains("compmd-container")) return true;
+    const type = view?.getComputedStyle(at).containerType;
+    if (type && type !== "normal") return true;
+  }
+  return false;
+}
+
 /**
  * Creates a region rendering into `target`, which it owns. Its breakpoints follow the nearest container around it,
- * so a region inside a page follows the page's width.
+ * which the caller provides: inside a page, the page or a box in it; elsewhere, `target` or an element around it with
+ * `compmd-container` (or `container-type: inline-size`). Without one, the region reports `no-container` once.
  *
  * @example
  * const region = createRegion(widget, { components, stylesheet: page.stylesheet });
@@ -81,6 +96,15 @@ export function createRegion(target: HTMLElement, options: RegionOptions = {}): 
   const stylesheet = options.stylesheet ?? new Stylesheet(document);
   const surface = surfaceOf(document, stylesheet, options);
   let views: View[] = [];
+  let checked = false;
+  // Checked once the target is in the document: an editor's widget is rendered before it is attached.
+  const checkContainer = () => {
+    if (checked || !target.isConnected) return;
+    checked = true;
+    if (!insideContainer(target)) {
+      options.onError?.({ reason: "no-container", message: "The region's blocks use breakpoints, but no container is around it to follow." });
+    }
+  };
   return {
     stylesheet,
     render(nodes, context = {}) {
@@ -93,6 +117,9 @@ export function createRegion(target: HTMLElement, options: RegionOptions = {}): 
         parent: context.parent ?? "block",
       });
       stylesheet.flush();
+      if (checked || !needsContainer(nodes)) return;
+      if (target.isConnected) checkContainer();
+      else document.defaultView?.requestAnimationFrame(checkContainer);
     },
     destroy() {
       destroyAll(views);

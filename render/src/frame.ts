@@ -1,7 +1,7 @@
 // The host and frame protocol: the page renders inside a frame its caller supplies, such as a sandboxed
 // iframe, and a port carries trees in and `set` calls out. Both ends take a port their caller made, so a host with its
 // own channel to the frame (a sandbox's bootstrap) hands one over, and any bridge fits behind a small adapter.
-import type { ComponentError, Mount } from "./contract.ts";
+import type { Mount, RenderError } from "./contract.ts";
 import { createPage, type Page, type PageOptions } from "./page.ts";
 import type { Change } from "./stable.ts";
 import type { ExpandedRoot } from "./tree.ts";
@@ -24,7 +24,7 @@ export type HostMessage = { type: "render"; tree: ExpandedRoot; change?: Change 
 export type FrameMessage =
   | { type: "ready"; version: number }
   | { type: "set"; input: string; value: unknown }
-  | { type: "error"; component: string; reason: ComponentError["reason"]; message: string }
+  | { type: "error"; reason: RenderError["reason"]; component?: string; message: string }
   | { type: "rendered"; ms: number };
 
 export interface FrameOptions extends Omit<PageOptions, "onSet" | "onError"> {
@@ -53,8 +53,9 @@ export function serveFrame(port: Port, options: FrameOptions): { page: Page; clo
     onSet: (input, value) => {
       post({ type: "set", input, value });
     },
-    onError: ({ component, reason, error }) => {
-      post({ type: "error", component, reason, message: messageOf(error) });
+    onError: (error) => {
+      if ("component" in error) post({ type: "error", reason: error.reason, component: error.component, message: messageOf(error.error) });
+      else post({ type: "error", reason: error.reason, message: error.message });
     },
   });
   const view = options.container.ownerDocument.defaultView;

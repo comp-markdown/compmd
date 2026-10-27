@@ -19,8 +19,8 @@ function run(scenario: Scenario): Outcome {
   const log: Mounted[] = [];
   const page = createPage(root, {
     components: components(log),
-    onError: ({ component, reason }) => {
-      throw new Error(`${component} ${reason}`);
+    onError: (error) => {
+      throw new Error(JSON.stringify(error));
     },
   });
   const [first, ...rest] = scenario.renders;

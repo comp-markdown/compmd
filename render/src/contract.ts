@@ -55,3 +55,15 @@ export interface ComponentError {
   reason: "missing" | "threw";
   error?: unknown;
 }
+
+/**
+ * A region whose blocks use breakpoints has no container around it to follow, so they never apply: the caller gives
+ * it one (a page, or an element with `compmd-container`).
+ */
+export interface LayoutError {
+  reason: "no-container";
+  message: string;
+}
+
+/** What `onError` reports. */
+export type RenderError = ComponentError | LayoutError;

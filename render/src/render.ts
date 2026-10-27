@@ -356,11 +356,15 @@ function placedIn(nodes: readonly ExpandedNode[]): ExpandedComponent[] {
   return nodes.flatMap((node) => (isComponent(node) ? [node] : placedIn(node.children ?? [])));
 }
 
+/** Whether blocks placed in the box around `nodes` use breakpoints, so that box must be a container. */
+export function needsContainer(nodes: readonly ExpandedNode[]): boolean {
+  return placedIn(nodes).some((child) => usesBreakpoints(child.params));
+}
+
 /** Marks `box` as the container its blocks' breakpoints query, and as a column when one of them fills it. */
 export function markBox(box: HTMLElement, nodes: readonly ExpandedNode[], layout: ParentLayout): void {
-  const placed = placedIn(nodes);
-  box.classList.toggle("compmd-container", placed.some((child) => usesBreakpoints(child.params)));
-  box.classList.toggle("compmd-fills", layout === "block" && placed.some((child) => fills(child.params)));
+  box.classList.toggle("compmd-container", needsContainer(nodes));
+  box.classList.toggle("compmd-fills", layout === "block" && placedIn(nodes).some((child) => fills(child.params)));
 }
 
 /** `box` (spec §9): a box with its layout, holding its children. */

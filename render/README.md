@@ -43,7 +43,16 @@ page.render(tree, { text, diagnostics, edit });             // a keystroke in an
 2. A top-level container that isn't closed (F004): its opener shows as a paragraph, and what follows stays where it was.
 3. Any other error in a top-level block: that block keeps its last good render, and the rest updates.
 
-**Breakpoints** are container queries: each block's params follow its parent's width (spec §9.3), so a box is a container when blocks placed in it use breakpoints, and the page always is. A region inside a page follows the page's width.
+**Breakpoints** are container queries: each block's params follow the width of the box around it (spec §9.3), so a box is a container when blocks placed in it use breakpoints, and the page always is. The page takes its width from where its caller puts it, so a page root in a flex row needs a width, or it shrinks to nothing.
+
+**Regions** follow the nearest container around them, which the caller provides: inside a page, the page or a box in it; elsewhere, the region's target or an element around it with the class `compmd-container` (or `container-type: inline-size`). A region whose blocks use breakpoints with no container around it reports `no-container` once through `onError`, when its target is in the document. Regions side by side give each pane its own container, so each follows its own width:
+
+```ts
+for (const [pane, nodes] of [[left, before], [right, after]]) {
+  pane.classList.add("compmd-container");
+  createRegion(pane, { components, stylesheet }).render(nodes);
+}
+```
 
 **Code blocks and math.** `code: { mermaid: (source, target) => … }` renders fenced code of a language, and `math: (tex, { display }, target) => …` renders math. Without them, code shows as a code block and math as its TeX source, as spec §2.3 says.
 
@@ -57,14 +66,14 @@ const { port1, port2 } = new MessageChannel();
 iframe.contentWindow.postMessage("compmd", "*", [port2]);
 const frame = connectFrame(port1);                 // from "@compmd/render/frame"
 frame.on("set", ({ input, value }) => processAgain({ [input]: value }));
-frame.on("error", ({ component, reason }) => report(component, reason));   // missing, or threw (W118)
+frame.on("error", ({ reason, component }) => report(reason, component));   // missing, or threw (W118)
 frame.render(tree, change);
 
 // inside the frame
 addEventListener("message", ({ ports: [port] }) => serveFrame(port, { container: document.body, components }));
 ```
 
-Host to frame: `render {tree, change?}`, `theme {tokens}`. Frame to host: `ready {version}`, `set {input, value}`, `error {component, reason, message}`, `rendered {ms}` (after the render is painted). The host's messages wait for `ready` with this protocol's version, since a host page and its frame may be deployed apart. Component code stays in the frame: modules can't be posted.
+Host to frame: `render {tree, change?}`, `theme {tokens}`. Frame to host: `ready {version}`, `set {input, value}`, `error {reason, component?, message}`, `rendered {ms}` (after the render is painted). The host's messages wait for `ready` with this protocol's version, since a host page and its frame may be deployed apart. Component code stays in the frame: modules can't be posted.
 
 ## The reference rendering of the built-ins
 
@@ -96,7 +105,7 @@ The HTML and CSS this package writes for the built-ins is the reference renderin
 
 ## Tests
 
-- **Unit tests** next to the code: the styles, raw HTML, keys, the component layer, the page, the frame protocol.
+- **Unit tests** next to the code: the styles, raw HTML, keys, the component layer, the page, a region's container, the frame protocol.
 - **[`test/identity.test.ts`](test/identity.test.ts):** every edit of a document of stateful components (typing above, inside and in params, inside an `each`, adding, removing and pasting blocks, undo, a record added, a block moved), checking which components keep their instance and their state.
 - **[`test/invalid.test.ts`](test/invalid.test.ts):** an unclosed container, a half-written expression, a half-typed component line and broken frontmatter, typed and finished.
 - **[`test/conformance.test.ts`](test/conformance.test.ts):** every expanded tree in the conformance set renders, as a page and as a region per block, with the same text.
