@@ -1,0 +1,13 @@
+[package]
+name = "compmd"
+version = "0.0.1"
+description = "The CompMD processor: parses, validates and expands CompMD (Component Markdown) documents. In development."
+readme = "README.md"
+keywords = ["markdown", "compmd", "commonmark", "components", "parser"]
+categories = ["parser-implementations", "text-processing"]
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true

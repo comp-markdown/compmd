@@ -1,0 +1,16 @@
+[workspace]
+resolver = "3"
+members = ["processor"]
+
+[workspace.package]
+edition = "2024"
+license = "MIT"
+repository = "https://github.com/comp-markdown/compmd"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
