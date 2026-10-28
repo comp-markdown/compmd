@@ -15,6 +15,7 @@ mod source;
 pub(crate) mod yaml;
 
 use crate::diagnostic::{Code, Diagnostic, Location};
+use crate::settings::Settings;
 use crate::tree::{Point, Root};
 use markdown::mdast;
 use serde_json::Value;
@@ -29,10 +30,12 @@ pub struct ParseOptions {
 }
 
 /// The result of parsing a document.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub(crate) struct Parsed {
     /// The document tree.
     pub(crate) root: Root,
+    /// The settings its frontmatter gives: none without one, or when CompMD processing doesn't apply to it.
+    pub(crate) settings: Settings,
     /// The parse diagnostics, in the order they were found.
     pub(crate) diagnostics: Vec<Diagnostic>,
 }
@@ -44,8 +47,9 @@ pub(crate) struct Parsed {
 pub(crate) fn parse(text: &str, options: &ParseOptions) -> Parsed {
     let text = text.strip_prefix('\u{feff}').unwrap_or(text);
     let mut diagnostics = Vec::new();
-    let mut settings = options.metadata.clone();
+    let mut metadata = options.metadata.clone();
     let mut parsed = None;
+    let mut settings = Settings::default();
     let mut compmd = true;
     if let Some(yaml) = frontmatter::find(text) {
         if options.metadata.is_some() {
@@ -55,13 +59,17 @@ pub(crate) fn parse(text: &str, options: &ParseOptions) -> Parsed {
                 "the document has its own frontmatter, so the host's metadata is ignored",
             ));
         }
-        parsed = frontmatter::read(yaml, &mut diagnostics);
-        compmd = parsed.is_some();
-        settings.clone_from(&parsed);
+        let document = frontmatter::read(yaml, &mut diagnostics);
+        compmd = document.is_some();
+        parsed = document.as_ref().map(frontmatter::tree_value);
+        metadata.clone_from(&parsed);
+        if let Some(document) = document {
+            settings = Settings::read(document, yaml);
+        }
     }
     let syntax = Syntax {
         compmd,
-        wiki_links: settings.as_ref().is_some_and(frontmatter::wiki_links),
+        wiki_links: metadata.as_ref().is_some_and(frontmatter::wiki_links),
     };
     let root = Converter {
         source: Source::new(text, START),
@@ -70,7 +78,11 @@ pub(crate) fn parse(text: &str, options: &ParseOptions) -> Parsed {
         diagnostics: &mut diagnostics,
     }
     .document(true);
-    Parsed { root, diagnostics }
+    Parsed {
+        root,
+        settings,
+        diagnostics,
+    }
 }
 
 /// The syntax a document is parsed with.

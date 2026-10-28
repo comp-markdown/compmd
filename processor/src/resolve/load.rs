@@ -11,7 +11,7 @@ use super::{
 use crate::diagnostic::{Code, Diagnostic, Location, Stage};
 use crate::parse::{ParseOptions, Parsed, parse};
 use crate::reserved;
-use crate::settings::{self, Import, Settings};
+use crate::settings::{self, Import};
 use crate::tree::{
     DeclaredType, Definition, DefinitionBody, Node, Position, Signature, SignatureFence, TypeName,
 };
@@ -101,7 +101,7 @@ impl<'h> Loader<'h> {
         self.documents.push(Document {
             origin: origin.clone(),
             text,
-            settings: Settings::of(&parsed.root),
+            settings: parsed.settings,
             root: parsed.root,
             names: Names::default(),
             exports: BTreeMap::new(),

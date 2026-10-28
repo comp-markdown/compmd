@@ -64,9 +64,9 @@ fn lines(text: &str) -> impl Iterator<Item = (usize, &str)> + Clone {
     })
 }
 
-/// Reads the frontmatter's YAML: the frontmatter as parsed YAML, each data import's `from` as parts (spec §12.2),
-/// or `None` when CompMD processing doesn't apply (F001, F033).
-pub(crate) fn read(yaml_text: &str, diagnostics: &mut Vec<Diagnostic>) -> Option<Value> {
+/// Reads the frontmatter's YAML, with where each key and value is; `None` when CompMD processing doesn't apply
+/// (F001, F033).
+pub(crate) fn read(yaml_text: &str, diagnostics: &mut Vec<Diagnostic>) -> Option<yaml::Document> {
     let at = |mark: Mark| Location::new(1 + mark.line, mark.column + 1);
     let document = match yaml::parse(yaml_text) {
         Ok(document) => document,
@@ -79,11 +79,8 @@ pub(crate) fn read(yaml_text: &str, diagnostics: &mut Vec<Diagnostic>) -> Option
             return None;
         }
     };
-    let mut parsed = match document.value {
-        Value::Object(entries) => Value::Object(entries),
-        _ => Value::Object(Map::new()),
-    };
-    let settings = parsed
+    let settings = document
+        .value
         .get("md")
         .and_then(Value::as_object)
         .cloned()
@@ -131,7 +128,16 @@ pub(crate) fn read(yaml_text: &str, diagnostics: &mut Vec<Diagnostic>) -> Option
             }
         }
     }
-    if let Some(Value::Array(entries)) = parsed.pointer_mut("/md/data") {
+    Some(document)
+}
+
+/// The frontmatter as the tree writes it (spec §12.2): a mapping, each data import's `from` as parts.
+pub(crate) fn tree_value(document: &yaml::Document) -> Value {
+    let mut value = match &document.value {
+        Value::Object(entries) => Value::Object(entries.clone()),
+        _ => Value::Object(Map::new()),
+    };
+    if let Some(Value::Array(entries)) = value.pointer_mut("/md/data") {
         for entry in entries {
             if let Some(from) = entry.get("from").and_then(Value::as_str) {
                 let parts = serde_json::to_value(string_parts(from)).expect("parts serialize");
@@ -139,7 +145,7 @@ pub(crate) fn read(yaml_text: &str, diagnostics: &mut Vec<Diagnostic>) -> Option
             }
         }
     }
-    Some(parsed)
+    value
 }
 
 /// `md.version`: `1`, `1.2` or `"1.2"`, as its major and minor version.
@@ -168,7 +174,7 @@ mod tests {
 
     fn read_all(yaml: &str) -> (Option<Value>, Vec<(Code, Location)>) {
         let mut diagnostics = Vec::new();
-        let parsed = read(yaml, &mut diagnostics);
+        let parsed = read(yaml, &mut diagnostics).map(|document| tree_value(&document));
         let found = diagnostics
             .iter()
             .map(|d| (d.code, d.range.start))

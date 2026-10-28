@@ -5,7 +5,6 @@
 use super::{Failure, Violation};
 use crate::diagnostic::Location;
 use crate::parse::{ParseOptions, parse, yaml};
-use crate::settings::Settings;
 use csv::ReaderBuilder;
 use serde_json::{Map, Value};
 use std::collections::HashSet;
@@ -109,7 +108,7 @@ impl Format {
             Self::Delimited(delimiter) => table(name, text, delimiter),
             Self::Compmd => {
                 let parsed = parse(text, &ParseOptions::default());
-                Ok(Parsed::value(Value::Object(Settings::of(&parsed.root).doc)))
+                Ok(Parsed::value(Value::Object(parsed.settings.doc)))
             }
         }
     }

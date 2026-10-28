@@ -61,11 +61,12 @@ pub struct New {
     text: String,
 }
 
-/// After stage 1: the document's tree.
+/// After stage 1: the document's tree and settings.
 pub struct Parsed {
     path: String,
     text: String,
-    root: tree::Root,
+    /// The tree and settings; its diagnostics are the processor's.
+    document: parse::Parsed,
 }
 
 /// After stage 2: the document, everything it imports, and what each name stands for.
@@ -133,12 +134,12 @@ impl Processor<New> {
     #[must_use]
     pub fn parse(self, options: &ParseOptions) -> Processor<Parsed> {
         self.then(|New { path, text }, diagnostics| {
-            let parsed = parse::parse(&text, options);
-            diagnostics.extend(parsed.diagnostics);
+            let mut document = parse::parse(&text, options);
+            diagnostics.append(&mut document.diagnostics);
             Parsed {
                 path,
                 text,
-                root: parsed.root,
+                document,
             }
         })
     }
@@ -148,7 +149,7 @@ impl Processor<Parsed> {
     /// The document's tree.
     #[must_use]
     pub fn tree(&self) -> &tree::Root {
-        &self.state.root
+        &self.state.document.root
     }
 
     /// Stage 2, resolving, with the host's `files` and `packs`, which loading reads data files from too, and the
@@ -162,8 +163,9 @@ impl Processor<Parsed> {
         ambient: &Ambient,
     ) -> Processor<Resolved<'h>> {
         let store = Store { files, packs };
-        self.then(|Parsed { path, text, root }, diagnostics| {
-            let mut resolved = resolve::resolve(&path, &text, root, store, ambient);
+        self.then(|parsed, diagnostics| {
+            let mut resolved =
+                resolve::resolve(&parsed.path, &parsed.text, parsed.document, store, ambient);
             diagnostics.append(&mut resolved.diagnostics);
             Resolved { store, resolved }
         })

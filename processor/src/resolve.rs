@@ -226,19 +226,15 @@ impl Resolved {
 /// Resolves a parsed document, stage 2 of spec §11: loads its imports and their imports, `@compmd/core` and the
 /// ambient packs from `store`, binds every name, and reports what can't be bound.
 ///
-/// `path` is where the document is under its root folder, against which its relative imports resolve; `root` is its
-/// tree, whose parse diagnostics the caller holds.
+/// `path` is where the document is under its root folder, against which its relative imports resolve; `parsed` is
+/// its tree and settings, whose parse diagnostics the caller holds.
 pub(crate) fn resolve(
     path: &str,
     text: &str,
-    root: Root,
+    parsed: Parsed,
     store: Store,
     ambient: &Ambient,
 ) -> Resolved {
-    let parsed = Parsed {
-        root,
-        diagnostics: Vec::new(),
-    };
     load::Loader::new(store, Origin::File(path.to_string())).resolve(text, parsed, ambient)
 }
 
@@ -267,12 +263,12 @@ mod tests {
             packs: ambient.iter().map(|pack| (*pack).to_string()).collect(),
             report: false,
         };
-        let root = parse(text, &ParseOptions::default()).root;
+        let parsed = parse(text, &ParseOptions::default());
         let store = Store {
             files: &files,
             packs: &packs,
         };
-        resolve("input.comp.md", text, root, store, &ambient)
+        resolve("input.comp.md", text, parsed, store, &ambient)
     }
 
     /// The component `name` stands for in the processed document.

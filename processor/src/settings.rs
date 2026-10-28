@@ -4,7 +4,7 @@
 use crate::diagnostic::Location;
 use crate::parse::definitions::declaration;
 use crate::parse::yaml::{self, Mark};
-use crate::tree::{Declaration, Node, Root};
+use crate::tree::Declaration;
 use serde_json::{Map, Value};
 use std::collections::HashMap;
 
@@ -105,20 +105,10 @@ pub(crate) struct Settings {
 }
 
 impl Settings {
-    /// The settings of the document `root` is the tree of: none without frontmatter, or when CompMD processing
-    /// doesn't apply to it.
-    pub(crate) fn of(root: &Root) -> Self {
-        let read = match root.children.first() {
-            Some(Node::Yaml(frontmatter)) if frontmatter.parsed.is_some() => {
-                yaml::parse(&frontmatter.value).ok().zip(Some(frontmatter))
-            }
-            _ => None,
-        };
-        let Some((document, frontmatter)) = read else {
-            return Self::default();
-        };
+    /// The settings a frontmatter gives: its YAML `document`, read from `text`.
+    pub(crate) fn read(document: yaml::Document, text: &str) -> Self {
         let reader = Reader {
-            lines: frontmatter.value.split('\n').collect(),
+            lines: text.split('\n').collect(),
             keys: document.keys,
             values: document.values,
         };
@@ -301,7 +291,7 @@ mod tests {
     use crate::parse::{ParseOptions, parse};
 
     fn settings(text: &str) -> Settings {
-        Settings::of(&parse(text, &ParseOptions::default()).root)
+        parse(text, &ParseOptions::default()).settings
     }
 
     #[test]
