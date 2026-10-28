@@ -1,6 +1,7 @@
 //! A document's lines, to find where a part of a line is: a component's name, a param's value, a path in a string.
 
 use crate::diagnostic::Location;
+use crate::parse::params::interpolations;
 use crate::tree::{Point, Position};
 
 /// The lines of a document, without their line endings.
@@ -40,6 +41,22 @@ impl<'a> Lines<'a> {
             .collect()
     }
 
+    /// Where the path of each interpolation is, from `start` to the end of its line, in order.
+    pub(crate) fn paths_from(&self, start: Point) -> Vec<Location> {
+        interpolations(&self.from(start))
+            .into_iter()
+            .map(|(index, _)| Location::new(start.line, start.column + index))
+            .collect()
+    }
+
+    /// Where the path of the interpolation that starts at `start` is; `start` when there is none there.
+    pub(crate) fn path_at(&self, start: Point) -> Location {
+        self.paths_from(start)
+            .first()
+            .copied()
+            .unwrap_or_else(|| start.into())
+    }
+
     /// Where the name of the component line or inline component that starts at `start` is: past its colons and
     /// the white space after them.
     pub(crate) fn name_at(&self, start: Point) -> Location {
@@ -72,6 +89,17 @@ mod tests {
         assert_eq!(lines.name_at(point(2, 3)), Location::new(2, 7));
         assert_eq!(lines.name_at(point(3, 6)), Location::new(3, 7));
         assert_eq!(lines.from(point(9, 1)), Vec::<char>::new());
+    }
+
+    #[test]
+    fn paths_are_past_their_braces() {
+        let lines = Lines::new("x {t=\"a {{ b }} {{c}}\"}\nnone");
+        assert_eq!(
+            lines.paths_from(point(1, 6)),
+            [Location::new(1, 12), Location::new(1, 19)]
+        );
+        assert_eq!(lines.path_at(point(1, 9)), Location::new(1, 12));
+        assert_eq!(lines.path_at(point(2, 1)), Location::new(2, 1));
     }
 
     #[test]

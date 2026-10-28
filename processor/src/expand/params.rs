@@ -88,14 +88,16 @@ impl<'r> Expander<'r> {
             column: at.column,
             offset: 0,
         };
+        let mut places = self.lines[&env.document].paths_from(start).into_iter();
         let mut text = String::new();
         for part in parts {
             match part {
                 StringPart::Text(literal) => text.push_str(&literal.value),
                 StringPart::Interpolation(interpolation) => {
+                    let at = places.next().unwrap_or(at);
                     text.push_str(
                         &self
-                            .path_text(&interpolation.path, start, env)
+                            .path_text(&interpolation.path, at, env)
                             .unwrap_or_default(),
                     );
                 }

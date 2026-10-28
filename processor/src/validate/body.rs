@@ -57,10 +57,7 @@ impl<'r> Checker<'r, '_> {
             .position
             .map(|position| position.start)
             .unwrap_or_default();
-        let found = interpolations(&self.lines.from(start));
-        let at = found.first().map_or(start.into(), |(index, _)| {
-            Location::new(start.line, start.column + index)
-        });
+        let at = self.lines.path_at(start);
         self.path(&interpolation.path, at, scope);
     }
 

@@ -7,8 +7,7 @@ use super::origins;
 use crate::cel::Value;
 use crate::diagnostic::{Code, Location};
 use crate::expanded::{self, Content};
-use crate::parse::params::interpolations;
-use crate::tree::{self, Image, Interpolation, Link, Node, Point, StringPart};
+use crate::tree::{self, Image, Interpolation, Link, Node, StringPart};
 use std::fmt::Write as _;
 
 /// The schemes an interpolated URL may have (spec §8.1).
@@ -33,7 +32,8 @@ impl<'r> Expander<'r> {
             .position
             .map(|position| position.start)
             .unwrap_or_default();
-        let Some(text) = self.path_text(path, start, env) else {
+        let at = self.lines[&env.document].path_at(start);
+        let Some(text) = self.path_text(path, at, env) else {
             return;
         };
         let text = self.made(Content::Text(super::literal(&text)), None);
@@ -52,14 +52,13 @@ impl<'r> Expander<'r> {
         }
     }
 
-    /// The text a path writes, `None` for `null`: an unknown path is shown as written (F014, from validating), and a
-    /// value that can't be written, F024 at the path.
-    pub(super) fn path_text(&mut self, path: &str, start: Point, env: &Env<'r>) -> Option<String> {
+    /// The text a path at `at` writes, `None` for `null`: an unknown path is shown as written (F014, from validating),
+    /// and a value that can't be written, F024 at the path.
+    pub(super) fn path_text(&mut self, path: &str, at: Location, env: &Env<'r>) -> Option<String> {
         let written = format!("{{{{{path}}}}}");
         if !env.scope.knows(path) {
             return Some(written);
         }
-        let at = self.path_at(start, env);
         match self.evaluate(path, env) {
             Ok(value) => match value.written() {
                 Ok(text) => text,
@@ -83,14 +82,6 @@ impl<'r> Expander<'r> {
                 Some(written)
             }
         }
-    }
-
-    /// Where the path of the interpolation that starts at `start` is.
-    fn path_at(&self, start: Point, env: &Env) -> Location {
-        let found = interpolations(&self.lines[&env.document].from(start));
-        found.first().map_or(start.into(), |(index, _)| {
-            Location::new(start.line, start.column + index)
-        })
     }
 
     /// A slot placed by `{{md.slot}}` or `{{md.slot.<name>}}`: its content, expanded in the caller's environment; a

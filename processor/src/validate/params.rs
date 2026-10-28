@@ -11,7 +11,6 @@ use crate::cel::time::parse_date;
 use crate::diagnostic::{Code, Location};
 use crate::md::Signatures;
 use crate::nearest::nearest;
-use crate::parse::params::interpolations;
 use crate::reserved::{self, Keyword};
 use crate::resolve::{Binding, Body, Component};
 use crate::tree::{
@@ -609,9 +608,8 @@ impl<'r> Checker<'r, '_> {
             column: at.column,
             offset: 0,
         };
-        let found = interpolations(&self.lines.from(start));
-        for (path, (index, _)) in paths.into_iter().zip(found) {
-            self.path(path, Location::new(at.line, at.column + index), scope);
+        for (path, at) in paths.into_iter().zip(self.lines.paths_from(start)) {
+            self.path(path, at, scope);
         }
     }
 

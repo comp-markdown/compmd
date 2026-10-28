@@ -355,6 +355,14 @@ fn components_that_cant_render_give_their_fallback() {
     assert_eq!(text(&rendered.tree), "Old body.|Again|Needed");
 }
 
+/// Each interpolation in a quoted param reports at its own path.
+#[test]
+fn a_quoted_params_paths_report_where_each_is() {
+    let input = "---\na: x\nm: {k: 1}\n---\n\n```compmd component=c\nparams:\n  t: string\n---\n{{t}}\n```\n\n:: c[C] {t=\"{{md.doc.a}} {{md.doc.m}}\"}\n";
+    let rendered = render(input, Setup::default());
+    assert_eq!(rendered.found, [at("F024", 13, 28)]);
+}
+
 /// The invocation F019 is reported at renders its fallback, whichever component the document invokes first.
 #[test]
 fn a_cycle_falls_back_where_it_is_reported() {
