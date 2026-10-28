@@ -48,39 +48,93 @@ pub use types::Type;
 pub use value::{Key, Value};
 
 use std::collections::BTreeMap;
-use std::fmt;
 
-/// An error in an expression, reported as F024: where it is and what it says.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Error {
-    /// The code point it is at, from the start of the expression, 0-based.
-    pub at: usize,
-    /// What is wrong, and where it helps, the nearest known name or the way out.
-    pub message: String,
+/// An error in an expression, reported as F024. Each kind has the code point it is at, from the start of the
+/// expression, 0-based, and says what is wrong: where it helps, with the nearest known name or the way out.
+#[derive(Clone, Debug, PartialEq, Eq, thiserror::Error)]
+pub enum Error {
+    /// Not an expression of the profile, or nested deeper than [`MAX_DEPTH`].
+    #[error("column {}: {message}", at + 1)]
+    Syntax {
+        /// Where it is.
+        at: usize,
+        /// What is wrong.
+        message: String,
+    },
+    /// Found by the checker: an unknown name, field or function, or a type that doesn't fit.
+    #[error("column {}: {message}", at + 1)]
+    Type {
+        /// Where it is.
+        at: usize,
+        /// What is wrong.
+        message: String,
+    },
+    /// Found while evaluating: division by zero, an index out of range, an overflow, an `md.` function's error.
+    #[error("column {}: {message}", at + 1)]
+    Evaluation {
+        /// Where it is.
+        at: usize,
+        /// What is wrong.
+        message: String,
+    },
+    /// The evaluation took more than [`BUDGET`] steps.
+    #[error("column {}: the expression takes too much work", at + 1)]
+    Budget {
+        /// The node being evaluated when the budget ran out.
+        at: usize,
+    },
 }
 
 impl Error {
-    pub(crate) fn new(at: usize, message: impl Into<String>) -> Self {
-        Self {
+    pub(crate) fn syntax(at: usize, message: impl Into<String>) -> Self {
+        Self::Syntax {
             at,
             message: message.into(),
+        }
+    }
+
+    pub(crate) fn type_error(at: usize, message: impl Into<String>) -> Self {
+        Self::Type {
+            at,
+            message: message.into(),
+        }
+    }
+
+    pub(crate) fn evaluation(at: usize, message: impl Into<String>) -> Self {
+        Self::Evaluation {
+            at,
+            message: message.into(),
+        }
+    }
+
+    /// The code point it is at, from the start of the expression, 0-based.
+    #[must_use]
+    pub fn at(&self) -> usize {
+        match self {
+            Self::Syntax { at, .. }
+            | Self::Type { at, .. }
+            | Self::Evaluation { at, .. }
+            | Self::Budget { at } => *at,
         }
     }
 
     /// The 1-based column, as F024 reports it.
     #[must_use]
     pub fn column(&self) -> usize {
-        self.at + 1
+        self.at() + 1
+    }
+
+    /// What is wrong, without the column.
+    #[must_use]
+    pub fn message(&self) -> &str {
+        match self {
+            Self::Syntax { message, .. }
+            | Self::Type { message, .. }
+            | Self::Evaluation { message, .. } => message,
+            Self::Budget { .. } => "the expression takes too much work",
+        }
     }
 }
-
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "column {}: {}", self.column(), self.message)
-    }
-}
-
-impl std::error::Error for Error {}
 
 /// The types of the `md.` functions, for the checker.
 pub trait FunctionTypes {

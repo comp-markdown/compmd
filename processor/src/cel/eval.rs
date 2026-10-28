@@ -42,7 +42,7 @@ impl<'a> Evaluator<'a> {
         let steps = u64::try_from(steps).unwrap_or(u64::MAX);
         let Some(rest) = self.budget.checked_sub(steps) else {
             self.budget = 0;
-            return Err(Error::new(at, "the expression takes too much work"));
+            return Err(Error::Budget { at });
         };
         self.budget = rest;
         Ok(())
@@ -64,13 +64,16 @@ impl<'a> Evaluator<'a> {
             Expr::Literal(literal, _) => Ok(Value::from(literal)),
             Expr::Ident(name, at) => self
                 .lookup(name)
-                .ok_or_else(|| Error::new(*at, format!("unknown name '{name}'"))),
+                .ok_or_else(|| Error::evaluation(*at, format!("unknown name '{name}'"))),
             Expr::Select(operand, field, at) => match self.eval(operand)? {
                 Value::Map(entries) => entries
                     .get(&Key::String(Rc::from(field.as_str())))
                     .cloned()
-                    .ok_or_else(|| Error::new(*at, format!("no field '{field}'"))),
-                other => Err(Error::new(*at, format!("{} has no fields", other.kind()))),
+                    .ok_or_else(|| Error::evaluation(*at, format!("no field '{field}'"))),
+                other => Err(Error::evaluation(
+                    *at,
+                    format!("{} has no fields", other.kind()),
+                )),
             },
             Expr::Index(operand, index, at) => {
                 let (operand, index) = (self.eval(operand)?, self.eval(index)?);
@@ -79,13 +82,13 @@ impl<'a> Evaluator<'a> {
             Expr::Unary(op, operand, at) => {
                 let operand = self.eval(operand)?;
                 op.apply(&operand)
-                    .map_err(|message| Error::new(*at, message))
+                    .map_err(|message| Error::evaluation(*at, message))
             }
             Expr::Binary(op, left, right, at) => {
                 let (left, right) = (self.eval(left)?, self.eval(right)?);
                 let value = op
                     .apply(&left, &right)
-                    .map_err(|message| Error::new(*at, message))?;
+                    .map_err(|message| Error::evaluation(*at, message))?;
                 self.built(*at, value)
             }
             Expr::Call {
@@ -115,14 +118,14 @@ impl<'a> Evaluator<'a> {
                 for (key, value) in entries {
                     let key_value = self.eval(key)?;
                     let Some(map_key) = Key::of(&key_value) else {
-                        return Err(Error::new(
+                        return Err(Error::evaluation(
                             key.at(),
                             format!("a map key can't be a {}", key_value.kind()),
                         ));
                     };
                     let value = self.eval(value)?;
                     if map.insert(map_key, value).is_some() {
-                        return Err(Error::new(key.at(), "the same key twice"));
+                        return Err(Error::evaluation(key.at(), "the same key twice"));
                     }
                 }
                 Ok(Value::Map(Rc::new(map)))
@@ -131,7 +134,7 @@ impl<'a> Evaluator<'a> {
                 Value::Map(entries) => Ok(Value::Bool(
                     entries.contains_key(&Key::String(Rc::from(field.as_str()))),
                 )),
-                other => Err(Error::new(
+                other => Err(Error::evaluation(
                     *at,
                     format!("has() needs a map, not {}", other.kind()),
                 )),
@@ -160,7 +163,7 @@ impl<'a> Evaluator<'a> {
     fn boolean(&mut self, expr: &'a Expr, at: usize) -> Result<bool, Error> {
         match self.eval(expr)? {
             Value::Bool(b) => Ok(b),
-            other => Err(Error::new(
+            other => Err(Error::evaluation(
                 at,
                 format!("expected a bool, not {}", other.kind()),
             )),
@@ -200,7 +203,7 @@ impl<'a> Evaluator<'a> {
             Value::List(items) => items,
             Value::Map(entries) => Rc::new(entries.keys().map(Key::to_value).collect()),
             other => {
-                return Err(Error::new(
+                return Err(Error::evaluation(
                     at,
                     format!(
                         "{}() needs a list or a map, not {}",
@@ -281,7 +284,7 @@ impl<'a> Evaluator<'a> {
         } else {
             call(name, receiver.as_ref(), &args)
         };
-        let value = result.map_err(|message| Error::new(at, message))?;
+        let value = result.map_err(|message| Error::evaluation(at, message))?;
         self.built(at, value)
     }
 }
@@ -310,19 +313,22 @@ fn index(operand: &Value, index: &Value, at: usize) -> Result<Value, Error> {
             .and_then(|i| items.get(i))
             .cloned()
             .ok_or_else(|| {
-                Error::new(
+                Error::evaluation(
                     at,
                     format!("index {i} is out of range for a list of {}", items.len()),
                 )
             }),
-        (Value::List(_), other) => Err(Error::new(
+        (Value::List(_), other) => Err(Error::evaluation(
             at,
             format!("a list index must be an int, not {}", other.kind()),
         )),
         (Value::Map(entries), key) => Key::to_find(key)
             .and_then(|k| entries.get(&k))
             .cloned()
-            .ok_or_else(|| Error::new(at, format!("no key {}", key.to_json()))),
-        (other, _) => Err(Error::new(at, format!("{} can't be indexed", other.kind()))),
+            .ok_or_else(|| Error::evaluation(at, format!("no key {}", key.to_json()))),
+        (other, _) => Err(Error::evaluation(
+            at,
+            format!("{} can't be indexed", other.kind()),
+        )),
     }
 }

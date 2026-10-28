@@ -18,16 +18,16 @@ const NOW: i128 = 1_793_091_600 * 1_000_000_000;
 
 /// Checks and evaluates `source` in `lang`, with `x` of type `dyn`.
 fn run_at(now: i128, lang: &str, source: &str, x: &Json) -> Result<Json, String> {
-    let program = Program::parse(source).map_err(|e| e.message.clone())?;
+    let program = Program::parse(source).map_err(|e| e.message().to_string())?;
     let scope = Scope::default().with("x", Type::Dyn);
     program
         .check(&scope, &Signatures)
-        .map_err(|e| format!("refused: {}", e.message))?;
+        .map_err(|e| format!("refused: {}", e.message()))?;
     let values = Values::default().with("x", Value::from_json(x));
     program
         .evaluate(&values, &Md::new(now, lang, "UTC", &Utc))
         .map(|value| value.to_json())
-        .map_err(|e| e.message)
+        .map_err(|e| e.message().to_string())
 }
 
 fn run(source: &str, x: &Json) -> Result<Json, String> {
@@ -253,7 +253,13 @@ fn list_functions_that_cel_checks_only_when_evaluated() {
     let error = program
         .evaluate(&values, &Md::new(NOW, "en", "UTC", &Utc))
         .expect_err("a field name");
-    assert_eq!(error.message, "md.sortBy() doesn't take (list, double)");
+    assert_eq!(
+        error,
+        compmd::cel::Error::Evaluation {
+            at: 3,
+            message: "md.sortBy() doesn't take (list, double)".into()
+        }
+    );
 }
 
 #[test]

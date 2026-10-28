@@ -87,29 +87,13 @@ impl<'a> Checker<'a> {
             Expr::Unary(op, operand, at) => {
                 let operand = self.check(operand)?;
                 op.result_type(&operand).ok_or_else(|| {
-                    Error::new(
+                    Error::type_error(
                         *at,
                         format!("'{}' can't be applied to {operand}", op.name()),
                     )
                 })
             }
-            Expr::Binary(op, left, right, at) => {
-                let (left, right) = (self.check(left)?, self.check(right)?);
-                op.result_type(&left, &right).ok_or_else(|| {
-                    let hint = if *op == BinaryOp::Remainder {
-                        int_hint(&[left.clone(), right.clone()])
-                    } else {
-                        ""
-                    };
-                    Error::new(
-                        *at,
-                        format!(
-                            "'{}' can't be applied to {left} and {right}{hint}",
-                            op.name()
-                        ),
-                    )
-                })
-            }
+            Expr::Binary(op, left, right, at) => self.binary(*op, left, right, *at),
             Expr::Call {
                 target,
                 name,
@@ -129,7 +113,7 @@ impl<'a> Checker<'a> {
             Expr::Conditional(condition, then, otherwise, at) => {
                 let condition_type = self.check(condition)?;
                 if !condition_type.fits(&Type::Bool) {
-                    return Err(Error::new(
+                    return Err(Error::type_error(
                         *at,
                         format!("the condition of '?:' must be a bool, not {condition_type}"),
                     ));
@@ -147,7 +131,10 @@ impl<'a> Checker<'a> {
             Expr::Map(entries, _) => self.map(entries),
             Expr::Has(operand, _, at) => match self.check(operand)? {
                 Type::Record(_) | Type::Map(..) | Type::Dyn => Ok(Type::Bool),
-                other => Err(Error::new(*at, format!("has() needs a map, not {other}"))),
+                other => Err(Error::type_error(
+                    *at,
+                    format!("has() needs a map, not {other}"),
+                )),
             },
             Expr::Comprehension {
                 kind,
@@ -173,11 +160,35 @@ impl<'a> Checker<'a> {
             Type::Map(key, _) => Ok((*key).clone()),
             Type::Record(_) => Ok(Type::String),
             Type::Dyn => Ok(Type::Dyn),
-            other => Err(Error::new(
+            other => Err(Error::type_error(
                 at,
                 format!("{}() needs a list or a map, not {other}", kind.name()),
             )),
         }
+    }
+
+    fn binary(
+        &mut self,
+        op: BinaryOp,
+        left: &'a Expr,
+        right: &'a Expr,
+        at: usize,
+    ) -> Result<Type, Error> {
+        let (left, right) = (self.check(left)?, self.check(right)?);
+        op.result_type(&left, &right).ok_or_else(|| {
+            let hint = if op == BinaryOp::Remainder {
+                int_hint(&[left.clone(), right.clone()])
+            } else {
+                ""
+            };
+            Error::type_error(
+                at,
+                format!(
+                    "'{}' can't be applied to {left} and {right}{hint}",
+                    op.name()
+                ),
+            )
+        })
     }
 
     /// A map literal: CEL's map keys are `int`, `uint`, `bool` and `string`.
@@ -189,7 +200,7 @@ impl<'a> Checker<'a> {
                 key_type,
                 Type::Int | Type::Uint | Type::Bool | Type::String | Type::Dyn
             ) {
-                return Err(Error::new(
+                return Err(Error::type_error(
                     key.at(),
                     format!("a map key must be an int, uint, bool or string, not {key_type}"),
                 ));
@@ -228,7 +239,7 @@ impl<'a> Checker<'a> {
         if side.fits(&Type::Bool) {
             Ok(())
         } else {
-            Err(Error::new(
+            Err(Error::type_error(
                 at,
                 format!("'{operator}' takes bools, not {side}"),
             ))
@@ -251,7 +262,7 @@ impl<'a> Checker<'a> {
             },
             Type::Map(key, value) if Type::String.fits(key) => Ok((**value).clone()),
             Type::Dyn => Ok(Type::Dyn),
-            other => Err(Error::new(at, format!("{other} has no fields"))),
+            other => Err(Error::type_error(at, format!("{other} has no fields"))),
         }
     }
 
@@ -268,7 +279,7 @@ impl<'a> Checker<'a> {
             if ty.fits(&Type::Bool) {
                 Ok(())
             } else {
-                Err(Error::new(
+                Err(Error::type_error(
                     at,
                     format!("{}() needs a bool expression, not {ty}", kind.name()),
                 ))
@@ -306,7 +317,7 @@ impl<'a> Checker<'a> {
             .map(|a| self.check(a))
             .collect::<Result<Vec<_>, _>>()?;
         if LEFT_OUT.contains(&name) {
-            return Err(Error::new(
+            return Err(Error::type_error(
                 at,
                 format!("{name}() isn't in the CompMD CEL profile"),
             ));
@@ -327,7 +338,7 @@ impl<'a> Checker<'a> {
                     ""
                 };
                 let receiver = receiver.map(|t| format!("{t}.")).unwrap_or_default();
-                Error::new(
+                Error::type_error(
                     at,
                     format!(
                         "{receiver}{name}() doesn't take ({}){hint}",
@@ -354,7 +365,7 @@ impl<'a> Checker<'a> {
             .map(|a| self.check(a))
             .collect::<Result<Vec<_>, _>>()?;
         self.functions.result_type(name, &arg_types).ok_or_else(|| {
-            Error::new(
+            Error::type_error(
                 at,
                 format!("md.{name}() doesn't take ({})", listed(&arg_types)),
             )
@@ -392,7 +403,7 @@ fn literal_type(literal: &Literal) -> Type {
 fn index(operand: &Type, index_type: &Type, index: &Expr, at: usize) -> Result<Type, Error> {
     match operand {
         Type::List(element) if index_type.fits(&Type::Int) => Ok((**element).clone()),
-        Type::List(_) => Err(Error::new(
+        Type::List(_) => Err(Error::type_error(
             at,
             format!(
                 "a list index must be an int, not {index_type}{}",
@@ -413,7 +424,7 @@ fn index(operand: &Type, index_type: &Type, index: &Expr, at: usize) -> Result<T
             _ => Ok(Type::Dyn),
         },
         Type::Dyn => Ok(Type::Dyn),
-        other => Err(Error::new(
+        other => Err(Error::type_error(
             at,
             format!("{other} can't be indexed with {index_type}"),
         )),
@@ -428,10 +439,10 @@ fn unknown<'n>(
     known: impl IntoIterator<Item = &'n str>,
 ) -> Error {
     match nearest(name, known) {
-        Some(near) => Error::new(
+        Some(near) => Error::type_error(
             at,
             format!("unknown {what} '{name}'; did you mean '{near}'?"),
         ),
-        None => Error::new(at, format!("unknown {what} '{name}'")),
+        None => Error::type_error(at, format!("unknown {what} '{name}'")),
     }
 }

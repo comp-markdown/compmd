@@ -253,6 +253,7 @@ dependencies = [
  "markdown",
  "serde",
  "serde_json",
+ "thiserror",
  "yaml-rust2",
 ]
 

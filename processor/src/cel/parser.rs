@@ -65,7 +65,7 @@ impl Parser {
                 Token::End => "the expression ends".to_string(),
                 other => format!("found {}", describe(other)),
             };
-            Error::new(self.position(), format!("expected '{punct}' but {found}"))
+            Error::syntax(self.position(), format!("expected '{punct}' but {found}"))
         })
     }
 
@@ -77,7 +77,7 @@ impl Parser {
     fn deeper(&mut self) -> Result<(), Error> {
         self.depth += 1;
         if self.depth > MAX_DEPTH {
-            return Err(Error::new(
+            return Err(Error::syntax(
                 self.position(),
                 "the expression is nested too deeply",
             ));
@@ -227,7 +227,10 @@ impl Parser {
             if let Some(dot) = self.eat(".") {
                 self.deeper()?;
                 let (Token::Ident(name), at) = self.next() else {
-                    return Err(Error::new(dot, "expected a field or method name after '.'"));
+                    return Err(Error::syntax(
+                        dot,
+                        "expected a field or method name after '.'",
+                    ));
                 };
                 expr = if self.eat("(").is_some() {
                     let args = self.list_until(")")?;
@@ -253,12 +256,12 @@ impl Parser {
             Token::Uint(n) => Expr::Literal(Literal::Uint(n), at),
             Token::Double(n) => Expr::Literal(Literal::Double(n), at),
             Token::String(s) => Expr::Literal(Literal::String(s), at),
-            Token::MinIntMagnitude => return Err(Error::new(at, "int literal out of range")),
+            Token::MinIntMagnitude => return Err(Error::syntax(at, "int literal out of range")),
             Token::Ident(word) => match word.as_str() {
                 "true" => Expr::Literal(Literal::Bool(true), at),
                 "false" => Expr::Literal(Literal::Bool(false), at),
                 "null" => Expr::Literal(Literal::Null, at),
-                "in" => return Err(Error::new(at, "'in' isn't expected here")),
+                "in" => return Err(Error::syntax(at, "'in' isn't expected here")),
                 _ if self.eat("(").is_some() => {
                     let args = self.list_until(")")?;
                     if word == "has" {
@@ -318,7 +321,7 @@ fn unexpected(token: &Token, at: usize) -> Error {
         Token::End => "the expression ends too early".to_string(),
         other => format!("{} isn't expected here", describe(other)),
     };
-    Error::new(at, message)
+    Error::syntax(at, message)
 }
 
 /// A token other than the end, for messages.
@@ -339,7 +342,7 @@ fn unary(op: UnaryOp, operand: Expr, at: usize) -> Expr {
 fn has(mut args: Vec<Expr>, at: usize) -> Result<Expr, Error> {
     match (args.pop(), args.is_empty()) {
         (Some(Expr::Select(operand, field, _)), true) => Ok(Expr::Has(operand, field, at)),
-        _ => Err(Error::new(
+        _ => Err(Error::syntax(
             at,
             "has() takes one field selection, such as has(md.doc.title)",
         )),
@@ -369,7 +372,7 @@ fn macro_or_call(target: Expr, name: String, args: Vec<Expr>, at: usize) -> Resu
             } else {
                 ""
             };
-            return Err(Error::new(
+            return Err(Error::syntax(
                 at,
                 format!("{name}() takes a variable name{filter} and an expression"),
             ));
@@ -448,7 +451,7 @@ mod tests {
             }
         }
         parse(source).map_or_else(
-            |e| format!("error at {}: {}", e.at, e.message),
+            |e| format!("error at {}: {}", e.at(), e.message()),
             |expr| walk(&expr),
         )
     }
@@ -551,7 +554,7 @@ mod tests {
         for chain in ["||", "&&", "==", "*"] {
             let source = vec!["a"; 200].join(chain);
             assert_eq!(
-                parse(&source).map_err(|e| e.message),
+                parse(&source).map_err(|e| e.message().to_string()),
                 Err("the expression is nested too deeply".into()),
                 "{chain}"
             );

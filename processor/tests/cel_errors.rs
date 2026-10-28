@@ -1,7 +1,7 @@
 //! What F024 says, and where: type errors the checker finds, and errors only evaluation finds, as when a value's type
 //! is known only then (`dyn`, as in data whose records differ).
 
-use compmd::cel::{BUDGET, MAX_DEPTH, Program, Scope, Type, Value, Values};
+use compmd::cel::{BUDGET, Error, MAX_DEPTH, Program, Scope, Type, Value, Values};
 use compmd::md::{Md, Signatures, TimeZones};
 use serde_json::{Value as Json, json};
 
@@ -36,7 +36,7 @@ fn scope() -> Scope {
 fn refused(source: &str) -> (usize, String) {
     match Program::parse(source).and_then(|program| program.check(&scope(), &Signatures)) {
         Ok(ty) => panic!("{source} checks, as {ty}"),
-        Err(error) => (error.column(), error.message),
+        Err(error) => (error.column(), error.message().to_string()),
     }
 }
 
@@ -50,7 +50,7 @@ fn type_of(source: &str) -> String {
 
 /// Evaluates `source` with `x` and `y` as given, without checking it first.
 fn evaluate(source: &str, x: Json, y: Json) -> Result<Json, (usize, String)> {
-    let program = Program::parse(source).map_err(|e| (e.column(), e.message.clone()))?;
+    let program = Program::parse(source).map_err(|e| (e.column(), e.message().to_string()))?;
     let md = json!({ "doc": { "title": "Release" } });
     let values = [("md", md), ("x", x), ("y", y)]
         .into_iter()
@@ -60,7 +60,7 @@ fn evaluate(source: &str, x: Json, y: Json) -> Result<Json, (usize, String)> {
     program
         .evaluate(&values, &Md::new(NOW, "en", "UTC", &Utc))
         .map(|value| value.to_json())
-        .map_err(|e| (e.column(), e.message))
+        .map_err(|e| (e.column(), e.message().to_string()))
 }
 
 /// The evaluation error of `source` with `x`.
@@ -616,4 +616,34 @@ fn the_limits_are_public() {
     );
     let error = Program::parse("1 +").expect_err("incomplete");
     assert_eq!(error.to_string(), "column 4: the expression ends too early");
+}
+
+#[test]
+fn errors_say_which_kind_they_are() {
+    let parse = |source: &str| Program::parse(source).expect("parses");
+    assert!(matches!(
+        Program::parse("1 +"),
+        Err(Error::Syntax { at: 3, .. })
+    ));
+    assert!(matches!(
+        parse("'a' + 1").check(&scope(), &Signatures),
+        Err(Error::Type { at: 4, .. })
+    ));
+    let md = Md::new(NOW, "en", "UTC", &Utc);
+    assert!(matches!(
+        parse("1 / 0").evaluate(&Values::default(), &md),
+        Err(Error::Evaluation { at: 2, .. })
+    ));
+    let ten = "[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]";
+    let five =
+        format!("{ten}.map(a, {ten}.map(b, {ten}.map(c, {ten}.map(d, {ten}.map(e, a))))).size()");
+    let budget = parse(&five)
+        .evaluate(&Values::default(), &md)
+        .expect_err("too much work");
+    assert!(matches!(budget, Error::Budget { .. }));
+    assert_eq!(budget.message(), "the expression takes too much work");
+    assert_eq!(
+        budget.to_string(),
+        format!("column {}: {}", budget.column(), budget.message())
+    );
 }

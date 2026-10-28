@@ -76,7 +76,7 @@ pub(crate) fn tokens(source: &str) -> Result<Vec<(Token, usize)>, Error> {
                 continue;
             }
             if quoted && matches!(c, 'b' | 'B') {
-                return Err(Error::new(
+                return Err(Error::syntax(
                     start,
                     "bytes literals aren't in the CompMD CEL profile",
                 ));
@@ -88,7 +88,7 @@ pub(crate) fn tokens(source: &str) -> Result<Vec<(Token, usize)>, Error> {
                     .count();
             let word: String = chars[at..end].iter().collect();
             if RESERVED.contains(&word.as_str()) {
-                return Err(Error::new(start, format!("'{word}' is a reserved word")));
+                return Err(Error::syntax(start, format!("'{word}' is a reserved word")));
             }
             out.push((Token::Ident(word), start));
             at = end;
@@ -116,11 +116,11 @@ fn unexpected_character(chars: &[char], at: usize) -> Error {
         '|' => "unexpected '|'; write '||'".to_string(),
         c => format!("unexpected character '{c}'"),
     };
-    Error::new(at, message)
+    Error::syntax(at, message)
 }
 
 fn number(chars: &[char], start: usize) -> Result<(Token, usize), Error> {
-    let bad = || Error::new(start, "malformed number");
+    let bad = || Error::syntax(start, "malformed number");
     let digits_from = |from: usize, hex: bool| {
         chars[from..]
             .iter()
@@ -177,7 +177,7 @@ fn number(chars: &[char], start: usize) -> Result<(Token, usize), Error> {
     match text.parse::<i64>() {
         Ok(n) => Ok((Token::Int(n), end)),
         Err(_) if text == "9223372036854775808" => Ok((Token::MinIntMagnitude, end)),
-        Err(_) => Err(Error::new(start, "int literal out of range")),
+        Err(_) => Err(Error::syntax(start, "int literal out of range")),
     }
 }
 
@@ -189,7 +189,7 @@ fn string(chars: &[char], start: usize, raw: bool) -> Result<(String, usize), Er
     let mut at = start + width;
     let mut out = String::new();
     loop {
-        let unterminated = || Error::new(start, "unterminated string");
+        let unterminated = || Error::syntax(start, "unterminated string");
         let c = *chars.get(at).ok_or_else(unterminated)?;
         if c == quote && (!triple || chars.get(at + 1..at + 3) == Some(&[quote, quote])) {
             return Ok((out, at + width));
@@ -210,7 +210,7 @@ fn string(chars: &[char], start: usize, raw: bool) -> Result<(String, usize), Er
 
 /// The escape sequence at `at`, its backslash.
 fn escape(chars: &[char], at: usize) -> Result<(char, usize), Error> {
-    let bad = || Error::new(at, "bad escape sequence");
+    let bad = || Error::syntax(at, "bad escape sequence");
     let code = |from: usize, digits: usize, radix: u32| -> Result<(char, usize), Error> {
         let text: String = chars
             .get(from..from + digits)
@@ -247,7 +247,7 @@ mod tests {
     fn kinds(source: &str) -> Result<Vec<Token>, (usize, String)> {
         tokens(source)
             .map(|tokens| tokens.into_iter().map(|(token, _)| token).collect())
-            .map_err(|e| (e.at, e.message))
+            .map_err(|e| (e.at(), e.message().to_string()))
     }
 
     #[test]
