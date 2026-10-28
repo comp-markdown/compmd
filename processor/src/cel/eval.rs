@@ -1,9 +1,10 @@
 //! The evaluator: CEL's semantics for the profile, with errors at their node's column and a work budget.
 
 use super::ast::{Expr, Macro};
-use super::time;
+use super::functions::Function;
+use super::overload;
 use super::value::{Key, Value};
-use super::{Error, Functions, Values, strings};
+use super::{Error, Functions, Values};
 use indexmap::IndexMap;
 use std::rc::Rc;
 
@@ -26,24 +27,6 @@ pub(crate) fn evaluate(
         budget,
     }
     .eval(expr)
-}
-
-/// Integer arithmetic that fails on overflow and on division by zero.
-macro_rules! checked {
-    ($op:expr, $x:expr, $y:expr, $at:expr, $wrap:path, $type:literal) => {{
-        let (x, y) = ($x, $y);
-        let result = match $op {
-            "_+_" => x.checked_add(y),
-            "_-_" => x.checked_sub(y),
-            "_*_" => x.checked_mul(y),
-            "_/_" | "_%_" if y == 0 => return Err(Error::new($at, "division by zero")),
-            "_/_" => x.checked_div(y),
-            _ => x.checked_rem(y),
-        };
-        result
-            .map($wrap)
-            .ok_or_else(|| Error::new($at, concat!($type, " overflow")))
-    }};
 }
 
 struct Evaluator<'a> {
@@ -92,6 +75,18 @@ impl<'a> Evaluator<'a> {
             Expr::Index(operand, index, at) => {
                 let (operand, index) = (self.eval(operand)?, self.eval(index)?);
                 self::index(&operand, &index, *at)
+            }
+            Expr::Unary(op, operand, at) => {
+                let operand = self.eval(operand)?;
+                op.apply(&operand)
+                    .map_err(|message| Error::new(*at, message))
+            }
+            Expr::Binary(op, left, right, at) => {
+                let (left, right) = (self.eval(left)?, self.eval(right)?);
+                let value = op
+                    .apply(&left, &right)
+                    .map_err(|message| Error::new(*at, message))?;
+                self.built(*at, value)
             }
             Expr::Call {
                 target,
@@ -208,7 +203,7 @@ impl<'a> Evaluator<'a> {
                 return Err(Error::new(
                     at,
                     format!(
-                        "{} needs a list or a map, not {}",
+                        "{}() needs a list or a map, not {}",
                         kind.name(),
                         other.kind()
                     ),
@@ -272,7 +267,7 @@ impl<'a> Evaluator<'a> {
         at: usize,
     ) -> Result<Value, Error> {
         let md = Expr::is_md_call(target, name, self.functions.names());
-        let target = if md {
+        let receiver = if md {
             None
         } else {
             target.map(|t| self.eval(t)).transpose()?
@@ -282,144 +277,30 @@ impl<'a> Evaluator<'a> {
             .map(|a| self.eval(a))
             .collect::<Result<Vec<_>, _>>()?;
         let result = if md {
-            self.functions
-                .call(name, &args)
-                .map_err(|message| Error::new(at, message))?
-        } else if let Some(result) = operator(name, &args, at) {
-            result?
+            self.functions.call(name, &args)
         } else {
-            function(name, target.as_ref(), &args, at)?
+            call(name, receiver.as_ref(), &args)
         };
-        self.built(at, result)
+        let value = result.map_err(|message| Error::new(at, message))?;
+        self.built(at, value)
     }
 }
 
-/// An operator's value: `None` when `name` isn't an operator.
-fn operator(name: &str, args: &[Value], at: usize) -> Option<Result<Value, Error>> {
-    Some(match (name, args) {
-        ("!_", [Value::Bool(b)]) => Ok(Value::Bool(!b)),
-        ("!_", [other]) => Err(Error::new(
-            at,
-            format!("'!' can't be applied to {}", other.kind()),
-        )),
-        ("-_", [operand]) => negate(operand, at),
-        ("_+_" | "_-_" | "_*_" | "_/_" | "_%_", [a, b]) => arithmetic(name, a, b, at),
-        ("_<_" | "_<=_" | "_>_" | "_>=_", [a, b]) => compare(name, a, b, at),
-        ("_==_", [a, b]) => Ok(Value::Bool(a.equals(b))),
-        ("_!=_", [a, b]) => Ok(Value::Bool(!a.equals(b))),
-        ("@in", [a, b]) => contains(a, b, at),
-        _ => return None,
-    })
-}
-
-/// Arithmetic, with the profile's `int` and `double` mixing: an `int` next to a `double` makes a `double`.
-fn arithmetic(op: &str, a: &Value, b: &Value, at: usize) -> Result<Value, Error> {
-    match (op, a, b) {
-        (_, Value::Int(x), Value::Int(y)) => checked!(op, *x, *y, at, Value::Int, "int"),
-        (_, Value::Uint(x), Value::Uint(y)) => checked!(op, *x, *y, at, Value::Uint, "uint"),
-        ("_+_", Value::String(x), Value::String(y)) => Ok(Value::string(&format!("{x}{y}"))),
-        ("_+_", Value::List(x), Value::List(y)) => {
-            Ok(Value::list(x.iter().chain(y.iter()).cloned().collect()))
-        }
-        ("_+_", Value::Timestamp(t), Value::Duration(d))
-        | ("_+_", Value::Duration(d), Value::Timestamp(t)) => timestamp(t + d, at),
-        ("_-_", Value::Timestamp(t), Value::Duration(d)) => timestamp(t - d, at),
-        ("_-_", Value::Timestamp(t), Value::Timestamp(u)) => duration(t - u, at),
-        ("_+_", Value::Duration(d), Value::Duration(e)) => duration(d + e, at),
-        ("_-_", Value::Duration(d), Value::Duration(e)) => duration(d - e, at),
-        _ => match (float(a), float(b)) {
-            (Some(x), Some(y)) if op != "_%_" => Ok(Value::Double(match op {
-                "_+_" => x + y,
-                "_-_" => x - y,
-                "_*_" => x * y,
-                _ => x / y,
-            })),
-            _ => Err(Error::new(
-                at,
-                format!(
-                    "'{}' can't be applied to {} and {}",
-                    op.trim_matches('_'),
-                    a.kind(),
-                    b.kind()
-                ),
-            )),
-        },
-    }
-}
-
-/// An `int` or a `double` as a `double`, for the profile's mixed arithmetic.
-#[allow(clippy::cast_precision_loss)]
-fn float(value: &Value) -> Option<f64> {
-    match value {
-        Value::Int(i) => Some(*i as f64),
-        Value::Double(d) => Some(*d),
-        _ => None,
-    }
-}
-
-fn timestamp(nanos: i128, at: usize) -> Result<Value, Error> {
-    if time::timestamp_in_range(nanos) {
-        Ok(Value::Timestamp(nanos))
-    } else {
-        Err(Error::new(at, "timestamp out of range"))
-    }
-}
-
-fn duration(nanos: i128, at: usize) -> Result<Value, Error> {
-    if time::duration_in_range(nanos) {
-        Ok(Value::Duration(nanos))
-    } else {
-        Err(Error::new(at, "duration out of range"))
-    }
-}
-
-fn negate(operand: &Value, at: usize) -> Result<Value, Error> {
-    match operand {
-        Value::Int(i) => i
-            .checked_neg()
-            .map(Value::Int)
-            .ok_or_else(|| Error::new(at, "int overflow")),
-        Value::Double(d) => Ok(Value::Double(-d)),
-        Value::Duration(d) => duration(-d, at),
-        other => Err(Error::new(
-            at,
-            format!("'-' can't be applied to {}", other.kind()),
-        )),
-    }
-}
-
-fn compare(op: &str, a: &Value, b: &Value, at: usize) -> Result<Value, Error> {
-    let ordering = a.order(b).map_err(|()| {
-        Error::new(
-            at,
-            format!(
-                "'{}' can't be applied to {} and {}",
-                op.trim_matches('_'),
-                a.kind(),
-                b.kind()
-            ),
-        )
-    })?;
-    // A `NaN` is neither less, equal nor greater.
-    Ok(Value::Bool(ordering.is_some_and(|ordering| match op {
-        "_<_" => ordering.is_lt(),
-        "_<=_" => ordering.is_le(),
-        "_>_" => ordering.is_gt(),
-        _ => ordering.is_ge(),
-    })))
-}
-
-fn contains(element: &Value, collection: &Value, at: usize) -> Result<Value, Error> {
-    match collection {
-        Value::List(items) => Ok(Value::Bool(items.iter().any(|item| element.equals(item)))),
-        Value::Map(entries) => Ok(Value::Bool(
-            Key::to_find(element).is_some_and(|key| entries.contains_key(&key)),
-        )),
-        other => Err(Error::new(
-            at,
-            format!("'in' needs a list or a map, not {}", other.kind()),
-        )),
-    }
+/// Calls one of the profile's functions from CEL, by the overload its arguments' values select.
+fn call(name: &str, receiver: Option<&Value>, args: &[Value]) -> Result<Value, String> {
+    let function = Function::from_name(name).ok_or_else(|| format!("unknown function '{name}'"))?;
+    let Some(overload) = overload::select(function.overloads(), receiver, args) else {
+        let kinds: Vec<&str> = args.iter().map(Value::kind).collect();
+        let receiver = receiver
+            .map(|r| format!("{}.", r.kind()))
+            .unwrap_or_default();
+        return Err(format!(
+            "{receiver}{name}() doesn't take ({})",
+            kinds.join(", ")
+        ));
+    };
+    let all: Vec<Value> = receiver.into_iter().chain(args).cloned().collect();
+    (overload.call)(&all)
 }
 
 fn index(operand: &Value, index: &Value, at: usize) -> Result<Value, Error> {
@@ -444,125 +325,4 @@ fn index(operand: &Value, index: &Value, at: usize) -> Result<Value, Error> {
             .ok_or_else(|| Error::new(at, format!("no key {}", key.to_json()))),
         (other, _) => Err(Error::new(at, format!("{} can't be indexed", other.kind()))),
     }
-}
-
-/// The profile's functions from CEL: `size`, the conversions, and the string functions.
-fn function(name: &str, target: Option<&Value>, args: &[Value], at: usize) -> Result<Value, Error> {
-    match (name, target, args) {
-        ("size", None, [x]) | ("size", Some(x), []) => size(x, at),
-        ("int", None, [x]) => to_int(x, at),
-        ("double", None, [x]) => to_double(x, at),
-        ("string", None, [x]) => to_string(x, at),
-        ("timestamp", None, [Value::String(s)]) => time::parse_timestamp(s)
-            .map(Value::Timestamp)
-            .ok_or_else(|| {
-                Error::new(
-                    at,
-                    format!("'{s}' is not an RFC 3339 timestamp in CEL's range"),
-                )
-            }),
-        ("duration", None, [Value::String(s)]) => time::parse_duration(s)
-            .map(Value::Duration)
-            .ok_or_else(|| Error::new(at, format!("'{s}' is not a duration such as '1h30m'"))),
-        ("timestamp", None, [t @ Value::Timestamp(_)])
-        | ("duration", None, [t @ Value::Duration(_)]) => Ok(t.clone()),
-        ("join", Some(Value::List(items)), []) => join(items, "", at),
-        ("join", Some(Value::List(items)), [Value::String(separator)]) => {
-            join(items, separator, at)
-        }
-        (_, Some(Value::String(s)), _) => strings::call(name, s, args, at),
-        _ => {
-            let kinds: Vec<&str> = target.into_iter().chain(args).map(Value::kind).collect();
-            Err(Error::new(
-                at,
-                format!("{name}() doesn't take ({})", kinds.join(", ")),
-            ))
-        }
-    }
-}
-
-fn count(n: usize) -> Value {
-    Value::Int(i64::try_from(n).unwrap_or(i64::MAX))
-}
-
-fn size(value: &Value, at: usize) -> Result<Value, Error> {
-    match value {
-        Value::String(s) => Ok(count(s.chars().count())),
-        Value::List(items) => Ok(count(items.len())),
-        Value::Map(entries) => Ok(count(entries.len())),
-        other => Err(Error::new(
-            at,
-            format!("size() doesn't take {}", other.kind()),
-        )),
-    }
-}
-
-fn to_int(value: &Value, at: usize) -> Result<Value, Error> {
-    let too_big = |what: String| Error::new(at, format!("{what} doesn't fit an int"));
-    match value {
-        Value::Int(i) => Ok(Value::Int(*i)),
-        Value::Uint(u) => i64::try_from(*u)
-            .map(Value::Int)
-            .map_err(|_| too_big(u.to_string())),
-        // -2^63 fits; 2^63 doesn't.
-        #[allow(clippy::cast_possible_truncation)]
-        Value::Double(d)
-            if (-9_223_372_036_854_775_808.0..9_223_372_036_854_775_808.0).contains(d) =>
-        {
-            Ok(Value::Int(d.trunc() as i64))
-        }
-        Value::Double(_) => Err(too_big(value.text())),
-        Value::String(s) => s
-            .parse()
-            .map(Value::Int)
-            .map_err(|_| Error::new(at, format!("'{s}' is not an int"))),
-        Value::Timestamp(t) => Ok(Value::Int(
-            i64::try_from(t.div_euclid(time::NANOS)).unwrap_or_default(),
-        )),
-        other => Err(Error::new(
-            at,
-            format!("int() doesn't take {}", other.kind()),
-        )),
-    }
-}
-
-#[allow(clippy::cast_precision_loss)]
-fn to_double(value: &Value, at: usize) -> Result<Value, Error> {
-    match value {
-        Value::Int(i) => Ok(Value::Double(*i as f64)),
-        Value::Uint(u) => Ok(Value::Double(*u as f64)),
-        Value::Double(d) => Ok(Value::Double(*d)),
-        Value::String(s) => s
-            .parse()
-            .map(Value::Double)
-            .map_err(|_| Error::new(at, format!("'{s}' is not a double"))),
-        other => Err(Error::new(
-            at,
-            format!("double() doesn't take {}", other.kind()),
-        )),
-    }
-}
-
-fn to_string(value: &Value, at: usize) -> Result<Value, Error> {
-    match value {
-        Value::Null | Value::List(_) | Value::Map(_) => Err(Error::new(
-            at,
-            format!("string() doesn't take {}", value.kind()),
-        )),
-        scalar => Ok(Value::string(&scalar.text())),
-    }
-}
-
-fn join(items: &[Value], separator: &str, at: usize) -> Result<Value, Error> {
-    let parts = items
-        .iter()
-        .map(|item| match item {
-            Value::String(s) => Ok(&**s),
-            other => Err(Error::new(
-                at,
-                format!("join() needs strings, not {}", other.kind()),
-            )),
-        })
-        .collect::<Result<Vec<_>, _>>()?;
-    Ok(Value::string(&parts.join(separator)))
 }

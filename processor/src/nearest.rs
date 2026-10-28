@@ -14,27 +14,31 @@ pub(crate) fn nearest<'a>(name: &str, names: impl IntoIterator<Item = &'a str>) 
         .map(|(_, candidate)| candidate)
 }
 
-/// The edits from `a` to `b`, in code points: inserts, deletes, changes, and swaps of two neighbours, the commonest
-/// typo (the optimal string alignment distance).
+/// The fewest edits that turn `a` into `b`, in code points: inserting, deleting or changing a letter, or swapping
+/// two neighbours, the commonest typo (the optimal string alignment distance).
 fn distance(a: &str, b: &str) -> usize {
     let (a, b): (Vec<char>, Vec<char>) = (a.chars().collect(), b.chars().collect());
-    // The rows for the two previous letters of `a`, and the current one.
-    let mut before: Vec<usize> = Vec::new();
-    let mut previous: Vec<usize> = (0..=b.len()).collect();
-    for i in 1..=a.len() {
-        let mut row = vec![i; b.len() + 1];
-        for j in 1..=b.len() {
-            let change = usize::from(a[i - 1] != b[j - 1]);
-            row[j] = (previous[j] + 1)
-                .min(row[j - 1] + 1)
-                .min(previous[j - 1] + change);
-            if i > 1 && j > 1 && a[i - 1] == b[j - 2] && a[i - 2] == b[j - 1] {
-                row[j] = row[j].min(before[j - 2] + 1);
-            }
+    // d[i][j]: the distance between the first i letters of `a` and the first j letters of `b`.
+    let mut d = vec![vec![0; b.len() + 1]; a.len() + 1];
+    for i in 0..=a.len() {
+        for j in 0..=b.len() {
+            d[i][j] = if i == 0 || j == 0 {
+                i + j
+            } else {
+                let delete = d[i - 1][j] + 1;
+                let insert = d[i][j - 1] + 1;
+                let change = d[i - 1][j - 1] + usize::from(a[i - 1] != b[j - 1]);
+                let swapped = i > 1 && j > 1 && a[i - 1] == b[j - 2] && a[i - 2] == b[j - 1];
+                let swap = if swapped {
+                    d[i - 2][j - 2] + 1
+                } else {
+                    usize::MAX
+                };
+                delete.min(insert).min(change).min(swap)
+            };
         }
-        before = std::mem::replace(&mut previous, row);
     }
-    previous[b.len()]
+    d[a.len()][b.len()]
 }
 
 #[cfg(test)]

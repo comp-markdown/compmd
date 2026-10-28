@@ -1,9 +1,13 @@
 //! The document's language (spec §8.2): dates, numbers, currencies, plurals, lists and the first day of the week by
 //! CLDR, through ICU4X and all its compiled locale data.
 
+use crate::cel::{Key, Value};
+use crate::named::named;
 use fixed_decimal::{Decimal, FloatPrecision, SignedRoundingMode, UnsignedRoundingMode};
+use icu::calendar::types::Weekday;
 use icu::calendar::week::WeekInformation;
 use icu::calendar::{Date, Iso};
+use icu::datetime::fieldsets::enums::DateFieldSet;
 use icu::datetime::{DateTimeFormatter, fieldsets};
 use icu::decimal::DecimalFormatter;
 use icu::decimal::options::DecimalFormatterOptions;
@@ -14,6 +18,7 @@ use icu::plurals::{PluralCategory, PluralRules};
 use icu_experimental::dimension::currency::CurrencyType;
 use icu_experimental::dimension::currency::formatter::CurrencyFormatter;
 use icu_experimental::dimension::currency::options::CurrencyFormatterOptions;
+use indexmap::IndexMap;
 
 /// A locale, from `md.lang`.
 pub(crate) struct Language(Locale);
@@ -27,36 +32,11 @@ impl Language {
         Self(Locale::try_from_str(tag).unwrap_or(Locale::UNKNOWN))
     }
 
-    /// A date in CLDR's `short`, `medium`, `long` or `full` style.
-    pub(crate) fn date(
-        &self,
-        (year, month, day): (i64, i64, i64),
-        style: &str,
-    ) -> Result<String, String> {
-        let out_of_range = |_| "the date is out of range".to_string();
-        let date: Date<Iso> = Date::try_new_iso(
-            i32::try_from(year).map_err(out_of_range)?,
-            u8::try_from(month).map_err(out_of_range)?,
-            u8::try_from(day).map_err(out_of_range)?,
-        )
-        .map_err(|e| e.to_string())?;
-        let prefs = (&self.0).into();
-        let formatted = match style {
-            "short" => DateTimeFormatter::try_new(prefs, fieldsets::YMD::short())
-                .map(|f| f.format(&date).to_string()),
-            "medium" => DateTimeFormatter::try_new(prefs, fieldsets::YMD::medium())
-                .map(|f| f.format(&date).to_string()),
-            "long" => DateTimeFormatter::try_new(prefs, fieldsets::YMD::long())
-                .map(|f| f.format(&date).to_string()),
-            "full" => DateTimeFormatter::try_new(prefs, fieldsets::YMDE::long())
-                .map(|f| f.format(&date).to_string()),
-            other => {
-                return Err(format!(
-                    "md.date() takes the style \"short\", \"medium\", \"long\" or \"full\", not \"{other}\""
-                ));
-            }
-        };
-        formatted.map_err(|e| e.to_string())
+    /// A date in one of CLDR's styles.
+    pub(crate) fn date(&self, date: Date<Iso>, style: DateStyle) -> Result<String, String> {
+        let formatter = DateTimeFormatter::try_new((&self.0).into(), style.fields())
+            .map_err(|e| e.to_string())?;
+        Ok(formatter.format(&date).to_string())
     }
 
     /// `n` with `digits` fraction digits, rounded half away from zero as `Intl.NumberFormat` does.
@@ -91,25 +71,53 @@ impl Language {
     }
 
     /// CLDR's plural category of `n`.
-    pub(crate) fn plural(&self, n: f64) -> Result<&'static str, String> {
+    fn category(&self, n: f64) -> Result<PluralCategory, String> {
         let rules = PluralRules::try_new_cardinal((&self.0).into()).map_err(|e| e.to_string())?;
-        Ok(match rules.category_for(&decimal(n)?) {
-            PluralCategory::Zero => "zero",
-            PluralCategory::One => "one",
-            PluralCategory::Two => "two",
-            PluralCategory::Few => "few",
-            PluralCategory::Many => "many",
-            PluralCategory::Other => "other",
-        })
+        Ok(rules.category_for(&decimal(n)?))
     }
 
-    /// Items joined by the locale's list pattern: for "and", or for alternatives, "or".
-    pub(crate) fn list(&self, items: &[String], or: bool) -> Result<String, String> {
+    /// Whether `n` is in the category `one`.
+    pub(crate) fn is_one(&self, n: f64) -> Result<bool, String> {
+        Ok(self.category(n)? == PluralCategory::One)
+    }
+
+    /// The form for `n` among `forms`, keyed by CLDR's plural categories (`one`, `few`, …), falling back to
+    /// `other`.
+    pub(crate) fn plural_form(
+        &self,
+        n: f64,
+        forms: &IndexMap<Key, Value>,
+    ) -> Result<Value, String> {
+        let wanted = self.category(n)?;
+        let (mut form, mut other) = (None, None);
+        for (key, value) in forms {
+            let Key::String(name) = key else {
+                return Err(format!(
+                    "md.plural() takes forms named by plural categories, not {}",
+                    key.to_value().text()
+                ));
+            };
+            let category = PluralCategory::get_for_cldr_string(name).ok_or_else(|| {
+                format!("md.plural() takes forms named by plural categories, not \"{name}\"")
+            })?;
+            if category == wanted {
+                form = Some(value);
+            }
+            if category == PluralCategory::Other {
+                other = Some(value);
+            }
+        }
+        form.or(other)
+            .cloned()
+            .ok_or_else(|| "md.plural() needs an \"other\" form".to_string())
+    }
+
+    /// Items joined by the locale's list pattern.
+    pub(crate) fn list(&self, items: &[String], kind: ListKind) -> Result<String, String> {
         let (prefs, options) = ((&self.0).into(), ListFormatterOptions::default());
-        let formatter = if or {
-            ListFormatter::try_new_or(prefs, options)
-        } else {
-            ListFormatter::try_new_and(prefs, options)
+        let formatter = match kind {
+            ListKind::And => ListFormatter::try_new_and(prefs, options),
+            ListKind::Or => ListFormatter::try_new_or(prefs, options),
         }
         .map_err(|e| e.to_string())?;
         Ok(formatter
@@ -117,10 +125,40 @@ impl Language {
             .to_string())
     }
 
-    /// The first day of the week, 1 for Monday to 7 for Sunday.
-    pub(crate) fn first_weekday(&self) -> Result<i64, String> {
+    /// The first day of the week.
+    pub(crate) fn first_weekday(&self) -> Result<Weekday, String> {
         let week = WeekInformation::try_new((&self.0).into()).map_err(|e| e.to_string())?;
-        Ok(i64::from(week.first_weekday as u8))
+        Ok(week.first_weekday)
+    }
+}
+
+named! {
+    /// CLDR's date styles.
+    pub(crate) enum DateStyle {
+        Short = "short",
+        Medium = "medium",
+        Long = "long",
+        Full = "full",
+    }
+}
+
+impl DateStyle {
+    /// The fields and length CLDR writes the style with: `full` adds the weekday.
+    fn fields(self) -> DateFieldSet {
+        match self {
+            Self::Short => DateFieldSet::YMD(fieldsets::YMD::short()),
+            Self::Medium => DateFieldSet::YMD(fieldsets::YMD::medium()),
+            Self::Long => DateFieldSet::YMD(fieldsets::YMD::long()),
+            Self::Full => DateFieldSet::YMDE(fieldsets::YMDE::long()),
+        }
+    }
+}
+
+named! {
+    /// How `md.list` joins: "a, b, and c", or as alternatives, "a, b, or c".
+    pub(crate) enum ListKind {
+        And = "and",
+        Or = "or",
     }
 }
 

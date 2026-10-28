@@ -4,6 +4,7 @@
 use super::Error;
 use super::ast::{Expr, Literal, Macro};
 use super::lexer::{Token, tokens};
+use super::ops::{BinaryOp, UnaryOp};
 
 /// How deeply an expression may nest. Deeper nesting is refused, so a hostile expression can't exhaust the stack of
 /// the parser, the checker or the evaluator. Parentheses, each operator of a chain, signs and member accesses count
@@ -137,43 +138,54 @@ impl Parser {
     }
 
     fn relation(&mut self) -> Result<Expr, Error> {
-        self.level(|parser| {
-            let mut left = parser.addition()?;
-            loop {
-                let name = match parser.peek() {
-                    Token::Punct(p @ ("<" | "<=" | ">" | ">=" | "==" | "!=")) => format!("_{p}_"),
-                    Token::Ident(word) if word == "in" => "@in".to_string(),
-                    _ => return Ok(left),
-                };
-                parser.deeper()?;
-                let at = parser.next().1;
-                left = binary(name, left, parser.addition()?, at);
-            }
-        })
+        use BinaryOp::{Equal, Greater, GreaterOrEqual, In, Less, LessOrEqual, NotEqual};
+        self.chain(
+            &[
+                Less,
+                LessOrEqual,
+                Greater,
+                GreaterOrEqual,
+                Equal,
+                NotEqual,
+                In,
+            ],
+            Self::addition,
+        )
     }
 
     fn addition(&mut self) -> Result<Expr, Error> {
+        self.chain(&[BinaryOp::Add, BinaryOp::Subtract], Self::multiplication)
+    }
+
+    fn multiplication(&mut self) -> Result<Expr, Error> {
+        use BinaryOp::{Divide, Multiply, Remainder};
+        self.chain(&[Multiply, Divide, Remainder], |parser| parser.unary(true))
+    }
+
+    /// Operands joined by the operators of one precedence level, left-associative.
+    fn chain(
+        &mut self,
+        operators: &[BinaryOp],
+        operand: impl Fn(&mut Self) -> Result<Expr, Error>,
+    ) -> Result<Expr, Error> {
         self.level(|parser| {
-            let mut left = parser.multiplication()?;
-            while let &Token::Punct(p @ ("+" | "-")) = parser.peek() {
+            let mut left = operand(parser)?;
+            while let Some(op) = parser.binary_op().filter(|op| operators.contains(op)) {
                 parser.deeper()?;
                 let at = parser.next().1;
-                left = binary(format!("_{p}_"), left, parser.multiplication()?, at);
+                left = Expr::Binary(op, Box::new(left), Box::new(operand(parser)?), at);
             }
             Ok(left)
         })
     }
 
-    fn multiplication(&mut self) -> Result<Expr, Error> {
-        self.level(|parser| {
-            let mut left = parser.unary(true)?;
-            while let &Token::Punct(p @ ("*" | "/" | "%")) = parser.peek() {
-                parser.deeper()?;
-                let at = parser.next().1;
-                left = binary(format!("_{p}_"), left, parser.unary(true)?, at);
-            }
-            Ok(left)
-        })
+    /// The binary operator at the current token, if it is one.
+    fn binary_op(&self) -> Option<BinaryOp> {
+        match self.peek() {
+            Token::Punct(p) => BinaryOp::from_name(p),
+            Token::Ident(word) if word == "in" => Some(BinaryOp::In),
+            _ => None,
+        }
     }
 
     /// A unary expression. A number right after a single `-` is one negative literal, so `-9223372036854775808`
@@ -183,7 +195,7 @@ impl Parser {
         self.level(|parser| {
             if let Some(at) = parser.eat("!") {
                 parser.deeper()?;
-                return Ok(unary("!_", parser.unary(true)?, at));
+                return Ok(unary(UnaryOp::Not, parser.unary(true)?, at));
             }
             let Some(at) = parser.eat("-") else {
                 return parser.member();
@@ -194,7 +206,7 @@ impl Parser {
                 Token::Int(n) if fold => Literal::Int(-n),
                 Token::MinIntMagnitude if fold => Literal::Int(i64::MIN),
                 Token::Double(n) if fold => Literal::Double(-n),
-                _ => return Ok(unary("-_", parser.unary(false)?, at)),
+                _ => return Ok(unary(UnaryOp::Negate, parser.unary(false)?, at)),
             };
             parser.next();
             Ok(Expr::Literal(literal, at))
@@ -319,22 +331,8 @@ fn describe(token: &Token) -> String {
     }
 }
 
-fn binary(name: String, left: Expr, right: Expr, at: usize) -> Expr {
-    Expr::Call {
-        target: None,
-        name,
-        args: vec![left, right],
-        at,
-    }
-}
-
-fn unary(name: &str, operand: Expr, at: usize) -> Expr {
-    Expr::Call {
-        target: None,
-        name: name.into(),
-        args: vec![operand],
-        at,
-    }
+fn unary(op: UnaryOp, operand: Expr, at: usize) -> Expr {
+    Expr::Unary(op, Box::new(operand), at)
 }
 
 /// `has(operand.field)`.
@@ -351,20 +349,13 @@ fn has(mut args: Vec<Expr>, at: usize) -> Result<Expr, Error> {
 /// A method call, or one of the comprehension macros when it is given a variable name and the right number of
 /// arguments.
 fn macro_or_call(target: Expr, name: String, args: Vec<Expr>, at: usize) -> Result<Expr, Error> {
-    let kind = match name.as_str() {
-        "all" => Macro::All,
-        "exists" => Macro::Exists,
-        "exists_one" => Macro::ExistsOne,
-        "filter" => Macro::Filter,
-        "map" => Macro::Map,
-        _ => {
-            return Ok(Expr::Call {
-                target: Some(Box::new(target)),
-                name,
-                args,
-                at,
-            });
-        }
+    let Some(kind) = Macro::from_name(&name) else {
+        return Ok(Expr::Call {
+            target: Some(Box::new(target)),
+            name,
+            args,
+            at,
+        });
     };
     let mut args = args.into_iter();
     let (var, filter, body) = match (kind, args.next(), args.next(), args.next(), args.next()) {
@@ -409,6 +400,8 @@ mod tests {
                 Expr::Ident(name, _) => name.clone(),
                 Expr::Select(operand, field, _) => format!("{}.{field}", walk(operand)),
                 Expr::Index(operand, index, _) => format!("{}[{}]", walk(operand), walk(index)),
+                Expr::Unary(op, operand, _) => format!("({} {})", op.name(), walk(operand)),
+                Expr::Binary(op, a, b, _) => format!("({} {} {})", op.name(), walk(a), walk(b)),
                 Expr::Call {
                     target: Some(target),
                     name,
@@ -462,14 +455,18 @@ mod tests {
 
     #[test]
     fn precedence_and_associativity_follow_cel() {
-        assert_eq!(shape("1 - 2 - 3"), "(_-_ (_-_ 1 2) 3)");
+        assert_eq!(shape("1 - 2 - 3"), "(- (- 1 2) 3)");
         assert_eq!(
             shape("1 + 2 * 3 < 4 && a || b"),
-            "(|| (&& (_<_ (_+_ 1 (_*_ 2 3)) 4) a) b)"
+            "(|| (&& (< (+ 1 (* 2 3)) 4) a) b)"
+        );
+        assert_eq!(
+            shape("a <= b != c >= d == e > f % g / h"),
+            "(> (== (>= (!= (<= a b) c) d) e) (/ (% f g) h))"
         );
         assert_eq!(shape("a ? b : c ? d : e"), "(? a b (? c d e))");
-        assert_eq!(shape("-a.size()"), "(-_ (a.size ))");
-        assert_eq!(shape("!a in b"), "(@in (!_ a) b)");
+        assert_eq!(shape("-a.size()"), "(- (a.size ))");
+        assert_eq!(shape("!a in b"), "(in (! a) b)");
         assert_eq!(shape("a.b[0].c"), "a.b[0].c");
         assert_eq!(shape("f(1, 2,)"), "(f 1 2)");
     }
@@ -489,8 +486,8 @@ mod tests {
         assert_eq!(shape("-1"), "-1");
         assert_eq!(shape("-9223372036854775808"), "-9223372036854775808");
         assert_eq!(shape("-2.5"), "-2.5");
-        assert_eq!(shape("--1"), "(-_ (-_ 1))");
-        assert_eq!(shape("-1.size()"), "(-_ (1.size ))");
+        assert_eq!(shape("--1"), "(- (- 1))");
+        assert_eq!(shape("-1.size()"), "(- (1.size ))");
         assert_eq!(
             shape("--9223372036854775808"),
             "error at 2: int literal out of range"
@@ -501,19 +498,19 @@ mod tests {
         );
         assert_eq!(
             shape("1 - -9223372036854775808"),
-            "(_-_ 1 -9223372036854775808)"
+            "(- 1 -9223372036854775808)"
         );
-        assert_eq!(shape("!!true"), "(!_ (!_ Bool(true)))");
+        assert_eq!(shape("!!true"), "(! (! Bool(true)))");
     }
 
     #[test]
     fn macros_need_a_variable_name() {
-        assert_eq!(shape("l.map(x, x * 2)"), "(map() l x (_*_ x 2))");
-        assert_eq!(shape("l.map(x, x > 0, x)"), "(map() l x (_>_ x 0) x)");
-        assert_eq!(shape("l.exists_one(x, x)"), "(exists_one() l x x)");
-        assert_eq!(shape("l.all(x, x)"), "(all() l x x)");
-        assert_eq!(shape("l.exists(x, x)"), "(exists() l x x)");
-        assert_eq!(shape("l.filter(x, x)"), "(filter() l x x)");
+        assert_eq!(shape("l.map(x, x * 2)"), "(map l x (* x 2))");
+        assert_eq!(shape("l.map(x, x > 0, x)"), "(map l x (> x 0) x)");
+        assert_eq!(shape("l.exists_one(x, x)"), "(exists_one l x x)");
+        assert_eq!(shape("l.all(x, x)"), "(all l x x)");
+        assert_eq!(shape("l.exists(x, x)"), "(exists l x x)");
+        assert_eq!(shape("l.filter(x, x)"), "(filter l x x)");
         assert_eq!(
             shape("l.all(1, true)"),
             "error at 2: all() takes a variable name and an expression"
@@ -532,12 +529,12 @@ mod tests {
     #[test]
     fn nodes_are_at_their_operator() {
         let expr = parse("a.b * c[1]");
-        assert!(matches!(&expr, Ok(Expr::Call { name, at: 4, .. }) if name == "_*_"));
-        let Ok(Expr::Call { args, .. }) = expr else {
-            return;
-        };
-        assert!(matches!(&args[0], Expr::Select(_, field, 1) if field == "b"));
-        assert!(matches!(&args[1], Expr::Index(_, _, 7)));
+        assert!(matches!(
+            &expr,
+            Ok(Expr::Binary(BinaryOp::Multiply, a, b, 4))
+                if matches!(&**a, Expr::Select(_, field, 1) if field == "b")
+                    && matches!(&**b, Expr::Index(_, _, 7))
+        ));
     }
 
     #[test]

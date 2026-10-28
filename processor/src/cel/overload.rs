@@ -1,0 +1,293 @@
+//! A function's overloads: for each way to call it, what it takes, what it gives and what it does, together, so the
+//! checker and the evaluator can't disagree.
+
+use super::types::Type;
+use super::value::Value;
+
+/// What an argument, or a method's receiver, must be.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Param {
+    Int,
+    Uint,
+    Double,
+    /// An `int`, a `uint` or a `double`.
+    Number,
+    String,
+    Bool,
+    Timestamp,
+    Duration,
+    List,
+    /// A list of numbers.
+    Numbers,
+    /// A list of strings.
+    Strings,
+    /// A map, or a record.
+    Map,
+    /// A string, a list or a map: what has a size.
+    Sized,
+}
+
+impl Param {
+    /// Whether an expression of type `ty` can be given: `dyn` can always, and is checked when evaluated.
+    pub(crate) fn takes_type(self, ty: &Type) -> bool {
+        match (self, ty) {
+            (_, Type::Dyn)
+            | (Self::Int, Type::Int)
+            | (Self::Uint, Type::Uint)
+            | (Self::Double, Type::Double)
+            | (Self::String, Type::String)
+            | (Self::Bool, Type::Bool)
+            | (Self::Timestamp, Type::Timestamp)
+            | (Self::Duration, Type::Duration)
+            | (Self::List, Type::List(_))
+            | (Self::Map, Type::Map(..) | Type::Record(_))
+            | (Self::Sized, Type::String | Type::List(_) | Type::Map(..) | Type::Record(_)) => true,
+            (Self::Number, ty) => ty.is_numeric(),
+            (Self::Numbers, Type::List(element)) => element.is_numeric(),
+            (Self::Strings, Type::List(element)) => element.fits(&Type::String),
+            _ => false,
+        }
+    }
+
+    /// Whether `value` can be given. A list's elements are checked by the function.
+    pub(crate) fn takes_value(self, value: &Value) -> bool {
+        matches!(
+            (self, value),
+            (Self::Int, Value::Int(_))
+                | (Self::Uint, Value::Uint(_))
+                | (Self::Double, Value::Double(_))
+                | (
+                    Self::Number,
+                    Value::Int(_) | Value::Uint(_) | Value::Double(_)
+                )
+                | (Self::String, Value::String(_))
+                | (Self::Bool, Value::Bool(_))
+                | (Self::Timestamp, Value::Timestamp(_))
+                | (Self::Duration, Value::Duration(_))
+                | (Self::List | Self::Numbers | Self::Strings, Value::List(_))
+                | (Self::Map, Value::Map(_))
+                | (
+                    Self::Sized,
+                    Value::String(_) | Value::List(_) | Value::Map(_)
+                )
+        )
+    }
+}
+
+/// The type a call gives, from its arguments' types.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Returns {
+    Int,
+    Double,
+    String,
+    Bool,
+    Timestamp,
+    Duration,
+    /// `list(string)`.
+    Strings,
+    /// The type of the argument at this index, such as a sorted list's.
+    Same(usize),
+    /// The values' type of the map at this index, such as a plural form's.
+    Values(usize),
+    /// A map from any key to the type of the argument at this index, such as groups of a list.
+    Groups(usize),
+}
+
+impl Returns {
+    fn type_for(self, args: &[Type]) -> Type {
+        let arg = |i: usize| args.get(i).cloned().unwrap_or(Type::Dyn);
+        match self {
+            Self::Int => Type::Int,
+            Self::Double => Type::Double,
+            Self::String => Type::String,
+            Self::Bool => Type::Bool,
+            Self::Timestamp => Type::Timestamp,
+            Self::Duration => Type::Duration,
+            Self::Strings => Type::list(Type::String),
+            Self::Same(i) => arg(i),
+            Self::Values(i) => match arg(i) {
+                Type::Map(_, value) => (*value).clone(),
+                Type::Record(fields) => Type::joined(fields.values().cloned()),
+                _ => Type::Dyn,
+            },
+            Self::Groups(i) => Type::map(Type::Dyn, arg(i)),
+        }
+    }
+}
+
+/// One way to call a function. `Call` is its implementation's type, which takes the receiver, if any, first.
+pub(crate) struct Overload<Call> {
+    pub(crate) receiver: Option<Param>,
+    pub(crate) params: &'static [Param],
+    pub(crate) returns: Returns,
+    pub(crate) call: Call,
+}
+
+impl<Call> Overload<Call> {
+    /// A function called as `f(args)`.
+    pub(crate) const fn global(params: &'static [Param], returns: Returns, call: Call) -> Self {
+        Self {
+            receiver: None,
+            params,
+            returns,
+            call,
+        }
+    }
+
+    /// A method called as `receiver.f(args)`.
+    pub(crate) const fn method(
+        receiver: Param,
+        params: &'static [Param],
+        returns: Returns,
+        call: Call,
+    ) -> Self {
+        Self {
+            receiver: Some(receiver),
+            params,
+            returns,
+            call,
+        }
+    }
+}
+
+/// The type of a call with arguments of these types, from its first overload that takes them.
+pub(crate) fn result_type<Call>(
+    overloads: &[Overload<Call>],
+    receiver: Option<&Type>,
+    args: &[Type],
+) -> Option<Type> {
+    overloads
+        .iter()
+        .find(|overload| fits(overload, receiver, args, Param::takes_type))
+        .map(|overload| {
+            let all: Vec<Type> = receiver.into_iter().chain(args).cloned().collect();
+            overload.returns.type_for(&all)
+        })
+}
+
+/// The overload that takes these values.
+pub(crate) fn select<'o, Call>(
+    overloads: &'o [Overload<Call>],
+    receiver: Option<&Value>,
+    args: &[Value],
+) -> Option<&'o Overload<Call>> {
+    overloads
+        .iter()
+        .find(|overload| fits(overload, receiver, args, Param::takes_value))
+}
+
+/// The string argument at `i`. Overloads are selected by their arguments' values, so a call finds the type it
+/// declares; the empty string is never used.
+pub(crate) fn text(args: &[Value], i: usize) -> &str {
+    match args.get(i) {
+        Some(Value::String(s)) => s,
+        _ => "",
+    }
+}
+
+/// The `int` argument at `i`, if there is one.
+pub(crate) fn int(args: &[Value], i: usize) -> Option<i64> {
+    match args.get(i) {
+        Some(Value::Int(n)) => Some(*n),
+        _ => None,
+    }
+}
+
+/// The list argument at `i`.
+pub(crate) fn list(args: &[Value], i: usize) -> &[Value] {
+    match args.get(i) {
+        Some(Value::List(items)) => items,
+        _ => &[],
+    }
+}
+
+fn fits<Call, T>(
+    overload: &Overload<Call>,
+    receiver: Option<&T>,
+    args: &[T],
+    takes: impl Fn(Param, &T) -> bool,
+) -> bool {
+    let receiver_fits = match (overload.receiver, receiver) {
+        (None, None) => true,
+        (Some(param), Some(receiver)) => takes(param, receiver),
+        _ => false,
+    };
+    receiver_fits
+        && overload.params.len() == args.len()
+        && overload
+            .params
+            .iter()
+            .zip(args)
+            .all(|(param, arg)| takes(*param, arg))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const OVERLOADS: [Overload<u8>; 2] = [
+        Overload::global(&[Param::Int], Returns::Int, 1),
+        Overload::method(Param::String, &[Param::Strings], Returns::Same(1), 2),
+    ];
+
+    #[test]
+    fn the_first_overload_that_takes_the_arguments_decides() {
+        assert_eq!(result_type(&OVERLOADS, None, &[Type::Int]), Some(Type::Int));
+        assert_eq!(result_type(&OVERLOADS, None, &[Type::Double]), None);
+        assert_eq!(
+            result_type(&OVERLOADS, Some(&Type::Int), &[Type::Int]),
+            None
+        );
+        let strings = Type::list(Type::String);
+        assert_eq!(
+            result_type(
+                &OVERLOADS,
+                Some(&Type::String),
+                std::slice::from_ref(&strings)
+            ),
+            Some(strings)
+        );
+        assert_eq!(
+            result_type(&OVERLOADS, Some(&Type::Dyn), &[Type::Dyn]),
+            Some(Type::Dyn)
+        );
+        assert_eq!(
+            select(&OVERLOADS, None, &[Value::Int(1)]).map(|o| o.call),
+            Some(1)
+        );
+        assert_eq!(
+            select(&OVERLOADS, None, &[Value::Int(1), Value::Int(2)]).map(|o| o.call),
+            None
+        );
+    }
+
+    #[test]
+    fn overloads_are_functions_or_methods() {
+        let function = Overload::global(&[Param::Int], Returns::Int, ());
+        let method = Overload::method(Param::String, &[], Returns::Int, ());
+        assert_eq!(
+            (function.receiver, function.params),
+            (None, &[Param::Int][..])
+        );
+        assert_eq!(
+            (method.receiver, method.returns),
+            (Some(Param::String), Returns::Int)
+        );
+    }
+
+    #[test]
+    fn returned_types_follow_the_arguments() {
+        let forms = Type::of_json(&serde_json::json!({ "one": "a", "other": "b" }));
+        assert_eq!(Returns::Values(0).type_for(&[forms]), Type::String);
+        assert_eq!(
+            Returns::Values(0).type_for(&[Type::map(Type::Dyn, Type::Int)]),
+            Type::Int
+        );
+        assert_eq!(Returns::Values(0).type_for(&[Type::Dyn]), Type::Dyn);
+        assert_eq!(
+            Returns::Groups(0).type_for(&[Type::Int]),
+            Type::map(Type::Dyn, Type::Int)
+        );
+        assert_eq!(Returns::Same(3).type_for(&[]), Type::Dyn);
+    }
+}

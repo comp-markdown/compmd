@@ -42,7 +42,7 @@ fn says(message: &str) -> Result<Json, String> {
 fn dates_must_be_dates() {
     assert_eq!(
         run("md.addDays(x, 1)", &json!(1)),
-        says("expected a date, not double")
+        says("md.addDays() doesn't take (double, int)")
     );
     assert_eq!(
         run("md.addDays(x, 1)", &json!("10/21/2026")),
@@ -54,7 +54,7 @@ fn dates_must_be_dates() {
     );
     assert_eq!(
         run("md.addDays('2026-10-21', x)", &json!("a")),
-        says("expected a number, not string")
+        says("md.addDays() doesn't take (string, string)")
     );
     assert_eq!(
         run("md.addDays('2026-10-21', 2u)", &json!(null)),
@@ -86,7 +86,7 @@ fn numbers_and_currencies() {
     );
     assert_eq!(
         run("md.number(x, 0)", &json!("a")),
-        says("expected a number, not string")
+        says("md.number() doesn't take (string, int)")
     );
     assert_eq!(
         run("md.number(1.0 / 0.0, 0)", &json!(null)),
@@ -122,7 +122,18 @@ fn plurals_need_an_other_form() {
     );
     assert_eq!(
         run("md.plural(2, x)", &json!("forms")),
-        says("md.plural() takes a map of forms, not string")
+        says("md.plural() doesn't take (int, string)")
+    );
+    assert_eq!(
+        run(
+            "md.plural(2, {'one': 'a', 'fwe': 'b', 'other': 'c'})",
+            &json!(null)
+        ),
+        says("md.plural() takes forms named by plural categories, not \"fwe\"")
+    );
+    assert_eq!(
+        run("md.plural(2, {1: 'a'})", &json!(null)),
+        says("md.plural() takes forms named by plural categories, not 1")
     );
     assert_eq!(
         run("md.plural(2, x)", &json!({ "other": 5 })),

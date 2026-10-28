@@ -1,5 +1,7 @@
-//! Timestamps and durations in nanoseconds, and dates in days since 1970-01-01, in the proleptic Gregorian calendar,
-//! without a time library.
+//! Timestamps and durations in nanoseconds, and dates as ICU4X's ISO dates, which count days since 1970-01-01 here.
+
+use icu::calendar::types::RataDie;
+use icu::calendar::{Date, Iso};
 
 /// Nanoseconds in a second.
 pub(crate) const NANOS: i128 = 1_000_000_000;
@@ -19,32 +21,17 @@ pub(crate) fn duration_in_range(nanos: i128) -> bool {
     (-LONGEST_DURATION..=LONGEST_DURATION).contains(&nanos)
 }
 
-/// Days since 1970-01-01 of a date (Howard Hinnant's `days_from_civil`).
-pub(crate) fn days_from_civil(year: i64, month: i64, day: i64) -> i64 {
-    let (y, m) = if month <= 2 {
-        (year - 1, month + 9)
-    } else {
-        (year, month - 3)
-    };
-    let era = y.div_euclid(400);
-    let year_of_era = y - era * 400;
-    let day_of_year = (153 * m + 2) / 5 + day - 1;
-    let day_of_era = year_of_era * 365 + year_of_era / 4 - year_of_era / 100 + day_of_year;
-    era * 146_097 + day_of_era - 719_468
+/// 1970-01-01, the day timestamps count from, as a day number of the proleptic Gregorian calendar.
+const EPOCH: RataDie = RataDie::new(719_163);
+
+/// The date `days` after 1970-01-01.
+pub(crate) fn date(days: i64) -> Date<Iso> {
+    Date::from_rata_die(EPOCH + days, Iso)
 }
 
-/// The year, month and day of days since 1970-01-01 (Howard Hinnant's `civil_from_days`).
-pub(crate) fn civil_from_days(days: i64) -> (i64, i64, i64) {
-    let z = days + 719_468;
-    let era = z.div_euclid(146_097);
-    let day_of_era = z - era * 146_097;
-    let year_of_era =
-        (day_of_era - day_of_era / 1460 + day_of_era / 36_524 - day_of_era / 146_096) / 365;
-    let day_of_year = day_of_era - (365 * year_of_era + year_of_era / 4 - year_of_era / 100);
-    let m = (5 * day_of_year + 2) / 153;
-    let day = day_of_year - (153 * m + 2) / 5 + 1;
-    let month = if m < 10 { m + 3 } else { m - 9 };
-    (year_of_era + era * 400 + i64::from(month <= 2), month, day)
+/// The days from 1970-01-01 to `date`.
+pub(crate) fn days(date: Date<Iso>) -> i64 {
+    date.to_rata_die() - EPOCH
 }
 
 /// The number in `text`, which must be all ASCII digits.
@@ -56,31 +43,34 @@ fn digits(text: Option<&str>) -> Option<i64> {
     text.parse().ok()
 }
 
-/// Days since 1970-01-01 of a `YYYY-MM-DD` date that exists.
-pub(crate) fn parse_date(text: &str) -> Option<i64> {
+/// A `YYYY-MM-DD` date that exists.
+pub(crate) fn parse_date(text: &str) -> Option<Date<Iso>> {
     let bytes = text.as_bytes();
     if bytes.len() != 10 || bytes[4] != b'-' || bytes[7] != b'-' {
         return None;
     }
-    let (year, month, day) = (
-        digits(text.get(..4))?,
-        digits(text.get(5..7))?,
-        digits(text.get(8..))?,
+    let part = |range| digits(text.get(range));
+    let year = i32::try_from(part(0..4)?).ok()?;
+    let (month, day) = (
+        u8::try_from(part(5..7)?).ok()?,
+        u8::try_from(part(8..10)?).ok()?,
     );
-    let days = days_from_civil(year, month, day);
-    // A day that doesn't exist, such as 02-30, comes back as another date.
-    (civil_from_days(days) == (year, month, day)).then_some(days)
+    Date::try_new_iso(year, month, day).ok()
 }
 
-/// `YYYY-MM-DD` of days since 1970-01-01.
-pub(crate) fn format_date(days: i64) -> String {
-    let (year, month, day) = civil_from_days(days);
+/// A date as `YYYY-MM-DD`.
+pub(crate) fn format_date(date: Date<Iso>) -> String {
+    let (year, month, day) = (
+        date.year().extended_year(),
+        date.month().ordinal,
+        date.day_of_month().0,
+    );
     format!("{year:04}-{month:02}-{day:02}")
 }
 
 /// An RFC 3339 timestamp, such as `2026-10-21T10:00:00Z` or `2026-10-21T12:00:00.5+02:00`, in CEL's range.
 pub(crate) fn parse_timestamp(text: &str) -> Option<i128> {
-    let days = parse_date(text.get(..10)?)?;
+    let days = days(parse_date(text.get(..10)?)?);
     let bytes = text.as_bytes();
     if bytes.get(10) != Some(&b'T') || bytes.get(13) != Some(&b':') || bytes.get(16) != Some(&b':')
     {
@@ -136,7 +126,7 @@ pub(crate) fn format_timestamp(nanos: i128) -> String {
     let fraction = fraction(nanos.rem_euclid(NANOS));
     format!(
         "{}T{hour:02}:{minute:02}:{second:02}{fraction}Z",
-        format_date(days)
+        format_date(date(days))
     )
 }
 
@@ -221,22 +211,17 @@ mod tests {
 
     #[test]
     fn dates_go_both_ways() {
-        assert_eq!(parse_date("1970-01-01"), Some(0));
+        let day = |text: &str| parse_date(text).map(days);
+        let text = |text: &str| parse_date(text).map(format_date);
+        assert_eq!(day("1970-01-01"), Some(0));
+        assert_eq!(day("1969-12-31"), Some(-1));
         assert_eq!(
-            parse_date("2026-10-21")
-                .zip(parse_date("2026-10-14"))
-                .map(|(a, b)| a - b),
+            day("2026-10-21").zip(day("2026-10-14")).map(|(a, b)| a - b),
             Some(7)
         );
-        assert_eq!(
-            parse_date("2024-02-29").map(format_date).as_deref(),
-            Some("2024-02-29")
-        );
-        assert_eq!(parse_date("1969-12-31"), Some(-1));
-        assert_eq!(
-            parse_date("0001-01-01").map(format_date).as_deref(),
-            Some("0001-01-01")
-        );
+        assert_eq!(format_date(date(20_747)), "2026-10-21");
+        assert_eq!(text("2024-02-29").as_deref(), Some("2024-02-29"));
+        assert_eq!(text("0001-01-01").as_deref(), Some("0001-01-01"));
         assert_eq!(parse_date("2026-02-29"), None);
         assert_eq!(parse_date("2026-1-01"), None);
         assert_eq!(parse_date("2026/10/21"), None);

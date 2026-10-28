@@ -32,7 +32,10 @@
 mod ast;
 mod check;
 mod eval;
+mod functions;
 mod lexer;
+mod ops;
+pub(crate) mod overload;
 mod parser;
 mod strings;
 pub(crate) mod time;

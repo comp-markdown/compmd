@@ -17,6 +17,7 @@
 pub mod cel;
 pub mod diagnostic;
 pub mod md;
+mod named;
 mod nearest;
 mod parse;
 pub mod tree;

@@ -131,7 +131,10 @@ impl Hash for Key {
 }
 
 /// The integer a `double` is equal to, if it is whole and fits a `uint` or an `int`.
-#[allow(clippy::cast_possible_truncation)]
+#[allow(
+    clippy::cast_possible_truncation,
+    reason = "the double is whole and in range, so exact"
+)]
 fn whole(d: f64) -> Option<i128> {
     // Below 2^64 and at least -2^63, every whole double is exact as an i128.
     (d.fract() == 0.0 && (-9_223_372_036_854_775_808.0..18_446_744_073_709_551_616.0).contains(&d))
@@ -237,7 +240,6 @@ impl Value {
     /// The order of two values, as `<` sees it: `Ok(None)` when a `NaN` leaves them unordered, `Err` when their
     /// types have no order between them.
     pub(crate) fn order(&self, other: &Self) -> Result<Option<Ordering>, ()> {
-        #[allow(clippy::cast_precision_loss)]
         let ordering = match (self, other) {
             (Self::Int(a), Self::Int(b)) => Some(a.cmp(b)),
             (Self::Uint(a), Self::Uint(b)) => Some(a.cmp(b)),
@@ -299,7 +301,11 @@ impl Value {
 
 /// The order of an integer against a `double`, exactly: an `i128` holds every `int` and `uint`, and a whole
 /// `double` in that range converts without loss.
-#[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
+#[allow(
+    clippy::cast_precision_loss,
+    clippy::cast_possible_truncation,
+    reason = "the whole part of a double below 1e30 is exact as an i128"
+)]
 fn compare_exact(integer: i128, d: f64) -> Option<Ordering> {
     if d.is_nan() {
         return None;

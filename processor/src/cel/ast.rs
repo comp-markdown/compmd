@@ -1,5 +1,8 @@
 //! The expression tree. Every node knows where it is, in code points from the start of the expression.
 
+use super::ops::{BinaryOp, UnaryOp};
+use crate::named::named;
+
 /// Where a node is: the code point its errors are reported at (an operator, a call's name, a `[`, a `.`), 0-based.
 pub(crate) type At = usize;
 
@@ -13,25 +16,14 @@ pub(crate) enum Literal {
     Null,
 }
 
-/// The comprehension macros of the profile.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum Macro {
-    All,
-    Exists,
-    ExistsOne,
-    Filter,
-    Map,
-}
-
-impl Macro {
-    pub(crate) fn name(self) -> &'static str {
-        match self {
-            Self::All => "all()",
-            Self::Exists => "exists()",
-            Self::ExistsOne => "exists_one()",
-            Self::Filter => "filter()",
-            Self::Map => "map()",
-        }
+named! {
+    /// The comprehension macros of the profile.
+    pub(crate) enum Macro {
+        All = "all",
+        Exists = "exists",
+        ExistsOne = "exists_one",
+        Filter = "filter",
+        Map = "map",
     }
 }
 
@@ -43,8 +35,11 @@ pub(crate) enum Expr {
     Select(Box<Expr>, String, At),
     /// `operand[index]`, at the `[`.
     Index(Box<Expr>, Box<Expr>, At),
-    /// A function or an operator: `target.name(args)` or `name(args)`. Operators are named `_+_`, `!_`, `-_` and
-    /// `@in`, never like a function. At the name or the operator.
+    /// `!operand` or `-operand`, at the operator.
+    Unary(UnaryOp, Box<Expr>, At),
+    /// `left op right`, at the operator.
+    Binary(BinaryOp, Box<Expr>, Box<Expr>, At),
+    /// A function: `target.name(args)` or `name(args)`, at the name.
     Call {
         target: Option<Box<Expr>>,
         name: String,
@@ -76,6 +71,8 @@ impl Expr {
             | Self::Ident(_, at)
             | Self::Select(_, _, at)
             | Self::Index(_, _, at)
+            | Self::Unary(_, _, at)
+            | Self::Binary(_, _, _, at)
             | Self::Call { at, .. }
             | Self::And(_, _, at)
             | Self::Or(_, _, at)

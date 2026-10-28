@@ -336,6 +336,10 @@ fn numbers_overflow_and_divide_by_zero_as_errors() {
     );
     assert_eq!(run("-(-9223372036854775808)"), Err(says(1, "int overflow")));
     assert_eq!(run("7 % 0"), Err(says(3, "division by zero")));
+    assert_eq!(
+        run("-9223372036854775808 % -1"),
+        Err(says(22, "int overflow"))
+    );
     assert_eq!(run("1u - 2u"), Err(says(4, "uint overflow")));
     assert_eq!(run("1u / 0u"), Err(says(4, "division by zero")));
     assert_eq!(run("7u % 4u + 7u * 2u"), Ok(json!(17)));
@@ -411,7 +415,7 @@ fn conversions_fail_where_they_must() {
     assert_eq!(fails("int(x)", json!("4x")), says(1, "'4x' is not an int"));
     assert_eq!(
         fails("int(x)", json!(true)),
-        says(1, "int() doesn't take bool")
+        says(1, "int() doesn't take (bool)")
     );
     assert_eq!(
         fails("double(x)", json!("x")),
@@ -419,15 +423,15 @@ fn conversions_fail_where_they_must() {
     );
     assert_eq!(
         fails("double(x)", json!(true)),
-        says(1, "double() doesn't take bool")
+        says(1, "double() doesn't take (bool)")
     );
     assert_eq!(
         fails("string(x)", json!(null)),
-        says(1, "string() doesn't take null")
+        says(1, "string() doesn't take (null)")
     );
     assert_eq!(
         fails("size(x)", json!(1)),
-        says(1, "size() doesn't take double")
+        says(1, "size() doesn't take (double)")
     );
     assert_eq!(
         fails("timestamp(x)", json!(1)),
@@ -439,7 +443,7 @@ fn conversions_fail_where_they_must() {
     );
     assert_eq!(
         fails("x.join()", json!(1)),
-        says(3, "join() doesn't take (double)")
+        says(3, "double.join() doesn't take ()")
     );
     assert_eq!(
         fails("x.charAt('a')", json!("abc")),
@@ -496,7 +500,7 @@ fn conversions_fail_where_they_must() {
             json!(null),
             json!(null)
         ),
-        Err(says(27, "string() doesn't take null"))
+        Err(says(27, "string() doesn't take (null)"))
     );
 }
 
