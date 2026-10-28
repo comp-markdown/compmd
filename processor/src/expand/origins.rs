@@ -105,17 +105,10 @@ pub(super) fn strip(nodes: &mut [Node]) {
         if let Content::ComponentContainer(container) = &mut node.content {
             for slot in &mut container.slots {
                 slot.origin = None;
-                strip(&mut slot.children);
-                for instance in slot.instances.iter_mut().flatten() {
-                    strip(&mut instance.children);
-                }
-            }
-            for instance in container.instances.iter_mut().flatten() {
-                strip(&mut instance.children);
             }
         }
-        if let Some(children) = node.content.children_mut() {
-            strip(children);
+        for list in node.content.lists_mut() {
+            strip(list);
         }
     }
 }

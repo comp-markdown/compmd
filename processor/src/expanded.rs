@@ -224,6 +224,34 @@ impl Content {
         }
     }
 
+    /// Every list of nodes it holds: its children, then a container's template instances and each named slot's
+    /// content and instances.
+    pub(crate) fn lists(&self) -> Vec<&[Node]> {
+        let mut lists = vec![self.children()];
+        if let Self::ComponentContainer(container) = self {
+            lists.extend(instances(container.instances.as_deref()));
+            for slot in &container.slots {
+                lists.push(&slot.children);
+                lists.extend(instances(slot.instances.as_deref()));
+            }
+        }
+        lists
+    }
+
+    /// Every list of nodes it holds, to change them: as [`Content::lists`].
+    pub(crate) fn lists_mut(&mut self) -> Vec<&mut Vec<Node>> {
+        let Self::ComponentContainer(container) = self else {
+            return self.children_mut().into_iter().collect();
+        };
+        let mut lists = vec![&mut container.children];
+        lists.extend(instances_mut(container.instances.as_deref_mut()));
+        for slot in &mut container.slots {
+            lists.push(&mut slot.children);
+            lists.extend(instances_mut(slot.instances.as_deref_mut()));
+        }
+        lists
+    }
+
     /// Its children, to change them.
     pub(crate) fn children_mut(&mut self) -> Option<&mut Vec<Node>> {
         match self {
@@ -246,6 +274,21 @@ impl Content {
             _ => None,
         }
     }
+}
+
+/// The content of a template slot's instances.
+fn instances(instances: Option<&[Instance]>) -> impl Iterator<Item = &[Node]> {
+    instances
+        .into_iter()
+        .flatten()
+        .map(|instance| instance.children.as_slice())
+}
+
+fn instances_mut(instances: Option<&mut [Instance]>) -> impl Iterator<Item = &mut Vec<Node>> {
+    instances
+        .into_iter()
+        .flatten()
+        .map(|instance| &mut instance.children)
 }
 
 /// A component container the processor renders.

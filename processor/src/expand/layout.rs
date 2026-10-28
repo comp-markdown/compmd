@@ -77,12 +77,8 @@ fn visit(block: &Block, around: Around, found: &mut Vec<Diagnostic>) {
         return;
     };
     let mut inside = Vec::new();
-    collect(&container.children, &mut inside);
-    for slot in &container.slots {
-        collect(&slot.children, &mut inside);
-    }
-    for instance in container.instances.iter().flatten() {
-        collect(&instance.children, &mut inside);
+    for list in block.node.content.lists() {
+        collect(list, &mut inside);
     }
     let held = if container.name == "box" {
         Around::Box(&container.params)
