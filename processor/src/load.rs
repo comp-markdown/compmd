@@ -43,32 +43,12 @@ impl Loaded {
             .cloned()
             .unwrap_or_else(|| Value::Map(Rc::default()))
     }
-
-    /// `md.input`: each input's value by its name.
-    pub(crate) fn input(&self) -> Value {
-        Value::Map(Rc::new(
-            self.inputs
-                .0
-                .iter()
-                .map(|input| {
-                    (
-                        Key::String(Rc::from(input.name.as_str())),
-                        Value::from_json(&input.value),
-                    )
-                })
-                .collect(),
-        ))
-    }
 }
 
 /// The remote and `host:` sources a render with `context` needs, each once, in the order they are first written.
 pub(crate) fn sources(resolved: &Resolved, validated: &Validated, context: &Context) -> Needed {
     let (inputs, _) = inputs::of(resolved, context);
-    let input = Loaded {
-        inputs,
-        ..Loaded::default()
-    }
-    .input();
+    let input = inputs.value();
     let mut needed = Needed::default();
     for (id, _, import) in imports(resolved, validated) {
         let (list, source) = match from::target(resolved, id, import, &input) {
@@ -108,7 +88,7 @@ pub(crate) fn load(
             data: HashMap::new(),
         },
     };
-    let input = loader.loaded.input();
+    let input = loader.loaded.inputs.value();
     let mut data: HashMap<DocumentId, IndexMap<Key, Value>> = HashMap::new();
     for (id, index, import) in all_imports(resolved) {
         let value = if validated.refuses_data(id, index) {

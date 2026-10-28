@@ -11,7 +11,6 @@ use crate::resolve::Resolved;
 use crate::settings::Settings;
 use crate::tree::{DeclaredType, DefaultValue, ParamValue, StringPart};
 use serde_json::Value as Json;
-use std::rc::Rc;
 
 /// The inputs of the processed document, and the errors of their defaults (F024).
 pub(super) fn of(resolved: &Resolved, context: &Context) -> (Inputs, Vec<Diagnostic>) {
@@ -95,8 +94,7 @@ fn text_of(parts: &[StringPart], settings: &Settings, context: &Context) -> Resu
 
 /// An expression of a default, with `md` of the document and its functions.
 fn evaluate(source: &str, settings: &Settings, context: &Context) -> Result<Value, String> {
-    let md = Value::Map(Rc::new(context.md(settings)));
-    let values = Values::default().with("md", md);
+    let values = Values::default().with("md", context.md(settings).into());
     Program::parse(source)
         .and_then(|program| program.evaluate(&values, &context.functions(settings)))
         .map_err(|error| error.to_string())

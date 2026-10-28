@@ -14,7 +14,7 @@ mod params;
 mod text;
 
 use crate::cel::{Error, Program, Value, Values};
-use crate::context::{Context, key};
+use crate::context::Context;
 use crate::diagnostic::{Code, Diagnostic, Location, Stage};
 use crate::expanded::{self, Content, Origin, Root};
 use crate::lines::Lines;
@@ -121,15 +121,11 @@ impl<'r> Expander<'r> {
             .ids()
             .map(|id| {
                 let settings = &resolved.document(id).settings;
-                let mut fields = context.md(settings);
-                fields.insert(key("data"), loaded.data(id));
+                let mut md = context.md(settings).data(loaded.data(id));
                 if id == resolved.main {
-                    fields.insert(key("input"), loaded.input());
+                    md = md.input(&loaded.inputs);
                 }
-                (
-                    id,
-                    (Value::Map(Rc::new(fields)), context.functions(settings)),
-                )
+                (id, (md.into(), context.functions(settings)))
             })
             .collect();
         let lines = resolved

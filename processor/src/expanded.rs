@@ -14,6 +14,7 @@ use crate::tree::{
 use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
 use serde_json::Value;
+use std::rc::Rc;
 
 /// A value as the expanded tree writes it: as JSON, with a whole `double` written as an integer (`5`, not `5.0`),
 /// as JavaScript writes numbers.
@@ -62,6 +63,17 @@ impl Inputs {
     /// The inputs, in declared order.
     pub fn iter(&self) -> std::slice::Iter<'_, Input> {
         self.0.iter()
+    }
+
+    /// `md.input`: each input's value by its name.
+    pub(crate) fn value(&self) -> cel::Value {
+        let values = self.iter().map(|input| {
+            (
+                cel::Key::String(Rc::from(input.name.as_str())),
+                cel::Value::from_json(&input.value),
+            )
+        });
+        cel::Value::Map(Rc::new(values.collect()))
     }
 }
 

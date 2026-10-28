@@ -2,6 +2,7 @@
 
 use crate::cel::time::parse_timestamp;
 use crate::cel::{Key, Value};
+use crate::expanded::Inputs;
 use crate::host::Time;
 use crate::md::Md;
 use crate::settings::Settings;
@@ -52,10 +53,10 @@ impl Context<'_> {
     }
 
     /// `md` of a document with `settings`, as far as the document alone gives it: `doc`, `version`, `lang` and `tz`
-    /// (spec §8.1). A render adds `data`, `input` and `loop`.
-    pub(crate) fn md(&self, settings: &Settings) -> IndexMap<Key, Value> {
+    /// (spec §8.1). A render adds `data` and `input` to it, and templates `loop`.
+    pub(crate) fn md(&self, settings: &Settings) -> MdValue {
         let text = |text: Option<&str>| text.map_or(Value::Null, Value::string);
-        IndexMap::from([
+        MdValue(IndexMap::from([
             (
                 key("doc"),
                 Value::from_json(&Json::Object(settings.doc.clone())),
@@ -66,11 +67,34 @@ impl Context<'_> {
                 Value::string(settings.lang.as_deref().unwrap_or(DEFAULT_LANG)),
             ),
             (key("tz"), Value::string(self.tz(settings))),
-        ])
+        ]))
     }
 
     fn tz<'s>(&'s self, settings: &'s Settings) -> &'s str {
         settings.tz.as_deref().unwrap_or(&self.tz)
+    }
+}
+
+/// The value of `md` for a document (spec §8.1), built up from what [`Context::md`] gives.
+pub(crate) struct MdValue(IndexMap<Key, Value>);
+
+impl MdValue {
+    /// With `md.data`: the document's data imports by name.
+    pub(crate) fn data(mut self, data: Value) -> Self {
+        self.0.insert(key("data"), data);
+        self
+    }
+
+    /// With `md.input`: the processed document's inputs.
+    pub(crate) fn input(mut self, inputs: &Inputs) -> Self {
+        self.0.insert(key("input"), inputs.value());
+        self
+    }
+}
+
+impl From<MdValue> for Value {
+    fn from(md: MdValue) -> Self {
+        Self::Map(Rc::new(md.0))
     }
 }
 
