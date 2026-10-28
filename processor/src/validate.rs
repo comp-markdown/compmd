@@ -11,13 +11,15 @@ pub(crate) mod params;
 pub(crate) mod scope;
 pub(crate) mod universal;
 
+use crate::cel::{self, Program};
 use crate::diagnostic::{Code, Diagnostic, Location, Stage};
 use crate::lines::Lines;
 use crate::reserved;
 use crate::resolve::{DocumentId, Resolved};
 use crate::tree::{Node, Param, Point, Position};
 use scope::Scope;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
+use std::rc::Rc;
 
 /// The checked document (spec §11): the diagnostics of validating, and what they refused, which the later stages
 /// treat as absent (spec §10.3).
@@ -26,6 +28,8 @@ pub(crate) struct Validated {
     /// The diagnostics of stage 3, until the processor takes them.
     pub(crate) diagnostics: Vec<Diagnostic>,
     refused: HashSet<Refused>,
+    /// The expressions it parsed, by their source, for every render to evaluate.
+    programs: HashMap<String, Rc<Program>>,
 }
 
 /// Something validating refused.
@@ -50,6 +54,11 @@ impl Validated {
     /// Whether the data import at `index` of the document `id` was refused.
     pub(crate) fn refuses_data(&self, id: DocumentId, index: usize) -> bool {
         self.refused.contains(&Refused::Data(id, index))
+    }
+
+    /// The parsed program of the expression `source`, if validating checked it.
+    pub(crate) fn program(&self, source: &str) -> Option<&Rc<Program>> {
+        self.programs.get(source)
     }
 
     /// Whether the invocation at `position` in the document `id` renders its fallback: no binding of this processor
@@ -110,6 +119,18 @@ impl Checker<'_, '_> {
                 .in_stage(Stage::Validate)
                 .in_file(self.file.clone()),
         );
+    }
+
+    /// The expression `source` parsed, kept for every render to evaluate; parsed once however often it is written.
+    fn parse(&mut self, source: &str) -> Result<Rc<Program>, cel::Error> {
+        if let Some(program) = self.validated.programs.get(source) {
+            return Ok(Rc::clone(program));
+        }
+        let program = Rc::new(Program::parse(source)?);
+        self.validated
+            .programs
+            .insert(source.to_string(), Rc::clone(&program));
+        Ok(program)
     }
 
     /// Records that `param` is treated as absent.

@@ -6,8 +6,8 @@ use super::Checker;
 use super::grammar::Grammar;
 use super::scope::Scope;
 use super::universal::{Takes, Universal};
+use crate::cel::Type;
 use crate::cel::time::parse_date;
-use crate::cel::{Program, Type};
 use crate::diagnostic::{Code, Location};
 use crate::md::Signatures;
 use crate::named::named;
@@ -588,8 +588,9 @@ impl<'r> Checker<'r, '_> {
         key: &str,
     ) -> Option<Type> {
         let inside = Location::new(at.line, at.column + 1);
-        let checked =
-            Program::parse(source).and_then(|program| program.check(&scope.cel(), &Signatures));
+        let checked = self
+            .parse(source)
+            .and_then(|program| program.check(&scope.cel(), &Signatures));
         match checked {
             Err(error) => {
                 let at = Location::new(inside.line, inside.column + error.at());

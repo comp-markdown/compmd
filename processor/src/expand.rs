@@ -94,6 +94,7 @@ struct Expander<'r> {
     md: HashMap<DocumentId, (Value, Md<'r>)>,
     /// Each document's lines, for where in it an interpolation's path is.
     lines: HashMap<DocumentId, Lines<'r>>,
+    /// The programs of the paths and defaults this render evaluates; validating keeps those of expressions.
     programs: HashMap<String, Result<Rc<Program>, Error>>,
     /// The depth of the last heading expanded, in output order, which relative headings follow (spec §7.2).
     last_heading: u8,
@@ -166,13 +167,17 @@ impl<'r> Expander<'r> {
         Scope::body(self.resolved, id)
     }
 
-    /// Evaluates an expression written in `env`'s document; its program is parsed once.
+    /// Evaluates an expression written in `env`'s document, with the program validating parsed; interpolation paths
+    /// and declared defaults, which validating doesn't parse, are parsed here once.
     fn evaluate(&mut self, source: &str, env: &Env) -> Result<Value, Error> {
-        let program = self
-            .programs
-            .entry(source.to_string())
-            .or_insert_with(|| Program::parse(source).map(Rc::new))
-            .clone()?;
+        let program = match self.validated.program(source) {
+            Some(program) => Rc::clone(program),
+            None => self
+                .programs
+                .entry(source.to_string())
+                .or_insert_with(|| Program::parse(source).map(Rc::new))
+                .clone()?,
+        };
         program.evaluate(&env.values, &self.md[&env.document].1)
     }
 
