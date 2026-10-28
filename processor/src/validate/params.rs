@@ -194,20 +194,13 @@ impl Invoked {
     }
 }
 
-/// What checking a declared param gave: given, with the type of its expression, or refused, so that a missing value
-/// isn't reported again (F010).
-enum Checked {
-    Given(Option<Type>),
-    Refused,
-}
-
 /// How a param of an invocation was judged.
 enum Verdict {
     /// A declared param, with the type of its expression.
     Declared(Option<Type>),
     /// A param for the component's box: a common param, a class or an id.
     Universal,
-    /// Treated as absent.
+    /// Treated as absent; a declared one isn't reported missing again (F010).
     Refused,
 }
 
@@ -364,10 +357,7 @@ impl<'r> Checker<'r, '_> {
                 self.no_breakpoint(param, key);
                 return Verdict::Refused;
             }
-            return match self.declared(target, declared, param, scope) {
-                Checked::Given(ty) => Verdict::Declared(ty),
-                Checked::Refused => Verdict::Refused,
-            };
+            return self.declared(target, declared, param, scope);
         }
         match Universal::from_name(key) {
             Some(universal) if target.contents && universal.needs_box() => self.no_box(param),
@@ -418,7 +408,7 @@ impl<'r> Checker<'r, '_> {
         declared: &Declaration,
         param: &'r Param,
         scope: &Scope<'r>,
-    ) -> Checked {
+    ) -> Verdict {
         let at = value_at(param);
         let key = declared.name.as_str();
         if target.is(Keyword::Box) && param.is_display_contents() {
@@ -427,7 +417,7 @@ impl<'r> Checker<'r, '_> {
                 at,
                 "`display=contents` is only for a definition fence, which has the box it removes",
             );
-            return Checked::Refused;
+            return Verdict::Refused;
         }
         match (&param.value, &declared.declared) {
             (ParamValue::Expr(_), DeclaredType::Name(TypeName::Name)) => self.refuse(
@@ -441,8 +431,8 @@ impl<'r> Checker<'r, '_> {
             (ParamValue::Expr(source), declared_type) => {
                 match self.expression(source, at, scope, Some(&Type::declared(declared_type)), key)
                 {
-                    Some(ty) => Checked::Given(Some(ty)),
-                    None => Checked::Refused,
+                    Some(ty) => Verdict::Declared(Some(ty)),
+                    None => Verdict::Refused,
                 }
             }
             (value, DeclaredType::Input { input }) => {
@@ -463,19 +453,19 @@ impl<'r> Checker<'r, '_> {
                 {
                     self.report(Code::F013, at, why);
                 }
-                Checked::Given(None)
+                Verdict::Declared(None)
             }
         }
     }
 
     /// F009: the param is treated as absent.
-    fn refuse(&mut self, at: Location, message: &str) -> Checked {
+    fn refuse(&mut self, at: Location, message: &str) -> Verdict {
         self.report(
             Code::F009,
             at,
             format!("{message}; the param is treated as absent"),
         );
-        Checked::Refused
+        Verdict::Refused
     }
 
     /// A param of type `input<…>`: the name of a declared input of a type it binds (F030).
@@ -487,7 +477,7 @@ impl<'r> Checker<'r, '_> {
         input_type: &DeclaredType,
         at: Location,
         scope: &Scope,
-    ) -> Checked {
+    ) -> Verdict {
         let ParamValue::Bare(name) = value else {
             return self.refuse(at, &format!("`{key}` binds an input by its name"));
         };
@@ -497,7 +487,7 @@ impl<'r> Checker<'r, '_> {
                 at,
                 format!("no input `{name}` is declared under `md.inputs` of this document"),
             );
-            return Checked::Refused;
+            return Verdict::Refused;
         };
         if !binds(input_type, &input.declaration.declared) {
             self.report(
@@ -509,12 +499,12 @@ impl<'r> Checker<'r, '_> {
                     input.declaration.declared.written()
                 ),
             );
-            return Checked::Refused;
+            return Verdict::Refused;
         }
         if target.component.body.is_host() {
             self.bound_by_hosts.insert(name.clone());
         }
-        Checked::Given(None)
+        Verdict::Declared(None)
     }
 
     /// A universal param's value against its grammar, and its breakpoint; whether it is accepted.
@@ -720,7 +710,7 @@ impl<'r> Checker<'r, '_> {
         if let Some((layout, declared)) = own {
             return matches!(
                 self.declared(layout, declared, param, scope),
-                Checked::Given(_)
+                Verdict::Declared(_)
             );
         }
         let takes = if compmd {
