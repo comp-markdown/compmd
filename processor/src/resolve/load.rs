@@ -2,6 +2,7 @@
 //! imports, F029, F035, W105, W112, W117, and F002 for a signature fence with nothing to attach to.
 
 use super::names::{Binding, Builder, Level, Names};
+use super::origin::CORE;
 use super::source::{PackSpec, Source};
 use super::{
     Ambient, Body, Component, ComponentId, Document, DocumentId, Language, Origin, Resolved, Store,
@@ -68,7 +69,7 @@ impl<'h> Loader<'h> {
     /// Loads `@compmd/core`, the ambient packs and the processed document, then reports the names its bodies use.
     pub(super) fn resolve(mut self, text: &str, parsed: Parsed, ambient: &Ambient) -> Resolved {
         self.core = self
-            .document_at(Origin::Core, Location::new(1, 1), true)
+            .document_at(Origin::core(), Location::new(1, 1), true)
             .ok();
         self.ambient = ambient
             .packs
@@ -272,7 +273,6 @@ impl<'h> Loader<'h> {
         let from = &import.from;
         let release = self
             .store
-            .packs
             .releases(&spec.name)
             .into_iter()
             .filter(|release| spec.range.matches(&release.version))
@@ -310,7 +310,6 @@ impl<'h> Loader<'h> {
     fn ambient_pack(&mut self, name: &str) -> Option<DocumentId> {
         let release = self
             .store
-            .packs
             .releases(name)
             .into_iter()
             .max_by(|a, b| a.version.cmp(&b.version))?;
@@ -335,8 +334,11 @@ impl<'h> Loader<'h> {
         };
         let manifest: Value = self
             .store
-            .packs
-            .pack_file(name, &version, "package.json")
+            .read(&Origin::Pack {
+                name: name.to_string(),
+                version: version.clone(),
+                path: "package.json".to_string(),
+            })
             .and_then(|text| serde_json::from_str(&text).ok())
             .ok_or_else(unloadable)?;
         let path = manifest
@@ -417,7 +419,7 @@ impl<'h> Loader<'h> {
         let core = self.core.filter(|core| *core != id);
         for (name, binding) in core.iter().flat_map(|core| &self.document(*core).exports) {
             if let Binding::Component(component, _) = binding {
-                names.share(name, *component, "@compmd/core", Level::Core);
+                names.share(name, *component, CORE, Level::Core);
             }
         }
         for pack in self.ambient.iter().filter(|pack| **pack != id) {
@@ -432,7 +434,7 @@ impl<'h> Loader<'h> {
     /// Whether `name` may be declared at the first two levels: not a keyword or `md`, which `@compmd/core` alone
     /// defines, and not declared yet (F013). Shadowing a `@compmd/core` component is allowed, with W112.
     fn admit(&mut self, id: DocumentId, names: &Builder, name: &str, at: Location) -> bool {
-        let core = self.document(id).origin == Origin::Core;
+        let core = self.document(id).origin.is_core();
         if let Some(why) = reserved::as_component(name).filter(|_| !core) {
             self.report(id, Code::F013, at, why);
             return false;

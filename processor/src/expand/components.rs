@@ -10,7 +10,7 @@ use crate::cel::{Value, Values};
 use crate::diagnostic::Location;
 use crate::expanded::{self, Container, Content, Instance, Leaf, json};
 use crate::reserved::Keyword;
-use crate::resolve::{Binding, Body, Component, ComponentId, Origin};
+use crate::resolve::{Binding, Body, Component, ComponentId};
 use crate::tree::{
     self, DeclaredType, DefaultValue, Headings, Node, Param, ParamValue, Signature, SlotDeclaration,
 };
@@ -115,7 +115,10 @@ impl<'r> Expander<'r> {
             .filter(|param| !self.validated.refuses_param(env.document, param))
             .collect();
         let signature = component.signature.as_ref();
-        let keyword = (resolved.document(component.document).origin == Origin::Core)
+        let keyword = resolved
+            .document(component.document)
+            .origin
+            .is_core()
             .then(|| Keyword::from_name(&component.name))
             .flatten();
         let renders = signature.is_none_or(|signature| !missing(signature, &given))

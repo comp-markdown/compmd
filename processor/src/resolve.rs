@@ -14,16 +14,17 @@ mod uses;
 pub(crate) use language::Language;
 pub(crate) use names::{Binding, Names};
 pub(crate) use origin::Origin;
+use origin::RESERVED_SCOPE;
 
 use crate::diagnostic::Diagnostic;
-use crate::host::{Files, Packs};
+use crate::host::{Files, Packs, Release};
 use crate::parse::Parsed;
 use crate::settings::Settings;
 use crate::tree::{Node, Param, Position, Root, Signature};
 use std::collections::BTreeMap;
 
-/// `@compmd/core`, built in (spec §9).
-const CORE: &str = include_str!("core.comp.md");
+/// The document of `@compmd/core`, built in (spec §9).
+const CORE_TEXT: &str = include_str!("core.comp.md");
 
 /// The packs every document imports, at the lowest priority (spec §6.3), and whether to report their names.
 ///
@@ -40,7 +41,8 @@ pub struct Ambient {
     pub report: bool,
 }
 
-/// Where documents and the files they name come from: the host's files and packs, and `@compmd/core`.
+/// Where documents and the files they name come from: the host's files and packs, and `@compmd/core`, which the
+/// processor serves itself: the host is never asked for a pack of `@compmd/` (spec §6.4).
 #[derive(Clone, Copy)]
 pub(crate) struct Store<'h> {
     pub(crate) files: &'h dyn Files,
@@ -52,12 +54,22 @@ impl Store<'_> {
     pub(crate) fn read(&self, origin: &Origin) -> Option<String> {
         match origin {
             Origin::File(path) => self.files.file(path),
+            _ if origin.is_core() => Some(CORE_TEXT.to_string()),
+            Origin::Pack { name, .. } if name.starts_with(RESERVED_SCOPE) => None,
             Origin::Pack {
                 name,
                 version,
                 path,
             } => self.packs.pack_file(name, version, path),
-            Origin::Core => Some(CORE.to_string()),
+        }
+    }
+
+    /// Every release of the host's `pack`; none of `@compmd/`.
+    pub(crate) fn releases(&self, pack: &str) -> Vec<Release> {
+        if pack.starts_with(RESERVED_SCOPE) {
+            Vec::new()
+        } else {
+            self.packs.releases(pack)
         }
     }
 }
@@ -244,6 +256,34 @@ mod tests {
             panic!("`{name}` is bound");
         };
         resolved.component(*id)
+    }
+
+    #[test]
+    fn core_is_built_in_even_when_the_host_has_a_pack_of_its_name() {
+        let impostor = json!({ "@compmd/core": [{ "version": "1.0.0", "files": {
+            "package.json": "{\"name\": \"@compmd/core\", \"version\": \"1.0.0\"}",
+            "index.comp.md": "Not core.\n",
+        } }] });
+        let packs: process::Packs = serde_json::from_value(impostor.clone()).expect("packs");
+        let store = Store {
+            files: &(),
+            packs: &packs,
+        };
+        let manifest = Origin::Pack {
+            name: "@compmd/core".into(),
+            version: semver::Version::new(1, 0, 0),
+            path: "package.json".into(),
+        };
+        assert_eq!(store.read(&manifest), None, "the host isn't asked");
+        let resolved = resolved(
+            &[("input.comp.md", ":: box[B]\n")],
+            impostor,
+            &["@compmd/core"],
+        );
+        assert_eq!(resolved.documents.len(), 2, "the document and core, once");
+        let core = resolved.document(bound(&resolved, "box").document);
+        assert!(core.origin.is_core());
+        assert_eq!(core.text, CORE_TEXT);
     }
 
     #[test]
