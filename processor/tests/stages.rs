@@ -75,7 +75,7 @@ fn run(files: &[(&str, &str)], packs: &Packs, ambient: &[&str]) -> (Resolved, Fo
         &sources,
     );
     let mut diagnostics = resolved.diagnostics.clone();
-    diagnostics.extend(validate(&resolved, &Options::default()));
+    diagnostics.extend(validate(&resolved, &Options::default()).diagnostics);
     let mut found: Found = diagnostics
         .iter()
         .map(|d| {

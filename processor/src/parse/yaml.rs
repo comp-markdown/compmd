@@ -64,13 +64,16 @@ pub(crate) fn parse(text: &str) -> Result<Document, Refused> {
     })
 }
 
+/// A sequence or a mapping being read, with where it starts.
 enum Collection {
     Sequence {
         pointer: String,
+        start: Mark,
         items: Vec<Value>,
     },
     Mapping {
         pointer: String,
+        start: Mark,
         entries: Map<String, Value>,
         key: Option<String>,
         seen: HashSet<String>,
@@ -90,7 +93,9 @@ impl Builder {
     /// The pointer of the value placed next.
     fn next_pointer(&self) -> String {
         match self.open.last() {
-            Some(Collection::Sequence { pointer, items }) => format!("{pointer}/{}", items.len()),
+            Some(Collection::Sequence { pointer, items, .. }) => {
+                format!("{pointer}/{}", items.len())
+            }
             Some(Collection::Mapping {
                 pointer,
                 key: Some(key),
@@ -100,7 +105,7 @@ impl Builder {
         }
     }
 
-    /// Places a value, or a mapping's key, that ends at `mark`.
+    /// Places a value, or a mapping's key, that starts at `mark`.
     fn place(&mut self, value: Value, mark: Mark) {
         let pointer = self.next_pointer();
         match self.open.last_mut() {
@@ -113,6 +118,7 @@ impl Builder {
                 entries,
                 key,
                 seen,
+                ..
             }) => {
                 if let Some(key) = key.take() {
                     self.values.insert(pointer, mark);
@@ -150,6 +156,7 @@ impl MarkedEventReceiver for Builder {
                 let pointer = self.next_pointer();
                 self.open.push(Collection::Sequence {
                     pointer,
+                    start: mark,
                     items: Vec::new(),
                 });
             }
@@ -157,18 +164,21 @@ impl MarkedEventReceiver for Builder {
                 let pointer = self.next_pointer();
                 self.open.push(Collection::Mapping {
                     pointer,
+                    start: mark,
                     entries: Map::new(),
                     key: None,
                     seen: HashSet::new(),
                 });
             }
             Event::SequenceEnd | Event::MappingEnd => {
-                let value = match self.open.pop() {
-                    Some(Collection::Sequence { items, .. }) => Value::Array(items),
-                    Some(Collection::Mapping { entries, .. }) => Value::Object(entries),
-                    None => Value::Null,
+                let (value, start) = match self.open.pop() {
+                    Some(Collection::Sequence { items, start, .. }) => (Value::Array(items), start),
+                    Some(Collection::Mapping { entries, start, .. }) => {
+                        (Value::Object(entries), start)
+                    }
+                    None => (Value::Null, mark),
                 };
-                self.place(value, mark);
+                self.place(value, start);
             }
             _ => {}
         }

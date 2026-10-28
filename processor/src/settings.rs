@@ -62,8 +62,21 @@ pub(crate) struct DataImport {
     pub(crate) text_at: Location,
     /// The name it gets under `md.data`.
     pub(crate) name: String,
-    /// The declared field types of its records.
-    pub(crate) schema: Option<Vec<Declaration>>,
+    /// The declared fields of its records.
+    pub(crate) schema: Option<Vec<Field>>,
+    /// The local file loaded when a remote or `host:` source fails.
+    pub(crate) fallback: Option<String>,
+    /// A CSV file's field separator.
+    pub(crate) delimiter: Option<char>,
+}
+
+/// A field of a data import's schema.
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct Field {
+    /// Its name and type.
+    pub(crate) declaration: Declaration,
+    /// The key it has in the data: its `from`, or its name.
+    pub(crate) key: String,
 }
 
 /// A declared input (spec §8.7).
@@ -83,6 +96,12 @@ pub(crate) struct Settings {
     pub(crate) export: Option<Export>,
     pub(crate) data: Vec<DataImport>,
     pub(crate) inputs: Vec<Input>,
+    /// `md.version` as written, `1` or `1.2`.
+    pub(crate) version: Option<String>,
+    /// `md.lang`, a BCP 47 tag.
+    pub(crate) lang: Option<String>,
+    /// `md.tz`, a time zone.
+    pub(crate) tz: Option<String>,
 }
 
 impl Settings {
@@ -107,12 +126,20 @@ impl Settings {
             return Self::default();
         };
         let md = doc.remove("md").unwrap_or(Value::Null);
+        let text = |key: &str| match md.get(key) {
+            Some(Value::String(text)) => Some(text.clone()),
+            Some(Value::Number(number)) => Some(number.to_string()),
+            _ => None,
+        };
         Self {
-            doc,
             imports: reader.list(&md, "import", Reader::import),
             export: md.get("export").and_then(|export| reader.export(export)),
             data: reader.list(&md, "data", Reader::data),
             inputs: reader.inputs(&md),
+            version: text("version"),
+            lang: text("lang"),
+            tz: text("tz"),
+            doc,
         }
     }
 }
@@ -232,14 +259,24 @@ impl Reader<'_> {
             .map(|fields| {
                 fields
                     .iter()
-                    .map(|(name, declared)| declaration(name, declared))
+                    .map(|(name, declared)| Field {
+                        declaration: declaration(name, declared),
+                        key: declared
+                            .get("from")
+                            .and_then(Value::as_str)
+                            .unwrap_or(name)
+                            .to_string(),
+                    })
                     .collect()
             });
+        let text = |key: &str| entry.get(key).and_then(Value::as_str);
         Some(DataImport {
             from: self.text(entry, pointer, "from")?,
             text_at: self.content_at(&format!("{pointer}/from")),
-            name: entry.get("as")?.as_str()?.to_string(),
+            name: text("as")?.to_string(),
             schema,
+            fallback: text("fallback").map(str::to_string),
+            delimiter: text("delimiter").and_then(|delimiter| delimiter.chars().next()),
         })
     }
 

@@ -7,15 +7,15 @@
 mod body;
 mod data;
 mod grammar;
-mod params;
-mod scope;
-mod universal;
+pub(crate) mod params;
+pub(crate) mod scope;
+pub(crate) mod universal;
 
 use crate::diagnostic::{Code, Diagnostic, Location, Stage};
 use crate::lines::Lines;
 use crate::reserved;
 use crate::resolve::{DocumentId, Resolved};
-use crate::tree::Node;
+use crate::tree::{Node, Param, Point};
 use scope::Scope;
 use std::collections::HashSet;
 
@@ -26,7 +26,39 @@ pub struct Options {
     pub allowed_origins: Vec<String>,
 }
 
-/// Validates a resolved document, stage 3 of spec §11, and gives its diagnostics.
+/// The checked document (spec §11): the diagnostics of validating, and what they refused, which the later stages
+/// treat as absent (spec §10.3).
+#[derive(Clone, Debug, Default)]
+pub struct Validated {
+    /// The diagnostics of stage 3.
+    pub diagnostics: Vec<Diagnostic>,
+    refused: HashSet<Refused>,
+}
+
+/// Something validating refused.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+enum Refused {
+    /// A param, by where it starts in its document: it is treated as absent.
+    Param(DocumentId, Point),
+    /// A data import, by its place in `md.data`: the data is its `fallback`, or null.
+    Data(DocumentId, usize),
+}
+
+impl Validated {
+    /// Whether the param of the document `id` was refused.
+    pub(crate) fn refuses_param(&self, id: DocumentId, param: &Param) -> bool {
+        param
+            .position
+            .is_some_and(|position| self.refused.contains(&Refused::Param(id, position.start)))
+    }
+
+    /// Whether the data import at `index` of the document `id` was refused.
+    pub(crate) fn refuses_data(&self, id: DocumentId, index: usize) -> bool {
+        self.refused.contains(&Refused::Data(id, index))
+    }
+}
+
+/// Validates a resolved document, stage 3 of spec §11: gives its diagnostics, and what they refused.
 ///
 /// ```
 /// use compmd::resolve::{Sources, resolve};
@@ -38,12 +70,12 @@ pub struct Options {
 /// let files: HashMap<String, String> = HashMap::new();
 /// let sources = Sources { files: &files, registry: &(), ambient: Vec::new(), report_ambient: false };
 /// let resolved = resolve("notes.comp.md", text, parse(text, &ParseOptions::default()), &sources);
-/// let diagnostics = validate(&resolved, &Options::default());
-/// assert_eq!(diagnostics[0].code.as_str(), "F009");
+/// let validated = validate(&resolved, &Options::default());
+/// assert_eq!(validated.diagnostics[0].code.as_str(), "F009");
 /// ```
 #[must_use]
-pub fn validate(resolved: &Resolved, options: &Options) -> Vec<Diagnostic> {
-    let mut diagnostics = Vec::new();
+pub fn validate(resolved: &Resolved, options: &Options) -> Validated {
+    let mut validated = Validated::default();
     for id in resolved.ids() {
         let document = resolved.document(id);
         let mut checker = Checker {
@@ -52,7 +84,7 @@ pub fn validate(resolved: &Resolved, options: &Options) -> Vec<Diagnostic> {
             lines: Lines::new(&document.text),
             file: resolved.file(id),
             bound_by_hosts: HashSet::new(),
-            diagnostics: &mut diagnostics,
+            validated: &mut validated,
         };
         if id == resolved.main {
             checker.nodes(
@@ -60,7 +92,6 @@ pub fn validate(resolved: &Resolved, options: &Options) -> Vec<Diagnostic> {
                 &Scope::document(&document.settings),
             );
             checker.inputs();
-            checker.data(&options.allowed_origins);
         } else {
             for node in &document.root.children {
                 if let Node::ComponentDefinition(definition) = node {
@@ -68,8 +99,9 @@ pub fn validate(resolved: &Resolved, options: &Options) -> Vec<Diagnostic> {
                 }
             }
         }
+        checker.data(&options.allowed_origins);
     }
-    diagnostics
+    validated
 }
 
 /// Checks one document.
@@ -81,16 +113,30 @@ struct Checker<'r, 'd> {
     file: Option<String>,
     /// The inputs bound to params of host-language components, which `from` may not interpolate (F031).
     bound_by_hosts: HashSet<String>,
-    diagnostics: &'d mut Vec<Diagnostic>,
+    validated: &'d mut Validated,
 }
 
 impl Checker<'_, '_> {
     fn report(&mut self, code: Code, at: Location, message: impl Into<String>) {
-        self.diagnostics.push(
+        self.validated.diagnostics.push(
             Diagnostic::new(code, at, message)
                 .in_stage(Stage::Validate)
                 .in_file(self.file.clone()),
         );
+    }
+
+    /// Records that `param` is treated as absent.
+    fn refuse_param(&mut self, param: &Param) {
+        if let Some(position) = param.position {
+            self.validated
+                .refused
+                .insert(Refused::Param(self.id, position.start));
+        }
+    }
+
+    /// Records that the data import at `index` loads its fallback, or null.
+    fn refuse_data(&mut self, index: usize) {
+        self.validated.refused.insert(Refused::Data(self.id, index));
     }
 
     /// F013 for an input named what expressions can't use.

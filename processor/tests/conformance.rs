@@ -1,7 +1,12 @@
 //! The conformance set (spec §13.2): every parse-only case's tree and diagnostics, every tree checked against the
-//! tree schema (spec §12.4), and the diagnostics of the resolve and validate cases (stages 2 and 3).
+//! tree schema (spec §12.4), and every processor case through stages 1 to 4b: its diagnostics and its expanded tree.
 
+use compmd::cel::{Program, Value as CelValue, Values};
+use compmd::context::Context;
 use compmd::diagnostic::Diagnostic;
+use compmd::expand::{self, expand};
+use compmd::load::{DataSources, Fetched, HostData, Remote, load};
+use compmd::md::TimeZones;
 use compmd::resolve::{Files, Registry, Release, Sources, resolve};
 use compmd::validate::{Options, validate};
 use compmd::{ParseOptions, parse};
@@ -10,6 +15,12 @@ use serde_json::{Value, json};
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
+
+/// The features this processor claims besides being one (spec §13.1): all but the host languages.
+const FEATURES: [&str; 3] = ["processor", "remote-data", "origins"];
+
+/// The host languages, whose components a renderer runs: the crate expands their invocations to nodes.
+const HOST_LANGUAGES: [&str; 5] = ["jsx", "tsx", "svelte", "js", "ts"];
 
 fn conformance() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../conformance")
@@ -36,24 +47,34 @@ fn read_json(path: &Path) -> Option<Value> {
     Some(serde_json::from_str(&text).unwrap_or_else(|error| panic!("{}: {error}", path.display())))
 }
 
-/// The schema's parse tree, `#/$defs/parseRoot`, as the schema to validate against.
-fn parse_tree_schema() -> jsonschema::Validator {
+/// The tree schema with `root` as its root: `parseRoot` or `expandedRoot`.
+fn tree_schema(root: &str) -> jsonschema::Validator {
     let mut schema =
         read_json(&conformance().join("compmd-tree.schema.json")).expect("the tree schema");
     let object = schema.as_object_mut().expect("the schema is an object");
     object.remove("anyOf");
-    object.insert("$ref".into(), json!("#/$defs/parseRoot"));
+    object.insert("$ref".into(), json!(format!("#/$defs/{root}")));
     jsonschema::validator_for(&schema).expect("a valid schema")
 }
 
+/// The schema's parse tree, `#/$defs/parseRoot`, as the schema to validate against.
+fn parse_tree_schema() -> jsonschema::Validator {
+    tree_schema("parseRoot")
+}
+
 fn without_positions(value: &Value) -> Value {
+    without(value, &["position", "closePosition"])
+}
+
+/// `value` without the fields `keys`, at any depth.
+fn without(value: &Value, keys: &[&str]) -> Value {
     match value {
-        Value::Array(items) => Value::Array(items.iter().map(without_positions).collect()),
+        Value::Array(items) => Value::Array(items.iter().map(|item| without(item, keys)).collect()),
         Value::Object(object) => Value::Object(
             object
                 .iter()
-                .filter(|(key, _)| *key != "position" && *key != "closePosition")
-                .map(|(key, value)| (key.clone(), without_positions(value)))
+                .filter(|(key, _)| !keys.contains(&key.as_str()))
+                .map(|(key, value)| (key.clone(), without(value, keys)))
                 .collect(),
         ),
         other => other.clone(),
@@ -241,8 +262,70 @@ impl Registry for CaseRegistry {
     }
 }
 
-/// Runs a case through stages 1 to 3; the reasons it fails, if any.
-fn run_processor(dir: &Path) -> Vec<String> {
+/// Remote data as a case's `context.json` maps it: `urls`, each URL to a file of the case, served with the
+/// `Content-Type` of its extension.
+struct CaseRemote(PathBuf, Value);
+
+impl Remote for CaseRemote {
+    fn fetch(&self, url: &str) -> Option<Fetched> {
+        let file = self.1["urls"][url].as_str()?;
+        let content_type = match file.rsplit_once('.').map(|(_, extension)| extension) {
+            Some("json") => Some("application/json".to_string()),
+            Some("csv") => Some("text/csv".to_string()),
+            Some("yaml") => Some("application/yaml".to_string()),
+            _ => None,
+        };
+        Some(Fetched {
+            text: fs::read_to_string(self.0.join(file)).ok()?,
+            content_type,
+        })
+    }
+}
+
+/// A host's data as a case's `context.json` maps it: `host`, each source to a JSON file of the case.
+struct CaseHost(PathBuf, Value);
+
+impl HostData for CaseHost {
+    fn read(&self, source: &str) -> Option<Value> {
+        let file = self.1["host"][source].as_str()?;
+        read_json(&self.0.join(file))
+    }
+}
+
+/// The time zones of the cases, at their offsets in late October 2026.
+struct Zones;
+
+impl TimeZones for Zones {
+    fn offset(&self, zone: &str, _at: i64) -> Option<i32> {
+        match zone {
+            "UTC" => Some(0),
+            "Europe/Berlin" => Some(2 * 3600),
+            "Asia/Tokyo" => Some(9 * 3600),
+            _ => None,
+        }
+    }
+}
+
+/// An RFC 3339 time, in nanoseconds since 1970.
+fn nanoseconds(time: &str) -> i128 {
+    let program = Program::parse(&format!("timestamp('{time}')")).expect("a timestamp");
+    match program.evaluate(
+        &Values::default(),
+        &compmd::md::Md::new(0, "en", "UTC", &Zones),
+    ) {
+        Ok(CelValue::Timestamp(nanos)) => nanos,
+        other => panic!("{time}: {other:?}"),
+    }
+}
+
+/// What running a case gave.
+struct Run {
+    diagnostics: Vec<Diagnostic>,
+    tree: Value,
+}
+
+/// Runs a case through stages 1 to 4b.
+fn run_stages(dir: &Path, case: &Value) -> Run {
     let text = fs::read_to_string(dir.join("input.comp.md")).expect("input.comp.md");
     let context = read_json(&dir.join("context.json")).unwrap_or(Value::Null);
     let files = CaseFiles(dir.to_path_buf());
@@ -266,45 +349,124 @@ fn run_processor(dir: &Path) -> Vec<String> {
             .filter_map(|origin| origin.as_str().map(str::to_string))
             .collect(),
     };
+    let validated = validate(&resolved, &options);
+    let render = Context {
+        now: nanoseconds(context["now"].as_str().unwrap_or("2026-01-01T00:00:00Z")),
+        tz: context["tz"].as_str().unwrap_or("UTC").to_string(),
+        zones: &Zones,
+        inputs: context["inputs"].as_object().cloned().unwrap_or_default(),
+    };
+    let remote = CaseRemote(dir.to_path_buf(), context.clone());
+    let host = CaseHost(dir.to_path_buf(), context.clone());
+    let data = DataSources {
+        files: &files,
+        registry: &registry,
+        remote: &remote,
+        host: &host,
+    };
+    let loaded = load(&resolved, &validated, &render, &data);
+    let requires_origins = case["requires"]
+        .as_array()
+        .is_some_and(|features| features.contains(&json!("origins")));
+    let options = expand::Options {
+        origins: requires_origins,
+        ..expand::Options::default()
+    };
+    let expanded = expand(&resolved, &validated, &loaded, &render, &options);
     let mut diagnostics = resolved.diagnostics.clone();
-    diagnostics.extend(validate(&resolved, &options));
+    diagnostics.extend(validated.diagnostics);
+    diagnostics.extend(loaded.diagnostics);
+    diagnostics.extend(expanded.diagnostics);
+    Run {
+        diagnostics,
+        tree: serde_json::to_value(&expanded.root).expect("the tree serializes"),
+    }
+}
+
+/// Runs a processor case; the reasons it fails, if any.
+fn run_processor(dir: &Path, case: &Value, schema: &jsonschema::Validator) -> Vec<String> {
+    let run = run_stages(dir, case);
+    let mut failures: Vec<String> = schema
+        .iter_errors(&run.tree)
+        .map(|error| format!("schema: {error} at {}", error.instance_path()))
+        .collect();
+    if let Some(expected) = read_json(&dir.join("expanded.json")) {
+        let difference = if case["positions"] == json!(true) {
+            first_difference("", &expected, &run.tree)
+        } else {
+            first_difference(
+                "",
+                &without_positions(&expected),
+                &without_positions(&run.tree),
+            )
+        };
+        failures.extend(difference.map(|difference| format!("expanded tree {difference}")));
+    }
     let expected = read_json(&dir.join("diagnostics.json"))
         .and_then(|d| d.as_array().cloned())
         .unwrap_or_default();
     let expected = sorted(expected);
-    let actual = sorted(diagnostics.iter().map(conformance_form).collect());
-    if expected == actual {
-        return Vec::new();
+    let actual = sorted(run.diagnostics.iter().map(conformance_form).collect());
+    if expected != actual {
+        let messages: Vec<String> = run
+            .diagnostics
+            .iter()
+            .map(|d| {
+                format!(
+                    "{} {}:{} {}",
+                    d.code, d.range.start.line, d.range.start.column, d.message
+                )
+            })
+            .collect();
+        failures.push(format!(
+            "diagnostics: expected {}, got {}\n    {}",
+            json!(expected),
+            json!(actual),
+            messages.join("\n    ")
+        ));
     }
-    let messages: Vec<String> = diagnostics
-        .iter()
-        .map(|d| {
-            format!(
-                "{} {}:{} {}",
-                d.code, d.range.start.line, d.range.start.column, d.message
-            )
-        })
-        .collect();
-    vec![format!(
-        "diagnostics: expected {}, got {}\n    {}",
-        json!(expected),
-        json!(actual),
-        messages.join("\n    ")
-    )]
+    failures
 }
 
-/// The resolve and validate cases that need no feature beyond a processor.
+/// Whether a case is a processor's that needs no feature beyond `features`.
+fn needs_only(case: &Value, features: &[&str]) -> bool {
+    let requires = case["requires"].as_array().cloned().unwrap_or_default();
+    requires.contains(&json!("processor"))
+        && requires
+            .iter()
+            .all(|feature| features.iter().any(|claimed| feature == claimed))
+}
+
+/// Every processor case that needs no host language.
 #[test]
-fn resolve_and_validate_cases_pass() {
+fn processor_cases_pass() {
+    let ran = run_cases(|case, _| needs_only(case, &FEATURES));
+    assert!(ran >= 68, "only {ran} processor cases found");
+}
+
+/// The cases that need a host language, as far as stage 4b: their invocations are nodes, which a renderer runs.
+/// Those that expect W118 are left out, since only running the component finds it.
+#[test]
+fn host_language_cases_expand() {
+    let features: Vec<&str> = FEATURES.iter().chain(&HOST_LANGUAGES).copied().collect();
+    let ran = run_cases(|case, dir| {
+        let w118 = read_json(&dir.join("diagnostics.json"))
+            .is_some_and(|expected| expected.to_string().contains("W118"));
+        !needs_only(case, &FEATURES) && needs_only(case, &features) && !w118
+    });
+    assert!(ran >= 3, "only {ran} host-language cases found");
+}
+
+/// Runs the cases `chosen` picks through stages 1 to 4b, and fails with what doesn't match; how many ran.
+fn run_cases(chosen: impl Fn(&Value, &Path) -> bool) -> usize {
     let mut dirs = Vec::new();
-    for area in ["resolve", "validate"] {
-        cases(&conformance().join(area), &mut dirs);
-    }
+    cases(&conformance(), &mut dirs);
+    let schema = tree_schema("expandedRoot");
     let mut failures = Vec::new();
     let mut ran = 0;
     for dir in &dirs {
         let case = read_json(&dir.join("case.json")).expect("case.json");
-        if case["requires"] != json!(["processor"]) {
+        if !chosen(&case, dir) {
             continue;
         }
         ran += 1;
@@ -314,18 +476,18 @@ fn resolve_and_validate_cases_pass() {
             .display()
             .to_string();
         failures.extend(
-            run_processor(dir)
+            run_processor(dir, &case, &schema)
                 .into_iter()
                 .map(|failure| format!("{id}: {failure}")),
         );
     }
-    assert!(ran >= 41, "only {ran} resolve and validate cases found");
     assert!(
         failures.is_empty(),
         "{} failures:\n{}",
         failures.len(),
         failures.join("\n")
     );
+    ran
 }
 
 #[test]

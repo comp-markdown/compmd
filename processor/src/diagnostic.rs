@@ -55,10 +55,14 @@ named! {
         F022 = "F022",
         /// A name two wildcard imports, or a wildcard import and `@compmd/core`, provide is used.
         F023 = "F023",
-        /// An expression's parse, type or evaluation error.
+        /// An expression's parse, type or evaluation error, or a value that can't be written as text.
         F024 = "F024",
+        /// An `each` iteration that doesn't have the shape its `join` needs.
+        F025 = "F025",
         /// A data or import source missing, unreachable or not allowed.
         F026 = "F026",
+        /// A data record that violates its schema.
+        F027 = "F027",
         /// A remote data origin the processor's configuration doesn't allow.
         F028 = "F028",
         /// An exported host-language component without a signature fence.
@@ -71,6 +75,8 @@ named! {
         F032 = "F032",
         /// Frontmatter that isn't YAML 1.2 core, or uses tags, anchors, aliases or repeated keys.
         F033 = "F033",
+        /// An expansion larger than the processor allows.
+        F034 = "F034",
         /// A pack that doesn't match its import's `integrity`.
         F035 = "F035",
         /// A param list on a signature fence.
@@ -89,20 +95,26 @@ named! {
         W107 = "W107",
         /// A container opener or leaf directly after a paragraph line.
         W108 = "W108",
+        /// An interpolated link or image URL with a scheme other than `https:`, `http:` or `mailto:`.
+        W109 = "W109",
         /// A later minor version than the processor implements.
         W110 = "W110",
         /// An unknown key under `md`, or an unknown name in `md.syntax`.
         W111 = "W111",
         /// A local definition or explicit import shadows a `@compmd/core` component.
         W112 = "W112",
-        /// A name from an ambient pack is used.
+        /// A name from an ambient pack, or a `host:` data source, is used.
         W113 = "W113",
+        /// A box whose blocks use breakpoints has no `width` where its width would come from its content.
+        W114 = "W114",
         /// Host metadata given for a document that has its own frontmatter.
         W115 = "W115",
         /// A line starting with `::` inside an HTML block.
         W116 = "W116",
         /// An exported host-language component without `runtime`.
         W117 = "W117",
+        /// A box that places blocks by position has no `height`, `aspect-ratio` or `fill` at some width.
+        W119 = "W119",
         /// A param for a box given to a `display=contents` component.
         W120 = "W120",
     }
@@ -158,6 +170,10 @@ pub enum Stage {
     Resolve,
     /// Stage 3, validating.
     Validate,
+    /// Stage 4a, loading data.
+    Load,
+    /// Stage 4b, evaluating: expanding the tree.
+    Evaluate,
 }
 
 /// A place in a document: 1-based line, 1-based column in code points.

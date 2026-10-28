@@ -145,13 +145,51 @@ impl Node {
             _ => &[],
         }
     }
+
+    /// Where the node is: for a container, its opener.
+    #[must_use]
+    pub fn position(&self) -> Option<Position> {
+        match self {
+            Self::Blockquote(n) => n.position,
+            Self::Code(n) => n.position,
+            Self::ComponentContainer(n) => n.position,
+            Self::ComponentDefinition(n) => n.position,
+            Self::ComponentInline(n) | Self::ComponentLeaf(n) => n.position,
+            Self::ComponentSignature(n) => n.position,
+            Self::ComponentSlot(n) => n.position,
+            Self::Definition(n) => n.position,
+            Self::Delete(n)
+            | Self::Emphasis(n)
+            | Self::Paragraph(n)
+            | Self::Strong(n)
+            | Self::TableCell(n)
+            | Self::TableRow(n) => n.position,
+            Self::FootnoteDefinition(n) => n.position,
+            Self::FootnoteReference(n) => n.position,
+            Self::Heading(n) => n.position,
+            Self::Html(n) | Self::InlineCode(n) | Self::InlineMath(n) | Self::Text(n) => n.position,
+            Self::Image(n) => n.position,
+            Self::ImageReference(n) => n.position,
+            Self::Interpolation(n) => n.position,
+            Self::Link(n) => n.position,
+            Self::LinkReference(n) => n.position,
+            Self::List(n) => n.position,
+            Self::ListItem(n) => n.position,
+            Self::Math(n) => n.position,
+            Self::Table(n) => n.position,
+            Self::Break(n) | Self::ThematicBreak(n) => n.position,
+            Self::WikiLink(n) => n.position,
+            Self::Yaml(n) => n.position,
+        }
+    }
 }
 
-/// A node with children and nothing else.
+/// A node with children and nothing else. Like every mdast node with children, it is generic over its children's
+/// type, so the expanded tree (spec §12.3) shares it.
 #[derive(Clone, Debug, Default, PartialEq, Serialize)]
-pub struct Parent {
+pub struct Parent<N = Node> {
     /// The node's content.
-    pub children: Vec<Node>,
+    pub children: Vec<N>,
     /// Where the node is.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub position: Option<Position>,
@@ -177,9 +215,9 @@ pub struct Void {
 
 /// A block quote.
 #[derive(Clone, Debug, Default, PartialEq, Serialize)]
-pub struct Blockquote {
+pub struct Blockquote<N = Node> {
     /// The quote's content, without an alert's `[!TYPE]` line.
-    pub children: Vec<Node>,
+    pub children: Vec<N>,
     /// The alert type, for `> [!NOTE]` and the like.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub alert: Option<Alert>,
@@ -232,11 +270,11 @@ pub struct Math {
 
 /// A heading.
 #[derive(Clone, Debug, Default, PartialEq, Serialize)]
-pub struct Heading {
-    /// The level as written, 1 to 6.
+pub struct Heading<N = Node> {
+    /// The level, 1 to 6: as written in the parse tree, computed in the expanded tree (spec §7.2).
     pub depth: u8,
     /// The heading's text.
-    pub children: Vec<Node>,
+    pub children: Vec<N>,
     /// Where the heading is.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub position: Option<Position>,
@@ -244,7 +282,7 @@ pub struct Heading {
 
 /// A list.
 #[derive(Clone, Debug, Default, PartialEq, Serialize)]
-pub struct List {
+pub struct List<N = Node> {
     /// Whether the list is numbered.
     pub ordered: bool,
     /// The first number of an ordered list.
@@ -252,7 +290,7 @@ pub struct List {
     /// Whether blank lines separate its items.
     pub spread: bool,
     /// The items.
-    pub children: Vec<Node>,
+    pub children: Vec<N>,
     /// Where the list is.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub position: Option<Position>,
@@ -260,13 +298,13 @@ pub struct List {
 
 /// An item of a list.
 #[derive(Clone, Debug, Default, PartialEq, Serialize)]
-pub struct ListItem {
+pub struct ListItem<N = Node> {
     /// Whether blank lines separate its children.
     pub spread: bool,
     /// A GFM task item's state.
     pub checked: Option<bool>,
     /// The item's content.
-    pub children: Vec<Node>,
+    pub children: Vec<N>,
     /// Where the item is.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub position: Option<Position>,
@@ -274,11 +312,11 @@ pub struct ListItem {
 
 /// A GFM table.
 #[derive(Clone, Debug, Default, PartialEq, Serialize)]
-pub struct Table {
+pub struct Table<N = Node> {
     /// Each column's alignment, `None` when it has none.
     pub align: Vec<Option<Align>>,
     /// The rows, the header row first.
-    pub children: Vec<Node>,
+    pub children: Vec<N>,
     /// Where the table is.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub position: Option<Position>,
@@ -299,10 +337,10 @@ pub enum Align {
 /// A link.
 #[derive(Clone, Debug, Default, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Link {
+pub struct Link<N = Node> {
     /// The link text.
-    pub children: Vec<Node>,
-    /// The destination as written.
+    pub children: Vec<N>,
+    /// The destination: as written in the parse tree, with its interpolations in the expanded tree.
     pub url: String,
     /// The title.
     pub title: Option<String>,
@@ -369,9 +407,9 @@ pub enum ReferenceType {
 /// A link by reference.
 #[derive(Clone, Debug, Default, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct LinkReference {
+pub struct LinkReference<N = Node> {
     /// The link text.
-    pub children: Vec<Node>,
+    pub children: Vec<N>,
     /// How the reference is written.
     pub reference_type: ReferenceType,
     /// The normalized label.
@@ -404,14 +442,14 @@ pub struct ImageReference {
 
 /// A footnote definition.
 #[derive(Clone, Debug, Default, PartialEq, Serialize)]
-pub struct FootnoteDefinition {
+pub struct FootnoteDefinition<N = Node> {
     /// The normalized label.
     pub identifier: String,
     /// The label as written.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub label: Option<String>,
     /// The note's content.
-    pub children: Vec<Node>,
+    pub children: Vec<N>,
     /// Where the definition is.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub position: Option<Position>,

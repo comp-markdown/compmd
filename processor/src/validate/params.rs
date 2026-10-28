@@ -148,7 +148,7 @@ fn is_display_contents(param: &Param) -> bool {
 }
 
 /// Where a param's value is: past its key, `=` and breakpoint; for a flag, a class or an id, the param itself.
-fn value_at(param: &Param) -> Location {
+pub(crate) fn value_at(param: &Param) -> Location {
     let start = param
         .position
         .map(|position| position.start)
@@ -229,10 +229,20 @@ impl Invoked {
     }
 }
 
-/// What checking a param gave: a declared param given, with the type of its expression, or refused, so that a
-/// missing value isn't reported again (F010).
+/// What checking a declared param gave: given, with the type of its expression, or refused, so that a missing value
+/// isn't reported again (F010).
 enum Checked {
     Given(Option<Type>),
+    Refused,
+}
+
+/// How a param of an invocation was judged.
+enum Verdict {
+    /// A declared param, with the type of its expression.
+    Declared(Option<Type>),
+    /// A param for the component's box: a common param, a class or an id.
+    Universal,
+    /// Treated as absent.
     Refused,
 }
 
@@ -274,14 +284,15 @@ impl<'r> Checker<'r, '_> {
         for param in params {
             let key = param.key.as_deref().unwrap_or("");
             match self.param(&target, param, scope) {
-                Some(Checked::Given(ty)) => {
+                Verdict::Declared(ty) => {
                     answered.insert(key);
                     types.extend(ty.map(|ty| (key, ty)));
                 }
-                Some(Checked::Refused) => {
+                Verdict::Refused => {
                     answered.insert(key);
+                    self.refuse_param(param);
                 }
-                None => {}
+                Verdict::Universal => {}
             }
         }
         for missing in signature.params.iter().filter(|param| {
@@ -316,7 +327,11 @@ impl<'r> Checker<'r, '_> {
     fn untyped(&mut self, params: &'r [Param], scope: &Scope<'r>) {
         for param in params {
             match param.key.as_deref().and_then(Universal::from_name) {
-                Some(universal) => self.universal(universal, param, scope),
+                Some(universal) => {
+                    if !self.universal(universal, param, scope) {
+                        self.refuse_param(param);
+                    }
+                }
                 None => self.loose(std::slice::from_ref(param), scope),
             }
         }
@@ -336,18 +351,14 @@ impl<'r> Checker<'r, '_> {
         }
     }
 
-    /// Checks one param of an invocation; `None` for one that isn't a declared param.
-    fn param(
-        &mut self,
-        target: &Target<'r>,
-        param: &'r Param,
-        scope: &Scope<'r>,
-    ) -> Option<Checked> {
+    /// Checks one param of an invocation.
+    fn param(&mut self, target: &Target<'r>, param: &'r Param, scope: &Scope<'r>) -> Verdict {
         if matches!(param.value, ParamValue::Class(_) | ParamValue::Id(_)) {
             if target.contents {
                 self.no_box(param);
+                return Verdict::Refused;
             }
-            return None;
+            return Verdict::Universal;
         }
         let key = param.key.as_deref().unwrap_or("");
         if let Some(breakpoint) = param
@@ -360,7 +371,7 @@ impl<'r> Checker<'r, '_> {
                 param_at(param),
                 format!("`{breakpoint}` isn't a breakpoint; they are `sm`, `md` and `lg`. The param is ignored"),
             );
-            return Some(Checked::Refused);
+            return Verdict::Refused;
         }
         if let Some(declared) = target
             .signature
@@ -370,13 +381,19 @@ impl<'r> Checker<'r, '_> {
         {
             if param.breakpoint.is_some() && !target.takes_breakpoints() {
                 self.no_breakpoint(param, key);
-                return Some(Checked::Refused);
+                return Verdict::Refused;
             }
-            return Some(self.declared(target, declared, param, scope));
+            return match self.declared(target, declared, param, scope) {
+                Checked::Given(ty) => Verdict::Declared(ty),
+                Checked::Refused => Verdict::Refused,
+            };
         }
         match Universal::from_name(key) {
             Some(universal) if target.contents && universal.needs_box() => self.no_box(param),
-            Some(universal) => self.universal(universal, param, scope),
+            Some(universal) if self.universal(universal, param, scope) => {
+                return Verdict::Universal;
+            }
+            Some(_) => {}
             None => {
                 let known = target
                     .signature
@@ -394,7 +411,7 @@ impl<'r> Checker<'r, '_> {
                 );
             }
         }
-        None
+        Verdict::Refused
     }
 
     fn no_box(&mut self, param: &Param) {
@@ -519,17 +536,19 @@ impl<'r> Checker<'r, '_> {
         Checked::Given(None)
     }
 
-    /// A universal param's value against its grammar, and its breakpoint.
-    fn universal(&mut self, universal: Universal, param: &'r Param, scope: &Scope<'r>) {
+    /// A universal param's value against its grammar, and its breakpoint; whether it is accepted.
+    fn universal(&mut self, universal: Universal, param: &'r Param, scope: &Scope<'r>) -> bool {
         let key = universal.name();
         if param.breakpoint.is_some() && !universal.takes_breakpoint() {
-            return self.no_breakpoint(param, key);
+            self.no_breakpoint(param, key);
+            return false;
         }
         let at = value_at(param);
         let value = &param.value;
         if let ParamValue::Expr(source) = value {
-            self.expression(source, at, scope, Some(&Type::String), key);
-            return;
+            return self
+                .expression(source, at, scope, Some(&Type::String), key)
+                .is_some();
         }
         if let ParamValue::String(parts) = value {
             self.string_paths(parts, at, scope);
@@ -548,6 +567,7 @@ impl<'r> Checker<'r, '_> {
         if !fits {
             self.refuse(at, &format!("`{key}` doesn't take this value"));
         }
+        fits
     }
 
     /// Type-checks an expression written at `at` (its `(`), against what `key` takes: F024 at the column inside
@@ -669,54 +689,70 @@ impl<'r> Checker<'r, '_> {
             _ => None,
         };
         for param in &component.fence {
-            if is_display_contents(param) {
-                if param.breakpoint.is_some() {
-                    self.report(
-                        Code::F009,
-                        value_at(param),
-                        "`display=contents` is written bare, with no breakpoint: a component has a box or not",
-                    );
-                    continue;
-                }
-                if compmd {
-                    continue;
-                }
+            if !self.fence_param(param, compmd, contents, layout.as_ref(), scope) {
+                self.refuse_param(param);
             }
-            if contents {
-                self.no_box(param);
-                continue;
+        }
+    }
+
+    /// One param of a definition fence; whether it is accepted.
+    fn fence_param(
+        &mut self,
+        param: &'r Param,
+        compmd: bool,
+        contents: bool,
+        layout: Option<&Target<'r>>,
+        scope: &Scope<'r>,
+    ) -> bool {
+        if is_display_contents(param) {
+            if param.breakpoint.is_some() {
+                self.report(
+                    Code::F009,
+                    value_at(param),
+                    "`display=contents` is written bare, with no breakpoint: a component has a box or not",
+                );
+                return false;
             }
-            if matches!(param.value, ParamValue::Class(_) | ParamValue::Id(_)) {
-                continue;
+            if compmd {
+                return true;
             }
-            let key = param.key.as_deref().unwrap_or("");
-            if let Some(universal) = Universal::from_name(key) {
-                self.universal(universal, param, scope);
-                continue;
-            }
-            let own = layout.as_ref().and_then(|layout| {
-                let declared = layout
-                    .signature
-                    .params
-                    .iter()
-                    .find(|declared| declared.name == key)?;
-                Some((layout, declared))
-            });
-            if let Some((layout, declared)) = own {
-                self.declared(layout, declared, param, scope);
-                continue;
-            }
-            let takes = if compmd {
-                "the common params, `class`, `id`, `lang`, `dir` and `box`'s params"
-            } else {
-                "the common params, `class`, `id`, `lang` and `dir`"
-            };
-            self.report(
-                Code::F008,
-                param_at(param),
-                format!("this fence takes {takes}, not `{key}`; ignored"),
+        }
+        if contents {
+            self.no_box(param);
+            return false;
+        }
+        if matches!(param.value, ParamValue::Class(_) | ParamValue::Id(_)) {
+            return true;
+        }
+        let key = param.key.as_deref().unwrap_or("");
+        if let Some(universal) = Universal::from_name(key) {
+            return self.universal(universal, param, scope);
+        }
+        let own = layout.and_then(|layout| {
+            let declared = layout
+                .signature
+                .params
+                .iter()
+                .find(|declared| declared.name == key)?;
+            Some((layout, declared))
+        });
+        if let Some((layout, declared)) = own {
+            return matches!(
+                self.declared(layout, declared, param, scope),
+                Checked::Given(_)
             );
         }
+        let takes = if compmd {
+            "the common params, `class`, `id`, `lang`, `dir` and `box`'s params"
+        } else {
+            "the common params, `class`, `id`, `lang` and `dir`"
+        };
+        self.report(
+            Code::F008,
+            param_at(param),
+            format!("this fence takes {takes}, not `{key}`; ignored"),
+        );
+        false
     }
 }
 

@@ -2,6 +2,7 @@
 
 use super::ast::Literal;
 use super::time;
+use crate::tree::DeclaredType;
 use indexmap::IndexMap;
 use serde_json::Value as Json;
 use std::cmp::Ordering;
@@ -152,6 +153,22 @@ impl Value {
     #[must_use]
     pub fn list(items: Vec<Self>) -> Self {
         Self::List(Rc::new(items))
+    }
+
+    /// A bare param value read by its declared type (spec §5.1): a `number` or a `boolean` when it reads as one,
+    /// text otherwise.
+    pub(crate) fn bare(text: &str, declared: Option<&DeclaredType>) -> Self {
+        match declared {
+            Some(DeclaredType::Name(name)) if name == "number" => text
+                .parse::<f64>()
+                .map_or_else(|_| Self::string(text), Self::Double),
+            Some(DeclaredType::Name(name)) if name == "boolean" => match text {
+                "true" => Self::Bool(true),
+                "false" => Self::Bool(false),
+                _ => Self::string(text),
+            },
+            _ => Self::string(text),
+        }
     }
 
     /// The value of JSON: every number is a `double` (spec §8.2), an object a map from strings.

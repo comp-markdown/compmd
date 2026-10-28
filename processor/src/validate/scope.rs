@@ -172,7 +172,13 @@ impl<'r> Scope<'r> {
                 let ty = data.schema.as_ref().map_or(Type::Dyn, |schema| {
                     let record = schema
                         .iter()
-                        .map(|field| (field.name.clone(), Type::declared(&field.declared)))
+                        .map(|field| {
+                            let declaration = &field.declaration;
+                            (
+                                declaration.name.clone(),
+                                Type::declared(&declaration.declared),
+                            )
+                        })
                         .collect();
                     Type::list(Type::record(record))
                 });
