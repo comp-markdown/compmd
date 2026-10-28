@@ -90,7 +90,7 @@ impl<'a> Checker<'a> {
                     )
                 })
             }
-            Expr::Binary(op, left, right, at) => self.binary(*op, left, right, *at),
+            Expr::Binary(op, left, right, _) => self.binary(*op, left, right),
             Expr::Call {
                 target,
                 name,
@@ -164,13 +164,9 @@ impl<'a> Checker<'a> {
         }
     }
 
-    fn binary(
-        &mut self,
-        op: BinaryOp,
-        left: &'a Expr,
-        right: &'a Expr,
-        at: usize,
-    ) -> Result<Type, Error> {
+    /// An operator's type, or an error at the start of the expression it makes.
+    fn binary(&mut self, op: BinaryOp, left: &'a Expr, right: &'a Expr) -> Result<Type, Error> {
+        let at = left.start();
         let (left, right) = (self.check(left)?, self.check(right)?);
         op.result_type(&left, &right).ok_or_else(|| {
             let hint = if op == BinaryOp::Remainder {

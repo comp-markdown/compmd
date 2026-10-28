@@ -120,7 +120,7 @@ fn ints_and_doubles_mix() {
         ("2 == 2.0", V(json!(true))),
         ("size(rows) / 2", V(json!(1))),
         ("double(size(rows)) / 2", V(json!(1.5))),
-        ("1u + 2.0", Refused(4)),
+        ("1u + 2.0", Refused(1)),
     ]);
 }
 
@@ -211,10 +211,10 @@ fn what_the_profile_leaves_out_is_refused() {
 #[test]
 fn type_errors_are_found_before_evaluating() {
     check(&[
-        ("\"a\" + 1", Refused(5)),
-        ("md.doc.title * 2", Refused(14)),
-        ("false && (\"a\" + 1 == 2)", Refused(15)),
-        ("md.dco.title", Refused(3)),
+        ("\"a\" + 1", Refused(1)),
+        ("md.doc.title * 2", Refused(1)),
+        ("false && (\"a\" + 1 == 2)", Refused(11)),
+        ("md.dco.title", Refused(4)),
         ("1 / 0", Failed(3)),
     ]);
 }
@@ -281,10 +281,10 @@ fn a_has_guard_lets_a_branch_read_a_field_the_type_lacks() {
             "has(md.doc.subtitle) && md.doc.subtitle == 'x'",
             V(json!(false)),
         ),
-        ("md.doc.subtitle", Refused(7)),
+        ("md.doc.subtitle", Refused(8)),
         (
             "has(md.doc.subtitle) ? md.doc.title : md.doc.subtitle",
-            Refused(45),
+            Refused(46),
         ),
         (
             "md.data.sales.filter(s, has(s.note)).map(s, s.note)",

@@ -236,7 +236,7 @@ impl Parser {
                     let args = self.list_until(")")?;
                     macro_or_call(expr, name, args, at)?
                 } else {
-                    Expr::Select(Box::new(expr), name, dot)
+                    Expr::Select(Box::new(expr), name, at)
                 };
             } else if let Some(at) = self.eat("[") {
                 self.deeper()?;
@@ -530,12 +530,12 @@ mod tests {
     }
 
     #[test]
-    fn nodes_are_at_their_operator() {
+    fn nodes_are_at_their_operator_or_name() {
         let expr = parse("a.b * c[1]");
         assert!(matches!(
             &expr,
             Ok(Expr::Binary(BinaryOp::Multiply, a, b, 4))
-                if matches!(&**a, Expr::Select(_, field, 1) if field == "b")
+                if matches!(&**a, Expr::Select(_, field, 2) if field == "b")
                     && matches!(&**b, Expr::Index(_, _, 7))
         ));
     }

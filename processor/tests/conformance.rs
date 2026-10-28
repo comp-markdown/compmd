@@ -1,8 +1,11 @@
-//! The conformance set (spec §13.2): every parse-only case's tree and diagnostics, and every tree checked against
-//! the tree schema (spec §12.4).
+//! The conformance set (spec §13.2): every parse-only case's tree and diagnostics, every tree checked against the
+//! tree schema (spec §12.4), and the diagnostics of the resolve and validate cases (stages 2 and 3).
 
 use compmd::diagnostic::Diagnostic;
+use compmd::resolve::{Files, Registry, Release, Sources, resolve};
+use compmd::validate::{Options, validate};
 use compmd::{ParseOptions, parse};
+use semver::Version;
 use serde_json::{Value, json};
 use std::collections::BTreeMap;
 use std::fs;
@@ -163,6 +166,166 @@ fn run(dir: &Path, schema: &jsonschema::Validator, case: &Value) -> Vec<String> 
         ));
     }
     failures
+}
+
+/// The files of a case's folder.
+struct CaseFiles(PathBuf);
+
+impl Files for CaseFiles {
+    fn read(&self, path: &str) -> Option<String> {
+        fs::read_to_string(self.0.join(path)).ok()
+    }
+}
+
+/// The stubbed registry of a case's `context.json`: `registry` (pack to releases, each a folder of the case) and
+/// `ambient` (pack to a folder, whose `package.json` gives the version).
+struct CaseRegistry {
+    dir: PathBuf,
+    packs: BTreeMap<String, Vec<(Release, String)>>,
+}
+
+impl CaseRegistry {
+    fn new(dir: &Path, context: &Value) -> Self {
+        let mut packs: BTreeMap<String, Vec<(Release, String)>> = BTreeMap::new();
+        for (pack, releases) in context["registry"].as_object().into_iter().flatten() {
+            for release in releases.as_array().into_iter().flatten() {
+                let version = Version::parse(release["version"].as_str().expect("a version"))
+                    .expect("a semver version");
+                let integrity = release["integrity"].as_str().map(str::to_string);
+                let folder = release["path"].as_str().expect("a path").to_string();
+                packs
+                    .entry(pack.clone())
+                    .or_default()
+                    .push((Release { version, integrity }, folder));
+            }
+        }
+        for (pack, folder) in context["ambient"].as_object().into_iter().flatten() {
+            let folder = folder.as_str().expect("a folder").to_string();
+            let manifest =
+                read_json(&dir.join(&folder).join("package.json")).expect("package.json");
+            let version = Version::parse(manifest["version"].as_str().expect("a version"))
+                .expect("a semver version");
+            let release = Release {
+                version,
+                integrity: None,
+            };
+            packs
+                .entry(pack.clone())
+                .or_default()
+                .push((release, folder));
+        }
+        Self {
+            dir: dir.to_path_buf(),
+            packs,
+        }
+    }
+}
+
+impl Registry for CaseRegistry {
+    fn releases(&self, pack: &str) -> Vec<Release> {
+        self.packs
+            .get(pack)
+            .into_iter()
+            .flatten()
+            .map(|(release, _)| release.clone())
+            .collect()
+    }
+
+    fn read(&self, pack: &str, version: &Version, path: &str) -> Option<String> {
+        let (_, folder) = self
+            .packs
+            .get(pack)?
+            .iter()
+            .find(|(release, _)| release.version == *version)?;
+        fs::read_to_string(self.dir.join(folder).join(path)).ok()
+    }
+}
+
+/// Runs a case through stages 1 to 3; the reasons it fails, if any.
+fn run_processor(dir: &Path) -> Vec<String> {
+    let text = fs::read_to_string(dir.join("input.comp.md")).expect("input.comp.md");
+    let context = read_json(&dir.join("context.json")).unwrap_or(Value::Null);
+    let files = CaseFiles(dir.to_path_buf());
+    let registry = CaseRegistry::new(dir, &context);
+    let sources = Sources {
+        files: &files,
+        registry: &registry,
+        ambient: context["ambient"]
+            .as_object()
+            .map(|packs| packs.keys().cloned().collect())
+            .unwrap_or_default(),
+        report_ambient: context["reportAmbient"] == json!(true),
+    };
+    let parsed = parse(&text, &ParseOptions::default());
+    let resolved = resolve("input.comp.md", &text, parsed, &sources);
+    let options = Options {
+        allowed_origins: context["allowedOrigins"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter_map(|origin| origin.as_str().map(str::to_string))
+            .collect(),
+    };
+    let mut diagnostics = resolved.diagnostics.clone();
+    diagnostics.extend(validate(&resolved, &options));
+    let expected = read_json(&dir.join("diagnostics.json"))
+        .and_then(|d| d.as_array().cloned())
+        .unwrap_or_default();
+    let expected = sorted(expected);
+    let actual = sorted(diagnostics.iter().map(conformance_form).collect());
+    if expected == actual {
+        return Vec::new();
+    }
+    let messages: Vec<String> = diagnostics
+        .iter()
+        .map(|d| {
+            format!(
+                "{} {}:{} {}",
+                d.code, d.range.start.line, d.range.start.column, d.message
+            )
+        })
+        .collect();
+    vec![format!(
+        "diagnostics: expected {}, got {}\n    {}",
+        json!(expected),
+        json!(actual),
+        messages.join("\n    ")
+    )]
+}
+
+/// The resolve and validate cases that need no feature beyond a processor.
+#[test]
+fn resolve_and_validate_cases_pass() {
+    let mut dirs = Vec::new();
+    for area in ["resolve", "validate"] {
+        cases(&conformance().join(area), &mut dirs);
+    }
+    let mut failures = Vec::new();
+    let mut ran = 0;
+    for dir in &dirs {
+        let case = read_json(&dir.join("case.json")).expect("case.json");
+        if case["requires"] != json!(["processor"]) {
+            continue;
+        }
+        ran += 1;
+        let id = dir
+            .strip_prefix(conformance())
+            .unwrap_or(dir)
+            .display()
+            .to_string();
+        failures.extend(
+            run_processor(dir)
+                .into_iter()
+                .map(|failure| format!("{id}: {failure}")),
+        );
+    }
+    assert!(ran >= 41, "only {ran} resolve and validate cases found");
+    assert!(
+        failures.is_empty(),
+        "{} failures:\n{}",
+        failures.len(),
+        failures.join("\n")
+    );
 }
 
 #[test]

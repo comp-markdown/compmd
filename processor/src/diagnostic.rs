@@ -1,83 +1,118 @@
 //! Diagnostics (spec §10) in the machine form of spec §10.5.
 
+use crate::named::named;
 use serde::ser::SerializeStruct;
 use serde::{Serialize, Serializer};
 use std::fmt;
 
-/// A diagnostic code from the catalog (spec §10.2): `F…` codes are errors, `W…` codes warnings.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum Code {
-    /// Unsupported major version.
-    F001,
-    /// A closer names no open container while one is open.
-    F003,
-    /// A container isn't closed before an enclosing closer or the end of the file.
-    F004,
-    /// A closer while no container is open.
-    F005,
-    /// A named slot given twice in one container.
-    F007,
-    /// A malformed param list.
-    F011,
-    /// A continuation line that doesn't follow an opener, a leaf or a continuation line.
-    F012,
-    /// A slot line outside a container.
-    F015,
-    /// A malformed component line.
-    F016,
-    /// A param given twice, or `id` together with `#name`.
-    F017,
-    /// A closer names a container opened outside its list item or block quote.
-    F032,
-    /// Frontmatter that isn't YAML 1.2 core, or uses tags, anchors, aliases or repeated keys.
-    F033,
-    /// A param list on a signature fence.
-    F036,
-    /// A leaf without fallback text.
-    W101,
-    /// `{{` followed by something that isn't a path.
-    W106,
-    /// An inline component followed by a space and a param list.
-    W107,
-    /// A container opener or leaf directly after a paragraph line.
-    W108,
-    /// A later minor version than the processor implements.
-    W110,
-    /// An unknown key under `md`, or an unknown name in `md.syntax`.
-    W111,
-    /// Host metadata given for a document that has its own frontmatter.
-    W115,
-    /// A line starting with `::` inside an HTML block.
-    W116,
+named! {
+    /// A diagnostic code from the catalog (spec §10.2): `F…` codes are errors, `W…` codes warnings.
+    #[derive(PartialOrd, Ord, Hash)]
+    pub enum Code {
+        /// Unsupported major version.
+        F001 = "F001",
+        /// An unknown component name, or a signature fence with nothing to attach to.
+        F002 = "F002",
+        /// A closer names no open container while one is open.
+        F003 = "F003",
+        /// A container isn't closed before an enclosing closer or the end of the file.
+        F004 = "F004",
+        /// A closer while no container is open.
+        F005 = "F005",
+        /// An undeclared slot name.
+        F006 = "F006",
+        /// A named slot given twice in one container.
+        F007 = "F007",
+        /// An unknown param, or a breakpoint the param doesn't take.
+        F008 = "F008",
+        /// A param value that doesn't match its type or grammar.
+        F009 = "F009",
+        /// A required param is missing.
+        F010 = "F010",
+        /// A malformed param list.
+        F011 = "F011",
+        /// A continuation line that doesn't follow an opener, a leaf or a continuation line.
+        F012 = "F012",
+        /// A name declared twice, a keyword or `md` declared, or a name expressions can't use.
+        F013 = "F013",
+        /// An unknown interpolation path.
+        F014 = "F014",
+        /// A slot line outside a container.
+        F015 = "F015",
+        /// A malformed component line.
+        F016 = "F016",
+        /// A param given twice, or `id` together with `#name`.
+        F017 = "F017",
+        /// A body given to a component that declares no slots.
+        F018 = "F018",
+        /// A recursive component definition.
+        F019 = "F019",
+        /// An import cycle.
+        F020 = "F020",
+        /// An imported name its source doesn't export.
+        F021 = "F021",
+        /// `export.pack` or `export.version` disagrees with the registry manifest.
+        F022 = "F022",
+        /// A name two wildcard imports, or a wildcard import and `@compmd/core`, provide is used.
+        F023 = "F023",
+        /// An expression's parse, type or evaluation error.
+        F024 = "F024",
+        /// A data or import source missing, unreachable or not allowed.
+        F026 = "F026",
+        /// A remote data origin the processor's configuration doesn't allow.
+        F028 = "F028",
+        /// An exported host-language component without a signature fence.
+        F029 = "F029",
+        /// A bound input that isn't declared, or has another type.
+        F030 = "F030",
+        /// A `from` that interpolates what it may not.
+        F031 = "F031",
+        /// A closer names a container opened outside its list item or block quote.
+        F032 = "F032",
+        /// Frontmatter that isn't YAML 1.2 core, or uses tags, anchors, aliases or repeated keys.
+        F033 = "F033",
+        /// A pack that doesn't match its import's `integrity`.
+        F035 = "F035",
+        /// A param list on a signature fence.
+        F036 = "F036",
+        /// A leaf without fallback text.
+        W101 = "W101",
+        /// A definition language or runtime this processor doesn't support.
+        W102 = "W102",
+        /// An `each` whose default slot is a single list item, with `join` unset.
+        W103 = "W103",
+        /// A local host-language component whose params can't be typed.
+        W105 = "W105",
+        /// `{{` followed by something that isn't a path.
+        W106 = "W106",
+        /// An inline component followed by a space and a param list.
+        W107 = "W107",
+        /// A container opener or leaf directly after a paragraph line.
+        W108 = "W108",
+        /// A later minor version than the processor implements.
+        W110 = "W110",
+        /// An unknown key under `md`, or an unknown name in `md.syntax`.
+        W111 = "W111",
+        /// A local definition or explicit import shadows a `@compmd/core` component.
+        W112 = "W112",
+        /// A name from an ambient pack is used.
+        W113 = "W113",
+        /// Host metadata given for a document that has its own frontmatter.
+        W115 = "W115",
+        /// A line starting with `::` inside an HTML block.
+        W116 = "W116",
+        /// An exported host-language component without `runtime`.
+        W117 = "W117",
+        /// A param for a box given to a `display=contents` component.
+        W120 = "W120",
+    }
 }
 
 impl Code {
     /// The code as the catalog writes it, `F004`.
     #[must_use]
     pub fn as_str(self) -> &'static str {
-        match self {
-            Self::F001 => "F001",
-            Self::F003 => "F003",
-            Self::F004 => "F004",
-            Self::F005 => "F005",
-            Self::F007 => "F007",
-            Self::F011 => "F011",
-            Self::F012 => "F012",
-            Self::F015 => "F015",
-            Self::F016 => "F016",
-            Self::F017 => "F017",
-            Self::F032 => "F032",
-            Self::F033 => "F033",
-            Self::F036 => "F036",
-            Self::W101 => "W101",
-            Self::W106 => "W106",
-            Self::W107 => "W107",
-            Self::W108 => "W108",
-            Self::W110 => "W110",
-            Self::W111 => "W111",
-            Self::W115 => "W115",
-            Self::W116 => "W116",
-        }
+        self.name()
     }
 
     /// `Error` for `F` codes, `Warning` for `W` codes.
@@ -119,6 +154,10 @@ pub enum Severity {
 pub enum Stage {
     /// Stage 1, parsing.
     Parse,
+    /// Stage 2, resolving names.
+    Resolve,
+    /// Stage 3, validating.
+    Validate,
 }
 
 /// A place in a document: 1-based line, 1-based column in code points.
@@ -211,6 +250,18 @@ impl Diagnostic {
             related: Vec::new(),
             stage: Stage::Parse,
         }
+    }
+
+    /// The same diagnostic, found by `stage`.
+    #[must_use]
+    pub fn in_stage(self, stage: Stage) -> Self {
+        Self { stage, ..self }
+    }
+
+    /// The same diagnostic, in the document named `file`; `None` is the processed document.
+    #[must_use]
+    pub fn in_file(self, file: Option<String>) -> Self {
+        Self { file, ..self }
     }
 
     /// The same diagnostic with a related place in the same document.

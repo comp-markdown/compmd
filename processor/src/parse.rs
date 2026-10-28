@@ -6,13 +6,13 @@
 //! counts positions in code points.
 
 mod blocks;
-mod definitions;
+pub(crate) mod definitions;
 mod frontmatter;
 mod inlines;
 mod line;
-mod params;
+pub(crate) mod params;
 mod source;
-mod yaml;
+pub(crate) mod yaml;
 
 use crate::diagnostic::{Code, Diagnostic, Location};
 use crate::tree::{Point, Root};

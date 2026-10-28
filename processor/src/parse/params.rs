@@ -120,6 +120,29 @@ pub(crate) fn interpolation_at(text: &[char], at: usize) -> Option<(String, usiz
     (text.get(close..close + 2) == Some(&['}', '}'])).then(|| (path, close + 2 - at))
 }
 
+/// Each interpolation in `text` as written, with the index where its path starts; `\{{` is no interpolation.
+pub(crate) fn interpolations(text: &[char]) -> Vec<(usize, String)> {
+    let mut found = Vec::new();
+    let mut at = 0;
+    while at < text.len() {
+        if text[at] == '\\' {
+            at += 2;
+        } else if let Some((path, len)) = interpolation_at(text, at) {
+            let path_start = at
+                + 2
+                + text[at + 2..]
+                    .iter()
+                    .take_while(|c| is_space(Some(c)))
+                    .count();
+            found.push((path_start, path));
+            at += len;
+        } else {
+            at += 1;
+        }
+    }
+    found
+}
+
 /// The text and interpolation parts of a URL or a data import's `from` (spec §12.2).
 pub(crate) fn string_parts(text: &str) -> Vec<StringPart> {
     let chars: Vec<char> = text.chars().collect();

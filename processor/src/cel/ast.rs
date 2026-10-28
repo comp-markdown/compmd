@@ -84,6 +84,23 @@ impl Expr {
         }
     }
 
+    /// Where the expression's text starts: at its leftmost operand, for an operator, a field, an index or a method.
+    pub(crate) fn start(&self) -> At {
+        match self {
+            Self::Select(operand, ..)
+            | Self::Index(operand, ..)
+            | Self::Binary(_, operand, ..)
+            | Self::And(operand, ..)
+            | Self::Or(operand, ..)
+            | Self::Conditional(operand, ..)
+            | Self::Call {
+                target: Some(operand),
+                ..
+            } => operand.start(),
+            _ => self.at(),
+        }
+    }
+
     /// Whether this is `md.<name>(…)`, a function of the `md.` namespace rather than a method on the `md` variable.
     pub(crate) fn is_md_call(target: Option<&Self>, name: &str, names: &[&str]) -> bool {
         matches!(target, Some(Self::Ident(namespace, _)) if namespace == "md")

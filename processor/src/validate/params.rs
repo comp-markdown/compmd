@@ -1,0 +1,844 @@
+//! Params against signatures (spec §5.3, §9.2): unknown params and breakpoints (F008), values outside their type or
+//! grammar (F009), missing required params (F010), the types of expressions (F024), bound inputs (F030), and names
+//! that can't be bound (F013). Then the invocation's slots (F006, F018), and W102, W103 and W120.
+
+use super::Checker;
+use super::grammar::Grammar;
+use super::scope::Scope;
+use super::universal::{Takes, Universal};
+use crate::cel::time::parse_date;
+use crate::cel::{Program, Type};
+use crate::diagnostic::{Code, Location};
+use crate::md::Signatures;
+use crate::named::named;
+use crate::nearest::nearest;
+use crate::parse::params::interpolations;
+use crate::reserved::{self, Keyword};
+use crate::resolve::{Binding, Body, Component};
+use crate::tree::{
+    Container, Declaration, DeclaredType, Node, Param, ParamValue, Point, Position, Signature,
+    SlotDeclaration, StringPart,
+};
+use std::borrow::Cow;
+use std::collections::{HashMap, HashSet};
+
+/// The breakpoints (spec §9.3).
+const BREAKPOINTS: [&str; 3] = ["sm", "md", "lg"];
+
+named! {
+    /// A type name of a declaration (spec §7.3).
+    enum Kind {
+        String = "string",
+        Number = "number",
+        Boolean = "boolean",
+        Date = "date",
+        Array = "array",
+        Object = "object",
+        Length = "length",
+        Space = "space",
+        Color = "color",
+        Tracks = "tracks",
+        Surface = "surface",
+        Border = "border",
+        Radius = "radius",
+        Name = "name",
+    }
+}
+
+impl Kind {
+    /// The grammar of a layout or styling type.
+    fn grammar(self) -> Option<Grammar> {
+        match self {
+            Self::Length => Some(Grammar::Length),
+            Self::Space => Some(Grammar::Space),
+            Self::Color => Some(Grammar::Color),
+            Self::Tracks => Some(Grammar::Tracks),
+            Self::Surface => Some(Grammar::Surface),
+            Self::Border => Some(Grammar::Border),
+            Self::Radius => Some(Grammar::Radius),
+            _ => None,
+        }
+    }
+
+    /// Whether a value written as `value` is of this type (spec §5.1). A string with interpolations is checked
+    /// when it is rendered.
+    fn accepts(self, value: &ParamValue) -> bool {
+        let Some(text) = literal(value) else {
+            return matches!(value, ParamValue::String(_))
+                || match self {
+                    Self::Boolean => *value == ParamValue::Flag,
+                    Self::Array => matches!(value, ParamValue::Json(json) if json.starts_with('[')),
+                    Self::Object => {
+                        matches!(value, ParamValue::Json(json) if json.starts_with('{'))
+                    }
+                    _ => false,
+                };
+        };
+        let bare = matches!(value, ParamValue::Bare(_));
+        match self {
+            Self::String => true,
+            Self::Number => bare && text.parse::<f64>().is_ok_and(f64::is_finite),
+            Self::Boolean => bare && (text == "true" || text == "false"),
+            Self::Date => parse_date(&text).is_some(),
+            Self::Array | Self::Object => false,
+            Self::Name => bare && is_identifier(&text),
+            grammar => grammar
+                .grammar()
+                .is_some_and(|grammar| grammar.accepts(&text)),
+        }
+    }
+}
+
+/// The text of a bare value, or of a string without interpolations.
+fn literal(value: &ParamValue) -> Option<Cow<'_, str>> {
+    match value {
+        ParamValue::Bare(text) => Some(Cow::Borrowed(text)),
+        ParamValue::String(parts) => parts
+            .iter()
+            .map(|part| match part {
+                StringPart::Text(text) => Some(text.value.as_str()),
+                StringPart::Interpolation(_) => None,
+            })
+            .collect::<Option<String>>()
+            .map(Cow::Owned),
+        _ => None,
+    }
+}
+
+/// Whether a value written as `value` is of the type `declared`; a bound input is checked by its name instead.
+fn fits(declared: &DeclaredType, value: &ParamValue) -> bool {
+    match declared {
+        DeclaredType::Enum { members } => {
+            !matches!(value, ParamValue::Flag | ParamValue::Json(_))
+                && literal(value).is_none_or(|text| members.iter().any(|member| *member == text))
+        }
+        DeclaredType::Name(name) => Kind::from_name(name).is_none_or(|kind| kind.accepts(value)),
+        DeclaredType::Input { .. } => true,
+    }
+}
+
+/// A CEL identifier, as `name` params, `as` names and inputs are.
+fn is_identifier(text: &str) -> bool {
+    let mut chars = text.chars();
+    chars
+        .next()
+        .is_some_and(|c| c.is_ascii_alphabetic() || c == '_')
+        && chars.all(|c| c.is_ascii_alphanumeric() || c == '_')
+}
+
+/// Whether an input declared `input` can be bound to a param declared `input<param>` (spec §7.3).
+fn binds(param: &DeclaredType, input: &DeclaredType) -> bool {
+    match (param, input) {
+        (DeclaredType::Name(any), DeclaredType::Enum { .. }) => any == "enum",
+        (DeclaredType::Enum { members: wanted }, DeclaredType::Enum { members }) => {
+            wanted == members
+        }
+        (DeclaredType::Name(wanted), DeclaredType::Name(name)) => wanted == name,
+        _ => false,
+    }
+}
+
+/// Whether a fence's params give the component no box: a bare `display=contents` (spec §9.2).
+fn is_contents(fence: &[Param]) -> bool {
+    fence.iter().any(is_display_contents)
+}
+
+fn is_display_contents(param: &Param) -> bool {
+    param.key.as_deref() == Some("display") && param.value == ParamValue::Bare("contents".into())
+}
+
+/// Where a param's value is: past its key, `=` and breakpoint; for a flag, a class or an id, the param itself.
+fn value_at(param: &Param) -> Location {
+    let start = param
+        .position
+        .map(|position| position.start)
+        .unwrap_or_default();
+    let key = param.key.as_deref().unwrap_or("");
+    let prefix = match param.value {
+        ParamValue::Flag | ParamValue::Class(_) | ParamValue::Id(_) => 0,
+        _ => {
+            param
+                .breakpoint
+                .as_ref()
+                .map_or(0, |breakpoint| breakpoint.chars().count() + 1)
+                + key.chars().count()
+                + 1
+        }
+    };
+    Location::new(start.line, start.column + prefix)
+}
+
+fn param_at(param: &Param) -> Location {
+    param
+        .position
+        .map_or(Location::new(1, 1), |position| position.start.into())
+}
+
+/// The component an invocation's params are checked against.
+struct Target<'r> {
+    component: &'r Component,
+    signature: &'r Signature,
+    /// Whether it has no box, so that params for a box are W120.
+    contents: bool,
+}
+
+impl Target<'_> {
+    /// Whether its declared params take breakpoints: a `compmd` component's, and `box`'s, which are layout params
+    /// (spec §9.3); not a host-language component's.
+    fn takes_breakpoints(&self) -> bool {
+        match self.component.body {
+            Body::Compmd(_) => true,
+            Body::Processor => self.is(Keyword::Box),
+            Body::Host { .. } | Body::File { .. } => false,
+        }
+    }
+
+    /// Whether it is the built-in `keyword`, which only `@compmd/core` defines.
+    fn is(&self, keyword: Keyword) -> bool {
+        Keyword::from_name(&self.component.name) == Some(keyword)
+    }
+}
+
+/// A template slot of an invocation (spec §7.5).
+#[derive(Debug)]
+struct Template {
+    /// The slot.
+    slot: String,
+    /// The name the author binds each element to.
+    bound: String,
+    /// The type of the elements.
+    element: Type,
+}
+
+/// What an invocation's slots see: its template slots bind a name to each element.
+#[derive(Debug, Default)]
+pub(super) struct Invoked {
+    templates: Vec<Template>,
+}
+
+impl Invoked {
+    /// What the slot `name` sees, inside the invocation whose own scope is `outer`.
+    pub(super) fn scope<'r>(&self, name: &str, outer: &Scope<'r>) -> Scope<'r> {
+        self.templates
+            .iter()
+            .find(|template| template.slot == name)
+            .map_or_else(
+                || outer.clone(),
+                |template| outer.template(&template.bound, template.element.clone()),
+            )
+    }
+}
+
+/// What checking a param gave: a declared param given, with the type of its expression, or refused, so that a
+/// missing value isn't reported again (F010).
+enum Checked {
+    Given(Option<Type>),
+    Refused,
+}
+
+impl<'r> Checker<'r, '_> {
+    /// Checks an invocation of `name`, and gives what its slots see.
+    pub(super) fn invocation(
+        &mut self,
+        name: &str,
+        params: &'r [Param],
+        position: Option<Position>,
+        container: Option<&'r Container>,
+        scope: &Scope<'r>,
+    ) -> Invoked {
+        let start: Point = position.map(|position| position.start).unwrap_or_default();
+        let resolved = self.resolved;
+        let Some(Binding::Component(id, _)) = resolved.document(self.id).names.get(name) else {
+            self.loose(params, scope);
+            return Invoked::default();
+        };
+        let component = resolved.component(*id);
+        if !component.body.supported() {
+            self.report(
+                Code::W102,
+                start.into(),
+                format!("this processor has no binding for `{name}`'s language or runtime, so it renders the fallback"),
+            );
+        }
+        let Some(signature) = &component.signature else {
+            self.untyped(params, scope);
+            return Invoked::default();
+        };
+        let target = Target {
+            component,
+            signature,
+            contents: matches!(component.body, Body::Compmd(_)) && is_contents(&component.fence),
+        };
+        let mut answered = HashSet::new();
+        let mut types = HashMap::new();
+        for param in params {
+            let key = param.key.as_deref().unwrap_or("");
+            match self.param(&target, param, scope) {
+                Some(Checked::Given(ty)) => {
+                    answered.insert(key);
+                    types.extend(ty.map(|ty| (key, ty)));
+                }
+                Some(Checked::Refused) => {
+                    answered.insert(key);
+                }
+                None => {}
+            }
+        }
+        for missing in signature.params.iter().filter(|param| {
+            !param.optional && param.default.is_none() && !answered.contains(param.name.as_str())
+        }) {
+            self.report(
+                Code::F010,
+                start.into(),
+                format!("`{name}` needs `{}`; it renders its fallback", missing.name),
+            );
+        }
+        if let Some(container) = container {
+            self.slots(name, container, signature, start);
+            if target.is(Keyword::Each)
+                && !answered.contains("join")
+                && is_single_list_item(&container.children)
+            {
+                self.report(
+                    Code::W103,
+                    start.into(),
+                    "the default slot is one list item, so each item becomes a list of its own; `join=list` makes one list",
+                );
+            }
+        }
+        Invoked {
+            templates: templates(signature, params, &types),
+        }
+    }
+
+    /// The params of a component without a signature (W105): the universal ones style the box the processor makes,
+    /// the others go through unchecked.
+    fn untyped(&mut self, params: &'r [Param], scope: &Scope<'r>) {
+        for param in params {
+            match param.key.as_deref().and_then(Universal::from_name) {
+                Some(universal) => self.universal(universal, param, scope),
+                None => self.loose(std::slice::from_ref(param), scope),
+            }
+        }
+    }
+
+    /// The params of an unknown component, or ones nothing declares: their expressions and paths alone.
+    fn loose(&mut self, params: &'r [Param], scope: &Scope<'r>) {
+        for param in params {
+            let at = value_at(param);
+            match &param.value {
+                ParamValue::Expr(source) => {
+                    self.expression(source, at, scope, None, "");
+                }
+                ParamValue::String(parts) => self.string_paths(parts, at, scope),
+                _ => {}
+            }
+        }
+    }
+
+    /// Checks one param of an invocation; `None` for one that isn't a declared param.
+    fn param(
+        &mut self,
+        target: &Target<'r>,
+        param: &'r Param,
+        scope: &Scope<'r>,
+    ) -> Option<Checked> {
+        if matches!(param.value, ParamValue::Class(_) | ParamValue::Id(_)) {
+            if target.contents {
+                self.no_box(param);
+            }
+            return None;
+        }
+        let key = param.key.as_deref().unwrap_or("");
+        if let Some(breakpoint) = param
+            .breakpoint
+            .as_deref()
+            .filter(|b| !BREAKPOINTS.contains(b))
+        {
+            self.report(
+                Code::F008,
+                param_at(param),
+                format!("`{breakpoint}` isn't a breakpoint; they are `sm`, `md` and `lg`. The param is ignored"),
+            );
+            return Some(Checked::Refused);
+        }
+        if let Some(declared) = target
+            .signature
+            .params
+            .iter()
+            .find(|declared| declared.name == key)
+        {
+            if param.breakpoint.is_some() && !target.takes_breakpoints() {
+                self.no_breakpoint(param, key);
+                return Some(Checked::Refused);
+            }
+            return Some(self.declared(target, declared, param, scope));
+        }
+        match Universal::from_name(key) {
+            Some(universal) if target.contents && universal.needs_box() => self.no_box(param),
+            Some(universal) => self.universal(universal, param, scope),
+            None => {
+                let known = target
+                    .signature
+                    .params
+                    .iter()
+                    .map(|declared| declared.name.as_str())
+                    .chain(Universal::NAMES.iter().copied());
+                let hint = nearest(key, known)
+                    .map_or_else(String::new, |near| format!("; did you mean `{near}`?"));
+                let name = &target.component.name;
+                self.report(
+                    Code::F008,
+                    param_at(param),
+                    format!("`{name}` has no param `{key}`, so it is ignored{hint}"),
+                );
+            }
+        }
+        None
+    }
+
+    fn no_box(&mut self, param: &Param) {
+        self.report(
+            Code::W120,
+            param_at(param),
+            "the component is `display=contents`, so it has no box for this param; ignored",
+        );
+    }
+
+    fn no_breakpoint(&mut self, param: &Param, key: &str) {
+        self.report(
+            Code::F008,
+            param_at(param),
+            format!("`{key}` takes no breakpoint; the param is ignored"),
+        );
+    }
+
+    /// A declared param's value against its declaration.
+    fn declared(
+        &mut self,
+        target: &Target<'r>,
+        declared: &Declaration,
+        param: &'r Param,
+        scope: &Scope<'r>,
+    ) -> Checked {
+        let at = value_at(param);
+        let key = declared.name.as_str();
+        if target.is(Keyword::Box) && is_display_contents(param) {
+            self.report(
+                Code::F009,
+                at,
+                "`display=contents` is only for a definition fence, which has the box it removes",
+            );
+            return Checked::Refused;
+        }
+        match (&param.value, &declared.declared) {
+            (ParamValue::Expr(_), DeclaredType::Name(name)) if name == "name" => self.refuse(
+                at,
+                &format!("`{key}` binds a name, written as is, not an expression"),
+            ),
+            (ParamValue::Expr(_), DeclaredType::Input { .. }) => self.refuse(
+                at,
+                &format!("`{key}` binds an input by its name, not an expression"),
+            ),
+            (ParamValue::Expr(source), declared_type) => {
+                match self.expression(source, at, scope, Some(&Type::declared(declared_type)), key)
+                {
+                    Some(ty) => Checked::Given(Some(ty)),
+                    None => Checked::Refused,
+                }
+            }
+            (value, DeclaredType::Input { input }) => {
+                self.bind(target, key, value, input, at, scope)
+            }
+            (value, declared_type) => {
+                if let ParamValue::String(parts) = value {
+                    self.string_paths(parts, at, scope);
+                }
+                let areas = key != "grid-template-areas"
+                    || literal(value).is_none_or(|text| Grammar::Areas.accepts(&text));
+                if !(fits(declared_type, value) && areas) {
+                    return self.refuse(at, &format!("`{key}` takes {}", written(declared_type)));
+                }
+                if let (ParamValue::Bare(bound), DeclaredType::Name(name)) = (value, declared_type)
+                    && name == "name"
+                    && let Some(why) = reserved::as_binding(bound)
+                {
+                    self.report(Code::F013, at, why);
+                }
+                Checked::Given(None)
+            }
+        }
+    }
+
+    /// F009: the param is treated as absent.
+    fn refuse(&mut self, at: Location, message: &str) -> Checked {
+        self.report(
+            Code::F009,
+            at,
+            format!("{message}; the param is treated as absent"),
+        );
+        Checked::Refused
+    }
+
+    /// A param of type `input<…>`: the name of a declared input of a type it binds (F030).
+    fn bind(
+        &mut self,
+        target: &Target,
+        key: &str,
+        value: &ParamValue,
+        input_type: &DeclaredType,
+        at: Location,
+        scope: &Scope,
+    ) -> Checked {
+        let ParamValue::Bare(name) = value else {
+            return self.refuse(at, &format!("`{key}` binds an input by its name"));
+        };
+        let Some(input) = scope.input(name) else {
+            self.report(
+                Code::F030,
+                at,
+                format!("no input `{name}` is declared under `md.inputs` of this document"),
+            );
+            return Checked::Refused;
+        };
+        if !binds(input_type, &input.declaration.declared) {
+            self.report(
+                Code::F030,
+                at,
+                format!(
+                    "`{key}` binds {}, but `{name}` is {}",
+                    written(input_type),
+                    written(&input.declaration.declared)
+                ),
+            );
+            return Checked::Refused;
+        }
+        if target.component.body.is_host() {
+            self.bound_by_hosts.insert(name.clone());
+        }
+        Checked::Given(None)
+    }
+
+    /// A universal param's value against its grammar, and its breakpoint.
+    fn universal(&mut self, universal: Universal, param: &'r Param, scope: &Scope<'r>) {
+        let key = universal.name();
+        if param.breakpoint.is_some() && !universal.takes_breakpoint() {
+            return self.no_breakpoint(param, key);
+        }
+        let at = value_at(param);
+        let value = &param.value;
+        if let ParamValue::Expr(source) = value {
+            self.expression(source, at, scope, Some(&Type::String), key);
+            return;
+        }
+        if let ParamValue::String(parts) = value {
+            self.string_paths(parts, at, scope);
+        }
+        let fits = match universal.takes() {
+            Takes::Flag => {
+                matches!(value, ParamValue::Flag)
+                    || matches!(value, ParamValue::Bare(text) if text == "true" || text == "false")
+            }
+            Takes::Text => matches!(value, ParamValue::Bare(_) | ParamValue::String(_)),
+            Takes::Value(grammar) => {
+                matches!(value, ParamValue::Bare(_) | ParamValue::String(_))
+                    && literal(value).is_none_or(|text| grammar.accepts(&text))
+            }
+        };
+        if !fits {
+            self.refuse(at, &format!("`{key}` doesn't take this value"));
+        }
+    }
+
+    /// Type-checks an expression written at `at` (its `(`), against what `key` takes: F024 at the column inside
+    /// it. Gives its type.
+    pub(super) fn expression(
+        &mut self,
+        source: &str,
+        at: Location,
+        scope: &Scope,
+        expected: Option<&Type>,
+        key: &str,
+    ) -> Option<Type> {
+        let inside = Location::new(at.line, at.column + 1);
+        let checked =
+            Program::parse(source).and_then(|program| program.check(&scope.cel(), &Signatures));
+        match checked {
+            Err(error) => {
+                let at = Location::new(inside.line, inside.column + error.at());
+                self.report(Code::F024, at, error.message());
+                None
+            }
+            Ok(ty) => {
+                let fits = expected.is_none_or(|expected| {
+                    ty.fits(expected) || (*expected == Type::Double && ty.is_numeric())
+                });
+                if fits {
+                    return Some(ty);
+                }
+                let expected = expected.map(ToString::to_string).unwrap_or_default();
+                self.report(
+                    Code::F024,
+                    inside,
+                    format!("`{key}` takes {expected}, but the expression gives {ty}"),
+                );
+                None
+            }
+        }
+    }
+
+    /// F014 for the interpolations of a quoted param whose `"` is at `at`.
+    fn string_paths(&mut self, parts: &[StringPart], at: Location, scope: &Scope) {
+        let paths: Vec<&str> = parts
+            .iter()
+            .filter_map(|part| match part {
+                StringPart::Interpolation(interpolation) => Some(interpolation.path.as_str()),
+                StringPart::Text(_) => None,
+            })
+            .collect();
+        if paths.is_empty() {
+            return;
+        }
+        let start = Point {
+            line: at.line,
+            column: at.column,
+            offset: 0,
+        };
+        let found = interpolations(&self.lines.from(start));
+        for (path, (index, _)) in paths.into_iter().zip(found) {
+            self.path(path, Location::new(at.line, at.column + index), scope);
+        }
+    }
+
+    /// F018 for a body given to a component without slots; F006 for an undeclared slot.
+    fn slots(&mut self, name: &str, container: &Container, signature: &Signature, start: Point) {
+        let Some(slots) = &signature.slots else {
+            if !container.children.is_empty() || !container.slots.is_empty() {
+                self.report(
+                    Code::F018,
+                    start.into(),
+                    format!("`{name}` declares no slots, so it takes no body; the body follows it as normal content"),
+                );
+            }
+            return;
+        };
+        let declared: Vec<&str> = slots
+            .iter()
+            .map(|slot| match slot {
+                SlotDeclaration::Name(slot) | SlotDeclaration::Template { name: slot, .. } => {
+                    slot.as_str()
+                }
+            })
+            .collect();
+        for slot in container
+            .slots
+            .iter()
+            .filter(|slot| !declared.contains(&slot.name.as_str()))
+        {
+            let hint = nearest(&slot.name, declared.iter().copied())
+                .map_or_else(String::new, |near| format!("; did you mean `{near}`?"));
+            let at = slot
+                .position
+                .map_or(start.into(), |position| position.start.into());
+            self.report(
+                Code::F006,
+                at,
+                format!(
+                    "`{name}` has no slot `{}`, so its content joins the default slot{hint}",
+                    slot.name
+                ),
+            );
+        }
+    }
+
+    /// A definition fence's params (spec §7, §9.2): the universal params, and on a `compmd` fence `box`'s own;
+    /// `display=contents` bare, and then nothing for a box (W120).
+    pub(super) fn fence(&mut self, component: &'r Component, scope: &Scope<'r>) {
+        let compmd = matches!(component.body, Body::Compmd(_));
+        let contents = compmd && is_contents(&component.fence);
+        let resolved = self.resolved;
+        let layout = match resolved.document(self.id).names.get("box") {
+            Some(Binding::Component(id, _)) if compmd => {
+                let layout = resolved.component(*id);
+                layout.signature.as_ref().map(|signature| Target {
+                    component: layout,
+                    signature,
+                    contents: false,
+                })
+            }
+            _ => None,
+        };
+        for param in &component.fence {
+            if is_display_contents(param) {
+                if param.breakpoint.is_some() {
+                    self.report(
+                        Code::F009,
+                        value_at(param),
+                        "`display=contents` is written bare, with no breakpoint: a component has a box or not",
+                    );
+                    continue;
+                }
+                if compmd {
+                    continue;
+                }
+            }
+            if contents {
+                self.no_box(param);
+                continue;
+            }
+            if matches!(param.value, ParamValue::Class(_) | ParamValue::Id(_)) {
+                continue;
+            }
+            let key = param.key.as_deref().unwrap_or("");
+            if let Some(universal) = Universal::from_name(key) {
+                self.universal(universal, param, scope);
+                continue;
+            }
+            let own = layout.as_ref().and_then(|layout| {
+                let declared = layout
+                    .signature
+                    .params
+                    .iter()
+                    .find(|declared| declared.name == key)?;
+                Some((layout, declared))
+            });
+            if let Some((layout, declared)) = own {
+                self.declared(layout, declared, param, scope);
+                continue;
+            }
+            let takes = if compmd {
+                "the common params, `class`, `id`, `lang`, `dir` and `box`'s params"
+            } else {
+                "the common params, `class`, `id`, `lang` and `dir`"
+            };
+            self.report(
+                Code::F008,
+                param_at(param),
+                format!("this fence takes {takes}, not `{key}`; ignored"),
+            );
+        }
+    }
+}
+
+/// Whether a default slot is a single list item, which `join=list` would make one list of (W103).
+fn is_single_list_item(children: &[Node]) -> bool {
+    matches!(children, [Node::List(list)] if list.children.len() == 1)
+}
+
+/// The template slots of an invocation: each slot, the name its `as` param binds, and the type of the elements of
+/// its `each` param, when it is a list.
+fn templates(
+    signature: &Signature,
+    params: &[Param],
+    types: &HashMap<&str, Type>,
+) -> Vec<Template> {
+    let slots = signature.slots.as_deref().unwrap_or_default();
+    slots
+        .iter()
+        .filter_map(|slot| {
+            let SlotDeclaration::Template {
+                name,
+                each,
+                binding,
+            } = slot
+            else {
+                return None;
+            };
+            let bound = params.iter().find_map(|param| match &param.value {
+                ParamValue::Bare(bound) if param.key.as_deref() == Some(binding.as_str()) => {
+                    Some(bound.clone())
+                }
+                _ => None,
+            })?;
+            let element = match types.get(each.as_str()) {
+                Some(Type::List(element)) => (**element).clone(),
+                _ => Type::Dyn,
+            };
+            Some(Template {
+                slot: name.clone(),
+                bound,
+                element,
+            })
+        })
+        .collect()
+}
+
+/// A declared type as messages write it.
+fn written(declared: &DeclaredType) -> String {
+    match declared {
+        DeclaredType::Name(name) => format!("a {name}"),
+        DeclaredType::Enum { members } => format!("one of {}", members.join(", ")),
+        DeclaredType::Input { input } => format!("an input of {}", written(input)),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn bare(text: &str) -> ParamValue {
+        ParamValue::Bare(text.into())
+    }
+
+    #[test]
+    fn kinds_accept_what_their_type_reads() {
+        assert!(Kind::Number.accepts(&bare("3")));
+        assert!(!Kind::Number.accepts(&bare("three")));
+        assert!(!Kind::Number.accepts(&bare("inf")));
+        assert!(Kind::Boolean.accepts(&ParamValue::Flag));
+        assert!(Kind::Boolean.accepts(&bare("false")));
+        assert!(Kind::Date.accepts(&bare("2026-10-21")));
+        assert!(!Kind::Date.accepts(&bare("2026-13-01")));
+        assert!(Kind::Array.accepts(&ParamValue::Json("[1]".into())));
+        assert!(!Kind::Object.accepts(&ParamValue::Json("[1]".into())));
+        assert!(Kind::Name.accepts(&bare("t")));
+        assert!(!Kind::Name.accepts(&bare("a-b")));
+        assert!(Kind::Space.accepts(&bare("m")));
+        assert!(!Kind::Array.accepts(&bare("x")));
+        for (kind, good, bad) in [
+            (Kind::Length, "2rem", "wide"),
+            (Kind::Color, "#fff", "loud"),
+            (Kind::Tracks, "1fr 2fr", "wide"),
+            (Kind::Surface, "subtle", "loud"),
+            (Kind::Border, "1px solid", "thick-dotted"),
+            (Kind::Radius, "full", "round"),
+        ] {
+            assert!(
+                kind.accepts(&bare(good)) && !kind.accepts(&bare(bad)),
+                "{kind:?}"
+            );
+        }
+        assert!(!Kind::String.accepts(&ParamValue::Flag));
+        assert!(
+            Kind::Number.accepts(&ParamValue::String(vec![StringPart::Interpolation(
+                crate::tree::Interpolation::default()
+            )]))
+        );
+    }
+
+    #[test]
+    fn inputs_bind_by_type() {
+        let name = |n: &str| DeclaredType::Name(n.into());
+        let members = |m: &[&str]| DeclaredType::Enum {
+            members: m.iter().map(|s| (*s).to_string()).collect(),
+        };
+        assert!(binds(&name("enum"), &members(&["a", "b"])));
+        assert!(binds(&members(&["a"]), &members(&["a"])));
+        assert!(!binds(&members(&["a"]), &members(&["b"])));
+        assert!(binds(&name("date"), &name("date")));
+        assert!(!binds(&name("date"), &members(&["a"])));
+        assert!(!binds(&members(&["a"]), &name("string")));
+        let input = DeclaredType::Input {
+            input: Box::new(name("date")),
+        };
+        assert!(fits(&input, &ParamValue::Flag));
+        assert!(!fits(&members(&["a"]), &ParamValue::Flag));
+        assert!(fits(&name("unknown-type"), &ParamValue::Flag));
+        assert_eq!(
+            written(&DeclaredType::Input {
+                input: Box::new(name("date"))
+            }),
+            "an input of a date"
+        );
+    }
+}

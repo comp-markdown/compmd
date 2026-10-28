@@ -115,6 +115,38 @@ pub enum Node {
     Yaml(Yaml),
 }
 
+impl Node {
+    /// The nodes inside this one: a paragraph's text, a list's items, a container's default slot, a leaf's or an
+    /// inline component's fallback, a `compmd` definition's body. A container's named slots are in its `slots`.
+    #[must_use]
+    pub fn children(&self) -> &[Node] {
+        match self {
+            Self::Blockquote(Blockquote { children, .. })
+            | Self::Delete(Parent { children, .. })
+            | Self::Emphasis(Parent { children, .. })
+            | Self::Paragraph(Parent { children, .. })
+            | Self::Strong(Parent { children, .. })
+            | Self::TableCell(Parent { children, .. })
+            | Self::TableRow(Parent { children, .. })
+            | Self::FootnoteDefinition(FootnoteDefinition { children, .. })
+            | Self::Heading(Heading { children, .. })
+            | Self::Link(Link { children, .. })
+            | Self::LinkReference(LinkReference { children, .. })
+            | Self::List(List { children, .. })
+            | Self::ListItem(ListItem { children, .. })
+            | Self::Table(Table { children, .. })
+            | Self::ComponentContainer(Container { children, .. })
+            | Self::ComponentSlot(Slot { children, .. })
+            | Self::ComponentDefinition(Definition {
+                body: DefinitionBody::Compmd { children },
+                ..
+            }) => children,
+            Self::ComponentLeaf(leaf) | Self::ComponentInline(leaf) => &leaf.fallback,
+            _ => &[],
+        }
+    }
+}
+
 /// A node with children and nothing else.
 #[derive(Clone, Debug, Default, PartialEq, Serialize)]
 pub struct Parent {
@@ -772,6 +804,22 @@ mod tests {
                 json!({ "key": "k", "breakpoint": null, "kind": kind, "value": expected })
             );
         }
+    }
+
+    #[test]
+    fn children_are_a_nodes_content() {
+        let paragraph = Node::Paragraph(Parent {
+            children: vec![Node::Text(Literal::default())],
+            position: None,
+        });
+        let slot = Node::ComponentSlot(Slot {
+            name: "footer".into(),
+            children: vec![paragraph.clone()],
+            position: None,
+        });
+        assert_eq!(slot.children(), std::slice::from_ref(&paragraph));
+        assert_eq!(paragraph.children().len(), 1);
+        assert_eq!(Node::Text(Literal::default()).children(), []);
     }
 
     #[test]

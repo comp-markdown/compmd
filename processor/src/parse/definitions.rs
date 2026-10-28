@@ -175,7 +175,7 @@ fn slots(value: Option<&Value>) -> Option<Vec<SlotDeclaration>> {
 }
 
 /// A declaration, short form (`info | warn = info`) or long form (`{type, default, doc}`).
-fn declaration(name: &str, written: &Value) -> Declaration {
+pub(crate) fn declaration(name: &str, written: &Value) -> Declaration {
     if let Some(short) = written.as_str() {
         let (type_text, default) = match split_default(short) {
             Some((type_text, default)) => (type_text, short_default(default.trim())),

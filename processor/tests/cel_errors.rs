@@ -137,7 +137,7 @@ fn maps_and_lists_are_built_from_what_fits() {
 
 #[test]
 fn fields_and_indexes() {
-    assert_eq!(refused("rows.x"), says(5, "list(double) has no fields"));
+    assert_eq!(refused("rows.x"), says(6, "list(double) has no fields"));
     assert_eq!(
         refused("has(rows.x)"),
         says(1, "has() needs a map, not list(double)")
@@ -161,8 +161,8 @@ fn fields_and_indexes() {
         refused("rows['a']"),
         says(5, "a list index must be an int, not string")
     );
-    assert_eq!(fails("x.y", json!(1)), says(2, "double has no fields"));
-    assert_eq!(fails("x.y", json!({})), says(2, "no field 'y'"));
+    assert_eq!(fails("x.y", json!(1)), says(3, "double has no fields"));
+    assert_eq!(fails("x.y", json!({})), says(3, "no field 'y'"));
     assert_eq!(
         fails("has(x.y)", json!(1)),
         says(1, "has() needs a map, not double")
@@ -229,7 +229,7 @@ fn macros_range_over_lists_and_maps() {
     );
     assert_eq!(
         fails("x.exists(v, v.a)", json!([{ "b": true }, { "a": false }])),
-        says(14, "no field 'a'")
+        says(15, "no field 'a'")
     );
 }
 
@@ -237,38 +237,42 @@ fn macros_range_over_lists_and_maps() {
 fn operators_take_the_types_cel_gives_them() {
     assert_eq!(
         refused("1 == 'a'"),
-        says(3, "'==' can't be applied to int and string")
+        says(1, "'==' can't be applied to int and string")
     );
     assert_eq!(
         refused("'a' < 1"),
-        says(5, "'<' can't be applied to string and int")
+        says(1, "'<' can't be applied to string and int")
     );
     assert_eq!(
         refused("x < [1]"),
-        says(3, "'<' can't be applied to dyn and list(int)")
+        says(1, "'<' can't be applied to dyn and list(int)")
     );
     assert_eq!(
         refused("1 in 'abc'"),
-        says(3, "'in' can't be applied to int and string")
+        says(1, "'in' can't be applied to int and string")
     );
     assert_eq!(
         refused("1 in md.doc"),
-        says(3, "'in' can't be applied to int and map(string, dyn)")
+        says(1, "'in' can't be applied to int and map(string, dyn)")
     );
     assert_eq!(
         refused("x % 1.5"),
         says(
-            3,
+            1,
             "'%' can't be applied to dyn and double; wrap the number in int(…) to drop its fraction"
         )
     );
     assert_eq!(
         refused("x - 'a'"),
-        says(3, "'-' can't be applied to dyn and string")
+        says(1, "'-' can't be applied to dyn and string")
     );
     assert_eq!(
         refused("x * 'a'"),
-        says(3, "'*' can't be applied to dyn and string")
+        says(1, "'*' can't be applied to dyn and string")
+    );
+    assert_eq!(
+        refused("rows[0] + 'a'"),
+        says(1, "'+' can't be applied to double and string")
     );
     assert_eq!(type_of("x + 'a'"), "dyn");
     assert_eq!(type_of("x < 'a' && 1u < 2.0"), "bool");
@@ -491,7 +495,7 @@ fn conversions_fail_where_they_must() {
     ] {
         assert_eq!(
             evaluate(&format!("{value}.y"), json!(null), json!(null)),
-            Err((value.len() + 1, format!("{kind} has no fields")))
+            Err((value.len() + 2, format!("{kind} has no fields")))
         );
     }
     assert_eq!(
@@ -522,7 +526,7 @@ fn functions_take_the_arguments_they_are_declared_with() {
     assert_eq!(
         refused("md.doc.price % 2"),
         says(
-            14,
+            1,
             "'%' can't be applied to double and int; wrap the number in int(…) to drop its fraction"
         )
     );
@@ -562,7 +566,7 @@ fn functions_take_the_arguments_they_are_declared_with() {
     );
     assert_eq!(
         refused("md.dco"),
-        says(3, "unknown field 'dco'; did you mean 'doc'?")
+        says(4, "unknown field 'dco'; did you mean 'doc'?")
     );
     assert_eq!(
         refused("row[0]"),
@@ -582,7 +586,7 @@ fn grammar_types_take_only_equality_and_concatenation() {
     assert_eq!(type_of("'calc(' + gap + ')'"), "string");
     assert_eq!(
         refused("gap < 'x'"),
-        says(5, "'<' can't be applied to length and string")
+        says(1, "'<' can't be applied to length and string")
     );
     assert_eq!(
         refused("gap.size()"),
@@ -602,7 +606,7 @@ fn unchecked_programs_still_fail_safely() {
     );
     assert_eq!(
         fails("md.doc.missing", json!(null)),
-        says(7, "no field 'missing'")
+        says(8, "no field 'missing'")
     );
 }
 
@@ -627,7 +631,7 @@ fn errors_say_which_kind_they_are() {
     ));
     assert!(matches!(
         parse("'a' + 1").check(&scope(), &Signatures),
-        Err(Error::Type { at: 4, .. })
+        Err(Error::Type { at: 0, .. })
     ));
     let md = Md::new(NOW, "en", "UTC", &Utc);
     assert!(matches!(

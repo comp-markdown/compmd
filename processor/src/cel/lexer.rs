@@ -87,7 +87,9 @@ pub(crate) fn tokens(source: &str) -> Result<Vec<(Token, usize)>, Error> {
                     .take_while(|c| **c == '_' || c.is_ascii_alphanumeric())
                     .count();
             let word: String = chars[at..end].iter().collect();
-            if RESERVED.contains(&word.as_str()) {
+            // After a `.` a word is a field name, so `md.loop` (spec §8.2) reads though `loop` is reserved.
+            let field = matches!(out.last(), Some((Token::Punct("."), _)));
+            if !field && RESERVED.contains(&word.as_str()) {
                 return Err(Error::syntax(start, format!("'{word}' is a reserved word")));
             }
             out.push((Token::Ident(word), start));
@@ -339,6 +341,15 @@ mod tests {
         assert_eq!(
             kinds("if").map_err(|e| e.1),
             Err("'if' is a reserved word".into())
+        );
+        assert_eq!(
+            kinds("md.loop"),
+            Ok(vec![
+                Token::Ident("md".into()),
+                Token::Punct("."),
+                Token::Ident("loop".into()),
+                Token::End
+            ])
         );
         assert_eq!(
             kinds("a = 1"),
