@@ -3,6 +3,7 @@
 //! Every type serializes to the JSON of spec §12.4 with `serde`, so `serde_json::to_value(&root)` is the tree
 //! `conformance/compmd-tree.schema.json` defines as `#/$defs/parseRoot`.
 
+use crate::named::named;
 use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
 use serde_json::Value;
@@ -761,12 +762,56 @@ pub struct Declaration {
     pub doc: Option<String>,
 }
 
+named! {
+    /// A type name of a declaration (spec §7.3), and `enum`, which `input<enum>` binds.
+    pub enum TypeName {
+        /// Text.
+        String = "string",
+        /// A number, a CEL `double`.
+        Number = "number",
+        /// `true` or `false`.
+        Boolean = "boolean",
+        /// A day, `YYYY-MM-DD`.
+        Date = "date",
+        /// A list of any values.
+        Array = "array",
+        /// A map from strings to any values.
+        Object = "object",
+        /// A length: `px`, `rem`, `em` or `%` (spec §9.4).
+        Length = "length",
+        /// A space: `none`, `s`, `m`, `l` or a length (spec §9.4).
+        Space = "space",
+        /// A CSS color (spec §9.4).
+        Color = "color",
+        /// Grid tracks: lengths, `fr`, `auto`, `minmax()`, `repeat()` … (spec §9.4).
+        Tracks = "tracks",
+        /// A background: a token or a CSS color (spec §9.4).
+        Surface = "surface",
+        /// A border: a token or a CSS border (spec §9.4).
+        Border = "border",
+        /// A corner radius: a token or a length (spec §9.4).
+        Radius = "radius",
+        /// A name the author binds, written as is: never read as an expression.
+        Name = "name",
+        /// Any enum, in `input<enum>`.
+        Enum = "enum",
+    }
+}
+
+impl Serialize for TypeName {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_str(self.name())
+    }
+}
+
 /// A declared type (spec §7.3).
 #[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(untagged)]
 pub enum DeclaredType {
-    /// A type name: `string`, `length`, … as written.
-    Name(String),
+    /// A type name: `string`, `length`, ….
+    Name(TypeName),
+    /// A name that isn't one of the type names, as written: any value fits it, as `dyn`.
+    Other(String),
     /// An enum, `a | b`.
     Enum {
         /// The members, in written order.
@@ -778,6 +823,13 @@ pub enum DeclaredType {
         /// The input's type.
         input: Box<DeclaredType>,
     },
+}
+
+impl DeclaredType {
+    /// The type a name stands for: one of the type names, or another name as written.
+    pub(crate) fn named(name: &str) -> Self {
+        TypeName::from_name(name).map_or_else(|| Self::Other(name.to_string()), Self::Name)
+    }
 }
 
 /// A declared default (spec §12.1).
@@ -915,7 +967,7 @@ mod tests {
                 Declaration {
                     name: "pick".into(),
                     declared: DeclaredType::Input {
-                        input: Box::new(DeclaredType::Name("date".into())),
+                        input: Box::new(DeclaredType::Name(TypeName::Date)),
                     },
                     optional: true,
                     default: Some(DefaultValue::Yaml(json!({ "a": 1 }))),

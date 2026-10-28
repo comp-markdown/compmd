@@ -2,7 +2,7 @@
 
 use super::ast::Literal;
 use super::time;
-use crate::tree::DeclaredType;
+use crate::tree::{DeclaredType, TypeName};
 use indexmap::IndexMap;
 use serde_json::Value as Json;
 use std::cmp::Ordering;
@@ -159,10 +159,10 @@ impl Value {
     /// text otherwise.
     pub(crate) fn bare(text: &str, declared: Option<&DeclaredType>) -> Self {
         match declared {
-            Some(DeclaredType::Name(name)) if name == "number" => text
+            Some(DeclaredType::Name(TypeName::Number)) => text
                 .parse::<f64>()
                 .map_or_else(|_| Self::string(text), Self::Double),
-            Some(DeclaredType::Name(name)) if name == "boolean" => match text {
+            Some(DeclaredType::Name(TypeName::Boolean)) => match text {
                 "true" => Self::Bool(true),
                 "false" => Self::Bool(false),
                 _ => Self::string(text),

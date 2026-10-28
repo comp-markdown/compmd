@@ -39,7 +39,8 @@ pub(super) fn of(resolved: &Resolved, context: &Context) -> (Inputs, Vec<Diagnos
             });
             let (kind, members) = match declared {
                 DeclaredType::Enum { members } => ("enum".to_string(), Some(members.clone())),
-                DeclaredType::Name(name) => (name.clone(), None),
+                DeclaredType::Name(name) => (name.name().to_string(), None),
+                DeclaredType::Other(name) => (name.clone(), None),
                 DeclaredType::Input { .. } => ("dyn".to_string(), None),
             };
             Input {

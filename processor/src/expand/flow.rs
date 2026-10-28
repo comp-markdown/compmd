@@ -8,7 +8,7 @@ use super::{Expander, origins};
 use crate::cel::Value;
 use crate::diagnostic::Code;
 use crate::expanded::{self, Content};
-use crate::tree::{self, DeclaredType, Param, ParamValue, Signature};
+use crate::tree::{self, DeclaredType, Param, ParamValue, Signature, TypeName};
 use crate::validate::params::value_at;
 use std::rc::Rc;
 
@@ -42,7 +42,7 @@ impl<'r> Expander<'r> {
         env: &Env<'r>,
         out: &mut Vec<expanded::Node>,
     ) {
-        match self.given(given, "when", &named("boolean"), env) {
+        match self.given(given, "when", &named(TypeName::Boolean), env) {
             Some(Value::Bool(true)) => out.extend(self.list(invocation.default_slot(), env)),
             Some(Value::Bool(false)) => out.extend(self.list(invocation.slot("else"), env)),
             _ => self.fallback(invocation, env, out),
@@ -58,7 +58,7 @@ impl<'r> Expander<'r> {
         out: &mut Vec<expanded::Node>,
     ) {
         let text = self
-            .given(given, "of", &named("string"), env)
+            .given(given, "of", &named(TypeName::String), env)
             .and_then(|value| value.written().ok().flatten());
         let Some(text) = text else {
             return self.fallback(invocation, env, out);
@@ -90,11 +90,11 @@ impl<'r> Expander<'r> {
             signature
                 .and_then(|signature| signature.params.iter().find(|d| d.name == key))
                 .map_or_else(
-                    || named("string"),
+                    || named(TypeName::String),
                     |declaration| declaration.declared.clone(),
                 )
         };
-        let items = match self.given(given, "in", &named("array"), env) {
+        let items = match self.given(given, "in", &named(TypeName::Array), env) {
             Some(Value::List(items)) => items,
             Some(Value::Null) => Rc::default(),
             other => {
@@ -182,8 +182,8 @@ impl<'r> Expander<'r> {
 }
 
 /// A type by its name.
-fn named(name: &str) -> DeclaredType {
-    DeclaredType::Name(name.into())
+fn named(name: TypeName) -> DeclaredType {
+    DeclaredType::Name(name)
 }
 
 type Iterations = Vec<Vec<expanded::Node>>;

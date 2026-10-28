@@ -415,7 +415,7 @@ fn breakpoint_values_reach_expressions_in_templates() {
 
 #[test]
 fn inputs_take_given_values_that_fit_or_their_defaults() {
-    let input = "---\nname: Ana\nmd:\n  inputs:\n    n: number = 2\n    on: boolean = true\n    q: string = \"Hi {{md.doc.name}}\"\n    tags: array = [\"a\"]\n    flag: boolean = (1 / 0 == 1)\n    long: {type: number, default: 3}\n    none: string?\n    day: date = (md.today())\n    word: string = plain\n    when: date = 2026-10-01\n---\n\n{{md.input.n}} {{md.input.on}} {{md.input.q}} {{md.input.long}} [{{md.input.none}}] {{md.input.day}} {{md.input.word}} {{md.input.when}}\n";
+    let input = "---\nname: Ana\nmd:\n  inputs:\n    n: number = 2\n    on: boolean = true\n    q: string = \"Hi {{md.doc.name}}\"\n    tags: array = [\"a\"]\n    flag: boolean = (1 / 0 == 1)\n    long: {type: number, default: 3}\n    none: string?\n    day: date = (md.today())\n    word: string = plain\n    when: date = 2026-10-01\n    odd: whatever = x\n---\n\n{{md.input.n}} {{md.input.on}} {{md.input.q}} {{md.input.long}} [{{md.input.none}}] {{md.input.day}} {{md.input.word}} {{md.input.when}}\n";
     let rendered = render(
         input,
         Setup {
@@ -432,6 +432,7 @@ fn inputs_take_given_values_that_fit_or_their_defaults() {
     assert_eq!(inputs["tags"], json!({ "type": "array", "value": ["a"] }));
     assert_eq!(inputs["flag"]["value"], Value::Null);
     assert_eq!(inputs["n"], json!({ "type": "number", "value": 2 }));
+    assert_eq!(inputs["odd"], json!({ "type": "whatever", "value": "x" }));
 }
 
 #[test]

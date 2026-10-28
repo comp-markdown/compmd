@@ -10,14 +10,13 @@ use crate::cel::Type;
 use crate::cel::time::parse_date;
 use crate::diagnostic::{Code, Location};
 use crate::md::Signatures;
-use crate::named::named;
 use crate::nearest::nearest;
 use crate::parse::params::interpolations;
 use crate::reserved::{self, Keyword};
 use crate::resolve::{Binding, Body, Component};
 use crate::tree::{
     Container, Declaration, DeclaredType, Node, Param, ParamValue, Point, Position, Signature,
-    SlotDeclaration, StringPart,
+    SlotDeclaration, StringPart, TypeName,
 };
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
@@ -25,67 +24,44 @@ use std::collections::{HashMap, HashSet};
 /// The breakpoints (spec §9.3).
 const BREAKPOINTS: [&str; 3] = ["sm", "md", "lg"];
 
-named! {
-    /// A type name of a declaration (spec §7.3).
-    enum Kind {
-        String = "string",
-        Number = "number",
-        Boolean = "boolean",
-        Date = "date",
-        Array = "array",
-        Object = "object",
-        Length = "length",
-        Space = "space",
-        Color = "color",
-        Tracks = "tracks",
-        Surface = "surface",
-        Border = "border",
-        Radius = "radius",
-        Name = "name",
+/// The grammar of a layout or styling type.
+fn grammar(name: TypeName) -> Option<Grammar> {
+    match name {
+        TypeName::Length => Some(Grammar::Length),
+        TypeName::Space => Some(Grammar::Space),
+        TypeName::Color => Some(Grammar::Color),
+        TypeName::Tracks => Some(Grammar::Tracks),
+        TypeName::Surface => Some(Grammar::Surface),
+        TypeName::Border => Some(Grammar::Border),
+        TypeName::Radius => Some(Grammar::Radius),
+        _ => None,
     }
 }
 
-impl Kind {
-    /// The grammar of a layout or styling type.
-    fn grammar(self) -> Option<Grammar> {
-        match self {
-            Self::Length => Some(Grammar::Length),
-            Self::Space => Some(Grammar::Space),
-            Self::Color => Some(Grammar::Color),
-            Self::Tracks => Some(Grammar::Tracks),
-            Self::Surface => Some(Grammar::Surface),
-            Self::Border => Some(Grammar::Border),
-            Self::Radius => Some(Grammar::Radius),
-            _ => None,
-        }
-    }
-
-    /// Whether a value written as `value` is of this type (spec §5.1). A string with interpolations is checked
-    /// when it is rendered.
-    fn accepts(self, value: &ParamValue) -> bool {
-        let Some(text) = literal(value) else {
-            return matches!(value, ParamValue::String(_))
-                || match self {
-                    Self::Boolean => *value == ParamValue::Flag,
-                    Self::Array => matches!(value, ParamValue::Json(json) if json.starts_with('[')),
-                    Self::Object => {
-                        matches!(value, ParamValue::Json(json) if json.starts_with('{'))
-                    }
-                    _ => false,
-                };
-        };
-        let bare = matches!(value, ParamValue::Bare(_));
-        match self {
-            Self::String => true,
-            Self::Number => bare && text.parse::<f64>().is_ok_and(f64::is_finite),
-            Self::Boolean => bare && (text == "true" || text == "false"),
-            Self::Date => parse_date(&text).is_some(),
-            Self::Array | Self::Object => false,
-            Self::Name => bare && is_identifier(&text),
-            grammar => grammar
-                .grammar()
-                .is_some_and(|grammar| grammar.accepts(&text)),
-        }
+/// Whether a value written as `value` is of the type `name` (spec §5.1). A string with interpolations is checked
+/// when it is rendered.
+fn accepts(name: TypeName, value: &ParamValue) -> bool {
+    let Some(text) = literal(value) else {
+        return matches!(value, ParamValue::String(_))
+            || match name {
+                TypeName::Boolean => *value == ParamValue::Flag,
+                TypeName::Array => matches!(value, ParamValue::Json(json) if json.starts_with('[')),
+                TypeName::Object => {
+                    matches!(value, ParamValue::Json(json) if json.starts_with('{'))
+                }
+                TypeName::Enum => true,
+                _ => false,
+            };
+    };
+    let bare = matches!(value, ParamValue::Bare(_));
+    match name {
+        TypeName::String | TypeName::Enum => true,
+        TypeName::Number => bare && text.parse::<f64>().is_ok_and(f64::is_finite),
+        TypeName::Boolean => bare && (text == "true" || text == "false"),
+        TypeName::Date => parse_date(&text).is_some(),
+        TypeName::Array | TypeName::Object => false,
+        TypeName::Name => bare && is_identifier(&text),
+        layout => grammar(layout).is_some_and(|grammar| grammar.accepts(&text)),
     }
 }
 
@@ -112,8 +88,8 @@ fn fits(declared: &DeclaredType, value: &ParamValue) -> bool {
             !matches!(value, ParamValue::Flag | ParamValue::Json(_))
                 && literal(value).is_none_or(|text| members.iter().any(|member| *member == text))
         }
-        DeclaredType::Name(name) => Kind::from_name(name).is_none_or(|kind| kind.accepts(value)),
-        DeclaredType::Input { .. } => true,
+        DeclaredType::Name(name) => accepts(*name, value),
+        DeclaredType::Other(_) | DeclaredType::Input { .. } => true,
     }
 }
 
@@ -129,11 +105,12 @@ fn is_identifier(text: &str) -> bool {
 /// Whether an input declared `input` can be bound to a param declared `input<param>` (spec §7.3).
 fn binds(param: &DeclaredType, input: &DeclaredType) -> bool {
     match (param, input) {
-        (DeclaredType::Name(any), DeclaredType::Enum { .. }) => any == "enum",
+        (DeclaredType::Name(TypeName::Enum), DeclaredType::Enum { .. }) => true,
         (DeclaredType::Enum { members: wanted }, DeclaredType::Enum { members }) => {
             wanted == members
         }
         (DeclaredType::Name(wanted), DeclaredType::Name(name)) => wanted == name,
+        (DeclaredType::Other(wanted), DeclaredType::Other(name)) => wanted == name,
         _ => false,
     }
 }
@@ -456,7 +433,7 @@ impl<'r> Checker<'r, '_> {
             return Checked::Refused;
         }
         match (&param.value, &declared.declared) {
-            (ParamValue::Expr(_), DeclaredType::Name(name)) if name == "name" => self.refuse(
+            (ParamValue::Expr(_), DeclaredType::Name(TypeName::Name)) => self.refuse(
                 at,
                 &format!("`{key}` binds a name, written as is, not an expression"),
             ),
@@ -483,8 +460,8 @@ impl<'r> Checker<'r, '_> {
                 if !(fits(declared_type, value) && areas) {
                     return self.refuse(at, &format!("`{key}` takes {}", written(declared_type)));
                 }
-                if let (ParamValue::Bare(bound), DeclaredType::Name(name)) = (value, declared_type)
-                    && name == "name"
+                if let (ParamValue::Bare(bound), DeclaredType::Name(TypeName::Name)) =
+                    (value, declared_type)
                     && let Some(why) = reserved::as_binding(bound)
                 {
                     self.report(Code::F013, at, why);
@@ -810,7 +787,8 @@ fn templates(
 /// A declared type as messages write it.
 fn written(declared: &DeclaredType) -> String {
     match declared {
-        DeclaredType::Name(name) => format!("a {name}"),
+        DeclaredType::Name(name) => format!("a {}", name.name()),
+        DeclaredType::Other(name) => format!("a {name}"),
         DeclaredType::Enum { members } => format!("one of {}", members.join(", ")),
         DeclaredType::Input { input } => format!("an input of {}", written(input)),
     }
@@ -826,43 +804,45 @@ mod tests {
 
     #[test]
     fn kinds_accept_what_their_type_reads() {
-        assert!(Kind::Number.accepts(&bare("3")));
-        assert!(!Kind::Number.accepts(&bare("three")));
-        assert!(!Kind::Number.accepts(&bare("inf")));
-        assert!(Kind::Boolean.accepts(&ParamValue::Flag));
-        assert!(Kind::Boolean.accepts(&bare("false")));
-        assert!(Kind::Date.accepts(&bare("2026-10-21")));
-        assert!(!Kind::Date.accepts(&bare("2026-13-01")));
-        assert!(Kind::Array.accepts(&ParamValue::Json("[1]".into())));
-        assert!(!Kind::Object.accepts(&ParamValue::Json("[1]".into())));
-        assert!(Kind::Name.accepts(&bare("t")));
-        assert!(!Kind::Name.accepts(&bare("a-b")));
-        assert!(Kind::Space.accepts(&bare("m")));
-        assert!(!Kind::Array.accepts(&bare("x")));
-        for (kind, good, bad) in [
-            (Kind::Length, "2rem", "wide"),
-            (Kind::Color, "#fff", "loud"),
-            (Kind::Tracks, "1fr 2fr", "wide"),
-            (Kind::Surface, "subtle", "loud"),
-            (Kind::Border, "1px solid", "thick-dotted"),
-            (Kind::Radius, "full", "round"),
+        assert!(accepts(TypeName::Number, &bare("3")));
+        assert!(!accepts(TypeName::Number, &bare("three")));
+        assert!(!accepts(TypeName::Number, &bare("inf")));
+        assert!(accepts(TypeName::Boolean, &ParamValue::Flag));
+        assert!(accepts(TypeName::Boolean, &bare("false")));
+        assert!(accepts(TypeName::Date, &bare("2026-10-21")));
+        assert!(!accepts(TypeName::Date, &bare("2026-13-01")));
+        assert!(accepts(TypeName::Array, &ParamValue::Json("[1]".into())));
+        assert!(!accepts(TypeName::Object, &ParamValue::Json("[1]".into())));
+        assert!(accepts(TypeName::Name, &bare("t")));
+        assert!(!accepts(TypeName::Name, &bare("a-b")));
+        assert!(accepts(TypeName::Space, &bare("m")));
+        assert!(!accepts(TypeName::Array, &bare("x")));
+        assert!(accepts(TypeName::Enum, &ParamValue::Flag));
+        for (name, good, bad) in [
+            (TypeName::Length, "2rem", "wide"),
+            (TypeName::Color, "#fff", "loud"),
+            (TypeName::Tracks, "1fr 2fr", "wide"),
+            (TypeName::Surface, "subtle", "loud"),
+            (TypeName::Border, "1px solid", "thick-dotted"),
+            (TypeName::Radius, "full", "round"),
         ] {
             assert!(
-                kind.accepts(&bare(good)) && !kind.accepts(&bare(bad)),
-                "{kind:?}"
+                accepts(name, &bare(good)) && !accepts(name, &bare(bad)),
+                "{name:?}"
             );
         }
-        assert!(!Kind::String.accepts(&ParamValue::Flag));
-        assert!(
-            Kind::Number.accepts(&ParamValue::String(vec![StringPart::Interpolation(
+        assert!(!accepts(TypeName::String, &ParamValue::Flag));
+        assert!(accepts(
+            TypeName::Number,
+            &ParamValue::String(vec![StringPart::Interpolation(
                 crate::tree::Interpolation::default()
-            )]))
-        );
+            )])
+        ));
     }
 
     #[test]
     fn inputs_bind_by_type() {
-        let name = |n: &str| DeclaredType::Name(n.into());
+        let name = DeclaredType::named;
         let members = |m: &[&str]| DeclaredType::Enum {
             members: m.iter().map(|s| (*s).to_string()).collect(),
         };
@@ -872,6 +852,8 @@ mod tests {
         assert!(binds(&name("date"), &name("date")));
         assert!(!binds(&name("date"), &members(&["a"])));
         assert!(!binds(&members(&["a"]), &name("string")));
+        assert!(binds(&name("odd"), &name("odd")));
+        assert_eq!(written(&name("odd")), "a odd");
         let input = DeclaredType::Input {
             input: Box::new(name("date")),
         };

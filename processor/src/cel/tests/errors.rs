@@ -27,7 +27,7 @@ fn scope() -> Scope {
             Type::of_json(&json!({ "doc": { "title": "Release", "price": 12.0 } })),
         )
         .with("rows", Type::list(Type::Double))
-        .with("gap", Type::declared(&DeclaredType::Name("length".into())))
+        .with("gap", Type::declared(&DeclaredType::named("length")))
         .with("x", Type::Dyn)
         .with("y", Type::Dyn)
 }

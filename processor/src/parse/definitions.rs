@@ -249,5 +249,5 @@ fn declared_type(text: &str) -> DeclaredType {
                 .collect(),
         };
     }
-    DeclaredType::Name(text.to_string())
+    DeclaredType::named(text)
 }

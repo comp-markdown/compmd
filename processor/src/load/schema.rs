@@ -5,7 +5,7 @@ use super::Violation;
 use super::format::Parsed;
 use crate::cel::time::parse_date;
 use crate::settings::Field;
-use crate::tree::DeclaredType;
+use crate::tree::{DeclaredType, TypeName};
 use serde_json::{Map, Number, Value};
 
 /// The data typed by `fields`, and the records dropped, with what was wrong.
@@ -73,8 +73,8 @@ pub(super) fn read(
         DeclaredType::Enum { members } => raw
             .as_str()
             .is_some_and(|value| members.iter().any(|member| member == value)),
-        DeclaredType::Name(name) => match (name.as_str(), &raw) {
-            ("number", Value::String(cell)) if text => {
+        DeclaredType::Name(name) => match (name, &raw) {
+            (TypeName::Number, Value::String(cell)) if text => {
                 return cell
                     .parse::<f64>()
                     .ok()
@@ -82,21 +82,21 @@ pub(super) fn read(
                     .map(Value::Number)
                     .ok_or_else(|| format!("isn't a number: `{cell}`"));
             }
-            ("boolean", Value::String(cell)) if text => {
+            (TypeName::Boolean, Value::String(cell)) if text => {
                 return match cell.as_str() {
                     "true" => Ok(Value::Bool(true)),
                     "false" => Ok(Value::Bool(false)),
                     _ => Err(format!("isn't `true` or `false`: `{cell}`")),
                 };
             }
-            ("number", value) => value.is_number(),
-            ("boolean", value) => value.is_boolean(),
-            ("date", Value::String(day)) => parse_date(day).is_some(),
-            ("array", value) => value.is_array(),
-            ("object", value) => value.is_object(),
-            ("dyn", _) => true,
+            (TypeName::Number, value) => value.is_number(),
+            (TypeName::Boolean, value) => value.is_boolean(),
+            (TypeName::Date, Value::String(day)) => parse_date(day).is_some(),
+            (TypeName::Array, value) => value.is_array(),
+            (TypeName::Object, value) => value.is_object(),
             (_, value) => value.is_string(),
         },
+        DeclaredType::Other(_) => true,
         DeclaredType::Input { .. } => false,
     };
     if fits {
@@ -108,9 +108,10 @@ pub(super) fn read(
 
 fn written(declared: &DeclaredType) -> String {
     match declared {
-        DeclaredType::Name(name) => format!("a {name}"),
+        DeclaredType::Name(name) => format!("a {}", name.name()),
         DeclaredType::Enum { members } => format!("one of {}", members.join(", ")),
-        DeclaredType::Input { .. } => "a value".into(),
+        // Any value fits another name.
+        DeclaredType::Other(_) | DeclaredType::Input { .. } => "a value".into(),
     }
 }
 
@@ -172,7 +173,7 @@ mod tests {
         };
         assert_eq!(read(json!("a"), &tone, false, false), Ok(json!("a")));
         assert!(read(json!("b"), &tone, false, false).is_err());
-        let name = |n: &str| DeclaredType::Name(n.into());
+        let name = DeclaredType::named;
         assert_eq!(
             read(json!(""), &name("string"), false, false),
             Ok(json!(""))

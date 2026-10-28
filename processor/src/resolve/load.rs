@@ -13,7 +13,7 @@ use crate::parse::{ParseOptions, Parsed, parse};
 use crate::reserved;
 use crate::settings::{self, Import, Settings};
 use crate::tree::{
-    DeclaredType, Definition, DefinitionBody, Node, Position, Signature, SignatureFence,
+    DeclaredType, Definition, DefinitionBody, Node, Position, Signature, SignatureFence, TypeName,
 };
 use semver::Version;
 use serde_json::Value;
@@ -582,7 +582,7 @@ impl<'h> Loader<'h> {
                     format!("two params differ only in `-` and `_` from `{}`, which expressions read alike", param.name),
                 );
             }
-            let binds_a_name = param.declared == DeclaredType::Name("name".into());
+            let binds_a_name = param.declared == DeclaredType::Name(TypeName::Name);
             if let Some(why) =
                 reserved::as_variable(&param.name).filter(|_| compmd && !binds_a_name)
             {

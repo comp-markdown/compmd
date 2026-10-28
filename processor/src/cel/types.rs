@@ -1,7 +1,7 @@
 //! The profile's types (spec §8.2): the type of a JSON value as frontmatter and data give it, and the type of a
 //! declared param. Nested types are shared, so a type is cheap to clone when a scope is extended for each `each`.
 
-use crate::tree::DeclaredType;
+use crate::tree::{DeclaredType, TypeName};
 use serde_json::Value as Json;
 use std::collections::BTreeMap;
 use std::fmt;
@@ -38,11 +38,6 @@ pub enum Type {
     /// Any type, checked when evaluated.
     Dyn,
 }
-
-/// The CompMD types whose values are strings in a grammar of spec §9.4.
-const GRAMMARS: [&str; 7] = [
-    "length", "space", "color", "tracks", "surface", "border", "radius",
-];
 
 impl Type {
     /// A list of `element`s.
@@ -90,17 +85,21 @@ impl Type {
         match declared {
             DeclaredType::Enum { .. } => Self::String,
             DeclaredType::Input { input } => Self::declared(input),
-            DeclaredType::Name(name) => match name.as_str() {
-                "string" | "date" | "name" | "enum" => Self::String,
-                "number" => Self::Double,
-                "boolean" => Self::Bool,
-                "array" => Self::list(Self::Dyn),
-                "object" => Self::map(Self::String, Self::Dyn),
-                other => GRAMMARS
-                    .iter()
-                    .find(|grammar| **grammar == other)
-                    .map_or(Self::Dyn, |grammar| Self::Grammar(grammar)),
+            DeclaredType::Name(name) => match name {
+                TypeName::String | TypeName::Date | TypeName::Name | TypeName::Enum => Self::String,
+                TypeName::Number => Self::Double,
+                TypeName::Boolean => Self::Bool,
+                TypeName::Array => Self::list(Self::Dyn),
+                TypeName::Object => Self::map(Self::String, Self::Dyn),
+                TypeName::Length
+                | TypeName::Space
+                | TypeName::Color
+                | TypeName::Tracks
+                | TypeName::Surface
+                | TypeName::Border
+                | TypeName::Radius => Self::Grammar(name.name()),
             },
+            DeclaredType::Other(_) => Self::Dyn,
         }
     }
 
@@ -246,7 +245,7 @@ mod tests {
 
     #[test]
     fn declarations_give_types() {
-        let name = |n: &str| Type::declared(&DeclaredType::Name(n.into()));
+        let name = |n: &str| Type::declared(&DeclaredType::named(n));
         assert_eq!(name("string"), Type::String);
         assert_eq!(name("date"), Type::String);
         assert_eq!(name("name"), Type::String);
@@ -264,7 +263,7 @@ mod tests {
             Type::String
         );
         let input = |inner: &str| DeclaredType::Input {
-            input: Box::new(DeclaredType::Name(inner.into())),
+            input: Box::new(DeclaredType::named(inner)),
         };
         assert_eq!(Type::declared(&input("number")), Type::Double);
         assert_eq!(Type::declared(&input("enum")), Type::String);

@@ -5,7 +5,7 @@
 use crate::cel::{self, Type};
 use crate::resolve::{DocumentId, Resolved};
 use crate::settings::{Input, Settings};
-use crate::tree::{DeclaredType, Signature, SlotDeclaration};
+use crate::tree::{DeclaredType, Signature, SlotDeclaration, TypeName};
 use serde_json::Value;
 use std::collections::BTreeMap;
 
@@ -94,7 +94,7 @@ impl<'r> Scope<'r> {
         self.definition
             .into_iter()
             .flat_map(|signature| &signature.params)
-            .filter(|param| param.declared != DeclaredType::Name("name".into()))
+            .filter(|param| param.declared != DeclaredType::Name(TypeName::Name))
             .map(|param| (param.name.replace('-', "_"), &param.declared))
     }
 
