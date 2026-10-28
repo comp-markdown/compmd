@@ -169,6 +169,15 @@ impl Component {
     pub(crate) fn keyword(&self) -> Option<Keyword> {
         Keyword::from_name(&self.name)
     }
+
+    /// Whether it has no box: a `compmd` component whose fence has `display=contents` with no breakpoint (spec §9.2).
+    pub(crate) fn is_contents(&self) -> bool {
+        matches!(self.body, Body::Compmd(_))
+            && self
+                .fence
+                .iter()
+                .any(|param| param.is_display_contents() && param.breakpoint.is_none())
+    }
 }
 
 /// The result of resolving a document: it, everything it imports, and the components their names stand for.

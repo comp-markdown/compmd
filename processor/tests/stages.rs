@@ -320,6 +320,18 @@ fn fences_take_box_params_on_compmd_only() {
     );
 }
 
+/// `display=contents` at a breakpoint is F009 and takes nothing away: the component keeps its box, for the fence's
+/// other params and the caller's.
+#[test]
+fn display_contents_at_a_breakpoint_keeps_the_box() {
+    assert_eq!(
+        codes(
+            "```compmd component=late {md:display=contents padding=s}\n---\nLate.\n```\n\n:: late[L] {padding=m}\n"
+        ),
+        [at("F009", 1, 38)]
+    );
+}
+
 #[test]
 fn interpolations_are_checked_in_every_inline_and_block() {
     let text = "*{{a}}* **{{b}}** ~~{{c}}~~ [x]({{d}}) [{{e}}][r] ![i]({{md.doc.f}})\n\n| H |\n| - |\n| {{g}} |\n\n> {{h}}\n\n- {{i}}\n\nNote.[^n]\n\n[^n]: {{j}}\n\n[r]: https://example.com/{{k}}\n\n# {{l}} {{ md.version }}\n";

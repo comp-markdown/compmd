@@ -604,6 +604,14 @@ pub enum ParamValue {
     Id(String),
 }
 
+impl Param {
+    /// Whether it is `display=contents`, at any breakpoint. Only a bare one on a `compmd` definition fence takes the
+    /// component's box away (spec §9.2); anywhere else it is F009.
+    pub(crate) fn is_display_contents(&self) -> bool {
+        self.key.as_deref() == Some("display") && self.value == ParamValue::Bare("contents".into())
+    }
+}
+
 impl ParamValue {
     /// The kind's name in the tree: `bare`, `string`, `json`, `expr`, `flag`, `class` or `id`.
     #[must_use]

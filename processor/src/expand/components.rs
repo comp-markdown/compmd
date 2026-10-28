@@ -329,7 +329,8 @@ impl<'r> Expander<'r> {
             .fence
             .iter()
             .filter(|param| {
-                !is_contents(param) && !self.validated.refuses_param(component.document, param)
+                !param.is_display_contents()
+                    && !self.validated.refuses_param(component.document, param)
             })
             .collect();
         self.evaluated(&fence, None, env)
@@ -396,7 +397,7 @@ impl<'r> Expander<'r> {
                 _ => None,
             };
         }
-        if component.fence.iter().any(is_contents) {
+        if component.is_contents() {
             return Some(expanded);
         }
         let signature = component.signature.as_ref();
@@ -530,11 +531,4 @@ impl<'r> Expander<'r> {
             }
         }
     }
-}
-
-/// A fence's bare `display=contents`: the component has no box (spec §9.2).
-fn is_contents(param: &Param) -> bool {
-    param.key.as_deref() == Some("display")
-        && param.breakpoint.is_none()
-        && param.value == ParamValue::Bare("contents".into())
 }

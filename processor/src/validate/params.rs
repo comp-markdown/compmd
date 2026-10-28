@@ -138,15 +138,6 @@ fn binds(param: &DeclaredType, input: &DeclaredType) -> bool {
     }
 }
 
-/// Whether a fence's params give the component no box: a bare `display=contents` (spec §9.2).
-fn is_contents(fence: &[Param]) -> bool {
-    fence.iter().any(is_display_contents)
-}
-
-fn is_display_contents(param: &Param) -> bool {
-    param.key.as_deref() == Some("display") && param.value == ParamValue::Bare("contents".into())
-}
-
 /// Where a param's value is: past its key, `=` and breakpoint; for a flag, a class or an id, the param itself.
 pub(crate) fn value_at(param: &Param) -> Location {
     let start = param
@@ -278,7 +269,7 @@ impl<'r> Checker<'r, '_> {
         let target = Target {
             component,
             signature,
-            contents: matches!(component.body, Body::Compmd(_)) && is_contents(&component.fence),
+            contents: component.is_contents(),
         };
         let mut given = HashSet::new();
         let mut refused = HashSet::new();
@@ -456,7 +447,7 @@ impl<'r> Checker<'r, '_> {
     ) -> Checked {
         let at = value_at(param);
         let key = declared.name.as_str();
-        if target.is(Keyword::Box) && is_display_contents(param) {
+        if target.is(Keyword::Box) && param.is_display_contents() {
             self.report(
                 Code::F009,
                 at,
@@ -691,7 +682,7 @@ impl<'r> Checker<'r, '_> {
     /// `display=contents` bare, and then nothing for a box (W120).
     pub(super) fn fence(&mut self, component: &'r Component, scope: &Scope<'r>) {
         let compmd = matches!(component.body, Body::Compmd(_));
-        let contents = compmd && is_contents(&component.fence);
+        let contents = component.is_contents();
         let resolved = self.resolved;
         let layout = match resolved.document(self.id).names.get("box") {
             Some(Binding::Component(id, _)) if compmd => {
@@ -720,7 +711,7 @@ impl<'r> Checker<'r, '_> {
         layout: Option<&Target<'r>>,
         scope: &Scope<'r>,
     ) -> bool {
-        if is_display_contents(param) {
+        if param.is_display_contents() {
             if param.breakpoint.is_some() {
                 self.report(
                     Code::F009,
