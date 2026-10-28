@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>@compmd/processor bench</title>
+  </head>
+  <body>
+    <pre id="out">Measuring…</pre>
+    <script type="module">
+      const worker = new Worker("worker.js", { type: "module" });
+      worker.onmessage = ({ data }) => {
+        document.getElementById("out").textContent = JSON.stringify(data, null, 2);
+        window.results = data;
+      };
+      worker.onerror = (event) => {
+        window.results = { error: event.message };
+      };
+    </script>
+  </body>
+</html>

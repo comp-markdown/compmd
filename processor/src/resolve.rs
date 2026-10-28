@@ -204,6 +204,12 @@ impl Resolved {
     pub fn file(&self, id: DocumentId) -> Option<String> {
         (id != self.main).then(|| self.document(id).origin.to_string())
     }
+
+    /// The document `id` names, taken out of the result.
+    #[must_use]
+    pub fn into_document(mut self, id: DocumentId) -> Document {
+        self.documents.swap_remove(id.0)
+    }
 }
 
 /// Resolves a parsed document, stage 2 of spec §11: loads its imports and their imports, `@compmd/core` and the

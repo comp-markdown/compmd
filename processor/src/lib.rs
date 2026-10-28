@@ -7,7 +7,8 @@
 //! binds every component name; stage 3, [`validate`](validate::validate), checks it against the signatures. Stage
 //! 4a, [`load`](load::load), gives the inputs their values and loads the data; stage 4b,
 //! [`expand`](expand::expand), makes the [expanded tree](expanded) a renderer draws, for one [render
-//! context](context). It also implements the CompMD CEL profile, in [`cel`], with the `md.` functions in [`md`].
+//! context](context). [`process`](process::process) runs them all on one request, as the WebAssembly build does. It
+//! also implements the CompMD CEL profile, in [`cel`], with the `md.` functions in [`md`].
 //!
 //! The processor does no I/O: the caller hands it files, packs, remote and host data through traits, and the time
 //! zones, so it runs anywhere, a browser among them.
@@ -31,6 +32,7 @@ pub mod md;
 mod named;
 mod nearest;
 mod parse;
+pub mod process;
 mod reserved;
 pub mod resolve;
 mod settings;

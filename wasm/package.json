@@ -1,0 +1,31 @@
+{
+  "name": "@compmd/processor",
+  "version": "0.1.0",
+  "description": "The CompMD processor as WebAssembly: parses, validates and expands a CompMD document in the browser.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "files": ["dist", "pkg"],
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" }
+  },
+  "scripts": {
+    "wasm": "cargo build --profile wasm --target wasm32-unknown-unknown -p compmd-wasm && wasm-bindgen --target web --out-dir pkg ../target/wasm32-unknown-unknown/wasm/compmd_wasm.wasm",
+    "build": "pnpm wasm && tsc -p tsconfig.build.json",
+    "lint": "pnpm wasm && eslint . && tsc --noEmit",
+    "test": "pnpm wasm && vitest run",
+    "bench": "pnpm build && node bench/run.ts"
+  },
+  "dependencies": {
+    "@compmd/render": "workspace:*"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "26.6.5",
+    "eslint": "10.13.0",
+    "playwright-core": "1.64.1",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.0",
+    "vitest": "5.0.5"
+  }
+}

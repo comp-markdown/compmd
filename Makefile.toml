@@ -22,6 +22,12 @@ clear = true
 command = "cargo"
 args = ["test", "--workspace"]
 
+[tasks.wasm]
+description = "Build the processor as WebAssembly, size-optimized; `pnpm wasm` in `wasm/` adds wasm-bindgen's JavaScript"
+clear = true
+command = "cargo"
+args = ["build", "--profile", "wasm", "--target", "wasm32-unknown-unknown", "-p", "compmd-wasm"]
+
 [tasks.deny]
 description = "Check dependencies: licenses, advisories, sources"
 clear = true
@@ -32,10 +38,11 @@ args = ["deny", "check"]
 description = "Measure line coverage of the workspace's crates; fails below 99%"
 clear = true
 command = "cargo"
-# The markdown-rs fork is a path dependency inside this folder; its coverage is its own.
-args = ["llvm-cov", "--workspace", "--ignore-filename-regex", "markdown-rs/", "--fail-under-lines", "99"]
+# The markdown-rs fork is a path dependency inside this folder; its coverage is its own. The WebAssembly binding
+# runs only as WebAssembly, where `@compmd/processor`'s tests cover it.
+args = ["llvm-cov", "--workspace", "--exclude", "compmd-wasm", "--ignore-filename-regex", "markdown-rs/", "--fail-under-lines", "99"]
 
 [tasks.ci]
 description = "Every check CI runs"
 clear = true
-dependencies = ["fmt", "clippy", "test", "deny", "coverage"]
+dependencies = ["fmt", "clippy", "test", "wasm", "deny", "coverage"]

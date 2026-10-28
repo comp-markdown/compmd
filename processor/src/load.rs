@@ -20,12 +20,15 @@ use crate::validate::Validated;
 use format::{Format, Parsed};
 use from::Target;
 use indexmap::IndexMap;
+use serde::Deserialize;
 use serde_json::Value as Json;
 use std::collections::HashMap;
+use std::hash::BuildHasher;
 use std::rc::Rc;
 
 /// What a remote source gave.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Fetched {
     /// The body, as text.
     pub text: String,
@@ -47,6 +50,13 @@ impl Remote for () {
     }
 }
 
+/// Remote data fetched beforehand, by URL.
+impl<S: BuildHasher> Remote for HashMap<String, Fetched, S> {
+    fn fetch(&self, url: &str) -> Option<Fetched> {
+        self.get(url).cloned()
+    }
+}
+
 /// Data a host provides (spec §8.6): what follows `host:` in a `from`, such as `tasks?status=open`, names it.
 pub trait HostData {
     /// The data `source` names, as JSON, or `None` when the host doesn't provide it.
@@ -57,6 +67,13 @@ pub trait HostData {
 impl HostData for () {
     fn read(&self, _source: &str) -> Option<Json> {
         None
+    }
+}
+
+/// Host data read beforehand, by source.
+impl<S: BuildHasher> HostData for HashMap<String, Json, S> {
+    fn read(&self, source: &str) -> Option<Json> {
+        self.get(source).cloned()
     }
 }
 

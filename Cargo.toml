@@ -1,8 +1,15 @@
 [workspace]
 resolver = "3"
-members = ["processor"]
+members = ["processor", "wasm"]
 # The markdown-rs fork, a submodule with its own workspace.
 exclude = ["markdown-rs"]
+
+# The WebAssembly build, optimized for size: `cargo build --profile wasm --target wasm32-unknown-unknown -p compmd-wasm`.
+[profile.wasm]
+inherits = "release"
+opt-level = "z"
+lto = true
+codegen-units = 1
 
 [workspace.package]
 edition = "2024"

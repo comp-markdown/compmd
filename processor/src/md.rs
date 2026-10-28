@@ -20,6 +20,13 @@ pub trait TimeZones {
     fn offset(&self, zone: &str, at: i64) -> Option<i32>;
 }
 
+/// No time zone data: only `UTC` is known.
+impl TimeZones for () {
+    fn offset(&self, zone: &str, _at: i64) -> Option<i32> {
+        (zone == "UTC").then_some(0)
+    }
+}
+
 /// An `md.` function's implementation: it takes the render and the arguments.
 type Call = for<'m> fn(&Md<'m>, &[Value]) -> Result<Value, String>;
 

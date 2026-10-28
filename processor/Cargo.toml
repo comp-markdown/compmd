@@ -24,7 +24,7 @@ indexmap = "2.14.2"
 # The fork of markdown-rs with CompMD's syntax (`markdown-rs/`, a submodule), to be published as `compmd-markdown`.
 markdown = { path = "../markdown-rs" }
 # Import version ranges (`@1`, `@^1.4.2`) matched against a registry's releases.
-semver = "1.0.28"
+semver = { version = "1.0.28", features = ["serde"] }
 serde ={ version = "1.0.228", features = ["derive"] }
 serde_json = { version = "1.0.145", features = ["preserve_order"] }
 thiserror = "2.0.18"

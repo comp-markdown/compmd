@@ -1,3 +1,5 @@
 node_modules/
 dist/
 target/
+# wasm-bindgen's output, made by `pnpm wasm` in `wasm/`.
+pkg/

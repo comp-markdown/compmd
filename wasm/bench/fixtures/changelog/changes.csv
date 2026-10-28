@@ -1,0 +1,129 @@
+release,type,pr,text
+1.4,breaking,9692,Config format 2: sections replace flat keys
+1.4,feature,9685,"New wgpu renderer, 40% faster on large scenes"
+1.4,feature,9678,HDR output on macOS and Windows
+1.4,feature,9671,Scene hot reload
+1.4,fix,9664,Audio drift after one hour of playback
+1.4,fix,9657,Crash when a texture is missing
+1.4,fix,9650,Wrong colors on 10-bit displays
+1.4,fix,9643,Stutter when resizing the window
+1.3,feature,9636,Gamepad support
+1.3,feature,9629,Recording to MP4
+1.3,feature,9622,Shader cache on disk
+1.3,feature,9615,Multi-window playback
+1.3,fix,9608,Memory leak in the asset loader
+1.3,fix,9601,Inspector freezes on large scenes
+1.3,fix,9594,Subtitles out of sync after seeking
+1.3,fix,9587,Export ignores the frame range
+1.3,fix,9580,Crash on startup with two GPUs
+1.3,fix,9573,Mouse capture lost after alt-tab
+1.3,fix,9566,Wrong aspect ratio in fullscreen
+1.2,feature,9559,Frame-time overlay
+1.2,feature,9552,Audio ducking for voice tracks
+1.2,feature,9545,Plugin API for exporters
+1.2,feature,9538,Dark theme for the inspector
+1.2,feature,9531,Batch export from the command line
+1.2,fix,9524,Shaders recompiled on every launch
+1.2,fix,9517,High CPU use while paused
+1.2,fix,9510,Fonts blurry on HiDPI screens
+1.2,fix,9503,Config not saved on quit
+1.2,fix,9496,Gamepad disconnects not detected
+1.1,feature,9489,Texture streaming for large worlds
+1.1,feature,9482,Timeline markers
+1.1,feature,9475,Scriptable cameras
+1.1,feature,9468,Linux Wayland support
+1.1,feature,9461,Remote control over WebSocket
+1.1,feature,9454,Color grading presets
+1.1,fix,9447,Seek bar jumps back after release
+1.1,fix,9440,Hot reload misses renamed files
+1.1,fix,9433,Crash when the audio device changes
+1.1,fix,9426,Log file grows without limit
+1.1,fix,9419,Audio drift after one hour of playback
+1.1,fix,9412,Crash when a texture is missing
+1.1,fix,9405,Wrong colors on 10-bit displays
+1.1,fix,9398,Stutter when resizing the window
+1.0,breaking,9391,The --fps flag is now --frame-rate
+1.0,feature,9384,Spatial audio
+1.0,feature,9377,Keyboard shortcuts editor
+1.0,feature,9370,"New wgpu renderer, 40% faster on large scenes"
+1.0,fix,9363,Memory leak in the asset loader
+1.0,fix,9356,Inspector freezes on large scenes
+1.0,fix,9349,Subtitles out of sync after seeking
+1.0,fix,9342,Export ignores the frame range
+1.0,fix,9335,Crash on startup with two GPUs
+1.0,fix,9328,Mouse capture lost after alt-tab
+0.14,feature,9321,HDR output on macOS and Windows
+0.14,feature,9314,Scene hot reload
+0.14,feature,9307,Gamepad support
+0.14,feature,9300,Recording to MP4
+0.14,fix,9293,Wrong aspect ratio in fullscreen
+0.14,fix,9286,Shaders recompiled on every launch
+0.14,fix,9279,High CPU use while paused
+0.14,fix,9272,Fonts blurry on HiDPI screens
+0.13,feature,9265,Shader cache on disk
+0.13,feature,9258,Multi-window playback
+0.13,feature,9251,Frame-time overlay
+0.13,feature,9244,Audio ducking for voice tracks
+0.13,feature,9237,Plugin API for exporters
+0.13,fix,9230,Config not saved on quit
+0.13,fix,9223,Gamepad disconnects not detected
+0.13,fix,9216,Seek bar jumps back after release
+0.13,fix,9209,Hot reload misses renamed files
+0.13,fix,9202,Crash when the audio device changes
+0.13,fix,9195,Log file grows without limit
+0.13,fix,9188,Audio drift after one hour of playback
+0.12,feature,9181,Dark theme for the inspector
+0.12,feature,9174,Batch export from the command line
+0.12,feature,9167,Texture streaming for large worlds
+0.12,feature,9160,Timeline markers
+0.12,feature,9153,Scriptable cameras
+0.12,feature,9146,Linux Wayland support
+0.12,fix,9139,Crash when a texture is missing
+0.12,fix,9132,Wrong colors on 10-bit displays
+0.12,fix,9125,Stutter when resizing the window
+0.12,fix,9118,Memory leak in the asset loader
+0.12,fix,9111,Inspector freezes on large scenes
+0.11,breaking,9104,Plugins need API version 3
+0.11,feature,9097,Remote control over WebSocket
+0.11,feature,9090,Color grading presets
+0.11,feature,9083,Spatial audio
+0.11,fix,9076,Subtitles out of sync after seeking
+0.11,fix,9069,Export ignores the frame range
+0.11,fix,9062,Crash on startup with two GPUs
+0.11,fix,9055,Mouse capture lost after alt-tab
+0.11,fix,9048,Wrong aspect ratio in fullscreen
+0.11,fix,9041,Shaders recompiled on every launch
+0.11,fix,9034,High CPU use while paused
+0.11,fix,9027,Fonts blurry on HiDPI screens
+0.10,feature,9020,Keyboard shortcuts editor
+0.10,feature,9013,"New wgpu renderer, 40% faster on large scenes"
+0.10,feature,9006,HDR output on macOS and Windows
+0.10,feature,8999,Scene hot reload
+0.10,fix,8992,Config not saved on quit
+0.10,fix,8985,Gamepad disconnects not detected
+0.10,fix,8978,Seek bar jumps back after release
+0.10,fix,8971,Hot reload misses renamed files
+0.10,fix,8964,Crash when the audio device changes
+0.10,fix,8957,Log file grows without limit
+0.9,feature,8950,Gamepad support
+0.9,feature,8943,Recording to MP4
+0.9,feature,8936,Shader cache on disk
+0.9,feature,8929,Multi-window playback
+0.9,feature,8922,Frame-time overlay
+0.9,fix,8915,Audio drift after one hour of playback
+0.9,fix,8908,Crash when a texture is missing
+0.9,fix,8901,Wrong colors on 10-bit displays
+0.9,fix,8894,Stutter when resizing the window
+0.8,feature,8887,Audio ducking for voice tracks
+0.8,feature,8880,Plugin API for exporters
+0.8,feature,8873,Dark theme for the inspector
+0.8,feature,8866,Batch export from the command line
+0.8,feature,8859,Texture streaming for large worlds
+0.8,feature,8852,Timeline markers
+0.8,fix,8845,Memory leak in the asset loader
+0.8,fix,8838,Inspector freezes on large scenes
+0.8,fix,8831,Subtitles out of sync after seeking
+0.8,fix,8824,Export ignores the frame range
+0.8,fix,8817,Crash on startup with two GPUs
+0.8,fix,8810,Mouse capture lost after alt-tab
+0.8,fix,8803,Wrong aspect ratio in fullscreen

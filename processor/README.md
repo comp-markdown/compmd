@@ -9,6 +9,7 @@ The CompMD processor, in Rust: it parses, validates and expands documents writte
 - Stage 3, validating: `compmd::validate::validate` checks invocations, slots, interpolation paths, the types of expressions, bound inputs and data sources, and gives what it refused, which the later stages leave out.
 - Stage 4a, loading: `compmd::load::load` gives the inputs their values and loads every data import, from the project's files, packs, `https:` URLs (`Remote`) and `host:` sources (`HostData`), typed by its schema. `compmd::load::sources` lists the URLs and host sources a render needs, so the caller can fetch them first.
 - Stage 4b, evaluating: `compmd::expand::expand` makes the expanded tree (§12.3), with every node's origin when asked, and checks its layout.
+- All stages in one call: `compmd::process::process` takes a `Request` (JSON) with the files, packs, remote and host data and the render context, and gives the parse tree, the expanded tree and every diagnostic; `compmd::process::sources` lists what to fetch first. The WebAssembly build, [`@compmd/processor`](../wasm/README.md), is this call.
 - The CEL profile: `compmd::cel` parses an expression, type-checks it against the variables' declared types, and evaluates it within a work budget, with the `md.` functions in `compmd::md`. Formatting uses [ICU4X](https://github.com/unicode-org/icu4x) with all its compiled locale data, and time zone offsets come from the caller.
 
 ```rust
