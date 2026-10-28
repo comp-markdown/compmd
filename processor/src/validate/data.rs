@@ -46,11 +46,7 @@ impl Checker<'_, '_> {
     pub(super) fn data(&mut self, allowed_origins: &[String]) {
         let resolved = self.resolved;
         let settings = &resolved.document(self.id).settings;
-        let scope = if self.id == resolved.main {
-            Scope::document(settings)
-        } else {
-            Scope::definition(settings, None)
-        };
+        let scope = Scope::body(resolved, self.id);
         for (index, import) in settings.data.iter().enumerate() {
             let chars: Vec<char> = import.from.value.chars().collect();
             let literal = literal_prefix(&chars);

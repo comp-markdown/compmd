@@ -77,10 +77,7 @@ pub(crate) fn validate(resolved: &Resolved, allowed_origins: &[String]) -> Valid
             validated: &mut validated,
         };
         if id == resolved.main {
-            checker.nodes(
-                &document.root.children,
-                &Scope::document(&document.settings),
-            );
+            checker.nodes(&document.root.children, &Scope::body(resolved, id));
             checker.inputs();
         } else {
             for node in &document.root.children {

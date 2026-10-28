@@ -166,12 +166,7 @@ impl<'r> Expander<'r> {
 
     /// What a document's body sees.
     fn scope(&self, id: DocumentId) -> Scope<'r> {
-        let settings = &self.resolved.document(id).settings;
-        if id == self.resolved.main {
-            Scope::document(settings)
-        } else {
-            Scope::definition(settings, None)
-        }
+        Scope::body(self.resolved, id)
     }
 
     /// Evaluates an expression written in `env`'s document; its program is parsed once.

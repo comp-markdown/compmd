@@ -3,6 +3,7 @@
 //! template. Interpolation paths are checked against it (F014), and expressions against its types.
 
 use crate::cel::{self, Type};
+use crate::resolve::{DocumentId, Resolved};
 use crate::settings::{Input, Settings};
 use crate::tree::{DeclaredType, Signature, SlotDeclaration};
 use serde_json::Value;
@@ -33,8 +34,19 @@ pub(crate) struct Scope<'r> {
 }
 
 impl<'r> Scope<'r> {
+    /// What the body of the document `id` sees: the processed document sees its inputs, any other document is used
+    /// only through its definitions, so it sees what they do.
+    pub(crate) fn body(resolved: &'r Resolved, id: DocumentId) -> Self {
+        let settings = &resolved.document(id).settings;
+        if id == resolved.main {
+            Self::document(settings)
+        } else {
+            Self::definition(settings, None)
+        }
+    }
+
     /// The body of the processed document.
-    pub(crate) fn document(settings: &'r Settings) -> Self {
+    fn document(settings: &'r Settings) -> Self {
         Self {
             settings,
             inputs: Some(&settings.inputs),
