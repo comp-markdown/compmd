@@ -119,10 +119,7 @@ impl Format {
 /// CSV (RFC 4180) as a list of records keyed by the header row, every value a string. No header, or one with an
 /// empty or repeated name, is F026; a record with more or fewer cells than the header is dropped (F027).
 fn table(name: &str, text: &str, delimiter: u8) -> Result<Parsed, Failure> {
-    let at = |line: u64| {
-        let line = usize::try_from(line).unwrap_or(usize::MAX);
-        Some((name.to_string(), Location::new(line, 1)))
-    };
+    let at = |line: usize| Some((name.to_string(), Location::new(line, 1)));
     let mut reader = ReaderBuilder::new()
         .delimiter(delimiter)
         .flexible(true)
@@ -150,7 +147,10 @@ fn table(name: &str, text: &str, delimiter: u8) -> Result<Parsed, Failure> {
     let mut records = Vec::new();
     let mut lines = Vec::new();
     for record in reader.records().flatten() {
-        let line = record.position().map_or(1, csv::Position::line);
+        let line = record
+            .position()
+            .and_then(|position| usize::try_from(position.byte()).ok())
+            .map_or(1, |byte| line_at(text, byte));
         if record.len() != header.len() {
             parsed.dropped.push(Violation {
                 message: format!(
@@ -173,6 +173,15 @@ fn table(name: &str, text: &str, delimiter: u8) -> Result<Parsed, Failure> {
     parsed.value = Value::Array(records);
     parsed.records = Some((name.to_string(), lines));
     Ok(parsed)
+}
+
+/// The line, from 1, of the record the `csv` crate places at `byte`. The crate's own line count falls behind after a
+/// blank line or a CRLF, and it places a record at the line ending before it, so the line is counted from the
+/// record's first byte after line endings.
+fn line_at(text: &str, byte: usize) -> usize {
+    let rest = text.get(byte..).unwrap_or_default();
+    let start = byte + (rest.len() - rest.trim_start_matches(['\r', '\n']).len());
+    1 + text[..start].matches('\n').count()
 }
 
 #[cfg(test)]
@@ -288,5 +297,11 @@ mod tests {
             .parse("t.csv", "a\r\n1\r\n\r\n2\n")
             .expect("CSV");
         assert_eq!(gaps.value, json!([{ "a": "1" }, { "a": "2" }]));
+        let lines: Vec<usize> = gaps
+            .records
+            .map(|(_, lines)| lines.iter().map(|at| at.line).collect())
+            .unwrap_or_default();
+        assert_eq!(lines, [2, 4]);
+        assert_eq!(line_at("a\n\n\nb", 1), 4);
     }
 }
