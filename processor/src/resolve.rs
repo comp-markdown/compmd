@@ -219,13 +219,13 @@ pub(crate) fn resolve(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::host::Pack;
+    use crate::host::LoadedRelease;
     use crate::parse::{ParseOptions, parse};
     use serde_json::{Value, json};
     use std::collections::HashMap;
 
     /// The packs of a registry, by name, from JSON.
-    fn packs_of(packs: Value) -> HashMap<String, Vec<Pack>> {
+    fn packs_of(packs: Value) -> HashMap<String, Vec<LoadedRelease>> {
         serde_json::from_value(packs).expect("packs")
     }
 

@@ -3,7 +3,7 @@
 use compmd::context::{Context, parse_time};
 use compmd::diagnostic::Diagnostic;
 use compmd::expand::Options;
-use compmd::host::{Fetched, Pack, Time};
+use compmd::host::{Fetched, LoadedRelease, Time};
 use compmd::load::Source;
 use compmd::processor::Validated;
 use compmd::{Ambient, ParseOptions, Processor, expanded, tree};
@@ -23,7 +23,7 @@ struct Request {
     files: HashMap<String, String>,
     /// The registry's packs, by name.
     #[serde(default)]
-    packs: HashMap<String, Vec<Pack>>,
+    packs: HashMap<String, Vec<LoadedRelease>>,
     /// Packs every document imports, at the lowest priority (spec §6.3).
     #[serde(default)]
     ambient: Vec<String>,
@@ -211,7 +211,10 @@ mod tests {
             "tz": "Europe/Berlin",
             "inputs": { "region": "us" }
         }));
-        assert_eq!(request.packs["@acme/kit"][0].version.to_string(), "1.0.0");
+        assert_eq!(
+            request.packs["@acme/kit"][0].release.version.to_string(),
+            "1.0.0"
+        );
         assert!(request.report_ambient);
         assert_eq!(
             request.remote["https://a.org/x.json"]

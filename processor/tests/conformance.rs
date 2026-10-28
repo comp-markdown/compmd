@@ -4,9 +4,8 @@
 use compmd::context::{Context, parse_time};
 use compmd::diagnostic::Diagnostic;
 use compmd::expand::Options;
-use compmd::host::{Fetched, Pack, Time};
+use compmd::host::{Fetched, LoadedRelease, Time};
 use compmd::{Ambient, ParseOptions, Processor};
-use semver::Version;
 use serde_json::{Map, Value, json};
 use std::collections::{BTreeMap, HashMap};
 use std::fs;
@@ -206,37 +205,27 @@ fn files_of(dir: &Path) -> HashMap<String, String> {
     files
 }
 
-fn version(value: &Value) -> Version {
-    value
-        .as_str()
-        .and_then(|text| text.parse().ok())
-        .expect("a version")
-}
-
 /// The packs of a case's `context.json`: `registry` (pack to releases, each a folder of the case) and `ambient` (pack
 /// to a folder, whose `package.json` gives the version).
-fn packs(dir: &Path, context: &Value) -> HashMap<String, Vec<Pack>> {
+fn packs(dir: &Path, context: &Value) -> HashMap<String, Vec<LoadedRelease>> {
+    let loaded = |release: &Value, folder: &Path| LoadedRelease {
+        release: serde_json::from_value(release.clone()).expect("a release"),
+        files: files_of(folder),
+    };
     let mut packs = HashMap::new();
     for (pack, releases) in context["registry"].as_object().into_iter().flatten() {
         let releases = releases.as_array().into_iter().flatten().map(|release| {
-            let folder = dir.join(release["path"].as_str().expect("a path"));
-            Pack {
-                version: version(&release["version"]),
-                integrity: release["integrity"].as_str().map(str::to_string),
-                files: files_of(&folder),
-            }
+            loaded(
+                release,
+                &dir.join(release["path"].as_str().expect("a path")),
+            )
         });
         packs.insert(pack.clone(), releases.collect());
     }
     for (pack, folder) in context["ambient"].as_object().into_iter().flatten() {
         let folder = dir.join(folder.as_str().expect("a folder"));
         let manifest = read_json(&folder.join("package.json")).expect("package.json");
-        let release = Pack {
-            version: version(&manifest["version"]),
-            integrity: None,
-            files: files_of(&folder),
-        };
-        packs.insert(pack.clone(), vec![release]);
+        packs.insert(pack.clone(), vec![loaded(&manifest, &folder)]);
     }
     packs
 }
