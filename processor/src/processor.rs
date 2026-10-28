@@ -46,7 +46,6 @@ use crate::expanded::{self, Inputs};
 use crate::host::{Data, Fetch, Files, Packs};
 use crate::load::{self, Source};
 use crate::parse::{self, ParseOptions};
-use crate::process::Processed;
 use crate::resolve::{self, Ambient, Store};
 use crate::{expand, tree, validate};
 
@@ -299,20 +298,6 @@ impl Processor<Expanded<'_>> {
 fn back<'h>(validated: Validated<'h>, diagnostics: &mut Vec<Diagnostic>) -> Validated<'h> {
     diagnostics.truncate(validated.kept);
     validated
-}
-
-impl From<Processor<Expanded<'_>>> for Processed {
-    fn from(processor: Processor<Expanded<'_>>) -> Self {
-        let Expanded {
-            validated, root, ..
-        } = processor.state;
-        let main = validated.resolved.main;
-        Self {
-            parse: validated.resolved.into_document(main).root,
-            expanded: root,
-            diagnostics: processor.diagnostics,
-        }
-    }
 }
 
 #[cfg(test)]

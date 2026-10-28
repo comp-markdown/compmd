@@ -6,8 +6,7 @@
 //! document's [tree], resolving loads its imports and binds every component name, validating checks it against the
 //! signatures, loading gives the inputs their values and loads the data, and expanding makes the [expanded
 //! tree](expanded) a renderer draws, for one [render context](context); every stage adds its
-//! [diagnostics](diagnostic). [`process`](process::process) runs them all on one JSON request, as the WebAssembly
-//! build does. Expressions follow the CompMD CEL profile, with the `md.` functions (spec §8.2).
+//! [diagnostics](diagnostic). Expressions follow the CompMD CEL profile, with the `md.` functions (spec §8.2).
 //!
 //! The processor does no I/O: the caller hands it files, packs, remote and host data, and the time zones, through the
 //! traits of [`host`], so it runs anywhere, a browser among them.
@@ -33,7 +32,6 @@ mod md;
 mod named;
 mod nearest;
 mod parse;
-pub mod process;
 pub mod processor;
 mod reserved;
 mod resolve;

@@ -26,7 +26,7 @@ Time zone offsets come from the page's `Intl`, so the module carries no zone dat
 
 ## How it is built
 
-- The Rust crate `compmd-wasm` in this folder is the binding: `process` and `sources` take and give JSON text, through `wasm-bindgen`.
+- The Rust crate `compmd-wasm` in this folder is the binding: `process` and `sources` take and give JSON text, through `wasm-bindgen`. Its request (`src/request.rs`) maps to the processor's stages and is tested natively, within the workspace's coverage gate.
 - It is built size-optimized: the workspace's `wasm` profile, with `opt-level = "z"`, LTO and one codegen unit.
 - `wasm-bindgen --target web` writes the JavaScript glue to `pkg/`.
 - `src/index.ts` parses both ways and gives the types.

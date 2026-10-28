@@ -195,11 +195,6 @@ impl Resolved {
     pub(crate) fn file(&self, id: DocumentId) -> Option<String> {
         (id != self.main).then(|| self.document(id).origin.to_string())
     }
-
-    /// The document `id` names, taken out of the result.
-    pub(crate) fn into_document(mut self, id: DocumentId) -> Document {
-        self.documents.swap_remove(id.0)
-    }
 }
 
 /// Resolves a parsed document, stage 2 of spec §11: loads its imports and their imports, `@compmd/core` and the
@@ -224,18 +219,23 @@ pub(crate) fn resolve(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::host::Pack;
     use crate::parse::{ParseOptions, parse};
-    use crate::process;
     use serde_json::{Value, json};
     use std::collections::HashMap;
 
-    /// `input.comp.md` among `files` resolved, with `packs` (as a request writes them) and the `ambient` packs.
+    /// The packs of a registry, by name, from JSON.
+    fn packs_of(packs: Value) -> HashMap<String, Vec<Pack>> {
+        serde_json::from_value(packs).expect("packs")
+    }
+
+    /// `input.comp.md` among `files` resolved, with `packs` (as JSON) and the `ambient` packs.
     fn resolved(files: &[(&str, &str)], packs: Value, ambient: &[&str]) -> Resolved {
         let files: HashMap<String, String> = files
             .iter()
             .map(|(path, text)| ((*path).to_string(), (*text).to_string()))
             .collect();
-        let packs: process::Packs = serde_json::from_value(packs).expect("packs");
+        let packs = packs_of(packs);
         let text = &files["input.comp.md"];
         let ambient = Ambient {
             packs: ambient.iter().map(|pack| (*pack).to_string()).collect(),
@@ -264,7 +264,7 @@ mod tests {
             "package.json": "{\"name\": \"@compmd/core\", \"version\": \"1.0.0\"}",
             "index.comp.md": "Not core.\n",
         } }] });
-        let packs: process::Packs = serde_json::from_value(impostor.clone()).expect("packs");
+        let packs = packs_of(impostor.clone());
         let store = Store {
             files: &(),
             packs: &packs,

@@ -1,9 +1,10 @@
-//! The CompMD processor as WebAssembly. A request and its result cross as JSON text (the `compmd` crate's
-//! [`Request`] and [`Processed`](compmd::process::Processed)); time zone offsets come from the page's `Intl`, so the
-//! module carries no zone data. The npm package `@compmd/processor` wraps it with types.
+//! The CompMD processor as WebAssembly. A request and its result cross as JSON text (see `request`); time zone
+//! offsets come from the page's `Intl`, so the module carries no zone data. The npm package `@compmd/processor` wraps
+//! it with types.
+
+mod request;
 
 use compmd::host::Time;
-use compmd::process::Request;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen(module = "/src/zones.js")]
@@ -35,9 +36,7 @@ impl Time for Intl {
 /// A request that isn't one, or whose document isn't one of its files.
 #[wasm_bindgen]
 pub fn process(request: &str) -> Result<String, JsError> {
-    let request: Request = serde_json::from_str(request)?;
-    let processed = compmd::process::process(&request, &Intl)?;
-    Ok(serde_json::to_string(&processed)?)
+    Ok(request::process(request, &Intl)?)
 }
 
 /// The remote and `host:` sources a render of `request` needs: `{remote, host}`.
@@ -47,7 +46,5 @@ pub fn process(request: &str) -> Result<String, JsError> {
 /// A request that isn't one, or whose document isn't one of its files.
 #[wasm_bindgen]
 pub fn sources(request: &str) -> Result<String, JsError> {
-    let request: Request = serde_json::from_str(request)?;
-    let needed = compmd::process::sources(&request, &Intl)?;
-    Ok(serde_json::to_string(&needed)?)
+    Ok(request::sources(request, &Intl)?)
 }

@@ -1,7 +1,9 @@
 //! What a host provides. The processor does no I/O: it reads the document's files, the packs, remote and `host:` data
 //! and the time zones through these traits, each on its own, so a stage takes only the ones it uses and a host can
 //! reuse an implementation, such as a pack store or a time zone database, in another host. `()` implements each as
-//! "none".
+//! "none", and maps implement the data traits for what a host holds in memory: `HashMap<String, String>` for files,
+//! `HashMap<String, Vec<Pack>>` for packs, `HashMap<String, Fetched>` for remote data by URL and
+//! `HashMap<String, Json>` for host data by source.
 //!
 //! ```
 //! use compmd::host::{Packs, Release};
@@ -75,6 +77,19 @@ pub struct Release {
     pub integrity: Option<String>,
 }
 
+/// A release of a pack with its files, as a host holds it in memory: `HashMap<String, Vec<Pack>>` is a registry of
+/// packs by name.
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
+pub struct Pack {
+    /// Its version.
+    pub version: Version,
+    /// The integrity hash the registry publishes for it, `sha512-…`.
+    #[serde(default)]
+    pub integrity: Option<String>,
+    /// Its files by path: `package.json`, the pack's document, and what it imports.
+    pub files: HashMap<String, String>,
+}
+
 /// What a remote source gave.
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -110,6 +125,29 @@ impl Packs for () {
     }
 }
 
+/// Packs held in memory, by name.
+impl<S: BuildHasher> Packs for HashMap<String, Vec<Pack>, S> {
+    fn releases(&self, pack: &str) -> Vec<Release> {
+        self.get(pack)
+            .into_iter()
+            .flatten()
+            .map(|release| Release {
+                version: release.version.clone(),
+                integrity: release.integrity.clone(),
+            })
+            .collect()
+    }
+
+    fn pack_file(&self, pack: &str, version: &Version, path: &str) -> Option<String> {
+        self.get(pack)?
+            .iter()
+            .find(|release| release.version == *version)?
+            .files
+            .get(path)
+            .cloned()
+    }
+}
+
 /// No remote data: every URL fails, so data imports from URLs load their fallback.
 impl Fetch for () {
     fn fetch(&self, _url: &str) -> Option<Fetched> {
@@ -117,10 +155,24 @@ impl Fetch for () {
     }
 }
 
+/// Remote data fetched beforehand, by URL.
+impl<S: BuildHasher> Fetch for HashMap<String, Fetched, S> {
+    fn fetch(&self, url: &str) -> Option<Fetched> {
+        self.get(url).cloned()
+    }
+}
+
 /// No host data: every `host:` source is missing.
 impl Data for () {
     fn data(&self, _source: &str) -> Option<Json> {
         None
+    }
+}
+
+/// Host data held in memory, by source without `host:`.
+impl<S: BuildHasher> Data for HashMap<String, Json, S> {
+    fn data(&self, source: &str) -> Option<Json> {
+        self.get(source).cloned()
     }
 }
 
@@ -134,6 +186,7 @@ impl Time for () {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json::json;
 
     #[test]
     fn the_unit_host_has_nothing_but_utc() {
@@ -144,5 +197,43 @@ mod tests {
         assert_eq!(().data("tasks"), None);
         assert_eq!(().offset("UTC", 0), Some(0));
         assert_eq!(().offset("Europe/Berlin", 0), None);
+    }
+
+    #[test]
+    fn packs_in_memory_serve_their_releases() {
+        let packs: HashMap<String, Vec<Pack>> = serde_json::from_value(json!({
+            "@acme/charts": [
+                { "version": "1.4.2", "integrity": "sha512-x", "files": { "package.json": "{}" } },
+                { "version": "1.5.0", "files": {} }
+            ]
+        }))
+        .expect("packs");
+        let releases = packs.releases("@acme/charts");
+        assert_eq!(releases.len(), 2);
+        assert_eq!(releases[0].integrity.as_deref(), Some("sha512-x"));
+        let version = Version::new(1, 4, 2);
+        assert_eq!(
+            packs.pack_file("@acme/charts", &version, "package.json"),
+            Some("{}".to_string())
+        );
+        assert_eq!(
+            packs.pack_file("@acme/charts", &Version::new(2, 0, 0), "a"),
+            None
+        );
+        assert_eq!(packs.releases("@acme/maps"), Vec::new());
+    }
+
+    #[test]
+    fn data_in_memory_is_served_by_url_and_source() {
+        let fetched = Fetched {
+            text: "{}".to_string(),
+            content_type: Some("application/json".to_string()),
+        };
+        let remote = HashMap::from([("https://a.org/x.json".to_string(), fetched.clone())]);
+        assert_eq!(remote.fetch("https://a.org/x.json"), Some(fetched));
+        assert_eq!(remote.fetch("https://a.org/y.json"), None);
+        let host = HashMap::from([("tasks".to_string(), json!([1]))]);
+        assert_eq!(host.data("tasks"), Some(json!([1])));
+        assert_eq!(host.data("notes"), None);
     }
 }

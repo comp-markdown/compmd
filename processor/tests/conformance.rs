@@ -1,12 +1,14 @@
 //! The conformance set (spec §13.2): every parse-only case's tree and diagnostics, every tree checked against the
 //! tree schema (spec §12.4), and every processor case through stages 1 to 4b: its diagnostics and its expanded tree.
 
+use compmd::context::{Context, parse_time};
 use compmd::diagnostic::Diagnostic;
-use compmd::host::Time;
-use compmd::process::{Request, process};
-use compmd::{ParseOptions, Processor};
+use compmd::expand::Options;
+use compmd::host::{Fetched, Pack, Time};
+use compmd::{Ambient, ParseOptions, Processor};
+use semver::Version;
 use serde_json::{Map, Value, json};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -184,8 +186,8 @@ fn run(dir: &Path, schema: &jsonschema::Validator, case: &Value) -> Vec<String> 
 }
 
 /// Every file under `dir`, by its `/`-separated path from `dir`.
-fn files_of(dir: &Path) -> Value {
-    fn add(root: &Path, dir: &Path, files: &mut Map<String, Value>) {
+fn files_of(dir: &Path) -> HashMap<String, String> {
+    fn add(root: &Path, dir: &Path, files: &mut HashMap<String, String>) {
         for path in fs::read_dir(dir)
             .expect("a readable folder")
             .flatten()
@@ -195,41 +197,53 @@ fn files_of(dir: &Path) -> Value {
                 add(root, &path, files);
             } else if let Ok(text) = fs::read_to_string(&path) {
                 let name = path.strip_prefix(root).expect("inside the folder");
-                files.insert(
-                    name.to_string_lossy().replace('\\', "/"),
-                    Value::String(text),
-                );
+                files.insert(name.to_string_lossy().replace('\\', "/"), text);
             }
         }
     }
-    let mut files = Map::new();
+    let mut files = HashMap::new();
     add(dir, dir, &mut files);
-    Value::Object(files)
+    files
+}
+
+fn version(value: &Value) -> Version {
+    value
+        .as_str()
+        .and_then(|text| text.parse().ok())
+        .expect("a version")
 }
 
 /// The packs of a case's `context.json`: `registry` (pack to releases, each a folder of the case) and `ambient` (pack
 /// to a folder, whose `package.json` gives the version).
-fn packs(dir: &Path, context: &Value) -> Value {
-    let mut packs = Map::new();
+fn packs(dir: &Path, context: &Value) -> HashMap<String, Vec<Pack>> {
+    let mut packs = HashMap::new();
     for (pack, releases) in context["registry"].as_object().into_iter().flatten() {
         let releases = releases.as_array().into_iter().flatten().map(|release| {
             let folder = dir.join(release["path"].as_str().expect("a path"));
-            json!({ "version": release["version"], "integrity": release["integrity"], "files": files_of(&folder) })
+            Pack {
+                version: version(&release["version"]),
+                integrity: release["integrity"].as_str().map(str::to_string),
+                files: files_of(&folder),
+            }
         });
         packs.insert(pack.clone(), releases.collect());
     }
     for (pack, folder) in context["ambient"].as_object().into_iter().flatten() {
         let folder = dir.join(folder.as_str().expect("a folder"));
         let manifest = read_json(&folder.join("package.json")).expect("package.json");
-        let release = json!({ "version": manifest["version"], "files": files_of(&folder) });
-        packs.insert(pack.clone(), json!([release]));
+        let release = Pack {
+            version: version(&manifest["version"]),
+            integrity: None,
+            files: files_of(&folder),
+        };
+        packs.insert(pack.clone(), vec![release]);
     }
-    Value::Object(packs)
+    packs
 }
 
 /// Remote data as a case's `context.json` maps it: `urls`, each URL to a file of the case, served with the
 /// `Content-Type` of its extension.
-fn remote(dir: &Path, context: &Value) -> Value {
+fn remote(dir: &Path, context: &Value) -> HashMap<String, Fetched> {
     let fetched = context["urls"].as_object().into_iter().flatten();
     let fetched = fetched.filter_map(|(url, file)| {
         let file = file.as_str()?;
@@ -242,18 +256,21 @@ fn remote(dir: &Path, context: &Value) -> Value {
         let text = fs::read_to_string(dir.join(file)).ok()?;
         Some((
             url.clone(),
-            json!({ "text": text, "contentType": content_type }),
+            Fetched {
+                text,
+                content_type: content_type.map(str::to_string),
+            },
         ))
     });
-    Value::Object(fetched.collect())
+    fetched.collect()
 }
 
 /// A host's data as a case's `context.json` maps it: `host`, each source to a JSON file of the case.
-fn host(dir: &Path, context: &Value) -> Value {
+fn host(dir: &Path, context: &Value) -> HashMap<String, Value> {
     let sources = context["host"].as_object().into_iter().flatten();
-    let sources = sources
-        .filter_map(|(source, file)| Some((source.clone(), read_json(&dir.join(file.as_str()?))?)));
-    Value::Object(sources.collect())
+    sources
+        .filter_map(|(source, file)| Some((source.clone(), read_json(&dir.join(file.as_str()?))?)))
+        .collect()
 }
 
 /// The time zones of the cases, at their offsets in late October 2026.
@@ -270,47 +287,54 @@ impl Time for Zones {
     }
 }
 
-/// The request a case makes: its folder's files, and the rest from its `context.json`.
-fn request(dir: &Path, case: &Value) -> Request {
-    let context = read_json(&dir.join("context.json")).unwrap_or(Value::Null);
-    let given = |key: &str, default: Value| match &context[key] {
-        Value::Null => default,
-        value => value.clone(),
-    };
-    let ambient: Vec<&String> = context["ambient"]
-        .as_object()
-        .into_iter()
-        .flat_map(Map::keys)
-        .collect();
-    let request = json!({
-        "path": "input.comp.md",
-        "files": files_of(dir),
-        "packs": packs(dir, &context),
-        "ambient": ambient,
-        "reportAmbient": context["reportAmbient"] == json!(true),
-        "allowedOrigins": given("allowedOrigins", json!([])),
-        "remote": remote(dir, &context),
-        "host": host(dir, &context),
-        "now": given("now", json!("2026-01-01T00:00:00Z")),
-        "tz": given("tz", json!("UTC")),
-        "inputs": given("inputs", json!({})),
-        "origins": case["requires"].as_array().is_some_and(|features| features.contains(&json!("origins"))),
-    });
-    serde_json::from_value(request).expect("a request")
-}
-
 /// What running a case gave.
 struct Run {
     diagnostics: Vec<Diagnostic>,
     tree: Value,
 }
 
-/// Runs a case through stages 1 to 4b, in one request.
+/// Runs a case through stages 1 to 4b: its folder's files, and the rest from its `context.json`.
 fn run_stages(dir: &Path, case: &Value) -> Run {
-    let processed = process(&request(dir, case), &Zones).expect("input.comp.md");
+    let context = read_json(&dir.join("context.json")).unwrap_or(Value::Null);
+    let strings = |key: &str| -> Vec<String> {
+        let items = context[key].as_array().into_iter().flatten();
+        items
+            .filter_map(Value::as_str)
+            .map(str::to_string)
+            .collect()
+    };
+    let files = files_of(dir);
+    let packs = packs(dir, &context);
+    let ambient = Ambient {
+        packs: context["ambient"]
+            .as_object()
+            .into_iter()
+            .flat_map(Map::keys)
+            .cloned()
+            .collect(),
+        report: context["reportAmbient"] == json!(true),
+    };
+    let render = Context {
+        now: parse_time(context["now"].as_str().unwrap_or("2026-01-01T00:00:00Z")).expect("a time"),
+        tz: context["tz"].as_str().unwrap_or("UTC").to_string(),
+        time: &Zones,
+        inputs: context["inputs"].as_object().cloned().unwrap_or_default(),
+    };
+    let options = Options {
+        origins: case["requires"]
+            .as_array()
+            .is_some_and(|features| features.contains(&json!("origins"))),
+        ..Options::default()
+    };
+    let processor = Processor::new("input.comp.md", files["input.comp.md"].clone())
+        .parse(&ParseOptions::default())
+        .resolve(&files, &packs, &ambient)
+        .validate(&strings("allowedOrigins"))
+        .load(&render, &remote(dir, &context), &host(dir, &context))
+        .expand(&options);
     Run {
-        diagnostics: processed.diagnostics,
-        tree: serde_json::to_value(&processed.expanded).expect("the tree serializes"),
+        diagnostics: processor.diagnostics().to_vec(),
+        tree: serde_json::to_value(processor.expanded()).expect("the tree serializes"),
     }
 }
 

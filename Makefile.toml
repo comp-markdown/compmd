@@ -38,9 +38,10 @@ args = ["deny", "check"]
 description = "Measure line coverage of the workspace's crates; fails below 99%"
 clear = true
 command = "cargo"
-# The markdown-rs fork is a path dependency inside this folder; its coverage is its own. The WebAssembly binding
-# runs only as WebAssembly, where `@compmd/processor`'s tests cover it.
-args = ["llvm-cov", "--workspace", "--exclude", "compmd-wasm", "--ignore-filename-regex", "markdown-rs/", "--fail-under-lines", "99"]
+# The markdown-rs fork is a path dependency inside this folder; its coverage is its own. The WebAssembly binding's
+# exports and `Intl` run only as WebAssembly, where `@compmd/processor`'s tests cover them; its request is tested
+# natively.
+args = ["llvm-cov", "--workspace", "--ignore-filename-regex", "markdown-rs/|wasm/src/lib\\.rs", "--fail-under-lines", "99"]
 
 [tasks.ci]
 description = "Every check CI runs"
