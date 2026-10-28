@@ -3,12 +3,13 @@
 //! value, or both an error.
 
 use compmd::cel::{Program, Scope, Values};
-use compmd::md::{Md, TimeZones};
+use compmd::host::Time;
+use compmd::md::Md;
 use serde_json::Value as Json;
 
 struct Utc;
 
-impl TimeZones for Utc {
+impl Time for Utc {
     fn offset(&self, _zone: &str, _at: i64) -> Option<i32> {
         Some(0)
     }

@@ -2,7 +2,7 @@
 //! [`Request`] and [`Processed`](compmd::process::Processed)); time zone offsets come from the page's `Intl`, so the
 //! module carries no zone data. The npm package `@compmd/processor` wraps it with types.
 
-use compmd::md::TimeZones;
+use compmd::host::Time;
 use compmd::process::Request;
 use wasm_bindgen::prelude::*;
 
@@ -17,7 +17,7 @@ extern "C" {
 /// The page's time zones, through `Intl`.
 struct Intl;
 
-impl TimeZones for Intl {
+impl Time for Intl {
     #[allow(
         clippy::cast_precision_loss,
         clippy::cast_possible_truncation,

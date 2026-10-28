@@ -1,7 +1,8 @@
 //! The CEL profile of spec §8.2, part by part: what each expression gives, or where it fails and when.
 
 use compmd::cel::{Program, Scope, Type, Value, Values};
-use compmd::md::{Md, Signatures, TimeZones};
+use compmd::host::Time;
+use compmd::md::{Md, Signatures};
 use serde_json::{Value as Json, json};
 
 /// What an expression gives.
@@ -20,7 +21,7 @@ use Outcome::{Failed, Refused, Value as V};
 /// UTC, and Berlin as UTC+2 (its summer time, which October 27 isn't in, so these tests don't depend on real data).
 struct Zones;
 
-impl TimeZones for Zones {
+impl Time for Zones {
     fn offset(&self, zone: &str, _at: i64) -> Option<i32> {
         match zone {
             "UTC" => Some(0),

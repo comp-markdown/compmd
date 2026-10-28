@@ -7,25 +7,12 @@ mod locale;
 use crate::cel::overload::{self, Library, Overload, Param, Returns};
 use crate::cel::time::{self, DAY, NANOS};
 use crate::cel::{FunctionTypes, Functions, Type, Value};
+use crate::host::Time;
 use crate::named::{choices, named};
 use icu::calendar::types::Weekday;
 use icu::calendar::{Date, Iso};
 use locale::{DateStyle, Language, ListKind};
 use std::rc::Rc;
-
-/// The time zones of the host: the browser's `Intl`, an app's own zone data. The crate carries none.
-pub trait TimeZones {
-    /// The offset of `zone` from UTC at `at`, in seconds east of UTC, or `None` when the zone is unknown. `zone` is
-    /// `md.tz`: an IANA name such as `Europe/Berlin`, or `UTC`; `at` is in seconds since 1970-01-01T00:00:00Z.
-    fn offset(&self, zone: &str, at: i64) -> Option<i32>;
-}
-
-/// No time zone data: only `UTC` is known.
-impl TimeZones for () {
-    fn offset(&self, zone: &str, _at: i64) -> Option<i32> {
-        (zone == "UTC").then_some(0)
-    }
-}
 
 /// An `md.` function's implementation: it takes the render and the arguments.
 type Call = for<'m> fn(&Md<'m>, &[Value]) -> Result<Value, String>;
@@ -205,7 +192,7 @@ pub struct Md<'a> {
     now: i128,
     language: Language,
     tz: String,
-    zones: &'a dyn TimeZones,
+    time: &'a dyn Time,
 }
 
 impl FunctionTypes for Md<'_> {
@@ -226,21 +213,21 @@ impl Functions for Md<'_> {
     fn offset(&self, zone: Option<&str>, at: i64) -> Result<i32, String> {
         let zone = zone.unwrap_or(&self.tz);
         time::parse_offset(zone)
-            .or_else(|| self.zones.offset(zone, at))
+            .or_else(|| self.time.offset(zone, at))
             .ok_or_else(|| format!("the time zone '{zone}' is unknown"))
     }
 }
 
 impl<'a> Md<'a> {
     /// The functions for a render at `now` (nanoseconds since 1970-01-01T00:00:00Z), with `md.lang` (a BCP 47 tag)
-    /// and `md.tz` (a time zone the host's `zones` know).
+    /// and `md.tz` (a time zone the host's `time` knows).
     #[must_use]
-    pub fn new(now: i128, lang: &str, tz: &str, zones: &'a dyn TimeZones) -> Self {
+    pub fn new(now: i128, lang: &str, tz: &str, time: &'a dyn Time) -> Self {
         Self {
             now,
             language: Language::new(lang),
             tz: tz.to_string(),
-            zones,
+            time,
         }
     }
 

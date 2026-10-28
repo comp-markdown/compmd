@@ -1,10 +1,10 @@
 //! Stage 4a, loading (spec §8.6, §8.7, §11): the values of the processed document's inputs, and the data imports of
 //! every loaded document, each typed by its schema.
 //!
-//! The processor does no I/O: data comes from the project's files, the packs' registry, a [`Remote`] for `https:`
-//! URLs and [`HostData`] for `host:` sources, all in [`Sources`]. Since a `from` may interpolate inputs, which
-//! sources a render needs depends on the inputs: the validated [`Processor`](crate::Processor) lists them, so a
-//! host can fetch them before it loads.
+//! The processor does no I/O: data comes from the host's [`Files`](crate::host::Files) and
+//! [`Packs`](crate::host::Packs), a [`Fetch`] for `https:` URLs and [`Data`] for `host:` sources. Since a `from` may
+//! interpolate inputs, which sources a render needs depends on the inputs: the validated
+//! [`Processor`](crate::Processor) lists them, so a host can fetch them before it loads.
 
 mod format;
 mod from;
@@ -15,68 +15,15 @@ use crate::cel::{Key, Value};
 use crate::context::Context;
 use crate::diagnostic::{Code, Diagnostic, Location, Stage};
 use crate::expanded::Inputs;
-use crate::resolve::{DocumentId, Origin, Resolved, Sources};
+use crate::host::{Data, Fetch};
+use crate::resolve::{DocumentId, Origin, Resolved, Store};
 use crate::settings::DataImport;
 use crate::validate::Validated;
 use format::{Format, Parsed};
 use from::Target;
 use indexmap::IndexMap;
-use serde::Deserialize;
-use serde_json::Value as Json;
 use std::collections::HashMap;
-use std::hash::BuildHasher;
 use std::rc::Rc;
-
-/// What a remote source gave.
-#[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Fetched {
-    /// The body, as text.
-    pub text: String,
-    /// The `Content-Type` header, which decides the format; without one, the URL's extension does.
-    pub content_type: Option<String>,
-}
-
-/// Remote data (the `remote data` feature, spec §8.6): what the host fetched for a URL.
-pub trait Remote {
-    /// What `url` gave, or `None` when it couldn't be fetched. Only `https:` URLs of origins the host allows reach
-    /// this; the host fetches without credentials, and decides how long a copy is kept (`cache`).
-    fn fetch(&self, url: &str) -> Option<Fetched>;
-}
-
-/// No remote data: every URL fails, so data imports from URLs load their fallback.
-impl Remote for () {
-    fn fetch(&self, _url: &str) -> Option<Fetched> {
-        None
-    }
-}
-
-/// Remote data fetched beforehand, by URL.
-impl<S: BuildHasher> Remote for HashMap<String, Fetched, S> {
-    fn fetch(&self, url: &str) -> Option<Fetched> {
-        self.get(url).cloned()
-    }
-}
-
-/// Data a host provides (spec §8.6): what follows `host:` in a `from`, such as `tasks?status=open`, names it.
-pub trait HostData {
-    /// The data `source` names, as JSON, or `None` when the host doesn't provide it.
-    fn read(&self, source: &str) -> Option<Json>;
-}
-
-/// No host data: every `host:` source is missing.
-impl HostData for () {
-    fn read(&self, _source: &str) -> Option<Json> {
-        None
-    }
-}
-
-/// Host data read beforehand, by source.
-impl<S: BuildHasher> HostData for HashMap<String, Json, S> {
-    fn read(&self, source: &str) -> Option<Json> {
-        self.get(source).cloned()
-    }
-}
 
 /// A source a render needs that the host provides.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -146,18 +93,25 @@ pub(crate) fn sources(
         .collect()
 }
 
+/// The host's sources of data: its files and packs, remote data and `host:` data.
+pub(crate) struct Host<'a> {
+    pub(crate) store: Store<'a>,
+    pub(crate) fetch: &'a dyn Fetch,
+    pub(crate) data: &'a dyn Data,
+}
+
 /// Loads, stage 4a of spec §11: the inputs' values for `context`, and every data import that validating didn't
-/// refuse; a refused or failed import is its `fallback`, or `null` (spec §10.3).
+/// refuse, from `host`; a refused or failed import is its `fallback`, or `null` (spec §10.3).
 pub(crate) fn load(
     resolved: &Resolved,
     validated: &Validated,
     context: &Context,
-    sources: &Sources,
+    host: &Host,
 ) -> Loaded {
     let (inputs, diagnostics) = inputs::of(resolved, context);
     let mut loader = Loader {
         resolved,
-        sources,
+        host,
         loaded: Loaded {
             inputs,
             diagnostics,
@@ -230,9 +184,9 @@ impl Failure {
 }
 
 /// Loads the data of one render.
-struct Loader<'r, 's> {
+struct Loader<'r, 'h> {
     resolved: &'r Resolved,
-    sources: &'s Sources<'s>,
+    host: &'h Host<'h>,
     loaded: Loaded,
 }
 
@@ -274,8 +228,8 @@ impl Loader<'_, '_> {
             Target::File(origin) => self.file(origin, import),
             Target::Remote(url) => {
                 let fetched = self
-                    .sources
-                    .remote
+                    .host
+                    .fetch
                     .fetch(url)
                     .ok_or_else(|| Failure::new(format!("`{url}` couldn't be fetched")))?;
                 let format = fetched
@@ -287,7 +241,7 @@ impl Loader<'_, '_> {
                 format.parse(url, &fetched.text)
             }
             Target::Host(source) => {
-                let value = self.sources.host.read(source).ok_or_else(|| {
+                let value = self.host.data.data(source).ok_or_else(|| {
                     Failure::new(format!("this processor doesn't provide `host:{source}`"))
                 })?;
                 Ok(Parsed::value(value))
@@ -295,20 +249,15 @@ impl Loader<'_, '_> {
         }
     }
 
-    /// A data file of the project or of a pack, by its extension.
+    /// A data file of the root folder or of a pack, by its extension.
     fn file(&self, origin: &Origin, import: &DataImport) -> Result<Parsed, Failure> {
-        let (text, path) = match origin {
-            Origin::File(path) => (self.sources.files.read(path), path),
-            Origin::Pack {
-                name,
-                version,
-                path,
-            } => (self.sources.registry.read(name, version, path), path),
-            Origin::Core => (None, &String::new()),
-        };
         let name = origin.to_string();
-        let text = text.ok_or_else(|| Failure::new(format!("`{name}` doesn't exist")))?;
-        let format = Format::of_path(path, import.delimiter)
+        let text = self
+            .host
+            .store
+            .read(origin)
+            .ok_or_else(|| Failure::new(format!("`{name}` doesn't exist")))?;
+        let format = Format::of_path(origin.path(), import.delimiter)
             .ok_or_else(|| Failure::new(format!("the format of `{name}` is unknown")))?;
         format.parse(&name, &text)
     }

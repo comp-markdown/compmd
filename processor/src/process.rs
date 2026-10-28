@@ -6,10 +6,9 @@
 use crate::cel::time::parse_timestamp;
 use crate::context::Context;
 use crate::diagnostic::Diagnostic;
-use crate::load::{Fetched, Source};
-use crate::md::TimeZones;
-use crate::resolve::{Registry, Release, Sources};
-use crate::{ParseOptions, Processor, expand, expanded, tree};
+use crate::host::{self, Fetched, Release, Time};
+use crate::load::Source;
+use crate::{Ambient, ParseOptions, Processor, expand, expanded, tree};
 use semver::Version;
 use serde::de::Error as _;
 use serde::{Deserialize, Deserializer, Serialize};
@@ -33,7 +32,8 @@ use std::collections::HashMap;
 pub struct Request {
     /// The processed document's path in `files`.
     pub path: String,
-    /// The project's files by their `/`-separated paths: the processed document, what it imports, its data.
+    /// The files of the document's root folder by their `/`-separated paths: the processed document, what it
+    /// imports, its data.
     #[serde(default)]
     pub files: HashMap<String, String>,
     /// The registry's packs.
@@ -48,12 +48,12 @@ pub struct Request {
     /// The origins remote data may come from, such as `https://status.example.org`.
     #[serde(default)]
     pub allowed_origins: Vec<String>,
-    /// Remote data the host fetched, by URL; [`sources`] lists the URLs a render needs.
+    /// Remote data the host fetched; [`sources`] lists the URLs a render needs.
     #[serde(default)]
-    pub remote: HashMap<String, Fetched>,
-    /// The host's data, by source without `host:`; [`sources`] lists the sources a render needs.
+    pub remote: Remote,
+    /// The host's data; [`sources`] lists the sources a render needs.
     #[serde(default)]
-    pub host: HashMap<String, Json>,
+    pub host: HostData,
     /// The render time, in nanoseconds since 1970-01-01T00:00:00Z; RFC 3339 in JSON.
     #[serde(deserialize_with = "timestamp")]
     pub now: i128,
@@ -85,7 +85,17 @@ pub struct Pack {
     pub files: HashMap<String, String>,
 }
 
-impl Registry for Packs {
+/// Remote data the host fetched, by URL.
+#[derive(Debug, Default, Deserialize)]
+#[serde(transparent)]
+pub struct Remote(pub HashMap<String, Fetched>);
+
+/// The host's data, by source without `host:`.
+#[derive(Debug, Default, Deserialize)]
+#[serde(transparent)]
+pub struct HostData(pub HashMap<String, Json>);
+
+impl host::Packs for Packs {
     fn releases(&self, pack: &str) -> Vec<Release> {
         self.0
             .get(pack)
@@ -98,7 +108,7 @@ impl Registry for Packs {
             .collect()
     }
 
-    fn read(&self, pack: &str, version: &Version, path: &str) -> Option<String> {
+    fn pack_file(&self, pack: &str, version: &Version, path: &str) -> Option<String> {
         self.0
             .get(pack)?
             .iter()
@@ -106,6 +116,18 @@ impl Registry for Packs {
             .files
             .get(path)
             .cloned()
+    }
+}
+
+impl host::Fetch for Remote {
+    fn fetch(&self, url: &str) -> Option<Fetched> {
+        self.0.get(url).cloned()
+    }
+}
+
+impl host::Data for HostData {
+    fn data(&self, source: &str) -> Option<Json> {
+        self.0.get(source).cloned()
     }
 }
 
@@ -154,18 +176,17 @@ pub enum Error {
 /// let processed = process(&request, &()).unwrap();
 /// assert_eq!(serde_json::to_value(&processed.expanded).unwrap()["children"][0]["type"], "paragraph");
 /// ```
-pub fn process(request: &Request, zones: &dyn TimeZones) -> Result<Processed, Error> {
-    let sources = request.sources();
-    let context = request.context(zones);
+pub fn process(request: &Request, time: &dyn Time) -> Result<Processed, Error> {
+    let context = request.context(time);
     let options = expand::Options {
         origins: request.origins,
         ..expand::Options::default()
     };
     let processor = Processor::new(&request.path, request.text()?)
         .parse(&ParseOptions::default())
-        .resolve(&sources)
+        .resolve(&request.files, &request.packs, &request.ambient())
         .validate(&request.allowed_origins)
-        .load(&context)
+        .load(&context, &request.remote, &request.host)
         .expand(&options);
     Ok(processor.into())
 }
@@ -176,14 +197,13 @@ pub fn process(request: &Request, zones: &dyn TimeZones) -> Result<Processed, Er
 /// # Errors
 ///
 /// [`Error::NoDocument`] when the document isn't one of the request's files.
-pub fn sources(request: &Request, zones: &dyn TimeZones) -> Result<Needed, Error> {
-    let sources = request.sources();
+pub fn sources(request: &Request, time: &dyn Time) -> Result<Needed, Error> {
     let processor = Processor::new(&request.path, request.text()?)
         .parse(&ParseOptions::default())
-        .resolve(&sources)
+        .resolve(&request.files, &request.packs, &request.ambient())
         .validate(&request.allowed_origins);
     let mut needed = Needed::default();
-    for source in processor.sources(&request.context(zones)) {
+    for source in processor.sources(&request.context(time)) {
         match source {
             Source::Remote(url) => needed.remote.push(url),
             Source::Host(source) => needed.host.push(source),
@@ -201,22 +221,18 @@ impl Request {
             .ok_or_else(|| Error::NoDocument(self.path.clone()))
     }
 
-    fn sources(&self) -> Sources<'_> {
-        Sources {
-            files: &self.files,
-            registry: &self.packs,
-            remote: &self.remote,
-            host: &self.host,
-            ambient: self.ambient.clone(),
-            report_ambient: self.report_ambient,
+    fn ambient(&self) -> Ambient {
+        Ambient {
+            packs: self.ambient.clone(),
+            report: self.report_ambient,
         }
     }
 
-    fn context<'z>(&self, zones: &'z dyn TimeZones) -> Context<'z> {
+    fn context<'t>(&self, time: &'t dyn Time) -> Context<'t> {
         Context {
             now: self.now,
             tz: self.tz.clone(),
-            zones,
+            time,
             inputs: self.inputs.clone(),
         }
     }
@@ -259,6 +275,7 @@ mod tests {
 
     #[test]
     fn packs_serve_their_releases() {
+        use host::Packs as _;
         let packs: Packs = serde_json::from_value(json!({
             "@acme/charts": [
                 { "version": "1.4.2", "integrity": "sha512-x", "files": { "package.json": "{}" } },
@@ -271,11 +288,11 @@ mod tests {
         assert_eq!(releases[0].integrity.as_deref(), Some("sha512-x"));
         let version = Version::new(1, 4, 2);
         assert_eq!(
-            packs.read("@acme/charts", &version, "package.json"),
+            packs.pack_file("@acme/charts", &version, "package.json"),
             Some("{}".to_string())
         );
         assert_eq!(
-            packs.read("@acme/charts", &Version::new(2, 0, 0), "a"),
+            packs.pack_file("@acme/charts", &Version::new(2, 0, 0), "a"),
             None
         );
         assert_eq!(packs.releases("@acme/maps"), Vec::new());

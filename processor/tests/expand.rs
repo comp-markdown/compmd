@@ -3,26 +3,17 @@
 
 use compmd::context::Context;
 use compmd::expand;
-use compmd::load::{Fetched, HostData, Remote, Source};
-use compmd::md::TimeZones;
-use compmd::resolve::{Registry, Release, Sources};
-use compmd::{ParseOptions, Processor};
+use compmd::host::{Data, Fetch, Fetched, Packs, Release};
+use compmd::load::Source;
+use compmd::{Ambient, ParseOptions, Processor};
 use semver::Version;
 use serde_json::{Value, json};
 use std::collections::HashMap;
 
-struct Utc;
-
-impl TimeZones for Utc {
-    fn offset(&self, zone: &str, _at: i64) -> Option<i32> {
-        (zone == "UTC").then_some(0)
-    }
-}
-
 /// One pack, `@acme/kit` 1.0.0, in memory.
 struct Kit(HashMap<String, String>);
 
-impl Registry for Kit {
+impl Packs for Kit {
     fn releases(&self, pack: &str) -> Vec<Release> {
         if pack == "@acme/kit" {
             vec![Release {
@@ -34,7 +25,7 @@ impl Registry for Kit {
         }
     }
 
-    fn read(&self, pack: &str, _version: &Version, path: &str) -> Option<String> {
+    fn pack_file(&self, pack: &str, _version: &Version, path: &str) -> Option<String> {
         (pack == "@acme/kit").then(|| self.0.get(path).cloned())?
     }
 }
@@ -42,7 +33,7 @@ impl Registry for Kit {
 /// URLs and what they give.
 struct Web(HashMap<String, Fetched>);
 
-impl Remote for Web {
+impl Fetch for Web {
     fn fetch(&self, url: &str) -> Option<Fetched> {
         self.0.get(url).cloned()
     }
@@ -51,8 +42,8 @@ impl Remote for Web {
 /// A host's sources, as a JSON object.
 struct Host(Value);
 
-impl HostData for Host {
-    fn read(&self, source: &str) -> Option<Value> {
+impl Data for Host {
+    fn data(&self, source: &str) -> Option<Value> {
         self.0.get(source).cloned()
     }
 }
@@ -101,12 +92,6 @@ fn render(input: &str, setup: Setup) -> Rendered {
         })
         .collect());
     let host = Host(setup.host);
-    let sources = Sources {
-        registry: &kit,
-        remote: &web,
-        host: &host,
-        ..Sources::new(&files)
-    };
     let allowed: Vec<String> = setup
         .allowed
         .iter()
@@ -115,15 +100,15 @@ fn render(input: &str, setup: Setup) -> Rendered {
     let context = Context {
         now: 1_792_576_800 * 1_000_000_000,
         tz: "UTC".into(),
-        zones: &Utc,
+        time: &(),
         inputs: setup.inputs.as_object().cloned().unwrap_or_default(),
     };
     let validated = Processor::new("input.comp.md", input)
         .parse(&ParseOptions::default())
-        .resolve(&sources)
+        .resolve(&files, &kit, &Ambient::default())
         .validate(&allowed);
     let needed = validated.sources(&context);
-    let expanded = validated.load(&context).expand(&setup.options);
+    let expanded = validated.load(&context, &web, &host).expand(&setup.options);
     let diagnostics = expanded.diagnostics();
     let mut found: Vec<(String, usize, usize)> = diagnostics
         .iter()
@@ -510,18 +495,17 @@ fn a_host_without_remote_or_host_data_loads_fallbacks() {
         ("input.comp.md".to_string(), input.to_string()),
         ("x.json".to_string(), "{\"n\": \"local\"}".to_string()),
     ]);
-    let sources = Sources::new(&files);
     let context = Context {
         now: 0,
         tz: "UTC".into(),
-        zones: &Utc,
+        time: &(),
         inputs: serde_json::Map::new(),
     };
     let expanded = Processor::new("input.comp.md", input)
         .parse(&ParseOptions::default())
-        .resolve(&sources)
+        .resolve(&files, &(), &Ambient::default())
         .validate(&["https://a.org".into()])
-        .load(&context)
+        .load(&context, &(), &())
         .expand(&expand::Options::default());
     let codes: Vec<String> = expanded
         .diagnostics()
@@ -531,6 +515,40 @@ fn a_host_without_remote_or_host_data_loads_fallbacks() {
     assert_eq!(codes, ["F026"]);
     let tree = serde_json::to_value(expanded.expanded()).expect("the tree serializes");
     assert_eq!(text(&tree), "local");
+}
+
+#[test]
+fn a_reload_takes_newly_fetched_data() {
+    let input =
+        "---\nmd:\n  data:\n    - from: host:tasks\n      as: tasks\n---\n\n{{md.data.tasks.n}}\n";
+    let files = HashMap::from([("input.comp.md".to_string(), input.to_string())]);
+    let context = Context {
+        now: 0,
+        tz: "UTC".into(),
+        time: &(),
+        inputs: serde_json::Map::new(),
+    };
+    let first = Processor::new("input.comp.md", input)
+        .parse(&ParseOptions::default())
+        .resolve(&files, &(), &Ambient::default())
+        .validate(&[])
+        .load(&context, &(), &())
+        .expand(&expand::Options::default());
+    let codes: Vec<String> = first
+        .diagnostics()
+        .iter()
+        .map(|d| d.code.to_string())
+        .collect();
+    assert_eq!(
+        codes,
+        ["F026", "F024"],
+        "no `host:tasks` yet, so `.n` of null"
+    );
+    let fetched = Host(json!({ "tasks": { "n": "fresh" } }));
+    let second = first.reload(&context, &(), &fetched);
+    assert_eq!(second.diagnostics(), []);
+    let tree = serde_json::to_value(second.expanded()).expect("the tree serializes");
+    assert_eq!(text(&tree), "fresh");
 }
 
 #[test]

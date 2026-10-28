@@ -4,7 +4,8 @@
 use super::names::{Binding, Builder, Level, Names};
 use super::source::{PackSpec, Source};
 use super::{
-    Body, Component, ComponentId, Document, DocumentId, Language, Origin, Resolved, Sources, uses,
+    Ambient, Body, Component, ComponentId, Document, DocumentId, Language, Origin, Resolved, Store,
+    uses,
 };
 use crate::diagnostic::{Code, Diagnostic, Location, Stage};
 use crate::parse::{ParseOptions, Parsed, parse};
@@ -16,9 +17,6 @@ use crate::tree::{
 use semver::Version;
 use serde_json::Value;
 use std::collections::{BTreeMap, HashMap, HashSet};
-
-/// `@compmd/core`, built in (spec §9).
-const CORE: &str = include_str!("../core.comp.md");
 
 /// Why an import loads nothing: the diagnostic it gets, where, and what it says. Its names are dropped.
 struct Refusal {
@@ -38,8 +36,8 @@ impl Refusal {
 }
 
 /// Loads documents, collecting them, their components and the diagnostics.
-pub(super) struct Loader<'s> {
-    sources: &'s Sources<'s>,
+pub(super) struct Loader<'h> {
+    store: Store<'h>,
     /// The processed document, which diagnostics name with no file.
     main: Origin,
     documents: Vec<Document>,
@@ -52,10 +50,10 @@ pub(super) struct Loader<'s> {
     ambient: Vec<DocumentId>,
 }
 
-impl<'s> Loader<'s> {
-    pub(super) fn new(sources: &'s Sources<'s>, main: Origin) -> Self {
+impl<'h> Loader<'h> {
+    pub(super) fn new(store: Store<'h>, main: Origin) -> Self {
         Self {
-            sources,
+            store,
             main,
             documents: Vec::new(),
             components: Vec::new(),
@@ -68,17 +66,15 @@ impl<'s> Loader<'s> {
     }
 
     /// Loads `@compmd/core`, the ambient packs and the processed document, then reports the names its bodies use.
-    pub(super) fn resolve(mut self, text: &str, parsed: Parsed) -> Resolved {
+    pub(super) fn resolve(mut self, text: &str, parsed: Parsed, ambient: &Ambient) -> Resolved {
         self.core = self
             .document_at(Origin::Core, Location::new(1, 1), true)
             .ok();
-        let sources = self.sources;
-        let ambient = sources
-            .ambient
+        self.ambient = ambient
+            .packs
             .iter()
             .filter_map(|pack| self.ambient_pack(pack))
             .collect();
-        self.ambient = ambient;
         let main = self.load(self.main.clone(), text.to_string(), parsed, false);
         let mut resolved = Resolved {
             documents: self.documents,
@@ -86,7 +82,7 @@ impl<'s> Loader<'s> {
             main,
             diagnostics: self.diagnostics,
         };
-        uses::report(&mut resolved, self.sources.report_ambient);
+        uses::report(&mut resolved, ambient.report);
         resolved
     }
 
@@ -199,22 +195,11 @@ impl<'s> Loader<'s> {
             return Ok(*id);
         }
         let text = self
+            .store
             .read(&origin)
             .ok_or_else(|| Refusal::new(Code::F026, at, format!("`{origin}` can't be loaded")))?;
         let parsed = parse(&text, &ParseOptions::default());
         Ok(self.load(origin, text, parsed, provided))
-    }
-
-    fn read(&self, origin: &Origin) -> Option<String> {
-        match origin {
-            Origin::File(path) => self.sources.files.read(path),
-            Origin::Pack {
-                name,
-                version,
-                path,
-            } => self.sources.registry.read(name, version, path),
-            Origin::Core => Some(CORE.to_string()),
-        }
     }
 
     /// Imports a component file (`./chart.jsx`), which exports one component, named after its stem.
@@ -233,7 +218,7 @@ impl<'s> Loader<'s> {
             drop_names(&import.names, names);
             return;
         };
-        if self.read(&origin).is_none() {
+        if self.store.read(&origin).is_none() {
             self.report(id, Code::F026, at, format!("`{origin}` can't be loaded"));
             drop_names(&import.names, names);
             return;
@@ -286,8 +271,8 @@ impl<'s> Loader<'s> {
     ) -> Result<DocumentId, Refusal> {
         let from = &import.from;
         let release = self
-            .sources
-            .registry
+            .store
+            .packs
             .releases(&spec.name)
             .into_iter()
             .filter(|release| spec.range.matches(&release.version))
@@ -324,8 +309,8 @@ impl<'s> Loader<'s> {
     /// The newest release of the ambient pack `name`.
     fn ambient_pack(&mut self, name: &str) -> Option<DocumentId> {
         let release = self
-            .sources
-            .registry
+            .store
+            .packs
             .releases(name)
             .into_iter()
             .max_by(|a, b| a.version.cmp(&b.version))?;
@@ -349,9 +334,9 @@ impl<'s> Loader<'s> {
             )
         };
         let manifest: Value = self
-            .sources
-            .registry
-            .read(name, &version, "package.json")
+            .store
+            .packs
+            .pack_file(name, &version, "package.json")
             .and_then(|text| serde_json::from_str(&text).ok())
             .ok_or_else(unloadable)?;
         let path = manifest

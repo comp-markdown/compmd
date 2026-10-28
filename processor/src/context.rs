@@ -1,7 +1,8 @@
 //! The render context (spec §8.5): what a render depends on besides the document, its imports and its data.
 
 use crate::cel::{Key, Value};
-use crate::md::{Md, TimeZones};
+use crate::host::Time;
+use crate::md::Md;
 use crate::settings::Settings;
 use indexmap::IndexMap;
 use serde_json::{Map, Value as Json};
@@ -15,7 +16,7 @@ pub struct Context<'a> {
     /// The processor's time zone, `md.tz` for a document without a `tz` key: an IANA name, or `UTC`.
     pub tz: String,
     /// The time zones the host knows.
-    pub zones: &'a dyn TimeZones,
+    pub time: &'a dyn Time,
     /// The values given for the document's inputs, by name: from a command line, a URL query, a host. A value that
     /// doesn't fit its input's type is ignored, and the default is used (spec §8.7).
     pub inputs: Map<String, Json>,
@@ -32,7 +33,7 @@ impl Context<'_> {
             self.now,
             settings.lang.as_deref().unwrap_or(DEFAULT_LANG),
             self.tz(settings),
-            self.zones,
+            self.time,
         )
     }
 

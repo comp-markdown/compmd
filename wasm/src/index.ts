@@ -12,7 +12,7 @@ export type { ExpandedRoot } from "@compmd/render";
 export interface Request {
   /** The processed document's path in `files`. */
   path: string;
-  /** The project's files by their `/`-separated paths: the processed document, what it imports, its data. */
+  /** The files of the document's root folder by their `/`-separated paths: the processed document, what it imports, its data. */
   files?: Record<string, string>;
   /** The registry's packs by name, each with its releases. */
   packs?: Record<string, PackRelease[]>;

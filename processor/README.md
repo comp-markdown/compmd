@@ -4,33 +4,33 @@ The CompMD processor, in Rust: it parses, validates and expands documents writte
 
 **Status: in development.** The processor implements stages 1 to 4b of the spec (§11) and its CEL profile (§8.2), does no I/O of its own, and passes every case of the [conformance set](https://github.com/comp-markdown/compmd/tree/main/conformance) that needs no host language: it is a "compmd/1 processor with remote data and origins" (§13.1). Running host-language components is a renderer's job; the processor expands their invocations to nodes for it.
 
-The stages are the states of a `compmd::Processor`: each stage takes the processor and gives it back in its next state, so they can only run in order, and each state gives what its stage made and the diagnostics so far (§10.5).
+The stages are the states of a `compmd::Processor`: each stage takes the processor and gives it back in its next state, so they can only run in order, and each state gives what its stage made and the diagnostics so far (§10.5). What the host provides comes through the small traits of `compmd::host`, each stage taking only the ones it uses: `Files` (the document's root folder), `Packs`, `Fetch` (remote data), `Data` (`host:` data) and `Time` (time zones).
 
 - Stage 1, `parse`: the document tree (§12).
 - Stage 2, `resolve`:
-  - Loads a document's imports through the host's `Sources` (files, a `Registry` of packs), with `@compmd/core` built in and the host's ambient packs.
+  - Loads a document's imports from the host's `Files` and `Packs`, with `@compmd/core` built in and the host's ambient packs (`compmd::Ambient`).
   - Binds every component name.
 - Stage 3, `validate`:
   - Checks invocations, slots, interpolation paths, the types of expressions, bound inputs and data sources.
   - Records what it refused, which the later stages leave out.
 - Stage 4a, `load`:
   - Gives the inputs their values for a render context.
-  - Loads every data import, typed by its schema, from the project's files, packs, `https:` URLs (`Remote`) and `host:` sources (`HostData`).
+  - Loads every data import, typed by its schema, from the root folder's files, packs, `https:` URLs (`Fetch`) and `host:` sources (`Data`).
   - Before it, the validated processor's `sources` lists the URLs and host sources a render needs, so the host can fetch them first.
 - Stage 4b, `expand`: makes the expanded tree (§12.3), with every node's origin when asked, and checks its layout.
-- `reload`, from the loaded or expanded state: loads (and expands) again for another render context, without running stages 1 to 3 again.
+- `reload`, from the loaded or expanded state: loads (and expands) again for another render context or newly fetched data, without running stages 1 to 3 again.
 
 ```rust
-use compmd::{ParseOptions, Processor};
+use compmd::{Ambient, ParseOptions, Processor};
 
 let processor = Processor::new("notes.comp.md", text)
     .parse(&ParseOptions::default())
-    .resolve(&sources)
+    .resolve(&files, &packs, &Ambient::default())
     .validate(&allowed_origins)
-    .load(&context)
+    .load(&context, &fetch, &data)
     .expand(&Default::default());
 let tree = processor.expanded(); // and processor.diagnostics()
-let processor = processor.reload(&other_context); // another input value, the same document
+let processor = processor.reload(&other_context, &fetch, &data); // another input value, the same document
 ```
 
 - All stages in one call: `compmd::process::process` takes a `Request` (JSON) with the files, packs, remote and host data and the render context, and gives the parse tree, the expanded tree and every diagnostic; `compmd::process::sources` lists what to fetch first. The WebAssembly build, [`@compmd/processor`](../wasm/README.md), is this call.

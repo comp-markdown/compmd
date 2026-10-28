@@ -12,7 +12,7 @@ use std::rc::Rc;
 /// The source a `from` names.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(super) enum Target {
-    /// A file of the project or of a pack.
+    /// A file of the root folder or of a pack.
     File(Origin),
     /// An `https:` URL.
     Remote(String),

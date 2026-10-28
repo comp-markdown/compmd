@@ -7,11 +7,12 @@
 //!
 //! ```
 //! use compmd::cel::{Program, Scope, Type, Value, Values};
-//! use compmd::md::{Md, Signatures, TimeZones};
+//! use compmd::host::Time;
+//! use compmd::md::{Md, Signatures};
 //!
 //! struct Utc;
 //!
-//! impl TimeZones for Utc {
+//! impl Time for Utc {
 //!     fn offset(&self, _zone: &str, _at: i64) -> Option<i32> {
 //!         Some(0)
 //!     }

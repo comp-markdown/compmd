@@ -1,4 +1,4 @@
-//! Where a document comes from: a file of the project, a file of a pack, or `@compmd/core`. The origin names the
+//! Where a document comes from: a file of the root folder, a file of a pack, or `@compmd/core`. The origin names the
 //! document in diagnostics (spec §10.4) and decides where its relative paths lead (spec §8.6).
 
 use semver::Version;
@@ -6,8 +6,8 @@ use std::fmt;
 
 /// Where a document comes from.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub enum Origin {
-    /// A file of the project, by its `/`-separated path from the project's folder.
+pub(crate) enum Origin {
+    /// A file of the document's root folder, by its `/`-separated path from it.
     File(String),
     /// A file of a pack from the registry, or of an ambient pack, by its path in the package.
     Pack {
@@ -24,9 +24,8 @@ pub enum Origin {
 
 impl Origin {
     /// The file `relative` (`./card.comp.md`, `../ui/x.jsx`) names, seen from this document; `None` when it leaves
-    /// the root: the project's folder, or the pack's.
-    #[must_use]
-    pub fn join(&self, relative: &str) -> Option<Self> {
+    /// the root: the document's root folder, or the pack's.
+    pub(crate) fn join(&self, relative: &str) -> Option<Self> {
         match self {
             Self::File(path) => joined(path, relative).map(Self::File),
             Self::Pack {
@@ -39,6 +38,14 @@ impl Origin {
                 path,
             }),
             Self::Core => None,
+        }
+    }
+
+    /// The file's path in its root folder or its pack; empty for `@compmd/core`.
+    pub(crate) fn path(&self) -> &str {
+        match self {
+            Self::File(path) | Self::Pack { path, .. } => path,
+            Self::Core => "",
         }
     }
 }
@@ -98,6 +105,8 @@ mod tests {
         );
         assert_eq!(file("a.comp.md").join("../b.comp.md"), None);
         assert_eq!(Origin::Core.join("./x.comp.md"), None);
+        assert_eq!(file("docs/a.csv").path(), "docs/a.csv");
+        assert_eq!(Origin::Core.path(), "");
     }
 
     #[test]

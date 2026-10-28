@@ -1,8 +1,8 @@
 //! Stage 2, resolving (spec §6, §11): every component name bound to the component it stands for, through local
 //! definitions, imports, `@compmd/core` and ambient packs.
 //!
-//! The processor does no I/O: imported documents and component files come from [`Files`], packs from a
-//! [`Registry`]. A host loads what they serve before it resolves, so resolving needs no waiting.
+//! The processor does no I/O: imported documents and component files come from the host's [`Files`], packs from its
+//! [`Packs`]. A host loads what they serve before it resolves, so resolving needs no waiting.
 
 mod language;
 mod load;
@@ -11,131 +11,87 @@ mod origin;
 mod source;
 mod uses;
 
-pub use language::Language;
-pub use names::{Binding, Level, Names};
-pub use origin::Origin;
+pub(crate) use language::Language;
+pub(crate) use names::{Binding, Names};
+pub(crate) use origin::Origin;
 
 use crate::diagnostic::Diagnostic;
-use crate::load::{HostData, Remote};
+use crate::host::{Files, Packs};
 use crate::parse::Parsed;
 use crate::settings::Settings;
 use crate::tree::{Node, Param, Position, Root, Signature};
-use semver::Version;
-use std::collections::{BTreeMap, HashMap};
-use std::hash::BuildHasher;
+use std::collections::BTreeMap;
 
-/// The files of the project a document is in, by their `/`-separated paths from the project's folder.
-pub trait Files {
-    /// The text of the file at `path`, or `None` when there is none.
-    fn read(&self, path: &str) -> Option<String>;
-}
+/// `@compmd/core`, built in (spec §9).
+const CORE: &str = include_str!("core.comp.md");
 
-/// Files held in memory, as a browser hands them over.
-impl<S: BuildHasher> Files for HashMap<String, String, S> {
-    fn read(&self, path: &str) -> Option<String> {
-        self.get(path).cloned()
-    }
-}
-
-/// A release of a pack, as a registry lists it.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Release {
-    /// Its version.
-    pub version: Version,
-    /// The integrity hash the registry publishes for it (`sha512-…`), which an import's `integrity` must equal.
-    pub integrity: Option<String>,
-}
-
-/// The packs a document can import (spec §6.4): npm packages with a `package.json` and a CompMD document.
-pub trait Registry {
-    /// Every release of `pack`, in any order.
-    fn releases(&self, pack: &str) -> Vec<Release>;
-
-    /// The file at `path` in a release of `pack`: `package.json`, the pack's document, or a file it imports.
-    fn read(&self, pack: &str, version: &Version, path: &str) -> Option<String>;
-}
-
-/// A registry with no packs.
-impl Registry for () {
-    fn releases(&self, _pack: &str) -> Vec<Release> {
-        Vec::new()
-    }
-
-    fn read(&self, _pack: &str, _version: &Version, _path: &str) -> Option<String> {
-        None
-    }
-}
-
-/// Where a document's imports and data come from: the host.
+/// The packs every document imports, at the lowest priority (spec §6.3), and whether to report their names.
 ///
 /// ```
-/// use compmd::resolve::Sources;
-/// use std::collections::HashMap;
+/// use compmd::Ambient;
 ///
-/// let files = HashMap::from([("team.yaml".to_string(), "- Ana\n".to_string())]);
-/// let sources = Sources { ambient: vec!["@acme/kit".into()], ..Sources::new(&files) };
+/// let ambient = Ambient { packs: vec!["@acme/kit".into()], report: true };
 /// ```
-pub struct Sources<'a> {
-    /// The project's files.
-    pub files: &'a dyn Files,
-    /// The packs.
-    pub registry: &'a dyn Registry,
-    /// Remote data.
-    pub remote: &'a dyn Remote,
-    /// The host's data.
-    pub host: &'a dyn HostData,
-    /// Packs of the registry that every document imports, at the lowest priority (spec §6.3). Their newest release
-    /// is used.
-    pub ambient: Vec<String>,
-    /// Whether to report each use of a name from an ambient pack (W113).
-    pub report_ambient: bool,
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Ambient {
+    /// The packs, by name. Their newest release is used.
+    pub packs: Vec<String>,
+    /// Whether to report each use of a name from them (W113).
+    pub report: bool,
 }
 
-impl<'a> Sources<'a> {
-    /// The project's `files`, and nothing else: no packs, no remote or host data, no ambient packs.
-    #[must_use]
-    pub fn new(files: &'a dyn Files) -> Self {
-        Self {
-            files,
-            registry: &(),
-            remote: &(),
-            host: &(),
-            ambient: Vec::new(),
-            report_ambient: false,
+/// Where documents and the files they name come from: the host's files and packs, and `@compmd/core`.
+#[derive(Clone, Copy)]
+pub(crate) struct Store<'h> {
+    pub(crate) files: &'h dyn Files,
+    pub(crate) packs: &'h dyn Packs,
+}
+
+impl Store<'_> {
+    /// The text of the file at `origin`, or `None` when there is none.
+    pub(crate) fn read(&self, origin: &Origin) -> Option<String> {
+        match origin {
+            Origin::File(path) => self.files.file(path),
+            Origin::Pack {
+                name,
+                version,
+                path,
+            } => self.packs.pack_file(name, version, path),
+            Origin::Core => Some(CORE.to_string()),
         }
     }
 }
 
 /// A document, by its place in [`Resolved::documents`].
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct DocumentId(usize);
+pub(crate) struct DocumentId(usize);
 
 /// A component, by its place in [`Resolved::components`].
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct ComponentId(usize);
+pub(crate) struct ComponentId(usize);
 
 /// A loaded document: the processed one, or one it imports, directly or not.
 #[derive(Clone, Debug)]
-pub struct Document {
+pub(crate) struct Document {
     /// Where it comes from.
-    pub origin: Origin,
+    pub(crate) origin: Origin,
     /// Its text.
-    pub text: String,
+    pub(crate) text: String,
     /// Its tree.
-    pub root: Root,
+    pub(crate) root: Root,
     /// What each component name in it stands for.
-    pub names: Names,
+    pub(crate) names: Names,
     /// What it exports, by public name.
-    pub exports: BTreeMap<String, Binding>,
+    pub(crate) exports: BTreeMap<String, Binding>,
     /// Whether the processor provides it (`@compmd/core`, an ambient pack), so that a signature fence alone in it
     /// is a component the processor implements.
-    pub provided: bool,
+    pub(crate) provided: bool,
     pub(crate) settings: Settings,
 }
 
 /// What implements a component.
 #[derive(Clone, Debug, PartialEq)]
-pub enum Body {
+pub(crate) enum Body {
     /// A `compmd` definition's body.
     Compmd(Vec<Node>),
     /// Host-language code in a definition fence.
@@ -160,8 +116,7 @@ pub enum Body {
 
 impl Body {
     /// For a host-language component, whether one of this processor's bindings runs it (W102 otherwise).
-    #[must_use]
-    pub fn supported(&self) -> bool {
+    pub(crate) fn supported(&self) -> bool {
         match self {
             Self::Host {
                 language, runtime, ..
@@ -172,64 +127,60 @@ impl Body {
     }
 
     /// Whether it is host-language code, in a fence or a file.
-    #[must_use]
-    pub fn is_host(&self) -> bool {
+    pub(crate) fn is_host(&self) -> bool {
         matches!(self, Self::Host { .. } | Self::File { .. })
     }
 }
 
 /// A component a name can stand for.
 #[derive(Clone, Debug, PartialEq)]
-pub struct Component {
+pub(crate) struct Component {
     /// Its name where it is defined, or the local name of the file import.
-    pub name: String,
+    pub(crate) name: String,
     /// The document that defines it, or imports its file.
-    pub document: DocumentId,
+    pub(crate) document: DocumentId,
     /// Its signature: a `compmd` definition's header, or the signature fence; `None` for a host-language component
     /// without one, whose params go through unchecked (W105).
-    pub signature: Option<Signature>,
+    pub(crate) signature: Option<Signature>,
     /// What implements it.
-    pub body: Body,
+    pub(crate) body: Body,
     /// The definition fence's param list, which styles the component's box.
-    pub fence: Vec<Param>,
+    pub(crate) fence: Vec<Param>,
     /// Where it is defined.
-    pub position: Option<Position>,
+    pub(crate) position: Option<Position>,
 }
 
 /// The result of resolving a document: it, everything it imports, and the components their names stand for.
 #[derive(Clone, Debug)]
-pub struct Resolved {
+pub(crate) struct Resolved {
     /// The processed document, its imports, `@compmd/core` and the ambient packs.
-    pub documents: Vec<Document>,
+    pub(crate) documents: Vec<Document>,
     /// Every component of those documents.
-    pub components: Vec<Component>,
+    pub(crate) components: Vec<Component>,
     /// The processed document.
-    pub main: DocumentId,
+    pub(crate) main: DocumentId,
     /// The diagnostics of stage 2, and of stage 1 for the documents it imports; the processor holds them.
     pub(crate) diagnostics: Vec<Diagnostic>,
 }
 
 impl Resolved {
     /// The document `id` names.
-    #[must_use]
-    pub fn document(&self, id: DocumentId) -> &Document {
+    pub(crate) fn document(&self, id: DocumentId) -> &Document {
         &self.documents[id.0]
     }
 
     /// The component `id` names.
-    #[must_use]
-    pub fn component(&self, id: ComponentId) -> &Component {
+    pub(crate) fn component(&self, id: ComponentId) -> &Component {
         &self.components[id.0]
     }
 
     /// Every document, in order.
-    pub fn ids(&self) -> impl Iterator<Item = DocumentId> + use<> {
+    pub(crate) fn ids(&self) -> impl Iterator<Item = DocumentId> + use<> {
         (0..self.documents.len()).map(DocumentId)
     }
 
     /// How diagnostics name the document `id`: `None` for the processed one.
-    #[must_use]
-    pub fn file(&self, id: DocumentId) -> Option<String> {
+    pub(crate) fn file(&self, id: DocumentId) -> Option<String> {
         (id != self.main).then(|| self.document(id).origin.to_string())
     }
 
@@ -240,14 +191,107 @@ impl Resolved {
 }
 
 /// Resolves a parsed document, stage 2 of spec §11: loads its imports and their imports, `@compmd/core` and the
-/// ambient packs, binds every name, and reports what can't be bound.
+/// ambient packs from `store`, binds every name, and reports what can't be bound.
 ///
-/// `path` is where the document is in the project, against which its relative imports resolve; `root` is its tree,
-/// whose parse diagnostics the caller holds.
-pub(crate) fn resolve(path: &str, text: &str, root: Root, sources: &Sources) -> Resolved {
+/// `path` is where the document is under its root folder, against which its relative imports resolve; `root` is its
+/// tree, whose parse diagnostics the caller holds.
+pub(crate) fn resolve(
+    path: &str,
+    text: &str,
+    root: Root,
+    store: Store,
+    ambient: &Ambient,
+) -> Resolved {
     let parsed = Parsed {
         root,
         diagnostics: Vec::new(),
     };
-    load::Loader::new(sources, Origin::File(path.to_string())).resolve(text, parsed)
+    load::Loader::new(store, Origin::File(path.to_string())).resolve(text, parsed, ambient)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::parse::{ParseOptions, parse};
+    use crate::process;
+    use serde_json::{Value, json};
+    use std::collections::HashMap;
+
+    /// `input.comp.md` among `files` resolved, with `packs` (as a request writes them) and the `ambient` packs.
+    fn resolved(files: &[(&str, &str)], packs: Value, ambient: &[&str]) -> Resolved {
+        let files: HashMap<String, String> = files
+            .iter()
+            .map(|(path, text)| ((*path).to_string(), (*text).to_string()))
+            .collect();
+        let packs: process::Packs = serde_json::from_value(packs).expect("packs");
+        let text = &files["input.comp.md"];
+        let ambient = Ambient {
+            packs: ambient.iter().map(|pack| (*pack).to_string()).collect(),
+            report: false,
+        };
+        let root = parse(text, &ParseOptions::default()).root;
+        let store = Store {
+            files: &files,
+            packs: &packs,
+        };
+        resolve("input.comp.md", text, root, store, &ambient)
+    }
+
+    /// The component `name` stands for in the processed document.
+    fn bound<'r>(resolved: &'r Resolved, name: &str) -> &'r Component {
+        let main = resolved.document(resolved.main);
+        let Some(Binding::Component(id, _)) = main.names.get(name) else {
+            panic!("`{name}` is bound");
+        };
+        resolved.component(*id)
+    }
+
+    #[test]
+    fn a_component_file_is_bound_with_its_signature_fence() {
+        let input = "---\nmd:\n  import:\n    - from: ./charts/Chart.jsx\n      names: [{name: Chart, as: plot}]\n---\n\n```compmd component=plot signature\nparams:\n  rows: array\n```\n";
+        let resolved = resolved(
+            &[
+                ("input.comp.md", input),
+                ("charts/Chart.jsx", "export default () => null;"),
+            ],
+            json!({}),
+            &[],
+        );
+        let plot = bound(&resolved, "plot");
+        assert!(
+            matches!(&plot.body, Body::File { origin: Origin::File(path), .. } if path == "charts/Chart.jsx")
+        );
+        assert!(plot.signature.is_some() && plot.body.supported() && plot.body.is_host());
+    }
+
+    #[test]
+    fn a_packs_own_file_is_loaded_once() {
+        let kit = json!({ "@acme/kit": [{ "version": "2.0.0", "files": {
+            "package.json": "{\"name\": \"@acme/kit\", \"version\": \"2.0.0\"}",
+            "index.comp.md": "---\nmd:\n  import:\n    - from: ./parts.comp.md\n      names: [part]\n  export:\n    names: [part]\n---\n",
+            "parts.comp.md": "---\nmd:\n  export:\n    names: \"*\"\n---\n\n```compmd component=part\n---\nPart.\n```\n",
+        } }] });
+        let input = "---\nmd:\n  import:\n    - from: \"@acme/kit@2\"\n      names: [part]\n    - from: \"@acme/kit\"\n      names: \"*\"\n---\n";
+        let resolved = resolved(&[("input.comp.md", input)], kit, &[]);
+        let parts = resolved
+            .documents
+            .iter()
+            .filter(|document| document.origin.to_string() == "@acme/kit@2.0.0/parts.comp.md");
+        assert_eq!(parts.count(), 1);
+    }
+
+    #[test]
+    fn an_ambient_packs_newest_release_gives_the_processors_components() {
+        let release = |version: &str, component: &str| {
+            json!({ "version": version, "files": {
+                "package.json": format!("{{\"name\": \"@host/c\", \"version\": \"{version}\"}}"),
+                "index.comp.md": format!("---\nmd:\n  export:\n    names: \"*\"\n---\n\n```compmd component={component}\n---\nX.\n```\n\n```compmd component=tag signature\nparams: {{}}\n```\n"),
+            } })
+        };
+        let packs = json!({ "@host/c": [release("1.0.0", "old"), release("1.1.0", "new")] });
+        let resolved = resolved(&[("input.comp.md", ":: tag[T]\n")], packs, &["@host/c"]);
+        assert_eq!(bound(&resolved, "tag").body, Body::Processor);
+        assert_eq!(bound(&resolved, "new").name, "new");
+        assert!(resolved.document(resolved.main).names.get("old").is_none());
+    }
 }

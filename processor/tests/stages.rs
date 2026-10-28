@@ -1,8 +1,8 @@
 //! Stages 2 and 3 beyond the conformance set: component files, packs and their files, re-exports, and the values
 //! params take, each with the diagnostics it gives, as `(code, line, column, file)`.
 
-use compmd::resolve::{Binding, Body, Origin, Registry, Release, Resolved, Sources};
-use compmd::{ParseOptions, Processor};
+use compmd::host::{self, Release};
+use compmd::{Ambient, ParseOptions, Processor};
 use semver::Version;
 use std::collections::HashMap;
 
@@ -34,7 +34,7 @@ impl Packs {
     }
 }
 
-impl Registry for Packs {
+impl host::Packs for Packs {
     fn releases(&self, pack: &str) -> Vec<Release> {
         self.0
             .iter()
@@ -43,7 +43,7 @@ impl Registry for Packs {
             .collect()
     }
 
-    fn read(&self, pack: &str, version: &Version, path: &str) -> Option<String> {
+    fn pack_file(&self, pack: &str, version: &Version, path: &str) -> Option<String> {
         let held = self
             .0
             .iter()
@@ -55,20 +55,19 @@ impl Registry for Packs {
 type Found = Vec<(String, usize, usize, Option<String>)>;
 
 /// Resolves and validates `input.comp.md` among `files`, with `packs` and the `ambient` packs.
-fn run(files: &[(&str, &str)], packs: &Packs, ambient: &[&str]) -> (Resolved, Found) {
+fn run(files: &[(&str, &str)], packs: &Packs, ambient: &[&str]) -> Found {
     let files: HashMap<String, String> = files
         .iter()
         .map(|(path, text)| ((*path).to_string(), (*text).to_string()))
         .collect();
     let text = files["input.comp.md"].clone();
-    let sources = Sources {
-        registry: packs,
-        ambient: ambient.iter().map(|pack| (*pack).to_string()).collect(),
-        ..Sources::new(&files)
+    let ambient = Ambient {
+        packs: ambient.iter().map(|pack| (*pack).to_string()).collect(),
+        report: false,
     };
     let validated = Processor::new("input.comp.md", text)
         .parse(&ParseOptions::default())
-        .resolve(&sources)
+        .resolve(&files, packs, &ambient)
         .validate(&[]);
     let mut found: Found = validated
         .diagnostics()
@@ -83,12 +82,11 @@ fn run(files: &[(&str, &str)], packs: &Packs, ambient: &[&str]) -> (Resolved, Fo
         })
         .collect();
     found.sort();
-    (validated.resolved().clone(), found)
+    found
 }
 
 fn codes(text: &str) -> Vec<(String, usize, usize)> {
     run(&[("input.comp.md", text)], &Packs::default(), &[])
-        .1
         .into_iter()
         .map(|(code, line, column, _)| (code, line, column))
         .collect()
@@ -101,7 +99,7 @@ fn at(code: &str, line: usize, column: usize) -> (String, usize, usize) {
 #[test]
 fn a_component_file_exports_one_component_named_after_its_stem() {
     let input = "---\nmd:\n  import:\n    - from: ./charts/Chart.jsx\n      names: [Chart, {name: Chart, as: plot}, Other]\n    - from: ./charts/Chart.jsx\n      names: \"*\"\n---\n\n```compmd component=plot signature\nparams:\n  rows: array\n```\n\n:: plot[A plot] {rows=[1]}\n\n:: Chart[A chart]\n";
-    let (resolved, found) = run(
+    let found = run(
         &[
             ("input.comp.md", input),
             ("charts/Chart.jsx", "export default () => null;"),
@@ -113,22 +111,13 @@ fn a_component_file_exports_one_component_named_after_its_stem() {
         found,
         [("F013".into(), 7, 14, None), ("F021".into(), 5, 47, None),]
     );
-    let main = resolved.document(resolved.main);
-    let Some(Binding::Component(plot, _)) = main.names.get("plot") else {
-        panic!("plot is bound");
-    };
-    let plot = resolved.component(*plot);
-    assert!(
-        matches!(&plot.body, Body::File { origin: Origin::File(path), .. } if path == "charts/Chart.jsx")
-    );
-    assert!(plot.signature.is_some() && plot.body.supported() && plot.body.is_host());
 }
 
 #[test]
 fn imports_that_load_nothing_drop_their_names() {
     let input = "---\nmd:\n  import:\n    - from: ./missing.jsx\n      names: [x]\n    - from: ../outside.jsx\n      names: [y]\n    - from: ../outside.comp.md\n      names: \"*\"\n    - from: \"@acme/bare\"\n      names: [z]\n---\n\n:: x[X]\n\n:: y[Y]\n\n:: z[Z]\n\n:: anything[Any]\n";
     let packs = Packs::default().with("@acme/bare", "1.0.0", &[]);
-    let (_, found) = run(&[("input.comp.md", input)], &packs, &[]);
+    let found = run(&[("input.comp.md", input)], &packs, &[]);
     assert_eq!(
         found,
         [
@@ -158,7 +147,7 @@ fn packs_find_their_document_and_their_own_files() {
     ];
     let packs = Packs::default().with("@acme/kit", "2.0.0", &kit);
     let input = "---\nmd:\n  import:\n    - from: \"@acme/kit@2\"\n      names: [part, piece]\n    - from: \"@acme/kit\"\n      names: \"*\"\n---\n\n:: part[P]\n\n:: piece[P]\n";
-    let (resolved, found) = run(&[("input.comp.md", input)], &packs, &[]);
+    let found = run(&[("input.comp.md", input)], &packs, &[]);
     assert_eq!(
         found,
         [(
@@ -168,11 +157,6 @@ fn packs_find_their_document_and_their_own_files() {
             Some("@acme/kit@2.0.0/index.comp.md".into())
         )]
     );
-    let parts = resolved
-        .documents
-        .iter()
-        .find(|document| document.origin.to_string() == "@acme/kit@2.0.0/parts.comp.md");
-    assert!(parts.is_some(), "the pack's own file is loaded once");
 }
 
 #[test]
@@ -180,7 +164,7 @@ fn re_exports_pass_on_what_they_have() {
     let ui = "---\nmd:\n  import:\n    - from: ./nowhere.comp.md\n      names: [lost]\n  export:\n    names: [lost]\n---\n";
     let input =
         "---\nmd:\n  import:\n    - from: ./ui.comp.md\n      names: [lost]\n---\n\n:: lost[L]\n";
-    let (_, found) = run(
+    let found = run(
         &[("input.comp.md", input), ("ui.comp.md", ui)],
         &Packs::default(),
         &[],
@@ -192,7 +176,7 @@ fn re_exports_pass_on_what_they_have() {
 fn host_components_are_pinned_and_typed_where_they_are_exported() {
     let input = "---\nmd:\n  import:\n    - from: ./ui.comp.md\n      names: [dial]\n    - from: ./Gauge.svelte\n      names: [Gauge]\n  export:\n    names: [dial, clock, plain, Gauge]\n---\n\n```jsx component=clock runtime=react@19\nexport default () => null;\n```\n\n```compmd component=clock signature\nparams: {}\n```\n\n```ts component=plain\nexport default function mount() {}\n```\n\n```compmd component=plain signature\nparams: {}\n```\n";
     let ui = "---\nmd:\n  export:\n    names: [dial]\n---\n\n```svelte component=dial\n<b />\n```\n\n```compmd component=dial signature\nparams: {}\n```\n";
-    let (_, found) = run(
+    let found = run(
         &[
             ("input.comp.md", input),
             ("ui.comp.md", ui),
@@ -236,17 +220,12 @@ fn ambient_packs_are_the_newest_release_and_lowest_priority() {
         .with("@host/c", "1.0.0", &old)
         .with("@host/c", "1.1.0", &new);
     let input = ":: new[N]\n\n:: tag[T]\n\n:: old[O]\n";
-    let (resolved, found) = run(
+    let found = run(
         &[("input.comp.md", input)],
         &packs,
         &["@host/c", "@host/none"],
     );
     assert_eq!(found, [("F002".into(), 5, 4, None)]);
-    let main = resolved.document(resolved.main);
-    let Some(Binding::Component(tag, _)) = main.names.get("tag") else {
-        panic!("tag is bound");
-    };
-    assert_eq!(resolved.component(*tag).body, Body::Processor);
 }
 
 #[test]
@@ -408,32 +387,27 @@ fn a_pack_without_exports_exports_nothing() {
     ];
     let packs = Packs::default().with("@acme/kit", "1.0.0", &kit);
     let input = "---\nmd:\n  import:\n    - from: \"@acme/kit\"\n      names: [chip]\n---\n";
-    let (_, found) = run(&[("input.comp.md", input)], &packs, &[]);
+    let found = run(&[("input.comp.md", input)], &packs, &[]);
     assert_eq!(found, [("F021".into(), 5, 15, None)]);
 }
 
 #[test]
 fn an_empty_registry_has_no_packs() {
     let files: HashMap<String, String> = HashMap::new();
-    let sources = Sources {
-        ambient: vec!["@host/c".into()],
-        report_ambient: true,
-        ..Sources::new(&files)
+    let ambient = Ambient {
+        packs: vec!["@host/c".into()],
+        report: true,
     };
     let text = "---\nmd:\n  import:\n    - from: \"@acme/kit@1\"\n      names: [chip]\n---\n";
     let resolved = Processor::new("a.comp.md", text)
         .parse(&ParseOptions::default())
-        .resolve(&sources);
+        .resolve(&files, &(), &ambient);
     let codes: Vec<String> = resolved
         .diagnostics()
         .iter()
         .map(|d| d.code.to_string())
         .collect();
     assert_eq!(codes, ["F026"]);
-    assert_eq!(
-        ().read("@acme/kit", &Version::new(1, 0, 0), "package.json"),
-        None
-    );
 }
 
 #[test]

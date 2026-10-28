@@ -2,12 +2,13 @@
 //! values from data whose records differ do.
 
 use compmd::cel::{Program, Scope, Type, Value, Values};
-use compmd::md::{Md, Signatures, TimeZones};
+use compmd::host::Time;
+use compmd::md::{Md, Signatures};
 use serde_json::{Value as Json, json};
 
 struct Utc;
 
-impl TimeZones for Utc {
+impl Time for Utc {
     fn offset(&self, zone: &str, _at: i64) -> Option<i32> {
         (zone == "UTC").then_some(0)
     }

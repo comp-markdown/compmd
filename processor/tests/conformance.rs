@@ -2,7 +2,7 @@
 //! tree schema (spec §12.4), and every processor case through stages 1 to 4b: its diagnostics and its expanded tree.
 
 use compmd::diagnostic::Diagnostic;
-use compmd::md::TimeZones;
+use compmd::host::Time;
 use compmd::process::{Request, process};
 use compmd::{ParseOptions, Processor};
 use serde_json::{Map, Value, json};
@@ -259,7 +259,7 @@ fn host(dir: &Path, context: &Value) -> Value {
 /// The time zones of the cases, at their offsets in late October 2026.
 struct Zones;
 
-impl TimeZones for Zones {
+impl Time for Zones {
     fn offset(&self, zone: &str, _at: i64) -> Option<i32> {
         match zone {
             "UTC" => Some(0),
