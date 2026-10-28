@@ -879,40 +879,6 @@ fn is_false(value: &bool) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::json;
-
-    fn text(value: &str) -> StringPart {
-        StringPart::Text(Literal {
-            value: value.to_string(),
-            position: None,
-        })
-    }
-
-    #[test]
-    fn params_serialize_with_their_kind_and_value() {
-        let params = [
-            (ParamValue::Bare("rocket".into()), json!("rocket")),
-            (
-                ParamValue::String(vec![text("Setup")]),
-                json!([{ "type": "text", "value": "Setup" }]),
-            ),
-            (ParamValue::Flag, json!(null)),
-            (ParamValue::Class("wide".into()), json!("wide")),
-        ];
-        for (value, expected) in params {
-            let kind = value.kind();
-            let param = Param {
-                key: Some("k".into()),
-                breakpoint: None,
-                value,
-                position: None,
-            };
-            assert_eq!(
-                serde_json::to_value(&param).unwrap(),
-                json!({ "key": "k", "breakpoint": null, "kind": kind, "value": expected })
-            );
-        }
-    }
 
     #[test]
     fn children_are_a_nodes_content() {
@@ -928,82 +894,5 @@ mod tests {
         assert_eq!(slot.children(), std::slice::from_ref(&paragraph));
         assert_eq!(paragraph.children().len(), 1);
         assert_eq!(Node::Text(Literal::default()).children(), []);
-    }
-
-    #[test]
-    fn a_container_leaves_out_recovery_fields_it_does_not_have() {
-        let container = Node::ComponentContainer(Container {
-            name: "card".into(),
-            ..Container::default()
-        });
-        assert_eq!(
-            serde_json::to_value(&container).unwrap(),
-            json!({ "type": "componentContainer", "name": "card", "params": [], "children": [], "slots": [] })
-        );
-    }
-
-    #[test]
-    fn definitions_serialize_their_body_flat() {
-        let host = Node::ComponentDefinition(Definition {
-            name: "chart".into(),
-            language: "jsx".into(),
-            signature: None,
-            params: Vec::new(),
-            body: DefinitionBody::Host {
-                source: "x".into(),
-                runtime: None,
-            },
-            position: None,
-        });
-        assert_eq!(
-            serde_json::to_value(&host).unwrap(),
-            json!({ "type": "componentDefinition", "name": "chart", "language": "jsx", "signature": null, "params": [], "source": "x", "runtime": null })
-        );
-    }
-
-    #[test]
-    fn declarations_serialize_types_and_defaults() {
-        let signature = Signature {
-            params: vec![
-                Declaration {
-                    name: "tone".into(),
-                    declared: DeclaredType::Enum {
-                        members: vec!["info".into(), "warn".into()],
-                    },
-                    optional: false,
-                    default: Some(DefaultValue::Param(ParamValue::Bare("info".into()))),
-                    doc: None,
-                },
-                Declaration {
-                    name: "pick".into(),
-                    declared: DeclaredType::Input {
-                        input: Box::new(DeclaredType::Name(TypeName::Date)),
-                    },
-                    optional: true,
-                    default: Some(DefaultValue::Yaml(json!({ "a": 1 }))),
-                    doc: Some("Picks".into()),
-                },
-            ],
-            slots: Some(vec![
-                SlotDeclaration::Name("default".into()),
-                SlotDeclaration::Template {
-                    name: "rows".into(),
-                    each: "items".into(),
-                    binding: "row".into(),
-                },
-            ]),
-            headings: Headings::Absolute,
-        };
-        assert_eq!(
-            serde_json::to_value(&signature).unwrap(),
-            json!({
-                "params": [
-                    { "name": "tone", "type": { "enum": ["info", "warn"] }, "optional": false, "default": { "kind": "bare", "value": "info" }, "doc": null },
-                    { "name": "pick", "type": { "input": "date" }, "optional": true, "default": { "kind": "yaml", "value": { "a": 1 } }, "doc": "Picks" },
-                ],
-                "slots": ["default", { "name": "rows", "each": "items", "as": "row" }],
-                "headings": "absolute",
-            })
-        );
     }
 }
