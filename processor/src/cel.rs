@@ -110,9 +110,6 @@ impl Error {
 
 /// The types of the `md.` functions, for the checker.
 pub trait FunctionTypes {
-    /// The function names, without `md.`: `["today", "sum", …]`.
-    fn names(&self) -> &[&'static str];
-
     /// The type `md.<name>` gives for arguments of these types.
     ///
     /// # Errors
@@ -122,7 +119,10 @@ pub trait FunctionTypes {
 }
 
 /// The render an expression is evaluated for: the `md.` functions, and time zone offsets for the timestamp getters.
-pub trait Functions: FunctionTypes {
+pub trait Functions {
+    /// The function names, without `md.`, which tell a call of one from a field of `md`.
+    fn names(&self) -> &[&'static str];
+
     /// Calls `md.<name>`.
     ///
     /// # Errors

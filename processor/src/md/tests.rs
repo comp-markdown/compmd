@@ -302,11 +302,9 @@ fn group_by_needs_values_that_can_be_keys() {
 }
 
 #[test]
-fn a_render_checks_as_the_signatures_do() {
-    let md = Md::new(NOW, "en", "UTC", &Utc);
+fn plural_forms_from_a_map_check_as_a_string() {
     let scope = Scope::default().with("forms", Type::of_json(&json!({ "one": "a", "other": "b" })));
     let program = Program::parse("md.plural(2, forms)").expect("parses");
-    assert_eq!(program.check(&scope, &md), Ok(Type::String));
     assert_eq!(program.check(&scope, &Signatures), Ok(Type::String));
 }
 

@@ -178,10 +178,6 @@ impl Library for MdFunction {
 pub struct Signatures;
 
 impl FunctionTypes for Signatures {
-    fn names(&self) -> &[&'static str] {
-        MdFunction::NAMES
-    }
-
     fn result_type(&self, name: &str, args: &[Type]) -> Result<Type, String> {
         overload::type_of::<MdFunction>(name, None, args)
     }
@@ -197,17 +193,11 @@ pub struct Md<'a> {
     time: &'a dyn Time,
 }
 
-impl FunctionTypes for Md<'_> {
-    fn names(&self) -> &[&'static str] {
-        Signatures.names()
-    }
-
-    fn result_type(&self, name: &str, args: &[Type]) -> Result<Type, String> {
-        Signatures.result_type(name, args)
-    }
-}
-
 impl Functions for Md<'_> {
+    fn names(&self) -> &[&'static str] {
+        MdFunction::NAMES
+    }
+
     fn call(&self, name: &str, args: &[Value]) -> Result<Value, String> {
         (overload::select::<MdFunction>(name, None, args)?.call)(self, args)
     }
