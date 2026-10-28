@@ -10,7 +10,7 @@ use crate::cel::{Value, Values};
 use crate::diagnostic::Location;
 use crate::expanded::{self, Container, Content, Instance, Leaf, json};
 use crate::reserved::Keyword;
-use crate::resolve::{Binding, Body, Component, ComponentId};
+use crate::resolve::{Binding, Body, Component};
 use crate::tree::{
     self, DeclaredType, DefaultValue, Headings, Node, Param, ParamValue, Signature, SlotDeclaration,
 };
@@ -124,7 +124,7 @@ impl<'r> Expander<'r> {
             }
             _ if !renders => self.fallback(&invocation, env, out),
             (Body::Compmd(body), _) => {
-                self.compmd(&invocation, *id, component, body, &given, env, out);
+                self.compmd(&invocation, component, body, &given, env, out);
             }
             (_, Some(Keyword::If)) => self.r#if(&invocation, &given, env, out),
             (_, Some(Keyword::Each)) => self.each(&invocation, signature, &given, env, out),
@@ -339,14 +339,9 @@ impl<'r> Expander<'r> {
     /// A `compmd` component (spec §7.2, §9.2): its body in its own document's scope with the invocation's params,
     /// in a box styled by the fence's params under the caller's; its body alone when it is `display=contents`; inline,
     /// its body's one paragraph.
-    #[allow(
-        clippy::too_many_arguments,
-        reason = "the invocation, its component and what it is given, as the other invocations take them"
-    )]
     fn compmd(
         &mut self,
         invocation: &Invocation<'r>,
-        id: ComponentId,
         component: &'r Component,
         body: &'r [Node],
         given: &[&'r Param],
@@ -354,20 +349,21 @@ impl<'r> Expander<'r> {
         out: &mut Vec<expanded::Node>,
     ) {
         let signature = component.signature.as_ref();
-        let body_env = (!self.invoked.contains(&id))
+        let closes_cycle = self
+            .resolved
+            .closes_cycle(env.document, invocation.node.position());
+        let body_env = (!closes_cycle)
             .then(|| self.body_env(invocation, component, given, env))
             .flatten();
         let Some(body_env) = body_env else {
             return self.fallback(invocation, env, out);
         };
-        self.invoked.push(id);
         let heading = self.last_heading;
         let made = self.expanding(env, invocation.at(), |this| {
             this.compmd_body(invocation, component, body, given, env, &body_env)
         });
         // The body's headings are its own: the caller's next invocation is still under the caller's heading.
         self.last_heading = heading;
-        self.invoked.pop();
         match made.flatten() {
             Some(nodes) => {
                 out.extend(nodes);

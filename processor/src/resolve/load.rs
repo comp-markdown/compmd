@@ -81,6 +81,7 @@ impl<'h> Loader<'h> {
             documents: self.documents,
             components: self.components,
             main,
+            cycles: HashSet::new(),
             diagnostics: self.diagnostics,
         };
         uses::report(&mut resolved, ambient.report);

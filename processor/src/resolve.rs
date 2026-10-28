@@ -21,8 +21,8 @@ use crate::host::{Files, Packs, Release};
 use crate::parse::Parsed;
 use crate::reserved::Keyword;
 use crate::settings::Settings;
-use crate::tree::{Node, Param, Position, Root, Signature};
-use std::collections::BTreeMap;
+use crate::tree::{Node, Param, Point, Position, Root, Signature};
+use std::collections::{BTreeMap, HashSet};
 
 /// The document of `@compmd/core`, built in (spec §9).
 const CORE_TEXT: &str = include_str!("core.comp.md");
@@ -189,6 +189,8 @@ pub(crate) struct Resolved {
     pub(crate) components: Vec<Component>,
     /// The processed document.
     pub(crate) main: DocumentId,
+    /// The invocations that close a cycle of definitions (F019), by their document and where they start.
+    pub(crate) cycles: HashSet<(DocumentId, Point)>,
     /// The diagnostics of stage 2, and of stage 1 for the documents it imports; the processor holds them.
     pub(crate) diagnostics: Vec<Diagnostic>,
 }
@@ -212,6 +214,12 @@ impl Resolved {
     /// How diagnostics name the document `id`: `None` for the processed one.
     pub(crate) fn file(&self, id: DocumentId) -> Option<String> {
         (id != self.main).then(|| self.document(id).origin.to_string())
+    }
+
+    /// Whether the invocation at `position` in the document `id` closes a cycle of definitions (F019), so that it
+    /// renders its fallback.
+    pub(crate) fn closes_cycle(&self, id: DocumentId, position: Option<Position>) -> bool {
+        position.is_some_and(|position| self.cycles.contains(&(id, position.start)))
     }
 }
 

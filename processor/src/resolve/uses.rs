@@ -10,6 +10,7 @@ use crate::diagnostic::{Code, Diagnostic, Location, Stage};
 use crate::lines::Lines;
 use crate::nearest::nearest;
 use crate::tree::{Node, Point};
+use std::collections::HashSet;
 
 /// A component a body invokes: its name, and where its line or inline component starts.
 struct Invocation<'a> {
@@ -47,7 +48,7 @@ pub(super) fn report(resolved: &mut Resolved, report_ambient: bool) {
     for index in 0..resolved.documents.len() {
         names_used(resolved, DocumentId(index), report_ambient, &mut found);
     }
-    recursion(resolved, &mut found);
+    resolved.cycles = recursion(resolved, &mut found);
     resolved.diagnostics.extend(found);
 }
 
@@ -107,9 +108,14 @@ fn names_used(
     }
 }
 
-/// F019: a `compmd` definition whose body leads back to it, reported at the invocation that closes the cycle.
-fn recursion(resolved: &Resolved, found: &mut Vec<Diagnostic>) {
-    let edges: Vec<Vec<(ComponentId, Location)>> = resolved
+/// An invocation of a `compmd` definition in another's body: the callee, where the name is, where the invocation
+/// starts.
+type Edge = (ComponentId, Location, Point);
+
+/// F019: a `compmd` definition whose body leads back to it, reported at the invocation that closes the cycle. Gives
+/// those invocations, by their document and where they start: each renders its fallback, which breaks every cycle.
+fn recursion(resolved: &Resolved, found: &mut Vec<Diagnostic>) -> HashSet<(DocumentId, Point)> {
+    let edges: Vec<Vec<Edge>> = resolved
         .components
         .iter()
         .map(|component| {
@@ -125,7 +131,7 @@ fn recursion(resolved: &Resolved, found: &mut Vec<Diagnostic>) {
                     Some(Binding::Component(callee, _))
                         if matches!(resolved.component(*callee).body, Body::Compmd(_)) =>
                     {
-                        Some((*callee, lines.name_at(invocation.start)))
+                        Some((*callee, lines.name_at(invocation.start), invocation.start))
                     }
                     _ => None,
                 })
@@ -137,12 +143,14 @@ fn recursion(resolved: &Resolved, found: &mut Vec<Diagnostic>) {
         edges: &edges,
         state: vec![State::New; edges.len()],
         found,
+        cycles: HashSet::new(),
     };
     for component in 0..edges.len() {
         if search.state[component] == State::New {
             search.visit(ComponentId(component));
         }
     }
+    search.cycles
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -156,18 +164,21 @@ enum State {
 /// A depth-first search for cycles among definitions.
 struct Search<'a> {
     resolved: &'a Resolved,
-    edges: &'a [Vec<(ComponentId, Location)>],
+    edges: &'a [Vec<Edge>],
     state: Vec<State>,
     found: &'a mut Vec<Diagnostic>,
+    /// The invocations that close a cycle.
+    cycles: HashSet<(DocumentId, Point)>,
 }
 
 impl Search<'_> {
     fn visit(&mut self, component: ComponentId) {
         self.state[component.0] = State::Open;
-        for &(callee, at) in &self.edges[component.0] {
+        for &(callee, at, start) in &self.edges[component.0] {
             match self.state[callee.0] {
                 State::Open => {
                     let caller = self.resolved.component(component);
+                    self.cycles.insert((caller.document, start));
                     let name = &self.resolved.component(callee).name;
                     self.found.push(
                         Diagnostic::new(

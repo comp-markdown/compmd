@@ -355,6 +355,15 @@ fn components_that_cant_render_give_their_fallback() {
     assert_eq!(text(&rendered.tree), "Old body.|Again|Needed");
 }
 
+/// The invocation F019 is reported at renders its fallback, whichever component the document invokes first.
+#[test]
+fn a_cycle_falls_back_where_it_is_reported() {
+    let input = "```compmd component=a\n---\nA\n\n:: b[From a]\n```\n\n```compmd component=b\n---\nB\n\n:: a[From b]\n```\n\n:: b[Top]\n";
+    let rendered = render(input, Setup::default());
+    assert_eq!(rendered.found, [at("F019", 12, 4)]);
+    assert_eq!(text(&rendered.tree), "BFrom b");
+}
+
 #[test]
 fn each_if_and_value_fail_to_their_fallbacks() {
     let input = "---\nmd:\n  data:\n    - from: ./d.yaml\n      as: d\n---\n\n::: each {in=(md.data.d.map) as=x}\nT {{x}}\n:: #empty\nE\n::: /each\n\n::: each {in=(md.data.d.list)}\nNo name {{x}}\n::: /each\n\n::: each {in=(md.data.d.list) as=x join=list}\n1. {{x}}\n\n- {{x}}\n::: /each\n\n::: each {in=(md.data.d.list) as=x join=inline}\nA {{x}}\n\nB {{x}}\n::: /each\n\n::: if {when=(md.data.d.list)}\nYes.\n:: #else\nNo.\n::: /if\n\n:: value[Fallback] {of=(md.data.d.list)}\n";

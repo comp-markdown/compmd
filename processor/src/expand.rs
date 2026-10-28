@@ -20,7 +20,7 @@ use crate::expanded::{self, Content, Origin, Root};
 use crate::lines::Lines;
 use crate::load::Loaded;
 use crate::md::Md;
-use crate::resolve::{ComponentId, DocumentId, Resolved};
+use crate::resolve::{DocumentId, Resolved};
 use crate::tree::{self, Node};
 use crate::validate::Validated;
 use crate::validate::scope::Scope;
@@ -97,8 +97,6 @@ struct Expander<'r> {
     programs: HashMap<String, Result<Rc<Program>, Error>>,
     /// The depth of the last heading expanded, in output order, which relative headings follow (spec §7.2).
     last_heading: u8,
-    /// The `compmd` components being expanded, innermost last: one that is already there recurses (F019).
-    invoked: Vec<ComponentId>,
     /// The nodes made so far, against the limit.
     made: usize,
     /// The expansions under way (`each`, template slots, invocations), innermost last, with where each is; and,
@@ -145,7 +143,6 @@ impl<'r> Expander<'r> {
             lines,
             programs: HashMap::new(),
             last_heading: 0,
-            invoked: Vec::new(),
             made: 0,
             expanding: Vec::new(),
             crossed: None,
