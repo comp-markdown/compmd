@@ -189,25 +189,49 @@ impl Value {
         }
     }
 
-    /// The JSON form: `int` and `double` stay apart (`7` against `7.0`); a non-finite `double` is `null`;
-    /// timestamps and durations are written as `string()` writes them; map keys that aren't strings are written as
-    /// text.
+    /// The JSON form, as the expanded tree writes values: numbers as JavaScript writes them, so a whole `double`
+    /// within ±2^53 is an integer (`5`, not `5.0`) and a non-finite one `null`; timestamps and durations as
+    /// `string()` writes them; map keys that aren't strings as text.
     #[must_use]
     pub fn to_json(&self) -> Json {
+        self.json_with(|d| {
+            /// The largest integer every `double` up to it holds exactly.
+            const EXACT: f64 = 9_007_199_254_740_992.0;
+            #[allow(
+                clippy::cast_possible_truncation,
+                reason = "the double is whole and within ±2^53, so exact"
+            )]
+            if d.fract() == 0.0 && d.abs() <= EXACT {
+                Json::from(d as i64)
+            } else {
+                Json::from(d)
+            }
+        })
+    }
+
+    /// The JSON form with `int` and `double` apart (`7` against `7.0`), for tests of the arithmetic.
+    #[cfg(test)]
+    pub(crate) fn typed_json(&self) -> Json {
+        self.json_with(Json::from)
+    }
+
+    fn json_with(&self, double: fn(f64) -> Json) -> Json {
         match self {
             Self::Int(i) => Json::from(*i),
             Self::Uint(u) => Json::from(*u),
-            Self::Double(d) => Json::from(*d),
+            Self::Double(d) => double(*d),
             Self::String(s) => Json::from(&**s),
             Self::Bool(b) => Json::from(*b),
             Self::Null => Json::Null,
             Self::Timestamp(t) => Json::from(time::format_timestamp(*t)),
             Self::Duration(d) => Json::from(time::format_duration(*d)),
-            Self::List(items) => Json::Array(items.iter().map(Self::to_json).collect()),
+            Self::List(items) => {
+                Json::Array(items.iter().map(|item| item.json_with(double)).collect())
+            }
             Self::Map(entries) => Json::Object(
                 entries
                     .iter()
-                    .map(|(k, v)| (k.to_json_key(), v.to_json()))
+                    .map(|(k, v)| (k.to_json_key(), v.json_with(double)))
                     .collect(),
             ),
         }
@@ -401,14 +425,20 @@ mod tests {
     use serde_json::json;
 
     #[test]
-    fn json_numbers_are_doubles_and_come_back_apart_from_ints() {
+    fn json_numbers_are_doubles_and_come_back_as_javascript_writes_them() {
         let value = Value::from_json(&json!({ "n": 1, "list": [1.5, "a", null, true] }));
         assert_eq!(
-            value.to_json(),
+            value.typed_json(),
             json!({ "n": 1.0, "list": [1.5, "a", null, true] })
         );
-        assert_eq!(Value::Int(7).to_json(), json!(7));
-        assert_ne!(Value::Int(7).to_json(), json!(7.0));
+        assert_eq!(
+            value.to_json(),
+            json!({ "n": 1, "list": [1.5, "a", null, true] })
+        );
+        assert_eq!(Value::Double(7.0).to_json(), json!(7));
+        assert_eq!(Value::Double(1e300).to_json(), json!(1e300));
+        assert_eq!(Value::Int(7).typed_json(), json!(7));
+        assert_ne!(Value::Double(7.0).typed_json(), json!(7));
         assert_eq!(Value::Uint(7).to_json(), json!(7));
         assert_eq!(Value::Double(f64::NAN).to_json(), Json::Null);
         assert_eq!(Value::Timestamp(0).to_json(), json!("1970-01-01T00:00:00Z"));

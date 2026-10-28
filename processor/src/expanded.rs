@@ -16,28 +16,6 @@ use serde::{Serialize, Serializer};
 use serde_json::Value;
 use std::rc::Rc;
 
-/// A value as the expanded tree writes it: as JSON, with a whole `double` written as an integer (`5`, not `5.0`),
-/// as JavaScript writes numbers.
-pub(crate) fn json(value: &cel::Value) -> Value {
-    /// The largest integer every `double` up to it holds exactly.
-    const EXACT: f64 = 9_007_199_254_740_992.0;
-    match value {
-        #[allow(
-            clippy::cast_possible_truncation,
-            reason = "the double is whole and within ±2^53, so exact"
-        )]
-        cel::Value::Double(d) if d.fract() == 0.0 && d.abs() <= EXACT => Value::from(*d as i64),
-        cel::Value::List(items) => Value::Array(items.iter().map(json).collect()),
-        cel::Value::Map(entries) => Value::Object(
-            entries
-                .iter()
-                .map(|(key, value)| (key.to_value().text(), json(value)))
-                .collect(),
-        ),
-        other => other.to_json(),
-    }
-}
-
 /// The root of an expanded tree.
 #[derive(Clone, Debug, Default, PartialEq, Serialize)]
 #[serde(tag = "type", rename = "root")]

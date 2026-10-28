@@ -59,7 +59,7 @@ fn evaluate(source: &str, x: Json, y: Json) -> Result<Json, (usize, String)> {
         });
     program
         .evaluate(&values, &Md::new(NOW, "en", "UTC", &Utc))
-        .map(|value| value.to_json())
+        .map(|value| value.typed_json())
         .map_err(|e| (e.at() + 1, e.message().to_string()))
 }
 

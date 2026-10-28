@@ -9,7 +9,7 @@ use super::{Expander, origins};
 use crate::breakpoint::BREAKPOINTS;
 use crate::cel::{Value, Values};
 use crate::diagnostic::Location;
-use crate::expanded::{self, Container, Content, Instance, Leaf, json};
+use crate::expanded::{self, Container, Content, Instance, Leaf};
 use crate::reserved::Keyword;
 use crate::resolve::{Binding, Body, Component};
 use crate::tree::{
@@ -276,7 +276,7 @@ impl<'r> Expander<'r> {
                 }
                 let inner = env.iteration(&template.name, &template.items, index);
                 instances.push(Instance {
-                    value: json(&template.items[index]),
+                    value: template.items[index].to_json(),
                     children: this.list(content, &inner),
                 });
             }

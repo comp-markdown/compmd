@@ -6,7 +6,7 @@ use super::schema::read;
 use crate::cel::{Program, Value, Values};
 use crate::context::Context;
 use crate::diagnostic::{Code, Diagnostic, Stage};
-use crate::expanded::{self, Input, Inputs};
+use crate::expanded::{Input, Inputs};
 use crate::resolve::Resolved;
 use crate::settings::Settings;
 use crate::tree::{DeclaredType, DefaultValue, ParamValue, StringPart};
@@ -75,7 +75,7 @@ fn default(
             ParamValue::Class(text) | ParamValue::Id(text) => Value::string(text),
         },
     };
-    Ok(expanded::json(&value))
+    Ok(value.to_json())
 }
 
 /// A quoted default's text, its interpolations filled in.

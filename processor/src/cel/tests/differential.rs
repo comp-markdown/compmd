@@ -33,7 +33,7 @@ fn profile(source: &str) -> Option<Json> {
     program
         .evaluate(&Values::default(), &md)
         .ok()
-        .map(|value| value.to_json())
+        .map(|value| value.typed_json())
 }
 
 /// The expressions on which the two disagree, with what each gave.

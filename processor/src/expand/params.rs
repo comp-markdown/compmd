@@ -7,7 +7,7 @@ use super::env::Env;
 use crate::breakpoint::{BREAKPOINTS, rank};
 use crate::cel::{Error, Value};
 use crate::diagnostic::{Code, Location};
-use crate::expanded::{self, json};
+use crate::expanded;
 use crate::tree::{DeclaredType, Param, ParamValue, Point, Signature, StringPart};
 use crate::validate::params::value_at;
 
@@ -26,7 +26,7 @@ impl Out {
         expanded::Param {
             key: self.key,
             breakpoint: self.breakpoint,
-            value: json(&self.value),
+            value: self.value.to_json(),
             input: self.input,
         }
     }
@@ -134,7 +134,7 @@ impl<'r> Expander<'r> {
             let Some(value) = self.param_value(param, declared, env) else {
                 continue;
             };
-            let mut previous = json(&value);
+            let mut previous = value.to_json();
             out.push(Out {
                 key: key.clone(),
                 breakpoint: param.breakpoint.clone(),
@@ -154,7 +154,7 @@ impl<'r> Expander<'r> {
                 let Some(value) = self.param_value(param, declared, &at) else {
                     continue;
                 };
-                let written = json(&value);
+                let written = value.to_json();
                 if written != previous {
                     previous = written;
                     out.push(Out {

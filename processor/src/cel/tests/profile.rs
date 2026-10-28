@@ -68,7 +68,7 @@ fn run_in(source: &str, lang: &str, tz: &str) -> Outcome {
         Err(error) => return Refused(error.at() + 1),
     };
     match program.evaluate(&values, &Md::new(NOW, lang, tz, &Zones)) {
-        Ok(value) => V(value.to_json()),
+        Ok(value) => V(value.typed_json()),
         Err(error) => Failed(error.at() + 1),
     }
 }

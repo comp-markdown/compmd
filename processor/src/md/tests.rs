@@ -27,7 +27,7 @@ fn run_at(now: i128, lang: &str, source: &str, x: &Json) -> Result<Json, String>
     let values = Values::default().with("x", Value::from_json(x));
     program
         .evaluate(&values, &Md::new(now, lang, "UTC", &Utc))
-        .map(|value| value.to_json())
+        .map(|value| value.typed_json())
         .map_err(|e| e.message().to_string())
 }
 
