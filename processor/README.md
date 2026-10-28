@@ -23,9 +23,9 @@ The stages are the states of a `compmd::Processor`: each stage takes the process
 ```rust
 use compmd::{ParseOptions, Processor};
 
-let processor = Processor::new("notes.comp.md", text, &sources)
+let processor = Processor::new("notes.comp.md", text)
     .parse(&ParseOptions::default())
-    .resolve()
+    .resolve(&sources)
     .validate(&allowed_origins)
     .load(&context)
     .expand(&Default::default());
@@ -45,10 +45,11 @@ assert_eq!(program.check(&Scope::default().with("count", Type::Double), &Signatu
 ```
 
 ```rust
-use compmd::{ParseOptions, parse};
+use compmd::{ParseOptions, Processor};
 
-let parsed = parse("::: card {title=\"Setup\"}\nInstall it.\n::: /card\n", &ParseOptions::default());
-let tree = serde_json::to_value(&parsed.root)?; // the JSON of §12.4
+let parsed = Processor::new("a.comp.md", "::: card {title=\"Setup\"}\nInstall it.\n::: /card\n")
+    .parse(&ParseOptions::default());
+let tree = serde_json::to_value(parsed.tree())?; // the JSON of §12.4
 ```
 
 It isn't published yet: it depends on the fork of markdown-rs by path, and is published once the fork is, as `compmd-markdown`.

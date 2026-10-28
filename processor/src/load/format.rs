@@ -4,9 +4,8 @@
 
 use super::{Failure, Violation};
 use crate::diagnostic::Location;
-use crate::parse::yaml;
+use crate::parse::{ParseOptions, parse, yaml};
 use crate::settings::Settings;
-use crate::{ParseOptions, parse};
 use csv::ReaderBuilder;
 use serde_json::{Map, Value};
 use std::collections::HashSet;

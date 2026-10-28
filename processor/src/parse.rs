@@ -30,31 +30,18 @@ pub struct ParseOptions {
 
 /// The result of parsing a document.
 #[derive(Clone, Debug, PartialEq)]
-pub struct Parsed {
+pub(crate) struct Parsed {
     /// The document tree.
-    pub root: Root,
+    pub(crate) root: Root,
     /// The parse diagnostics, in the order they were found.
-    pub diagnostics: Vec<Diagnostic>,
+    pub(crate) diagnostics: Vec<Diagnostic>,
 }
 
 /// Parses a CompMD document: stage 1 of spec §11.
 ///
 /// Parsing never fails: a mistake is a diagnostic, and the recovery rules of spec §10.3 decide the tree. A document
 /// whose frontmatter makes CompMD processing not apply (F001, F033) is parsed as plain CommonMark and GFM.
-///
-/// ```
-/// use compmd::{ParseOptions, parse};
-/// use compmd::tree::Node;
-///
-/// let parsed = parse("::: card {title=\"Setup\"}\nInstall it.\n::: /card\n", &ParseOptions::default());
-/// assert!(parsed.diagnostics.is_empty());
-/// let Node::ComponentContainer(card) = &parsed.root.children[0] else {
-///     panic!("a container");
-/// };
-/// assert_eq!(card.name, "card");
-/// ```
-#[must_use]
-pub fn parse(text: &str, options: &ParseOptions) -> Parsed {
+pub(crate) fn parse(text: &str, options: &ParseOptions) -> Parsed {
     let text = text.strip_prefix('\u{feff}').unwrap_or(text);
     let mut diagnostics = Vec::new();
     let mut settings = options.metadata.clone();

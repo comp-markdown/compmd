@@ -6,18 +6,18 @@
 //! document's [tree], resolving loads its imports and binds every component name, validating checks it against the
 //! signatures, loading gives the inputs their values and loads the data, and expanding makes the [expanded
 //! tree](expanded) a renderer draws, for one [render context](context); every stage adds its
-//! [diagnostics](diagnostic). [`parse`] runs stage 1 alone, and [`process`](process::process) runs them all on one
-//! JSON request, as the WebAssembly build does. It also implements the CompMD CEL profile, in [`cel`], with the `md.`
-//! functions in [`md`].
+//! [diagnostics](diagnostic). [`process`](process::process) runs them all on one JSON request, as the WebAssembly
+//! build does. It also implements the CompMD CEL profile, in [`cel`], with the `md.` functions in [`md`].
 //!
 //! The processor does no I/O: the caller hands it files, packs, remote and host data through traits
 //! ([`Sources`](resolve::Sources)), and the time zones, so it runs anywhere, a browser among them.
 //!
 //! ```
-//! use compmd::{ParseOptions, parse};
+//! use compmd::{ParseOptions, Processor};
 //!
-//! let parsed = parse(":: chart[Weekly installs] {src=installs.csv}\n", &ParseOptions::default());
-//! let json = serde_json::to_value(&parsed.root).unwrap();
+//! let parsed = Processor::new("a.comp.md", ":: chart[Weekly installs] {src=installs.csv}\n")
+//!     .parse(&ParseOptions::default());
+//! let json = serde_json::to_value(parsed.tree()).unwrap();
 //! assert_eq!(json["children"][0]["type"], "componentLeaf");
 //! ```
 
@@ -40,5 +40,5 @@ mod settings;
 pub mod tree;
 mod validate;
 
-pub use parse::{ParseOptions, Parsed, parse};
+pub use parse::ParseOptions;
 pub use processor::Processor;

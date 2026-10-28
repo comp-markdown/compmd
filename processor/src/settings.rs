@@ -298,7 +298,7 @@ impl Reader<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{ParseOptions, parse};
+    use crate::parse::{ParseOptions, parse};
 
     fn settings(text: &str) -> Settings {
         Settings::of(&parse(text, &ParseOptions::default()).root)

@@ -118,9 +118,9 @@ fn render(input: &str, setup: Setup) -> Rendered {
         zones: &Utc,
         inputs: setup.inputs.as_object().cloned().unwrap_or_default(),
     };
-    let validated = Processor::new("input.comp.md", input, &sources)
+    let validated = Processor::new("input.comp.md", input)
         .parse(&ParseOptions::default())
-        .resolve()
+        .resolve(&sources)
         .validate(&allowed);
     let needed = validated.sources(&context);
     let expanded = validated.load(&context).expand(&setup.options);
@@ -517,9 +517,9 @@ fn a_host_without_remote_or_host_data_loads_fallbacks() {
         zones: &Utc,
         inputs: serde_json::Map::new(),
     };
-    let expanded = Processor::new("input.comp.md", input, &sources)
+    let expanded = Processor::new("input.comp.md", input)
         .parse(&ParseOptions::default())
-        .resolve()
+        .resolve(&sources)
         .validate(&["https://a.org".into()])
         .load(&context)
         .expand(&expand::Options::default());

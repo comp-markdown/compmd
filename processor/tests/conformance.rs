@@ -4,7 +4,7 @@
 use compmd::diagnostic::Diagnostic;
 use compmd::md::TimeZones;
 use compmd::process::{Request, process};
-use compmd::{ParseOptions, parse};
+use compmd::{ParseOptions, Processor};
 use serde_json::{Map, Value, json};
 use std::collections::BTreeMap;
 use std::fs;
@@ -140,8 +140,8 @@ fn parse_case(dir: &Path, case: &Value) -> Parsed {
     let options = ParseOptions {
         metadata: context.get("metadata").cloned(),
     };
-    let parsed = parse(&input, &options);
-    let tree = serde_json::to_value(&parsed.root).expect("the tree serializes");
+    let parsed = Processor::new("input.comp.md", input).parse(&options);
+    let tree = serde_json::to_value(parsed.tree()).expect("the tree serializes");
     let difference = read_json(&dir.join("parse.json")).and_then(|expected| {
         if case["positions"] == json!(true) {
             first_difference("", &expected, &tree)
@@ -151,7 +151,7 @@ fn parse_case(dir: &Path, case: &Value) -> Parsed {
     });
     Parsed {
         tree,
-        diagnostics: parsed.diagnostics,
+        diagnostics: parsed.diagnostics().to_vec(),
         difference,
     }
 }

@@ -1,8 +1,8 @@
 //! The processor (spec §11), its stages as states: a [`Processor`] goes from [`New`] through [`Parsed`],
 //! [`Resolved`], [`Validated`] and [`Loaded`] to [`Expanded`]. Each stage takes the processor and gives it back in its
 //! next state, so the stages can only run in order; each state gives what its stage made, and every state the
-//! diagnostics so far. Each stage takes what it uses: the parse options, the origins remote data may come from, the
-//! render context, the expansion options.
+//! diagnostics so far. Each stage takes what it uses: the parse options, the host's sources, the origins remote data
+//! may come from, the render context, the expansion options.
 //!
 //! ```
 //! use compmd::context::Context;
@@ -15,9 +15,9 @@
 //! let files: HashMap<String, String> = HashMap::new();
 //! let sources = Sources::new(&files);
 //! let context = Context { now: 0, tz: "UTC".into(), zones: &(), inputs: Default::default() };
-//! let processor = Processor::new("team.comp.md", text, &sources)
+//! let processor = Processor::new("team.comp.md", text)
 //!     .parse(&ParseOptions::default())
-//!     .resolve()
+//!     .resolve(&sources)
 //!     .validate(&[])
 //!     .load(&context)
 //!     .expand(&Options::default());
@@ -25,18 +25,33 @@
 //! let json = serde_json::to_value(processor.expanded()).unwrap();
 //! assert_eq!(json["children"][0]["children"][0]["value"], "Ana, Kenji");
 //! ```
+//!
+//! Parsing alone is the first two calls:
+//!
+//! ```
+//! use compmd::{ParseOptions, Processor};
+//! use compmd::tree::Node;
+//!
+//! let parsed = Processor::new("a.comp.md", "::: card {title=\"Setup\"}\nInstall it.\n::: /card\n")
+//!     .parse(&ParseOptions::default());
+//! assert!(parsed.diagnostics().is_empty());
+//! let Node::ComponentContainer(card) = &parsed.tree().children[0] else {
+//!     panic!("a container");
+//! };
+//! assert_eq!(card.name, "card");
+//! ```
 
 use crate::context::Context;
 use crate::diagnostic::Diagnostic;
 use crate::expanded::{self, Inputs};
 use crate::load::{self, Source};
+use crate::parse::{self, ParseOptions};
 use crate::process::Processed;
 use crate::resolve::{self, Sources};
-use crate::{ParseOptions, expand, tree, validate};
+use crate::{expand, tree, validate};
 
 /// A document on its way through the stages, in the state `S`.
-pub struct Processor<'s, S> {
-    sources: &'s Sources<'s>,
+pub struct Processor<S> {
     diagnostics: Vec<Diagnostic>,
     state: S,
 }
@@ -55,12 +70,14 @@ pub struct Parsed {
 }
 
 /// After stage 2: the document, everything it imports, and what each name stands for.
-pub struct Resolved {
+pub struct Resolved<'s> {
+    sources: &'s Sources<'s>,
     resolved: resolve::Resolved,
 }
 
 /// After stage 3: the checked documents, and what checking refused.
-pub struct Validated {
+pub struct Validated<'s> {
+    sources: &'s Sources<'s>,
     resolved: resolve::Resolved,
     checks: validate::Validated,
     /// How many diagnostics stages 1 to 3 gave, which a reload keeps.
@@ -68,20 +85,20 @@ pub struct Validated {
 }
 
 /// After stage 4a: the inputs' values and the data, for one render context.
-pub struct Loaded<'c> {
-    validated: Validated,
+pub struct Loaded<'s, 'c> {
+    validated: Validated<'s>,
     context: &'c Context<'c>,
     data: load::Loaded,
 }
 
 /// After stage 4b: the expanded tree.
-pub struct Expanded {
-    validated: Validated,
+pub struct Expanded<'s> {
+    validated: Validated<'s>,
     options: expand::Options,
     root: expanded::Root,
 }
 
-impl<'s, S> Processor<'s, S> {
+impl<S> Processor<S> {
     /// The diagnostics of every stage run so far, in stage order.
     #[must_use]
     pub fn diagnostics(&self) -> &[Diagnostic] {
@@ -89,31 +106,21 @@ impl<'s, S> Processor<'s, S> {
     }
 
     /// The next state, which `step` makes from this one, adding the diagnostics it finds.
-    fn then<T>(
-        self,
-        step: impl FnOnce(S, &'s Sources<'s>, &mut Vec<Diagnostic>) -> T,
-    ) -> Processor<'s, T> {
+    fn then<T>(self, step: impl FnOnce(S, &mut Vec<Diagnostic>) -> T) -> Processor<T> {
         let Processor {
-            sources,
             mut diagnostics,
             state,
         } = self;
-        let state = step(state, sources, &mut diagnostics);
-        Processor {
-            sources,
-            diagnostics,
-            state,
-        }
+        let state = step(state, &mut diagnostics);
+        Processor { diagnostics, state }
     }
 }
 
-impl<'s> Processor<'s, New> {
-    /// A processor for the document at `path` in the project, with `text`; its imports and data come from
-    /// `sources`.
+impl Processor<New> {
+    /// A processor for the document at `path` in the project, with `text`.
     #[must_use]
-    pub fn new(path: impl Into<String>, text: impl Into<String>, sources: &'s Sources<'s>) -> Self {
+    pub fn new(path: impl Into<String>, text: impl Into<String>) -> Self {
         Self {
-            sources,
             diagnostics: Vec::new(),
             state: New {
                 path: path.into(),
@@ -122,11 +129,12 @@ impl<'s> Processor<'s, New> {
         }
     }
 
-    /// Stage 1, parsing: the document's tree (spec §12.1).
+    /// Stage 1, parsing: the document's tree (spec §12.1). Parsing never fails: a mistake is a diagnostic, and the
+    /// recovery rules of spec §10.3 decide the tree.
     #[must_use]
-    pub fn parse(self, options: &ParseOptions) -> Processor<'s, Parsed> {
-        self.then(|New { path, text }, _, diagnostics| {
-            let parsed = crate::parse(&text, options);
+    pub fn parse(self, options: &ParseOptions) -> Processor<Parsed> {
+        self.then(|New { path, text }, diagnostics| {
+            let parsed = parse::parse(&text, options);
             diagnostics.extend(parsed.diagnostics);
             Parsed {
                 path,
@@ -137,26 +145,26 @@ impl<'s> Processor<'s, New> {
     }
 }
 
-impl<'s> Processor<'s, Parsed> {
+impl Processor<Parsed> {
     /// The document's tree.
     #[must_use]
     pub fn tree(&self) -> &tree::Root {
         &self.state.root
     }
 
-    /// Stage 2, resolving: loads the document's imports and their imports, `@compmd/core` and the ambient packs,
-    /// and binds every name.
+    /// Stage 2, resolving, with the host's `sources` of imports and data, which the later stages use too: loads the
+    /// document's imports and their imports, `@compmd/core` and the ambient packs, and binds every name.
     #[must_use]
-    pub fn resolve(self) -> Processor<'s, Resolved> {
-        self.then(|Parsed { path, text, root }, sources, diagnostics| {
+    pub fn resolve<'s>(self, sources: &'s Sources<'s>) -> Processor<Resolved<'s>> {
+        self.then(|Parsed { path, text, root }, diagnostics| {
             let mut resolved = resolve::resolve(&path, &text, root, sources);
             diagnostics.append(&mut resolved.diagnostics);
-            Resolved { resolved }
+            Resolved { sources, resolved }
         })
     }
 }
 
-impl<'s> Processor<'s, Resolved> {
+impl<'s> Processor<Resolved<'s>> {
     /// The documents and the components their names stand for.
     #[must_use]
     pub fn resolved(&self) -> &resolve::Resolved {
@@ -166,11 +174,12 @@ impl<'s> Processor<'s, Resolved> {
     /// Stage 3, validating, with the origins remote data may come from (`https://api.example.com`; any other is
     /// F028): checks every invocation, slot, interpolation path, expression, bound input and data source.
     #[must_use]
-    pub fn validate(self, allowed_origins: &[String]) -> Processor<'s, Validated> {
-        self.then(|Resolved { resolved }, _, diagnostics| {
+    pub fn validate(self, allowed_origins: &[String]) -> Processor<Validated<'s>> {
+        self.then(|Resolved { sources, resolved }, diagnostics| {
             let mut checks = validate::validate(&resolved, allowed_origins);
             diagnostics.append(&mut checks.diagnostics);
             Validated {
+                sources,
                 resolved,
                 checks,
                 kept: diagnostics.len(),
@@ -179,7 +188,7 @@ impl<'s> Processor<'s, Resolved> {
     }
 }
 
-impl<'s> Processor<'s, Validated> {
+impl<'s> Processor<Validated<'s>> {
     /// The documents and the components their names stand for.
     #[must_use]
     pub fn resolved(&self) -> &resolve::Resolved {
@@ -195,9 +204,14 @@ impl<'s> Processor<'s, Validated> {
 
     /// Stage 4a, loading, for a render with `context`: the inputs' values and every data import.
     #[must_use]
-    pub fn load<'c>(self, context: &'c Context<'c>) -> Processor<'s, Loaded<'c>> {
-        self.then(|validated, sources, diagnostics| {
-            let mut data = load::load(&validated.resolved, &validated.checks, context, sources);
+    pub fn load<'c>(self, context: &'c Context<'c>) -> Processor<Loaded<'s, 'c>> {
+        self.then(|validated, diagnostics| {
+            let mut data = load::load(
+                &validated.resolved,
+                &validated.checks,
+                context,
+                validated.sources,
+            );
             diagnostics.append(&mut data.diagnostics);
             Loaded {
                 validated,
@@ -208,7 +222,7 @@ impl<'s> Processor<'s, Validated> {
     }
 }
 
-impl<'s> Processor<'s, Loaded<'_>> {
+impl<'s> Processor<Loaded<'s, '_>> {
     /// The processed document's inputs, with the values the render uses.
     #[must_use]
     pub fn inputs(&self) -> &Inputs {
@@ -217,14 +231,13 @@ impl<'s> Processor<'s, Loaded<'_>> {
 
     /// Stage 4b, evaluating: the expanded tree.
     #[must_use]
-    pub fn expand(self, options: &expand::Options) -> Processor<'s, Expanded> {
+    pub fn expand(self, options: &expand::Options) -> Processor<Expanded<'s>> {
         self.then(
             |Loaded {
                  validated,
                  context,
                  data,
              },
-             _,
              diagnostics| {
                 let expanded = expand::expand(
                     &validated.resolved,
@@ -245,13 +258,13 @@ impl<'s> Processor<'s, Loaded<'_>> {
 
     /// Loads again for a render with `context`, without running stages 1 to 3 again.
     #[must_use]
-    pub fn reload<'d>(self, context: &'d Context<'d>) -> Processor<'s, Loaded<'d>> {
-        self.then(|loaded, _, diagnostics| back(loaded.validated, diagnostics))
+    pub fn reload<'d>(self, context: &'d Context<'d>) -> Processor<Loaded<'s, 'd>> {
+        self.then(|loaded, diagnostics| back(loaded.validated, diagnostics))
             .load(context)
     }
 }
 
-impl Processor<'_, Expanded> {
+impl Processor<Expanded<'_>> {
     /// The processed document's tree (spec §12.1).
     #[must_use]
     pub fn tree(&self) -> &tree::Root {
@@ -270,20 +283,20 @@ impl Processor<'_, Expanded> {
     #[must_use]
     pub fn reload(self, context: &Context) -> Self {
         let options = self.state.options.clone();
-        self.then(|expanded, _, diagnostics| back(expanded.validated, diagnostics))
+        self.then(|expanded, diagnostics| back(expanded.validated, diagnostics))
             .load(context)
             .expand(&options)
     }
 }
 
 /// The validated state again, with the diagnostics of stage 4 dropped.
-fn back(validated: Validated, diagnostics: &mut Vec<Diagnostic>) -> Validated {
+fn back<'s>(validated: Validated<'s>, diagnostics: &mut Vec<Diagnostic>) -> Validated<'s> {
     diagnostics.truncate(validated.kept);
     validated
 }
 
-impl From<Processor<'_, Expanded>> for Processed {
-    fn from(processor: Processor<'_, Expanded>) -> Self {
+impl From<Processor<Expanded<'_>>> for Processed {
+    fn from(processor: Processor<Expanded<'_>>) -> Self {
         let Expanded {
             validated, root, ..
         } = processor.state;
@@ -318,9 +331,9 @@ mod tests {
         let text = "---\nmd:\n  data:\n    - from: ./missing.json\n      as: m\n  inputs:\n    n: number = 1\n---\n\n{{md.input.n}} :x[y]\n";
         let files: HashMap<String, String> = HashMap::new();
         let sources = Sources::new(&files);
-        let parsed = Processor::new("a.comp.md", text, &sources).parse(&ParseOptions::default());
+        let parsed = Processor::new("a.comp.md", text).parse(&ParseOptions::default());
         assert_eq!(parsed.tree().children.len(), 2);
-        let resolved = parsed.resolve();
+        let resolved = parsed.resolve(&sources);
         assert_eq!(resolved.resolved().documents.len(), 2, "with @compmd/core");
         let validated = resolved.validate(&[]);
         assert_eq!(validated.diagnostics().len(), 1, "F002 for `x`");

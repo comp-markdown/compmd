@@ -161,9 +161,9 @@ pub fn process(request: &Request, zones: &dyn TimeZones) -> Result<Processed, Er
         origins: request.origins,
         ..expand::Options::default()
     };
-    let processor = Processor::new(&request.path, request.text()?, &sources)
+    let processor = Processor::new(&request.path, request.text()?)
         .parse(&ParseOptions::default())
-        .resolve()
+        .resolve(&sources)
         .validate(&request.allowed_origins)
         .load(&context)
         .expand(&options);
@@ -178,9 +178,9 @@ pub fn process(request: &Request, zones: &dyn TimeZones) -> Result<Processed, Er
 /// [`Error::NoDocument`] when the document isn't one of the request's files.
 pub fn sources(request: &Request, zones: &dyn TimeZones) -> Result<Needed, Error> {
     let sources = request.sources();
-    let processor = Processor::new(&request.path, request.text()?, &sources)
+    let processor = Processor::new(&request.path, request.text()?)
         .parse(&ParseOptions::default())
-        .resolve()
+        .resolve(&sources)
         .validate(&request.allowed_origins);
     let mut needed = Needed::default();
     for source in processor.sources(&request.context(zones)) {

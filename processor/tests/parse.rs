@@ -1,12 +1,17 @@
 //! Stage 1 beyond the conformance set: the mdast nodes CompMD keeps as they are, the base syntax's edge cases,
 //! recovery in nested parents, definitions, and documents read as plain Markdown.
 
-use compmd::{ParseOptions, parse};
+use compmd::processor::Parsed;
+use compmd::{ParseOptions, Processor};
 use serde_json::{Value, json};
+
+fn parse(text: &str) -> Processor<Parsed> {
+    Processor::new("input.comp.md", text).parse(&ParseOptions::default())
+}
 
 /// The tree of `text`, without positions.
 fn tree(text: &str) -> Value {
-    without_positions(&serde_json::to_value(parse(text, &ParseOptions::default()).root).unwrap())
+    without_positions(&serde_json::to_value(parse(text).tree()).unwrap())
 }
 
 /// The first block of `text`'s tree.
@@ -16,8 +21,8 @@ fn first(text: &str) -> Value {
 
 /// The diagnostics of `text`: code, line and column.
 fn diagnostics(text: &str) -> Vec<(String, usize, usize)> {
-    parse(text, &ParseOptions::default())
-        .diagnostics
+    parse(text)
+        .diagnostics()
         .iter()
         .map(|d| (d.code.to_string(), d.range.start.line, d.range.start.column))
         .collect()
@@ -287,7 +292,6 @@ fn parsing_never_fails_on_odd_input() {
         "\u{feff}",
         "> ::: a\n> ::: /b",
     ] {
-        let parsed = parse(text, &ParseOptions::default());
-        assert!(serde_json::to_value(&parsed.root).is_ok(), "{text:?}");
+        assert!(serde_json::to_value(parse(text).tree()).is_ok(), "{text:?}");
     }
 }

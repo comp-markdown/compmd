@@ -66,9 +66,9 @@ fn run(files: &[(&str, &str)], packs: &Packs, ambient: &[&str]) -> (Resolved, Fo
         ambient: ambient.iter().map(|pack| (*pack).to_string()).collect(),
         ..Sources::new(&files)
     };
-    let validated = Processor::new("input.comp.md", text, &sources)
+    let validated = Processor::new("input.comp.md", text)
         .parse(&ParseOptions::default())
-        .resolve()
+        .resolve(&sources)
         .validate(&[]);
     let mut found: Found = validated
         .diagnostics()
@@ -421,9 +421,9 @@ fn an_empty_registry_has_no_packs() {
         ..Sources::new(&files)
     };
     let text = "---\nmd:\n  import:\n    - from: \"@acme/kit@1\"\n      names: [chip]\n---\n";
-    let resolved = Processor::new("a.comp.md", text, &sources)
+    let resolved = Processor::new("a.comp.md", text)
         .parse(&ParseOptions::default())
-        .resolve();
+        .resolve(&sources);
     let codes: Vec<String> = resolved
         .diagnostics()
         .iter()
