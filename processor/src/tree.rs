@@ -830,6 +830,16 @@ impl DeclaredType {
     pub(crate) fn named(name: &str) -> Self {
         TypeName::from_name(name).map_or_else(|| Self::Other(name.to_string()), Self::Name)
     }
+
+    /// The type as messages write it: `a number`, `one of a, b`, `an input of a date`.
+    pub(crate) fn written(&self) -> String {
+        match self {
+            Self::Name(name) => format!("a {}", name.name()),
+            Self::Other(name) => format!("a {name}"),
+            Self::Enum { members } => format!("one of {}", members.join(", ")),
+            Self::Input { input } => format!("an input of {}", input.written()),
+        }
+    }
 }
 
 /// A declared default (spec §12.1).

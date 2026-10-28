@@ -4,8 +4,9 @@
 //! can't render renders its fallback (spec §4.5).
 
 use super::env::{Env, Slots, Template};
-use super::params::{BREAKPOINTS, boxed, key_of};
+use super::params::{boxed, key_of};
 use super::{Expander, origins};
+use crate::breakpoint::BREAKPOINTS;
 use crate::cel::{Value, Values};
 use crate::diagnostic::Location;
 use crate::expanded::{self, Container, Content, Instance, Leaf, json};

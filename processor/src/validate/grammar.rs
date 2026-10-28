@@ -54,7 +54,7 @@ impl Grammar {
             Self::Color => is_color(value),
             Self::Tracks => is_tracks(value),
             Self::Areas => is_areas(value),
-            Self::AreaName => is_ident(value),
+            Self::AreaName => is_css_ident(value),
             Self::Ratio => value == "none" || is_ratio(value),
             Self::Language => is_language(value),
             Self::Keywords(words) => words.contains(&value),
@@ -96,8 +96,8 @@ fn is_ratio(text: &str) -> bool {
     }
 }
 
-/// A CSS identifier as area and track names use them.
-fn is_ident(text: &str) -> bool {
+/// A CSS identifier as area and track names use them; unlike a CEL identifier, it may hold `-`.
+fn is_css_ident(text: &str) -> bool {
     let mut chars = text.chars();
     chars
         .next()
@@ -134,7 +134,7 @@ fn is_areas(text: &str) -> bool {
         .iter()
         .map(|row| {
             let cells: Vec<&str> = row.split_whitespace().collect();
-            if cells.iter().all(|cell| *cell == "." || is_ident(cell)) {
+            if cells.iter().all(|cell| *cell == "." || is_css_ident(cell)) {
                 cells.len()
             } else {
                 0
@@ -280,7 +280,7 @@ fn is_color_arguments(name: &str, inner: &str) -> bool {
         }
         _ => (inner, None),
     };
-    if space.is_some_and(|space| !is_ident(space)) {
+    if space.is_some_and(|space| !is_css_ident(space)) {
         return false;
     }
     if inner.contains(',') {
@@ -310,9 +310,9 @@ fn is_color_mix(inner: &str) -> bool {
     };
     let method: Vec<&str> = method.split_whitespace().collect();
     let method_ok = match method[..] {
-        ["in", space] => is_ident(space),
+        ["in", space] => is_css_ident(space),
         ["in", space, hue, "hue"] => {
-            is_ident(space) && ["shorter", "longer", "increasing", "decreasing"].contains(&hue)
+            is_css_ident(space) && ["shorter", "longer", "increasing", "decreasing"].contains(&hue)
         }
         _ => false,
     };

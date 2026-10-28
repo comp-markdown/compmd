@@ -4,14 +4,12 @@
 
 use super::Expander;
 use super::env::Env;
+use crate::breakpoint::{BREAKPOINTS, rank};
 use crate::cel::{Error, Value};
 use crate::diagnostic::{Code, Location};
 use crate::expanded::{self, json};
 use crate::tree::{DeclaredType, Param, ParamValue, Point, Signature, StringPart};
 use crate::validate::params::value_at;
-
-/// The breakpoints, narrowest first (spec §9.3).
-pub(super) const BREAKPOINTS: [&str; 3] = ["sm", "md", "lg"];
 
 /// An evaluated param.
 #[derive(Clone, Debug)]
@@ -232,16 +230,6 @@ fn under(fence: Out, caller: &[Out], kept: &mut Vec<Out>) {
     }
 }
 
-/// Where a breakpoint is among the breakpoints: none, the widest range, first.
-fn rank(breakpoint: Option<&str>) -> usize {
-    breakpoint.map_or(0, |breakpoint| {
-        BREAKPOINTS
-            .iter()
-            .position(|known| *known == breakpoint)
-            .map_or(0, |index| index + 1)
-    })
-}
-
 /// The parts a shorthand sets: `padding` its block and inline padding, those their two sides.
 fn parts(key: &str) -> &'static [&'static str] {
     match key {
@@ -374,6 +362,5 @@ mod tests {
         };
         let param = number.into_param();
         assert_eq!(serde_json::to_value(&param).unwrap()["value"], json!(5));
-        assert_eq!(rank(Some("xl")), 0);
     }
 }

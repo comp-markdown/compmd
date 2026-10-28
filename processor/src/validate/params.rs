@@ -6,6 +6,7 @@ use super::Checker;
 use super::grammar::Grammar;
 use super::scope::Scope;
 use super::universal::{Takes, Universal};
+use crate::breakpoint::BREAKPOINTS;
 use crate::cel::Type;
 use crate::cel::time::parse_date;
 use crate::diagnostic::{Code, Location};
@@ -19,9 +20,6 @@ use crate::tree::{
 };
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
-
-/// The breakpoints (spec §9.3).
-const BREAKPOINTS: [&str; 3] = ["sm", "md", "lg"];
 
 /// The grammar of a layout or styling type.
 fn grammar(name: TypeName) -> Option<Grammar> {
@@ -457,7 +455,7 @@ impl<'r> Checker<'r, '_> {
                 let areas = key != "grid-template-areas"
                     || literal(value).is_none_or(|text| Grammar::Areas.accepts(&text));
                 if !(fits(declared_type, value) && areas) {
-                    return self.refuse(at, &format!("`{key}` takes {}", written(declared_type)));
+                    return self.refuse(at, &format!("`{key}` takes {}", declared_type.written()));
                 }
                 if let (ParamValue::Bare(bound), DeclaredType::Name(TypeName::Name)) =
                     (value, declared_type)
@@ -507,8 +505,8 @@ impl<'r> Checker<'r, '_> {
                 at,
                 format!(
                     "`{key}` binds {}, but `{name}` is {}",
-                    written(input_type),
-                    written(&input.declaration.declared)
+                    input_type.written(),
+                    input.declaration.declared.written()
                 ),
             );
             return Checked::Refused;
@@ -782,16 +780,6 @@ fn templates(
         .collect()
 }
 
-/// A declared type as messages write it.
-fn written(declared: &DeclaredType) -> String {
-    match declared {
-        DeclaredType::Name(name) => format!("a {}", name.name()),
-        DeclaredType::Other(name) => format!("a {name}"),
-        DeclaredType::Enum { members } => format!("one of {}", members.join(", ")),
-        DeclaredType::Input { input } => format!("an input of {}", written(input)),
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -851,18 +839,13 @@ mod tests {
         assert!(!binds(&name("date"), &members(&["a"])));
         assert!(!binds(&members(&["a"]), &name("string")));
         assert!(binds(&name("odd"), &name("odd")));
-        assert_eq!(written(&name("odd")), "a odd");
+        assert_eq!(name("odd").written(), "a odd");
         let input = DeclaredType::Input {
             input: Box::new(name("date")),
         };
         assert!(fits(&input, &ParamValue::Flag));
         assert!(!fits(&members(&["a"]), &ParamValue::Flag));
         assert!(fits(&name("unknown-type"), &ParamValue::Flag));
-        assert_eq!(
-            written(&DeclaredType::Input {
-                input: Box::new(name("date"))
-            }),
-            "an input of a date"
-        );
+        assert_eq!(input.written(), "an input of a date");
     }
 }

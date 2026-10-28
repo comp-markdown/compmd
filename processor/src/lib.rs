@@ -20,6 +20,7 @@
 //! assert_eq!(json["children"][0]["type"], "componentLeaf");
 //! ```
 
+mod breakpoint;
 mod cel;
 pub mod context;
 pub mod diagnostic;

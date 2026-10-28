@@ -102,16 +102,7 @@ pub(super) fn read(
     if fits {
         Ok(raw)
     } else {
-        Err(format!("isn't {}: `{raw}`", written(declared)))
-    }
-}
-
-fn written(declared: &DeclaredType) -> String {
-    match declared {
-        DeclaredType::Name(name) => format!("a {}", name.name()),
-        DeclaredType::Enum { members } => format!("one of {}", members.join(", ")),
-        // Any value fits another name.
-        DeclaredType::Other(_) | DeclaredType::Input { .. } => "a value".into(),
+        Err(format!("isn't {}: `{raw}`", declared.written()))
     }
 }
 

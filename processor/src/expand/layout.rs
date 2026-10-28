@@ -5,7 +5,7 @@
 //! A block's nearest box is the nearest `box` or host-language component around it in the expanded tree; `each`,
 //! `if` and `display=contents` components are gone by then, and list items, quotes and table cells don't count.
 
-use super::params::BREAKPOINTS;
+use crate::breakpoint::{BREAKPOINTS, rank};
 use crate::diagnostic::{Code, Diagnostic, Location, Stage};
 use crate::expanded::{Content, Node, Param};
 use serde_json::Value;
@@ -129,8 +129,8 @@ fn report(found: &mut Vec<Diagnostic>, code: Code, node: &Node, message: &str) {
 fn value<'a>(params: &'a [Param], key: &str, at: usize) -> Option<&'a Value> {
     params
         .iter()
-        .filter(|param| param.key == key && level(param.breakpoint.as_deref()) <= at)
-        .max_by_key(|param| level(param.breakpoint.as_deref()))
+        .filter(|param| param.key == key && rank(param.breakpoint.as_deref()) <= at)
+        .max_by_key(|param| rank(param.breakpoint.as_deref()))
         .map(|param| &param.value)
 }
 
@@ -139,12 +139,6 @@ fn text<'a>(params: &'a [Param], key: &str, at: usize, default: &'a str) -> &'a 
     value(params, key, at)
         .and_then(Value::as_str)
         .unwrap_or(default)
-}
-
-fn level(breakpoint: Option<&str>) -> usize {
-    breakpoint
-        .and_then(|breakpoint| BREAKPOINTS.iter().position(|known| *known == breakpoint))
-        .map_or(0, |index| index + 1)
 }
 
 /// Whether a block uses breakpoints: a breakpoint on any of its params, or `show` or `hide`.
