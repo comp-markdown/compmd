@@ -17,8 +17,7 @@ use serde_json::Value;
 
 /// A value as the expanded tree writes it: as JSON, with a whole `double` written as an integer (`5`, not `5.0`),
 /// as JavaScript writes numbers.
-#[must_use]
-pub fn json(value: &cel::Value) -> Value {
+pub(crate) fn json(value: &cel::Value) -> Value {
     /// The largest integer every `double` up to it holds exactly.
     const EXACT: f64 = 9_007_199_254_740_992.0;
     match value {
@@ -51,7 +50,7 @@ pub struct Root {
 
 /// A document's inputs, serialized as a map from each name to its state.
 #[derive(Clone, Debug, Default, PartialEq)]
-pub struct Inputs(pub Vec<Input>);
+pub struct Inputs(pub(crate) Vec<Input>);
 
 impl Inputs {
     /// Whether the document declares no input.
@@ -59,12 +58,26 @@ impl Inputs {
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
+
+    /// The inputs, in declared order.
+    pub fn iter(&self) -> std::slice::Iter<'_, Input> {
+        self.0.iter()
+    }
+}
+
+impl<'a> IntoIterator for &'a Inputs {
+    type Item = &'a Input;
+    type IntoIter = std::slice::Iter<'a, Input>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
 }
 
 impl Serialize for Inputs {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         let mut map = serializer.serialize_map(Some(self.0.len()))?;
-        for input in &self.0 {
+        for input in self {
             map.serialize_entry(&input.name, input)?;
         }
         map.end()
@@ -100,8 +113,7 @@ pub struct Node {
 
 impl Node {
     /// A node without an origin.
-    #[must_use]
-    pub fn new(content: Content) -> Self {
+    pub(crate) fn new(content: Content) -> Self {
         Self {
             content,
             origin: None,
@@ -201,7 +213,7 @@ impl Content {
     }
 
     /// Its children, to change them.
-    pub fn children_mut(&mut self) -> Option<&mut Vec<Node>> {
+    pub(crate) fn children_mut(&mut self) -> Option<&mut Vec<Node>> {
         match self {
             Self::Blockquote(Blockquote { children, .. })
             | Self::Delete(Parent { children, .. })

@@ -333,11 +333,18 @@ mod tests {
         assert_eq!(validated.diagnostics().len(), 1, "F002 for `x`");
         let one = context(json!({}));
         let loaded = validated.load(&one, &(), &());
-        assert_eq!(loaded.inputs().0[0].value, json!(1));
+        let values = |loaded: &Processor<Loaded>| -> Vec<serde_json::Value> {
+            loaded
+                .inputs()
+                .iter()
+                .map(|input| input.value.clone())
+                .collect()
+        };
+        assert_eq!(values(&loaded), [json!(1)]);
         assert_eq!(loaded.diagnostics().len(), 2, "and F026 for the data");
         let two = context(json!({ "n": 2 }));
         let loaded = loaded.reload(&two, &(), &());
-        assert_eq!(loaded.inputs().0[0].value, json!(2));
+        assert_eq!(values(&loaded), [json!(2)]);
         assert_eq!(
             loaded.diagnostics().len(),
             2,
