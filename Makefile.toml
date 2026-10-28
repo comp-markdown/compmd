@@ -1,0 +1,41 @@
+# cargo-make tasks for the Rust workspace. `cargo make ci` runs every check.
+
+[config]
+# Run each task once for the whole workspace, not once per member crate.
+default_to_workspace = false
+
+[tasks.fmt]
+description = "Check formatting"
+clear = true
+command = "cargo"
+args = ["fmt", "--all", "--", "--check"]
+
+[tasks.clippy]
+description = "Lint all targets; warnings are errors"
+clear = true
+command = "cargo"
+args = ["clippy", "--workspace", "--all-targets", "--", "-D", "warnings"]
+
+[tasks.test]
+description = "Run the tests, the conformance set's among them"
+clear = true
+command = "cargo"
+args = ["test", "--workspace"]
+
+[tasks.deny]
+description = "Check dependencies: licenses, advisories, sources"
+clear = true
+command = "cargo"
+args = ["deny", "check"]
+
+[tasks.coverage]
+description = "Measure line coverage of the workspace's crates; fails below 99%"
+clear = true
+command = "cargo"
+# The markdown-rs fork is a path dependency inside this folder; its coverage is its own.
+args = ["llvm-cov", "--workspace", "--ignore-filename-regex", "markdown-rs/", "--fail-under-lines", "99"]
+
+[tasks.ci]
+description = "Every check CI runs"
+clear = true
+dependencies = ["fmt", "clippy", "test", "deny", "coverage"]

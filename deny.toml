@@ -1,0 +1,30 @@
+# cargo-deny configuration: licenses, advisories and sources of the workspace's dependencies.
+
+[advisories]
+# Vulnerabilities and unmaintained crates fail the check; yanked versions too.
+yanked = "deny"
+
+[licenses]
+# Permissive licenses only. A dependency under any other license needs a decision first.
+allow = [
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "MIT",
+    "Unicode-3.0",
+    "Zlib",
+]
+# The allow list is the policy, so a license no dependency uses yet is fine.
+unused-allowed-license = "allow"
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+
+[bans]
+multiple-versions = "warn"
+# Every version is pinned, except the workspace's own path dependencies.
+wildcards = "deny"
+allow-wildcard-paths = true

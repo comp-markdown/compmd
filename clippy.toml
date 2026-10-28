@@ -1,1 +1,1 @@
-doc-valid-idents = ["CompMD", ".."]
+doc-valid-idents = ["CompMD", "CommonMark", ".."]
