@@ -5,7 +5,6 @@
 //! `https:` URLs and [`HostData`] for `host:` sources. Since a `from` may interpolate inputs, which sources a render
 //! needs depends on the inputs: [`sources`] lists them, so a host can fetch them before it calls [`load`].
 
-mod csv;
 mod format;
 mod from;
 mod inputs;

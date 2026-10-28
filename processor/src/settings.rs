@@ -66,8 +66,8 @@ pub(crate) struct DataImport {
     pub(crate) schema: Option<Vec<Field>>,
     /// The local file loaded when a remote or `host:` source fails.
     pub(crate) fallback: Option<String>,
-    /// A CSV file's field separator.
-    pub(crate) delimiter: Option<char>,
+    /// A CSV file's field separator, when it is one ASCII character.
+    pub(crate) delimiter: Option<u8>,
 }
 
 /// A field of a data import's schema.
@@ -276,7 +276,9 @@ impl Reader<'_> {
             name: text("as")?.to_string(),
             schema,
             fallback: text("fallback").map(str::to_string),
-            delimiter: text("delimiter").and_then(|delimiter| delimiter.chars().next()),
+            delimiter: text("delimiter")
+                .and_then(|delimiter| <[u8; 1]>::try_from(delimiter.as_bytes()).ok())
+                .map(|[byte]| byte),
         })
     }
 
