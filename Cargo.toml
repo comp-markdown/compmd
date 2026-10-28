@@ -1,6 +1,8 @@
 [workspace]
 resolver = "3"
 members = ["processor"]
+# The markdown-rs fork, a submodule with its own workspace.
+exclude = ["markdown-rs"]
 
 [workspace.package]
 edition = "2024"

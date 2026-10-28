@@ -9,5 +9,9 @@ edition.workspace = true
 license.workspace = true
 repository.workspace = true
 
+[dependencies]
+# The fork of markdown-rs with CompMD's syntax (`markdown-rs/`, a submodule), published as `compmd-markdown`.
+markdown = { path = "../markdown-rs" }
+
 [lints]
 workspace = true

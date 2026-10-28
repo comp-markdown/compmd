@@ -6,7 +6,10 @@ The CompMD processor, in Rust: it parses, validates and expands documents writte
 
 ## Commands
 
+The parser is a fork of markdown-rs in the submodule `markdown-rs/`; fetch it once after cloning.
+
 ```sh
+git submodule update --init
 cargo fmt --check
 cargo clippy --all-targets -- -D warnings
 cargo test

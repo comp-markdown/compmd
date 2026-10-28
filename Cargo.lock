@@ -5,3 +5,19 @@ version = 4
 [[package]]
 name = "compmd"
 version = "0.0.1"
+dependencies = [
+ "markdown",
+]
+
+[[package]]
+name = "markdown"
+version = "1.0.0"
+dependencies = [
+ "unicode-id",
+]
+
+[[package]]
+name = "unicode-id"
+version = "0.3.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "65dd75ab2d9d379dbe86d4059e91d8b5a6e7054865eaba1ddbfc7a817ff96392"
