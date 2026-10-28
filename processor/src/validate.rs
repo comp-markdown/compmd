@@ -15,7 +15,7 @@ use crate::diagnostic::{Code, Diagnostic, Location, Stage};
 use crate::lines::Lines;
 use crate::reserved;
 use crate::resolve::{DocumentId, Resolved};
-use crate::tree::{Node, Param, Point};
+use crate::tree::{Node, Param, Point, Position};
 use scope::Scope;
 use std::collections::HashSet;
 
@@ -35,6 +35,8 @@ enum Refused {
     Param(DocumentId, Point),
     /// A data import, by its place in `md.data`: the data is its `fallback`, or null.
     Data(DocumentId, usize),
+    /// An invocation, by where it starts in its document: it renders its fallback.
+    Invocation(DocumentId, Point),
 }
 
 impl Validated {
@@ -48,6 +50,15 @@ impl Validated {
     /// Whether the data import at `index` of the document `id` was refused.
     pub(crate) fn refuses_data(&self, id: DocumentId, index: usize) -> bool {
         self.refused.contains(&Refused::Data(id, index))
+    }
+
+    /// Whether the invocation at `position` in the document `id` renders its fallback: no binding of this processor
+    /// runs its language or runtime (W102), or a required param is missing (F010) or refused.
+    pub(crate) fn falls_back(&self, id: DocumentId, position: Option<Position>) -> bool {
+        position.is_some_and(|position| {
+            self.refused
+                .contains(&Refused::Invocation(id, position.start))
+        })
     }
 }
 
@@ -110,6 +121,15 @@ impl Checker<'_, '_> {
             self.validated
                 .refused
                 .insert(Refused::Param(self.id, position.start));
+        }
+    }
+
+    /// Records that the invocation at `position` renders its fallback.
+    fn fall_back(&mut self, position: Option<Position>) {
+        if let Some(position) = position {
+            self.validated
+                .refused
+                .insert(Refused::Invocation(self.id, position.start));
         }
     }
 

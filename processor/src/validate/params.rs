@@ -193,9 +193,9 @@ impl Target<'_> {
         }
     }
 
-    /// Whether it is the built-in `keyword`, which only `@compmd/core` defines.
+    /// Whether it is the built-in `keyword`.
     fn is(&self, keyword: Keyword) -> bool {
-        Keyword::from_name(&self.component.name) == Some(keyword)
+        self.component.keyword() == Some(keyword)
     }
 }
 
@@ -269,6 +269,7 @@ impl<'r> Checker<'r, '_> {
                 start.into(),
                 format!("this processor has no binding for `{name}`'s language or runtime, so it renders the fallback"),
             );
+            self.fall_back(position);
         }
         let Some(signature) = &component.signature else {
             self.untyped(params, scope);
@@ -279,35 +280,50 @@ impl<'r> Checker<'r, '_> {
             signature,
             contents: matches!(component.body, Body::Compmd(_)) && is_contents(&component.fence),
         };
-        let mut answered = HashSet::new();
+        let mut given = HashSet::new();
+        let mut refused = HashSet::new();
         let mut types = HashMap::new();
         for param in params {
             let key = param.key.as_deref().unwrap_or("");
             match self.param(&target, param, scope) {
                 Verdict::Declared(ty) => {
-                    answered.insert(key);
+                    given.insert(key);
                     types.extend(ty.map(|ty| (key, ty)));
                 }
                 Verdict::Refused => {
-                    answered.insert(key);
+                    refused.insert(key);
                     self.refuse_param(param);
                 }
                 Verdict::Universal => {}
             }
         }
-        for missing in signature.params.iter().filter(|param| {
-            !param.optional && param.default.is_none() && !answered.contains(param.name.as_str())
-        }) {
-            self.report(
-                Code::F010,
-                start.into(),
-                format!("`{name}` needs `{}`; it renders its fallback", missing.name),
-            );
+        let required = signature
+            .params
+            .iter()
+            .filter(|param| !param.optional && param.default.is_none());
+        let mut falls_back = false;
+        for declared in required.filter(|param| !given.contains(param.name.as_str())) {
+            falls_back = true;
+            // A refused value has been reported already.
+            if !refused.contains(declared.name.as_str()) {
+                self.report(
+                    Code::F010,
+                    start.into(),
+                    format!(
+                        "`{name}` needs `{}`; it renders its fallback",
+                        declared.name
+                    ),
+                );
+            }
+        }
+        if falls_back {
+            self.fall_back(position);
         }
         if let Some(container) = container {
             self.slots(name, container, signature, start);
             if target.is(Keyword::Each)
-                && !answered.contains("join")
+                && !given.contains("join")
+                && !refused.contains("join")
                 && is_single_list_item(&container.children)
             {
                 self.report(

@@ -115,15 +115,10 @@ impl<'r> Expander<'r> {
             .filter(|param| !self.validated.refuses_param(env.document, param))
             .collect();
         let signature = component.signature.as_ref();
-        let keyword = resolved
-            .document(component.document)
-            .origin
-            .is_core()
-            .then(|| Keyword::from_name(&component.name))
-            .flatten();
-        let renders = signature.is_none_or(|signature| !missing(signature, &given))
-            && component.body.supported();
-        match (&component.body, keyword) {
+        let renders = !self
+            .validated
+            .falls_back(env.document, invocation.node.position());
+        match (&component.body, component.keyword()) {
             (_, Some(Keyword::Each)) if !renders => {
                 self.fallback_template(&invocation, env, out);
             }
@@ -535,15 +530,6 @@ impl<'r> Expander<'r> {
             }
         }
     }
-}
-
-/// Whether a required param of `signature` isn't given (F010): the component renders its fallback.
-fn missing(signature: &Signature, given: &[&Param]) -> bool {
-    signature.params.iter().any(|declared| {
-        !declared.optional
-            && declared.default.is_none()
-            && !given.iter().any(|param| key_of(param) == declared.name)
-    })
 }
 
 /// A fence's bare `display=contents`: the component has no box (spec §9.2).

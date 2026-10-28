@@ -19,6 +19,7 @@ use origin::RESERVED_SCOPE;
 use crate::diagnostic::Diagnostic;
 use crate::host::{Files, Packs, Release};
 use crate::parse::Parsed;
+use crate::reserved::Keyword;
 use crate::settings::Settings;
 use crate::tree::{Node, Param, Position, Root, Signature};
 use std::collections::BTreeMap;
@@ -160,6 +161,14 @@ pub(crate) struct Component {
     pub(crate) fence: Vec<Param>,
     /// Where it is defined.
     pub(crate) position: Option<Position>,
+}
+
+impl Component {
+    /// The built-in keyword it is, if any. Resolving admits a keyword as a name only in `@compmd/core` (F013), so a
+    /// component with a keyword's name is always core's.
+    pub(crate) fn keyword(&self) -> Option<Keyword> {
+        Keyword::from_name(&self.name)
+    }
 }
 
 /// The result of resolving a document: it, everything it imports, and the components their names stand for.
