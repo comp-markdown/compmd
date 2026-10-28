@@ -1,6 +1,9 @@
 //! Stages 4a and 4b beyond the conformance set: data from packs, URLs and hosts, inputs and their defaults, every
 //! mdast node, host components with slots, origins, and what fails, with the diagnostics as `(code, line, column)`.
 
+mod common;
+
+use common::{at, place};
 use compmd::context::Context;
 use compmd::expand;
 use compmd::host::{Fetched, LoadedRelease, Needed, Release};
@@ -82,10 +85,7 @@ fn render(input: &str, setup: Setup) -> Rendered {
     let needed = validated.sources(&context);
     let expanded = validated.load(&context, &web, &host).expand(&setup.options);
     let diagnostics = expanded.diagnostics();
-    let mut found: Vec<(String, usize, usize)> = diagnostics
-        .iter()
-        .map(|d| (d.code.to_string(), d.range.start.line, d.range.start.column))
-        .collect();
+    let mut found: Vec<(String, usize, usize)> = diagnostics.iter().map(place).collect();
     found.sort();
     Rendered {
         tree: serde_json::to_value(expanded.expanded()).expect("the tree serializes"),
@@ -93,10 +93,6 @@ fn render(input: &str, setup: Setup) -> Rendered {
         files: diagnostics.iter().map(|d| d.file.clone()).collect(),
         sources: needed,
     }
-}
-
-fn at(code: &str, line: usize, column: usize) -> (String, usize, usize) {
-    (code.to_string(), line, column)
 }
 
 /// The text of a tree, its text nodes in order, joined by `|` between blocks.

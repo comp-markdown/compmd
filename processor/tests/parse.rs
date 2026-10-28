@@ -1,6 +1,9 @@
 //! Stage 1 beyond the conformance set: the mdast nodes CompMD keeps as they are, the base syntax's edge cases,
 //! recovery in nested parents, definitions, and documents read as plain Markdown.
 
+mod common;
+
+use common::{place, without_positions};
 use compmd::processor::Parsed;
 use compmd::{ParseOptions, Processor};
 use serde_json::{Value, json};
@@ -21,25 +24,7 @@ fn first(text: &str) -> Value {
 
 /// The diagnostics of `text`: code, line and column.
 fn diagnostics(text: &str) -> Vec<(String, usize, usize)> {
-    parse(text)
-        .diagnostics()
-        .iter()
-        .map(|d| (d.code.to_string(), d.range.start.line, d.range.start.column))
-        .collect()
-}
-
-fn without_positions(value: &Value) -> Value {
-    match value {
-        Value::Array(items) => Value::Array(items.iter().map(without_positions).collect()),
-        Value::Object(object) => Value::Object(
-            object
-                .iter()
-                .filter(|(key, _)| *key != "position" && *key != "closePosition")
-                .map(|(key, value)| (key.clone(), without_positions(value)))
-                .collect(),
-        ),
-        other => other.clone(),
-    }
+    parse(text).diagnostics().iter().map(place).collect()
 }
 
 fn text_node(value: &str) -> Value {

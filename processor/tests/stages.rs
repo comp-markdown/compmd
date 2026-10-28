@@ -1,6 +1,9 @@
 //! Stages 2 and 3 beyond the conformance set: component files, packs and their files, re-exports, and the values
 //! params take, each with the diagnostics it gives, as `(code, line, column, file)`.
 
+mod common;
+
+use common::at;
 use compmd::host::{LoadedRelease, Release};
 use compmd::{Ambient, ParseOptions, Processor};
 use semver::Version;
@@ -70,10 +73,6 @@ fn codes(text: &str) -> Vec<(String, usize, usize)> {
         .into_iter()
         .map(|(code, line, column, _)| (code, line, column))
         .collect()
-}
-
-fn at(code: &str, line: usize, column: usize) -> (String, usize, usize) {
-    (code.to_string(), line, column)
 }
 
 #[test]

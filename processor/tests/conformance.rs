@@ -1,6 +1,9 @@
 //! The conformance set (spec §13.2): every parse-only case's tree and diagnostics, every tree checked against the
 //! tree schema (spec §12.4), and every processor case through stages 1 to 4b: its diagnostics and its expanded tree.
 
+mod common;
+
+use common::without_positions;
 use compmd::context::{Context, parse_time};
 use compmd::diagnostic::Diagnostic;
 use compmd::expand::Options;
@@ -55,25 +58,6 @@ fn tree_schema(root: &str) -> jsonschema::Validator {
 /// The schema's parse tree, `#/$defs/parseRoot`, as the schema to validate against.
 fn parse_tree_schema() -> jsonschema::Validator {
     tree_schema("parseRoot")
-}
-
-fn without_positions(value: &Value) -> Value {
-    without(value, &["position", "closePosition"])
-}
-
-/// `value` without the fields `keys`, at any depth.
-fn without(value: &Value, keys: &[&str]) -> Value {
-    match value {
-        Value::Array(items) => Value::Array(items.iter().map(|item| without(item, keys)).collect()),
-        Value::Object(object) => Value::Object(
-            object
-                .iter()
-                .filter(|(key, _)| !keys.contains(&key.as_str()))
-                .map(|(key, value)| (key.clone(), without(value, keys)))
-                .collect(),
-        ),
-        other => other.clone(),
-    }
 }
 
 /// A diagnostic as the conformance set writes it: `{code, file, line, column, related}`.
