@@ -16,6 +16,7 @@ pub use names::{Binding, Level, Names};
 pub use origin::Origin;
 
 use crate::diagnostic::Diagnostic;
+use crate::load::{HostData, Remote};
 use crate::parse::Parsed;
 use crate::settings::Settings;
 use crate::tree::{Node, Param, Position, Root, Signature};
@@ -65,17 +66,44 @@ impl Registry for () {
     }
 }
 
-/// Where a document's imports come from.
+/// Where a document's imports and data come from: the host.
+///
+/// ```
+/// use compmd::resolve::Sources;
+/// use std::collections::HashMap;
+///
+/// let files = HashMap::from([("team.yaml".to_string(), "- Ana\n".to_string())]);
+/// let sources = Sources { ambient: vec!["@acme/kit".into()], ..Sources::new(&files) };
+/// ```
 pub struct Sources<'a> {
     /// The project's files.
     pub files: &'a dyn Files,
     /// The packs.
     pub registry: &'a dyn Registry,
+    /// Remote data.
+    pub remote: &'a dyn Remote,
+    /// The host's data.
+    pub host: &'a dyn HostData,
     /// Packs of the registry that every document imports, at the lowest priority (spec §6.3). Their newest release
     /// is used.
     pub ambient: Vec<String>,
     /// Whether to report each use of a name from an ambient pack (W113).
     pub report_ambient: bool,
+}
+
+impl<'a> Sources<'a> {
+    /// The project's `files`, and nothing else: no packs, no remote or host data, no ambient packs.
+    #[must_use]
+    pub fn new(files: &'a dyn Files) -> Self {
+        Self {
+            files,
+            registry: &(),
+            remote: &(),
+            host: &(),
+            ambient: Vec::new(),
+            report_ambient: false,
+        }
+    }
 }
 
 /// A document, by its place in [`Resolved::documents`].
@@ -177,8 +205,8 @@ pub struct Resolved {
     pub components: Vec<Component>,
     /// The processed document.
     pub main: DocumentId,
-    /// The diagnostics of stages 1 and 2, of the processed document and of what it imports.
-    pub diagnostics: Vec<Diagnostic>,
+    /// The diagnostics of stage 2, and of stage 1 for the documents it imports; the processor holds them.
+    pub(crate) diagnostics: Vec<Diagnostic>,
 }
 
 impl Resolved {
@@ -206,8 +234,7 @@ impl Resolved {
     }
 
     /// The document `id` names, taken out of the result.
-    #[must_use]
-    pub fn into_document(mut self, id: DocumentId) -> Document {
+    pub(crate) fn into_document(mut self, id: DocumentId) -> Document {
         self.documents.swap_remove(id.0)
     }
 }
@@ -215,23 +242,12 @@ impl Resolved {
 /// Resolves a parsed document, stage 2 of spec §11: loads its imports and their imports, `@compmd/core` and the
 /// ambient packs, binds every name, and reports what can't be bound.
 ///
-/// `path` is where the document is in the project, against which its relative imports resolve; `parsed` is what
-/// [`parse`](crate::parse) gave for `text`, whose diagnostics come first in the result.
-///
-/// ```
-/// use compmd::resolve::{Binding, Sources, resolve};
-/// use compmd::{ParseOptions, parse};
-/// use std::collections::HashMap;
-///
-/// let text = "::: stack {gap=s}\nText.\n::: /stack\n";
-/// let files: HashMap<String, String> = HashMap::new();
-/// let sources = Sources { files: &files, registry: &(), ambient: Vec::new(), report_ambient: false };
-/// let resolved = resolve("notes.comp.md", text, parse(text, &ParseOptions::default()), &sources);
-/// assert!(resolved.diagnostics.is_empty());
-/// let names = &resolved.document(resolved.main).names;
-/// assert!(matches!(names.get("stack"), Some(Binding::Component(..))));
-/// ```
-#[must_use]
-pub fn resolve(path: &str, text: &str, parsed: Parsed, sources: &Sources) -> Resolved {
+/// `path` is where the document is in the project, against which its relative imports resolve; `root` is its tree,
+/// whose parse diagnostics the caller holds.
+pub(crate) fn resolve(path: &str, text: &str, root: Root, sources: &Sources) -> Resolved {
+    let parsed = Parsed {
+        root,
+        diagnostics: Vec::new(),
+    };
     load::Loader::new(sources, Origin::File(path.to_string())).resolve(text, parsed)
 }

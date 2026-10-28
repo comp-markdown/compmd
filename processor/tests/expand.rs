@@ -2,12 +2,11 @@
 //! mdast node, host components with slots, origins, and what fails, with the diagnostics as `(code, line, column)`.
 
 use compmd::context::Context;
-use compmd::expand::{self, expand};
-use compmd::load::{DataSources, Fetched, HostData, Remote, Source, load, sources};
+use compmd::expand;
+use compmd::load::{Fetched, HostData, Remote, Source};
 use compmd::md::TimeZones;
-use compmd::resolve::{Registry, Release, Sources, resolve};
-use compmd::validate::{Options, validate};
-use compmd::{ParseOptions, parse};
+use compmd::resolve::{Registry, Release, Sources};
+use compmd::{ParseOptions, Processor};
 use semver::Version;
 use serde_json::{Value, json};
 use std::collections::HashMap;
@@ -102,52 +101,37 @@ fn render(input: &str, setup: Setup) -> Rendered {
         })
         .collect());
     let host = Host(setup.host);
-    let sources_of = Sources {
-        files: &files,
+    let sources = Sources {
         registry: &kit,
-        ambient: Vec::new(),
-        report_ambient: false,
+        remote: &web,
+        host: &host,
+        ..Sources::new(&files)
     };
-    let resolved = resolve(
-        "input.comp.md",
-        input,
-        parse(input, &ParseOptions::default()),
-        &sources_of,
-    );
-    let options = Options {
-        allowed_origins: setup
-            .allowed
-            .iter()
-            .map(|origin| (*origin).to_string())
-            .collect(),
-    };
-    let validated = validate(&resolved, &options);
+    let allowed: Vec<String> = setup
+        .allowed
+        .iter()
+        .map(|origin| (*origin).to_string())
+        .collect();
     let context = Context {
         now: 1_792_576_800 * 1_000_000_000,
         tz: "UTC".into(),
         zones: &Utc,
         inputs: setup.inputs.as_object().cloned().unwrap_or_default(),
     };
-    let data = DataSources {
-        files: &files,
-        registry: &kit,
-        remote: &web,
-        host: &host,
-    };
-    let needed = sources(&resolved, &validated, &context);
-    let loaded = load(&resolved, &validated, &context, &data);
-    let expanded = expand(&resolved, &validated, &loaded, &context, &setup.options);
-    let mut diagnostics = resolved.diagnostics.clone();
-    diagnostics.extend(validated.diagnostics);
-    diagnostics.extend(loaded.diagnostics);
-    diagnostics.extend(expanded.diagnostics);
+    let validated = Processor::new("input.comp.md", input, &sources)
+        .parse(&ParseOptions::default())
+        .resolve()
+        .validate(&allowed);
+    let needed = validated.sources(&context);
+    let expanded = validated.load(&context).expand(&setup.options);
+    let diagnostics = expanded.diagnostics();
     let mut found: Vec<(String, usize, usize)> = diagnostics
         .iter()
         .map(|d| (d.code.to_string(), d.range.start.line, d.range.start.column))
         .collect();
     found.sort();
     Rendered {
-        tree: serde_json::to_value(&expanded.root).expect("the tree serializes"),
+        tree: serde_json::to_value(expanded.expanded()).expect("the tree serializes"),
         found,
         files: diagnostics.iter().map(|d| d.file.clone()).collect(),
         sources: needed,
@@ -526,51 +510,26 @@ fn a_host_without_remote_or_host_data_loads_fallbacks() {
         ("input.comp.md".to_string(), input.to_string()),
         ("x.json".to_string(), "{\"n\": \"local\"}".to_string()),
     ]);
-    let sources_of = Sources {
-        files: &files,
-        registry: &(),
-        ambient: Vec::new(),
-        report_ambient: false,
-    };
-    let resolved = resolve(
-        "input.comp.md",
-        input,
-        parse(input, &ParseOptions::default()),
-        &sources_of,
-    );
-    let validated = validate(
-        &resolved,
-        &Options {
-            allowed_origins: vec!["https://a.org".into()],
-        },
-    );
+    let sources = Sources::new(&files);
     let context = Context {
         now: 0,
         tz: "UTC".into(),
         zones: &Utc,
         inputs: serde_json::Map::new(),
     };
-    let data = DataSources {
-        files: &files,
-        registry: &(),
-        remote: &(),
-        host: &(),
-    };
-    let loaded = load(&resolved, &validated, &context, &data);
-    let codes: Vec<String> = loaded
-        .diagnostics
+    let expanded = Processor::new("input.comp.md", input, &sources)
+        .parse(&ParseOptions::default())
+        .resolve()
+        .validate(&["https://a.org".into()])
+        .load(&context)
+        .expand(&expand::Options::default());
+    let codes: Vec<String> = expanded
+        .diagnostics()
         .iter()
         .map(|d| d.code.to_string())
         .collect();
     assert_eq!(codes, ["F026"]);
-    let expanded = expand(
-        &resolved,
-        &validated,
-        &loaded,
-        &context,
-        &expand::Options::default(),
-    );
-    let tree = serde_json::to_value(&expanded.root).expect("the tree serializes");
+    let tree = serde_json::to_value(expanded.expanded()).expect("the tree serializes");
     assert_eq!(text(&tree), "local");
 }
 

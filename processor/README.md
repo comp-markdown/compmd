@@ -4,11 +4,35 @@ The CompMD processor, in Rust: it parses, validates and expands documents writte
 
 **Status: in development.** The processor implements stages 1 to 4b of the spec (§11) and its CEL profile (§8.2), does no I/O of its own, and passes every case of the [conformance set](https://github.com/comp-markdown/compmd/tree/main/conformance) that needs no host language: it is a "compmd/1 processor with remote data and origins" (§13.1). Running host-language components is a renderer's job; the processor expands their invocations to nodes for it.
 
-- Stage 1, parsing: `compmd::parse` gives the document tree (§12) and the parse diagnostics (§10.5).
-- Stage 2, resolving: `compmd::resolve::resolve` loads a document's imports through the caller's `Files` and `Registry`, with `@compmd/core` built in and the caller's ambient packs, and binds every component name.
-- Stage 3, validating: `compmd::validate::validate` checks invocations, slots, interpolation paths, the types of expressions, bound inputs and data sources, and gives what it refused, which the later stages leave out.
-- Stage 4a, loading: `compmd::load::load` gives the inputs their values and loads every data import, from the project's files, packs, `https:` URLs (`Remote`) and `host:` sources (`HostData`), typed by its schema. `compmd::load::sources` lists the URLs and host sources a render needs, so the caller can fetch them first.
-- Stage 4b, evaluating: `compmd::expand::expand` makes the expanded tree (§12.3), with every node's origin when asked, and checks its layout.
+The stages are the states of a `compmd::Processor`: each stage takes the processor and gives it back in its next state, so they can only run in order, and each state gives what its stage made and the diagnostics so far (§10.5).
+
+- Stage 1, `parse`: the document tree (§12).
+- Stage 2, `resolve`:
+  - Loads a document's imports through the host's `Sources` (files, a `Registry` of packs), with `@compmd/core` built in and the host's ambient packs.
+  - Binds every component name.
+- Stage 3, `validate`:
+  - Checks invocations, slots, interpolation paths, the types of expressions, bound inputs and data sources.
+  - Records what it refused, which the later stages leave out.
+- Stage 4a, `load`:
+  - Gives the inputs their values for a render context.
+  - Loads every data import, typed by its schema, from the project's files, packs, `https:` URLs (`Remote`) and `host:` sources (`HostData`).
+  - Before it, the validated processor's `sources` lists the URLs and host sources a render needs, so the host can fetch them first.
+- Stage 4b, `expand`: makes the expanded tree (§12.3), with every node's origin when asked, and checks its layout.
+- `reload`, from the loaded or expanded state: loads (and expands) again for another render context, without running stages 1 to 3 again.
+
+```rust
+use compmd::{ParseOptions, Processor};
+
+let processor = Processor::new("notes.comp.md", text, &sources)
+    .parse(&ParseOptions::default())
+    .resolve()
+    .validate(&allowed_origins)
+    .load(&context)
+    .expand(&Default::default());
+let tree = processor.expanded(); // and processor.diagnostics()
+let processor = processor.reload(&other_context); // another input value, the same document
+```
+
 - All stages in one call: `compmd::process::process` takes a `Request` (JSON) with the files, packs, remote and host data and the render context, and gives the parse tree, the expanded tree and every diagnostic; `compmd::process::sources` lists what to fetch first. The WebAssembly build, [`@compmd/processor`](../wasm/README.md), is this call.
 - The CEL profile: `compmd::cel` parses an expression, type-checks it against the variables' declared types, and evaluates it within a work budget, with the `md.` functions in `compmd::md`. Formatting uses [ICU4X](https://github.com/unicode-org/icu4x) with all its compiled locale data, and time zone offsets come from the caller.
 

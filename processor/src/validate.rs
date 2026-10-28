@@ -19,19 +19,12 @@ use crate::tree::{Node, Param, Point};
 use scope::Scope;
 use std::collections::HashSet;
 
-/// What validating needs besides the resolved document.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub struct Options {
-    /// The origins remote data may come from (`https://api.example.com`); any other is F028 (spec §8.6).
-    pub allowed_origins: Vec<String>,
-}
-
 /// The checked document (spec §11): the diagnostics of validating, and what they refused, which the later stages
 /// treat as absent (spec §10.3).
 #[derive(Clone, Debug, Default)]
-pub struct Validated {
-    /// The diagnostics of stage 3.
-    pub diagnostics: Vec<Diagnostic>,
+pub(crate) struct Validated {
+    /// The diagnostics of stage 3, until the processor takes them.
+    pub(crate) diagnostics: Vec<Diagnostic>,
     refused: HashSet<Refused>,
 }
 
@@ -58,23 +51,9 @@ impl Validated {
     }
 }
 
-/// Validates a resolved document, stage 3 of spec §11: gives its diagnostics, and what they refused.
-///
-/// ```
-/// use compmd::resolve::{Sources, resolve};
-/// use compmd::validate::{Options, validate};
-/// use compmd::{ParseOptions, parse};
-/// use std::collections::HashMap;
-///
-/// let text = "::: row {gap=bigger}\nText.\n::: /row\n";
-/// let files: HashMap<String, String> = HashMap::new();
-/// let sources = Sources { files: &files, registry: &(), ambient: Vec::new(), report_ambient: false };
-/// let resolved = resolve("notes.comp.md", text, parse(text, &ParseOptions::default()), &sources);
-/// let validated = validate(&resolved, &Options::default());
-/// assert_eq!(validated.diagnostics[0].code.as_str(), "F009");
-/// ```
-#[must_use]
-pub fn validate(resolved: &Resolved, options: &Options) -> Validated {
+/// Validates a resolved document, stage 3 of spec §11: gives its diagnostics, and what they refused. Remote data
+/// from an origin other than `allowed_origins` is F028 (spec §8.6).
+pub(crate) fn validate(resolved: &Resolved, allowed_origins: &[String]) -> Validated {
     let mut validated = Validated::default();
     for id in resolved.ids() {
         let document = resolved.document(id);
@@ -99,7 +78,7 @@ pub fn validate(resolved: &Resolved, options: &Options) -> Validated {
                 }
             }
         }
-        checker.data(&options.allowed_origins);
+        checker.data(allowed_origins);
     }
     validated
 }

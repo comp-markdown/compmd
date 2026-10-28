@@ -1,9 +1,8 @@
 //! Stages 2 and 3 beyond the conformance set: component files, packs and their files, re-exports, and the values
 //! params take, each with the diagnostics it gives, as `(code, line, column, file)`.
 
-use compmd::resolve::{Binding, Body, Origin, Registry, Release, Resolved, Sources, resolve};
-use compmd::validate::{Options, validate};
-use compmd::{ParseOptions, parse};
+use compmd::resolve::{Binding, Body, Origin, Registry, Release, Resolved, Sources};
+use compmd::{ParseOptions, Processor};
 use semver::Version;
 use std::collections::HashMap;
 
@@ -63,20 +62,16 @@ fn run(files: &[(&str, &str)], packs: &Packs, ambient: &[&str]) -> (Resolved, Fo
         .collect();
     let text = files["input.comp.md"].clone();
     let sources = Sources {
-        files: &files,
         registry: packs,
         ambient: ambient.iter().map(|pack| (*pack).to_string()).collect(),
-        report_ambient: false,
+        ..Sources::new(&files)
     };
-    let resolved = resolve(
-        "input.comp.md",
-        &text,
-        parse(&text, &ParseOptions::default()),
-        &sources,
-    );
-    let mut diagnostics = resolved.diagnostics.clone();
-    diagnostics.extend(validate(&resolved, &Options::default()).diagnostics);
-    let mut found: Found = diagnostics
+    let validated = Processor::new("input.comp.md", text, &sources)
+        .parse(&ParseOptions::default())
+        .resolve()
+        .validate(&[]);
+    let mut found: Found = validated
+        .diagnostics()
         .iter()
         .map(|d| {
             (
@@ -88,7 +83,7 @@ fn run(files: &[(&str, &str)], packs: &Packs, ambient: &[&str]) -> (Resolved, Fo
         })
         .collect();
     found.sort();
-    (resolved, found)
+    (validated.resolved().clone(), found)
 }
 
 fn codes(text: &str) -> Vec<(String, usize, usize)> {
@@ -421,20 +416,16 @@ fn a_pack_without_exports_exports_nothing() {
 fn an_empty_registry_has_no_packs() {
     let files: HashMap<String, String> = HashMap::new();
     let sources = Sources {
-        files: &files,
-        registry: &(),
         ambient: vec!["@host/c".into()],
         report_ambient: true,
+        ..Sources::new(&files)
     };
     let text = "---\nmd:\n  import:\n    - from: \"@acme/kit@1\"\n      names: [chip]\n---\n";
-    let resolved = resolve(
-        "a.comp.md",
-        text,
-        parse(text, &ParseOptions::default()),
-        &sources,
-    );
+    let resolved = Processor::new("a.comp.md", text, &sources)
+        .parse(&ParseOptions::default())
+        .resolve();
     let codes: Vec<String> = resolved
-        .diagnostics
+        .diagnostics()
         .iter()
         .map(|d| d.code.to_string())
         .collect();

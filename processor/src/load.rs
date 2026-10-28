@@ -1,9 +1,10 @@
 //! Stage 4a, loading (spec §8.6, §8.7, §11): the values of the processed document's inputs, and the data imports of
 //! every loaded document, each typed by its schema.
 //!
-//! The processor does no I/O: data comes from the project's [`Files`], the packs' [`Registry`], a [`Remote`] for
-//! `https:` URLs and [`HostData`] for `host:` sources. Since a `from` may interpolate inputs, which sources a render
-//! needs depends on the inputs: [`sources`] lists them, so a host can fetch them before it calls [`load`].
+//! The processor does no I/O: data comes from the project's files, the packs' registry, a [`Remote`] for `https:`
+//! URLs and [`HostData`] for `host:` sources, all in [`Sources`]. Since a `from` may interpolate inputs, which
+//! sources a render needs depends on the inputs: the validated [`Processor`](crate::Processor) lists them, so a
+//! host can fetch them before it loads.
 
 mod format;
 mod from;
@@ -14,7 +15,7 @@ use crate::cel::{Key, Value};
 use crate::context::Context;
 use crate::diagnostic::{Code, Diagnostic, Location, Stage};
 use crate::expanded::Inputs;
-use crate::resolve::{DocumentId, Files, Origin, Registry, Resolved};
+use crate::resolve::{DocumentId, Origin, Resolved, Sources};
 use crate::settings::DataImport;
 use crate::validate::Validated;
 use format::{Format, Parsed};
@@ -77,18 +78,6 @@ impl<S: BuildHasher> HostData for HashMap<String, Json, S> {
     }
 }
 
-/// Where data comes from.
-pub struct DataSources<'a> {
-    /// The project's files.
-    pub files: &'a dyn Files,
-    /// The packs, for data files inside them.
-    pub registry: &'a dyn Registry,
-    /// Remote data.
-    pub remote: &'a dyn Remote,
-    /// The host's data.
-    pub host: &'a dyn HostData,
-}
-
 /// A source a render needs that the host provides.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Source {
@@ -100,18 +89,17 @@ pub enum Source {
 
 /// What loading gave: the inputs' values, every document's data, and the diagnostics of stage 4a.
 #[derive(Clone, Debug, Default)]
-pub struct Loaded {
+pub(crate) struct Loaded {
     /// The processed document's inputs, with the values the render uses.
-    pub inputs: Inputs,
-    /// The diagnostics of stage 4a.
-    pub diagnostics: Vec<Diagnostic>,
+    pub(crate) inputs: Inputs,
+    /// The diagnostics of stage 4a, until the processor takes them.
+    pub(crate) diagnostics: Vec<Diagnostic>,
     data: HashMap<DocumentId, Value>,
 }
 
 impl Loaded {
     /// `md.data` of the document `id`: each data import by its name, `null` when it failed.
-    #[must_use]
-    pub fn data(&self, id: DocumentId) -> Value {
+    pub(crate) fn data(&self, id: DocumentId) -> Value {
         self.data
             .get(&id)
             .cloned()
@@ -119,8 +107,7 @@ impl Loaded {
     }
 
     /// `md.input`: each input's value by its name.
-    #[must_use]
-    pub fn input(&self) -> Value {
+    pub(crate) fn input(&self) -> Value {
         Value::Map(Rc::new(
             self.inputs
                 .0
@@ -137,8 +124,11 @@ impl Loaded {
 }
 
 /// The remote and `host:` sources a render with `context` needs, in the order they are written.
-#[must_use]
-pub fn sources(resolved: &Resolved, validated: &Validated, context: &Context) -> Vec<Source> {
+pub(crate) fn sources(
+    resolved: &Resolved,
+    validated: &Validated,
+    context: &Context,
+) -> Vec<Source> {
     let (inputs, _) = inputs::of(resolved, context);
     let input = Loaded {
         inputs,
@@ -158,12 +148,11 @@ pub fn sources(resolved: &Resolved, validated: &Validated, context: &Context) ->
 
 /// Loads, stage 4a of spec §11: the inputs' values for `context`, and every data import that validating didn't
 /// refuse; a refused or failed import is its `fallback`, or `null` (spec §10.3).
-#[must_use]
-pub fn load(
+pub(crate) fn load(
     resolved: &Resolved,
     validated: &Validated,
     context: &Context,
-    sources: &DataSources,
+    sources: &Sources,
 ) -> Loaded {
     let (inputs, diagnostics) = inputs::of(resolved, context);
     let mut loader = Loader {
@@ -243,7 +232,7 @@ impl Failure {
 /// Loads the data of one render.
 struct Loader<'r, 's> {
     resolved: &'r Resolved,
-    sources: &'s DataSources<'s>,
+    sources: &'s Sources<'s>,
     loaded: Loaded,
 }
 

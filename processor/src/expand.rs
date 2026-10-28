@@ -51,48 +51,16 @@ impl Default for Options {
 
 /// The result of expanding: the expanded tree and the diagnostics of stage 4b.
 #[derive(Clone, Debug)]
-pub struct Expanded {
+pub(crate) struct Expanded {
     /// The expanded tree.
-    pub root: Root,
+    pub(crate) root: Root,
     /// The diagnostics of stage 4b.
-    pub diagnostics: Vec<Diagnostic>,
+    pub(crate) diagnostics: Vec<Diagnostic>,
 }
 
 /// Expands a document, stage 4b of spec §11: the expanded tree of `resolved`'s processed document, with what
 /// `validated` refused left out, `loaded`'s inputs and data, and `context`'s time and zone.
-///
-/// ```
-/// use compmd::context::Context;
-/// use compmd::expand::{Options, expand};
-/// use compmd::load::{DataSources, load};
-/// use compmd::md::TimeZones;
-/// use compmd::resolve::{Sources, resolve};
-/// use compmd::validate::validate;
-/// use compmd::{ParseOptions, parse};
-/// use std::collections::HashMap;
-///
-/// struct Utc;
-///
-/// impl TimeZones for Utc {
-///     fn offset(&self, _zone: &str, _at: i64) -> Option<i32> {
-///         Some(0)
-///     }
-/// }
-///
-/// let text = "---\nteam: [Ana, Kenji]\n---\n\n::: each {in=(md.doc.team) as=p join=inline sep=\", \"}\n{{p}}\n::: /each\n";
-/// let files: HashMap<String, String> = HashMap::new();
-/// let sources = Sources { files: &files, registry: &(), ambient: Vec::new(), report_ambient: false };
-/// let resolved = resolve("team.comp.md", text, parse(text, &ParseOptions::default()), &sources);
-/// let validated = validate(&resolved, &Default::default());
-/// let context = Context { now: 0, tz: "UTC".into(), zones: &Utc, inputs: Default::default() };
-/// let data = DataSources { files: &files, registry: &(), remote: &(), host: &() };
-/// let loaded = load(&resolved, &validated, &context, &data);
-/// let expanded = expand(&resolved, &validated, &loaded, &context, &Options::default());
-/// let json = serde_json::to_value(&expanded.root).unwrap();
-/// assert_eq!(json["children"][0]["children"][0]["value"], "Ana, Kenji");
-/// ```
-#[must_use]
-pub fn expand(
+pub(crate) fn expand(
     resolved: &Resolved,
     validated: &Validated,
     loaded: &Loaded,

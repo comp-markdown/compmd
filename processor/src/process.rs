@@ -6,11 +6,10 @@
 use crate::cel::time::parse_timestamp;
 use crate::context::Context;
 use crate::diagnostic::Diagnostic;
-use crate::load::{self, DataSources, Fetched, Source};
+use crate::load::{Fetched, Source};
 use crate::md::TimeZones;
-use crate::resolve::{self, Registry, Release, Resolved, Sources};
-use crate::validate::{self, Validated};
-use crate::{ParseOptions, expand, expanded, parse, tree};
+use crate::resolve::{Registry, Release, Sources};
+use crate::{ParseOptions, Processor, expand, expanded, tree};
 use semver::Version;
 use serde::de::Error as _;
 use serde::{Deserialize, Deserializer, Serialize};
@@ -156,30 +155,19 @@ pub enum Error {
 /// assert_eq!(serde_json::to_value(&processed.expanded).unwrap()["children"][0]["type"], "paragraph");
 /// ```
 pub fn process(request: &Request, zones: &dyn TimeZones) -> Result<Processed, Error> {
-    let (resolved, validated) = validated(request)?;
+    let sources = request.sources();
     let context = request.context(zones);
-    let data = DataSources {
-        files: &request.files,
-        registry: &request.packs,
-        remote: &request.remote,
-        host: &request.host,
-    };
-    let loaded = load::load(&resolved, &validated, &context, &data);
     let options = expand::Options {
         origins: request.origins,
         ..expand::Options::default()
     };
-    let expanded = expand::expand(&resolved, &validated, &loaded, &context, &options);
-    let mut diagnostics = resolved.diagnostics.clone();
-    diagnostics.extend(validated.diagnostics);
-    diagnostics.extend(loaded.diagnostics);
-    diagnostics.extend(expanded.diagnostics);
-    let main = resolved.main;
-    Ok(Processed {
-        parse: resolved.into_document(main).root,
-        expanded: expanded.root,
-        diagnostics,
-    })
+    let processor = Processor::new(&request.path, request.text()?, &sources)
+        .parse(&ParseOptions::default())
+        .resolve()
+        .validate(&request.allowed_origins)
+        .load(&context)
+        .expand(&options);
+    Ok(processor.into())
 }
 
 /// The remote and `host:` sources a render of the request's document needs, for the host to fetch before it calls
@@ -189,9 +177,13 @@ pub fn process(request: &Request, zones: &dyn TimeZones) -> Result<Processed, Er
 ///
 /// [`Error::NoDocument`] when the document isn't one of the request's files.
 pub fn sources(request: &Request, zones: &dyn TimeZones) -> Result<Needed, Error> {
-    let (resolved, validated) = validated(request)?;
+    let sources = request.sources();
+    let processor = Processor::new(&request.path, request.text()?, &sources)
+        .parse(&ParseOptions::default())
+        .resolve()
+        .validate(&request.allowed_origins);
     let mut needed = Needed::default();
-    for source in load::sources(&resolved, &validated, &request.context(zones)) {
+    for source in processor.sources(&request.context(zones)) {
         match source {
             Source::Remote(url) => needed.remote.push(url),
             Source::Host(source) => needed.host.push(source),
@@ -200,28 +192,26 @@ pub fn sources(request: &Request, zones: &dyn TimeZones) -> Result<Needed, Error
     Ok(needed)
 }
 
-/// Stages 1 to 3.
-fn validated(request: &Request) -> Result<(Resolved, Validated), Error> {
-    let text = request
-        .files
-        .get(&request.path)
-        .ok_or_else(|| Error::NoDocument(request.path.clone()))?;
-    let sources = Sources {
-        files: &request.files,
-        registry: &request.packs,
-        ambient: request.ambient.clone(),
-        report_ambient: request.report_ambient,
-    };
-    let parsed = parse(text, &ParseOptions::default());
-    let resolved = resolve::resolve(&request.path, text, parsed, &sources);
-    let options = validate::Options {
-        allowed_origins: request.allowed_origins.clone(),
-    };
-    let validated = validate::validate(&resolved, &options);
-    Ok((resolved, validated))
-}
-
 impl Request {
+    /// The processed document's text.
+    fn text(&self) -> Result<&str, Error> {
+        self.files
+            .get(&self.path)
+            .map(String::as_str)
+            .ok_or_else(|| Error::NoDocument(self.path.clone()))
+    }
+
+    fn sources(&self) -> Sources<'_> {
+        Sources {
+            files: &self.files,
+            registry: &self.packs,
+            remote: &self.remote,
+            host: &self.host,
+            ambient: self.ambient.clone(),
+            report_ambient: self.report_ambient,
+        }
+    }
+
     fn context<'z>(&self, zones: &'z dyn TimeZones) -> Context<'z> {
         Context {
             now: self.now,
