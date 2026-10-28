@@ -3,8 +3,7 @@
 
 use compmd::context::Context;
 use compmd::expand;
-use compmd::host::{Data, Fetch, Fetched, Packs, Release};
-use compmd::load::Source;
+use compmd::host::{Data, Fetch, Fetched, Needed, Packs, Release};
 use compmd::{Ambient, ParseOptions, Processor};
 use semver::Version;
 use serde_json::{Value, json};
@@ -65,7 +64,7 @@ struct Rendered {
     tree: Value,
     found: Vec<(String, usize, usize)>,
     files: Vec<Option<String>>,
-    sources: Vec<Source>,
+    sources: Needed,
 }
 
 fn render(input: &str, setup: Setup) -> Rendered {
@@ -427,6 +426,28 @@ fn inputs_take_given_values_that_fit_or_their_defaults() {
 }
 
 #[test]
+fn each_source_is_needed_once_at_its_first_place() {
+    let input = "---\nmd:\n  data:\n    - from: https://api.example.com/b.json\n      as: b\n    - from: host:tasks\n      as: tasks\n    - from: https://api.example.com/a.json\n      as: a\n    - from: https://api.example.com/b.json\n      as: again\n    - from: host:tasks\n      as: same\n---\nText.\n";
+    let rendered = render(
+        input,
+        Setup {
+            allowed: vec!["https://api.example.com"],
+            ..Setup::default()
+        },
+    );
+    assert_eq!(
+        rendered.sources,
+        Needed {
+            remote: vec![
+                "https://api.example.com/b.json".into(),
+                "https://api.example.com/a.json".into(),
+            ],
+            host: vec!["tasks".into()],
+        }
+    );
+}
+
+#[test]
 fn data_comes_from_packs_urls_and_hosts() {
     let input = "---\nmd:\n  import:\n    - from: \"@acme/kit@1\"\n      names: [stat]\n  inputs:\n    region: eu | us = eu\n  data:\n    - from: \"@acme/kit/icons.json\"\n      as: icons\n    - from: \"@other/kit/x.json\"\n      as: other\n    - from: https://api.example.com/s?r={{md.input.region}}\n      as: remote\n    - from: https://api.example.com/plain\n      as: plain\n    - from: https://api.example.com/gone\n      as: gone\n      fallback: ./cached.json\n    - from: http://old.example.com/x.json\n      as: old\n    - from: host:tasks\n      as: tasks\n    - from: host:none\n      as: none\n    - from: ../outside.json\n      as: outside\n    - from: ./notes.txt\n      as: notes\n---\n\n{{md.data.icons.star}} {{md.data.remote.n}} {{md.data.gone.n}} {{md.data.tasks.n}} :stat[s]\n";
     let kit = vec![
@@ -472,13 +493,14 @@ fn data_comes_from_packs_urls_and_hosts() {
     );
     assert_eq!(
         rendered.sources,
-        [
-            Source::Remote("https://api.example.com/s?r=eu".into()),
-            Source::Remote("https://api.example.com/plain".into()),
-            Source::Remote("https://api.example.com/gone".into()),
-            Source::Host("tasks".into()),
-            Source::Host("none".into()),
-        ]
+        Needed {
+            remote: vec![
+                "https://api.example.com/s?r=eu".into(),
+                "https://api.example.com/plain".into(),
+                "https://api.example.com/gone".into(),
+            ],
+            host: vec!["tasks".into(), "none".into()],
+        }
     );
     assert_eq!(text(&rendered.tree), "* 5 cached host s");
     assert!(

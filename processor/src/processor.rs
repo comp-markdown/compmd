@@ -43,8 +43,8 @@
 use crate::context::Context;
 use crate::diagnostic::Diagnostic;
 use crate::expanded::{self, Inputs};
-use crate::host::{Data, Fetch, Files, Packs};
-use crate::load::{self, Source};
+use crate::host::{Data, Fetch, Files, Needed, Packs};
+use crate::load;
 use crate::parse::{self, ParseOptions};
 use crate::resolve::{self, Ambient, Store};
 use crate::{expand, tree, validate};
@@ -189,10 +189,10 @@ impl<'h> Processor<Resolved<'h>> {
 }
 
 impl<'h> Processor<Validated<'h>> {
-    /// The remote and `host:` sources a render with `context` needs, in the order they are written, for the host
-    /// to fetch before it loads.
+    /// The remote and `host:` sources a render with `context` needs, each once, in the order they are first written,
+    /// for the host to fetch before it loads.
     #[must_use]
-    pub fn sources(&self, context: &Context) -> Vec<Source> {
+    pub fn sources(&self, context: &Context) -> Needed {
         load::sources(&self.state.resolved, &self.state.checks, context)
     }
 

@@ -16,7 +16,7 @@ The stages are the states of a `compmd::Processor`: each stage takes the process
 - Stage 4a, `load`:
   - Gives the inputs their values for a render context.
   - Loads every data import, typed by its schema, from the root folder's files, packs, `https:` URLs (`Fetch`) and `host:` sources (`Data`).
-  - Before it, the validated processor's `sources` lists the URLs and host sources a render needs, so the host can fetch them first.
+  - Before it, the validated processor's `sources` gives the URLs and host sources a render needs (`host::Needed`, each once), so the host can fetch them first.
 - Stage 4b, `expand`: makes the expanded tree (§12.3), with every node's origin when asked, and checks its layout.
 - `reload`, from the loaded or expanded state: loads (and expands) again for another render context or newly fetched data, without running stages 1 to 3 again.
 

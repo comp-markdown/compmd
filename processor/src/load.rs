@@ -15,7 +15,7 @@ use crate::cel::{Key, Value};
 use crate::context::Context;
 use crate::diagnostic::{Code, Diagnostic, Location, Stage};
 use crate::expanded::Inputs;
-use crate::host::{Data, Fetch};
+use crate::host::{Data, Fetch, Needed};
 use crate::resolve::{DocumentId, Origin, Resolved, Store};
 use crate::settings::DataImport;
 use crate::validate::Validated;
@@ -24,15 +24,6 @@ use from::Target;
 use indexmap::IndexMap;
 use std::collections::HashMap;
 use std::rc::Rc;
-
-/// A source a render needs that the host provides.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub enum Source {
-    /// An `https:` URL, its values filled in.
-    Remote(String),
-    /// A `host:` source, without `host:`.
-    Host(String),
-}
 
 /// What loading gave: the inputs' values, every document's data, and the diagnostics of stage 4a.
 #[derive(Clone, Debug, Default)]
@@ -70,27 +61,26 @@ impl Loaded {
     }
 }
 
-/// The remote and `host:` sources a render with `context` needs, in the order they are written.
-pub(crate) fn sources(
-    resolved: &Resolved,
-    validated: &Validated,
-    context: &Context,
-) -> Vec<Source> {
+/// The remote and `host:` sources a render with `context` needs, each once, in the order they are first written.
+pub(crate) fn sources(resolved: &Resolved, validated: &Validated, context: &Context) -> Needed {
     let (inputs, _) = inputs::of(resolved, context);
     let input = Loaded {
         inputs,
         ..Loaded::default()
     }
     .input();
-    imports(resolved, validated)
-        .filter_map(
-            |(id, _, import)| match from::target(resolved, id, import, &input).ok()? {
-                Target::Remote(url) => Some(Source::Remote(url)),
-                Target::Host(source) => Some(Source::Host(source)),
-                Target::File(_) => None,
-            },
-        )
-        .collect()
+    let mut needed = Needed::default();
+    for (id, _, import) in imports(resolved, validated) {
+        let (list, source) = match from::target(resolved, id, import, &input) {
+            Ok(Target::Remote(url)) => (&mut needed.remote, url),
+            Ok(Target::Host(source)) => (&mut needed.host, source),
+            Ok(Target::File(_)) | Err(_) => continue,
+        };
+        if !list.contains(&source) {
+            list.push(source);
+        }
+    }
+    needed
 }
 
 /// The host's sources of data: its files and packs, remote data and `host:` data.

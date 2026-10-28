@@ -27,7 +27,7 @@ pub mod expand;
 pub mod expanded;
 pub mod host;
 mod lines;
-pub mod load;
+mod load;
 mod md;
 mod named;
 mod nearest;

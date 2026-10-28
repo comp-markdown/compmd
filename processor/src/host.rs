@@ -26,7 +26,7 @@
 //! ```
 
 use semver::Version;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value as Json;
 use std::collections::HashMap;
 use std::hash::BuildHasher;
@@ -87,6 +87,16 @@ pub struct LoadedRelease {
     pub release: Release,
     /// Its files by path: `package.json`, the pack's document, and what it imports.
     pub files: HashMap<String, String>,
+}
+
+/// The remote and `host:` sources a render needs, for a host to fetch before it loads: each once, in the order they
+/// are first written.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize)]
+pub struct Needed {
+    /// The `https:` URLs [`Fetch`] will be asked for, their values filled in.
+    pub remote: Vec<String>,
+    /// The sources [`Data`] will be asked for, without `host:`.
+    pub host: Vec<String>,
 }
 
 /// What a remote source gave.

@@ -4,7 +4,6 @@ use compmd::context::{Context, parse_time};
 use compmd::diagnostic::Diagnostic;
 use compmd::expand::Options;
 use compmd::host::{Fetched, LoadedRelease, Time};
-use compmd::load::Source;
 use compmd::processor::Validated;
 use compmd::{Ambient, ParseOptions, Processor, expanded, tree};
 use serde::de::Error as _;
@@ -61,13 +60,6 @@ struct Processed<'a> {
     diagnostics: &'a [Diagnostic],
 }
 
-/// The remote and `host:` sources a render needs, in the order they are written.
-#[derive(Default, Serialize)]
-struct Needed {
-    remote: Vec<String>,
-    host: Vec<String>,
-}
-
 /// Why a request can't be processed.
 #[derive(Debug, thiserror::Error)]
 pub(crate) enum Error {
@@ -102,7 +94,8 @@ pub(crate) fn process(json: &str, time: &dyn Time) -> Result<String, Error> {
 /// The remote and `host:` sources a render of the request in `json` needs: `{remote, host}`.
 pub(crate) fn sources(json: &str, time: &dyn Time) -> Result<String, Error> {
     let request: Request = serde_json::from_str(json)?;
-    Ok(serde_json::to_string(&request.needed(time)?)?)
+    let needed = request.validated()?.sources(&request.context(time));
+    Ok(serde_json::to_string(&needed)?)
 }
 
 impl Request {
@@ -120,17 +113,6 @@ impl Request {
             .parse(&ParseOptions::default())
             .resolve(&self.files, &self.packs, &ambient)
             .validate(&self.allowed_origins))
-    }
-
-    fn needed(&self, time: &dyn Time) -> Result<Needed, Error> {
-        let mut needed = Needed::default();
-        for source in self.validated()?.sources(&self.context(time)) {
-            match source {
-                Source::Remote(url) => needed.remote.push(url),
-                Source::Host(source) => needed.host.push(source),
-            }
-        }
-        Ok(needed)
     }
 
     fn context<'t>(&self, time: &'t dyn Time) -> Context<'t> {
