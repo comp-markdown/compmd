@@ -1,5 +1,8 @@
-//! CSV as RFC 4180 reads it (spec §8.6): fields separated by a delimiter, `"` quoting a field, `""` writing a
-//! quote, quoted fields holding delimiters and line breaks, lines ending in LF or CRLF, a byte order mark ignored.
+//! CSV as RFC 4180 reads it (spec §8.6), with the `csv` crate: fields separated by a delimiter, `"` quoting a field,
+//! `""` writing a quote, quoted fields holding delimiters and line breaks, lines ending in LF or CRLF, a byte order
+//! mark ignored. Rows may have any number of fields; the header decides how many they need.
+
+use csv::ReaderBuilder;
 
 /// A record: its fields, and the line it starts on.
 #[derive(Debug, PartialEq, Eq)]
@@ -9,53 +12,46 @@ pub(super) struct Row {
 }
 
 /// The records of `text`; blank lines are skipped.
-pub(super) fn rows(text: &str, delimiter: char) -> Vec<Row> {
-    let text = text.strip_prefix('\u{feff}').unwrap_or(text);
-    let mut rows = Vec::new();
-    let mut row = Row {
-        cells: Vec::new(),
-        line: 1,
-    };
-    let mut field = String::new();
-    let mut quoted = false;
-    let mut line = 1;
-    let mut chars = text.chars().peekable();
-    while let Some(c) = chars.next() {
-        match c {
-            '"' if quoted && chars.peek() == Some(&'"') => {
-                field.push('"');
-                chars.next();
-            }
-            '"' => quoted = !quoted,
-            '\r' if !quoted && chars.peek() == Some(&'\n') => {}
-            '\n' if !quoted => {
-                line += 1;
-                row.cells.push(std::mem::take(&mut field));
-                let next = Row {
-                    cells: Vec::new(),
-                    line,
-                };
-                push(&mut rows, std::mem::replace(&mut row, next));
-            }
-            c if c == delimiter && !quoted => row.cells.push(std::mem::take(&mut field)),
-            c => {
-                if c == '\n' {
-                    line += 1;
-                }
-                field.push(c);
-            }
-        }
-    }
-    row.cells.push(field);
-    push(&mut rows, row);
-    rows
+///
+/// # Errors
+///
+/// A delimiter that isn't one ASCII character.
+pub(super) fn rows(text: &str, delimiter: char) -> Result<Vec<Row>, String> {
+    let byte = u8::try_from(delimiter)
+        .ok()
+        .filter(u8::is_ascii)
+        .ok_or_else(|| format!("the delimiter `{delimiter}` isn't one ASCII character"))?;
+    let mut reader = ReaderBuilder::new()
+        .has_headers(false)
+        .flexible(true)
+        .delimiter(byte)
+        .from_reader(text.as_bytes());
+    // Reading text in memory fails only on invalid UTF-8, which a `&str` can't hold.
+    Ok(reader
+        .records()
+        .filter_map(Result::ok)
+        .filter(|record| record.iter().any(|cell| !cell.is_empty()))
+        .map(|record| Row {
+            line: record
+                .position()
+                .and_then(|position| usize::try_from(position.byte()).ok())
+                .map_or(1, |byte| line_at(text, byte)),
+            cells: record.iter().map(str::to_string).collect(),
+        })
+        .collect())
 }
 
-/// Adds `row` unless it is a blank line.
-fn push(rows: &mut Vec<Row>, row: Row) {
-    if row.cells.iter().any(|cell| !cell.is_empty()) {
-        rows.push(row);
-    }
+/// The line of a record the crate places at `byte`, from 1: the crate places a record where the line ending before
+/// it starts, so its first byte after line endings counts.
+fn line_at(text: &str, byte: usize) -> usize {
+    let bytes = text.as_bytes();
+    let start = bytes[byte.min(bytes.len())..]
+        .iter()
+        .position(|b| !matches!(b, b'\r' | b'\n'))
+        .map_or(bytes.len(), |skipped| byte + skipped);
+    1 + text
+        .get(..start)
+        .map_or(0, |before| before.matches('\n').count())
 }
 
 #[cfg(test)]
@@ -73,7 +69,8 @@ mod tests {
         let rows = rows(
             "\u{feff}name,note\r\nAna,\"says \"\"hi\"\", twice\"\n\nKenji,\"two\nlines\"\nLi,last",
             ',',
-        );
+        )
+        .expect("CSV");
         assert_eq!(
             cells(&rows),
             [
@@ -89,11 +86,13 @@ mod tests {
 
     #[test]
     fn the_delimiter_is_chosen() {
-        assert_eq!(
-            cells(&rows("a;b\n1,5;2\n", ';')),
-            [vec!["a", "b"], vec!["1,5", "2"]]
-        );
-        assert_eq!(cells(&rows("a\tb\n", '\t')), [vec!["a", "b"]]);
-        assert_eq!(rows("\n\n", ','), []);
+        let cells_of = |text, delimiter| -> Vec<String> {
+            let rows = rows(text, delimiter).expect("CSV");
+            rows.into_iter().flat_map(|row| row.cells).collect()
+        };
+        assert_eq!(cells_of("a;b\n1,5;2\n", ';'), ["a", "b", "1,5", "2"]);
+        assert_eq!(cells_of("a\tb\n", '\t'), ["a", "b"]);
+        assert_eq!(rows("\n,\n", ','), Ok(Vec::new()));
+        assert!(rows("a", '→').is_err());
     }
 }

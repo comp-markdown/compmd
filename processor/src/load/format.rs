@@ -107,7 +107,7 @@ impl Format {
                     ..Parsed::default()
                 })
             }
-            Self::Delimited(delimiter) => table(name, rows(text, delimiter)),
+            Self::Delimited(delimiter) => table(name, rows(text, delimiter).map_err(Failure::new)?),
             Self::Compmd => {
                 let parsed = parse(text, &ParseOptions::default());
                 Ok(Parsed::value(Value::Object(Settings::of(&parsed.root).doc)))
