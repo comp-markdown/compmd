@@ -9,7 +9,7 @@ use std::fmt;
 pub(crate) enum Origin {
     /// A file of the document's root folder, by its `/`-separated path from it.
     File(String),
-    /// A file of a pack from the registry, or of an ambient pack, by its path in the package.
+    /// A file of a pack the host's `Packs` serve, imported or ambient, by its path in the package.
     Pack {
         /// The pack's name, `@scope/name`.
         name: String,
@@ -18,7 +18,7 @@ pub(crate) enum Origin {
         /// The file's path in the package.
         path: String,
     },
-    /// `@compmd/core`, built in.
+    /// `@compmd/core`, built into the processor: the one document that isn't a file.
     Core,
 }
 
@@ -41,7 +41,8 @@ impl Origin {
         }
     }
 
-    /// The file's path in its root folder or its pack; empty for `@compmd/core`.
+    /// The file's path in its root folder or its pack, ambient packs included; empty for `@compmd/core`, which isn't
+    /// a file.
     pub(crate) fn path(&self) -> &str {
         match self {
             Self::File(path) | Self::Pack { path, .. } => path,

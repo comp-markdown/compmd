@@ -8,14 +8,14 @@ use indexmap::IndexMap;
 use serde_json::{Map, Value as Json};
 use std::rc::Rc;
 
-/// The render time, the processor's time zone and the input values one render uses. The same context gives the
-/// same expanded tree.
+/// The render time, the processor's time zone, the host's time zone offsets and the input values one render uses.
+/// The same context gives the same expanded tree.
 pub struct Context<'a> {
     /// The render time, in nanoseconds since 1970-01-01T00:00:00Z: what `md.now()` and `md.today()` give.
     pub now: i128,
     /// The processor's time zone, `md.tz` for a document without a `tz` key: an IANA name, or `UTC`.
     pub tz: String,
-    /// The time zones the host knows.
+    /// The host's time zone offsets, for `md.tz` and the zones expressions name.
     pub time: &'a dyn Time,
     /// The values given for the document's inputs, by name: from a command line, a URL query, a host. A value that
     /// doesn't fit its input's type is ignored, and the default is used (spec §8.7).
