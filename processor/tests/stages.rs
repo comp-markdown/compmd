@@ -1,54 +1,34 @@
 //! Stages 2 and 3 beyond the conformance set: component files, packs and their files, re-exports, and the values
 //! params take, each with the diagnostics it gives, as `(code, line, column, file)`.
 
-use compmd::host::{self, Release};
+use compmd::host::{LoadedRelease, Release};
 use compmd::{Ambient, ParseOptions, Processor};
 use semver::Version;
 use std::collections::HashMap;
 
-/// A pack's release in memory.
-struct Held {
-    pack: String,
-    release: Release,
-    files: HashMap<String, String>,
+/// Packs held in memory, by name.
+type Packs = HashMap<String, Vec<LoadedRelease>>;
+
+/// Adds a release to packs.
+trait With {
+    fn with(self, pack: &str, version: &str, files: &[(&str, &str)]) -> Self;
 }
 
-/// Packs held in memory.
-#[derive(Default)]
-struct Packs(Vec<Held>);
-
-impl Packs {
+impl With for Packs {
     fn with(mut self, pack: &str, version: &str, files: &[(&str, &str)]) -> Self {
-        self.0.push(Held {
-            pack: pack.to_string(),
-            release: Release {
-                version: Version::parse(version).expect("a version"),
-                integrity: None,
-            },
-            files: files
-                .iter()
-                .map(|(path, text)| ((*path).to_string(), (*text).to_string()))
-                .collect(),
-        });
+        self.entry(pack.to_string())
+            .or_default()
+            .push(LoadedRelease {
+                release: Release {
+                    version: Version::parse(version).expect("a version"),
+                    integrity: None,
+                },
+                files: files
+                    .iter()
+                    .map(|(path, text)| ((*path).to_string(), (*text).to_string()))
+                    .collect(),
+            });
         self
-    }
-}
-
-impl host::Packs for Packs {
-    fn releases(&self, pack: &str) -> Vec<Release> {
-        self.0
-            .iter()
-            .filter(|held| held.pack == pack)
-            .map(|held| held.release.clone())
-            .collect()
-    }
-
-    fn pack_file(&self, pack: &str, version: &Version, path: &str) -> Option<String> {
-        let held = self
-            .0
-            .iter()
-            .find(|held| held.pack == pack && held.release.version == *version)?;
-        held.files.get(path).cloned()
     }
 }
 

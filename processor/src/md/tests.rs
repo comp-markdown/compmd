@@ -3,16 +3,7 @@
 
 use super::{Md, Signatures};
 use crate::cel::{Program, Scope, Type, Value, Values};
-use crate::host::Time;
 use serde_json::{Value as Json, json};
-
-struct Utc;
-
-impl Time for Utc {
-    fn offset(&self, zone: &str, _at: i64) -> Option<i32> {
-        (zone == "UTC").then_some(0)
-    }
-}
 
 /// 2026-10-27T09:00:00Z.
 const NOW: i128 = 1_793_091_600 * 1_000_000_000;
@@ -26,7 +17,7 @@ fn run_at(now: i128, lang: &str, source: &str, x: &Json) -> Result<Json, String>
         .map_err(|e| format!("refused: {}", e.message()))?;
     let values = Values::default().with("x", Value::from_json(x));
     program
-        .evaluate(&values, &Md::new(now, lang, "UTC", &Utc))
+        .evaluate(&values, &Md::new(now, lang, "UTC", &()))
         .map(|value| value.typed_json())
         .map_err(|e| e.message().to_string())
 }
@@ -252,7 +243,7 @@ fn list_functions_that_cel_checks_only_when_evaluated() {
         .with("x", Value::from_json(&json!([])))
         .with("f", Value::from_json(&json!(1)));
     let error = program
-        .evaluate(&values, &Md::new(NOW, "en", "UTC", &Utc))
+        .evaluate(&values, &Md::new(NOW, "en", "UTC", &()))
         .expect_err("a field name");
     assert_eq!(
         error,

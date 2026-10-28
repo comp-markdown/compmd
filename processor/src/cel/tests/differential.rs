@@ -3,17 +3,8 @@
 //! value, or both an error.
 
 use crate::cel::{Program, Scope, Values};
-use crate::host::Time;
 use crate::md::{Md, Signatures};
 use serde_json::Value as Json;
-
-struct Utc;
-
-impl Time for Utc {
-    fn offset(&self, _zone: &str, _at: i64) -> Option<i32> {
-        Some(0)
-    }
-}
 
 /// What the `cel` crate gives: a value, or `None` for any error.
 fn oracle(source: &str) -> Option<Json> {
@@ -29,7 +20,7 @@ fn oracle(source: &str) -> Option<Json> {
 fn profile(source: &str) -> Option<Json> {
     let program = Program::parse(source).ok()?;
     program.check(&Scope::default(), &Signatures).ok()?;
-    let md = Md::new(0, "en", "UTC", &Utc);
+    let md = Md::new(0, "en", "UTC", &());
     program
         .evaluate(&Values::default(), &md)
         .ok()

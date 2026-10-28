@@ -3,54 +3,17 @@
 
 use compmd::context::Context;
 use compmd::expand;
-use compmd::host::{Data, Fetch, Fetched, Needed, Packs, Release};
+use compmd::host::{Fetched, LoadedRelease, Needed, Release};
 use compmd::{Ambient, ParseOptions, Processor};
 use semver::Version;
 use serde_json::{Value, json};
 use std::collections::HashMap;
 
-/// One pack, `@acme/kit` 1.0.0, in memory.
-struct Kit(HashMap<String, String>);
-
-impl Packs for Kit {
-    fn releases(&self, pack: &str) -> Vec<Release> {
-        if pack == "@acme/kit" {
-            vec![Release {
-                version: Version::new(1, 0, 0),
-                integrity: None,
-            }]
-        } else {
-            Vec::new()
-        }
-    }
-
-    fn pack_file(&self, pack: &str, _version: &Version, path: &str) -> Option<String> {
-        (pack == "@acme/kit").then(|| self.0.get(path).cloned())?
-    }
-}
-
-/// URLs and what they give.
-struct Web(HashMap<String, Fetched>);
-
-impl Fetch for Web {
-    fn fetch(&self, url: &str) -> Option<Fetched> {
-        self.0.get(url).cloned()
-    }
-}
-
-/// A host's sources, as a JSON object.
-struct Host(Value);
-
-impl Data for Host {
-    fn data(&self, source: &str) -> Option<Value> {
-        self.0.get(source).cloned()
-    }
-}
-
 /// What a render is given besides the document.
 #[derive(Default)]
 struct Setup {
     files: Vec<(&'static str, &'static str)>,
+    /// The files of one pack, `@acme/kit` 1.0.0.
     kit: Vec<(&'static str, &'static str)>,
     web: Vec<(&'static str, &'static str, Option<&'static str>)>,
     host: Value,
@@ -74,12 +37,19 @@ fn render(input: &str, setup: Setup) -> Rendered {
         .map(|(path, text)| ((*path).to_string(), (*text).to_string()))
         .collect();
     files.insert("input.comp.md".into(), input.to_string());
-    let kit = Kit(setup
-        .kit
-        .iter()
-        .map(|(path, text)| ((*path).to_string(), (*text).to_string()))
-        .collect());
-    let web = Web(setup
+    let kit = LoadedRelease {
+        release: Release {
+            version: Version::new(1, 0, 0),
+            integrity: None,
+        },
+        files: setup
+            .kit
+            .iter()
+            .map(|(path, text)| ((*path).to_string(), (*text).to_string()))
+            .collect(),
+    };
+    let packs = HashMap::from([("@acme/kit".to_string(), vec![kit])]);
+    let web: HashMap<String, Fetched> = setup
         .web
         .iter()
         .map(|(url, text, content_type)| {
@@ -89,8 +59,11 @@ fn render(input: &str, setup: Setup) -> Rendered {
             };
             ((*url).to_string(), fetched)
         })
-        .collect());
-    let host = Host(setup.host);
+        .collect();
+    let host: HashMap<String, Value> = match setup.host {
+        Value::Object(sources) => sources.into_iter().collect(),
+        _ => HashMap::new(),
+    };
     let allowed: Vec<String> = setup
         .allowed
         .iter()
@@ -104,7 +77,7 @@ fn render(input: &str, setup: Setup) -> Rendered {
     };
     let validated = Processor::new("input.comp.md", input)
         .parse(&ParseOptions::default())
-        .resolve(&files, &kit, &Ambient::default())
+        .resolve(&files, &packs, &Ambient::default())
         .validate(&allowed);
     let needed = validated.sources(&context);
     let expanded = validated.load(&context, &web, &host).expand(&setup.options);
@@ -584,7 +557,7 @@ fn a_reload_takes_newly_fetched_data() {
         ["F026", "F024"],
         "no `host:tasks` yet, so `.n` of null"
     );
-    let fetched = Host(json!({ "tasks": { "n": "fresh" } }));
+    let fetched = HashMap::from([("tasks".to_string(), json!({ "n": "fresh" }))]);
     let second = first.reload(&context, &(), &fetched);
     assert_eq!(second.diagnostics(), []);
     let tree = serde_json::to_value(second.expanded()).expect("the tree serializes");

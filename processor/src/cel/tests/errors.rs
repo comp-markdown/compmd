@@ -3,18 +3,9 @@
 
 use crate::cel::parser::MAX_DEPTH;
 use crate::cel::{BUDGET, Error, Program, Scope, Type, Value, Values};
-use crate::host::Time;
 use crate::md::{Md, Signatures};
 use crate::tree::DeclaredType;
 use serde_json::{Value as Json, json};
-
-struct Utc;
-
-impl Time for Utc {
-    fn offset(&self, zone: &str, _at: i64) -> Option<i32> {
-        (zone == "UTC").then_some(0)
-    }
-}
 
 /// 2026-10-27T09:00:00Z.
 const NOW: i128 = 1_793_091_600 * 1_000_000_000;
@@ -58,7 +49,7 @@ fn evaluate(source: &str, x: Json, y: Json) -> Result<Json, (usize, String)> {
             values.with(name, Value::from_json(&json))
         });
     program
-        .evaluate(&values, &Md::new(NOW, "en", "UTC", &Utc))
+        .evaluate(&values, &Md::new(NOW, "en", "UTC", &()))
         .map(|value| value.typed_json())
         .map_err(|e| (e.at() + 1, e.message().to_string()))
 }
@@ -633,7 +624,7 @@ fn errors_say_which_kind_they_are() {
         parse("'a' + 1").check(&scope(), &Signatures),
         Err(Error::Type { at: 0, .. })
     ));
-    let md = Md::new(NOW, "en", "UTC", &Utc);
+    let md = Md::new(NOW, "en", "UTC", &());
     assert!(matches!(
         parse("1 / 0").evaluate(&Values::default(), &md),
         Err(Error::Evaluation { at: 2, .. })
