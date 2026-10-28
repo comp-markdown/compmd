@@ -4,7 +4,7 @@
 mod lists;
 mod locale;
 
-use crate::cel::overload::{self, Overload, Param, Returns};
+use crate::cel::overload::{self, Library, Overload, Param, Returns};
 use crate::cel::time::{self, DAY, NANOS};
 use crate::cel::{FunctionTypes, Functions, Type, Value};
 use crate::named::{choices, named};
@@ -49,8 +49,18 @@ named! {
     }
 }
 
-impl MdFunction {
-    /// Its overloads.
+impl Library for MdFunction {
+    type Call = Call;
+    const PREFIX: &'static str = "md.";
+
+    fn from_name(name: &str) -> Option<Self> {
+        Self::from_name(name)
+    }
+
+    fn names() -> &'static [&'static str] {
+        Self::NAMES
+    }
+
     #[allow(
         clippy::too_many_lines,
         reason = "one table of every function's overloads"
@@ -176,8 +186,8 @@ impl FunctionTypes for Signatures {
         MdFunction::NAMES
     }
 
-    fn result_type(&self, name: &str, args: &[Type]) -> Option<Type> {
-        overload::result_type(MdFunction::from_name(name)?.overloads(), None, args)
+    fn result_type(&self, name: &str, args: &[Type]) -> Result<Type, String> {
+        overload::type_of::<MdFunction>(name, None, args)
     }
 }
 
@@ -196,20 +206,21 @@ impl FunctionTypes for Md<'_> {
         Signatures.names()
     }
 
-    fn result_type(&self, name: &str, args: &[Type]) -> Option<Type> {
+    fn result_type(&self, name: &str, args: &[Type]) -> Result<Type, String> {
         Signatures.result_type(name, args)
     }
 }
 
 impl Functions for Md<'_> {
     fn call(&self, name: &str, args: &[Value]) -> Result<Value, String> {
-        let function =
-            MdFunction::from_name(name).ok_or_else(|| format!("unknown function 'md.{name}'"))?;
-        let Some(overload) = overload::select(function.overloads(), None, args) else {
-            let kinds: Vec<&str> = args.iter().map(Value::kind).collect();
-            return Err(format!("md.{name}() doesn't take ({})", kinds.join(", ")));
-        };
-        (overload.call)(self, args)
+        (overload::select::<MdFunction>(name, None, args)?.call)(self, args)
+    }
+
+    fn offset(&self, zone: Option<&str>, at: i64) -> Result<i32, String> {
+        let zone = zone.unwrap_or(&self.tz);
+        time::parse_offset(zone)
+            .or_else(|| self.zones.offset(zone, at))
+            .ok_or_else(|| format!("the time zone '{zone}' is unknown"))
     }
 }
 
@@ -230,10 +241,7 @@ impl<'a> Md<'a> {
     fn local_date(&self, nanos: i128) -> Result<Date<Iso>, String> {
         let seconds =
             i64::try_from(nanos.div_euclid(NANOS)).map_err(|_| "the timestamp is out of range")?;
-        let offset = self
-            .zones
-            .offset(&self.tz, seconds)
-            .ok_or_else(|| format!("the time zone '{}' is unknown", self.tz))?;
+        let offset = self.offset(None, seconds)?;
         Ok(time::date((seconds + i64::from(offset)).div_euclid(DAY)))
     }
 

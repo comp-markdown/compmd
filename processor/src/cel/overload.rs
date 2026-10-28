@@ -3,6 +3,7 @@
 
 use super::types::Type;
 use super::value::Value;
+use crate::nearest::nearest;
 
 /// What an argument, or a method's receiver, must be.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -150,30 +151,109 @@ impl<Call> Overload<Call> {
     }
 }
 
-/// The type of a call with arguments of these types, from its first overload that takes them.
-pub(crate) fn result_type<Call>(
-    overloads: &[Overload<Call>],
+/// A family of named, overloaded functions: the profile's functions from CEL, or the `md.` functions.
+pub(crate) trait Library: Copy + 'static {
+    /// The type of its implementations.
+    type Call: 'static;
+
+    /// What its names are written with in messages: `""`, or `"md."`.
+    const PREFIX: &'static str;
+
+    /// The function written `name`.
+    fn from_name(name: &str) -> Option<Self>;
+
+    /// Every function's name.
+    fn names() -> &'static [&'static str];
+
+    /// Its overloads.
+    fn overloads(self) -> &'static [Overload<Self::Call>];
+
+    /// Whether its `int` arguments are positions or counts, which a `double` from data is often given for.
+    fn counts(self) -> bool {
+        false
+    }
+}
+
+/// The way out when a `double` is given where an `int` is needed: numbers from data are `double`s (spec §8.2).
+pub(crate) const INT_HINT: &str = "; wrap the number in int(…) to drop its fraction";
+
+/// The type a call of `L`'s function `name` gives, from its first overload that takes arguments of these types.
+///
+/// # Errors
+///
+/// An unknown function, with the nearest known one, or arguments no overload takes.
+pub(crate) fn type_of<L: Library>(
+    name: &str,
     receiver: Option<&Type>,
     args: &[Type],
-) -> Option<Type> {
-    overloads
+) -> Result<Type, String> {
+    let function = resolve::<L>(name)?;
+    let overload = function
+        .overloads()
         .iter()
-        .find(|overload| fits(overload, receiver, args, Param::takes_type))
-        .map(|overload| {
-            let all: Vec<Type> = receiver.into_iter().chain(args).cloned().collect();
-            overload.returns.type_for(&all)
+        .find(|overload| fits(overload, receiver, args, Param::takes_type));
+    let Some(overload) = overload else {
+        let hint = if function.counts() && args.contains(&Type::Double) {
+            INT_HINT
+        } else {
+            ""
+        };
+        let receiver = receiver.map(ToString::to_string);
+        let args: Vec<String> = args.iter().map(ToString::to_string).collect();
+        return Err(no_overload::<L>(name, receiver, &args, hint));
+    };
+    let all: Vec<Type> = receiver.into_iter().chain(args).cloned().collect();
+    Ok(overload.returns.type_for(&all))
+}
+
+/// The overload of `L`'s function `name` that takes these values.
+///
+/// # Errors
+///
+/// An unknown function, or values no overload takes.
+pub(crate) fn select<L: Library>(
+    name: &str,
+    receiver: Option<&Value>,
+    args: &[Value],
+) -> Result<&'static Overload<L::Call>, String> {
+    let function = resolve::<L>(name)?;
+    function
+        .overloads()
+        .iter()
+        .find(|overload| fits(overload, receiver, args, Param::takes_value))
+        .ok_or_else(|| {
+            let receiver = receiver.map(|r| r.kind().to_string());
+            let args: Vec<String> = args.iter().map(|a| a.kind().to_string()).collect();
+            no_overload::<L>(name, receiver, &args, "")
         })
 }
 
-/// The overload that takes these values.
-pub(crate) fn select<'o, Call>(
-    overloads: &'o [Overload<Call>],
-    receiver: Option<&Value>,
-    args: &[Value],
-) -> Option<&'o Overload<Call>> {
-    overloads
-        .iter()
-        .find(|overload| fits(overload, receiver, args, Param::takes_value))
+fn resolve<L: Library>(name: &str) -> Result<L, String> {
+    L::from_name(name).ok_or_else(|| {
+        let written = format!("{}{name}", L::PREFIX);
+        let known: Vec<String> = L::names()
+            .iter()
+            .map(|n| format!("{}{n}", L::PREFIX))
+            .collect();
+        match nearest(&written, known.iter().map(String::as_str)) {
+            Some(near) => format!("unknown function '{written}'; did you mean '{near}'?"),
+            None => format!("unknown function '{written}'"),
+        }
+    })
+}
+
+fn no_overload<L: Library>(
+    name: &str,
+    receiver: Option<String>,
+    args: &[String],
+    hint: &str,
+) -> String {
+    let receiver = receiver.map(|r| format!("{r}.")).unwrap_or_default();
+    format!(
+        "{receiver}{}{name}() doesn't take ({}){hint}",
+        L::PREFIX,
+        args.join(", ")
+    )
 }
 
 /// The string argument at `i`. Overloads are selected by their arguments' values, so a call finds the type it
@@ -225,39 +305,70 @@ fn fits<Call, T>(
 mod tests {
     use super::*;
 
-    const OVERLOADS: [Overload<u8>; 2] = [
-        Overload::global(&[Param::Int], Returns::Int, 1),
-        Overload::method(Param::String, &[Param::Strings], Returns::Same(1), 2),
-    ];
+    /// A library of one function, `f`: `f(int)` and `string.f(list(string))`.
+    #[derive(Clone, Copy)]
+    struct Test;
+
+    impl Library for Test {
+        type Call = u8;
+        const PREFIX: &'static str = "t.";
+
+        fn from_name(name: &str) -> Option<Self> {
+            (name == "f").then_some(Self)
+        }
+
+        fn names() -> &'static [&'static str] {
+            &["f"]
+        }
+
+        fn overloads(self) -> &'static [Overload<u8>] {
+            const {
+                &[
+                    Overload::global(&[Param::Int], Returns::Int, 1),
+                    Overload::method(Param::String, &[Param::Strings], Returns::Same(1), 2),
+                ]
+            }
+        }
+    }
 
     #[test]
     fn the_first_overload_that_takes_the_arguments_decides() {
-        assert_eq!(result_type(&OVERLOADS, None, &[Type::Int]), Some(Type::Int));
-        assert_eq!(result_type(&OVERLOADS, None, &[Type::Double]), None);
+        let type_of = |receiver: Option<&Type>, args: &[Type]| type_of::<Test>("f", receiver, args);
+        assert_eq!(type_of(None, &[Type::Int]), Ok(Type::Int));
         assert_eq!(
-            result_type(&OVERLOADS, Some(&Type::Int), &[Type::Int]),
-            None
+            type_of(None, &[Type::Double]),
+            Err("t.f() doesn't take (double)".into())
+        );
+        assert_eq!(
+            type_of(Some(&Type::Int), &[Type::Int]),
+            Err("int.t.f() doesn't take (int)".into())
         );
         let strings = Type::list(Type::String);
         assert_eq!(
-            result_type(
-                &OVERLOADS,
-                Some(&Type::String),
-                std::slice::from_ref(&strings)
-            ),
-            Some(strings)
+            type_of(Some(&Type::String), std::slice::from_ref(&strings)),
+            Ok(strings)
+        );
+        assert_eq!(type_of(Some(&Type::Dyn), &[Type::Dyn]), Ok(Type::Dyn));
+        assert_eq!(
+            select::<Test>("f", None, &[Value::Int(1)]).map(|o| o.call),
+            Ok(1)
         );
         assert_eq!(
-            result_type(&OVERLOADS, Some(&Type::Dyn), &[Type::Dyn]),
-            Some(Type::Dyn)
+            select::<Test>("f", None, &[Value::Int(1), Value::Int(2)]).map(|o| o.call),
+            Err("t.f() doesn't take (int, int)".into())
+        );
+        assert!(!Test.counts());
+    }
+
+    #[test]
+    fn unknown_functions_come_with_the_nearest() {
+        assert_eq!(
+            type_of::<Test>("g", None, &[]),
+            Err("unknown function 't.g'; did you mean 't.f'?".into())
         );
         assert_eq!(
-            select(&OVERLOADS, None, &[Value::Int(1)]).map(|o| o.call),
-            Some(1)
-        );
-        assert_eq!(
-            select(&OVERLOADS, None, &[Value::Int(1), Value::Int(2)]).map(|o| o.call),
-            None
+            select::<Test>("nothing", None, &[]).map(|o| o.call),
+            Err("unknown function 't.nothing'".into())
         );
     }
 

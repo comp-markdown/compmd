@@ -33,6 +33,7 @@ mod ast;
 mod check;
 mod eval;
 mod functions;
+mod getters;
 mod lexer;
 mod ops;
 pub(crate) mod overload;
@@ -141,11 +142,15 @@ pub trait FunctionTypes {
     /// The function names, without `md.`: `["today", "sum", …]`.
     fn names(&self) -> &[&'static str];
 
-    /// The type `md.<name>` gives for arguments of these types, or `None` when it doesn't take them.
-    fn result_type(&self, name: &str, args: &[Type]) -> Option<Type>;
+    /// The type `md.<name>` gives for arguments of these types.
+    ///
+    /// # Errors
+    ///
+    /// An unknown function, or arguments it doesn't take, reported at the call.
+    fn result_type(&self, name: &str, args: &[Type]) -> Result<Type, String>;
 }
 
-/// The `md.` functions, for the evaluator.
+/// The render an expression is evaluated for: the `md.` functions, and time zone offsets for the timestamp getters.
 pub trait Functions: FunctionTypes {
     /// Calls `md.<name>`.
     ///
@@ -153,6 +158,14 @@ pub trait Functions: FunctionTypes {
     ///
     /// What went wrong, reported at the call.
     fn call(&self, name: &str, args: &[Value]) -> Result<Value, String>;
+
+    /// The offset from UTC, in seconds east, of `zone` at `at` (seconds since 1970-01-01T00:00:00Z). `zone` is an
+    /// IANA name or an offset such as `"+02:00"`; `None` is `md.tz`.
+    ///
+    /// # Errors
+    ///
+    /// An unknown zone.
+    fn offset(&self, zone: Option<&str>, at: i64) -> Result<i32, String>;
 }
 
 /// The variables an expression sees, by their types: `md`, a definition's params, `each` names. Types share their

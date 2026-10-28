@@ -696,7 +696,7 @@ A param value written in parentheses, `name=(expr)`, is an expression in the **C
 
 **Profile.** The profile is exactly:
 
-- **From CEL's standard definitions:** the operators, the conditional `?:`, the macros `has`, `all`, `exists`, `exists_one`, `filter` and `map`, and the functions `size`, `in`, `contains`, `startsWith`, `endsWith`, `int`, `double`, `string`, `timestamp` and `duration` with their `timestamp` and `duration` operations.
+- **From CEL's standard definitions:** the operators, the conditional `?:`, the macros `has`, `all`, `exists`, `exists_one`, `filter` and `map`, and the functions `size`, `in`, `contains`, `startsWith`, `endsWith`, `int`, `double`, `string`, `timestamp` and `duration` with their `timestamp` and `duration` operations: arithmetic, comparison and the getters. A timestamp's getters (`getFullYear`, `getMonth`, `getDate`, `getDayOfMonth`, `getDayOfWeek`, `getDayOfYear`, `getHours`, `getMinutes`, `getSeconds`, `getMilliseconds`) read it in the time zone given, an IANA name or an offset such as `"+02:00"`, and without one, unlike CEL's UTC, in `md.tz`: `md.now().getHours()` is the hour of the render where the document is read. A duration's (`getHours`, `getMinutes`, `getSeconds`, `getMilliseconds`) count its whole units.
 - **From CEL's strings extension:** `charAt`, `indexOf`, `lastIndexOf`, `lowerAscii`, `upperAscii`, `replace`, `split`, `substring`, `trim` and `join`.
 - **The CompMD functions** in the tables below.
 

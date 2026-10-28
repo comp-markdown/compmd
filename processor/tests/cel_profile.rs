@@ -203,10 +203,7 @@ fn what_the_profile_leaves_out_is_refused() {
         ("\"%s\".format([\"a\"])", Refused(6)),
         ("math.greatest(1, 2)", Refused(1)),
         ("uint(1)", Refused(1)),
-        (
-            "timestamp(\"2026-10-21T10:00:00Z\").getHours()",
-            Refused(35),
-        ),
+        ("'a'.quote()", Refused(5)),
         ("b\"abc\"", Refused(1)),
     ]);
 }
@@ -367,6 +364,50 @@ fn md_functions() {
         ("md.todya()", Refused(4)),
         ("md.sum(md.doc.tags)", Refused(4)),
         ("md.daysBetween(md.today(), 'soon')", Failed(4)),
+    ]);
+}
+
+#[test]
+fn timestamp_getters_read_md_tz_or_the_zone_given() {
+    let t = "timestamp('2026-10-21T22:30:15.250Z')";
+    let get = |getter: &str, tz: &str| run_in(&format!("{t}.{getter}"), "en", tz);
+    // 2026-10-21 is a Wednesday, the 294th day of the year.
+    let in_utc = [
+        ("getFullYear()", 2026),
+        ("getMonth()", 9),
+        ("getDate()", 21),
+        ("getDayOfMonth()", 20),
+        ("getDayOfWeek()", 3),
+        ("getDayOfYear()", 293),
+        ("getHours()", 22),
+        ("getMinutes()", 30),
+        ("getSeconds()", 15),
+        ("getMilliseconds()", 250),
+    ];
+    for (getter, expected) in in_utc {
+        assert_eq!(get(getter, "UTC"), V(json!(expected)), "{getter}");
+    }
+    // Two hours east, it is already Thursday the 22nd.
+    assert_eq!(get("getDate()", "Europe/Berlin"), V(json!(22)));
+    assert_eq!(get("getDayOfWeek()", "Europe/Berlin"), V(json!(4)));
+    assert_eq!(get("getHours()", "Europe/Berlin"), V(json!(0)));
+    assert_eq!(get("getHours('+05:30')", "UTC"), V(json!(4)));
+    assert_eq!(get("getMinutes('-01:15')", "UTC"), V(json!(15)));
+    assert_eq!(get("getHours('UTC')", "Europe/Berlin"), V(json!(22)));
+    assert_eq!(get("getHours('Mars/Olympus')", "UTC"), Failed(39));
+    assert_eq!(get("getHours()", "Mars/Olympus"), Failed(39));
+    assert_eq!(get("getHours(1)", "UTC"), Refused(39));
+}
+
+#[test]
+fn duration_getters_count_whole_units() {
+    check(&[
+        ("duration('90m').getHours()", V(json!(1))),
+        ("duration('90m').getMinutes()", V(json!(90))),
+        ("duration('1.5s').getSeconds()", V(json!(1))),
+        ("duration('1.5s').getMilliseconds()", V(json!(1500))),
+        ("duration('-90m').getHours()", V(json!(-1))),
+        ("duration('1h').getDate()", Refused(16)),
     ]);
 }
 

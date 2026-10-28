@@ -4,13 +4,10 @@
 use super::ast::{Expr, Literal, Macro};
 use super::functions::{Function, LEFT_OUT};
 use super::ops::BinaryOp;
-use super::overload;
+use super::overload::{self, INT_HINT};
 use super::types::Type;
 use super::{Error, FunctionTypes, Scope};
 use crate::nearest::nearest;
-
-/// The way out when a `double` is given where an `int` is needed: numbers from data are `double`s (spec §8.2).
-const INT_HINT: &str = "; wrap the number in int(…) to drop its fraction";
 
 /// Checks `expr` against the types of the variables in `scope`, and gives its type.
 pub(crate) fn check(
@@ -322,63 +319,19 @@ impl<'a> Checker<'a> {
                 format!("{name}() isn't in the CompMD CEL profile"),
             ));
         }
-        let Some(function) = Function::from_name(name) else {
-            return Err(unknown(
-                at,
-                "function",
-                name,
-                Function::NAMES.iter().copied(),
-            ));
-        };
-        overload::result_type(function.overloads(), receiver.as_ref(), &arg_types).ok_or_else(
-            || {
-                let hint = if function.counts() {
-                    int_hint(&arg_types)
-                } else {
-                    ""
-                };
-                let receiver = receiver.map(|t| format!("{t}.")).unwrap_or_default();
-                Error::type_error(
-                    at,
-                    format!(
-                        "{receiver}{name}() doesn't take ({}){hint}",
-                        listed(&arg_types)
-                    ),
-                )
-            },
-        )
+        overload::type_of::<Function>(name, receiver.as_ref(), &arg_types)
+            .map_err(|message| Error::type_error(at, message))
     }
 
     fn md_call(&mut self, name: &str, args: &'a [Expr], at: usize) -> Result<Type, Error> {
-        let names = self.functions.names();
-        if !names.contains(&name) {
-            let known: Vec<String> = names.iter().map(|n| format!("md.{n}")).collect();
-            return Err(unknown(
-                at,
-                "function",
-                &format!("md.{name}"),
-                known.iter().map(String::as_str),
-            ));
-        }
         let arg_types = args
             .iter()
             .map(|a| self.check(a))
             .collect::<Result<Vec<_>, _>>()?;
-        self.functions.result_type(name, &arg_types).ok_or_else(|| {
-            Error::type_error(
-                at,
-                format!("md.{name}() doesn't take ({})", listed(&arg_types)),
-            )
-        })
+        self.functions
+            .result_type(name, &arg_types)
+            .map_err(|message| Error::type_error(at, message))
     }
-}
-
-fn listed(types: &[Type]) -> String {
-    types
-        .iter()
-        .map(ToString::to_string)
-        .collect::<Vec<_>>()
-        .join(", ")
 }
 
 fn int_hint(given: &[Type]) -> &'static str {

@@ -282,7 +282,7 @@ impl<'a> Evaluator<'a> {
         let result = if md {
             self.functions.call(name, &args)
         } else {
-            call(name, receiver.as_ref(), &args)
+            call(self.functions, name, receiver.as_ref(), &args)
         };
         let value = result.map_err(|message| Error::evaluation(at, message))?;
         self.built(at, value)
@@ -290,20 +290,15 @@ impl<'a> Evaluator<'a> {
 }
 
 /// Calls one of the profile's functions from CEL, by the overload its arguments' values select.
-fn call(name: &str, receiver: Option<&Value>, args: &[Value]) -> Result<Value, String> {
-    let function = Function::from_name(name).ok_or_else(|| format!("unknown function '{name}'"))?;
-    let Some(overload) = overload::select(function.overloads(), receiver, args) else {
-        let kinds: Vec<&str> = args.iter().map(Value::kind).collect();
-        let receiver = receiver
-            .map(|r| format!("{}.", r.kind()))
-            .unwrap_or_default();
-        return Err(format!(
-            "{receiver}{name}() doesn't take ({})",
-            kinds.join(", ")
-        ));
-    };
+fn call(
+    render: &dyn Functions,
+    name: &str,
+    receiver: Option<&Value>,
+    args: &[Value],
+) -> Result<Value, String> {
+    let overload = overload::select::<Function>(name, receiver, args)?;
     let all: Vec<Value> = receiver.into_iter().chain(args).cloned().collect();
-    (overload.call)(&all)
+    (overload.call)(render, &all)
 }
 
 fn index(operand: &Value, index: &Value, at: usize) -> Result<Value, Error> {

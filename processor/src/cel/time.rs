@@ -95,14 +95,18 @@ pub(crate) fn parse_timestamp(text: &str) -> Option<i128> {
         nanos = i128::from(digits(fraction.get(..count))?) * scale;
         rest = &fraction[count..];
     }
-    let offset = if rest == "Z" { 0 } else { offset(rest)? };
+    let offset = if rest == "Z" {
+        0
+    } else {
+        i64::from(parse_offset(rest)?)
+    };
     let seconds = i128::from(days * DAY + hour * 3600 + minute * 60 + second - offset);
     let total = seconds * NANOS + nanos;
     timestamp_in_range(total).then_some(total)
 }
 
-/// A `+hh:mm` or `-hh:mm` offset, in seconds.
-fn offset(text: &str) -> Option<i64> {
+/// A `+hh:mm` or `-hh:mm` offset, in seconds east of UTC.
+pub(crate) fn parse_offset(text: &str) -> Option<i32> {
     let sign = match text.as_bytes().first() {
         Some(b'+') => 1,
         Some(b'-') => -1,
@@ -111,7 +115,9 @@ fn offset(text: &str) -> Option<i64> {
     if text.len() != 6 || text.as_bytes()[3] != b':' {
         return None;
     }
-    Some(sign * (digits(text.get(1..3))? * 3600 + digits(text.get(4..6))? * 60))
+    let (hours, minutes) = (digits(text.get(1..3))?, digits(text.get(4..6))?);
+    (hours < 24 && minutes < 60)
+        .then(|| sign * i32::try_from(hours * 3600 + minutes * 60).unwrap_or_default())
 }
 
 /// RFC 3339 in UTC, with as many fractional digits as it needs.
@@ -306,6 +312,15 @@ mod tests {
             "400000000h",
         ] {
             assert_eq!(parse_duration(bad), None, "{bad}");
+        }
+    }
+
+    #[test]
+    fn offsets_are_hours_and_minutes() {
+        assert_eq!(parse_offset("+05:30"), Some(19_800));
+        assert_eq!(parse_offset("-01:15"), Some(-4_500));
+        for bad in ["+24:00", "+05:60", "05:30", "+5:30", "+05-30", "UTC"] {
+            assert_eq!(parse_offset(bad), None, "{bad}");
         }
     }
 
