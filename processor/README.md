@@ -2,7 +2,15 @@
 
 The CompMD processor, in Rust: it parses, validates and expands documents written in CompMD (Component Markdown), as the [specification](https://github.com/comp-markdown/compmd/blob/main/compmd-spec-v1.md) describes (version 1, draft).
 
-**Status: in development.** The processor will implement stages 1 to 4b of the spec (§11) and its CEL profile (§8.2), do no I/O of its own, give every expanded node its origin (§12.3), and pass the [conformance set](https://github.com/comp-markdown/compmd/tree/main/conformance). Stage 1, parsing, is done: `compmd::parse` gives the document tree (§12) and the parse diagnostics (§10.5), and passes every parse-only case of the conformance set.
+**Status: in development.** The processor will implement stages 1 to 4b of the spec (§11) and its CEL profile (§8.2), do no I/O of its own, give every expanded node its origin (§12.3), and pass the [conformance set](https://github.com/comp-markdown/compmd/tree/main/conformance). Stage 1, parsing, is done: `compmd::parse` gives the document tree (§12) and the parse diagnostics (§10.5), and passes every parse-only case of the conformance set. So is the CEL profile: `compmd::cel` parses an expression, type-checks it against the variables' declared types, and evaluates it within a work budget, with the `md.` functions in `compmd::md`. Formatting uses [ICU4X](https://github.com/unicode-org/icu4x) with all its compiled locale data, and time zone offsets come from the caller.
+
+```rust
+use compmd::cel::{Program, Scope, Type};
+use compmd::md::Signatures;
+
+let program = Program::parse("md.plural(count, 'item', 'items')")?;
+assert_eq!(program.check(&Scope::default().with("count", Type::Double), &Signatures)?, Type::String);
+```
 
 ```rust
 use compmd::{ParseOptions, parse};

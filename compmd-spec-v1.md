@@ -638,7 +638,7 @@ Everything CompMD provides, variables and functions, is under the `md.` namespac
 
   | Value       | Written as                                                         |
   | ----------- | ------------------------------------------------------------------ |
-  | number      | the shortest form that reads back as the same number: `12.5`, `3`, `0.1` |
+  | number      | as JavaScript's `String(n)` writes it: the shortest form that reads back as the same number, `12.5`, `3`, `0.1`; with an exponent below 10⁻⁶ and from 10²¹ up, `1.5e-7`, `1e+21`; and `NaN`, `Infinity`, `-Infinity` |
   | boolean     | `true`, `false`                                                    |
   | `null`      | nothing                                                            |
   | date        | as stored: `2026-10-21`                                            |
@@ -690,7 +690,7 @@ A param value written in parentheses, `name=(expr)`, is an expression in the **C
 | `object`                    | `map(string, dyn)`                                 |                                                      |
 | `length`, `space`, `color`, `tracks`, `surface`, `border`, `radius` | `string` | only `==`, `!=` and string concatenation are allowed; grammars in section 9.4 |
 
-**Numbers.** Every number from frontmatter, data, params and inputs is a CEL `double`. Integer literals, `size()`, `md.loop` fields, `md.daysBetween` and list indexes are `int`, as in CEL. The profile adds arithmetic and comparison between `int` and `double`, which gives a `double`: `p.price * 12` and `md.input.rate * 100 > 5` need no conversion. Everything else follows CEL: dividing two `int`s truncates (`size(rows) / 2` with 3 rows is `1`; write `double(size(rows)) / 2`), and a list index must be an `int` (`rows[int(md.input.page)]`).
+**Numbers.** Every number from frontmatter, data, params and inputs is a CEL `double`. Integer literals, `size()`, `md.loop` fields, `md.daysBetween` and list indexes are `int`, as in CEL. The profile adds arithmetic and comparison between `int` and `double`, which gives a `double`: `p.price * 12` and `md.input.rate * 100 > 5` need no conversion. Everything else follows CEL: dividing two `int`s truncates (`size(rows) / 2` with 3 rows is `1`; write `double(size(rows)) / 2`), and a list index must be an `int` (`rows[int(md.input.page)]`). `string()` writes a `double` as interpolation does (section 8.1): `string(1e21)` is `"1e+21"`. Map keys of different number types match by value, as in CEL: `{1: "a"}[1u]` and `{1: "a"}[1.0]` are `"a"`, so `md.groupBy` on a field of whole numbers from data gives `int` keys.
 
 **Dates and times.** A `date` is a string holding an ISO 8601 calendar date (`"2026-10-21"`), so dates from frontmatter, data and inputs need no conversion, and they compare correctly with `<`, `>=` and `==`. Times are CEL `timestamp`s and `duration`s, for the few documents that need a time of day. Data holding full timestamps (`"2026-10-21T10:00:00Z"`) compares with a date as strings, which works for ranges in one zone; for exact times, convert with `timestamp(s.at)`.
 

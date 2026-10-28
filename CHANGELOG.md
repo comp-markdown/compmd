@@ -6,6 +6,8 @@ Changes to the [CompMD specification](compmd-spec-v1.md), newest first. Every ch
 
 ### 2026-10-27
 
+- **Numbers as text (§8.1, §8.2).** Interpolation and `string()` write a number as JavaScript's `String(n)` does: plain from 10⁻⁶ up to 10²¹, with an exponent outside (`1e+21`, `1.5e-7`), and `NaN`, `Infinity` and `-Infinity`. Before, the form of very large and very small numbers wasn't said.
+- **Number map keys match by value (§8.2).** As in CEL, `{1: "a"}[1u]` and `{1: "a"}[1.0]` are `"a"`, so `md.groupBy` on a field of whole numbers from data gives `int` keys.
 - **Inline math follows Pandoc's rule in full (§2.3).** Outside a `{…}` group, a `$` with white space on its left ends the attempt, and the opening `$` is text, as in Pandoc. Before, a later valid closer could reach back past it, so `It costs $5 and $6. Math $x^2$` made `5 and $6. Math $x^2` math; now only `$x^2$` is. Breaking for documents that relied on the old reading. New case `base-syntax/math-dollar-after-space`, checked against Pandoc 3.12.1.
 - **Code spans in fallbacks (§3.1, §3.2 rule 9).** A code span binds tighter than a fallback's brackets, as in CommonMark's link text: `:a[b `c]` d]` has the fallback ``b `c]` d``, as plain renderers show it. Before, the `]` inside the code span ended the fallback. Breaking for such fallbacks. New case `inline/fallback-code-span`.
 - **Terms (§1.1).** A glossary of the spec's terms, each with its section. "Container" means only a `:::` component; the box a block's breakpoints follow is its *nearest box*.

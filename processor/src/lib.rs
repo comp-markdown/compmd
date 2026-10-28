@@ -3,7 +3,8 @@
 //! describes.
 //!
 //! This version implements stage 1, parsing: [`parse`] turns a document's text into its [tree](tree) and its
-//! [diagnostics](diagnostic).
+//! [diagnostics](diagnostic). It also implements the CompMD CEL profile, in [`cel`], with the `md.` functions in
+//! [`md`].
 //!
 //! ```
 //! use compmd::{ParseOptions, parse};
@@ -13,7 +14,9 @@
 //! assert_eq!(json["children"][0]["type"], "componentLeaf");
 //! ```
 
+pub mod cel;
 pub mod diagnostic;
+pub mod md;
 mod nearest;
 mod parse;
 pub mod tree;

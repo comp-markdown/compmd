@@ -13,6 +13,12 @@ repository.workspace = true
 publish = false
 
 [dependencies]
+fixed_decimal = { version = "0.7.3", features = ["ryu"] }
+# Formatting by CLDR, with all of ICU4X's compiled locale data, so every `md.lang` formats offline.
+icu = "2.4.0"
+# `md.currency`: ICU4X's currency formatter is still experimental, so its version is pinned.
+icu_experimental = "=0.7.0"
+indexmap = "2.14.2"
 # The fork of markdown-rs with CompMD's syntax (`markdown-rs/`, a submodule), to be published as `compmd-markdown`.
 markdown = { path = "../markdown-rs" }
 serde = { version = "1.0.228", features = ["derive"] }
@@ -20,6 +26,8 @@ serde_json = { version = "1.0.145", features = ["preserve_order"] }
 yaml-rust2 = "0.13.0"
 
 [dev-dependencies]
+# An oracle for the CEL profile, where it and CEL agree.
+cel = { version = "0.15.0", default-features = false, features = ["chrono", "json"] }
 jsonschema = { version = "0.60.2", default-features = false }
 
 [lints]
