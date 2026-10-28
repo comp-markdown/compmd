@@ -34,15 +34,8 @@ let processor = processor.reload(&other_context, &fetch, &data); // another inpu
 ```
 
 - All stages in one call: `compmd::process::process` takes a `Request` (JSON) with the files, packs, remote and host data and the render context, and gives the parse tree, the expanded tree and every diagnostic; `compmd::process::sources` lists what to fetch first. The WebAssembly build, [`@compmd/processor`](../wasm/README.md), is this call.
-- The CEL profile: `compmd::cel` parses an expression, type-checks it against the variables' declared types, and evaluates it within a work budget, with the `md.` functions in `compmd::md`. Formatting uses [ICU4X](https://github.com/unicode-org/icu4x) with all its compiled locale data, and time zone offsets come from the caller.
-
-```rust
-use compmd::cel::{Program, Scope, Type};
-use compmd::md::Signatures;
-
-let program = Program::parse("md.plural(count, 'item', 'items')")?;
-assert_eq!(program.check(&Scope::default().with("count", Type::Double), &Signatures)?, Type::String);
-```
+- Expressions follow the CEL profile with the `md.` functions: each is type-checked against the variables' declared types before it runs, and runs within a work budget. Formatting uses [ICU4X](https://github.com/unicode-org/icu4x) with all its compiled locale data, and time zone offsets come from the host's `Time`.
+- Parsing alone is the first two calls:
 
 ```rust
 use compmd::{ParseOptions, Processor};

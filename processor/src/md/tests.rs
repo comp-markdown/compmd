@@ -1,9 +1,9 @@
 //! The `md.` functions' errors, and the edges of what they take. Values of type `dyn` get past the checker, as
 //! values from data whose records differ do.
 
-use compmd::cel::{Program, Scope, Type, Value, Values};
-use compmd::host::Time;
-use compmd::md::{Md, Signatures};
+use super::{Md, Signatures};
+use crate::cel::{Program, Scope, Type, Value, Values};
+use crate::host::Time;
 use serde_json::{Value as Json, json};
 
 struct Utc;
@@ -256,7 +256,7 @@ fn list_functions_that_cel_checks_only_when_evaluated() {
         .expect_err("a field name");
     assert_eq!(
         error,
-        compmd::cel::Error::Evaluation {
+        crate::cel::Error::Evaluation {
             at: 3,
             message: "md.sortBy() doesn't take (list, double)".into()
         }

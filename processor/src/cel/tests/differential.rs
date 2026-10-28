@@ -2,9 +2,9 @@
 //! and `double` mixing, nothing the profile leaves out, no `double` written as a string. Both must give the same
 //! value, or both an error.
 
-use compmd::cel::{Program, Scope, Values};
-use compmd::host::Time;
-use compmd::md::Md;
+use crate::cel::{Program, Scope, Values};
+use crate::host::Time;
+use crate::md::{Md, Signatures};
 use serde_json::Value as Json;
 
 struct Utc;
@@ -17,20 +17,18 @@ impl Time for Utc {
 
 /// What the `cel` crate gives: a value, or `None` for any error.
 fn oracle(source: &str) -> Option<Json> {
-    let mut env = cel::Env::stdlib();
-    cel::extensions::strings(&mut env).ok()?;
+    let mut env = ::cel::Env::stdlib();
+    ::cel::extensions::strings(&mut env).ok()?;
     let env = std::sync::Arc::new(env);
     let program = env.compile(source).ok()?;
-    let context = cel::Context::with_env(env);
+    let context = ::cel::Context::with_env(env);
     program.execute(&context).ok()?.json().ok()
 }
 
 /// What the profile gives.
 fn profile(source: &str) -> Option<Json> {
     let program = Program::parse(source).ok()?;
-    program
-        .check(&Scope::default(), &compmd::md::Signatures)
-        .ok()?;
+    program.check(&Scope::default(), &Signatures).ok()?;
     let md = Md::new(0, "en", "UTC", &Utc);
     program
         .evaluate(&Values::default(), &md)

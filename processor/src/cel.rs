@@ -4,31 +4,6 @@
 //! An expression is parsed once into a [`Program`], checked against the types of the variables it sees (a
 //! [`Scope`]), and evaluated with their values ([`Values`]). The `md.` functions come from outside, through
 //! [`FunctionTypes`] and [`Functions`]: [`crate::md`] has the spec's.
-//!
-//! ```
-//! use compmd::cel::{Program, Scope, Type, Value, Values};
-//! use compmd::host::Time;
-//! use compmd::md::{Md, Signatures};
-//!
-//! struct Utc;
-//!
-//! impl Time for Utc {
-//!     fn offset(&self, _zone: &str, _at: i64) -> Option<i32> {
-//!         Some(0)
-//!     }
-//! }
-//!
-//! let program = Program::parse("md.plural(count, 'item', 'items') + ' in ' + md.date(md.today(), 'long')")?;
-//! let scope = Scope::default().with("count", Type::Double);
-//! assert_eq!(program.check(&scope, &Signatures)?, Type::String);
-//!
-//! let now = 1_792_576_800 * 1_000_000_000; // 2026-10-21T10:00:00Z
-//! let md = Md::new(now, "en", "UTC", &Utc);
-//! let values = Values::default().with("count", Value::Double(3.0));
-//! let text = program.evaluate(&values, &md)?;
-//! assert_eq!(text.written(), Ok(Some("items in October 21, 2026".into())));
-//! # Ok::<(), compmd::cel::Error>(())
-//! ```
 
 mod ast;
 mod check;
@@ -40,12 +15,13 @@ mod ops;
 pub(crate) mod overload;
 mod parser;
 mod strings;
+#[cfg(test)]
+mod tests;
 pub(crate) mod time;
 mod types;
 mod value;
 
 pub use eval::BUDGET;
-pub use parser::MAX_DEPTH;
 pub use types::Type;
 pub use value::{Key, Value};
 
@@ -55,7 +31,7 @@ use std::collections::BTreeMap;
 /// expression, 0-based, and says what is wrong: where it helps, with the nearest known name or the way out.
 #[derive(Clone, Debug, PartialEq, Eq, thiserror::Error)]
 pub enum Error {
-    /// Not an expression of the profile, or nested deeper than [`MAX_DEPTH`].
+    /// Not an expression of the profile, or nested deeper than [`parser::MAX_DEPTH`].
     #[error("column {}: {message}", at + 1)]
     Syntax {
         /// Where it is.
@@ -118,12 +94,6 @@ impl Error {
             | Self::Evaluation { at, .. }
             | Self::Budget { at } => *at,
         }
-    }
-
-    /// The 1-based column, as F024 reports it.
-    #[must_use]
-    pub fn column(&self) -> usize {
-        self.at() + 1
     }
 
     /// What is wrong, without the column.
@@ -224,7 +194,7 @@ impl Program {
     ///
     /// # Errors
     ///
-    /// A syntax error, or nesting deeper than [`MAX_DEPTH`].
+    /// A syntax error, or nesting deeper than [`parser::MAX_DEPTH`].
     pub fn parse(source: &str) -> Result<Self, Error> {
         Ok(Self {
             expr: parser::parse(source)?,

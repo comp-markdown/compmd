@@ -172,14 +172,6 @@ impl Value {
     }
 
     /// The value of JSON: every number is a `double` (spec §8.2), an object a map from strings.
-    ///
-    /// ```
-    /// use compmd::cel::Value;
-    /// use serde_json::json;
-    ///
-    /// let value = Value::from_json(&json!({ "price": 12 }));
-    /// assert_eq!(value.to_json(), json!({ "price": 12.0 }));
-    /// ```
     #[must_use]
     pub fn from_json(json: &Json) -> Self {
         match json {

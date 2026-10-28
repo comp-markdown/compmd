@@ -1,8 +1,8 @@
 //! The CEL profile of spec §8.2, part by part: what each expression gives, or where it fails and when.
 
-use compmd::cel::{Program, Scope, Type, Value, Values};
-use compmd::host::Time;
-use compmd::md::{Md, Signatures};
+use crate::cel::{Program, Scope, Type, Value, Values};
+use crate::host::Time;
+use crate::md::{Md, Signatures};
 use serde_json::{Value as Json, json};
 
 /// What an expression gives.
@@ -65,11 +65,11 @@ fn run_in(source: &str, lang: &str, tz: &str) -> Outcome {
         .and_then(|program| program.check(&scope, &Signatures).map(|_| program));
     let program = match checked {
         Ok(program) => program,
-        Err(error) => return Refused(error.column()),
+        Err(error) => return Refused(error.at() + 1),
     };
     match program.evaluate(&values, &Md::new(NOW, lang, tz, &Zones)) {
         Ok(value) => V(value.to_json()),
-        Err(error) => Failed(error.column()),
+        Err(error) => Failed(error.at() + 1),
     }
 }
 

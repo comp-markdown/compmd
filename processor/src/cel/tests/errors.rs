@@ -1,9 +1,11 @@
 //! What F024 says, and where: type errors the checker finds, and errors only evaluation finds, as when a value's type
 //! is known only then (`dyn`, as in data whose records differ).
 
-use compmd::cel::{BUDGET, Error, MAX_DEPTH, Program, Scope, Type, Value, Values};
-use compmd::host::Time;
-use compmd::md::{Md, Signatures};
+use crate::cel::parser::MAX_DEPTH;
+use crate::cel::{BUDGET, Error, Program, Scope, Type, Value, Values};
+use crate::host::Time;
+use crate::md::{Md, Signatures};
+use crate::tree::DeclaredType;
 use serde_json::{Value as Json, json};
 
 struct Utc;
@@ -25,10 +27,7 @@ fn scope() -> Scope {
             Type::of_json(&json!({ "doc": { "title": "Release", "price": 12.0 } })),
         )
         .with("rows", Type::list(Type::Double))
-        .with(
-            "gap",
-            Type::declared(&compmd::tree::DeclaredType::Name("length".into())),
-        )
+        .with("gap", Type::declared(&DeclaredType::Name("length".into())))
         .with("x", Type::Dyn)
         .with("y", Type::Dyn)
 }
@@ -37,7 +36,7 @@ fn scope() -> Scope {
 fn refused(source: &str) -> (usize, String) {
     match Program::parse(source).and_then(|program| program.check(&scope(), &Signatures)) {
         Ok(ty) => panic!("{source} checks, as {ty}"),
-        Err(error) => (error.column(), error.message().to_string()),
+        Err(error) => (error.at() + 1, error.message().to_string()),
     }
 }
 
@@ -51,7 +50,7 @@ fn type_of(source: &str) -> String {
 
 /// Evaluates `source` with `x` and `y` as given, without checking it first.
 fn evaluate(source: &str, x: Json, y: Json) -> Result<Json, (usize, String)> {
-    let program = Program::parse(source).map_err(|e| (e.column(), e.message().to_string()))?;
+    let program = Program::parse(source).map_err(|e| (e.at() + 1, e.message().to_string()))?;
     let md = json!({ "doc": { "title": "Release" } });
     let values = [("md", md), ("x", x), ("y", y)]
         .into_iter()
@@ -61,7 +60,7 @@ fn evaluate(source: &str, x: Json, y: Json) -> Result<Json, (usize, String)> {
     program
         .evaluate(&values, &Md::new(NOW, "en", "UTC", &Utc))
         .map(|value| value.to_json())
-        .map_err(|e| (e.column(), e.message().to_string()))
+        .map_err(|e| (e.at() + 1, e.message().to_string()))
 }
 
 /// The evaluation error of `source` with `x`.
@@ -649,6 +648,6 @@ fn errors_say_which_kind_they_are() {
     assert_eq!(budget.message(), "the expression takes too much work");
     assert_eq!(
         budget.to_string(),
-        format!("column {}: {}", budget.column(), budget.message())
+        format!("column {}: {}", budget.at() + 1, budget.message())
     );
 }

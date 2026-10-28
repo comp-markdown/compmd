@@ -3,6 +3,8 @@
 
 mod lists;
 mod locale;
+#[cfg(test)]
+mod tests;
 
 use crate::cel::overload::{self, Library, Overload, Param, Returns};
 use crate::cel::time::{self, DAY, NANOS};

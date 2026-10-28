@@ -65,15 +65,6 @@ impl Type {
 
     /// The type of a JSON value: every number is a `double` (spec §8.2), an object a record of its fields, and a
     /// list's element type is what its elements share.
-    ///
-    /// ```
-    /// use compmd::cel::Type;
-    /// use serde_json::json;
-    ///
-    /// let price = Type::of_json(&json!({ "price": 12 }));
-    /// assert_eq!(price.to_string(), "map(string, dyn)");
-    /// assert_eq!(Type::of_json(&json!([1, 2.5])), Type::list(Type::Double));
-    /// ```
     #[must_use]
     pub fn of_json(value: &Json) -> Self {
         match value {
