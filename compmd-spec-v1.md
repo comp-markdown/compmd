@@ -483,7 +483,7 @@ A declaration has a short form, a YAML string in this grammar:
 ```abnf
 type-decl = type [ "?" ] [ 1*WSP "=" 1*WSP default ]
 type      = "string" / "number" / "boolean" / "date" / "array" / "object"
-          / "length" / "space" / "color" / "tracks" / "surface" / "border" / "radius"
+          / "length" / "space" / "color" / "tracks" / "areas" / "surface" / "border" / "radius"
           / "name" / enum / input
 enum      = name 1*( *WSP "|" *WSP name )
 input     = "input<" ( type / "enum" ) ">"          ; a bound input (section 7.4)
@@ -688,7 +688,7 @@ A param value written in parentheses, `name=(expr)`, is an expression in the **C
 | `date`                      | `string`                                           | an ISO 8601 calendar date, `"2026-10-21"`            |
 | `array`                     | `list`                                             |                                                      |
 | `object`                    | `map(string, dyn)`                                 |                                                      |
-| `length`, `space`, `color`, `tracks`, `surface`, `border`, `radius` | `string` | only `==`, `!=` and string concatenation are allowed; grammars in section 9.4 |
+| `length`, `space`, `color`, `tracks`, `areas`, `surface`, `border`, `radius` | `string` | only `==`, `!=` and string concatenation are allowed; grammars in section 9.4 |
 
 **Numbers.** Every number from frontmatter, data, params and inputs is a CEL `double`. Integer literals, `size()`, `md.loop` fields, `md.daysBetween` and list indexes are `int`, as in CEL. The profile adds arithmetic and comparison between `int` and `double`, which gives a `double`: `p.price * 12` and `md.input.rate * 100 > 5` need no conversion. Everything else follows CEL: dividing two `int`s truncates (`size(rows) / 2` with 3 rows is `1`; write `double(size(rows)) / 2`), and a list index must be an `int` (`rows[int(md.input.page)]`). `string()` writes a `double` as interpolation does (section 8.1): `string(1e21)` is `"1e+21"`. Map keys of different number types match by value, as in CEL: `{1: "a"}[1u]` and `{1: "a"}[1.0]` are `"a"`, so `md.groupBy` on a field of whole numbers from data gives `int` keys.
 
@@ -1051,7 +1051,7 @@ params:
   flex-wrap: wrap | nowrap = nowrap
   grid-template-columns: tracks?
   grid-template-rows: tracks?
-  grid-template-areas: string?
+  grid-template-areas: areas?
 slots: [default]
 ```
 
@@ -1096,9 +1096,9 @@ Any container or leaf (built-in or not) accepts these params, applied to its out
 | Param                                         | Values                                                  | Example                  |
 | --------------------------------------------- | ------------------------------------------------------- | ------------------------ |
 | `width`, `height`, `min-width`, `max-width`   | a length, a percentage or `auto`                        | `width=40%`              |
-| `padding`                                     | one or two spaces (block, then inline)                  | `padding=m`, `padding="s l"` |
-| `padding-inline`, `padding-block`             | one or two spaces (start, then end)                     | `padding-inline=l`       |
-| `padding-inline-start`, `padding-inline-end`, `padding-block-start`, `padding-block-end` | a space            | `padding-block-start=s`  |
+| `padding`                                     | one or two spaces (`none`, `s`, `m`, `l` or a length): block, then inline | `padding=m`, `padding="s l"` |
+| `padding-inline`, `padding-block`             | one or two spaces (`none`, `s`, `m`, `l` or a length): start, then end | `padding-inline=l`       |
+| `padding-inline-start`, `padding-inline-end`, `padding-block-start`, `padding-block-end` | a space (`none`, `s`, `m`, `l` or a length) | `padding-block-start=s`  |
 | `border`                                      | a token (`none`, `subtle`, `strong`) or a CSS border     | `border=subtle`, `border="1px solid"` |
 | `border-radius`                               | a token (`none`, `s`, `m`, `l`, `full`) or a length      | `border-radius=m`        |
 | `background`                                  | a token (`none`, `subtle`, `strong`, `accent`) or a CSS color | `background=subtle`  |
@@ -1108,8 +1108,8 @@ Any container or leaf (built-in or not) accepts these params, applied to its out
 | `justify-self`                                | `start`, `center`, `end`                                | `justify-self=end`       |
 | `aspect-ratio`                                | width over height, or `none`                            | `aspect-ratio=16/9`      |
 | `inset-inline-start`, `inset-inline-end`, `inset-block-start`, `inset-block-end` | a length, a percentage or `auto` (the default) | `inset-inline-start=16px` |
-| `scroll`                                      | a flag                                                  | `scroll`                 |
-| `fill`                                        | a flag                                                  | `fill`                   |
+| `scroll`                                      | a flag, or `true` or `false`                            | `scroll`                 |
+| `fill`                                        | a flag, or `true` or `false`                            | `fill`                   |
 | `sticky`                                      | `top`, `bottom`, `none`                                 | `sticky=top`             |
 | `show`, `hide`                                | `sm`, `md`, `lg`                                        | `show=md`                |
 
@@ -1160,7 +1160,7 @@ A layout or common param MAY carry a breakpoint prefix: `md:gap=l` overrides `ga
 
   `none` means no background, border or rounding. No token is a CSS keyword of the same param, so a value is never ambiguous.
 - **Spaces** (`gap` and the padding params, type `space`) are a token, `none`, `s`, `m` or `l`, or a length. The tokens are the CSS custom properties `--compmd-space-s`, `--compmd-space-m` and `--compmd-space-l`, by default `0.5rem`, `1rem` and `2rem`, which a processor or stylesheet may change. Documents SHOULD use tokens; lengths are for layouts that need exact sizes.
-- **Lengths** are `px`, `rem`, `em` and `%`. **Tracks** (`grid-template-columns`, `grid-template-rows`) also take `fr`, `auto`, `min-content`, `max-content`, `minmax()` and `repeat()`. **Areas** are quoted rows of area names or `.`, all the same length (`"'head head' 'side main'"`). **Colors** and **borders** take CSS syntax.
+- **Lengths** are `px`, `rem`, `em` and `%`. **Tracks** (`grid-template-columns`, `grid-template-rows`, type `tracks`) also take `fr`, `auto`, `min-content`, `max-content`, `minmax()` and `repeat()`. **Areas** (`grid-template-areas`, type `areas`) are quoted rows of area names or `.`, all the same length (`"'head head' 'side main'"`). **Colors** and **borders** take CSS syntax.
 - **The vocabulary is closed.** The params in this section are all the layout and styling a document can write. An unknown param is F008 and a value outside its grammar is F009, so no param can pass raw CSS through.
 - **Directions are logical.** Every param says `start` and `end`, `inline` and `block`, never left, right, top or bottom, so a document laid out for a left-to-right language reads correctly right to left.
 - **Meaning.** Each param means what the CSS property it names means (section 13.1). An HTML processor emits that CSS. A processor for another output (PDF, terminal) implements the same meaning, as far as its output allows.
@@ -1315,7 +1315,8 @@ Processors that report diagnostics to other tools use this JSON form:
 
 - Lines and columns are 1-based; columns count Unicode code points. `end` is optional.
 - `severity` is `error` for F codes and `warning` for W codes; `stage` is the stage that found it (section 11).
-- Messages are not normative. The form maps one to one onto an LSP `Diagnostic`; an LSP adapter converts positions to 0-based UTF-16.
+- `fix`, optional, is an edit that fixes the diagnostic, when a processor has one to suggest: the text at `range` (on one line, in the diagnostic's document) becomes `text`. A misspelt name or token gets one, such as `"fix": { "range": { "start": { "line": 3, "column": 17 }, "end": { "line": 3, "column": 22 } }, "text": "subtle" }` for `border=subtl`. An editor offers it as a quick fix.
+- Messages are not normative. The form maps one to one onto an LSP `Diagnostic`, and a `fix` onto a code action; an LSP adapter converts positions to 0-based UTF-16.
 
 ## 11. Processing model
 

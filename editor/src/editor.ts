@@ -5,7 +5,7 @@
 import type { Diagnostic, Request } from "@compmd/processor";
 import type { Change } from "@compmd/render";
 import type { FrameConnection } from "@compmd/render/frame";
-import { editOf, type Selection } from "./edit.ts";
+import { editOf, fixOf, type Selection } from "./edit.ts";
 import type { Example } from "./documents.ts";
 import type { ComponentFailed, ComponentsMessage } from "./protocol.ts";
 import { Session, type Update, type WorkerPort } from "./session.ts";
@@ -44,6 +44,8 @@ export class Editor {
   readonly #onChange: () => void;
   /** The text the last input left, and the selection before the next one. */
   #text = "";
+  /** The text the diagnostics shown are of. */
+  #processed: string | undefined;
   #selection: Selection = { start: 0, end: 0 };
   #request: Request | undefined;
   #inputs: Record<string, unknown> = {};
@@ -105,6 +107,18 @@ export class Editor {
     this.#session.edit(edit, text, at);
   }
 
+  /**
+   * Makes a diagnostic's fix, as an input would, and gives the text after it for the text area. A fix is of the text
+   * its diagnostic was found in, so after another input it does nothing until the diagnostics come again.
+   */
+  fix(fix: NonNullable<Diagnostic["fix"]>, at = performance.now()): string {
+    if (this.#text !== this.#processed) return this.#text;
+    const edit = fixOf(this.#text, fix);
+    this.#text = this.#text.slice(0, edit.start) + edit.text + this.#text.slice(edit.end);
+    this.#session.edit(edit, this.#text, at);
+    return this.#text;
+  }
+
   /** The document again, with the current text and the inputs' values. */
   #reopen(): void {
     const request = this.#request;
@@ -119,6 +133,7 @@ export class Editor {
     this.#rendering.push(update.since);
     this.#frame.connection.splice(update.splices, change, { replace: update.opened });
     this.state.diagnostics = update.diagnostics;
+    this.#processed = update.text;
     this.state.processing.add(update.ms);
     if (update.components) this.state.problems = [];
     this.#onChange();

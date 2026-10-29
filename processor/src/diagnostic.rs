@@ -227,6 +227,30 @@ pub struct Related {
     pub message: String,
 }
 
+/// An edit that fixes a diagnostic: the text at `range` becomes `text`, as a "did you mean" suggests.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct Fix {
+    /// The text it replaces, on one line.
+    pub range: Range,
+    /// What replaces it.
+    pub text: String,
+}
+
+impl Fix {
+    /// `written`, which starts at `at`, replaced by `text`.
+    #[must_use]
+    pub fn replacing(at: Location, written: &str, text: impl Into<String>) -> Self {
+        let end = Location::new(at.line, at.column + written.chars().count());
+        Self {
+            range: Range {
+                start: at,
+                end: Some(end),
+            },
+            text: text.into(),
+        }
+    }
+}
+
 /// A diagnostic (spec §10.5).
 ///
 /// ```
@@ -252,6 +276,8 @@ pub struct Diagnostic {
     pub related: Vec<Related>,
     /// The stage that found it.
     pub stage: Stage,
+    /// The edit that fixes it, when its message suggests one.
+    pub fix: Option<Fix>,
 }
 
 impl Diagnostic {
@@ -265,7 +291,14 @@ impl Diagnostic {
             range: at.into(),
             related: Vec::new(),
             stage: Stage::Parse,
+            fix: None,
         }
+    }
+
+    /// The same diagnostic, fixed by `fix` when there is one.
+    #[must_use]
+    pub fn with_fix(self, fix: Option<Fix>) -> Self {
+        Self { fix, ..self }
     }
 
     /// The same diagnostic, found by `stage`.
@@ -300,7 +333,7 @@ impl Diagnostic {
 
 impl Serialize for Diagnostic {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        let mut out = serializer.serialize_struct("Diagnostic", 7)?;
+        let mut out = serializer.serialize_struct("Diagnostic", 8)?;
         out.serialize_field("code", &self.code)?;
         out.serialize_field("severity", &self.severity())?;
         out.serialize_field("message", &self.message)?;
@@ -312,6 +345,9 @@ impl Serialize for Diagnostic {
             out.serialize_field("related", &self.related)?;
         }
         out.serialize_field("stage", &self.stage)?;
+        if let Some(fix) = &self.fix {
+            out.serialize_field("fix", fix)?;
+        }
         out.end()
     }
 }
@@ -352,6 +388,23 @@ mod tests {
         let json = serde_json::to_value(&diagnostic).unwrap();
         assert_eq!(json["file"], "ui.comp.md");
         assert_eq!(json["range"]["end"], json!({ "line": 7, "column": 32 }));
+    }
+
+    #[test]
+    fn carries_its_fix() {
+        let diagnostic = Diagnostic::new(Code::F009, Location::new(2, 12), "").with_fix(Some(
+            Fix::replacing(Location::new(2, 12), "subtl", "subtle"),
+        ));
+        assert_eq!(
+            serde_json::to_value(&diagnostic).unwrap()["fix"],
+            json!({ "range": { "start": { "line": 2, "column": 12 }, "end": { "line": 2, "column": 17 } }, "text": "subtle" })
+        );
+        assert!(
+            serde_json::to_value(Diagnostic::new(Code::F005, Location::new(1, 1), ""))
+                .unwrap()
+                .get("fix")
+                .is_none()
+        );
     }
 
     #[test]

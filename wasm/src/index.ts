@@ -74,6 +74,8 @@ export interface Diagnostic {
   /** Related places, innermost first. */
   related?: { file?: string; range: Range; message: string }[];
   stage: "parse" | "resolve" | "validate" | "load" | "evaluate";
+  /** The edit that fixes it, when its message suggests one: the text at `range`, on one line, becomes `text`. */
+  fix?: { range: Required<Range>; text: string };
 }
 
 /** What processing gave. */

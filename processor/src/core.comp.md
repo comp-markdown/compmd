@@ -22,7 +22,7 @@ params:
   flex-wrap: wrap | nowrap = nowrap
   grid-template-columns: tracks?
   grid-template-rows: tracks?
-  grid-template-areas: string?
+  grid-template-areas: areas?
 slots: [default]
 ```
 

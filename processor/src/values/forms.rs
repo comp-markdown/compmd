@@ -1,65 +1,116 @@
-//! The grammars of layout and styling values (spec §9.2, §9.4): a value outside its grammar is F009, so no param
-//! can pass raw CSS through. Colors and borders take CSS syntax, checked here part by part.
+//! The forms a param's value takes besides its tokens (spec §5.1, §9.4): how each is checked, and how a message names
+//! it. Colors and borders take CSS syntax, checked here part by part, so no param can pass raw CSS through.
 
-/// A grammar a param's value must be in.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum Grammar {
-    /// A length: a number with `px`, `rem`, `em` or `%`, or `0`.
-    Length,
-    /// A length or `auto`: sizes and insets.
-    Size,
-    /// A space token (`none`, `s`, `m`, `l`) or a length.
-    Space,
-    /// One or two spaces.
-    Spaces,
-    /// A radius token (`none`, `s`, `m`, `l`, `full`) or a length.
-    Radius,
-    /// A surface token (`none`, `subtle`, `strong`, `accent`) or a color.
-    Surface,
-    /// A border token (`none`, `subtle`, `strong`) or a CSS border: a width, a style and a color, each at most once.
-    Border,
-    /// A CSS color.
-    Color,
-    /// Grid tracks: lengths, `fr`, `auto`, `min-content`, `max-content`, `minmax()` and `repeat()`.
-    Tracks,
-    /// Quoted rows of area names or `.`, all the same length.
-    Areas,
-    /// An area name.
-    AreaName,
-    /// Width over height, `16/9`, or `none`.
-    Ratio,
-    /// A BCP 47 language tag.
-    Language,
-    /// One of these words.
-    Keywords(&'static [&'static str]),
+use crate::cel::time::parse_date;
+use crate::named::named;
+
+named! {
+    /// A form of value, by the name `params.json` gives it.
+    pub enum Form {
+        /// A length: a number with `px`, `rem`, `em` or `%`, or `0`.
+        Length = "length",
+        /// A CSS color.
+        Color = "color",
+        /// A CSS border: a width, a style and a color, each at most once.
+        Border = "border",
+        /// Grid tracks: lengths, `fr`, `auto`, `min-content`, `max-content`, `minmax()` and `repeat()`.
+        Tracks = "tracks",
+        /// Quoted rows of area names or `.`, all the same length.
+        Areas = "areas",
+        /// An area name.
+        AreaName = "area-name",
+        /// Width over height, `16/9`.
+        Ratio = "ratio",
+        /// A BCP 47 language tag.
+        Language = "language",
+        /// A finite number.
+        Number = "number",
+        /// A day, `YYYY-MM-DD`.
+        Date = "date",
+        /// A JSON array.
+        Array = "array",
+        /// A JSON object.
+        Object = "object",
+        /// A CEL identifier, written as is.
+        Name = "name",
+        /// Any text.
+        Text = "text",
+        /// Any value at all.
+        Any = "any",
+    }
 }
 
-impl Grammar {
-    /// Whether `value` is in the grammar.
-    pub(crate) fn accepts(self, value: &str) -> bool {
-        let value = value.trim();
+impl serde::Serialize for Form {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_str(self.name())
+    }
+}
+
+impl Form {
+    /// Whether `text`, a bare value or a string's, is of this form.
+    pub(crate) fn accepts(self, text: &str) -> bool {
         match self {
-            Self::Length => is_length(value),
-            Self::Size => value == "auto" || is_length(value),
-            Self::Space => is_space(value),
-            Self::Spaces => {
-                let parts: Vec<&str> = value.split_whitespace().collect();
-                (1..=2).contains(&parts.len()) && parts.iter().all(|part| is_space(part))
-            }
-            Self::Radius => ["none", "s", "m", "l", "full"].contains(&value) || is_length(value),
-            Self::Surface => {
-                ["none", "subtle", "strong", "accent"].contains(&value) || is_color(value)
-            }
-            Self::Border => ["none", "subtle", "strong"].contains(&value) || is_border(value),
-            Self::Color => is_color(value),
-            Self::Tracks => is_tracks(value),
-            Self::Areas => is_areas(value),
-            Self::AreaName => is_css_ident(value),
-            Self::Ratio => value == "none" || is_ratio(value),
-            Self::Language => is_language(value),
-            Self::Keywords(words) => words.contains(&value),
+            Self::Length => is_length(text),
+            Self::Color => is_color(text),
+            Self::Border => is_border(text),
+            Self::Tracks => is_tracks(text),
+            Self::Areas => is_areas(text),
+            Self::AreaName => is_css_ident(text),
+            Self::Ratio => is_ratio(text),
+            Self::Language => is_language(text),
+            Self::Number => text.parse::<f64>().is_ok_and(f64::is_finite),
+            Self::Date => parse_date(text).is_some(),
+            Self::Name => is_identifier(text),
+            Self::Text | Self::Any => true,
+            Self::Array | Self::Object => false,
         }
     }
+
+    /// Whether the JSON value `json`, written as JSON in a param, is of this form.
+    pub(crate) fn takes_json(self, json: &str) -> bool {
+        match self {
+            Self::Array => json.starts_with('['),
+            Self::Object => json.starts_with('{'),
+            Self::Any => true,
+            _ => false,
+        }
+    }
+
+    /// How a message names it: "a CSS border".
+    #[must_use]
+    pub fn phrase(self) -> &'static str {
+        match self {
+            Self::Length => "a length in `px`, `rem`, `em` or `%`",
+            Self::Color => "a CSS color",
+            Self::Border => "a CSS border",
+            Self::Tracks => "grid tracks",
+            Self::Areas => "quoted rows of area names, all as long",
+            Self::AreaName => "an area name",
+            Self::Ratio => "a width over a height",
+            Self::Language => "a language tag",
+            Self::Number => "a number",
+            Self::Date => "a date (`YYYY-MM-DD`)",
+            Self::Array => "an array, as JSON",
+            Self::Object => "an object, as JSON",
+            Self::Name => "a name, written as is",
+            Self::Text => "text",
+            Self::Any => "any value",
+        }
+    }
+
+    /// Whether CSS's color names are close to its values, so a misspelt one is suggested.
+    pub(crate) fn has_color_names(self) -> bool {
+        matches!(self, Self::Color | Self::Border)
+    }
+}
+
+/// A CEL identifier, as `name` params, `as` names and inputs are.
+pub(crate) fn is_identifier(text: &str) -> bool {
+    let mut chars = text.chars();
+    chars
+        .next()
+        .is_some_and(|c| c.is_ascii_alphabetic() || c == '_')
+        && chars.all(|c| c.is_ascii_alphanumeric() || c == '_')
 }
 
 /// `12`, `-0.5`, `.5`: a CSS number.
@@ -80,12 +131,8 @@ fn with_unit(text: &str, units: &[&str]) -> bool {
     })
 }
 
-fn is_length(text: &str) -> bool {
+pub(crate) fn is_length(text: &str) -> bool {
     text == "0" || with_unit(text, &["px", "rem", "em", "%"])
-}
-
-fn is_space(text: &str) -> bool {
-    ["none", "s", "m", "l"].contains(&text) || is_length(text)
 }
 
 fn is_ratio(text: &str) -> bool {
@@ -329,7 +376,7 @@ fn is_color_mix(inner: &str) -> bool {
 }
 
 /// The named colors of CSS Color 4.
-const NAMED_COLORS: [&str; 148] = [
+pub(crate) const NAMED_COLORS: [&str; 148] = [
     "aliceblue",
     "antiquewhite",
     "aqua",
@@ -484,37 +531,25 @@ const NAMED_COLORS: [&str; 148] = [
 mod tests {
     use super::*;
 
-    fn check(grammar: Grammar, good: &[&str], bad: &[&str]) {
+    fn check(form: Form, good: &[&str], bad: &[&str]) {
         for value in good {
-            assert!(grammar.accepts(value), "{grammar:?} refused {value}");
+            assert!(form.accepts(value), "{form:?} refused {value}");
         }
         for value in bad {
-            assert!(!grammar.accepts(value), "{grammar:?} took {value}");
+            assert!(!form.accepts(value), "{form:?} took {value}");
         }
     }
 
     #[test]
-    fn lengths_sizes_spaces_and_ratios() {
+    fn lengths_and_ratios() {
         check(
-            Grammar::Length,
+            Form::Length,
             &["0", "16px", "2.5rem", ".5em", "40%", "-8px"],
             &["", "px", "12", "1.2.3px", "wide", "1vw"],
         );
-        check(Grammar::Size, &["auto", "50%"], &["wide"]);
         check(
-            Grammar::Space,
-            &["none", "s", "m", "l", "2.5rem"],
-            &["bigger", "xl"],
-        );
-        check(
-            Grammar::Spaces,
-            &["s l", "m", "1rem 2px"],
-            &["", "s m l", "s big"],
-        );
-        check(Grammar::Radius, &["full", "8px"], &["round"]);
-        check(
-            Grammar::Ratio,
-            &["16/9", "1.5", "none", "4 / 3"],
+            Form::Ratio,
+            &["16/9", "1.5", "4 / 3"],
             &["0/1", "16:9", "wide"],
         );
     }
@@ -522,7 +557,7 @@ mod tests {
     #[test]
     fn tracks_and_areas() {
         check(
-            Grammar::Tracks,
+            Form::Tracks,
             &[
                 "1fr 2fr",
                 "12rem 1fr",
@@ -541,17 +576,17 @@ mod tests {
             ],
         );
         check(
-            Grammar::Areas,
+            Form::Areas,
             &["'head head' 'side main'", "\"a . b\""],
             &["", "'head' 'side main'", "head head", "'a", "'a-b! c'"],
         );
-        check(Grammar::AreaName, &["side", "main_2"], &["2col", "a b"]);
+        check(Form::AreaName, &["side", "main_2"], &["2col", "a b"]);
     }
 
     #[test]
-    fn colors_surfaces_and_borders() {
+    fn colors_and_borders() {
         check(
-            Grammar::Color,
+            Form::Color,
             &[
                 "#f5f5f5",
                 "#abc",
@@ -587,19 +622,8 @@ mod tests {
             ],
         );
         check(
-            Grammar::Surface,
-            &["subtle", "accent", "#f6f8fa"],
-            &["loud"],
-        );
-        check(
-            Grammar::Border,
-            &[
-                "subtle",
-                "1px solid",
-                "1px dashed #d0d7de",
-                "thick",
-                "red dotted",
-            ],
+            Form::Border,
+            &["1px solid", "1px dashed #d0d7de", "thick", "red dotted"],
             &[
                 "thick-dotted",
                 "1px 2px",
@@ -612,12 +636,28 @@ mod tests {
     }
 
     #[test]
-    fn languages_and_keywords() {
+    fn languages_numbers_dates_names_and_json() {
         check(
-            Grammar::Language,
+            Form::Language,
             &["en", "de-CH", "zh-Hant-TW"],
             &["e", "en_US", "de-", "123"],
         );
-        check(Grammar::Keywords(&["top", "bottom"]), &["top"], &["left"]);
+        check(Form::Number, &["3", "-0.5"], &["three", "inf"]);
+        check(Form::Date, &["2026-10-21"], &["2026-13-01"]);
+        check(Form::Name, &["t", "row_2"], &["a-b", "2x"]);
+        check(Form::Text, &["", "anything"], &[]);
+        check(Form::Array, &[], &["[1]"]);
+        assert!(Form::Array.takes_json("[1]") && !Form::Array.takes_json("{}"));
+        assert!(Form::Object.takes_json("{}") && !Form::Object.takes_json("[1]"));
+        assert!(Form::Any.takes_json("[1]") && !Form::Text.takes_json("[1]"));
+    }
+
+    #[test]
+    fn each_form_has_a_phrase_and_a_name() {
+        for form in Form::ALL {
+            assert_ne!(form.phrase(), "");
+            assert_eq!(Form::from_name(form.name()), Some(*form));
+        }
+        assert!(Form::Border.has_color_names() && !Form::Length.has_color_names());
     }
 }

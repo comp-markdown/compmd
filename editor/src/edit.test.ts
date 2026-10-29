@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { editOf, type Edit } from "./edit.ts";
+import { editOf, fixOf, offsetOf, type Edit } from "./edit.ts";
 
 /** `before` with `edit` applied. */
 const applied = (before: string, { start, end, text }: Edit) => before.slice(0, start) + text + before.slice(end);
@@ -32,4 +32,21 @@ describe("editOf", () => {
       expect(applied(before, edit)).toBe(after);
     });
   }
+});
+
+describe("fixOf", () => {
+  const range = (line: number, from: number, to: number) => ({ start: { line, column: from }, end: { line, column: to } });
+
+  it("places a fix by its line and code-point columns", () => {
+    const text = "# 😀 Title\n::: box {border=subtl}\n";
+    const edit = fixOf(text, { range: range(2, 17, 22), text: "subtle" });
+    expect(applied(text, edit)).toBe("# 😀 Title\n::: box {border=subtle}\n");
+    expect(fixOf("😀ab", { range: range(1, 2, 3), text: "x" })).toEqual({ start: 2, end: 3, text: "x" });
+  });
+
+  it("counts after a byte order mark, and stops at the end", () => {
+    expect(offsetOf("﻿ab", { line: 1, column: 2 })).toBe(2);
+    expect(offsetOf("ab", { line: 5, column: 1 })).toBe(2);
+    expect(offsetOf("ab", { line: 1, column: 9 })).toBe(2);
+  });
 });

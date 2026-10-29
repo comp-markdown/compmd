@@ -91,6 +91,17 @@ describe("Editor", () => {
     expect(editor.state.processing.values).toEqual([2, 1]);
   });
 
+  it("makes a diagnostic's fix as an edit, only in the text its diagnostic was found in", () => {
+    const { worker, editor } = setup();
+    editor.open(example);
+    worker.answer(processed(["whole"], { opened: true }));
+    const fix = { range: { start: { line: 1, column: 1 }, end: { line: 1, column: 6 } }, text: "Howdy" };
+    expect(editor.fix(fix)).toBe("Howdy");
+    expect(worker.received[1]).toEqual({ type: "edits", edits: [{ start: 0, end: 5, text: "Howdy" }] });
+    expect(editor.fix(fix), "its diagnostics are of the text before it").toBe("Howdy");
+    expect(worker.received).toHaveLength(2);
+  });
+
   it("times each render from its first key press to the frame painted", () => {
     const { worker, frame, editor } = setup();
     editor.open(example, 0);

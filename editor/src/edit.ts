@@ -39,6 +39,35 @@ export function editOf(before: string, after: string, selection: Selection): Edi
   return { start, end, text: after.slice(start, after.length - (before.length - end)) };
 }
 
+/** A place as the processor gives it: 1-based line, 1-based column in code points (spec §10.5). */
+export interface Place {
+  line: number;
+  column: number;
+}
+
+/** Where `place` is in `text`, in UTF-16 units; columns count after a leading byte order mark, as the processor's. */
+export function offsetOf(text: string, { line, column }: Place): number {
+  let at = text.startsWith("﻿") ? 1 : 0;
+  for (let n = 1; n < line; n++) {
+    const next = text.indexOf("\n", at);
+    if (next === -1) return text.length;
+    at = next + 1;
+  }
+  for (let c = 1; c < column && at < text.length; c++) at += (text.codePointAt(at) ?? 0) > 0xffff ? 2 : 1;
+  return at;
+}
+
+/**
+ * The edit a diagnostic's fix makes in `text`.
+ *
+ * @example
+ * fixOf("::: box {border=subtl}", { range: { start: { line: 1, column: 17 }, end: { line: 1, column: 22 } }, text: "subtle" });
+ * // { start: 16, end: 21, text: "subtle" }
+ */
+export function fixOf(text: string, fix: { range: { start: Place; end: Place }; text: string }): Edit {
+  return { start: offsetOf(text, fix.range.start), end: offsetOf(text, fix.range.end), text: fix.text };
+}
+
 /** How many units `a` and `b` start with in common, at most `most`. */
 function commonPrefix(a: string, b: string, most: number): number {
   let length = 0;

@@ -72,10 +72,17 @@ pub(crate) trait Shift {
     fn shift(&mut self, by: Move);
 }
 
-/// A diagnostic's places in the processed document: its own when it is there, and those of its related places there.
+/// A diagnostic's places in the processed document: its own and its fix's when it is there, and those of its related
+/// places there.
 fn main_ranges(diagnostic: &mut Diagnostic) -> impl Iterator<Item = &mut Range> {
-    let own = diagnostic.file.is_none().then_some(&mut diagnostic.range);
-    own.into_iter().chain(
+    let here = diagnostic.file.is_none();
+    let own = here.then_some(&mut diagnostic.range);
+    let fix = diagnostic
+        .fix
+        .as_mut()
+        .filter(|_| here)
+        .map(|fix| &mut fix.range);
+    own.into_iter().chain(fix).chain(
         diagnostic
             .related
             .iter_mut()

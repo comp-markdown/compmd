@@ -39,6 +39,7 @@ mod resolve;
 mod settings;
 pub mod tree;
 mod validate;
+pub mod values;
 
 pub use parse::{ParseOptions, TextEdit};
 pub use processor::Processor;

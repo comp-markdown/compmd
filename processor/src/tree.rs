@@ -789,6 +789,8 @@ named! {
         Color = "color",
         /// Grid tracks: lengths, `fr`, `auto`, `minmax()`, `repeat()` … (spec §9.4).
         Tracks = "tracks",
+        /// Grid areas: quoted rows of area names, all as long (spec §9.4).
+        Areas = "areas",
         /// A background: a token or a CSS color (spec §9.4).
         Surface = "surface",
         /// A border: a token or a CSS border (spec §9.4).

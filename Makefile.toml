@@ -1,4 +1,4 @@
-# cargo-make tasks for the Rust workspace. `cargo make ci` runs every check.
+# cargo-make tasks for the Rust workspace and the TypeScript packages. `cargo make ci` runs every check.
 
 [config]
 # Run each task once for the whole workspace, not once per member crate.
@@ -43,7 +43,12 @@ command = "cargo"
 # natively.
 args = ["llvm-cov", "--workspace", "--ignore-filename-regex", "markdown-rs/|wasm/src/lib\\.rs", "--fail-under-lines", "99"]
 
+[tasks.packages]
+description = "Build and test the TypeScript packages: the renderer, the processor as WebAssembly, and the editor; the renderer's tests check it against the processor's `conformance/params.json`"
+clear = true
+script = ["pnpm -r --if-present build", "pnpm -r --if-present test"]
+
 [tasks.ci]
 description = "Every check CI runs"
 clear = true
-dependencies = ["fmt", "clippy", "test", "wasm", "deny", "coverage"]
+dependencies = ["fmt", "clippy", "test", "wasm", "deny", "coverage", "packages"]

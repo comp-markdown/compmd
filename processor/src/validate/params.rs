@@ -3,13 +3,11 @@
 //! that can't be bound (F013). Then the invocation's slots (F006, F018), and W102, W103 and W120.
 
 use super::Checker;
-use super::grammar::Grammar;
 use super::scope::Scope;
-use super::universal::{Takes, Universal};
+use super::universal::Universal;
 use crate::breakpoint::BREAKPOINTS;
 use crate::cel::Type;
-use crate::cel::time::parse_date;
-use crate::diagnostic::{Code, Location};
+use crate::diagnostic::{Code, Fix, Location, Range};
 use crate::md::Signatures;
 use crate::nearest::nearest;
 use crate::reserved::{self, Keyword};
@@ -18,85 +16,22 @@ use crate::tree::{
     Container, Declaration, DeclaredType, Node, Param, ParamValue, Point, Position, Signature,
     SlotDeclaration, StringPart, TypeName,
 };
-use std::borrow::Cow;
+use crate::values::Kind;
 use std::collections::{HashMap, HashSet};
 
-/// The grammar of a layout or styling type.
-fn grammar(name: TypeName) -> Option<Grammar> {
-    match name {
-        TypeName::Length => Some(Grammar::Length),
-        TypeName::Space => Some(Grammar::Space),
-        TypeName::Color => Some(Grammar::Color),
-        TypeName::Tracks => Some(Grammar::Tracks),
-        TypeName::Surface => Some(Grammar::Surface),
-        TypeName::Border => Some(Grammar::Border),
-        TypeName::Radius => Some(Grammar::Radius),
-        _ => None,
-    }
-}
-
-/// Whether a value written as `value` is of the type `name` (spec §5.1). A string with interpolations is checked
-/// when it is rendered.
-fn accepts(name: TypeName, value: &ParamValue) -> bool {
-    let Some(text) = literal(value) else {
-        return matches!(value, ParamValue::String(_))
-            || match name {
-                TypeName::Boolean => *value == ParamValue::Flag,
-                TypeName::Array => matches!(value, ParamValue::Json(json) if json.starts_with('[')),
-                TypeName::Object => {
-                    matches!(value, ParamValue::Json(json) if json.starts_with('{'))
-                }
-                TypeName::Enum => true,
-                _ => false,
-            };
-    };
-    let bare = matches!(value, ParamValue::Bare(_));
-    match name {
-        TypeName::String | TypeName::Enum => true,
-        TypeName::Number => bare && text.parse::<f64>().is_ok_and(f64::is_finite),
-        TypeName::Boolean => bare && (text == "true" || text == "false"),
-        TypeName::Date => parse_date(&text).is_some(),
-        TypeName::Array | TypeName::Object => false,
-        TypeName::Name => bare && is_identifier(&text),
-        layout => grammar(layout).is_some_and(|grammar| grammar.accepts(&text)),
-    }
-}
-
-/// The text of a bare value, or of a string without interpolations.
-fn literal(value: &ParamValue) -> Option<Cow<'_, str>> {
+/// The text of a bare value, or of a string without interpolations: what a misspelt token is looked for in.
+fn literal(value: &ParamValue) -> Option<String> {
     match value {
-        ParamValue::Bare(text) => Some(Cow::Borrowed(text)),
+        ParamValue::Bare(text) => Some(text.clone()),
         ParamValue::String(parts) => parts
             .iter()
             .map(|part| match part {
                 StringPart::Text(text) => Some(text.value.as_str()),
                 StringPart::Interpolation(_) => None,
             })
-            .collect::<Option<String>>()
-            .map(Cow::Owned),
+            .collect(),
         _ => None,
     }
-}
-
-/// Whether a value written as `value` is of the type `declared`; a bound input is checked by its name instead.
-fn fits(declared: &DeclaredType, value: &ParamValue) -> bool {
-    match declared {
-        DeclaredType::Enum { members } => {
-            !matches!(value, ParamValue::Flag | ParamValue::Json(_))
-                && literal(value).is_none_or(|text| members.iter().any(|member| *member == text))
-        }
-        DeclaredType::Name(name) => accepts(*name, value),
-        DeclaredType::Other(_) | DeclaredType::Input { .. } => true,
-    }
-}
-
-/// A CEL identifier, as `name` params, `as` names and inputs are.
-fn is_identifier(text: &str) -> bool {
-    let mut chars = text.chars();
-    chars
-        .next()
-        .is_some_and(|c| c.is_ascii_alphabetic() || c == '_')
-        && chars.all(|c| c.is_ascii_alphanumeric() || c == '_')
 }
 
 /// Whether an input declared `input` can be bound to a param declared `input<param>` (spec §7.3).
@@ -137,6 +72,16 @@ fn param_at(param: &Param) -> Location {
     param
         .position
         .map_or(Location::new(1, 1), |position| position.start.into())
+}
+
+/// Where a param's key is: past its breakpoint.
+fn key_at(param: &Param) -> Location {
+    let start = param_at(param);
+    let prefix = param
+        .breakpoint
+        .as_ref()
+        .map_or(0, |breakpoint| breakpoint.chars().count() + 1);
+    Location::new(start.line, start.column + prefix)
 }
 
 /// The component an invocation's params are checked against.
@@ -372,13 +317,16 @@ impl<'r> Checker<'r, '_> {
                     .iter()
                     .map(|declared| declared.name.as_str())
                     .chain(Universal::NAMES.iter().copied());
-                let hint = nearest(key, known)
-                    .map_or_else(String::new, |near| format!("; did you mean `{near}`?"));
+                let near = nearest(key, known);
+                let hint =
+                    near.map_or_else(String::new, |near| format!("; did you mean `{near}`?"));
+                let fix = near.map(|near| Fix::replacing(key_at(param), key, near));
                 let name = &target.component.name;
-                self.report(
+                self.report_fixed(
                     Code::F008,
                     param_at(param),
                     format!("`{name}` has no param `{key}`, so it is ignored{hint}"),
+                    fix,
                 );
             }
         }
@@ -442,10 +390,9 @@ impl<'r> Checker<'r, '_> {
                 if let ParamValue::String(parts) = value {
                     self.string_paths(parts, at, scope);
                 }
-                let areas = key != "grid-template-areas"
-                    || literal(value).is_none_or(|text| Grammar::Areas.accepts(&text));
-                if !(fits(declared_type, value) && areas) {
-                    return self.refuse(at, &format!("`{key}` takes {}", declared_type.written()));
+                let kind = Kind::declared(declared_type);
+                if !kind.accepts(value) {
+                    return self.refused(param, key, &kind);
                 }
                 if let (ParamValue::Bare(bound), DeclaredType::Name(TypeName::Name)) =
                     (value, declared_type)
@@ -458,12 +405,39 @@ impl<'r> Checker<'r, '_> {
         }
     }
 
-    /// F009: the param is treated as absent.
+    /// F009 for how a value is written, such as an expression where a name is bound: the param is treated as absent.
     fn refuse(&mut self, at: Location, message: &str) -> Verdict {
         self.report(
             Code::F009,
             at,
             format!("{message}; the param is treated as absent"),
+        );
+        Verdict::Refused
+    }
+
+    /// F009 for a value `key` doesn't take: what it takes, and the nearest token when one is close, with the fix
+    /// that writes it. The only place that says what a param takes.
+    fn refused(&mut self, param: &Param, key: &str, kind: &Kind) -> Verdict {
+        let at = value_at(param);
+        let written = literal(&param.value);
+        let near = written.as_deref().and_then(|written| kind.suggest(written));
+        let hint = near.map_or_else(String::new, |near| format!("; did you mean `{near}`?"));
+        // The value runs to the param's end: a quoted one's quotes go with it.
+        let fix = near.zip(param.position).map(|(near, position)| Fix {
+            range: Range {
+                start: at,
+                end: Some(position.end.into()),
+            },
+            text: near.to_string(),
+        });
+        self.report_fixed(
+            Code::F009,
+            at,
+            format!(
+                "`{key}` takes {}, so the param is treated as absent{hint}",
+                kind.describe()
+            ),
+            fix,
         );
         Verdict::Refused
     }
@@ -524,19 +498,10 @@ impl<'r> Checker<'r, '_> {
         if let ParamValue::String(parts) = value {
             self.string_paths(parts, at, scope);
         }
-        let fits = match universal.takes() {
-            Takes::Flag => {
-                matches!(value, ParamValue::Flag)
-                    || matches!(value, ParamValue::Bare(text) if text == "true" || text == "false")
-            }
-            Takes::Text => matches!(value, ParamValue::Bare(_) | ParamValue::String(_)),
-            Takes::Value(grammar) => {
-                matches!(value, ParamValue::Bare(_) | ParamValue::String(_))
-                    && literal(value).is_none_or(|text| grammar.accepts(&text))
-            }
-        };
+        let kind = universal.kind();
+        let fits = kind.accepts(value);
         if !fits {
-            self.refuse(at, &format!("`{key}` doesn't take this value"));
+            self.refused(param, key, &kind);
         }
         fits
     }
@@ -626,18 +591,24 @@ impl<'r> Checker<'r, '_> {
             .iter()
             .filter(|slot| !declared.contains(&slot.name.as_str()))
         {
-            let hint = nearest(&slot.name, declared.iter().copied())
-                .map_or_else(String::new, |near| format!("; did you mean `{near}`?"));
+            let near = nearest(&slot.name, declared.iter().copied());
+            let hint = near.map_or_else(String::new, |near| format!("; did you mean `{near}`?"));
             let at = slot
                 .position
                 .map_or(start.into(), |position| position.start.into());
-            self.report(
+            // The slot's name follows the `#` that `name_at` finds past the colons.
+            let fix = near.zip(slot.position).map(|(near, position)| {
+                let hash = self.lines.name_at(position.start);
+                Fix::replacing(Location::new(hash.line, hash.column + 1), &slot.name, near)
+            });
+            self.report_fixed(
                 Code::F006,
                 at,
                 format!(
                     "`{name}` has no slot `{}`, so its content joins the default slot{hint}",
                     slot.name
                 ),
+                fix,
             );
         }
     }
@@ -778,6 +749,14 @@ mod tests {
         ParamValue::Bare(text.into())
     }
 
+    fn accepts(name: TypeName, value: &ParamValue) -> bool {
+        name.kind().accepts(value)
+    }
+
+    fn fits(declared: &DeclaredType, value: &ParamValue) -> bool {
+        Kind::declared(declared).accepts(value)
+    }
+
     #[test]
     fn kinds_accept_what_their_type_reads() {
         assert!(accepts(TypeName::Number, &bare("3")));
@@ -798,6 +777,7 @@ mod tests {
             (TypeName::Length, "2rem", "wide"),
             (TypeName::Color, "#fff", "loud"),
             (TypeName::Tracks, "1fr 2fr", "wide"),
+            (TypeName::Areas, "'a b' 'c d'", "a b"),
             (TypeName::Surface, "subtle", "loud"),
             (TypeName::Border, "1px solid", "thick-dotted"),
             (TypeName::Radius, "full", "round"),

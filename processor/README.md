@@ -39,6 +39,7 @@ let splice = processor.splice(); // nodes `from..to` became `splice.nodes`
 ```
 
 - A host that holds everything in memory can use maps: `HashMap<String, String>` is `Files`, `HashMap<String, Vec<host::LoadedRelease>>` is `Packs`, `HashMap<String, host::Fetched>` is `Fetch` and `HashMap<String, serde_json::Value>` is `Data`. `compmd::context::parse_time` gives a render time from RFC 3339 text. The WebAssembly build, [`@compmd/processor`](../wasm/README.md), runs the stages this way on a JSON request.
+- **What a param takes** is `compmd::values` ([its design](docs/param-values.md)): one `Kind` per kind of value (its tokens, forms and examples), which checks a value, says in an F009 what the param takes, and suggests a misspelt token. `values::vocabulary()` is the fixed vocabulary every document can write, the common params, the attributes and `box`'s params, each with its kind; `conformance/params.json` is its JSON, for the renderer and editors. A diagnostic whose message suggests a name or a token carries the edit as its `fix`.
 - Expressions follow the CEL profile with the `md.` functions: each is type-checked against the variables' declared types before it runs, and runs within a work budget. Formatting uses [ICU4X](https://github.com/unicode-org/icu4x) with all its compiled locale data, and time zone offsets come from the host's `Time`.
 - Parsing alone is the first two calls:
 
@@ -54,7 +55,7 @@ It isn't published yet: it depends on the fork of markdown-rs by path, and is pu
 
 ## Commands
 
-The parser is a fork of markdown-rs in the submodule `markdown-rs/`; fetch it once after cloning. `cargo make ci` (with [cargo-make](https://github.com/sagiegurari/cargo-make)) runs every check: formatting, clippy with warnings as errors, the tests with the conformance set, [cargo-deny](https://github.com/EmbarkStudios/cargo-deny), and line coverage of at least 99% with [cargo-llvm-cov](https://github.com/taiki-e/cargo-llvm-cov).
+The parser is a fork of markdown-rs in the submodule `markdown-rs/`; fetch it once after cloning. `cargo make ci` (with [cargo-make](https://github.com/sagiegurari/cargo-make)) runs every check: formatting, clippy with warnings as errors, the tests with the conformance set, [cargo-deny](https://github.com/EmbarkStudios/cargo-deny), line coverage of at least 99% with [cargo-llvm-cov](https://github.com/taiki-e/cargo-llvm-cov), and the TypeScript packages built and tested (which needs pnpm), the renderer's tests checking it against `params.json`.
 
 ```sh
 git submodule update --init

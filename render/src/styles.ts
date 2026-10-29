@@ -13,17 +13,17 @@ export const BREAKPOINTS: readonly (readonly [string, number])[] = [
 ];
 
 /** `box`'s own layout params (spec §9). */
-const LAYOUT = ["display", "flex-direction", "gap", "align-items", "justify-content", "flex-wrap", "grid-template-columns", "grid-template-rows", "grid-template-areas"];
+export const LAYOUT = ["display", "flex-direction", "gap", "align-items", "justify-content", "flex-wrap", "grid-template-columns", "grid-template-rows", "grid-template-areas"];
 
 /** The common params (spec §9.2), and the attributes any component takes. */
-const COMMON = [
+export const COMMON = [
   "width", "height", "min-width", "max-width",
   "padding", "padding-inline", "padding-block", "padding-inline-start", "padding-inline-end", "padding-block-start", "padding-block-end",
   "border", "border-radius", "background", "grid-area", "order", "align-self", "justify-self", "aspect-ratio",
   "inset-inline-start", "inset-inline-end", "inset-block-start", "inset-block-end",
   "scroll", "fill", "sticky", "show", "hide",
 ];
-const ATTRIBUTES = ["class", "id", "lang", "dir"];
+export const ATTRIBUTES = ["class", "id", "lang", "dir"];
 const INSETS = ["inset-inline-start", "inset-inline-end", "inset-block-start", "inset-block-end"];
 
 /** Params the renderer applies to a component's outer box rather than passing them on (spec §7.4). */

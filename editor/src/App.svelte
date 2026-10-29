@@ -76,7 +76,18 @@
     {#if shown && (shown.diagnostics.length > 0 || shown.problems.length > 0)}
       <ul class="diagnostics" aria-label="Diagnostics">
         {#each shown.diagnostics as d, i (i)}
-          <li class={d.severity}><code>{d.code}</code> {d.file ? `${d.file} ` : ""}{d.range.start.line}:{d.range.start.column} {d.message}</li>
+          <li class={d.severity}>
+            <code>{d.code}</code> {d.file ? `${d.file} ` : ""}{d.range.start.line}:{d.range.start.column} {d.message}
+            {#if d.fix && d.file === undefined}
+              {@const fix = d.fix}
+              <button
+                type="button"
+                onclick={() => {
+                  if (textarea && editor) textarea.value = editor.fix(fix);
+                }}>Use <code>{fix.text}</code></button
+              >
+            {/if}
+          </li>
         {/each}
         {#each shown.problems as problem (problem)}
           <li class="error">{problem}</li>

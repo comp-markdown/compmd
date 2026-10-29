@@ -6,7 +6,7 @@
 
 use super::names::{Binding, Level};
 use super::{Body, ComponentId, DocumentId, Resolved};
-use crate::diagnostic::{Code, Diagnostic, Location, Stage};
+use crate::diagnostic::{Code, Diagnostic, Fix, Location, Stage};
 use crate::nearest::nearest;
 use crate::tree::{Node, Point};
 use std::collections::HashSet;
@@ -107,9 +107,11 @@ fn names_used(
         let name = invocation.name;
         let diagnostic = match document.names.get(name) {
             None => {
-                let hint = nearest(name, document.names.all())
-                    .map_or_else(String::new, |known| format!("; did you mean `{known}`?"));
+                let known = nearest(name, document.names.all());
+                let hint =
+                    known.map_or_else(String::new, |known| format!("; did you mean `{known}`?"));
                 Diagnostic::new(Code::F002, at, format!("unknown component `{name}`{hint}"))
+                    .with_fix(known.map(|known| Fix::replacing(at, name, known)))
             }
             Some(Binding::Ambiguous(sources)) => Diagnostic::new(
                 Code::F023,

@@ -1,0 +1,657 @@
+{
+  "common": [
+    {
+      "name": "width",
+      "tokens": [
+        "auto"
+      ],
+      "forms": [
+        "length"
+      ],
+      "examples": [
+        "20rem"
+      ],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
+      "name": "height",
+      "tokens": [
+        "auto"
+      ],
+      "forms": [
+        "length"
+      ],
+      "examples": [
+        "20rem"
+      ],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
+      "name": "min-width",
+      "tokens": [
+        "auto"
+      ],
+      "forms": [
+        "length"
+      ],
+      "examples": [
+        "20rem"
+      ],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
+      "name": "max-width",
+      "tokens": [
+        "auto"
+      ],
+      "forms": [
+        "length"
+      ],
+      "examples": [
+        "20rem"
+      ],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
+      "name": "padding",
+      "tokens": [
+        "none",
+        "s",
+        "m",
+        "l"
+      ],
+      "forms": [
+        "length"
+      ],
+      "examples": [
+        "s l"
+      ],
+      "upTo": 2,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
+      "name": "padding-inline",
+      "tokens": [
+        "none",
+        "s",
+        "m",
+        "l"
+      ],
+      "forms": [
+        "length"
+      ],
+      "examples": [
+        "s l"
+      ],
+      "upTo": 2,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
+      "name": "padding-block",
+      "tokens": [
+        "none",
+        "s",
+        "m",
+        "l"
+      ],
+      "forms": [
+        "length"
+      ],
+      "examples": [
+        "s l"
+      ],
+      "upTo": 2,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
+      "name": "padding-inline-start",
+      "tokens": [
+        "none",
+        "s",
+        "m",
+        "l"
+      ],
+      "forms": [
+        "length"
+      ],
+      "examples": [
+        "1rem"
+      ],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
+      "name": "padding-inline-end",
+      "tokens": [
+        "none",
+        "s",
+        "m",
+        "l"
+      ],
+      "forms": [
+        "length"
+      ],
+      "examples": [
+        "1rem"
+      ],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
+      "name": "padding-block-start",
+      "tokens": [
+        "none",
+        "s",
+        "m",
+        "l"
+      ],
+      "forms": [
+        "length"
+      ],
+      "examples": [
+        "1rem"
+      ],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
+      "name": "padding-block-end",
+      "tokens": [
+        "none",
+        "s",
+        "m",
+        "l"
+      ],
+      "forms": [
+        "length"
+      ],
+      "examples": [
+        "1rem"
+      ],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
+      "name": "border",
+      "tokens": [
+        "none",
+        "subtle",
+        "strong"
+      ],
+      "forms": [
+        "border"
+      ],
+      "examples": [
+        "1px solid #d0d7de"
+      ],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
+      "name": "border-radius",
+      "tokens": [
+        "none",
+        "s",
+        "m",
+        "l",
+        "full"
+      ],
+      "forms": [
+        "length"
+      ],
+      "examples": [
+        "6px"
+      ],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
+      "name": "background",
+      "tokens": [
+        "none",
+        "subtle",
+        "strong",
+        "accent"
+      ],
+      "forms": [
+        "color"
+      ],
+      "examples": [
+        "#f6f8fa"
+      ],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
+      "name": "grid-area",
+      "tokens": [],
+      "forms": [
+        "area-name"
+      ],
+      "examples": [
+        "side"
+      ],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": false
+    },
+    {
+      "name": "order",
+      "tokens": [
+        "first",
+        "last",
+        "none"
+      ],
+      "forms": [],
+      "examples": [],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
+      "name": "align-self",
+      "tokens": [
+        "start",
+        "center",
+        "end",
+        "stretch"
+      ],
+      "forms": [],
+      "examples": [],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
+      "name": "justify-self",
+      "tokens": [
+        "start",
+        "center",
+        "end"
+      ],
+      "forms": [],
+      "examples": [],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
+      "name": "aspect-ratio",
+      "tokens": [
+        "none"
+      ],
+      "forms": [
+        "ratio"
+      ],
+      "examples": [
+        "16/9"
+      ],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
+      "name": "inset-inline-start",
+      "tokens": [
+        "auto"
+      ],
+      "forms": [
+        "length"
+      ],
+      "examples": [
+        "20rem"
+      ],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
+      "name": "inset-inline-end",
+      "tokens": [
+        "auto"
+      ],
+      "forms": [
+        "length"
+      ],
+      "examples": [
+        "20rem"
+      ],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
+      "name": "inset-block-start",
+      "tokens": [
+        "auto"
+      ],
+      "forms": [
+        "length"
+      ],
+      "examples": [
+        "20rem"
+      ],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
+      "name": "inset-block-end",
+      "tokens": [
+        "auto"
+      ],
+      "forms": [
+        "length"
+      ],
+      "examples": [
+        "20rem"
+      ],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
+      "name": "scroll",
+      "tokens": [
+        "true",
+        "false"
+      ],
+      "forms": [],
+      "examples": [],
+      "upTo": 1,
+      "flag": true,
+      "quoted": false,
+      "breakpoints": false
+    },
+    {
+      "name": "fill",
+      "tokens": [
+        "true",
+        "false"
+      ],
+      "forms": [],
+      "examples": [],
+      "upTo": 1,
+      "flag": true,
+      "quoted": false,
+      "breakpoints": false
+    },
+    {
+      "name": "sticky",
+      "tokens": [
+        "top",
+        "bottom",
+        "none"
+      ],
+      "forms": [],
+      "examples": [],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
+      "name": "show",
+      "tokens": [
+        "sm",
+        "md",
+        "lg"
+      ],
+      "forms": [],
+      "examples": [],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": false
+    },
+    {
+      "name": "hide",
+      "tokens": [
+        "sm",
+        "md",
+        "lg"
+      ],
+      "forms": [],
+      "examples": [],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": false
+    }
+  ],
+  "attributes": [
+    {
+      "name": "class",
+      "tokens": [],
+      "forms": [
+        "text"
+      ],
+      "examples": [],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": false
+    },
+    {
+      "name": "id",
+      "tokens": [],
+      "forms": [
+        "text"
+      ],
+      "examples": [],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": false
+    },
+    {
+      "name": "lang",
+      "tokens": [],
+      "forms": [
+        "language"
+      ],
+      "examples": [
+        "en",
+        "de-CH"
+      ],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": false
+    },
+    {
+      "name": "dir",
+      "tokens": [
+        "ltr",
+        "rtl",
+        "auto"
+      ],
+      "forms": [],
+      "examples": [],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": false
+    }
+  ],
+  "layout": [
+    {
+      "name": "display",
+      "tokens": [
+        "block",
+        "flex",
+        "grid",
+        "contents"
+      ],
+      "forms": [],
+      "examples": [],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
+      "name": "flex-direction",
+      "tokens": [
+        "row",
+        "column"
+      ],
+      "forms": [],
+      "examples": [],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
+      "name": "gap",
+      "tokens": [
+        "none",
+        "s",
+        "m",
+        "l"
+      ],
+      "forms": [
+        "length"
+      ],
+      "examples": [
+        "1rem"
+      ],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
+      "name": "align-items",
+      "tokens": [
+        "start",
+        "center",
+        "end",
+        "stretch"
+      ],
+      "forms": [],
+      "examples": [],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
+      "name": "justify-content",
+      "tokens": [
+        "start",
+        "center",
+        "end",
+        "between",
+        "around",
+        "space-between",
+        "space-around"
+      ],
+      "forms": [],
+      "examples": [],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
+      "name": "flex-wrap",
+      "tokens": [
+        "wrap",
+        "nowrap"
+      ],
+      "forms": [],
+      "examples": [],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
+      "name": "grid-template-columns",
+      "tokens": [],
+      "forms": [
+        "tracks"
+      ],
+      "examples": [
+        "1fr 2fr",
+        "repeat(auto-fill, minmax(12rem, 1fr))"
+      ],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
+      "name": "grid-template-rows",
+      "tokens": [],
+      "forms": [
+        "tracks"
+      ],
+      "examples": [
+        "1fr 2fr",
+        "repeat(auto-fill, minmax(12rem, 1fr))"
+      ],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
+      "name": "grid-template-areas",
+      "tokens": [],
+      "forms": [
+        "areas"
+      ],
+      "examples": [
+        "'head head' 'side main'"
+      ],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    }
+  ]
+}

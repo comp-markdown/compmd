@@ -95,6 +95,7 @@ impl Type {
                 | TypeName::Space
                 | TypeName::Color
                 | TypeName::Tracks
+                | TypeName::Areas
                 | TypeName::Surface
                 | TypeName::Border
                 | TypeName::Radius => Self::Grammar(name.name()),

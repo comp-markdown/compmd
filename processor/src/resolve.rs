@@ -27,7 +27,7 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 use std::rc::Rc;
 
 /// The document of `@compmd/core`, built in (spec §9).
-const CORE_TEXT: &str = include_str!("core.comp.md");
+pub(crate) const CORE_TEXT: &str = include_str!("core.comp.md");
 
 /// The packs every document imports, at the lowest priority (spec §6.3), and whether to report their names.
 ///

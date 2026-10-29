@@ -283,17 +283,18 @@ md:
 | `row` | side by side, wrapping | `gap`, `align-items`, `justify-content`, `flex-wrap` |
 | `grid` | as many per row as fit (`min`), or an exact grid | `min`, `gap`, `align-items`, `grid-template-columns`, `grid-template-rows`, `grid-template-areas` |
 
+`box`'s params take: `display=block|flex|grid|contents`, `flex-direction=row|column`, `align-items=start|center|end|stretch`, `justify-content=start|center|end|between|around|space-between|space-around`, `flex-wrap=wrap|nowrap`, `gap` a space (below), `grid-template-columns` and `grid-template-rows` tracks (`1fr 2fr`, `repeat(auto-fill, minmax(12rem, 1fr))`), `grid-template-areas` quoted rows of area names (`"'head head' 'side main'"`).
+
 Common params, on any container or leaf (they style its outer box):
 
-- size: `width`, `height`, `min-width`, `max-width`, `aspect-ratio=16/9`
-- spacing: `padding`, `padding-inline`, `padding-block`, `padding-inline-start` (and `-end`, `padding-block-start`, `-end`)
+- size: `width`, `height`, `min-width`, `max-width` (`auto` or a length), `aspect-ratio` (`none` or a ratio such as `16/9`)
+- spacing: `padding`, `padding-inline`, `padding-block` (one or two spaces), `padding-inline-start`, `padding-inline-end`, `padding-block-start`, `padding-block-end` (one space); a space is `none`, `s`, `m`, `l` or a length
 - look: `border` (`none subtle strong` or CSS), `border-radius` (`none s m l full` or a length), `background` (`none subtle strong accent` or a CSS color)
-- placement: `grid-area`, `order` (`first last none`), `align-self`, `justify-self`, `inset-inline-start`, `inset-inline-end`, `inset-block-start`, `inset-block-end`
-- behavior: `scroll`, `fill`, `sticky=top|bottom`, `show=sm|md|lg`, `hide=sm|md|lg`
+- placement: `grid-area`, `order` (`first last none`), `align-self` (`start center end stretch`), `justify-self` (`start center end`), `inset-inline-start`, `inset-inline-end`, `inset-block-start`, `inset-block-end` (`auto` or a length)
+- behavior: `scroll`, `fill` (flags: alone, or `true` or `false`), `sticky=top|bottom|none`, `show=sm|md|lg`, `hide=sm|md|lg`
 
 - Spaces (`gap`, padding): tokens `none`, `s`, `m`, `l`, or a length (`px rem em %`). Prefer tokens.
 - Each top-level block in a layout container is one item. Wrap several blocks in `::: box` to make one item.
-- `justify-content` takes `start center end between around`.
 - Directions are logical only: `inline`/`block`, `start`/`end`. There is no `left`, `top`, `margin`, `color`, `font-size` or `style`. Unknown params are errors (F008); the vocabulary is closed, so raw CSS never passes.
 - Breakpoints follow the width of the block's nearest box (the closest `box`, layout or component box around it; list items and quotes don't count), not the window and not the block's own width. Write the narrow layout first and override up: `::: grid {gap=s md:gap=l md:grid-template-columns="2fr 1fr"}`.
 - A block with an `inset-*` is placed over its nearest box, which needs `height`, `aspect-ratio` or `fill` (W119).

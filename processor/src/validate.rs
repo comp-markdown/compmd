@@ -7,13 +7,12 @@
 
 mod body;
 mod data;
-mod grammar;
 pub(crate) mod params;
 pub(crate) mod scope;
 pub(crate) mod universal;
 
 use crate::cel::{self, Program};
-use crate::diagnostic::{Code, Diagnostic, Location, Stage};
+use crate::diagnostic::{Code, Diagnostic, Fix, Location, Stage};
 use crate::lines::Lines;
 use crate::parse::Spliced;
 use crate::reserved;
@@ -265,10 +264,22 @@ impl<'r, 'd> Checker<'r, 'd> {
 
 impl Checker<'_, '_> {
     fn report(&mut self, code: Code, at: Location, message: impl Into<String>) {
+        self.report_fixed(code, at, message, None);
+    }
+
+    /// A diagnostic whose message suggests `fix`.
+    fn report_fixed(
+        &mut self,
+        code: Code,
+        at: Location,
+        message: impl Into<String>,
+        fix: Option<Fix>,
+    ) {
         self.found.diagnostics.push(
             Diagnostic::new(code, at, message)
                 .in_stage(Stage::Validate)
-                .in_file(self.file.clone()),
+                .in_file(self.file.clone())
+                .with_fix(fix),
         );
     }
 

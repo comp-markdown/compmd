@@ -109,6 +109,7 @@ The HTML and CSS this package writes for the built-ins is the reference renderin
 
 ## Tests
 
+- **[`src/vocabulary.test.ts`](src/vocabulary.test.ts):** the params it styles are exactly the processor's (`conformance/params.json`), and every token of theirs gets CSS; a token CSS takes as it is is listed there.
 - **Unit tests** next to the code: the styles, raw HTML, keys, the component layer, the page and its splices (blocks kept, several in order, footnotes, links, headings, raw HTML across blocks, inputs, broken frontmatter), a region's container, the frame protocol.
 - **[`test/identity.test.ts`](test/identity.test.ts):** every edit of a document of stateful components (typing above, inside and in params, inside an `each`, adding, removing and pasting blocks, undo, a record added, a block moved), checking which components keep their instance and their state. Each runs with whole trees and with splices, which give the same page.
 - **[`test/invalid.test.ts`](test/invalid.test.ts):** an unclosed container, a half-written expression, a half-typed component line and broken frontmatter, typed and finished, with whole trees and with splices.
