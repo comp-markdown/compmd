@@ -92,6 +92,8 @@ struct EditContext {
     /// The parse of `text`, whose tree the resolved document shares.
     parsed: parse::Parsed,
     ambient: Ambient,
+    /// The parses of the documents resolving loaded, which it reuses while their text stays the same.
+    parses: resolve::Parses,
 }
 
 /// After stage 3: the checked documents, and what checking refused.
@@ -206,10 +208,19 @@ impl Processor<Parsed> {
         packs: &'h impl Packs,
         ambient: &Ambient,
     ) -> Processor<Resolved<'h>> {
-        self.resolve_in(Store { files, packs }, ambient.clone())
+        self.resolve_in(
+            Store { files, packs },
+            ambient.clone(),
+            resolve::Parses::default(),
+        )
     }
 
-    fn resolve_in(self, store: Store<'_>, ambient: Ambient) -> Processor<Resolved<'_>> {
+    fn resolve_in(
+        self,
+        store: Store<'_>,
+        ambient: Ambient,
+        mut parses: resolve::Parses,
+    ) -> Processor<Resolved<'_>> {
         self.then(|parsed, diagnostics| {
             let Parsed {
                 path,
@@ -217,14 +228,21 @@ impl Processor<Parsed> {
                 document,
                 options,
             } = parsed;
-            let mut resolved =
-                resolve::resolve(&path, &text, document.for_resolving(), store, &ambient);
+            let mut resolved = resolve::resolve(
+                &path,
+                &text,
+                document.for_resolving(),
+                store,
+                &ambient,
+                &mut parses,
+            );
             let edit_context = EditContext {
                 path,
                 text,
                 options,
                 parsed: document,
                 ambient,
+                parses,
             };
             diagnostics.append(&mut resolved.diagnostics);
             Resolved {
@@ -446,7 +464,7 @@ impl<'h> Processor<Expanded<'h, '_>> {
             diagnostics,
             state: parsed,
         }
-        .resolve_in(store, context.ambient)
+        .resolve_in(store, context.ambient, context.parses)
         .validate(&allowed_origins)
         .load_with(render)
         .expand(&options)

@@ -142,6 +142,10 @@ fn measured(
         });
     });
     group.finish();
+    if samples.is_empty() {
+        // A filter on the command line left it out.
+        return;
+    }
     let recent = if flat {
         &samples[..]
     } else {

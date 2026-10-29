@@ -5,8 +5,8 @@ use super::names::{Binding, Builder, Level, Names};
 use super::origin::CORE;
 use super::source::{PackSpec, Source};
 use super::{
-    Ambient, Body, Component, ComponentId, Document, DocumentId, Language, Origin, Resolved, Store,
-    uses,
+    Ambient, Body, Component, ComponentId, Document, DocumentId, Language, Origin, Parses,
+    Resolved, Store, uses,
 };
 use crate::diagnostic::{Code, Diagnostic, Location, Stage};
 use crate::parse::{ParseOptions, Parsed, parse};
@@ -37,8 +37,10 @@ impl Refusal {
 }
 
 /// Loads documents, collecting them, their components and the diagnostics.
-pub(super) struct Loader<'h> {
+pub(super) struct Loader<'h, 'p> {
     store: Store<'h>,
+    /// The parses of documents loaded before, which a document whose text hasn't changed reuses.
+    parses: &'p mut Parses,
     /// The processed document, which diagnostics name with no file.
     main: Origin,
     documents: Vec<Document>,
@@ -51,10 +53,11 @@ pub(super) struct Loader<'h> {
     ambient: Vec<DocumentId>,
 }
 
-impl<'h> Loader<'h> {
-    pub(super) fn new(store: Store<'h>, main: Origin) -> Self {
+impl<'h, 'p> Loader<'h, 'p> {
+    pub(super) fn new(store: Store<'h>, main: Origin, parses: &'p mut Parses) -> Self {
         Self {
             store,
+            parses,
             main,
             documents: Vec::new(),
             components: Vec::new(),
@@ -200,7 +203,16 @@ impl<'h> Loader<'h> {
             .store
             .read(&origin)
             .ok_or_else(|| Refusal::new(Code::F026, at, format!("`{origin}` can't be loaded")))?;
-        let parsed = parse(&text, &ParseOptions::default());
+        let parsed = match self.parses.0.get(&origin) {
+            Some((before, parsed)) if *before == text => parsed.clone(),
+            _ => {
+                let parsed = parse(&text, &ParseOptions::default());
+                self.parses
+                    .0
+                    .insert(origin.clone(), (text.clone(), parsed.clone()));
+                parsed
+            }
+        };
         Ok(self.load(origin, text, parsed, provided))
     }
 

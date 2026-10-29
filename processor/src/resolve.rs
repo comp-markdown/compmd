@@ -22,7 +22,7 @@ use crate::parse::Parsed;
 use crate::reserved::Keyword;
 use crate::settings::Settings;
 use crate::tree::{Node, Param, Point, Position, Root, Signature};
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::rc::Rc;
 
 /// The document of `@compmd/core`, built in (spec §9).
@@ -224,19 +224,26 @@ impl Resolved {
     }
 }
 
+/// The parses of the documents resolving loaded, by where they come from, with the text each was parsed from: a
+/// later resolve parses a document again only when its text changed.
+#[derive(Clone, Debug, Default)]
+pub(crate) struct Parses(HashMap<Origin, (String, Parsed)>);
+
 /// Resolves a parsed document, stage 2 of spec §11: loads its imports and their imports, `@compmd/core` and the
 /// ambient packs from `store`, binds every name, and reports what can't be bound.
 ///
 /// `path` is where the document is under its root folder, against which its relative imports resolve; `parsed` is
-/// its tree and settings, whose parse diagnostics the caller holds.
+/// its tree and settings, whose parse diagnostics the caller holds. The documents it loads are parsed once and kept in
+/// `known`.
 pub(crate) fn resolve(
     path: &str,
     text: &str,
     parsed: Parsed,
     store: Store,
     ambient: &Ambient,
+    known: &mut Parses,
 ) -> Resolved {
-    load::Loader::new(store, Origin::File(path.to_string())).resolve(text, parsed, ambient)
+    load::Loader::new(store, Origin::File(path.to_string()), known).resolve(text, parsed, ambient)
 }
 
 #[cfg(test)]
@@ -269,7 +276,14 @@ mod tests {
             files: &files,
             packs: &packs,
         };
-        resolve("input.comp.md", text, parsed, store, &ambient)
+        resolve(
+            "input.comp.md",
+            text,
+            parsed,
+            store,
+            &ambient,
+            &mut Parses::default(),
+        )
     }
 
     /// The component `name` stands for in the processed document.
@@ -279,6 +293,49 @@ mod tests {
             panic!("`{name}` is bound");
         };
         resolved.component(*id)
+    }
+
+    #[test]
+    fn a_document_is_parsed_again_only_when_its_text_changed() {
+        let text = "---\nmd:\n  import:\n    - from: ./kit.comp.md\n      names: [card]\n---\n\n:: card[x]\n";
+        let kit = |body: &str| format!("```compmd component=card\n---\n{body}\n```\n");
+        let mut known = Parses::default();
+        let mut resolve_with = |kit: &str| {
+            let files = HashMap::from([("kit.comp.md".to_string(), kit.to_string())]);
+            let store = Store {
+                files: &files,
+                packs: &(),
+            };
+            let parsed = parse(text, &ParseOptions::default());
+            let resolved = resolve(
+                "input.comp.md",
+                text,
+                parsed,
+                store,
+                &Ambient::default(),
+                &mut known,
+            );
+            resolved
+                .ids()
+                .map(|id| Rc::clone(&resolved.document(id).root))
+                .collect::<Vec<_>>()
+        };
+        let first = resolve_with(&kit("One."));
+        let same = resolve_with(&kit("One."));
+        let changed = resolve_with(&kit("Two."));
+        assert_eq!(first.len(), 3, "core, the processed document and the kit");
+        let shared = |one: &[Rc<Root>], other: &[Rc<Root>]| {
+            one.iter()
+                .zip(other)
+                .filter(|(one, other)| Rc::ptr_eq(one, other))
+                .count()
+        };
+        assert_eq!(shared(&first, &same), 2, "core and the kit are kept");
+        assert_eq!(
+            shared(&first, &changed),
+            1,
+            "the changed kit is parsed again"
+        );
     }
 
     #[test]
