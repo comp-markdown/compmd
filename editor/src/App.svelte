@@ -1,4 +1,4 @@
-<!-- The editor: the document's text on the left, with its diagnostics under it; on the right, the host's stylesheet
+<!-- The editor: the document's text on the left, with the hint at the caret and the diagnostics under it; on the right, the host's stylesheet
      the author picks and the document's inputs over tabs with the rendered page in a sandboxed frame, what a plain
      Markdown renderer shows, what the frontmatter gives the render, the components the document can name, and its
      trees. Each document opens with a worker and a frame of its own. -->
@@ -10,7 +10,8 @@
   import DataView from "./DataView.svelte";
   import { EXAMPLES, exampleIndex, type SupportingFile } from "./documents.ts";
   import { offsetOf } from "./edit.ts";
-  import { Editor, type EditorState, type Frame } from "./editor.ts";
+  import { Editor, type EditorState, type Frame, type Replaced } from "./editor.ts";
+  import { lineOf } from "./hint.ts";
   import Inputs from "./Inputs.svelte";
   import JsonTree from "./JsonTree.svelte";
   import Split from "./Split.svelte";
@@ -123,8 +124,18 @@
   /** Whether text is selected, which offers a link to it. */
   let selected = $state(false);
   let copied = $state(false);
+  /** Notes what is selected, and where the caret is, for the hint at it: the session asks the worker once it is free. */
   function noteSelection(): void {
     selected = textarea !== undefined && textarea.selectionStart !== textarea.selectionEnd;
+    if (textarea) editor?.moveCaret(textarea.selectionStart);
+  }
+
+  /** Puts the text a fix or a value button wrote in the text area, with the caret past what it wrote. */
+  function write(replaced: Replaced | undefined): void {
+    if (!textarea || !replaced) return;
+    textarea.value = replaced.text;
+    textarea.focus();
+    textarea.setSelectionRange(replaced.caret, replaced.caret);
   }
 
   /** Copies a link to the playground with this document and the selected passage, or shows it when it can't. */
@@ -216,8 +227,9 @@
       Write a <a href="https://github.com/comp-markdown/compmd" target="_blank" rel="noreferrer">CompMD</a> document on the left and see it
       rendered on the right as you type: components, data, layout and all. The tabs show what a plain Markdown renderer makes of the same
       text, what the frontmatter gives the page, the components the document can name and where it uses them, and the trees the processor
-      builds. Above them, try the stylesheets a host might give the page, and other values for the document's inputs. Diagnostics under
-      the text point at what's wrong and offer fixes. Nothing leaves your browser.
+      builds. Above them, try the stylesheets a host might give the page, and other values for the document's inputs. Under the text,
+      a line says what is at the caret and what it takes, with its values to click, and the diagnostics point at what's wrong and offer
+      fixes. Nothing leaves your browser.
     </p>
     <button type="button" class="close" aria-label="Close" onclick={toggleAbout}>
       <svg viewBox="0 0 12 12" aria-hidden="true"><path d="m3 3 6 6m0-6-6 6" /></svg>
@@ -260,11 +272,12 @@
           if (textarea) editor?.beforeInput({ start: textarea.selectionStart, end: textarea.selectionEnd });
         }}
         oninput={(event) => {
-          if (textarea) editor?.input(textarea.value, event.timeStamp);
+          if (textarea) editor?.input(textarea.value, textarea.selectionStart, event.timeStamp);
           linkNote = undefined;
           noteSelection();
         }}
         onselect={noteSelection}
+        onselectionchange={noteSelection}
         onkeyup={noteSelection}
         onmouseup={noteSelection}
       ></textarea>
@@ -276,6 +289,42 @@
     </div>
     {#if linkNote}
       <p class="link-note" role="status">{linkNote}</p>
+    {/if}
+    {#if shown?.hint && file === undefined}
+      {@const hint = shown.hint}
+      {@const line = lineOf(hint)}
+      <div class="hint" role="status" aria-label="What is at the caret">
+        {#each hint.diagnostics as d, i (i)}
+          <span class="part diagnostic {d.severity}">
+            <code class="code">{d.code}</code>{d.message}
+            {#if d.fix}
+              {@const fix = d.fix}
+              <button type="button" class="fix" onmousedown={(event) => event.preventDefault()} onclick={() => write(editor?.fix(fix))}>Use <code>{fix.text}</code></button>
+            {/if}
+          </span>
+        {/each}
+        {#if line}
+          {#each line.parts as part, i (i)}
+            <span class="part"
+              >{#each part as run, j (j)}{#if run.name}<code class="name">{run.text}</code>{:else if run.code}<code>{run.text}</code>{:else}{run.text}{/if}{/each}</span
+            >
+            {#if i === 0 && line.values.length > 0}
+              <span class="part values">
+                {#each line.values as value (value.text)}
+                  <button
+                    type="button"
+                    class="value"
+                    aria-pressed={value.text === line.current}
+                    title={value.detail}
+                    onmousedown={(event) => event.preventDefault()}
+                    onclick={() => write(editor?.complete(value.text))}><code>{value.label}</code></button
+                  >
+                {/each}
+              </span>
+            {/if}
+          {/each}
+        {/if}
+      </div>
     {/if}
     {#if shown && (shown.diagnostics.length > 0 || shown.problems.length > 0)}
       <ul class="diagnostics" aria-label="Diagnostics">
@@ -293,9 +342,7 @@
               <button
                 type="button"
                 class="fix"
-                onclick={() => {
-                  if (textarea && editor) textarea.value = editor.fix(fix);
-                }}>Use <code>{fix.text}</code></button
+                onclick={() => write(editor?.fix(fix))}>Use <code>{fix.text}</code></button
               >
             {/if}
           </li>

@@ -2,13 +2,13 @@
 // splices it gave, which the editor passes on unread. An input component's `set` in the frame, or the inputs panel,
 // opens the document again with the new value. It times each change from its first key press to the frame painted.
 
-import type { Diagnostic, ExpandedInput, Request } from "@compmd/processor";
+import type { Diagnostic, ExpandedInput, PositionalHint, Request } from "@compmd/processor";
 import type { Change } from "@compmd/render";
 import type { FrameConnection } from "@compmd/render/frame";
 import { editOf, fixOf, type Selection } from "./edit.ts";
 import type { Example } from "./documents.ts";
 import type { ComponentFailed, ComponentsMessage, HostStyleMessage } from "./protocol.ts";
-import { Session, type Update, type WorkerPort } from "./session.ts";
+import { Session, type Hinted, type Update, type WorkerPort } from "./session.ts";
 import { Timings } from "./timings.ts";
 
 /** What the editor shows besides the page. */
@@ -26,6 +26,14 @@ export interface EditorState {
   painted: Timings;
   /** How many times the worker's answers have changed the document, for views that follow it. */
   updates: number;
+  /** What is at the caret, in the text the worker processed last. */
+  hint?: PositionalHint;
+}
+
+/** The text after a fix or a completion, for the text area, and where its caret goes: past what was written. */
+export interface Replaced {
+  text: string;
+  caret: number;
 }
 
 /** The frame's end the editor uses: the render protocol, and the port it shares for components. */
@@ -48,8 +56,9 @@ export class Editor {
   readonly #onChange: () => void;
   /** The text the last input left, and the selection before the next one. */
   #text = "";
-  /** The text the diagnostics shown are of. */
+  /** The text the diagnostics shown are of, and the one the hint is of. */
   #processed: string | undefined;
+  #hinted: string | undefined;
   #selection: Selection = { start: 0, end: 0 };
   #request: Request | undefined;
   #inputs: Record<string, unknown> = {};
@@ -67,6 +76,10 @@ export class Editor {
       },
       (message) => {
         this.state.problems = [message];
+        onChange();
+      },
+      (hinted) => {
+        this.#hint(hinted);
         onChange();
       },
     );
@@ -94,6 +107,7 @@ export class Editor {
     this.#inputs = {};
     this.#text = example.request.files?.[example.request.path] ?? "";
     this.state.problems = [];
+    delete this.state.hint;
     this.#session.open(this.#request, this.#text, at);
     return this.#text;
   }
@@ -103,23 +117,41 @@ export class Editor {
     this.#selection = selection;
   }
 
-  /** After an input, at `at`, the text area holds `text`. */
-  input(text: string, at = performance.now()): void {
+  /** After an input, at `at`, the text area holds `text`, with its caret at `caret`. */
+  input(text: string, caret: number, at = performance.now()): void {
     const edit = editOf(this.#text, text, this.#selection);
     this.#text = text;
-    this.#session.edit(edit, text, at);
+    this.#session.edit(edit, text, caret, at);
+  }
+
+  /** The caret moved to `caret` without an input: the hint follows it. */
+  moveCaret(caret: number): void {
+    this.#session.moveCaret(caret);
   }
 
   /**
    * Makes a diagnostic's fix, as an input would, and gives the text after it for the text area. A fix is of the text
-   * its diagnostic was found in, so after another input it does nothing until the diagnostics come again.
+   * its diagnostic was found in, so after another input it does nothing (`undefined`) until the diagnostics come
+   * again.
    */
-  fix(fix: NonNullable<Diagnostic["fix"]>, at = performance.now()): string {
-    if (this.#text !== this.#processed) return this.#text;
+  fix(fix: NonNullable<Diagnostic["fix"]>, at = performance.now()): Replaced | undefined {
+    if (this.#text !== this.#processed) return undefined;
+    return this.#replace(fix, at);
+  }
+
+  /** Writes `text` in place of what the hint is about, as a fix does: only in the text the hint is of. */
+  complete(text: string, at = performance.now()): Replaced | undefined {
+    const hint = this.state.hint;
+    if (!hint || this.#text !== this.#hinted) return undefined;
+    return this.#replace({ range: hint.range, text }, at);
+  }
+
+  #replace(fix: NonNullable<Diagnostic["fix"]>, at: number): Replaced {
     const edit = fixOf(this.#text, fix);
     this.#text = this.#text.slice(0, edit.start) + edit.text + this.#text.slice(edit.end);
-    this.#session.edit(edit, this.#text, at);
-    return this.#text;
+    const caret = edit.start + edit.text.length;
+    this.#session.edit(edit, this.#text, caret, at);
+    return { text: this.#text, caret };
   }
 
   /** Gives the input `name` the value `value`, as the page's input components do: the document opens again with it. */
@@ -150,10 +182,17 @@ export class Editor {
     this.state.diagnostics = update.diagnostics;
     this.state.inputs = update.inputs;
     this.#processed = update.text;
+    this.#hint(update);
     this.state.updates++;
     this.state.processing.add(update.ms);
     if (update.components) this.state.problems = [];
     this.#onChange();
+  }
+
+  #hint({ hint, text }: Hinted): void {
+    this.#hinted = text;
+    if (hint) this.state.hint = hint;
+    else delete this.state.hint;
   }
 
   #problem(problem: string): void {

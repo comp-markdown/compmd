@@ -15,15 +15,23 @@ export class Processing {
     this.#open = open;
   }
 
-  /** What `message` gives: a splice per edit, the diagnostics after them, and the components when they changed. */
+  /**
+   * What `message` gives: a splice per edit, the diagnostics after them, the components when they changed, and the
+   * hint at the caret; or only the hint, when only the caret moved.
+   */
   handle(message: ToWorker): FromWorker {
     const started = performance.now();
     try {
+      if (message.type === "hint") {
+        const hint = this.#document?.hintAt(message.caret);
+        return { type: "hint", ...(hint ? { hint } : {}) };
+      }
       const changes = message.type === "open" ? [this.#opened(message.request)] : this.#edited(message.edits);
       const document = this.#document;
       if (!document) return { type: "failed", message: "no document is open" };
       const components = changes.findLast((change) => change.components)?.components;
       const last = changes.at(-1) ?? document.changes();
+      const hint = document.hintAt(message.caret);
       return {
         type: "processed",
         splices: changes.map((change) => change.splice),
@@ -31,6 +39,7 @@ export class Processing {
         diagnostics: last.diagnostics,
         inputs: last.inputs,
         ...(components ? { components } : {}),
+        ...(hint ? { hint } : {}),
         ms: performance.now() - started,
       };
     } catch (error) {

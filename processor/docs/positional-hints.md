@@ -1,19 +1,19 @@
 # Positional hints
 
-**Status: accepted.**
+**Status: accepted, and built.**
 
 A writer can't find the other values a param takes while the one written is valid: `border=subtle` is fine, so no diagnostic says what else `border` takes. Diagnostics help once something is wrong; a hint helps before. The processor answers one question, *what is at this place in the text?*, with structured data: a positional hint. The playground shows it in a line under the text, and a language server, later, turns the same hint into hovers, completions and "go to definition".
 
 ## Decisions
 
 1. **One query, structured answers.** `Processor<Expanded>::hint_at(offset)` gives a `PositionalHint`: what is at a place in the processed document, a component, a param and its value, a slot, an interpolation's path, a name in an expression, or a frontmatter key, each with what it is, what it takes and where it is defined. It is data, not a sentence. The wording of a value's kind stays `Kind::describe()` (the one F009 uses), so a diagnostic and a hint never say different things.
-2. **Completions are derived from the same hint**, `hint.completions()`: the candidates for the text at the place, each with its label, the text it inserts and the range it replaces. Nothing else lists a param's values or a component's params.
-3. **It works on text being typed.** At the caret the text is often half-written (`border=`, `::: car`, `{{md.da`), and the tree has dropped what broke. So the query finds the block the caret is in by its position in the tree, and reads the caret's line again with the parser's own param-list reader, which keeps the params before a break. The component's name and binding come from the tree when it has them, and from the line when it doesn't.
+2. **Completions come with the same hint**, `hint.completions`: the candidates for the text at the place, each with its label, the text it inserts and a few words on what it is; each replaces the hint's `range`. The lookup makes them from what it found, so nothing else lists a param's values or a component's params, and the binding sends them with the hint.
+3. **It works on text being typed.** At the caret the text is often half-written (`border=`, `::: car`, `{{md.da`), and the tree has dropped what broke. So the query finds the block the caret is in by its position in the tree, which tells code, math and the frontmatter from text, and reads the caret's line again as the parser reads it, with its param-list reader, which keeps the params before a break. The component's name comes from the line, and what it stands for from the resolved names; a slot's container, and the names a template binds, come from the tree.
 4. **A lookup, not a pass.** The query finds the top-level block at the offset (the blocks are in order, so a binary search), walks down to the node, reads one line, and looks up names in the resolved state. It never runs a stage again, so it can answer on every caret move, and an edit keeps it as cheap as the incremental state is.
 5. **Positions are the processor's, in code points; the binding converts.** `hint_at` takes an offset in code points and gives ranges in lines and columns, as diagnostics do (spec §10.5). `OpenDocument.hintAt(offset)` takes the editor's UTF-16 offset, as `edit` does. A language server converts its `(line, character)` the same way, with the same line index.
 6. **Diagnostics stay what they are, and the hint shows the one at the caret.** When the caret is in a diagnostic's range, the hint line shows that diagnostic first, with its fix as a button, then the hint. The list under the text doesn't change. A language server needs nothing of this: its client shows diagnostics in hovers by itself.
 7. **In the playground, the hint comes with each answer from the worker.** The editor sends the caret's offset with each batch of edits, and alone when only the caret moved; the worker answers with the hint for the text it just processed, so the hint is never of an older text. No round trip of its own while typing.
-8. **The hint line offers its values as buttons.** Clicking a token replaces the value at the caret, as a diagnostic's fix does, through the same edit. Completion as you type (a list that opens on its own) waits for CodeMirror, and comes from `completions()` then.
+8. **The hint line offers its values as buttons:** a param's value's tokens, and the type names on a type. Clicking one replaces what is written, as a diagnostic's fix does, through the same edit. Completion as you type (a list that opens on its own) waits for CodeMirror, and comes from `completions` then.
 9. **All three phases in this work, built in order** (below): component lines and slots first, then interpolations and expressions, then frontmatter. The query's shape covers all of them from the start, so each phase adds answers, not a new API.
 10. **The hints have their own module**, `compmd::hints`: `PositionalHint`, its subjects, the `…Hint` types, completions and the lookup itself. `Processor<Expanded>::hint_at` only hands the processor's state to `hints::at`.
 
@@ -131,7 +131,10 @@ The rest is in `compmd::hints`:
 pub struct PositionalHint {
     /// The text the hint is about: the name, the key, the value, the path step. A completion replaces it.
     pub range: Range,
-    pub subject: Subject,
+    /// `None` where only a diagnostic has something to say.
+    pub subject: Option<Subject>,
+    /// The candidates for the text in `range`: tokens, keys, names, each with its label, its text and a detail.
+    pub completions: Vec<Completion>,
     /// The diagnostics whose range holds the offset, as `diagnostics()` gives them.
     pub diagnostics: Vec<Diagnostic>,
 }
@@ -141,18 +144,21 @@ pub struct PositionalHint {
 pub enum Subject {
     /// A component's name, on its line or inline.
     Component { name: String, component: Option<ComponentHint> },
-    /// The param list, between params: the params the component takes, those written left out.
+    /// The param list, between params, or a key it doesn't take: the params the component takes, those written
+    /// left out.
     Params { component: String, params: Vec<ParameterHint> },
     /// A param's key, or its value (`value` holds what is written).
     Param { component: String, param: ParameterHint, value: Option<String> },
     /// A slot line.
     Slot { component: String, slot: String, slots: Vec<SlotDeclaration> },
     /// A step of a path, in an interpolation or an expression (second phase).
-    Path { path: String, names: NameHint },
-    /// A function in an expression (second phase).
-    Function { name: String, hint: FunctionHint },
-    /// A key or a type name in the frontmatter (third phase).
-    Frontmatter { path: Vec<String>, hint: FrontmatterHint },
+    Path { path: String, name: NameHint },
+    /// A function in an expression (second phase); `None` for a name that is no function.
+    Function { name: String, hint: Option<FunctionHint> },
+    /// A key in the frontmatter, or a value CompMD reads (third phase).
+    Frontmatter { path: Vec<String>, about: Option<String> },
+    /// A type name in an input's or a schema field's declaration (third phase).
+    Type { name: String, takes: Option<KindHint> },
 }
 
 /// A param: what it is and what it takes.
@@ -168,17 +174,13 @@ pub struct ParameterHint {
     pub doc: Option<String>,
     pub breakpoints: bool,
 }
-
-impl PositionalHint {
-    /// The candidates for the text in `range`: tokens, keys, names, each with what it inserts.
-    pub fn completions(&self) -> Vec<Completion>;
-}
 ```
 
-- `ComponentHint` is the Components tab's `Listed` with where the component is defined (file and range), so "go to definition" is one field.
-- `KindHint` is `Kind`'s public fields as data, plus `description: Kind::describe()`, so no client words a kind itself.
-- `NameHint`, `FunctionHint` and `FrontmatterHint` hold what their phases need: a name's type and where it comes from, a function's signature and line, a frontmatter key's meaning or a type's description.
-- `compmd::hints` is `src/hints.rs` and holds only the hint code: the types above and the lookup. The components, expressions, frontmatter and vocabulary stay in their own modules; the hints read them, with the resolved state and `values`, and change nothing.
+- `ComponentHint` has what the Components tab's `Listed` has, but its uses, with the file that defines the component and where in it, so "go to definition" is one field.
+- `KindHint` is `Kind`'s public fields as data, plus `description: Kind::describe()`, so no client words a kind itself. For a bound input (`input<number>`), its tokens are the inputs it can bind.
+- `NameHint` holds a path step's type, what it is in words ("data from `./books.csv`") and a record's fields; `FunctionHint` each way to call a function and one line on what it gives. That line sits beside the function's overloads (`Library::doc`), and a test checks that spec §8.2 names every function.
+- The frontmatter's keys are tables beside the code that reads them (`MD_KEYS`), or in the hints for the keys of imports, exports, data imports and declarations; a test checks that the spec's sections name every key.
+- `compmd::hints` is `src/hints.rs` and holds only the hint code: the types above and the lookup, the component lines in `hints/invocation.rs`, paths and expressions in `hints/expression.rs`, the frontmatter in `hints/frontmatter.rs`. The components, expressions, frontmatter and vocabulary stay in their own modules; the hints read them, with the resolved state and `values`, and change nothing.
 
 ### Binding
 
@@ -196,9 +198,9 @@ The types in `src/index.ts` mirror the Rust ones, as `Components` does.
 
 ### The playground
 
-- **Worker protocol:** `{type: "edits", edits, caret}` (the caret after the edits) and `{type: "hint", caret}` when only the caret moved. The answer to either carries `hint`.
-- **The hint line**, under the text, above the diagnostics: one line, cut with an ellipsis and opened in full on hover. Tokens are buttons that make the edit; the diagnostic at the caret, if any, comes first with its fix.
-- **When it updates:** on `selectionchange` in the text area (a caret move by key or click), at most once per frame. A selection shows the hint of its start.
+- **Worker protocol:** `{type: "open", request, caret}` and `{type: "edits", edits, caret}` (the caret after them), and `{type: "hint", caret}` when only the caret moved. The answer to either carries `hint`.
+- **The hint line**, under the text, above the diagnostics: one line, cut with an ellipsis and opened in full on hover. Values are buttons that make the edit; the diagnostic at the caret, if any, comes first with its fix.
+- **When it updates:** on `selectionchange` in the text area (a caret move by key or click). The session sends the caret's move as it comes when the worker is free, and keeps the latest for its next message while it is busy, so moves never queue. A selection shows the hint of its start. Waiting for an animation frame to send a move put every paint of the page a frame later (`pnpm bench`), so it doesn't.
 
 ## A language server, later
 
@@ -207,7 +209,7 @@ The server is a small Rust program over the processor crate. Each LSP request ma
 | LSP | From |
 |---|---|
 | `textDocument/hover` | `hint_at(offset)`, written as Markdown: the subject's line, then `takes.description`, the default and the `doc` |
-| `textDocument/completion` | `hint_at(offset).completions()`; each `Completion`'s range and text is a `TextEdit` |
+| `textDocument/completion` | `hint_at(offset).completions`; each `Completion`'s text, with the hint's range, is a `TextEdit` |
 | `textDocument/definition` | `Subject::Component`'s definition range and file |
 | `textDocument/signatureHelp` | `Subject::Params`/`Param`: the component's params, the one at the caret active |
 | `textDocument/publishDiagnostics` | `diagnostics()`, as today; `fix` becomes a code action |

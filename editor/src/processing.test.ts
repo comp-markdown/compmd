@@ -30,7 +30,8 @@ function page(): { page: Page; root: HTMLElement } {
 
 /** What the frame does with an answer: the first splice after opening renders as a whole tree. */
 function apply(target: Page, answer: FromWorker, text: string): void {
-  if (answer.type !== "processed") throw new Error(answer.message);
+  if (answer.type === "failed") throw new Error(answer.message);
+  if (answer.type !== "processed") throw new Error("a hint, not a change");
   const splices = answer.splices.map((splice) => JSON.parse(splice) as Parameters<Page["splice"]>[0][number]);
   const change = { text, diagnostics: [] };
   const [first] = splices;
@@ -55,14 +56,14 @@ describe("Processing", () => {
     const processing = new Processing(open);
     const { page: shown, root } = page();
     let text = "# Title\n\nOne.\n\n:: nope[N]\n";
-    const opened = processing.handle({ type: "open", request: request(text) });
+    const opened = processing.handle({ type: "open", request: request(text), caret: 0 });
     expect(opened).toMatchObject({ type: "processed", opened: true, components: [], inputs: {} });
     apply(shown, opened, text);
     const edits = [
       { start: 7, end: 7, text: "!" },
       { start: 10, end: 10, text: "Zero.\n\n" },
     ];
-    const answer = processing.handle({ type: "edits", edits });
+    const answer = processing.handle({ type: "edits", edits, caret: 0 });
     for (const edit of edits) text = edited(text, edit);
     expect(answer).toMatchObject({ type: "processed", opened: false, diagnostics: process(request(text)).diagnostics });
     expect(answer).not.toHaveProperty("components");
@@ -77,7 +78,7 @@ describe("Processing", () => {
       const processing = new Processing(open);
       const { page: shown, root } = page();
       let text = textOf(example);
-      apply(shown, processing.handle({ type: "open", request: base }), text);
+      apply(shown, processing.handle({ type: "open", request: base, caret: 0 }), text);
       const middle = text.indexOf("\n\n", text.length / 2) + 2;
       // Each step's edits, in the text the step before left.
       const steps: ((now: string) => Edit[])[] = [
@@ -91,7 +92,7 @@ describe("Processing", () => {
       ];
       for (const step of steps) {
         const edits = step(text);
-        const answer = processing.handle({ type: "edits", edits });
+        const answer = processing.handle({ type: "edits", edits, caret: 0 });
         for (const edit of edits) text = edited(text, edit);
         apply(shown, answer, text);
         expect(html(root), JSON.stringify(edits)).toBe(fresh(base, text));
@@ -101,25 +102,37 @@ describe("Processing", () => {
 
   it("gives the inputs with their values", () => {
     const processing = new Processing(open);
-    const answer = processing.handle({ type: "open", request: { ...request("---\nmd:\n  inputs:\n    n: number = 2\n---\n"), inputs: { n: 5 } } });
+    const answer = processing.handle({ type: "open", request: { ...request("---\nmd:\n  inputs:\n    n: number = 2\n---\n"), inputs: { n: 5 } }, caret: 0 });
     expect(answer).toMatchObject({ inputs: { n: { type: "number", value: 5 } } });
   });
 
   it("gives the components when an edit changes them", () => {
     const processing = new Processing(open);
     const text = "```jsx component=hi runtime=react@19\nexport default () => 'hi';\n```\n";
-    processing.handle({ type: "open", request: request(text) });
+    processing.handle({ type: "open", request: request(text), caret: 0 });
     const at = text.indexOf("'hi'") + 1;
-    const answer = processing.handle({ type: "edits", edits: [{ start: at, end: at + 2, text: "yo" }] });
+    const answer = processing.handle({ type: "edits", edits: [{ start: at, end: at + 2, text: "yo" }], caret: 0 });
     expect(answer).toMatchObject({ components: [{ name: "hi", code: "export default () => 'yo';" }] });
   });
 
   it("fails without a document, and on a request it can't open", () => {
     const processing = new Processing(open);
-    expect(processing.handle({ type: "edits", edits: [] })).toEqual({ type: "failed", message: "no document is open" });
-    processing.handle({ type: "open", request: request("Text.\n") });
-    expect(processing.handle({ type: "edits", edits: [] })).toMatchObject({ type: "processed", splices: [], diagnostics: [] });
-    expect(processing.handle({ type: "open", request: { path: "a", now: "never" } })).toMatchObject({ type: "failed" });
-    expect(processing.handle({ type: "edits", edits: [] })).toMatchObject({ type: "failed" });
+    expect(processing.handle({ type: "edits", edits: [], caret: 0 })).toEqual({ type: "failed", message: "no document is open" });
+    expect(processing.handle({ type: "hint", caret: 0 })).toEqual({ type: "hint" });
+    processing.handle({ type: "open", request: request("Text.\n"), caret: 0 });
+    expect(processing.handle({ type: "edits", edits: [], caret: 0 })).toMatchObject({ type: "processed", splices: [], diagnostics: [] });
+    expect(processing.handle({ type: "open", request: { path: "a", now: "never" }, caret: 0 })).toMatchObject({ type: "failed" });
+    expect(processing.handle({ type: "edits", edits: [], caret: 0 })).toMatchObject({ type: "failed" });
+  });
+
+  it("gives the hint at the caret of the text the edits left, or alone when only the caret moved", () => {
+    const processing = new Processing(open);
+    const text = "::: box {border=subtle}\nB.\n::: /box\n";
+    const opened = processing.handle({ type: "open", request: request(text), caret: 18 });
+    expect(opened).toMatchObject({ hint: { subject: { kind: "param", value: "subtle" } } });
+    const typed = processing.handle({ type: "edits", edits: [{ start: 16, end: 22, text: "strong" }], caret: 22 });
+    expect(typed).toMatchObject({ hint: { subject: { value: "strong" } } });
+    expect(processing.handle({ type: "hint", caret: 5 })).toMatchObject({ type: "hint", hint: { subject: { kind: "component", name: "box" } } });
+    expect(processing.handle({ type: "hint", caret: 26 })).toEqual({ type: "hint" });
   });
 });

@@ -1,10 +1,13 @@
 // The messages between the editor, its worker and its frame.
 
-import type { Diagnostic, ExpandedInput, HostComponent, Request } from "@compmd/processor";
+import type { Diagnostic, ExpandedInput, HostComponent, PositionalHint, Request } from "@compmd/processor";
 import type { Edit } from "./edit.ts";
 
-/** From the editor to its worker: open a document, or apply edits to it, each in the text the one before left. */
-export type ToWorker = { type: "open"; request: Request } | { type: "edits"; edits: Edit[] };
+/**
+ * From the editor to its worker: open a document, or apply edits to it, each in the text the one before left; or only
+ * the caret moved. Each carries where the caret is after it, in UTF-16 units, for the hint the answer gives.
+ */
+export type ToWorker = { type: "open"; request: Request; caret: number } | { type: "edits"; edits: Edit[]; caret: number } | { type: "hint"; caret: number };
 
 /** From the worker to the editor, once per message it was sent. */
 export type FromWorker =
@@ -19,9 +22,12 @@ export type FromWorker =
       inputs: Record<string, ExpandedInput>;
       /** The host-language components, when they changed (and after opening). */
       components?: readonly HostComponent[];
+      /** What is at the caret in the text the edits left, when there is something to say. */
+      hint?: PositionalHint;
       /** How long processing took, in the worker. */
       ms: number;
     }
+  | { type: "hint"; hint?: PositionalHint }
   | { type: "failed"; message: string };
 
 /** From the editor to the frame, on the port `@compmd/render/frame` uses too: the components to compile. */

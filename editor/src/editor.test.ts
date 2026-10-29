@@ -76,15 +76,15 @@ describe("Editor", () => {
   it("opens the document with origins, then sends each input as an edit, and passes each answer's splices on", () => {
     const { worker, frame, editor } = setup();
     expect(editor.open(example)).toBe("Hello");
-    expect(worker.received).toEqual([{ type: "open", request: opened }]);
+    expect(worker.received).toEqual([{ type: "open", request: opened, caret: 0 }]);
     worker.answer(processed(["whole"], { opened: true, components: [{ name: "c", language: "js", code: "x" }], ms: 2 }));
     expect(frame.sent).toEqual([
       ["components", { type: "components", components: [{ name: "c", language: "js", code: "x" }] }],
       ["splice", ["whole"], { text: "Hello", diagnostics: [] }, { replace: true }],
     ]);
     editor.beforeInput({ start: 5, end: 5 });
-    editor.input("Hello!");
-    expect(worker.received[1]).toEqual({ type: "edits", edits: [{ start: 5, end: 5, text: "!" }] });
+    editor.input("Hello!", 6);
+    expect(worker.received[1]).toEqual({ type: "edits", edits: [{ start: 5, end: 5, text: "!" }], caret: 6 });
     worker.answer(processed(["typed"], { diagnostics: [diagnostic(), diagnostic("b.comp.md")] }));
     expect(frame.sent[2]).toEqual(["splice", ["typed"], { text: "Hello!", diagnostics: [{ code: "F002", line: 3, column: 4 }] }, { replace: false }]);
     expect(editor.state.diagnostics).toHaveLength(2);
@@ -96,7 +96,7 @@ describe("Editor", () => {
     expect(editor.document).toBeUndefined();
     editor.open(example);
     editor.beforeInput({ start: 5, end: 5 });
-    editor.input("Hello!");
+    editor.input("Hello!", 6);
     expect(editor.document).toEqual({ ...opened, files: { "a.comp.md": "Hello!", "b.csv": "x" }, inputs: {} });
     worker.answer(processed(["whole"], { opened: true }));
     worker.answer(processed(["typed"]));
@@ -108,10 +108,32 @@ describe("Editor", () => {
     editor.open(example);
     worker.answer(processed(["whole"], { opened: true }));
     const fix = { range: { start: { line: 1, column: 1 }, end: { line: 1, column: 6 } }, text: "Howdy" };
-    expect(editor.fix(fix)).toBe("Howdy");
-    expect(worker.received[1]).toEqual({ type: "edits", edits: [{ start: 0, end: 5, text: "Howdy" }] });
-    expect(editor.fix(fix), "its diagnostics are of the text before it").toBe("Howdy");
+    expect(editor.fix(fix)).toEqual({ text: "Howdy", caret: 5 });
+    expect(worker.received[1]).toEqual({ type: "edits", edits: [{ start: 0, end: 5, text: "Howdy" }], caret: 5 });
+    expect(editor.fix(fix), "its diagnostics are of the text before it").toBeUndefined();
     expect(worker.received).toHaveLength(2);
+  });
+
+  it("keeps the hint at the caret, and writes a value in its place only in the text it is of", () => {
+    const { worker, editor, changes } = setup();
+    editor.open(example);
+    expect(editor.complete("Hi"), "no hint yet").toBeUndefined();
+    const hint = { range: { start: { line: 1, column: 1 }, end: { line: 1, column: 6 } }, completions: [], diagnostics: [] };
+    worker.answer(processed(["whole"], { opened: true, hint }));
+    expect(editor.state.hint).toEqual(hint);
+    editor.moveCaret(2);
+    expect(worker.received[1]).toEqual({ type: "hint", caret: 2 });
+    const before = changes();
+    worker.answer({ type: "hint", hint: { ...hint, completions: [{ label: "Hi", text: "Hi" }] } });
+    expect(editor.state.hint?.completions).toHaveLength(1);
+    expect(changes()).toBe(before + 1);
+    expect(editor.complete("Hi")).toEqual({ text: "Hi", caret: 2 });
+    expect(worker.received[2]).toEqual({ type: "edits", edits: [{ start: 0, end: 5, text: "Hi" }], caret: 2 });
+    expect(editor.complete("Yo"), "the hint is of the text before").toBeUndefined();
+    worker.answer(processed(["typed"]));
+    expect(editor.state.hint, "nothing at the caret now").toBeUndefined();
+    editor.open(example);
+    expect(editor.state.hint).toBeUndefined();
   });
 
   it("times each render from its first key press to the frame painted", () => {
@@ -130,12 +152,13 @@ describe("Editor", () => {
     editor.open(example);
     worker.answer(processed(["whole"], { opened: true }));
     editor.beforeInput({ start: 0, end: 0 });
-    editor.input("Oh Hello");
+    editor.input("Oh Hello", 3);
     worker.answer(processed(["typed"]));
     frame.emit({ type: "set", input: "region", value: "eu" });
     expect(worker.received[2]).toEqual({
       type: "open",
       request: { ...opened, files: { "a.comp.md": "Oh Hello", "b.csv": "x" }, inputs: { region: "eu" } },
+      caret: 3,
     });
     // The inputs panel sets them the same way, keeping the others.
     worker.answer(processed(["whole"], { opened: true, inputs: { region: { type: "enum", members: ["all", "eu"], value: "eu" } } }));
@@ -155,7 +178,7 @@ describe("Editor", () => {
     frame.emit({ type: "error", reason: "no-container", message: "no container" });
     expect(editor.state.problems).toEqual(["bad request", "chart: does not compile", "board: boom"]);
     editor.beforeInput({ start: 0, end: 0 });
-    editor.input("x");
+    editor.input("x", 1);
     worker.answer(processed(["typed"], { components: [] }));
     expect(editor.state.problems).toEqual([]);
     expect(changes()).toBeGreaterThan(4);

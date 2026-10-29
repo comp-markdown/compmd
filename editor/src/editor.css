@@ -443,6 +443,77 @@ textarea::selection {
   font: 12px var(--mono);
 }
 
+/* The hint line: what is at the caret, in one line cut short, all of it on hover or while a value has focus. */
+
+.hint {
+  margin: 0;
+  padding: 6px 22px;
+  overflow: hidden;
+  border-top: 1px solid var(--rule);
+  background: color-mix(in srgb, var(--accent) 3%, var(--sheet));
+  color: var(--ink-secondary);
+  font-size: 13px;
+  line-height: 1.7;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.hint:hover,
+.hint:focus-within {
+  white-space: normal;
+}
+
+.hint .part + .part::before {
+  content: "·";
+  margin-inline: 7px;
+  color: var(--rule);
+}
+
+.hint code {
+  font: 12px var(--mono);
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.hint .name {
+  font-weight: 600;
+}
+
+.hint .diagnostic.error .code {
+  color: var(--error);
+}
+
+.hint .diagnostic.warning .code {
+  color: var(--warning);
+}
+
+.hint .diagnostic .code {
+  margin-inline-end: 6px;
+  font-weight: 600;
+}
+
+.hint .value {
+  margin-inline-end: 4px;
+  padding: 0 7px;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--sheet);
+  cursor: pointer;
+}
+
+.hint .value:hover {
+  border-color: var(--accent);
+}
+
+.hint .value[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+  background: var(--accent-wash);
+}
+
+.hint .value[aria-pressed="true"] code {
+  color: var(--accent);
+}
+
 /* The views: tabs over the proof. */
 
 .tabs {
