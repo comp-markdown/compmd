@@ -166,7 +166,7 @@ The ordered list numbers on from one item to the next, and inside `each`, `md.lo
 ::: /each
 
 > [!TIP]
-> **Try it.** Change `md.sortBy(md.data.books, "year")` to `md.data.books.filter(b, b.pages > 400)`: no book is that long, so `empty` shows.
+> **Try it.** Change `md.sortBy(md.data.books, "year")` to `md.data.books.filter(b, b.pages > 300)`: only the two books over 300 pages stay, numbered 1 and 2.
 
 ## 8. Your own components
 
