@@ -18,29 +18,12 @@ md:
 
 Inputs are values the reader changes: declared in the frontmatter with a type and a default, read as `md.input.<name>`, and edited by the input components below, or in the bar above the tabs. Every figure on this page follows them.
 
-::: grid {grid-template-columns="7rem 1fr" gap=s align-items=center}
-Guest
-
+::: grid {min=14rem gap=m}
 :: text-input[Guest: Alex] {bind=guest}
-
-Arrival
-
 :: date-input[Arrival: in two weeks] {bind=arrival}
-
-Nights
-
 :: number-input[Nights: 3] {bind=nights}
-
-Guests
-
 :: number-input[Guests: 2] {bind=guests}
-
-Room
-
 :: select-input[Room: deluxe] {bind=room}
-
-Breakfast
-
 :: toggle-input[Breakfast: yes] {bind=breakfast}
 ::: /grid
 

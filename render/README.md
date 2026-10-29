@@ -85,14 +85,16 @@ The HTML and CSS this package writes for the built-ins is the reference renderin
 
 | Built-in | HTML | CSS |
 |---|---|---|
-| `box` (and `stack`, `row`, `grid`, which expand to it) | `<div class="compmd-box compmd-bN">` holding its children | its layout and common params on `.compmd-bN`; tokens as `var(--compmd-space-m, 1rem)` and so on (§9.4); breakpoint params in `@container (min-width: 768px) { … }`; `show` and `hide` as `display: none` outside their range |
+| `box` (and `stack`, `row`, `grid`, which expand to it) | `<div class="compmd-box compmd-bN">` holding its children | its layout and common params on `.compmd-bN`; tokens as `var(--compmd-space-m, 1rem)` and so on (§9.4); breakpoint params in `@container (min-width: 768px) { … }`; `show` and `hide` as `display: none` outside their range; its first child's block-start margin and its last child's block-end margin trimmed, as `margin-trim: block` would, so its padding is all the space at its edges (also in a component's box and a slot item) |
 | A box whose blocks use breakpoints | adds `compmd-container` | `container-type: inline-size` |
 | A box whose block fills it (`fill`) | adds `compmd-fills` | `display: flex; flex-direction: column`, the block `flex-grow: 1` |
 | A block with a position (`inset-*` not `auto`) | — | `position: absolute` with its insets; every box is `position: relative` |
 | A host-language component | `<div class="compmd-component compmd-bN">` (its `target`), each slot item in `<div class="compmd-item">` | its common params on its box |
-| An input component | `<div class="compmd-box compmd-input">` with `<input type="date">`, `number`, `text`, `checkbox`, or `<select>` with the enum's members; `aria-label` from the fallback | — |
+| An input component | `<label class="compmd-box compmd-input">` with `<span class="compmd-input-label">`, the fallback before its first colon (`From: today` gives `From`, since what follows is the default), then `<input type="date">`, `number`, `text`, `checkbox`, or `<select>` with the enum's members | the label and the control side by side |
 | An alert | `<div class="compmd-alert compmd-alert-note" role="note">` with `<p class="compmd-alert-title">Note</p>` first | a rule on the start edge |
-| A task list item | `<li class="compmd-task">` with `<input type="checkbox" disabled>` first | no bullet |
+| A quote | `<blockquote class="compmd-quote">` | a lighter rule on the start edge |
+| A tight list (`spread: false`) | `<ul class="compmd-tight">`, `<ol class="compmd-tight">` | its items' paragraphs without margins, as HTML renders a tight list without `<p>` |
+| A task list item | `<li class="compmd-task">` with `<input type="checkbox" disabled>` first | no bullet; the box on its first paragraph's line |
 | Footnotes | `<sup><a href="#compmd-fn-1" id="compmd-fnref-1">1</a></sup>`, and at the end `<section class="compmd-footnotes"><hr><ol><li id="compmd-fn-1">…</li></ol></section>` | smaller text |
 | Math without a renderer | `<code class="language-math math-inline">`, `<pre><code class="language-math math-display">` | — |
 | A table | `<thead>` for the first row, alignment as `compmd-align-left`, `-center`, `-right` | `text-align` |

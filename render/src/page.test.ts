@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Mount, SlotInstance, SlotItem } from "./contract.ts";
 import { createPage, type PageOptions } from "./page.ts";
+import { inputLabel } from "./render.ts";
 import type { ExpandedComponent, ExpandedNode, ExpandedParam, ExpandedRoot } from "./tree.ts";
 
 const text = (value: string): ExpandedNode => ({ type: "text", value });
@@ -41,8 +42,8 @@ describe("Markdown", () => {
           { type: "link", url: "https://example.com", title: "T", children: [text("link")] },
           { type: "image", url: "a.png", alt: "A" },
         ),
-        { type: "list", ordered: true, start: 3, children: [{ type: "listItem", children: [paragraph(text("three"))] }] },
-        { type: "list", ordered: false, children: [{ type: "listItem", checked: true, children: [paragraph(text("done"))] }] },
+        { type: "list", ordered: true, start: 3, spread: true, children: [{ type: "listItem", children: [paragraph(text("three"))] }] },
+        { type: "list", ordered: false, spread: false, children: [{ type: "listItem", checked: true, children: [paragraph(text("done"))] }] },
         { type: "blockquote", children: [paragraph(text("quoted"))] },
         { type: "thematicBreak" },
         { type: "code", lang: "js", value: "let a;" },
@@ -52,8 +53,8 @@ describe("Markdown", () => {
       "<h2>Title</h2>" +
         '<p><em>em</em><strong>strong</strong><del>del</del><code>code</code><br><a href="https://example.com" title="T">link</a><img src="a.png" alt="A"></p>' +
         '<ol start="3"><li><p>three</p></li></ol>' +
-        '<ul><li class="compmd-task"><input type="checkbox" disabled="" checked=""><p>done</p></li></ul>' +
-        "<blockquote><p>quoted</p></blockquote><hr>" +
+        '<ul class="compmd-tight"><li class="compmd-task"><input type="checkbox" disabled="" checked=""><p>done</p></li></ul>' +
+        '<blockquote class="compmd-quote"><p>quoted</p></blockquote><hr>' +
         '<pre><code class="language-js">let a;</code></pre>',
     );
   });
@@ -148,11 +149,20 @@ describe("the page", () => {
     const select = root.querySelector("select")!;
     expect([...select.options].map((o) => o.value)).toEqual(["all", "eu"]);
     expect(select.value).toBe("eu");
-    expect(select.getAttribute("aria-label")).toBe("Region: all");
-    expect(root.querySelector<HTMLInputElement>("input[type=checkbox]")?.checked).toBe(true);
+    // A label, from the fallback before its colon: what follows is the default, which the value replaces.
+    expect(select.closest("label")?.querySelector(".compmd-input-label")?.textContent).toBe("Region");
+    const toggle = root.querySelector<HTMLInputElement>("input[type=checkbox]");
+    expect(toggle?.checked).toBe(true);
+    expect(toggle?.closest("label")?.textContent).toBe("");
     select.value = "all";
     select.dispatchEvent(new Event("change"));
     expect(onSet).toHaveBeenCalledWith("region", "all");
+  });
+});
+
+describe("inputLabel", () => {
+  it("is the fallback before its colon, or all of it", () => {
+    expect(["From: today", "Show closed: no", "Search", " Region : all "].map(inputLabel)).toEqual(["From", "Show closed", "Search", "Region"]);
   });
 });
 

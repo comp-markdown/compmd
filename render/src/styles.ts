@@ -179,15 +179,26 @@ export function ownParams(params: readonly ExpandedParam[]): Record<string, unkn
   return Object.fromEntries(params.filter((p) => !BOX_PARAMS.has(p.key) && p.breakpoint === null).map((p) => [p.key, p.value]));
 }
 
-/** Rules every document needs once: the boxes the renderer makes, and the containers breakpoints query. */
+/**
+ * Rules every document needs once: the boxes the renderer makes, the containers breakpoints query, and the look of
+ * what Markdown has no CSS for. A box's padding is its own: the margins of its first and last child are trimmed, as
+ * `margin-trim: block` would, at the specificity of `:first-child`, so a host's own rules still win.
+ */
 const BASE_RULES = `
 .compmd-page { container-type: inline-size; position: relative; }
 .compmd-box, .compmd-item, .compmd-component { position: relative; box-sizing: border-box; min-inline-size: 0; }
 .compmd-container { container-type: inline-size; }
 .compmd-fills { display: flex; flex-direction: column; }
+:where(.compmd-box, .compmd-item, .compmd-component) > :first-child { margin-block-start: 0; }
+:where(.compmd-box, .compmd-item, .compmd-component) > :last-child { margin-block-end: 0; }
 .compmd-alert { border-inline-start: 0.25em solid var(--compmd-border-strong, color-mix(in srgb, currentColor 45%, transparent)); padding-inline-start: 1em; }
+.compmd-quote { margin-inline: 0; border-inline-start: 0.25em solid var(--compmd-border-subtle-color, color-mix(in srgb, currentColor 25%, transparent)); padding-inline-start: 1em; }
 .compmd-footnotes { font-size: smaller; }
+.compmd-tight > li > p { margin-block: 0; }
 .compmd-task { list-style: none; }
+.compmd-task > input:first-child { margin-block: 0; margin-inline: 0 0.5em; }
+.compmd-task > input:first-child + p { display: inline; }
+.compmd-input { display: inline-flex; align-items: center; gap: 0.5em; }
 .compmd-align-left { text-align: start; }
 .compmd-align-center { text-align: center; }
 .compmd-align-right { text-align: end; }

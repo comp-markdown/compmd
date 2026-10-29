@@ -97,6 +97,14 @@ describe("Stylesheet", () => {
     sheet.remove();
   });
 
+  it("trims the margins at a box's edges, below a host's own rules", () => {
+    const sheet = new Stylesheet(document);
+    sheet.flush();
+    expect(sheet.text).toContain(":where(.compmd-box, .compmd-item, .compmd-component) > :first-child { margin-block-start: 0; }");
+    expect(sheet.text).toContain(":where(.compmd-box, .compmd-item, .compmd-component) > :last-child { margin-block-end: 0; }");
+    sheet.remove();
+  });
+
   it("keeps an element's class across updates", () => {
     const sheet = new Stylesheet(document);
     const element = document.createElement("div");

@@ -233,13 +233,15 @@ function renderingOf(surface: Surface, node: MarkdownNode, pass: Pass): Renderin
       return { tag: "hr", attributes: {} };
     case "blockquote": {
       const type = typeof node.alert === "string" ? node.alert : undefined;
-      if (type === undefined) return plain("blockquote");
+      if (type === undefined) return plain("blockquote", { class: "compmd-quote" });
       const title = element("p", { attributes: { class: "compmd-alert-title" }, text: ALERT_TITLES[type] ?? type });
       return { tag: "div", attributes: { class: `compmd-alert compmd-alert-${type}`, role: "note" }, children: [title, ...children] };
     }
     case "list": {
-      const start = typeof node.start === "number" && node.start !== 1 ? { start: String(node.start) } : {};
-      return plain(node.ordered === true ? "ol" : "ul", node.ordered === true ? start : {});
+      const start = typeof node.start === "number" && node.start !== 1 && node.ordered === true ? { start: String(node.start) } : {};
+      // A tight list's items hold their paragraphs without margins, as HTML renders them without `<p>` (CommonMark §5.3).
+      const tight = node.spread === false ? { class: "compmd-tight" } : {};
+      return plain(node.ordered === true ? "ol" : "ul", { ...start, ...tight });
     }
     case "listItem": {
       if (typeof node.checked !== "boolean") return plain("li");
@@ -409,12 +411,22 @@ class BoxView implements View {
   }
 }
 
-/** An input component (spec §8.7): a form control showing its input's value; changing it sets the input. */
+/** An input's visible label: its fallback before the first colon, since a fallback writes the default after one ("From: today"). */
+export function inputLabel(fallback: string): string {
+  const colon = fallback.indexOf(":");
+  return (colon === -1 ? fallback : fallback.slice(0, colon)).trim();
+}
+
+/**
+ * An input component (spec §8.7): a form control showing its input's value, in a label from its fallback; changing it
+ * sets the input.
+ */
 class InputView implements View {
   readonly shape: string;
   readonly key: string | undefined;
   readonly dom: HTMLElement;
   readonly #surface: Surface;
+  readonly #label: HTMLElement;
   readonly #control: HTMLInputElement | HTMLSelectElement;
   readonly #kind: string;
   #input = "";
@@ -423,8 +435,10 @@ class InputView implements View {
     this.#surface = surface;
     this.shape = shapeOf(node);
     this.key = key;
-    this.dom = surface.document.createElement(node.type === "componentInline" ? "span" : "div");
+    this.dom = surface.document.createElement("label");
     this.dom.classList.add("compmd-box", "compmd-input");
+    this.#label = this.dom.appendChild(surface.document.createElement("span"));
+    this.#label.className = "compmd-input-label";
     this.#kind = INPUTS[node.name] ?? "text";
     if (this.#kind === "select") this.#control = surface.document.createElement("select");
     else {
@@ -453,8 +467,8 @@ class InputView implements View {
     const bind = input.params.find((p) => p.key === "bind");
     this.#input = bind?.input ?? textOf(bind?.value);
     const declared = pass.inputs[this.#input];
-    const label = plainText(input.fallback ?? []);
-    if (this.#control.getAttribute("aria-label") !== label) this.#control.setAttribute("aria-label", label);
+    const label = inputLabel(plainText(input.fallback ?? []));
+    if (this.#label.textContent !== label) this.#label.textContent = label;
     const control = this.#control;
     if (this.#kind === "select") {
       const members = declared?.members ?? [];
