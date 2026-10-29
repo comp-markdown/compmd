@@ -9,14 +9,25 @@ Today every change runs stages 1 to 4b on the whole text. The WebAssembly build 
 1. **The unit is a top-level block** of the processed document: a paragraph, a heading, a whole list, a whole block quote, a whole `:::` container, a fence. A block nested in a list or a container can't be parsed on its own, because Markdown's block structure depends on what is around it; a top-level block can.
 2. **An edit is classified, and its class decides what is redone** (see [Edits](#edits)). An edit inside one body block redoes that block, through every stage.
 3. **The result equals processing from scratch:** the same parse tree, expanded tree and diagnostics. A differential test checks this over random edits.
-4. **One more method on the expanded processor**, next to `reload`:
+4. **One more method on the expanded processor**, next to `reload`, that takes only the edit:
 
    ```rust
-   let processor = processor.edit(&TextEdit { start, end, text }, &context, &fetch, &data);
+   let edited = processor.edit(&TextEdit { start, end, text });
+   ```
+
+   The expanded processor keeps what its last load used and gave: the context, and the inputs and data loaded with the host's `fetch` and `data`. An edit to the body needs nothing else, since loading never reads the body. An edit to the frontmatter can change the imports, inputs and data sources, which may need data the host hasn't fetched yet, so it gives the processor back at stage 3, and the host loads and expands it as when it opened the document:
+
+   ```rust
+   pub enum Edited<'h, 'c> {
+       /// A body edit: the expanded processor, updated.
+       Expanded(Processor<Expanded<'h, 'c>>),
+       /// A frontmatter edit: the validated processor, to load and expand again.
+       Validated(Processor<Validated<'h>>),
+   }
    ```
 
    The `Processor` stays the only way in.
-5. **The markdown-rs fork gets a parse option for the labels defined elsewhere** in the document (link and footnote definitions), so a slice parses as it would in place.
+5. **The markdown-rs fork gets a parse option for the labels defined elsewhere** in the document, so a slice parses as it would in place (see [Labels](#labels)).
 6. **The host decides where edits come from:** a text area's selection, a CodeMirror transaction, a CRDT's text delta. The processor takes text edits and nothing else.
 
 ## Edits
@@ -30,7 +41,23 @@ pub struct TextEdit {
 }
 ```
 
-A host with several changes at once (a paste over a selection, a collaborator's delta, changes made while the last edit was processed) applies them in order, or merges them into one edit over the text the processor last saw.
+The host knows nothing of blocks. It says only which range of the text changed and what replaced it; finding the blocks that range touches is the processor's job.
+
+`start` and `end` are positions in the whole text the processor last saw, counted in code points from its first character, which is position 0. They are the same positions the trees' `offset` fields hold. An editor already tracks them: a text area's `selectionStart` and `selectionEnd`, CodeMirror's `from` and `to`. Both count UTF-16 units, as JavaScript strings do; the WebAssembly binding turns them into code points (see [The WebAssembly binding](#the-webassembly-binding)). A Rust host counts `char`s.
+
+For example, with the text `Hello world` (positions 0 to 11):
+
+| The user | The host sends | The text becomes |
+|---|---|---|
+| types `!` at the end | `{ start: 11, end: 11, text: "!" }` | `Hello world!` |
+| presses Backspace after `world` | `{ start: 10, end: 11, text: "" }` | `Hello worl` |
+| selects `world` and pastes `there` | `{ start: 6, end: 11, text: "there" }` | `Hello there` |
+| selects `world` and deletes it | `{ start: 6, end: 11, text: "" }` | `Hello ` |
+| pastes two paragraphs at the start | `{ start: 0, end: 0, text: "One.\n\nTwo.\n\n" }` | `One.`, `Two.`, then `Hello world` |
+
+Typing sends one edit per key press, each over the text the one before left: typing `abc` at position 5 is `{5, 5, "a"}`, then `{6, 6, "b"}`, then `{7, 7, "c"}`.
+
+A host with several changes at once (a CodeMirror transaction with several cursors, a collaborator's delta, key presses made while the last edit was processed) sends them one after another, each with positions in the text the edits before it left. It may also merge them into one edit that covers them all.
 
 | The edit touches | What is redone |
 |---|---|
@@ -46,10 +73,45 @@ An edit is classified by the blocks it overlaps before and after it is parsed: t
 
 - **What is kept.** The processed document's top-level blocks, each with its text range, its nodes and its parse diagnostics.
 - **What is parsed again.** The blocks the edit overlaps, and one block either side. An edit reaches across block boundaries: a `---` line turns the paragraph above it into a heading, a deleted blank line joins two blocks, a lazy continuation line joins the block before it.
-- **Resync.** The slice is parsed as a text of its own, placed at its origin, as the parser already does for fallbacks and definition bodies. Its last block has to end where the slice ends. If it doesn't (a fence or a container opened and not closed takes in what follows), the slice grows by the next block and is parsed again. Past a limit, the whole body is parsed.
+- **Resync.** The slice is parsed as a text of its own, placed at its origin, as the parser already does for fallbacks and definition bodies. Its last block has to end where the slice ends. If it doesn't (a fence or a container opened and not closed takes in what follows), the slice is parsed again with twice as many blocks after the edit, until it ends on a block boundary or reaches the end of the body. Doubling keeps the worst case, a fence opened at the top that takes in the whole rest, to about twice the cost of parsing the whole body, with no limit to tune.
 - **Labels.** The slice is parsed with the labels the rest of the document defines (decision 5), so references parse as they would in place.
 - **The blocks after the slice** keep their nodes. Their positions move by the edit's change in lines and offsets. Columns don't change: each block after the slice starts on a line of its own. Moving positions costs a pass over those nodes, far less than parsing them. Positions relative to each block would remove that pass, later.
 - **The frontmatter** is read only when the edit touches it.
+
+### Labels
+
+A **label** is the name a link reference definition or a footnote definition gives, written in brackets at the start of a line:
+
+```markdown
+[docs]: https://example.com
+[^1]: A footnote.
+```
+
+Here the labels are `docs` and `1`. Labels are compared without case and with runs of white space as one space, so `[Docs]` and `[docs]` are the same.
+
+In CommonMark, whether brackets make a link depends on the labels the *whole* document defines, anywhere in it, before or after the reference:
+
+```markdown
+See [the docs][docs] and the note[^1].
+
+[docs]: https://example.com
+[^1]: A footnote.
+```
+
+With the two definitions, `[the docs][docs]` is a link and `[^1]` a footnote reference. Without them, both are plain text with the brackets in it.
+
+Parsed alone, the slice `See [the docs][docs] and the note[^1].` has no definitions, so the fork would read both as text, and the tree would differ from parsing from scratch. The fork already collects the labels while it parses, in two lists (`definitions` and `gfm_footnote_definitions` in its parse state), and decides each reference against them. The new option fills those lists before parsing starts:
+
+```rust
+markdown::ParseOptions {
+    // The labels the rest of the document defines.
+    definitions: vec!["docs".into()],
+    footnote_definitions: vec!["1".into()],
+    ..options
+}
+```
+
+The processor keeps the document's labels with its blocks. An edit that adds, removes or renames a definition changes them, which is why it parses the whole body again (see [Edits](#edits)).
 
 ## Stage 2: resolving
 
@@ -89,6 +151,7 @@ A host that renders the whole tree each time ignores it; one that crosses a boun
 ## The WebAssembly binding
 
 - `open(request)` processes a document once and keeps the processor; `edit(start, end, text)` gives the splice, the diagnostics and the moved positions, as JSON.
+- An edit to the frontmatter gives instead the sources the render now needs, in the form `sources(request)` gives them today; the host fetches them and calls `load(fetched)`, which gives the whole expanded tree.
 - Offsets cross the boundary in UTF-16, as a JavaScript string counts them, and the binding turns them into code points.
 - The TypeScript wrapper keeps the whole expanded tree by applying each splice, and gives it to `@compmd/render`, which already updates the page by key.
 - For an edit inside one block, neither the processing nor the JSON grows with the document.
@@ -110,7 +173,9 @@ A collaborator's edit arrives like a local one, so the preview follows a shared 
 
 ## Performance
 
-- **Bench:** time per keystroke inside one block of the 52 KB body and of a 500 KB body, and for each edit class. Keystrokes inside a block should take about the same time in both documents.
+- **Bench:** time per keystroke inside one block of the 52 KB body and of a 500 KB body, and for each edit class.
+- **What to expect.** Today the WebAssembly build takes about 10 ms for a 52 KB body, about 0.2 µs a byte. A keystroke parses, validates and expands its block and one block either side, a few hundred bytes to a few KB: tens to a few hundred microseconds, not nanoseconds. Moving the positions of the blocks after the edit adds a pass over their nodes, a few nanoseconds each, which does grow with the document: about 0.1 ms for 500 KB.
+- **The target:** a keystroke inside a block of ordinary size takes under 1 ms (p95) in both documents.
 - The browser budgets stay as they are: a key press is painted within 16 ms for a short document and 50 ms for a long one.
 
 ## Phases
@@ -137,5 +202,21 @@ A collaborator's edit arrives like a local one, so the preview follows a shared 
 
 ## Open questions
 
-- **Fallbacks and definition bodies** are already parsed as texts of their own, without the labels the document defines, so a reference link written in one may not resolve as it would in place. The labels option should be given to them too; check whether they parse wrongly today.
-- **The limit before resync parses the whole body:** a number of blocks, or a share of the document. To be set from the bench.
+- **Fallbacks and definition bodies don't see the document's labels today.** The parser parses each of them as a text of its own, without the labels the rest of the document defines. Checked on today's processor with:
+
+  ````markdown
+  ```compmd component=note
+  ---
+  See [the docs][docs].
+  ```
+
+  In place: [the docs][docs].
+
+  :: chart[See [the docs][docs].]
+
+  [docs]: https://example.com
+  ````
+
+  The paragraph gives a `linkReference`, as it should. The definition's body and the `chart` fallback both give the text `See [the docs][docs].` with the brackets in it. For the fallback this is a bug: it is part of the document and should parse as it would in place. Phase 1 fixes it with the labels option.
+
+  For a definition's body, the spec has to say which labels it sees. The body is written in the document that defines the component, but it is expanded where the component is used, which may be another document that imports it. The suggestion is the defining document's labels, since the author of the body wrote it next to them.
