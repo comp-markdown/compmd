@@ -337,10 +337,7 @@ impl Place<'_> {
             signature: component.signature.clone(),
             file: (origin != self.document.origin).then(|| origin.to_string()),
             provided: self.resolved.document(component.document).provided,
-            defined: component.position.map(|position| Range {
-                start: position.start.into(),
-                end: Some(position.end.into()),
-            }),
+            defined: component.position.map(Range::from),
         })
     }
 

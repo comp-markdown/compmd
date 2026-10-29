@@ -50,7 +50,7 @@ document.reload({ remote: await fetchAll(remote), host: hostData(host) });
 - **`hintAt(offset)`** gives what is at a UTF-16 position of the text as the last change left it ([positional hints](../processor/docs/positional-hints.md)): `{range, subject, completions, diagnostics}`, or `undefined` in plain prose. Its `range` is in lines and code point columns, as a diagnostic's `fix` is, and a completion replaces it.
 - `free()` releases the module's memory for the document.
 - **`frontmatterOf(request)`** gives what a document's frontmatter gives its render: its own fields, its settings, each data import with what was loaded, and its inputs.
-- **`componentsOf(request)`** gives the components a document can name, grouped by the file that defines them, each with its kind, its signature and where the document uses it; and the names it uses that stand for none.
+- **`componentsOf(request)`** gives the components a document can name, grouped by the file that defines them, each with its kind, its signature, where the document uses it and, for its own, where it defines it; and the names it uses that stand for none.
 - **`plainHtml(text)`** gives what a plain CommonMark and GFM renderer shows of a document (spec §14), as HTML, for a view of how it degrades.
 
 Time zone offsets come from the page's `Intl`, so the module carries no zone data. Formatting has all of ICU4X's locales.

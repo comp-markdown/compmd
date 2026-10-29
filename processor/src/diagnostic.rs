@@ -220,6 +220,15 @@ impl Range {
     }
 }
 
+impl From<crate::tree::Position> for Range {
+    fn from(position: crate::tree::Position) -> Self {
+        Self {
+            start: position.start.into(),
+            end: Some(position.end.into()),
+        }
+    }
+}
+
 impl From<Location> for Range {
     fn from(start: Location) -> Self {
         Self { start, end: None }

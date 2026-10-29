@@ -939,7 +939,12 @@ textarea::selection {
   white-space: nowrap;
 }
 
-.uses .place {
+.component-list .definition {
+  margin-inline-start: 8px;
+}
+
+.uses .place,
+.component-list .definition {
   padding: 0;
   border: 0;
   background: none;
@@ -950,7 +955,8 @@ textarea::selection {
   cursor: pointer;
 }
 
-.uses .place:hover {
+.uses .place:hover,
+.component-list .definition:hover {
   color: var(--accent);
 }
 

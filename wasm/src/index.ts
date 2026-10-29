@@ -187,6 +187,8 @@ export interface ListedComponent {
   kind: string;
   /** Absent for a host-language component without one, whose params go unchecked. */
   signature?: Signature;
+  /** Where the document defines it, its definition fence; absent for one another file defines. */
+  defined?: Required<Range>;
   /** Where the document invokes it, each the range of the name. */
   uses: Required<Range>[];
 }

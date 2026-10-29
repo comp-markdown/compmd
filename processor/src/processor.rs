@@ -464,7 +464,7 @@ impl Processor<Expanded> {
     }
 
     /// The components the processed document can name, grouped by the file that defines them, each with where the
-    /// document uses it; and the names it uses that stand for none.
+    /// document uses it, and where it defines it; and the names it uses that stand for none.
     ///
     /// ```
     /// use compmd::context::RenderContext;

@@ -45,6 +45,9 @@ pub struct Listed {
     /// Its signature; `None` for a host-language component without one, whose params go unchecked.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub signature: Option<Signature>,
+    /// Where the processed document defines it: its definition fence; `None` for one another file defines.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub defined: Option<Range>,
     /// Where the document invokes it, each the range of the name.
     pub uses: Vec<Range>,
 }
@@ -82,6 +85,10 @@ pub(crate) fn of(resolved: &Resolved) -> Components {
             defined_as: (component.name != name).then(|| component.name.clone()),
             kind: kind(component),
             signature: component.signature.clone(),
+            defined: component
+                .position
+                .filter(|_| origin == document.origin)
+                .map(Range::from),
             uses: uses.remove(name).unwrap_or_default(),
         };
         if let Some((.., group)) = groups.iter_mut().find(|(known, ..)| *known == origin) {
@@ -192,10 +199,17 @@ mod tests {
         assert_eq!(groups[0]["file"], Value::Null);
         assert_eq!(
             groups[0]["components"],
-            json!([{ "name": "note", "kind": "compmd", "signature": { "params": [], "slots": null, "headings": "relative" }, "uses": [at(15, 4, 4), at(18, 15, 4)] }])
+            json!([{
+                "name": "note",
+                "kind": "compmd",
+                "signature": { "params": [], "slots": null, "headings": "relative" },
+                "defined": { "start": { "line": 10, "column": 1 }, "end": { "line": 13, "column": 4 } },
+                "uses": [at(15, 4, 4), at(18, 15, 4)]
+            }])
         );
         assert_eq!(groups[1]["file"], "kit.comp.md");
         let tag = &groups[1]["components"][0];
+        assert_eq!(tag.get("defined"), None, "defined in another file");
         assert_eq!(
             (
                 &tag["name"],

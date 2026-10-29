@@ -1,5 +1,5 @@
-<!-- The components of the document in two lists: those it defines, and those it uses, wherever they come from, each
-     use's line selecting it in the text. The imported and built-in components it doesn't use are folded away under
+<!-- The components of the document in two lists: those it defines, each with the line of its definition, and those it
+     uses, wherever they come from; a definition's or a use's line selects it in the text. The imported and built-in components it doesn't use are folded away under
      them. -->
 <script lang="ts">
   import type { Components, ListedComponent, Range } from "@compmd/processor";
@@ -23,6 +23,10 @@
   <th scope="row">
     <code>{component.name}</code>
     {#if component.definedAs}<span class="defined-as">as <code>{component.definedAs}</code> there</span>{/if}
+    {#if component.defined}
+      {@const defined = component.defined}
+      <button type="button" class="place definition" title="Select its definition in the text" onclick={() => onselect(defined)}>line {defined.start.line}</button>
+    {/if}
   </th>
 {/snippet}
 

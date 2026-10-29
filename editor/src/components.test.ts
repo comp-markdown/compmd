@@ -10,7 +10,7 @@ describe("the Components tab's lists", () => {
       {
         provided: false,
         components: [
-          { name: "note", kind: "compmd", uses: [at(9)] },
+          { name: "note", kind: "compmd", defined: { start: { line: 3, column: 1 }, end: { line: 6, column: 4 } }, uses: [at(9)] },
           { name: "spare", kind: "compmd", uses: [] },
         ],
       },
@@ -30,10 +30,11 @@ describe("the Components tab's lists", () => {
   it("separates what the document defines from what it uses, and what it could use", () => {
     const { defined, used, available } = listsOf(components);
     expect(defined.map((c) => c.name)).toEqual(["note", "spare"]);
+    expect(defined[0]?.defined, "where its definition is, for its link").toEqual({ start: { line: 3, column: 1 }, end: { line: 6, column: 4 } });
     expect(used).toEqual([
       { name: "box", kind: "processor", uses: [at(2)], source: "@compmd/core@1.0.0/index.comp.md" },
       { name: "gone", unknown: true, uses: [at(5)] },
-      { name: "note", kind: "compmd", uses: [at(9)], source: undefined },
+      { name: "note", kind: "compmd", defined: { start: { line: 3, column: 1 }, end: { line: 6, column: 4 } }, uses: [at(9)], source: undefined },
     ]);
     expect(available.map((c) => [c.name, c.source])).toEqual([
       ["chip", "kit.comp.md"],

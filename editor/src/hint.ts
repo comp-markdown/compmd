@@ -1,7 +1,8 @@
 // The hint line above the diagnostics: what the processor's positional hint at the caret says, in a few short parts,
 // with the values it offers as buttons.
 
-import type { Completion, ComponentHint, Declaration, DeclaredType, ParameterHint, PositionalHint } from "@compmd/processor";
+import type { Completion, ComponentHint, Declaration, ParameterHint, PositionalHint } from "@compmd/processor";
+import { paramText } from "./components.ts";
 
 /** A run of the line's text: plain, code, or the name the hint is about. */
 export interface Run {
@@ -33,17 +34,11 @@ function listed(items: readonly string[]): Run[] {
   return items.flatMap((item, i) => (i === 0 ? [code(item)] : [{ text: ", " }, code(item)]));
 }
 
-/** A declared type as a signature writes it: `number`, `a | b`, `input<date>`. */
-function typeText(declared: DeclaredType): string {
-  if (typeof declared === "string") return declared;
-  if ("enum" in declared) return declared.enum.join(" | ");
-  return `input<${typeText(declared.input)}>`;
-}
-
-/** A declaration as its short form writes it: `kind: note | warning = note`. */
-function declarationText({ name, type, optional, default: value }: Declaration): string {
+/** A declaration as its short form writes it, with its default: `kind: note | warning = note`. */
+function declarationText(declaration: Declaration): string {
+  const value = declaration.default;
   const written = value === null ? "" : ` = ${typeof value.value === "string" ? value.value : JSON.stringify(value.value)}`;
-  return `${name}: ${typeText(type)}${optional ? "?" : ""}${written}`;
+  return `${paramText(declaration)}${written}`;
 }
 
 /** What the component is and where it comes from: "a CompMD component defined in this document (line 3)". */
