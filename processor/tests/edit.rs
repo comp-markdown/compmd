@@ -128,19 +128,6 @@ fn moved(node: &Value, lines: isize, offset: isize) -> Value {
     }
 }
 
-/// Whether parsing `text` panics, which some text makes the fork do (`[l]:x\n-\n1\n-`, a bug upstream has too); such
-/// an edit is left out until the fork is fixed.
-fn parse_panics(text: &str) -> bool {
-    let hook = std::panic::take_hook();
-    std::panic::set_hook(Box::new(|_| {}));
-    let panicked = std::panic::catch_unwind(|| {
-        let _ = Processor::new("a.comp.md", text).parse(&ParseOptions::default());
-    })
-    .is_err();
-    std::panic::set_hook(hook);
-    panicked
-}
-
 /// Edits `text`, the document `path` of `setup`, with random edits from `seed`, checking each against a new processor.
 /// How many edits it made, and how many of them replaced part of the expanded tree, not all of it.
 fn edit_and_compare(setup: &Setup, path: &str, text: &str, seed: u64) -> (usize, usize) {
@@ -153,9 +140,6 @@ fn edit_and_compare(setup: &Setup, path: &str, text: &str, seed: u64) -> (usize,
         let before =
             serde_json::to_value(processor.expanded()).expect("a tree")["children"].clone();
         let new_text = applied(&text, &edit);
-        if parse_panics(&new_text) {
-            continue;
-        }
         processor = processor.edit(&edit);
         let fresh = setup.process(path, &new_text);
         let context = || {

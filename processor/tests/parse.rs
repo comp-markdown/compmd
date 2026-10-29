@@ -88,6 +88,13 @@ fn mdast_blocks_keep_their_fields() {
 }
 
 #[test]
+fn an_underline_after_only_definitions_starts_the_next_heading() {
+    let tree = tree("[l]: /x\n-\n1\n-\n");
+    assert_eq!(tree["children"][1]["type"], "heading");
+    assert_eq!(tree["children"][1]["children"][0]["value"], "-\n1");
+}
+
+#[test]
 fn math_fences_are_display_math() {
     assert_eq!(
         first("```math\nx^2\n```\n"),
