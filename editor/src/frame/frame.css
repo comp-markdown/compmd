@@ -149,6 +149,628 @@ a {
   font-size: 0.85em;
 }
 
+/* Fancy: an aurora behind a pane of frosted glass, headings in a moving sheen, and glowing code. The renderer's tokens
+   make its boxes glass too. */
+:root[data-host="fancy"] {
+  --fancy-violet: #7c3aed;
+  --fancy-rose: #e11d74;
+  --fancy-cyan: #0891b2;
+  --fancy-ink: #1e1442;
+  --fancy-pane: rgb(255 255 255 / 58%);
+  --fancy-edge: rgb(255 255 255 / 75%);
+  --compmd-accent: var(--fancy-violet);
+  --compmd-surface-subtle: rgb(255 255 255 / 55%);
+  --compmd-surface-strong: rgb(255 255 255 / 78%);
+  --compmd-surface-accent: color-mix(in srgb, var(--fancy-violet) 14%, rgb(255 255 255 / 50%));
+  --compmd-border-subtle: 1px solid rgb(124 58 237 / 22%);
+  --compmd-border-strong: 1px solid rgb(124 58 237 / 50%);
+  --compmd-radius-s: 10px;
+  --compmd-radius-m: 18px;
+  --compmd-radius-l: 30px;
+  --viz-surface: #faf8ff;
+  --viz-primary: var(--fancy-ink);
+  --viz-secondary: #5b4f86;
+  --viz-grid: #e4dcfb;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-host="fancy"] {
+    --fancy-violet: #b794ff;
+    --fancy-rose: #ff6fb1;
+    --fancy-cyan: #5ee6ff;
+    --fancy-ink: #efeaff;
+    --fancy-pane: rgb(24 16 56 / 55%);
+    --fancy-edge: rgb(255 255 255 / 12%);
+    --compmd-surface-subtle: rgb(255 255 255 / 6%);
+    --compmd-surface-strong: rgb(255 255 255 / 11%);
+    --compmd-surface-accent: color-mix(in srgb, var(--fancy-violet) 18%, transparent);
+    --compmd-border-subtle: 1px solid rgb(183 148 255 / 25%);
+    --compmd-border-strong: 1px solid rgb(183 148 255 / 55%);
+    --viz-surface: #1a1236;
+    --viz-secondary: #b5a8de;
+    --viz-grid: #352a5c;
+  }
+}
+
+:root[data-host="fancy"] body {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 10% 6%, color-mix(in srgb, var(--fancy-rose) 38%, transparent), transparent 40%),
+    radial-gradient(circle at 92% 14%, color-mix(in srgb, var(--fancy-cyan) 40%, transparent), transparent 42%),
+    radial-gradient(circle at 50% 105%, color-mix(in srgb, var(--fancy-violet) 42%, transparent), transparent 58%),
+    light-dark(#f6f3ff, #0c0822);
+  background-attachment: fixed;
+  color: var(--fancy-ink);
+  font: 16px/1.6 "Avenir Next", "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+}
+
+:root[data-host="fancy"] #page {
+  max-width: 66rem;
+  margin: 28px auto;
+  padding: 40px 48px;
+  border: 1px solid var(--fancy-edge);
+  border-radius: 30px;
+  background: var(--fancy-pane);
+  box-shadow:
+    0 30px 80px -24px color-mix(in srgb, var(--fancy-violet) 45%, transparent),
+    inset 0 1px 0 var(--fancy-edge);
+  backdrop-filter: blur(22px) saturate(170%);
+}
+
+:root[data-host="fancy"] :is(h1, h2) {
+  background: linear-gradient(100deg, var(--fancy-violet), var(--fancy-rose) 35%, var(--fancy-cyan) 65%, var(--fancy-violet)) 0 / 200% auto;
+  background-clip: text;
+  color: transparent;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  animation: fancy-sheen 7s linear infinite;
+}
+
+:root[data-host="fancy"] h1 {
+  font-size: 2.7em;
+  line-height: 1.08;
+}
+
+@keyframes fancy-sheen {
+  to {
+    background-position: 200% center;
+  }
+}
+
+:root[data-host="fancy"] a {
+  color: var(--fancy-violet);
+  text-decoration: none;
+  background: linear-gradient(90deg, var(--fancy-rose), var(--fancy-cyan)) 0 100% / 0 2px no-repeat;
+  transition: background-size 250ms, text-shadow 250ms;
+}
+
+:root[data-host="fancy"] a:hover {
+  background-size: 100% 2px;
+  text-shadow: 0 0 12px color-mix(in srgb, var(--fancy-violet) 60%, transparent);
+}
+
+:root[data-host="fancy"] :not(pre) > code {
+  padding: 0.15em 0.45em;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--fancy-violet) 12%, transparent);
+  color: var(--fancy-violet);
+  font-size: 0.88em;
+}
+
+:root[data-host="fancy"] pre {
+  padding: 18px 20px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #1e1b4b, #3b0764);
+  color: #e9e3ff;
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 8%), 0 18px 40px -16px color-mix(in srgb, var(--fancy-violet) 70%, transparent);
+}
+
+:root[data-host="fancy"] :is(.compmd-alert, .compmd-quote) {
+  padding: 0.8em 1.1em;
+  border-inline-start: 0;
+  border-radius: 16px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--fancy-violet) 16%, transparent), transparent);
+  box-shadow: inset 4px 0 0 var(--fancy-rose);
+}
+
+:root[data-host="fancy"] hr {
+  height: 2px;
+  border: 0;
+  background: linear-gradient(90deg, transparent, var(--fancy-violet), var(--fancy-cyan), transparent);
+}
+
+:root[data-host="fancy"] table {
+  overflow: hidden;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 14px;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--fancy-violet) 25%, transparent);
+}
+
+:root[data-host="fancy"] th {
+  background: linear-gradient(90deg, var(--fancy-violet), var(--fancy-rose));
+  color: #fff;
+}
+
+:root[data-host="fancy"] :is(th, td) {
+  padding: 8px 14px;
+}
+
+:root[data-host="fancy"] :is(input, select) {
+  accent-color: var(--fancy-violet);
+}
+
+:root[data-host="fancy"] ::selection {
+  background: color-mix(in srgb, var(--fancy-rose) 35%, transparent);
+}
+
+/* Terminal: green phosphor on a dark screen, with scanlines, a soft glow and a blinking cursor; dark in either
+   scheme, as a terminal is. */
+:root[data-host="terminal"] {
+  color-scheme: dark;
+  --term: #3dff8b;
+  --term-bright: #b8ffd4;
+  --term-dim: #20a35a;
+  --term-screen: #021008;
+  --compmd-accent: var(--term);
+  --compmd-surface-subtle: rgb(61 255 139 / 6%);
+  --compmd-surface-strong: rgb(61 255 139 / 12%);
+  --compmd-surface-accent: rgb(61 255 139 / 16%);
+  --compmd-border-subtle: 1px dashed rgb(61 255 139 / 45%);
+  --compmd-border-strong: 1px solid var(--term);
+  --compmd-radius-s: 0;
+  --compmd-radius-m: 0;
+  --compmd-radius-l: 0;
+  --compmd-radius-full: 0;
+  --viz-surface: var(--term-screen);
+  --viz-primary: var(--term);
+  --viz-secondary: var(--term-dim);
+  --viz-muted: #167a43;
+  --viz-grid: #0d3a20;
+  --viz-axis: #1c6b3d;
+  --viz-border: rgb(61 255 139 / 25%);
+}
+
+:root[data-host="terminal"] body {
+  min-height: 100vh;
+  background: radial-gradient(ellipse at center, #06311a, var(--term-screen) 72%) fixed;
+  color: var(--term);
+  font: 15px/1.65 ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  text-shadow: 0 0 2px rgb(61 255 139 / 55%), 0 0 10px rgb(61 255 139 / 22%);
+}
+
+/* The scanlines, over everything, letting every click through. */
+:root[data-host="terminal"] body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+  background: repeating-linear-gradient(to bottom, transparent 0 2px, rgb(0 0 0 / 26%) 2px 3px);
+  animation: terminal-flicker 5s steps(1) infinite;
+}
+
+@keyframes terminal-flicker {
+  50% {
+    opacity: 0.85;
+  }
+  52% {
+    opacity: 1;
+  }
+}
+
+:root[data-host="terminal"] #page {
+  max-width: 64rem;
+}
+
+:root[data-host="terminal"] :is(h1, h2, h3) {
+  color: var(--term-bright);
+  font-size: 1.15em;
+  font-weight: 700;
+}
+
+:root[data-host="terminal"] h1 {
+  font-size: 1.5em;
+}
+
+:root[data-host="terminal"] h1::before {
+  content: "$ ";
+  color: var(--term-dim);
+}
+
+:root[data-host="terminal"] h1::after {
+  content: "█";
+  margin-inline-start: 0.2em;
+  animation: terminal-cursor 1.1s steps(1) infinite;
+}
+
+@keyframes terminal-cursor {
+  50% {
+    opacity: 0;
+  }
+}
+
+:root[data-host="terminal"] h2::before {
+  content: "## ";
+  color: var(--term-dim);
+}
+
+:root[data-host="terminal"] h3::before {
+  content: "### ";
+  color: var(--term-dim);
+}
+
+:root[data-host="terminal"] a {
+  color: var(--term-bright);
+}
+
+:root[data-host="terminal"] a:hover {
+  background: var(--term);
+  color: var(--term-screen);
+  text-shadow: none;
+}
+
+:root[data-host="terminal"] code {
+  color: var(--term-bright);
+}
+
+:root[data-host="terminal"] pre {
+  padding: 12px 16px;
+  border: 1px dashed var(--term-dim);
+  background: rgb(61 255 139 / 4%);
+}
+
+:root[data-host="terminal"] :is(.compmd-quote, .compmd-alert) {
+  border-inline-start: 2px solid var(--term-dim);
+}
+
+:root[data-host="terminal"] .compmd-alert-title::before {
+  content: "[ ";
+}
+
+:root[data-host="terminal"] .compmd-alert-title::after {
+  content: " ]";
+}
+
+:root[data-host="terminal"] ul > li::marker {
+  content: "> ";
+  color: var(--term-dim);
+}
+
+:root[data-host="terminal"] hr {
+  border: 0;
+  border-top: 1px dashed var(--term-dim);
+}
+
+:root[data-host="terminal"] table {
+  border-collapse: collapse;
+}
+
+:root[data-host="terminal"] :is(th, td) {
+  padding: 4px 12px;
+  border: 1px dashed var(--term-dim);
+}
+
+:root[data-host="terminal"] :is(input, select) {
+  border: 1px solid var(--term);
+  background: var(--term-screen);
+  color: var(--term);
+  accent-color: var(--term);
+}
+
+:root[data-host="terminal"] img {
+  filter: grayscale(1) sepia(1) hue-rotate(80deg) saturate(3) brightness(0.9);
+}
+
+:root[data-host="terminal"] ::selection {
+  background: var(--term);
+  color: var(--term-screen);
+}
+
+/* Magazine: an editorial page, with high-contrast display headlines, a drop cap, pull quotes and one red. */
+:root[data-host="magazine"] {
+  --mag-paper: #fdfdfb;
+  --mag-ink: #141414;
+  --mag-quiet: #5a554e;
+  --mag-rule: #d9d4cc;
+  --mag-red: #b3122e;
+  --mag-display: "Didot", "Bodoni 72", "Bodoni MT", "Playfair Display", Georgia, serif;
+  --compmd-accent: var(--mag-red);
+  --compmd-surface-subtle: #f3f1ed;
+  --compmd-surface-strong: #e8e4dd;
+  --compmd-surface-accent: color-mix(in srgb, var(--mag-red) 8%, var(--mag-paper));
+  --compmd-border-subtle: 1px solid var(--mag-rule);
+  --compmd-border-strong: 2px solid var(--mag-ink);
+  --compmd-radius-s: 2px;
+  --compmd-radius-m: 2px;
+  --compmd-radius-l: 4px;
+  --viz-surface: var(--mag-paper);
+  --viz-primary: var(--mag-ink);
+  --viz-secondary: var(--mag-quiet);
+  --viz-grid: #e6e1d9;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-host="magazine"] {
+    --mag-paper: #121314;
+    --mag-ink: #edece8;
+    --mag-quiet: #a8a39b;
+    --mag-rule: #36332f;
+    --mag-red: #ff5f72;
+    --compmd-surface-subtle: #1c1d1f;
+    --compmd-surface-strong: #26272a;
+    --viz-grid: #2c2b29;
+  }
+}
+
+:root[data-host="magazine"] body {
+  background: var(--mag-paper);
+  color: var(--mag-ink);
+  font: 18px/1.68 "Iowan Old Style", Palatino, "Palatino Linotype", Charter, Georgia, serif;
+}
+
+:root[data-host="magazine"] #page {
+  max-width: 50rem;
+  padding: 56px 40px 80px;
+}
+
+:root[data-host="magazine"] :is(h1, h2) {
+  font-family: var(--mag-display);
+  letter-spacing: -0.015em;
+}
+
+:root[data-host="magazine"] h1 {
+  margin-bottom: 0.4em;
+  padding-bottom: 0.3em;
+  border-bottom: 4px double var(--mag-ink);
+  font-size: 3.3em;
+  font-weight: 700;
+  line-height: 1.02;
+}
+
+:root[data-host="magazine"] h2 {
+  margin-top: 2em;
+  padding-top: 0.45em;
+  border-top: 1px solid var(--mag-ink);
+  font-size: 1.85em;
+  line-height: 1.15;
+}
+
+:root[data-host="magazine"] h3 {
+  color: var(--mag-red);
+  font: 600 0.78em/1.4 "Avenir Next", "Helvetica Neue", system-ui, sans-serif;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* The opening paragraph: a drop cap in the display face. */
+:root[data-host="magazine"] h1 + p::first-letter {
+  float: inline-start;
+  margin: 0.06em 0.1em 0 0;
+  color: var(--mag-red);
+  font: 700 4.1em/0.82 var(--mag-display);
+}
+
+:root[data-host="magazine"] h1 + p {
+  font-size: 1.08em;
+}
+
+:root[data-host="magazine"] .compmd-quote {
+  margin: 1.8em 0;
+  padding: 0.6em 0;
+  border: 0;
+  border-block: 2px solid var(--mag-red);
+  font: italic 1.45em/1.35 var(--mag-display);
+  text-align: center;
+}
+
+:root[data-host="magazine"] .compmd-alert {
+  padding: 0.9em 1.1em;
+  border-inline-start: 4px solid var(--mag-red);
+  background: var(--compmd-surface-subtle);
+  font: 0.9em/1.6 "Avenir Next", "Helvetica Neue", system-ui, sans-serif;
+}
+
+:root[data-host="magazine"] a {
+  color: inherit;
+  text-decoration-color: var(--mag-red);
+  text-decoration-thickness: 2px;
+}
+
+:root[data-host="magazine"] :not(pre) > code {
+  padding: 0.1em 0.35em;
+  background: var(--compmd-surface-subtle);
+  font-size: 0.8em;
+}
+
+:root[data-host="magazine"] hr {
+  width: 30%;
+  margin: 2.5em auto;
+  border: 0;
+  border-top: 1px solid var(--mag-ink);
+}
+
+:root[data-host="magazine"] table {
+  border-collapse: collapse;
+  font: 0.86em/1.5 "Avenir Next", "Helvetica Neue", system-ui, sans-serif;
+}
+
+:root[data-host="magazine"] th {
+  border-bottom: 2px solid var(--mag-ink);
+  text-align: start;
+}
+
+:root[data-host="magazine"] :is(th, td) {
+  padding: 6px 14px 6px 0;
+}
+
+:root[data-host="magazine"] td {
+  border-bottom: 1px solid var(--mag-rule);
+}
+
+:root[data-host="magazine"] :is(input, select) {
+  accent-color: var(--mag-red);
+}
+
+/* Hand-drawn: a notebook page in marker and highlighter, with wobbly boxes; a chalkboard in the dark. */
+:root[data-host="sketch"] {
+  --sketch-paper: #fdfefe;
+  --sketch-line: #dbe7f3;
+  --sketch-margin: #ffb3b3;
+  --sketch-ink: #2b2d42;
+  --sketch-blue: #1971c2;
+  --sketch-orange: #e8590c;
+  --sketch-marker: rgb(255 224 102 / 85%);
+  --sketch-wobble: 255px 15px 225px 15px / 15px 225px 15px 255px;
+  --sketch-hand: "Marker Felt", "Segoe Print", "Bradley Hand", "Chalkboard SE", cursive;
+  --compmd-accent: var(--sketch-orange);
+  --compmd-surface-subtle: rgb(255 224 102 / 28%);
+  --compmd-surface-strong: rgb(77 171 247 / 18%);
+  --compmd-surface-accent: rgb(255 143 171 / 24%);
+  --compmd-border-subtle: 2px solid var(--sketch-ink);
+  --compmd-border-strong: 3px solid var(--sketch-ink);
+  --compmd-radius-s: var(--sketch-wobble);
+  --compmd-radius-m: var(--sketch-wobble);
+  --compmd-radius-l: var(--sketch-wobble);
+  --viz-surface: var(--sketch-paper);
+  --viz-primary: var(--sketch-ink);
+  --viz-secondary: #5c6178;
+  --viz-grid: #cfd8e3;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-host="sketch"] {
+    --sketch-paper: #1f2a24;
+    --sketch-line: rgb(255 255 255 / 6%);
+    --sketch-margin: rgb(255 140 140 / 35%);
+    --sketch-ink: #f1f3ee;
+    --sketch-blue: #8cc8ff;
+    --sketch-orange: #ffa94d;
+    --sketch-marker: rgb(255 224 102 / 32%);
+    --compmd-surface-subtle: rgb(255 224 102 / 12%);
+    --compmd-surface-strong: rgb(140 200 255 / 14%);
+    --compmd-surface-accent: rgb(255 143 171 / 16%);
+    --viz-secondary: #b9c2b9;
+    --viz-grid: #34433b;
+  }
+}
+
+:root[data-host="sketch"] body {
+  min-height: 100vh;
+  background: linear-gradient(transparent calc(1.7em - 1px), var(--sketch-line) calc(1.7em - 1px)) 0 0 / 100% 1.7em,
+    var(--sketch-paper);
+  color: var(--sketch-ink);
+  font: 17px/1.7 "Chalkboard SE", "Comic Neue", "Segoe Print", "Comic Sans MS", cursive;
+}
+
+:root[data-host="sketch"] #page {
+  max-width: 62rem;
+  padding: 36px 44px 56px 56px;
+  border-inline-start: 2px solid var(--sketch-margin);
+}
+
+:root[data-host="sketch"] :is(h1, h2, h3) {
+  font-family: var(--sketch-hand);
+  font-weight: 400;
+}
+
+:root[data-host="sketch"] h1 {
+  display: inline-block;
+  padding: 0 0.15em;
+  background: linear-gradient(transparent 55%, var(--sketch-marker) 55% 92%, transparent 92%);
+  font-size: 2.6em;
+  line-height: 1.15;
+  transform: rotate(-1.2deg);
+}
+
+:root[data-host="sketch"] h2 {
+  text-decoration: underline wavy var(--sketch-blue) 2px;
+  text-underline-offset: 0.28em;
+}
+
+:root[data-host="sketch"] strong {
+  background: linear-gradient(transparent 60%, var(--sketch-marker) 60%);
+}
+
+:root[data-host="sketch"] a {
+  color: var(--sketch-blue);
+  text-decoration: underline wavy;
+  text-decoration-thickness: 1px;
+}
+
+:root[data-host="sketch"] .compmd-alert {
+  padding: 0.8em 1em;
+  border: 2px solid var(--sketch-ink);
+  border-radius: var(--sketch-wobble);
+  background: var(--compmd-surface-subtle);
+  box-shadow: 3px 4px 0 var(--sketch-ink);
+  transform: rotate(-0.4deg);
+}
+
+:root[data-host="sketch"] .compmd-quote {
+  border-inline-start: 4px solid var(--sketch-orange);
+  font-style: italic;
+}
+
+:root[data-host="sketch"] :not(pre) > code {
+  padding: 0.05em 0.35em;
+  border-radius: 4px;
+  background: var(--compmd-surface-strong);
+  font-size: 0.85em;
+}
+
+:root[data-host="sketch"] pre {
+  padding: 14px 18px;
+  border: 2px dashed var(--sketch-ink);
+  border-radius: var(--sketch-wobble);
+  background: var(--sketch-paper);
+}
+
+:root[data-host="sketch"] hr {
+  height: 6px;
+  border: 0;
+  background: radial-gradient(circle, var(--sketch-ink) 1.3px, transparent 1.6px) 0 0 / 11px 6px;
+}
+
+:root[data-host="sketch"] table {
+  border: 2px solid var(--sketch-ink);
+  border-radius: var(--sketch-wobble);
+  border-spacing: 0;
+}
+
+:root[data-host="sketch"] th {
+  background: var(--compmd-surface-subtle);
+}
+
+:root[data-host="sketch"] :is(th, td) {
+  padding: 6px 12px;
+}
+
+:root[data-host="sketch"] li::marker {
+  color: var(--sketch-orange);
+}
+
+:root[data-host="sketch"] img {
+  border: 6px solid #fff;
+  box-shadow: 2px 3px 8px rgb(0 0 0 / 28%);
+  transform: rotate(1.2deg);
+}
+
+:root[data-host="sketch"] :is(input, select) {
+  border: 2px solid var(--sketch-ink);
+  border-radius: var(--sketch-wobble);
+  accent-color: var(--sketch-orange);
+}
+
+/* The moving parts stay still for a reader who asks for less motion. */
+@media (prefers-reduced-motion: reduce) {
+  :root[data-host] :is(h1, h2),
+  :root[data-host] h1::after,
+  :root[data-host] body::after {
+    animation: none;
+  }
+}
+
 /* Unstyled: the browser's own defaults, to show what the renderer adds by itself. */
 :root[data-host="unstyled"] body {
   background: Canvas;

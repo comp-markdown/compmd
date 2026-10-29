@@ -70,7 +70,7 @@ input {
   color: inherit;
 }
 
-/* The header: the name, the document, and how fast the last change reached the page. */
+/* The header: the name, the document and the host's stylesheet, and how fast the last change reached the page. */
 
 header {
   display: flex;
@@ -91,6 +91,12 @@ h1 {
   align-items: center;
   gap: 10px;
   color: var(--ink-secondary);
+}
+
+/* As wide as a short name: a longer one is cut, and the open list shows it whole. */
+.document select {
+  max-width: 15rem;
+  text-overflow: ellipsis;
 }
 
 select,
@@ -648,39 +654,10 @@ textarea::selection {
   stroke-linecap: round;
 }
 
-/* Over the tabs: the host's stylesheets, and the inputs. */
+/* Over the tabs: the inputs. */
 
 .page-view:not([hidden]) {
   overflow: hidden;
-}
-
-.host-style {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 14px;
-  padding: 8px 16px;
-  border-bottom: 1px solid var(--rule);
-  background: color-mix(in srgb, var(--accent) 4%, var(--sheet));
-  color: var(--ink-secondary);
-}
-
-.host-style > span {
-  margin-inline-end: 2px;
-  cursor: help;
-}
-
-.host-style label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--ink);
-  cursor: pointer;
-}
-
-.host-style input {
-  margin: 0;
-  accent-color: var(--accent);
 }
 
 /* The trees: JSON that folds. */

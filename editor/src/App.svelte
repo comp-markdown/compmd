@@ -205,6 +205,14 @@
       {/each}
     </select>
   </label>
+  <label class="document" title="The page's look is its host's, not the document's: try the stylesheets a host might give it.">
+    <span>Host stylesheet</span>
+    <select bind:value={hostStyle}>
+      {#each HOST_STYLES as { id, label } (id)}
+        <option value={id}>{label}</option>
+      {/each}
+    </select>
+  </label>
   <dl class="status" aria-live="off">
     <div title="The worker's processing of the last change; p95 {ms(shown?.processing.p95)}">
       <dt>Processing</dt>
@@ -227,7 +235,7 @@
       Write a <a href="https://github.com/comp-markdown/compmd" target="_blank" rel="noreferrer">CompMD</a> document on the left and see it
       rendered on the right as you type: components, data, layout and all. The tabs show what a plain Markdown renderer makes of the same
       text, what the frontmatter gives the page, the components the document can name and where it uses them, and the trees the processor
-      builds. Above them, try the stylesheets a host might give the page, and other values for the document's inputs. Under the text,
+      builds. Beside the document, try the stylesheets a host might give the page; above the tabs, other values for the document's inputs. Under the text,
       a line says what is at the caret and what it takes, with its values to click, and the diagnostics point at what's wrong and offer
       fixes. Nothing leaves your browser.
     </p>
@@ -357,15 +365,6 @@
 
 {#snippet panes()}
   <div class="sheet views">
-    <div class="host-style" role="radiogroup" aria-label="The host's stylesheet">
-      <span title="The page's look is its host's, not the document's: try the stylesheets a host might give it.">Host stylesheet</span>
-      {#each HOST_STYLES as { id, label } (id)}
-        <label>
-          <input type="radio" name="host-style" value={id} bind:group={hostStyle} />
-          {label}
-        </label>
-      {/each}
-    </div>
     {#if shown && Object.keys(shown.inputs).length > 0}
       <Inputs inputs={shown.inputs} onset={(name, value) => editor?.setInput(name, value)} />
     {/if}

@@ -41,6 +41,10 @@ export const HOST_STYLES = [
   { id: "reference", label: "Reference" },
   { id: "github", label: "GitHub-like" },
   { id: "docs", label: "Documentation" },
+  { id: "fancy", label: "Fancy" },
+  { id: "terminal", label: "Terminal" },
+  { id: "magazine", label: "Magazine" },
+  { id: "sketch", label: "Hand-drawn" },
   { id: "unstyled", label: "Unstyled" },
 ] as const;
 
