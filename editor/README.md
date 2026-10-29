@@ -1,6 +1,6 @@
 # The CompMD editor
 
-A text area on the left, the rendered page on the right, updated as you type. It opens the spec's complete example and the other documents in its menu, with everything they need bundled: their files, packs, remote and host data. Once loaded it makes no requests.
+A text area on the left, the rendered page on the right, updated as you type. It opens the documents in its menu, from a tour of the syntax to the spec's complete example, with everything they need bundled: their files, packs, remote and host data. Once loaded it makes no requests.
 
 **Status: in development,** as the processor is; not published yet.
 
@@ -12,7 +12,7 @@ A text area on the left, the rendered page on the right, updated as you type. It
 - **The page renders in a sandboxed iframe** (`sandbox="allow-scripts"`, an opaque origin) with no network (spec §15): its content security policy, a `<meta>` the build writes into `frame.html` (`frame-policy.ts`), allows scripts only from the site, the components compiled into `blob:` modules and the import map by its hash, and no requests, images from elsewhere, sockets, frames or workers, so it works on any static host. The dev server's frame may also connect to the site, for live reload. It renders through [`@compmd/render`](../render/README.md)'s frame protocol. The renderer applies each splice and renders only the blocks it replaced; its keys follow each splice's edit, so components keep their state through edits around them, merged edits included.
 - **The look** (`src/editor.css`): the text and the page as two sheets on a desk, in cool paper and blue-black ink with one blue accent, light and dark, in the system's fonts, so it loads nothing to show itself. The handle between them drags, or moves with the arrow keys; Home and End fold a side away, Enter or a double click opens it, and the browser remembers where it was (`src/split.ts`). On a narrow screen the sheets stack.
 - **The host's stylesheet:** a page's look is its host's, not the document's, so a bar over the tabs tries four: the reference look, GitHub-like, Documentation (a serif reading column) and Unstyled (the browser's defaults). They are rules in `src/frame/frame.css`, picked by an attribute the editor sets in the frame, so a switch reloads nothing and components keep their state.
-- **About:** a short paragraph on the first visit says what the editor is for; closed, it comes back from the header, beside links to the spec and the repository.
+- **About:** a short paragraph on the first visit says what the editor, *CompMD Playground* on its page, is for; closed, it comes back from the "i" beside the name. The header also links to the spec and the repository.
 - **Diagnostics** are listed under the text, each with its code, place and message; clicking its place selects its range in the text (to the end of the line when it has no end).
 - **Views:** tabs beside the page (the CompMD tab) show what a plain CommonMark and GFM renderer shows of the text (spec §14: markdown-rs with CompMD's syntax off, through `@compmd/processor`'s `plainHtml`, in a frame without scripts); what the frontmatter gives the render (`frontmatterOf`): its own fields, each data import with its source, schema and what was loaded, the inputs with their values, and the settings; the components (`componentsOf`) in two lists, those the document defines, with their kinds, params and slots, and those it uses, wherever they come from, unknown names among them, each use's line selecting it in the text, and the imported and built-in ones it doesn't use folded under them; and the parse tree and the expanded tree (spec §12), the expanded one without origins. The trees and the data are JSON that folds (`src/JsonTree.svelte`): two levels open, a folded record showing its first values. The editor's worker keeps no tree, so a second worker makes these from the current text while one of their tabs is open, the latest text only when it is busy (`src/views.ts`). The page stays mounted under them, with its state.
 - **Inputs:** a bar under the host's stylesheet lists the document's inputs, each with a control by its type (a select for an enum, a checkbox, a number, a date, text). Changing one there, or through the page (an input component's `set`: a select, a chart's column), opens the document again with the new value.
@@ -29,16 +29,21 @@ The expanded tree names a component but holds no code, so the worker sends the f
 
 ### The documents
 
-| Document | From |
-|---|---|
-| The spec's complete example (the default) | `../conformance/examples/complete-example-expanded/`, with its packs, remote and host data |
-| A sales dashboard: tiles, a column chart bound to an input, a timeline, an area chart, a donut, a sortable table | `examples/dashboard/`, with the charts of `examples/charts/` |
-| A layout: *Kyoto in four days*, with blocks placed by position, grid areas that change at `md` and `lg`, a sticky column, a `display=contents` component, blocks shown and hidden by width | `examples/kyoto/` |
-| A changelog of 12 releases and 128 changes | `../wasm/bench/fixtures/changelog/` |
-| The release notes of spec §16, which import a pack and a file their folder doesn't hold, so they show their fallbacks | `../conformance/examples/spec-16-release-notes/` |
-| Field notes, a 52 KB body with 20 charts | `../wasm/bench/fixtures/notes/`, with the charts of `examples/charts/` |
+Each document in the menu shows one side of CompMD. The files it reads (its folder's other files, its packs' files, its remote and host data) are tabs over the text, each shown read-only in its place. Every document renders without diagnostics but the one about them, whose mistakes each have a fix, and fixing them all leaves none; `src/documents.test.ts` checks both.
 
-`examples/charts/` is an ambient pack, `@preview/charts`, under the name the field notes give theirs: React components for columns, areas and a timeline, Svelte components for a donut and a sortable table, in plain SVG. Their colors are the `--viz-*` custom properties the frame sets for light and dark, a categorical palette checked for color vision deficiencies in both. `?doc=<n>` opens the menu's *n*th document.
+| `?doc=` | Document | From |
+|---|---|---|
+| `tour` (the default) | A tour of the syntax: Markdown and GFM, containers, leaves, inline components, the kinds of params, values, slots, `if` and `each` | `examples/tour/` |
+| `definitions` | Definitions and slots: a `compmd` component with params and named slots, used as a container and a leaf, one definition in another, `display=contents`, a template slot | `examples/definitions/` |
+| `changelog` | Expressions: a changelog of 12 releases and 128 changes | `../wasm/bench/fixtures/changelog/` |
+| `dashboard` | Data: a sales dashboard, with tiles, a column chart bound to an input, a timeline, an area chart, a donut, a sortable table | `examples/dashboard/`, with the charts of `examples/charts/` |
+| `inputs` | Inputs: planning a stay, with an input of every type and its component | `examples/inputs/` |
+| `kyoto` | Layout: *Kyoto in four days*, with blocks placed by position, grid areas that change at `md` and `lg`, a sticky column, a `display=contents` component, blocks shown and hidden by width | `examples/kyoto/` |
+| `complete` | Components in JSX and from packs: the spec's complete example | `../conformance/examples/complete-example-expanded/`, with its packs, remote and host data |
+| `diagnostics` | Diagnostics and their fixes: an unknown component, param and slot, and values a param doesn't take | `examples/diagnostics/` |
+| `notes` | A long document: field notes, a 52 KB body with 20 charts | `../wasm/bench/fixtures/notes/`, with the charts of `examples/charts/` |
+
+`examples/charts/` is an ambient pack, `@preview/charts`, under the name the field notes give theirs: React components for columns, areas and a timeline, Svelte components for a donut and a sortable table, in plain SVG. Their colors are the `--viz-*` custom properties the frame sets for light and dark, a categorical palette checked for color vision deficiencies in both.
 
 ## Commands
 

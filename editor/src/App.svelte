@@ -5,9 +5,10 @@
 <script lang="ts">
   import type { Range } from "@compmd/processor";
   import { connectFrame } from "@compmd/render/frame";
+  import { tick } from "svelte";
   import ComponentsView from "./ComponentsView.svelte";
   import DataView from "./DataView.svelte";
-  import { EXAMPLES } from "./documents.ts";
+  import { EXAMPLES, exampleIndex, type SupportingFile } from "./documents.ts";
   import { offsetOf } from "./edit.ts";
   import { Editor, type EditorState, type Frame } from "./editor.ts";
   import Inputs from "./Inputs.svelte";
@@ -17,11 +18,13 @@
   import { keep, recall } from "./stored.ts";
   import { plainPage, ViewsClient, type View, type ViewKind } from "./views.ts";
 
-  const initial = Number(new URLSearchParams(location.search).get("doc") ?? 0);
-  let chosen = $state(Number.isInteger(initial) && EXAMPLES[initial] ? initial : 0);
+  let chosen = $state(exampleIndex(new URLSearchParams(location.search).get("doc")));
   let text = $state("");
   let shown: EditorState | undefined = $state.raw();
   let textarea: HTMLTextAreaElement | undefined = $state();
+  const example = $derived(EXAMPLES[chosen]);
+  /** The supporting file shown in place of the text, read-only; `undefined` for the document. */
+  let file: SupportingFile | undefined = $state.raw();
   let editor: Editor | undefined;
   let worker: Worker | undefined;
 
@@ -74,7 +77,9 @@
   }
 
   /** Selects `range` in the text area (to the end of its line, when it has no end), and scrolls to it. */
-  function select(range: Range): void {
+  async function select(range: Range): Promise<void> {
+    file = undefined;
+    await tick();
     if (!textarea) return;
     const start = offsetOf(textarea.value, range.start);
     const lineEnd = textarea.value.indexOf("\n", start);
@@ -108,7 +113,6 @@
       shown = { ...opened.state };
     });
     editor = opened;
-    const example = EXAMPLES[chosen];
     if (example) text = opened.open(example);
     // For the bench, which reads the timings.
     (window as { compmdEditor?: Editor }).compmdEditor = opened;
@@ -118,10 +122,13 @@
 </script>
 
 <header>
-  <h1>CompMD editor</h1>
+  <div class="title">
+    <h1>CompMD Playground</h1>
+    <button type="button" class="about-toggle" aria-label="About" title="About" aria-expanded={about} aria-controls="about" onclick={toggleAbout}>i</button>
+  </div>
   <label class="document">
     <span>Document</span>
-    <select bind:value={chosen}>
+    <select bind:value={chosen} onchange={() => (file = undefined)}>
       {#each EXAMPLES as example, i (example.name)}
         <option value={i}>{example.name}</option>
       {/each}
@@ -140,12 +147,11 @@
   <nav class="links" aria-label="CompMD">
     <a href="https://github.com/comp-markdown/compmd/blob/main/compmd-spec-v1.md" target="_blank" rel="noreferrer">Spec</a>
     <a href="https://github.com/comp-markdown/compmd" target="_blank" rel="noreferrer">GitHub</a>
-    <button type="button" class="about-toggle" aria-expanded={about} aria-controls="about" onclick={toggleAbout}>About</button>
   </nav>
 </header>
 
 {#if about}
-  <section class="about" id="about" aria-label="About this editor">
+  <section class="about" id="about" aria-label="About the playground">
     <p>
       Write a <a href="https://github.com/comp-markdown/compmd" target="_blank" rel="noreferrer">CompMD</a> document on the left and see it
       rendered on the right as you type: components, data, layout and all. The tabs show what a plain Markdown renderer makes of the same
@@ -170,7 +176,21 @@
 
 {#snippet source()}
   <div class="sheet text">
+    {#if example && example.files.length > 0}
+      <div class="tabs files" role="tablist" aria-label="The document and the files it reads">
+        <button type="button" role="tab" aria-selected={file === undefined} onclick={() => (file = undefined)}>{example.request.path}</button>
+        {#each example.files as supporting (supporting.name)}
+          <button type="button" role="tab" aria-selected={file === supporting} title="Read-only: a file the document reads" onclick={() => (file = supporting)}>
+            {supporting.name}
+          </button>
+        {/each}
+      </div>
+    {/if}
+    {#if file}
+      <pre class="file" aria-label="{file.name}, read-only">{file.text}</pre>
+    {/if}
     <textarea
+      hidden={file !== undefined}
       bind:this={textarea}
       value={text}
       spellcheck="false"
@@ -188,7 +208,7 @@
           <li class={d.severity}>
             <code class="code">{d.code}</code>
             {#if d.file === undefined}
-              <button type="button" class="place" title="Select it in the text" onclick={() => select(d.range)}>{d.range.start.line}:{d.range.start.column}</button>
+              <button type="button" class="place" title="Select it in the text" onclick={() => void select(d.range)}>{d.range.start.line}:{d.range.start.column}</button>
             {:else}
               {d.file} {d.range.start.line}:{d.range.start.column}
             {/if}
@@ -250,7 +270,7 @@
         {:else if "frontmatter" in view}
           <DataView frontmatter={view.frontmatter} />
         {:else if "components" in view}
-          <ComponentsView components={view.components} onselect={select} />
+          <ComponentsView components={view.components} onselect={(range) => void select(range)} />
         {:else}
           <div class="tree-tools">
             <button type="button" onclick={() => (treeDepth = Number.POSITIVE_INFINITY)}>Open all</button>

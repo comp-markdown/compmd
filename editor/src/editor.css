@@ -281,6 +281,24 @@ textarea:focus {
   outline: none;
 }
 
+/* The files the document reads, over the text, and one of them shown read-only in its place. */
+
+.files button {
+  font: 12.5px var(--mono);
+}
+
+.file {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 18px 22px;
+  overflow: auto;
+  background: color-mix(in srgb, var(--ink) 3%, var(--sheet));
+  color: var(--ink);
+  font: 13px/1.6 var(--mono);
+  tab-size: 2;
+}
+
 textarea::selection {
   background: color-mix(in srgb, var(--accent) 22%, transparent);
 }
@@ -450,6 +468,22 @@ textarea::selection {
   color: var(--ink-secondary);
   text-decoration: none;
   cursor: pointer;
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* About, as an "i" in a circle beside the name. */
+.title .about-toggle {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  font: italic 600 13px/1 var(--serif);
 }
 
 .links a:hover,

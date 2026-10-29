@@ -52,7 +52,7 @@ class FakeFrame implements Frame {
   }
 }
 
-const example: Example = { name: "A", request: { path: "a.comp.md", files: { "a.comp.md": "Hello", "b.csv": "x" }, now: "2026-10-22T09:00:00Z" } };
+const example: Example = { id: "a", name: "A", request: { path: "a.comp.md", files: { "a.comp.md": "Hello", "b.csv": "x" }, now: "2026-10-22T09:00:00Z" }, files: [] };
 const opened = { ...example.request, origins: true };
 const processed = (splices: string[], extra: Partial<Extract<FromWorker, { type: "processed" }>> = {}): FromWorker => ({ type: "processed", splices, opened: false, diagnostics: [], inputs: {}, ms: 1, ...extra });
 const diagnostic = (file?: string) => ({

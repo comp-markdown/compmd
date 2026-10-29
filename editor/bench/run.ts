@@ -17,16 +17,16 @@ const WARM_UP = 20;
 const PRESSES = 200;
 const EVERY = 80;
 /**
- * Where each document is typed into: the menu's index, the text the caret goes into (after its first four
+ * Where each document is typed into: its id in the menu, the text the caret goes into (after its first four
  * characters), and the budget from key press to paint, p95 in ms. Typing in a paragraph processes that block; typing
  * in a definition processes the whole document again, and in a host-language one, compiles it again too.
  */
 const EDITS = [
-  { name: "The spec's complete example, in a paragraph", doc: 0, at: "This page renders live data", budget: 16 },
-  { name: "The spec's complete example, in the sparkline's JSX", doc: 0, at: "compmd.fallback.text", budget: 16 },
-  { name: "The changelog, in its heading", doc: 3, at: "# RayPlay changelog", budget: 50 },
-  { name: "The changelog, in a definition it uses 384 times", doc: 3, at: "c.release == release && c.type == kind)) as=c", budget: 50 },
-  { name: "Field notes (52 KB), in a paragraph", doc: 5, at: "Seeds order the early light", budget: 50 },
+  { name: "The spec's complete example, in a paragraph", doc: "complete", at: "This page renders live data", budget: 16 },
+  { name: "The spec's complete example, in the sparkline's JSX", doc: "complete", at: "compmd.fallback.text", budget: 16 },
+  { name: "The changelog, in its heading", doc: "changelog", at: "# RayPlay changelog", budget: 50 },
+  { name: "The changelog, in a definition it uses 384 times", doc: "changelog", at: "c.release == release && c.type == kind)) as=c", budget: 50 },
+  { name: "Field notes (52 KB), in a paragraph", doc: "notes", at: "Seeds order the early light", budget: 50 },
 ];
 /** The text area's input latency, p95 in ms. */
 const INPUT_BUDGET = 50;
@@ -92,7 +92,7 @@ for (const { name, doc, at, budget } of EDITS) {
       }
     }).observe({ type: "event", durationThreshold: 16, buffered: true } as PerformanceObserverInit);
   });
-  await page.goto(`http://127.0.0.1:${String(port)}/index.html?doc=${String(doc)}`);
+  await page.goto(`http://127.0.0.1:${String(port)}/index.html?doc=${doc}`);
   await page.waitForFunction(() => ((window as { compmdEditor?: { state: { painted: { count: number } } } }).compmdEditor?.state.painted.count ?? 0) > 0, null, { timeout: 60_000 });
   const placed = await page.evaluate((text) => {
     const textarea = document.querySelector("textarea");
