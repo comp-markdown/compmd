@@ -209,6 +209,17 @@ pub struct Range {
     pub end: Option<Location>,
 }
 
+impl Range {
+    /// The range of `written`, which starts at `at` and is on one line.
+    #[must_use]
+    pub fn spanning(at: Location, written: &str) -> Self {
+        Self {
+            start: at,
+            end: Some(Location::new(at.line, at.column + written.chars().count())),
+        }
+    }
+}
+
 impl From<Location> for Range {
     fn from(start: Location) -> Self {
         Self { start, end: None }
@@ -240,12 +251,8 @@ impl Fix {
     /// `written`, which starts at `at`, replaced by `text`.
     #[must_use]
     pub fn replacing(at: Location, written: &str, text: impl Into<String>) -> Self {
-        let end = Location::new(at.line, at.column + written.chars().count());
         Self {
-            range: Range {
-                start: at,
-                end: Some(end),
-            },
+            range: Range::spanning(at, written),
             text: text.into(),
         }
     }

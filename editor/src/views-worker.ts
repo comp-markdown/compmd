@@ -1,4 +1,5 @@
-// The views' worker: makes the document's trees and its plain rendering, off the text area's thread.
+// The views' worker: makes the document's trees, its plain rendering, its data and its components, off the text
+// area's thread.
 
 import { init } from "@compmd/processor";
 import { viewOf, type ViewRequest } from "./views.ts";

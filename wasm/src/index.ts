@@ -2,8 +2,15 @@
 // editor, which takes edits and keeps its expanded tree.
 
 import type { ExpandedInput, ExpandedRoot, Splice } from "@compmd/render";
-import { Document as Kept, frontmatter as frontmatterJson, plain, process as processJson, sources as sourcesJson } from "../pkg/compmd_wasm.js";
-import type { ParseRoot } from "./parse-tree.ts";
+import {
+  components as componentsJson,
+  Document as Kept,
+  frontmatter as frontmatterJson,
+  plain,
+  process as processJson,
+  sources as sourcesJson,
+} from "../pkg/compmd_wasm.js";
+import type { ParseRoot, Signature } from "./parse-tree.ts";
 
 export { default as init, initSync } from "../pkg/compmd_wasm.js";
 export type * from "./parse-tree.ts";
@@ -157,6 +164,41 @@ export interface Frontmatter {
  */
 export function frontmatterOf(request: Request): Frontmatter {
   return JSON.parse(frontmatterJson(JSON.stringify(request))) as Frontmatter;
+}
+
+/** The components a document can name (spec §6.3), and the names it uses that stand for none. */
+export interface Components {
+  /**
+   * The components by the file that defines them: the document first (without `file`), then the files it imports in
+   * written order, then the packs the processor provides (`provided`).
+   */
+  groups: { file?: string; provided: boolean; components: ListedComponent[] }[];
+  /** The names the document uses that stand for no one component: unknown (F002), ambiguous (F023) or from an import that failed. */
+  unknown: { name: string; uses: Required<Range>[] }[];
+}
+
+/** A component a document can name. */
+export interface ListedComponent {
+  /** The name the document gives it. */
+  name: string;
+  /** Its name in the file that defines it, when an import renames it. */
+  definedAs?: string;
+  /** What implements it: `compmd`, `processor`, or the host language as written (`jsx`, `svelte`, …). */
+  kind: string;
+  /** Absent for a host-language component without one, whose params go unchecked. */
+  signature?: Signature;
+  /** Where the document invokes it, each the range of the name. */
+  uses: Required<Range>[];
+}
+
+/**
+ * The components `request`'s document can name, grouped by the file that defines them, each with where the document
+ * uses it.
+ *
+ * @throws Error as {@link process} does.
+ */
+export function componentsOf(request: Request): Components {
+  return JSON.parse(componentsJson(JSON.stringify(request))) as Components;
 }
 
 /**

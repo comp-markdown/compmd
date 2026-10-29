@@ -101,6 +101,13 @@ pub(crate) fn frontmatter(json: &str, time: Rc<dyn Time>) -> Result<String, Erro
     Ok(serde_json::to_string(&processor.frontmatter())?)
 }
 
+/// The components the request's document in `json` can name, and the names it uses that stand for none:
+/// `{groups, unknown}`.
+pub(crate) fn components(json: &str, time: Rc<dyn Time>) -> Result<String, Error> {
+    let processor = prepare(json, time)?.expand();
+    Ok(serde_json::to_string(&processor.components())?)
+}
+
 /// The remote and `host:` sources a render of the request in `json` needs: `{remote, host}`.
 pub(crate) fn sources(json: &str, time: Rc<dyn Time>) -> Result<String, Error> {
     let prepared = prepare(json, time)?;
@@ -191,6 +198,22 @@ mod tests {
         );
         assert!(sources(&missing, Rc::new(())).is_err());
         assert!(frontmatter(&missing, Rc::new(())).is_err());
+        assert!(components(&missing, Rc::new(())).is_err());
+    }
+
+    #[test]
+    fn a_request_gives_its_components() {
+        let request = json!({
+            "path": "a.comp.md",
+            "files": { "a.comp.md": "```compmd component=note\n---\nN.\n```\n\n:: note[]\n:: gone[]\n" },
+            "now": "2026-10-22T09:00:00Z"
+        });
+        let given: Json = serde_json::from_str(
+            &components(&request.to_string(), Rc::new(())).expect("components"),
+        )
+        .expect("JSON");
+        assert_eq!(given["groups"][0]["components"][0]["name"], "note");
+        assert_eq!(given["unknown"][0]["name"], "gone");
     }
 
     #[test]

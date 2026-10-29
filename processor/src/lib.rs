@@ -22,6 +22,7 @@
 
 mod breakpoint;
 mod cel;
+pub mod components;
 pub mod context;
 pub mod diagnostic;
 pub mod expand;

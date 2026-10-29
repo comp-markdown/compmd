@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import { changelog, completeExample, completeJson, longBody } from "../bench/requests.ts";
-import { frontmatterOf, initSync, OpenDocument, OpenDocumentJson, plainHtml, process, sources, type Request } from "./index.ts";
+import { componentsOf, frontmatterOf, initSync, OpenDocument, OpenDocumentJson, plainHtml, process, sources, type Request } from "./index.ts";
 
 /** `value` without positions, as the conformance case compares it. */
 function withoutPositions(value: unknown): unknown {
@@ -63,6 +63,16 @@ describe("frontmatterOf", () => {
     expect(frontmatter.settings).toMatchObject({ lang: "en", tz: "Europe/Berlin" });
     expect(frontmatter.data.map((data) => data.name).length).toBeGreaterThan(0);
     expect(Object.keys(frontmatter.inputs)).toContain("region");
+  });
+});
+
+describe("componentsOf", () => {
+  it("groups the components the document can name, with its uses", () => {
+    const { groups, unknown } = componentsOf(completeExample());
+    const named = groups.flatMap((group) => group.components.filter((c) => c.uses.length > 0).map((c) => [c.name, c.kind]));
+    expect(named).toContainEqual(["chart", "jsx"]);
+    expect(groups.at(-1)).toMatchObject({ provided: true });
+    expect(unknown).toEqual([]);
   });
 });
 

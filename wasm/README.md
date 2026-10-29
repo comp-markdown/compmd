@@ -49,13 +49,14 @@ document.reload({ remote: await fetchAll(remote), host: hostData(host) });
 - For an edit inside one block, neither the processing nor the splice grows with the document. Moving the origins after the edit does: it is a pass over those nodes.
 - `free()` releases the module's memory for the document.
 - **`frontmatterOf(request)`** gives what a document's frontmatter gives its render: its own fields, its settings, each data import with what was loaded, and its inputs.
+- **`componentsOf(request)`** gives the components a document can name, grouped by the file that defines them, each with its kind, its signature and where the document uses it; and the names it uses that stand for none.
 - **`plainHtml(text)`** gives what a plain CommonMark and GFM renderer shows of a document (spec §14), as HTML, for a view of how it degrades.
 
 Time zone offsets come from the page's `Intl`, so the module carries no zone data. Formatting has all of ICU4X's locales.
 
 ## How it is built
 
-- The Rust crate `compmd-wasm` in this folder is the binding: `process`, `sources` and the class `Document` take and give JSON text, through `wasm-bindgen`. The request (`src/request.rs`), the open document (`src/document.rs`) and the UTF-16 positions (`src/text.rs`) are tested natively, within the workspace's coverage gate; `src/lib.rs` only passes them through.
+- The Rust crate `compmd-wasm` in this folder is the binding: `process`, `sources`, `frontmatter`, `components` and the class `Document` take and give JSON text, through `wasm-bindgen`. The request (`src/request.rs`), the open document (`src/document.rs`) and the UTF-16 positions (`src/text.rs`) are tested natively, within the workspace's coverage gate; `src/lib.rs` only passes them through.
 - The text kept with an open document has each line's start in bytes, UTF-16 units and code points, so a position is found in its line. An edit that removes a leading byte order mark, or writes text before it, changes where the processor starts counting, so it is sent as an edit of the whole text.
 - It is built size-optimized: the workspace's `wasm` profile, with `opt-level = "z"`, LTO and one codegen unit.
 - `wasm-bindgen --target web` writes the JavaScript glue to `pkg/`. The `package.json` it writes there is removed, since it has no `"type": "module"`, which made TypeScript read the glue as CommonJS and `init` as no function.

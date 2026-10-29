@@ -23,6 +23,13 @@ describe("viewOf", () => {
     expect(view).toMatchObject({ view: "data", frontmatter: { doc: { title: "T" }, data: [], inputs: {} } });
   });
 
+  it("gives the components the document can name", () => {
+    const view = viewOf({ request: request(":: box[x]\n"), view: "components" });
+    if (view.view !== "components" || !("components" in view)) throw new Error(JSON.stringify(view));
+    const box = view.components.groups.flatMap((group) => group.components).find((component) => component.name === "box");
+    expect(box?.uses).toEqual([{ start: { line: 1, column: 4 }, end: { line: 1, column: 7 } }]);
+  });
+
   it("gives what a plain GFM renderer shows", () => {
     expect(viewOf({ request: request(":: chip[x]\n"), view: "plain" })).toEqual({ view: "plain", html: "<p>:: chip[x]</p>\n" });
   });

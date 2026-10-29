@@ -63,6 +63,17 @@ pub fn frontmatter(request: &str) -> Result<String, JsError> {
     Ok(request::frontmatter(request, Rc::new(Intl))?)
 }
 
+/// The components `request`'s document can name, grouped by the file that defines them, each with where the
+/// document uses it, and the names it uses that stand for none: `{groups, unknown}`.
+///
+/// # Errors
+///
+/// A request that isn't one, or whose document isn't one of its files.
+#[wasm_bindgen]
+pub fn components(request: &str) -> Result<String, JsError> {
+    Ok(request::components(request, Rc::new(Intl))?)
+}
+
 /// What a plain CommonMark and GFM renderer shows of `text` (spec §14), as HTML.
 #[wasm_bindgen]
 #[must_use]

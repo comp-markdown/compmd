@@ -1,10 +1,11 @@
-<!-- The editor: the document's text on the left, with its inputs and diagnostics under it; on the right, tabs with the
-     rendered page in a sandboxed frame (in a host's stylesheet the author picks), what a plain Markdown renderer
-     shows, what the frontmatter gives the render, and the document's trees. Each document opens with a worker and a
-     frame of its own. -->
+<!-- The editor: the document's text on the left, with its diagnostics under it; on the right, the host's stylesheet
+     the author picks and the document's inputs over tabs with the rendered page in a sandboxed frame, what a plain
+     Markdown renderer shows, what the frontmatter gives the render, the components the document can name, and its
+     trees. Each document opens with a worker and a frame of its own. -->
 <script lang="ts">
-  import type { Diagnostic } from "@compmd/processor";
+  import type { Range } from "@compmd/processor";
   import { connectFrame } from "@compmd/render/frame";
+  import ComponentsView from "./ComponentsView.svelte";
   import DataView from "./DataView.svelte";
   import { EXAMPLES } from "./documents.ts";
   import { offsetOf } from "./edit.ts";
@@ -25,9 +26,10 @@
   let worker: Worker | undefined;
 
   const TABS = [
-    { id: "page", label: "Page" },
+    { id: "page", label: "CompMD" },
     { id: "plain", label: "Plain Markdown" },
     { id: "data", label: "Data" },
+    { id: "components", label: "Components" },
     { id: "parse", label: "Parse tree" },
     { id: "expanded", label: "Expanded tree" },
   ] as const;
@@ -71,8 +73,8 @@
     keep(ABOUT_KEY, about ? "open" : "closed");
   }
 
-  /** Selects a diagnostic's range in the text area (to the end of its line, when it has no end), and scrolls to it. */
-  function select({ range }: Diagnostic): void {
+  /** Selects `range` in the text area (to the end of its line, when it has no end), and scrolls to it. */
+  function select(range: Range): void {
     if (!textarea) return;
     const start = offsetOf(textarea.value, range.start);
     const lineEnd = textarea.value.indexOf("\n", start);
@@ -135,7 +137,11 @@
       <dd>{ms(shown?.painted.last)}</dd>
     </div>
   </dl>
-  <button type="button" class="about-toggle" aria-expanded={about} aria-controls="about" onclick={toggleAbout}>About</button>
+  <nav class="links" aria-label="CompMD">
+    <a href="https://github.com/comp-markdown/compmd/blob/main/compmd-spec-v1.md" target="_blank" rel="noreferrer">Spec</a>
+    <a href="https://github.com/comp-markdown/compmd" target="_blank" rel="noreferrer">GitHub</a>
+    <button type="button" class="about-toggle" aria-expanded={about} aria-controls="about" onclick={toggleAbout}>About</button>
+  </nav>
 </header>
 
 {#if about}
@@ -143,9 +149,9 @@
     <p>
       Write a <a href="https://github.com/comp-markdown/compmd" target="_blank" rel="noreferrer">CompMD</a> document on the left and see it
       rendered on the right as you type: components, data, layout and all. The tabs show what a plain Markdown renderer makes of the same
-      text, what the frontmatter gives the page, and the trees the processor builds. Diagnostics under the text point at what's wrong and
-      offer fixes; the inputs under it try other values. Under the page, try the stylesheets a host might give it. Nothing leaves your
-      browser.
+      text, what the frontmatter gives the page, the components the document can name and where it uses them, and the trees the processor
+      builds. Above them, try the stylesheets a host might give the page, and other values for the document's inputs. Diagnostics under
+      the text point at what's wrong and offer fixes. Nothing leaves your browser.
     </p>
     <button type="button" class="close" aria-label="Close" onclick={toggleAbout}>
       <svg viewBox="0 0 12 12" aria-hidden="true"><path d="m3 3 6 6m0-6-6 6" /></svg>
@@ -176,16 +182,13 @@
         if (textarea) editor?.input(textarea.value, event.timeStamp);
       }}
     ></textarea>
-    {#if shown && Object.keys(shown.inputs).length > 0}
-      <Inputs inputs={shown.inputs} onset={(name, value) => editor?.setInput(name, value)} />
-    {/if}
     {#if shown && (shown.diagnostics.length > 0 || shown.problems.length > 0)}
       <ul class="diagnostics" aria-label="Diagnostics">
         {#each shown.diagnostics as d, i (i)}
           <li class={d.severity}>
             <code class="code">{d.code}</code>
             {#if d.file === undefined}
-              <button type="button" class="place" title="Select it in the text" onclick={() => select(d)}>{d.range.start.line}:{d.range.start.column}</button>
+              <button type="button" class="place" title="Select it in the text" onclick={() => select(d.range)}>{d.range.start.line}:{d.range.start.column}</button>
             {:else}
               {d.file} {d.range.start.line}:{d.range.start.column}
             {/if}
@@ -212,6 +215,18 @@
 
 {#snippet panes()}
   <div class="sheet views">
+    <div class="host-style" role="radiogroup" aria-label="The host's stylesheet">
+      <span title="The page's look is its host's, not the document's: try the stylesheets a host might give it.">Host stylesheet</span>
+      {#each HOST_STYLES as { id, label } (id)}
+        <label>
+          <input type="radio" name="host-style" value={id} bind:group={hostStyle} />
+          {label}
+        </label>
+      {/each}
+    </div>
+    {#if shown && Object.keys(shown.inputs).length > 0}
+      <Inputs inputs={shown.inputs} onset={(name, value) => editor?.setInput(name, value)} />
+    {/if}
     <div class="tabs" role="tablist" aria-label="Views">
       {#each TABS as { id, label } (id)}
         <button type="button" role="tab" id="tab-{id}" aria-selected={tab === id} aria-controls="view-{id}" onclick={() => (tab = id)}>{label}</button>
@@ -222,15 +237,6 @@
       {#key chosen}
         <iframe title="The rendered page" sandbox="allow-scripts" src="./frame.html" onload={(event) => start(event.currentTarget)}></iframe>
       {/key}
-      <div class="host-style" role="radiogroup" aria-label="The host's stylesheet">
-        <span title="The page's look is its host's, not the document's: try the stylesheets a host might give it.">Host stylesheet</span>
-        {#each HOST_STYLES as { id, label } (id)}
-          <label>
-            <input type="radio" name="host-style" value={id} bind:group={hostStyle} />
-            {label}
-          </label>
-        {/each}
-      </div>
     </div>
     {#if tab !== "page"}
       <div class="view" id="view-{tab}" role="tabpanel" aria-labelledby="tab-{tab}">
@@ -243,6 +249,8 @@
           <iframe title="What a plain Markdown renderer shows" sandbox="" srcdoc={plainPage(view.html)}></iframe>
         {:else if "frontmatter" in view}
           <DataView frontmatter={view.frontmatter} />
+        {:else if "components" in view}
+          <ComponentsView components={view.components} onselect={select} />
         {:else}
           <div class="tree-tools">
             <button type="button" onclick={() => (treeDepth = Number.POSITIVE_INFINITY)}>Open all</button>

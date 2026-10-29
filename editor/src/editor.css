@@ -289,11 +289,12 @@ textarea::selection {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px 18px;
+  gap: 6px 18px;
   margin: 0;
-  padding: 10px 22px;
+  padding: 7px 16px;
   border: 0;
-  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  background: color-mix(in srgb, var(--accent) 4%, var(--sheet));
 }
 
 .inputs legend {
@@ -432,17 +433,26 @@ textarea::selection {
   display: none;
 }
 
-/* The header's About, and the paragraph it opens. */
+/* The header's links to the spec and the repository, its About, and the paragraph About opens. */
 
+.links {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.links a,
 .about-toggle {
   padding: 4px 10px;
   border: 1px solid var(--rule);
   border-radius: 999px;
   background: var(--sheet);
   color: var(--ink-secondary);
+  text-decoration: none;
   cursor: pointer;
 }
 
+.links a:hover,
 .about-toggle:hover,
 .about-toggle[aria-expanded="true"] {
   border-color: color-mix(in srgb, var(--accent) 45%, var(--rule));
@@ -498,18 +508,10 @@ textarea::selection {
   stroke-linecap: round;
 }
 
-/* The page, with the host's stylesheets under it. */
+/* Over the tabs: the host's stylesheets, and the inputs. */
 
 .page-view:not([hidden]) {
-  display: flex;
-  flex-direction: column;
   overflow: hidden;
-}
-
-.page-view iframe {
-  flex: 1;
-  min-height: 0;
-  height: auto;
 }
 
 .host-style {
@@ -518,7 +520,8 @@ textarea::selection {
   align-items: center;
   gap: 6px 14px;
   padding: 8px 16px;
-  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  background: color-mix(in srgb, var(--accent) 4%, var(--sheet));
   color: var(--ink-secondary);
 }
 
@@ -713,6 +716,125 @@ textarea::selection {
 .empty {
   margin: 0;
   color: var(--ink-secondary);
+}
+
+/* The components: what the document defines, what it uses, and what it could use. */
+
+/* A fixed layout, so the columns line up from one file's table to the next. */
+.component-list {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.component-list th {
+  width: 24%;
+}
+
+.component-list .kind {
+  width: 11%;
+}
+
+.component-list .used {
+  width: 16%;
+}
+
+.component-list tr:last-child > * {
+  border-bottom: 0;
+}
+
+.component-list th,
+.component-list td {
+  padding: 6px 12px 6px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--rule) 60%, transparent);
+  text-align: start;
+  vertical-align: baseline;
+}
+
+.component-list th {
+  font-weight: 400;
+  overflow-wrap: anywhere;
+}
+
+.component-list tr.unused th code {
+  color: var(--ink-secondary);
+}
+
+.defined-as,
+.component-list .kind,
+.slots,
+.count {
+  color: var(--ink-secondary);
+  font-size: 13px;
+}
+
+.defined-as {
+  margin-inline-start: 6px;
+}
+
+.component-list .kind {
+  white-space: nowrap;
+}
+
+.component-list .signature code {
+  display: inline-block;
+  margin: 1px 6px 1px 0;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--accent-wash);
+}
+
+.slots {
+  display: block;
+}
+
+.uses {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+}
+
+.uses .count {
+  white-space: nowrap;
+}
+
+.uses .place {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink-secondary);
+  font: 12px var(--mono);
+  text-decoration: underline dotted color-mix(in srgb, currentColor 50%, transparent);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.uses .place:hover {
+  color: var(--accent);
+}
+
+.components details {
+  margin-top: 8px;
+}
+
+.components summary {
+  color: var(--ink-secondary);
+  cursor: pointer;
+}
+
+.components summary:hover {
+  color: var(--ink);
+}
+
+.component-list .unknown {
+  color: var(--error);
+}
+
+.component-list .source {
+  color: var(--ink-secondary);
+  font: 12.5px var(--mono);
+  overflow-wrap: anywhere;
 }
 
 .note {

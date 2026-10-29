@@ -15,6 +15,7 @@ pub use language::Language;
 pub(crate) use names::{Binding, Names};
 pub(crate) use origin::Origin;
 use origin::RESERVED_SCOPE;
+pub(crate) use uses::invocations;
 
 use crate::diagnostic::Diagnostic;
 use crate::host::{Files, Packs, Release};

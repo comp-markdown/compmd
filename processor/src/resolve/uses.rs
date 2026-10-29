@@ -12,13 +12,13 @@ use crate::tree::{Node, Point};
 use std::collections::HashSet;
 
 /// A component a body invokes: its name, and where its line or inline component starts.
-struct Invocation<'a> {
-    name: &'a str,
-    start: Point,
+pub(crate) struct Invocation<'a> {
+    pub(crate) name: &'a str,
+    pub(crate) start: Point,
 }
 
 /// Every component the nodes invoke, in source order, in slots and fallbacks too.
-fn invocations<'a>(nodes: &'a [Node], out: &mut Vec<Invocation<'a>>) {
+pub(crate) fn invocations<'a>(nodes: &'a [Node], out: &mut Vec<Invocation<'a>>) {
     for node in nodes {
         let named = match node {
             Node::ComponentContainer(container) => Some((&container.name, container.position)),

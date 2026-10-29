@@ -463,6 +463,35 @@ impl Processor<Expanded> {
         crate::frontmatter::of(resolved, resolved.main, &self.state.data)
     }
 
+    /// The components the processed document can name, grouped by the file that defines them, each with where the
+    /// document uses it; and the names it uses that stand for none.
+    ///
+    /// ```
+    /// use compmd::context::RenderContext;
+    /// use compmd::expand::Options;
+    /// use compmd::{Ambient, ParseOptions, Processor};
+    /// use std::collections::HashMap;
+    /// use std::rc::Rc;
+    ///
+    /// let text = "```compmd component=note\n---\nA note.\n```\n\n:: note[]\n";
+    /// let files: HashMap<String, String> = HashMap::new();
+    /// let context = RenderContext { now: 0, tz: "UTC".into(), time: Rc::new(()), inputs: Default::default() };
+    /// let processor = Processor::new("a.comp.md", text)
+    ///     .parse(&ParseOptions::default())
+    ///     .resolve(files, (), &Ambient::default())
+    ///     .validate(&[])
+    ///     .load(context, (), ())
+    ///     .expand(&Options::default());
+    /// let components = processor.components();
+    /// let here = &components.groups[0];
+    /// assert_eq!((here.file.as_deref(), here.components[0].name.as_str()), (None, "note"));
+    /// assert_eq!(here.components[0].uses[0].start.line, 6);
+    /// ```
+    #[must_use]
+    pub fn components(&self) -> crate::components::Components {
+        crate::components::of(&self.state.validated.resolved)
+    }
+
     /// The processed document's tree (spec §12.1).
     #[must_use]
     pub fn tree(&self) -> &tree::Root {

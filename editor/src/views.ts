@@ -1,12 +1,13 @@
 // The views of the document beside the page: what a plain CommonMark and GFM renderer shows (spec §14), what its
-// frontmatter gives the render (its fields, settings, data and inputs), and its trees (spec §12). The editor's worker
+// frontmatter gives the render (its fields, settings, data and inputs), the components it can name, and its trees
+// (spec §12). The editor's worker
 // keeps the document open and gives only what changed, so these come from a second worker that processes the
 // document from scratch, and only while a tab shows one.
 
-import { frontmatterOf, plainHtml, process, type Frontmatter, type Request } from "@compmd/processor";
+import { componentsOf, frontmatterOf, plainHtml, process, type Components, type Frontmatter, type Request } from "@compmd/processor";
 
 /** A view the second worker makes. */
-export type ViewKind = "trees" | "plain" | "data";
+export type ViewKind = "trees" | "plain" | "data" | "components";
 
 /** From the editor to the views' worker: the document as it is now, and the view to make of it. */
 export interface ViewRequest {
@@ -19,6 +20,7 @@ export type View =
   | { view: "trees"; parse: unknown; expanded: unknown }
   | { view: "plain"; html: string }
   | { view: "data"; frontmatter: Frontmatter }
+  | { view: "components"; components: Components }
   | { view: ViewKind; failed: string };
 
 /** What the views' worker does with each request. */
@@ -26,6 +28,7 @@ export function viewOf({ request, view }: ViewRequest): View {
   try {
     if (view === "plain") return { view, html: plainHtml(request.files?.[request.path] ?? "") };
     if (view === "data") return { view, frontmatter: frontmatterOf(request) };
+    if (view === "components") return { view, components: componentsOf(request) };
     const { parse, expanded } = process(request);
     return { view, parse, expanded };
   } catch (error) {
