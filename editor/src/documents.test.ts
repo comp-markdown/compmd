@@ -60,7 +60,8 @@ describe("EXAMPLES", () => {
 
   it("list the files each document reads: its folder's, its packs', its remote and host data", () => {
     const names = (id: string) => byId(id).files.map((file) => file.name);
-    expect(names("tour")).toEqual([]);
+    expect(names("tour")).toEqual(["books.csv"]);
+    expect(names("diagnostics")).toEqual([]);
     expect(names("dashboard")).toEqual(expect.arrayContaining(["sales.csv", "milestones.yaml", "@preview/charts@1.0.0/bar-chart.jsx"]));
     const complete = names("complete");
     expect(complete).toEqual(

@@ -1,6 +1,6 @@
 # The CompMD editor
 
-A text area on the left, the rendered page on the right, updated as you type. It opens the documents in its menu, from a tour of the syntax to the spec's complete example, with everything they need bundled: their files, packs, remote and host data. Once loaded it makes no requests.
+A text area on the left, the rendered page on the right, updated as you type. It opens the documents in its menu, from a tutorial to the spec's complete example, with everything they need bundled: their files, packs, remote and host data. Once loaded it makes no requests.
 
 **Status: in development,** as the processor is; not published yet.
 
@@ -33,7 +33,7 @@ Each document in the menu shows one side of CompMD. The files it reads (its fold
 
 | `?doc=` | Document | From |
 |---|---|---|
-| `tour` (the default) | A tour of the syntax: Markdown and GFM, containers, leaves, inline components, the kinds of params, values, slots, `if` and `each` | `examples/tour/` |
+| `tour` (the default) | A tutorial in fourteen lessons, each with a change to try: the document, Markdown, containers, params, values, expressions, `if` and `each`, definitions, template slots, data, inputs, layout and a JSX component | `examples/tour/`, with a reading list in CSV |
 | `definitions` | Definitions and slots: a `compmd` component with params and named slots, used as a container and a leaf, one definition in another, `display=contents`, a template slot | `examples/definitions/` |
 | `changelog` | Expressions: a changelog of 12 releases and 128 changes | `../wasm/bench/fixtures/changelog/` |
 | `dashboard` | Data: a sales dashboard, with tiles, a column chart bound to an input, a timeline, an area chart, a donut, a sortable table | `examples/dashboard/`, with the charts of `examples/charts/` |

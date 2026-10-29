@@ -115,7 +115,7 @@ const NOW = "2026-10-29T09:00:00Z";
 
 /** The menu, from the syntax to the diagnostics, each document showing one side of CompMD. */
 export const EXAMPLES: Example[] = [
-  example("tour", "A tour of CompMD", { path: "tour.comp.md", files: own("tour"), now: NOW }),
+  example("tour", "Learn CompMD: a tutorial in fourteen lessons", { path: "tour.comp.md", files: own("tour"), now: NOW }),
   example("definitions", "Definitions and slots", { path: "definitions.comp.md", files: own("definitions"), now: NOW }),
   example("changelog", "Expressions: a changelog (12 releases, 128 changes)", { path: "changelog.comp.md", files: filesIn(bundled.changelog, CHANGELOG), now: "2026-10-22T09:00:00Z" }),
   example("dashboard", "Data: a sales dashboard", withCharts(own("dashboard"), "dashboard.comp.md", NOW)),
