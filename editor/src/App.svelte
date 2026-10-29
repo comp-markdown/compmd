@@ -8,6 +8,7 @@
   import { offsetOf } from "./edit.ts";
   import { Editor, type EditorState, type Frame } from "./editor.ts";
   import Inputs from "./Inputs.svelte";
+  import Split from "./Split.svelte";
   import { FRAME_HELLO, type ComponentFailed } from "./protocol.ts";
   import { plainPage, ViewsClient, type View } from "./views.ts";
 
@@ -87,21 +88,32 @@
 
 <header>
   <h1>CompMD editor</h1>
-  <label>
-    Document
+  <label class="document">
+    <span>Document</span>
     <select bind:value={chosen}>
       {#each EXAMPLES as example, i (example.name)}
         <option value={i}>{example.name}</option>
       {/each}
     </select>
   </label>
-  <p class="status" aria-live="off">
-    processing {ms(shown?.processing.last)} (p95 {ms(shown?.processing.p95)}) · key press to paint {ms(shown?.painted.last)} (p95 {ms(shown?.painted.p95)})
-  </p>
+  <dl class="status" aria-live="off">
+    <div title="The worker's processing of the last change; p95 {ms(shown?.processing.p95)}">
+      <dt>Processing</dt>
+      <dd>{ms(shown?.processing.last)}</dd>
+    </div>
+    <div title="From the last change's first key press to the page painted; p95 {ms(shown?.painted.p95)}">
+      <dt>Key press to paint</dt>
+      <dd>{ms(shown?.painted.last)}</dd>
+    </div>
+  </dl>
 </header>
 
 <main>
-  <section class="text">
+  <Split text={source} views={panes} />
+</main>
+
+{#snippet source()}
+  <div class="sheet text">
     <textarea
       bind:this={textarea}
       value={text}
@@ -121,7 +133,7 @@
       <ul class="diagnostics" aria-label="Diagnostics">
         {#each shown.diagnostics as d, i (i)}
           <li class={d.severity}>
-            <code>{d.code}</code>
+            <code class="code">{d.code}</code>
             {#if d.file === undefined}
               <button type="button" class="place" title="Select it in the text" onclick={() => select(d)}>{d.range.start.line}:{d.range.start.column}</button>
             {:else}
@@ -132,6 +144,7 @@
               {@const fix = d.fix}
               <button
                 type="button"
+                class="fix"
                 onclick={() => {
                   if (textarea && editor) textarea.value = editor.fix(fix);
                 }}>Use <code>{fix.text}</code></button
@@ -140,12 +153,15 @@
           </li>
         {/each}
         {#each shown.problems as problem (problem)}
-          <li class="error">{problem}</li>
+          <li class="error problem">{problem}</li>
         {/each}
       </ul>
     {/if}
-  </section>
-  <section class="views">
+  </div>
+{/snippet}
+
+{#snippet panes()}
+  <div class="sheet views">
     <div class="tabs" role="tablist" aria-label="Views">
       {#each TABS as { id, label } (id)}
         <button type="button" role="tab" id="tab-{id}" aria-selected={tab === id} aria-controls="view-{id}" onclick={() => (tab = id)}>{label}</button>
@@ -172,5 +188,5 @@
         {/if}
       </div>
     {/if}
-  </section>
-</main>
+  </div>
+{/snippet}

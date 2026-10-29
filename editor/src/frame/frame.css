@@ -1,12 +1,13 @@
-/* The preview: the page's surface, and the chart tokens the examples' charts read, in light and dark. */
+/* The preview: the page's surface and ink, the editor's sheet (`../editor.css`), and the chart tokens the examples'
+   charts read, in light and dark. */
 
 :root {
   color-scheme: light dark;
-  --viz-surface: #fcfcfb;
-  --viz-primary: #0b0b0b;
-  --viz-secondary: #52514e;
+  --viz-surface: #fbfcfd;
+  --viz-primary: #1b2430;
+  --viz-secondary: #5b6776;
   --viz-muted: #898781;
-  --viz-grid: #e1e0d9;
+  --viz-grid: #d3dae2;
   --viz-axis: #c3c2b7;
   --viz-border: rgba(11, 11, 11, 0.1);
   --viz-series-1: #2a78d6;
@@ -21,11 +22,11 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --viz-surface: #1a1a19;
-    --viz-primary: #f0efec;
-    --viz-secondary: #c3c2b7;
+    --viz-surface: #161b22;
+    --viz-primary: #e4e9ef;
+    --viz-secondary: #97a3b1;
     --viz-muted: #898781;
-    --viz-grid: #2c2c2a;
+    --viz-grid: #29313c;
     --viz-axis: #383835;
     --viz-border: rgba(255, 255, 255, 0.1);
     --viz-series-1: #3987e5;
@@ -43,11 +44,23 @@ body {
   margin: 0;
   background: var(--viz-surface);
   color: var(--viz-primary);
-  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  font: 16px/1.55 "Avenir Next", "Segoe UI Variable Text", "Segoe UI", Seravek, "Helvetica Neue", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: #3557c4;
+  text-underline-offset: 2px;
+}
+
+@media (prefers-color-scheme: dark) {
+  a {
+    color: #8da6ee;
+  }
 }
 
 #page {
-  padding: 24px;
+  padding: 28px 32px;
   max-width: 72rem;
   margin: 0 auto;
 }

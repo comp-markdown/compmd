@@ -1,23 +1,37 @@
+/* The editor's look: the text is the manuscript and the page its proof, side by side on a desk. Cool paper, blue-black
+   ink, an editor's blue pencil as the one accent, red only for errors. Every font is the system's, so the editor
+   loads nothing to show itself. */
+
 :root {
   color-scheme: light dark;
-  --surface: #fcfcfb;
-  --plane: #f9f9f7;
-  --ink: #0b0b0b;
-  --ink-secondary: #52514e;
-  --hairline: #e1e0d9;
-  --error: #d03b3b;
-  --warning: #9a6700;
+  --desk: #e9edf1;
+  --sheet: #fbfcfd;
+  --ink: #1b2430;
+  --ink-secondary: #5b6776;
+  --rule: #d3dae2;
+  --accent: #3557c4;
+  --accent-wash: color-mix(in srgb, var(--accent) 9%, transparent);
+  --error: #be3b34;
+  --warning: #966100;
+  --shadow: 0 1px 2px rgb(27 36 48 / 6%), 0 4px 16px rgb(27 36 48 / 5%);
+  --serif: "Iowan Old Style", Charter, "Bitstream Charter", "Sitka Text", Cambria, serif;
+  --sans: "Avenir Next", "Segoe UI Variable Text", "Segoe UI", Seravek, "Helvetica Neue", system-ui, sans-serif;
+  --mono: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
+  --radius: 6px;
+  --gap: 10px;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --surface: #1a1a19;
-    --plane: #0d0d0d;
-    --ink: #f0efec;
-    --ink-secondary: #c3c2b7;
-    --hairline: #2c2c2a;
-    --error: #e66767;
-    --warning: #fab219;
+    --desk: #101419;
+    --sheet: #161b22;
+    --ink: #e4e9ef;
+    --ink-secondary: #97a3b1;
+    --rule: #29313c;
+    --accent: #8da6ee;
+    --error: #ee8a82;
+    --warning: #e3b04b;
+    --shadow: 0 1px 2px rgb(0 0 0 / 40%), 0 6px 20px rgb(0 0 0 / 25%);
   }
 }
 
@@ -32,9 +46,10 @@ body {
 }
 
 body {
-  background: var(--plane);
+  background: var(--desk);
   color: var(--ink);
-  font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+  font: 14px/1.45 var(--sans);
+  -webkit-font-smoothing: antialiased;
 }
 
 #app {
@@ -43,52 +58,210 @@ body {
   height: 100%;
 }
 
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+button,
+select,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+/* The header: the name, the document, and how fast the last change reached the page. */
+
 header {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px 24px;
-  padding: 8px 16px;
-  border-bottom: 1px solid var(--hairline);
+  gap: 8px 28px;
+  padding: 12px 20px 10px;
 }
 
 h1 {
   margin: 0;
-  font-size: 16px;
+  font: 600 19px/1 var(--serif);
+  letter-spacing: 0.005em;
 }
 
-label {
+.document {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  color: var(--ink-secondary);
+}
+
+select,
+input[type="text"],
+input[type="number"],
+input[type="date"] {
+  min-height: 30px;
+  padding: 3px 8px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--sheet);
+}
+
+select:hover,
+input:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--rule));
 }
 
 .status {
+  display: flex;
+  gap: 22px;
   margin: 0 0 0 auto;
+}
+
+.status div {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.status dt {
   color: var(--ink-secondary);
+}
+
+.status dd {
+  margin: 0;
+  min-width: 4.5em;
   font-variant-numeric: tabular-nums;
 }
 
+/* The desk: two sheets and the gutter between them. */
+
 main {
-  display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
   flex: 1;
   min-height: 0;
+  padding: 0 12px 12px;
 }
 
-@media (max-width: 800px) {
-  main {
-    grid-template-columns: 1fr;
-    grid-template-rows: 1fr 1fr;
-  }
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, var(--text)) 18px minmax(0, var(--views));
+  height: 100%;
 }
 
-.text {
+/* Each part keeps its column, so a folded side, which leaves the grid, doesn't move the others into its place. */
+.split .side {
+  min-width: 0;
+  min-height: 0;
+}
+
+.split .text-side {
+  grid-column: 1;
+}
+
+.split .handle {
+  grid-column: 2;
+}
+
+.split .views-side {
+  grid-column: 3;
+}
+
+.split .side[hidden] {
+  display: none;
+}
+
+.split[data-folded="text"] {
+  grid-template-columns: 0 18px minmax(0, 1fr);
+}
+
+.split[data-folded="views"] {
+  grid-template-columns: minmax(0, 1fr) 18px 0;
+}
+
+/* While the handle is dragged, the frames don't take the pointer from it. */
+.split.dragging {
+  cursor: col-resize;
+  user-select: none;
+}
+
+.split.dragging iframe {
+  pointer-events: none;
+}
+
+.handle {
   display: flex;
   flex-direction: column;
-  min-height: 0;
-  border-inline-end: 1px solid var(--hairline);
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: col-resize;
+  touch-action: none;
 }
+
+.handle:focus-visible {
+  outline-offset: -2px;
+  border-radius: var(--radius);
+}
+
+.grip {
+  width: 3px;
+  height: 44px;
+  border-radius: 2px;
+  background: var(--rule);
+  transition: background-color 120ms;
+}
+
+.handle:hover .grip,
+.split.dragging .grip {
+  background: var(--accent);
+}
+
+.fold {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--ink-secondary);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 120ms;
+}
+
+.handle:hover .fold,
+.handle:focus-within .fold,
+.split[data-folded] .fold {
+  opacity: 1;
+}
+
+.fold:hover {
+  background: var(--accent-wash);
+  color: var(--accent);
+}
+
+.fold svg {
+  width: 7px;
+  height: 11px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--sheet);
+  box-shadow: var(--shadow);
+}
+
+/* The text: the manuscript. */
 
 textarea {
   flex: 1;
@@ -96,63 +269,154 @@ textarea {
   width: 100%;
   resize: none;
   border: 0;
-  padding: 16px;
-  background: var(--surface);
+  padding: 18px 22px;
+  background: transparent;
   color: var(--ink);
-  font: 13px/1.5 ui-monospace, "SF Mono", Menlo, monospace;
+  font: 13px/1.6 var(--mono);
   tab-size: 2;
+  caret-color: var(--accent);
 }
 
 textarea:focus {
   outline: none;
 }
 
-.diagnostics {
-  max-height: 30%;
-  overflow: auto;
-  margin: 0;
-  padding: 8px 16px;
-  list-style: none;
-  border-top: 1px solid var(--hairline);
+textarea::selection {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
 }
 
-.diagnostics .error code {
+.inputs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 18px;
+  margin: 0;
+  padding: 10px 22px;
+  border: 0;
+  border-top: 1px solid var(--rule);
+}
+
+.inputs legend {
+  float: left;
+  margin-inline-end: 4px;
+  padding: 0;
+  color: var(--ink-secondary);
+}
+
+.inputs label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.inputs code {
+  font: 12.5px var(--mono);
+}
+
+.inputs input[type="checkbox"] {
+  accent-color: var(--accent);
+}
+
+/* Diagnostics: one line each, marked on the start edge by how serious it is. */
+
+.diagnostics {
+  max-height: 32%;
+  overflow: auto;
+  margin: 0;
+  padding: 6px 0;
+  list-style: none;
+  border-top: 1px solid var(--rule);
+}
+
+.diagnostics li {
+  padding: 5px 22px 5px 19px;
+  border-inline-start: 3px solid transparent;
+}
+
+.diagnostics li.error {
+  border-inline-start-color: var(--error);
+}
+
+.diagnostics li.warning {
+  border-inline-start-color: var(--warning);
+}
+
+.diagnostics .code {
+  margin-inline-end: 8px;
+  font: 600 12px var(--mono);
+}
+
+.diagnostics .error .code,
+.diagnostics .problem {
   color: var(--error);
 }
 
-.diagnostics .warning code {
+.diagnostics .warning .code {
   color: var(--warning);
 }
 
-li.error {
-  color: var(--error);
-}
-
-.views {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-
-.tabs {
-  display: flex;
-  gap: 4px;
-  padding: 4px 8px 0;
-  border-bottom: 1px solid var(--hairline);
-}
-
-.tabs button {
+.diagnostics .place {
+  margin-inline-end: 8px;
+  padding: 0;
   border: 0;
-  border-bottom: 2px solid transparent;
-  padding: 6px 10px;
   background: none;
   color: var(--ink-secondary);
-  font: inherit;
+  font: 12px var(--mono);
+  text-decoration: underline dotted color-mix(in srgb, currentColor 50%, transparent);
+  text-underline-offset: 3px;
   cursor: pointer;
 }
 
+.diagnostics .place:hover {
+  color: var(--accent);
+}
+
+.fix {
+  margin-inline-start: 8px;
+  padding: 1px 8px;
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  border-radius: 999px;
+  background: var(--accent-wash);
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.fix:hover {
+  border-color: var(--accent);
+}
+
+.fix code {
+  font: 12px var(--mono);
+}
+
+/* The views: tabs over the proof. */
+
+.tabs {
+  display: flex;
+  gap: 2px;
+  padding: 0 12px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--rule);
+}
+
+.tabs button {
+  flex: none;
+  white-space: nowrap;
+  padding: 11px 12px 9px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  background: none;
+  color: var(--ink-secondary);
+  cursor: pointer;
+}
+
+.tabs button:hover {
+  color: var(--ink);
+}
+
 .tabs button[aria-selected="true"] {
-  border-bottom-color: currentColor;
+  border-bottom-color: var(--accent);
   color: var(--ink);
 }
 
@@ -168,14 +432,14 @@ li.error {
 
 .tree {
   margin: 0;
-  padding: 16px;
-  font: 12px/1.45 ui-monospace, "SF Mono", Menlo, monospace;
+  padding: 18px 22px;
+  font: 12px/1.55 var(--mono);
   tab-size: 2;
 }
 
 .note {
   margin: 0;
-  padding: 16px;
+  padding: 18px 22px;
   color: var(--ink-secondary);
 }
 
@@ -183,36 +447,53 @@ li.error {
   color: var(--error);
 }
 
-.inputs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 16px;
-  margin: 0;
-  padding: 8px 16px;
-  border: 0;
-  border-top: 1px solid var(--hairline);
-}
-
-.inputs legend {
-  float: left;
-  margin-inline-end: 8px;
-  color: var(--ink-secondary);
-}
-
-.diagnostics .place {
-  border: 0;
-  padding: 0;
-  background: none;
-  color: inherit;
-  font: inherit;
-  text-decoration: underline dotted;
-  cursor: pointer;
-}
-
 iframe {
   display: block;
   width: 100%;
   height: 100%;
   border: 0;
-  background: var(--surface);
+  background: var(--sheet);
+}
+
+/* A narrow screen: the sheets stack, each half the height, and the handle goes. */
+
+@media (max-width: 800px) {
+  header {
+    padding-inline: 16px;
+  }
+
+  .status {
+    margin-inline-start: 0;
+  }
+
+  main {
+    padding: 0 8px 8px;
+  }
+
+  .split,
+  .split[data-folded] {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .split .side[hidden] {
+    display: block;
+  }
+
+  .split .text-side,
+  .split .views-side {
+    grid-column: 1;
+  }
+
+  .handle {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .grip,
+  .fold {
+    transition: none;
+  }
 }
