@@ -255,7 +255,9 @@
     <!-- The page stays mounted under the other tabs, so its components keep their state. -->
     <div class="view page-view" id="view-page" role="tabpanel" aria-labelledby="tab-page" hidden={tab !== "page"}>
       {#key chosen}
-        <iframe title="The rendered page" sandbox="allow-scripts" src="./frame.html" onload={(event) => start(event.currentTarget)}></iframe>
+        <iframe title="The rendered page" sandbox="allow-scripts" src="./frame.html" onload={({ currentTarget }) => {
+            if (currentTarget instanceof HTMLIFrameElement) start(currentTarget);
+          }}></iframe>
       {/key}
     </div>
     {#if tab !== "page"}

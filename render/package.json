@@ -5,17 +5,32 @@
   "license": "MIT",
   "type": "module",
   "sideEffects": false,
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "exports": {
-    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
-    "./frame": { "types": "./dist/frame.d.ts", "default": "./dist/frame.js" },
-    "./react": { "types": "./dist/bindings/react.d.ts", "default": "./dist/bindings/react.js" },
-    "./svelte": { "types": "./dist/bindings/svelte.svelte.d.ts", "svelte": "./dist/bindings/svelte.svelte.js", "default": "./dist/bindings/svelte.svelte.js" }
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./frame": {
+      "types": "./dist/frame.d.ts",
+      "default": "./dist/frame.js"
+    },
+    "./react": {
+      "types": "./dist/bindings/react.d.ts",
+      "default": "./dist/bindings/react.js"
+    },
+    "./svelte": {
+      "types": "./dist/bindings/svelte.svelte.d.ts",
+      "svelte": "./dist/bindings/svelte.svelte.js",
+      "default": "./dist/bindings/svelte.svelte.js"
+    }
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "check": "tsc --noEmit",
-    "lint": "eslint . && tsc --noEmit",
+    "lint": "eslint . && tsc --noEmit && svelte-check --tsconfig ./tsconfig.json --fail-on-warnings --output machine",
     "test": "vitest run"
   },
   "peerDependencies": {
@@ -24,9 +39,15 @@
     "svelte": "^5"
   },
   "peerDependenciesMeta": {
-    "react": { "optional": true },
-    "react-dom": { "optional": true },
-    "svelte": { "optional": true }
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    },
+    "svelte": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
@@ -38,6 +59,7 @@
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "svelte": "5.57.2",
+    "svelte-check": "4.7.7",
     "typescript": "6.0.3",
     "typescript-eslint": "8.72.0",
     "vite": "8.3.4",

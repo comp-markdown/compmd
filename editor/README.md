@@ -53,7 +53,7 @@ Each document in the menu shows one side of CompMD. The files it reads (its fold
 ```sh
 pnpm dev     # the shared libraries, then a dev server
 pnpm build   # the shared libraries, then the static site into dist/
-pnpm lint    # eslint and tsc
+pnpm lint    # eslint, tsc, and svelte-check for the .svelte files
 pnpm test    # edits, the session and the editor's loop, every document's page after the worker's splices against processing from scratch, compiling and swapping components
 pnpm bench   # the budgets, in Chrome
 ```

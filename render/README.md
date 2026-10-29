@@ -9,7 +9,7 @@ It renders trees; it doesn't process documents. A processor (stages 1 to 4b, spe
 ```sh
 pnpm install         # in the repository root
 pnpm test            # unit tests in a DOM (happy-dom)
-pnpm lint            # eslint and the type check
+pnpm lint            # eslint and the type check, svelte-check for the Svelte test component
 pnpm build           # ESM and types into dist/
 ```
 
