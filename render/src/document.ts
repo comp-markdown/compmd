@@ -14,6 +14,53 @@ export interface Footnotes {
   definitions: readonly { identifier: string; number: number; children: ExpandedNode[] }[];
 }
 
+/** What some of the document's blocks hold of its footnotes and links, so the page can put them together. */
+export interface Notes {
+  /** The footnotes they reference, in reading order. */
+  references: string[];
+  /** Their footnote definitions, by identifier. */
+  footnotes: [string, ExpandedNode[]][];
+  /** Their link reference definitions, by identifier. */
+  links: [string, LinkDefinition][];
+  /** Whether they have a link or image reference, which a definition anywhere resolves. */
+  usesLinks: boolean;
+}
+
+/** The footnotes and links of `nodes`, some of the document's blocks. */
+export function notesOf(nodes: readonly ExpandedNode[]): Notes {
+  const notes: Notes = { references: [], footnotes: [], links: [], usesLinks: false };
+  walk(nodes, (node) => {
+    if (node.type === "linkReference" || node.type === "imageReference") notes.usesLinks = true;
+    if (isComponent(node)) return;
+    const identifier = node.identifier;
+    if (typeof identifier !== "string") return;
+    if (node.type === "footnoteReference") notes.references.push(identifier);
+    if (node.type === "footnoteDefinition") notes.footnotes.push([identifier, node.children ?? []]);
+    if (node.type === "definition") notes.links.push([identifier, { url: textOf(node.url), title: (node.title as string | null | undefined) ?? null }]);
+  });
+  return notes;
+}
+
+/** The footnotes of the whole document, from the notes of its blocks in order. */
+export function footnotesFrom(parts: readonly Notes[]): Footnotes {
+  const numbers = new Map<string, number>();
+  const definitions = new Map<string, ExpandedNode[]>();
+  for (const { references, footnotes } of parts) {
+    for (const identifier of references) if (!numbers.has(identifier)) numbers.set(identifier, numbers.size + 1);
+    for (const [identifier, children] of footnotes) definitions.set(identifier, children);
+  }
+  for (const identifier of definitions.keys()) if (!numbers.has(identifier)) numbers.set(identifier, numbers.size + 1);
+  const ordered = [...definitions].map(([identifier, children]) => ({ identifier, number: numbers.get(identifier) ?? 0, children }));
+  return { numbers, definitions: ordered.sort((a, b) => a.number - b.number) };
+}
+
+/** The link reference definitions of the whole document, from the notes of its blocks in order: the first one counts. */
+export function linksFrom(parts: readonly Notes[]): Map<string, LinkDefinition> {
+  const definitions = new Map<string, LinkDefinition>();
+  for (const { links } of parts) for (const [identifier, definition] of links) if (!definitions.has(identifier)) definitions.set(identifier, definition);
+  return definitions;
+}
+
 /**
  * The footnotes of `nodes`, the whole document's blocks.
  *
@@ -21,28 +68,12 @@ export interface Footnotes {
  * footnotesOf(tree.children).numbers.get("note"); // 1, for the first footnote referenced
  */
 export function footnotesOf(nodes: readonly ExpandedNode[]): Footnotes {
-  const numbers = new Map<string, number>();
-  const definitions = new Map<string, ExpandedNode[]>();
-  walk(nodes, (node) => {
-    if (isComponent(node)) return;
-    const identifier = node.identifier;
-    if (typeof identifier !== "string") return;
-    if (node.type === "footnoteReference" && !numbers.has(identifier)) numbers.set(identifier, numbers.size + 1);
-    if (node.type === "footnoteDefinition") definitions.set(identifier, node.children ?? []);
-  });
-  for (const identifier of definitions.keys()) if (!numbers.has(identifier)) numbers.set(identifier, numbers.size + 1);
-  const ordered = [...definitions].map(([identifier, children]) => ({ identifier, number: numbers.get(identifier) ?? 0, children }));
-  return { numbers, definitions: ordered.sort((a, b) => a.number - b.number) };
+  return footnotesFrom([notesOf(nodes)]);
 }
 
 /** The link reference definitions of `nodes`, the whole document's blocks. */
 export function definitionsOf(nodes: readonly ExpandedNode[]): Map<string, LinkDefinition> {
-  const definitions = new Map<string, LinkDefinition>();
-  walk(nodes, (node) => {
-    if (node.type !== "definition" || typeof node.identifier !== "string" || definitions.has(node.identifier)) return;
-    definitions.set(node.identifier, { url: textOf(node.url), title: (node.title as string | null | undefined) ?? null });
-  });
-  return definitions;
+  return linksFrom([notesOf(nodes)]);
 }
 
 /** The plain text of `nodes`, as a fallback's `text` (spec §7.4). */

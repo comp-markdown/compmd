@@ -32,7 +32,7 @@ addEventListener("message", (event: MessageEvent) => {
       port.postMessage({ type: "component-failed", component, message } satisfies ComponentFailed);
     },
   });
-  // Before `serveFrame` starts the port, so the components come before the first tree.
+  // Before `serveFrame` starts the port, so the components come before the first splice.
   port.addEventListener("message", ({ data }: MessageEvent<{ type?: string }>) => {
     if (data.type === "components") void components.set((data as ComponentsMessage).components);
   });

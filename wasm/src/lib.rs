@@ -53,7 +53,8 @@ pub fn sources(request: &str) -> Result<String, JsError> {
     Ok(request::sources(request, Rc::new(Intl))?)
 }
 
-/// A document kept open for an editor. Each call that changes it gives `{splice, diagnostics}`.
+/// A document kept open for an editor. After each change, `splice`, `diagnostics` and `components` give what it
+/// did, each as JSON text.
 #[wasm_bindgen(js_name = Document)]
 pub struct Handle(Option<document::Document>);
 
@@ -72,21 +73,40 @@ impl Handle {
         )?)))
     }
 
-    /// What the last change gave; after opening, a splice of the whole tree.
+    /// The last change's splice of the expanded tree, `{from, to, nodes, lines, offset, inputs, edit}`; after
+    /// opening, the whole tree.
     ///
     /// # Errors
     ///
     /// None in practice: the trees always serialize.
-    pub fn changes(&self) -> Result<String, JsError> {
-        Ok(self.document()?.changes()?)
+    pub fn splice(&self) -> Result<String, JsError> {
+        Ok(self.document()?.splice()?)
+    }
+
+    /// Every diagnostic of the document, in stage order.
+    ///
+    /// # Errors
+    ///
+    /// None in practice, as `splice`.
+    pub fn diagnostics(&self) -> Result<String, JsError> {
+        Ok(self.document()?.diagnostics()?)
+    }
+
+    /// The host-language components, when the last change changed them (and after opening).
+    ///
+    /// # Errors
+    ///
+    /// None in practice, as `splice`.
+    pub fn components(&self) -> Result<Option<String>, JsError> {
+        Ok(self.document()?.components()?)
     }
 
     /// The text's UTF-16 `start..end` became `text`.
     ///
     /// # Errors
     ///
-    /// None in practice, as `changes`.
-    pub fn edit(&mut self, start: usize, end: usize, text: String) -> Result<String, JsError> {
+    /// A call after one that panicked, which left no document.
+    pub fn edit(&mut self, start: usize, end: usize, text: String) -> Result<(), JsError> {
         self.change(|document| document.edit(start, end, text))
     }
 
@@ -94,7 +114,7 @@ impl Handle {
     ///
     /// # Errors
     ///
-    /// None in practice, as `changes`.
+    /// None in practice, as `splice`.
     pub fn sources(&self) -> Result<String, JsError> {
         Ok(self.document()?.sources()?)
     }
@@ -104,7 +124,7 @@ impl Handle {
     /// # Errors
     ///
     /// Data that isn't JSON of that shape.
-    pub fn reload(&mut self, fetched: &str) -> Result<String, JsError> {
+    pub fn reload(&mut self, fetched: &str) -> Result<(), JsError> {
         let data = document::Data::from_json(fetched)?;
         self.change(|document| document.reload(data))
     }
@@ -118,11 +138,9 @@ impl Handle {
     fn change(
         &mut self,
         step: impl FnOnce(document::Document) -> document::Document,
-    ) -> Result<String, JsError> {
-        let document = step(self.0.take().ok_or_else(closed)?);
-        let changes = document.changes()?;
-        self.0 = Some(document);
-        Ok(changes)
+    ) -> Result<(), JsError> {
+        self.0 = Some(step(self.0.take().ok_or_else(closed)?));
+        Ok(())
     }
 }
 

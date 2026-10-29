@@ -1,18 +1,20 @@
-//! A document kept open for an editor: processed once, then changed by edits in the editor's UTF-16 positions, each
-//! giving what changed in the expanded tree as JSON (`camelCase`), as `src/index.ts` types it.
+//! A document kept open for an editor: processed once, then changed by edits in the editor's UTF-16 positions. After
+//! each change it gives, as JSON (`camelCase`) that `src/index.ts` types, the splice of the expanded tree, every
+//! diagnostic, and the host-language components when they changed: three pieces, so a host can pass the splice on
+//! as text without reading it.
 
 use crate::request::{self, Error};
 use crate::text::Text;
-use compmd::diagnostic::Diagnostic;
 use compmd::host::{Fetched, Time};
 use compmd::processor::{Expanded, HostComponent};
-use compmd::{Processor, context::RenderContext, expanded};
+use compmd::{Processor, TextEdit, context::RenderContext, expanded};
 use serde::{Deserialize, Serialize};
 use serde_json::Value as Json;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-/// The processor of an open document, its text, the render context its loads use, and its host-language components.
+/// The processor of an open document, its text, the render context its loads use, its host-language components,
+/// and the last edit.
 pub(crate) struct Document {
     text: Text,
     processor: Processor<Expanded>,
@@ -20,18 +22,8 @@ pub(crate) struct Document {
     components: Vec<HostComponent>,
     /// Whether the last change changed the components, so that it gives them.
     components_changed: bool,
-}
-
-/// What the last change gave: the splice of the expanded tree, the root's inputs, every diagnostic, and the
-/// host-language components when they changed.
-#[derive(Serialize)]
-struct Changes<'a> {
-    splice: Splice<'a>,
-    #[serde(skip_serializing_if = "expanded::Inputs::is_empty")]
-    inputs: &'a expanded::Inputs,
-    diagnostics: &'a [Diagnostic],
-    #[serde(skip_serializing_if = "Option::is_none")]
-    components: Option<Vec<Component<'a>>>,
+    /// The last change's edit, in code points; none after opening or a reload.
+    edit: Option<TextEdit>,
 }
 
 /// A host-language component, for the renderer to run (`compmd::processor::HostComponent`).
@@ -56,7 +48,7 @@ impl<'a> From<&'a HostComponent> for Component<'a> {
 }
 
 /// The processed document's top-level expanded nodes `from..to` became `nodes`; every node after them moved by
-/// `lines` lines and `offset` code points.
+/// `lines` lines and `offset` code points. With the root's inputs, and the edit that made it.
 #[derive(Serialize)]
 struct Splice<'a> {
     from: usize,
@@ -64,6 +56,28 @@ struct Splice<'a> {
     nodes: &'a [expanded::Node],
     lines: isize,
     offset: isize,
+    #[serde(skip_serializing_if = "expanded::Inputs::is_empty")]
+    inputs: &'a expanded::Inputs,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    edit: Option<Edit<'a>>,
+}
+
+/// An edit in code points (spec §10.5): the text's `start..end` became `text`.
+#[derive(Serialize)]
+struct Edit<'a> {
+    start: usize,
+    end: usize,
+    text: &'a str,
+}
+
+impl<'a> From<&'a TextEdit> for Edit<'a> {
+    fn from(edit: &'a TextEdit) -> Self {
+        Self {
+            start: edit.start,
+            end: edit.end,
+            text: &edit.text,
+        }
+    }
 }
 
 /// Data the host fetched, for a reload: remote data by URL, and `host:` data by source.
@@ -94,35 +108,50 @@ impl Document {
             components_changed: true,
             processor,
             context,
+            edit: None,
         })
     }
 
-    /// What the last change gave, `{splice, inputs, diagnostics, components}`; after opening, the splice is the whole
-    /// tree, with every component.
-    pub(crate) fn changes(&self) -> Result<String, Error> {
+    /// The last change's splice, `{from, to, nodes, lines, offset, inputs, edit}`; after opening, the whole tree.
+    pub(crate) fn splice(&self) -> Result<String, Error> {
         let splice = self.processor.splice();
-        let changes = Changes {
-            splice: Splice {
-                from: splice.from,
-                to: splice.to,
-                nodes: &splice.nodes,
-                lines: splice.lines,
-                offset: splice.offset,
-            },
+        Ok(serde_json::to_string(&Splice {
+            from: splice.from,
+            to: splice.to,
+            nodes: &splice.nodes,
+            lines: splice.lines,
+            offset: splice.offset,
             inputs: &self.processor.expanded().inputs,
-            diagnostics: self.processor.diagnostics(),
-            components: self
-                .components_changed
-                .then(|| self.components.iter().map(Component::from).collect()),
-        };
-        Ok(serde_json::to_string(&changes)?)
+            edit: self.edit.as_ref().map(Edit::from),
+        })?)
+    }
+
+    /// Every diagnostic of the document, in stage order.
+    pub(crate) fn diagnostics(&self) -> Result<String, Error> {
+        Ok(serde_json::to_string(self.processor.diagnostics())?)
+    }
+
+    /// The host-language components, when the last change changed them (and after opening).
+    pub(crate) fn components(&self) -> Result<Option<String>, Error> {
+        self.components_changed
+            .then(|| {
+                let components: Vec<_> = self.components.iter().map(Component::from).collect();
+                serde_json::to_string(&components)
+            })
+            .transpose()
+            .map_err(Error::from)
     }
 
     /// The document after its text's UTF-16 `start..end` became `text`.
     pub(crate) fn edit(mut self, start: usize, end: usize, text: String) -> Self {
         let edit = self.text.edit(start, end, text);
         let processor = self.processor.edit(&edit);
-        Self { processor, ..self }.settled()
+        Self {
+            processor,
+            edit: Some(edit),
+            ..self
+        }
+        .settled()
     }
 
     /// With the components the processor gives now, noting whether they changed.
@@ -145,7 +174,12 @@ impl Document {
         let processor = self
             .processor
             .reload(self.context.clone(), data.remote, data.host);
-        Self { processor, ..self }.settled()
+        Self {
+            processor,
+            edit: None,
+            ..self
+        }
+        .settled()
     }
 }
 
@@ -165,24 +199,32 @@ mod tests {
         Document::open(&request.to_string(), Rc::new(())).expect("opened")
     }
 
+    /// The last change's three pieces, `components` null when they didn't change.
     fn changes(document: &Document) -> Json {
-        serde_json::from_str(&document.changes().expect("changes")).expect("JSON")
+        let parse = |json: &str| serde_json::from_str::<Json>(json).expect("JSON");
+        json!({
+            "splice": parse(&document.splice().expect("splice")),
+            "diagnostics": parse(&document.diagnostics().expect("diagnostics")),
+            "components": document.components().expect("components").as_deref().map(parse),
+        })
     }
 
     #[test]
     fn opening_gives_the_whole_tree() {
         let document = open("One.\n\nTwo.\n");
         let changes = changes(&document);
-        assert_eq!(
-            (&changes["splice"]["from"], &changes["splice"]["to"]),
-            (&json!(0), &json!(0))
-        );
-        assert_eq!(changes["splice"]["nodes"].as_array().map(Vec::len), Some(2));
+        let splice = &changes["splice"];
+        assert_eq!((&splice["from"], &splice["to"]), (&json!(0), &json!(0)));
+        assert_eq!(splice["nodes"].as_array().map(Vec::len), Some(2));
         assert_eq!(changes["diagnostics"], json!([]));
-        assert!(changes.get("inputs").is_none());
+        assert!(splice.get("inputs").is_none());
+        assert!(splice.get("edit").is_none(), "opening isn't an edit");
         assert!(Document::open("{}", Rc::new(())).is_err());
         let with_inputs = open("---\nmd:\n  inputs:\n    n: number = 1\n---\n");
-        assert_eq!(self::changes(&with_inputs)["inputs"]["n"]["value"], 1);
+        assert_eq!(
+            self::changes(&with_inputs)["splice"]["inputs"]["n"]["value"],
+            1
+        );
     }
 
     #[test]
@@ -205,6 +247,11 @@ mod tests {
             splice["nodes"][0]["origin"]["end"],
             json!({ "line": 1, "column": 8, "offset": 7 })
         );
+        assert_eq!(
+            splice["edit"],
+            json!({ "start": 5, "end": 5, "text": "!" }),
+            "the edit, in code points"
+        );
         assert_eq!(changes["diagnostics"][0]["code"], "F002");
     }
 
@@ -219,7 +266,7 @@ mod tests {
         let end = text.len() - 1;
         let document = document.edit(end, end, "!".into());
         assert!(
-            changes(&document).get("components").is_none(),
+            changes(&document)["components"].is_null(),
             "a paragraph changed, not the code"
         );
         let quote = text.find("'hi'").expect("the code") + 1;
@@ -257,6 +304,10 @@ mod tests {
         assert_eq!(
             changes["splice"]["nodes"][1]["children"][0]["value"],
             "fetched"
+        );
+        assert!(
+            changes["splice"].get("edit").is_none(),
+            "a reload isn't an edit"
         );
         assert_eq!(changes["diagnostics"], json!([]));
         assert!(Data::from_json("{\"remote\": []}").is_err());

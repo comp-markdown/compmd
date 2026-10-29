@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { codePointOffset, diff, Keys, mapRange, utf16Offset, type Edit } from "./keys.ts";
-import type { ExpandedNode, ExpandedRoot } from "./tree.ts";
+import { codePointOffset, diff, editOf, Keys, mapRange, utf16Offset, type Edit } from "./keys.ts";
+import type { ExpandedNode } from "./tree.ts";
 
 const insert = (at: number, length: number, opensLine = false): Edit => ({ start: at, oldEnd: at, newEnd: at + length, opensLine });
 
@@ -42,40 +42,79 @@ describe("diff", () => {
   });
 });
 
+describe("editOf", () => {
+  it("counts the inserted text in code points, and sees a new line", () => {
+    expect(editOf({ start: 2, end: 4, text: "😀b" })).toEqual({ start: 2, oldEnd: 4, newEnd: 4, opensLine: false });
+    expect(editOf({ start: 0, end: 0, text: "\nx" })).toMatchObject({ newEnd: 2, opensLine: true });
+  });
+});
+
 const node = (start: number, end: number, occurrence = 0): ExpandedNode => ({
   type: "paragraph",
   children: [],
   origin: { start: { line: 1, column: start + 1, offset: start }, end: { line: 1, column: end + 1, offset: end }, occurrence },
 });
-const root = (...children: ExpandedNode[]): ExpandedRoot => ({ type: "root", children });
 
 describe("Keys", () => {
   it("keeps a node's key when an edit before it moves its origin", () => {
     const keys = new Keys();
     const a = node(0, 3);
-    const first = keys.assign(root(a), { text: "# A" });
+    const first = keys.assign([a], 0);
+    keys.release(first.ids, 0);
+    keys.edit(insert(0, 7));
     const b = node(7, 10);
-    const second = keys.assign(root(node(0, 5), b), { text: "Intro\n\n# A", edit: { start: 0, end: 0 } });
-    expect(second(b)).toBe(first(a));
+    expect(keys.assign([b], 0).keys.get(b)).toBe(first.keys.get(a));
+  });
+
+  it("follows a block's ids from where its origins were, `shift` behind", () => {
+    const keys = new Keys();
+    const a = node(0, 3);
+    const first = keys.assign([a], 0);
+    // Blocks before it grew by 5 since it was rendered: its origins say 0-3, it is at 5-8.
+    keys.release(first.ids, 5);
+    keys.edit(insert(8, 1));
+    const b = node(5, 9);
+    expect(keys.assign([b], 0).keys.get(b)).toBe(first.keys.get(a));
+    keys.settle();
+    expect(keys.assign([node(5, 9)], 0).keys.get(b)).toBeUndefined();
   });
 
   it("tells nodes with one origin apart by their occurrence", () => {
-    const keys = new Keys();
     const [one, two] = [node(0, 3, 0), node(0, 3, 1)];
-    const keyOf = keys.assign(root(one, two));
-    expect(keyOf(one)).not.toBe(keyOf(two));
-    expect(keyOf(one)?.split("#")[0]).toBe(keyOf(two)?.split("#")[0]);
+    const { keys } = new Keys().assign([one, two], 0);
+    expect(keys.get(one)).not.toBe(keys.get(two));
+    expect(keys.get(one)?.split("#")[0]).toBe(keys.get(two)?.split("#")[0]);
   });
 
-  it("keeps keys for the same origins without a change (an input changed)", () => {
+  it("keeps keys for the same origins without an edit (an input changed)", () => {
     const keys = new Keys();
     const before = node(0, 3);
-    const first = keys.assign(root(before));
+    const first = keys.assign([before], 0);
+    keys.release(first.ids, 0);
     const again = node(0, 3);
-    expect(keys.assign(root(again))(again)).toBe(first(before));
+    expect(keys.assign([again], 0).keys.get(again)).toBe(first.keys.get(before));
+  });
+
+  it("drops the ids of ranges an edit replaced", () => {
+    const keys = new Keys();
+    const a = node(2, 4);
+    keys.release(keys.assign([a], 0).ids, 0);
+    keys.edit({ start: 0, oldEnd: 6, newEnd: 1, opensLine: false });
+    const b = node(0, 1);
+    expect(keys.assign([b], 0).keys.get(b)).toBe("1#0");
+  });
+
+  it("keeps an origin without offsets only by its own lines and columns", () => {
+    const keys = new Keys();
+    const lines: ExpandedNode = { type: "paragraph", origin: { start: { line: 2, column: 1 }, end: { line: 2, column: 4 }, occurrence: 0 } };
+    const first = keys.assign([lines], 0);
+    keys.release(first.ids, 3);
+    keys.edit(insert(0, 1));
+    expect(keys.assign([lines], 0).keys.get(lines)).toBe(first.keys.get(lines));
   });
 
   it("gives a node without an origin no key", () => {
-    expect(new Keys().assign(root({ type: "text", value: "x" }))({ type: "text", value: "x" })).toBeUndefined();
+    const text: ExpandedNode = { type: "text", value: "x" };
+    expect(new Keys().assign([text], 0).keys.get(text)).toBeUndefined();
   });
 });

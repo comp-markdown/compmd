@@ -3,13 +3,14 @@
 // loses its state), a new opener into a container that swallows the rest of the document, and a stray character in
 // the frontmatter into a page without components. Three rules on top of it, by key:
 //
-// 1. Frontmatter that doesn't parse (F001, F033): the last good page stays, and keys aren't reassigned until the text
-//    is valid again.
+// 1. Frontmatter that doesn't parse (F001, F033): the last good page stays until the text is valid again.
 // 2. A top-level container that isn't closed (F004; only the end of the file can close it there): its opener shows
 //    as a paragraph, and what follows stays where it was, with its keys and its state.
 // 3. Any other error in a top-level block: that block keeps its last good render, found by its key; the rest updates.
-import { Keys, utf16Offset, type EditRange, type KeyOf } from "./keys.ts";
-import { contentOf, walk, type ExpandedNode, type ExpandedRoot, type Origin } from "./tree.ts";
+//
+// The page applies rule 1; a block it renders shows what rules 2 and 3 say.
+import { utf16Offset, type EditRange } from "./keys.ts";
+import { contentOf, walk, type ExpandedNode, type Point } from "./tree.ts";
 
 /** A diagnostic as a processor reports it (spec §10.5): its code and where it was found, 1-based. */
 export interface Diagnostic {
@@ -18,23 +19,45 @@ export interface Diagnostic {
   column: number;
 }
 
-/** What changed since the last render: the new text, its diagnostics, and the old text's range the editor replaced. */
+/**
+ * What changed since the last render: the new text, its diagnostics, and, for a whole tree, the old text's range the
+ * editor replaced.
+ */
 export interface Change {
   text: string;
   diagnostics?: readonly Diagnostic[];
   edit?: EditRange;
 }
 
-/** A tree to render and how to find its nodes' keys. */
-export interface Keyed {
-  tree: ExpandedRoot;
-  keyOf: KeyOf;
+/** A block's last good render: its node, and the keys of that node's tree. */
+export interface Good {
+  node: ExpandedNode;
+  keys: ReadonlyMap<ExpandedNode, string>;
+}
+
+/** What rules 2 and 3 need: the errors, the text they are in, and the last good renders of blocks that went. */
+export interface Rules {
+  errors: readonly Diagnostic[];
+  text: string | undefined;
+  good: ReadonlyMap<string, Good>;
 }
 
 const WHOLE_DOCUMENT = new Set(["F001", "F033"]);
 
+/** The errors of `change`, which the rules read. */
+export const errorsOf = (change: Change | undefined): Diagnostic[] => (change?.diagnostics ?? []).filter((d) => d.code.startsWith("F"));
+
+/** Whether `errors` break the whole document (rule 1). */
+export const breaksDocument = (errors: readonly Diagnostic[]): boolean => errors.some((d) => WHOLE_DOCUMENT.has(d.code));
+
+const before = (a: { line: number; column: number }, b: Point): boolean => a.line < b.line || (a.line === b.line && a.column < b.column);
+const at = (a: { line: number; column: number }, b: Point): boolean => a.line === b.line && a.column === b.column;
+
+/** `point`, `lines` lines on. */
+const moved = (point: Point, lines: number): Point => ({ ...point, line: point.line + lines });
+
 /** A point as a code-point offset, by its line and column (both count code points, spec §10.5). */
-function offsetOf(text: string, line: number, column: number): number {
+function offsetOf(text: string, { line, column }: Point): number {
   let current = 1;
   let offset = 0;
   for (const char of text) {
@@ -45,74 +68,29 @@ function offsetOf(text: string, line: number, column: number): number {
   return offset + column - 1;
 }
 
-const rangeOf = (origin: Origin | undefined): { start: number; end: number } | undefined => {
-  const start = origin?.start.offset;
-  const end = origin?.end.offset;
-  return start === undefined || end === undefined ? undefined : { start, end };
-};
-
 /**
- * Keys each tree and keeps the last good render of what an invalid edit breaks, by the rules above.
- *
- * @example
- * const stable = new Stable();
- * const { tree, keyOf } = stable.show(processed.tree, { text, diagnostics: processed.diagnostics, edit });
+ * What a block shows: its node, or what rules 2 and 3 say for an error in it. Its origins are `lines` lines and
+ * `shift` code points behind the text; `keys` are its node's tree's, to which a kept render's are added.
  */
-export class Stable {
-  readonly #keys: Keys;
-  #last: Keyed | undefined;
-  /** Whether the last change wasn't keyed (rule 1), so the next edit's range doesn't apply to the keys' text. */
-  #skipped = false;
-
-  constructor(keys = new Keys()) {
-    this.#keys = keys;
+export function shownOf(node: ExpandedNode, place: { lines: number; shift: number }, keys: Map<ExpandedNode, string>, rules: Rules): ExpandedNode[] {
+  const origin = node.origin;
+  if (!origin || rules.errors.length === 0) return [node];
+  const start = moved(origin.start, place.lines);
+  const end = moved(origin.end, place.lines);
+  const inNode = rules.errors.filter((d) => !before(d, start) && (before(d, end) || at(d, start)));
+  if (inNode.length === 0) return [node];
+  if (node.type === "componentContainer" && rules.text !== undefined && inNode.some((d) => d.code === "F004" && at(d, start))) {
+    return asText(node, rules.text, origin.start.offset === undefined ? offsetOf(rules.text, start) : origin.start.offset + place.shift);
   }
-
-  /** The tree to show for `tree`, processed from `change.text`, with its keys. */
-  show(tree: ExpandedRoot, change?: Change): Keyed {
-    if (!change) return this.#remember({ tree, keyOf: this.#keys.assign(tree) });
-    const errors = (change.diagnostics ?? []).filter((d) => d.code.startsWith("F"));
-    if (this.#last && errors.some((d) => WHOLE_DOCUMENT.has(d.code))) {
-      this.#skipped = true;
-      return this.#last;
-    }
-    const keyOf = this.#keys.assign(tree, { text: change.text, ...(change.edit && !this.#skipped ? { edit: change.edit } : {}) });
-    this.#skipped = false;
-    if (errors.length === 0 || !this.#last) return this.#remember({ tree, keyOf });
-    return this.#stabilized({ tree, keyOf }, this.#last, errors, change.text);
-  }
-
-  #remember(keyed: Keyed): Keyed {
-    this.#last = keyed;
-    return keyed;
-  }
-
-  #stabilized(next: Keyed, last: Keyed, errors: readonly Diagnostic[], text: string): Keyed {
-    const lastByKey = new Map<string, ExpandedNode>();
-    for (const node of last.tree.children) {
-      const key = last.keyOf(node);
-      if (key !== undefined) lastByKey.set(key, node);
-    }
-    const kept = new Set<ExpandedNode>();
-    const offsets = errors.map((d) => ({ code: d.code, at: offsetOf(text, d.line, d.column) }));
-    const children = next.tree.children.flatMap((node): ExpandedNode[] => {
-      const range = rangeOf(node.origin);
-      if (!range) return [node];
-      const inNode = offsets.filter(({ at }) => at >= range.start && at < Math.max(range.end, range.start + 1));
-      if (inNode.length === 0) return [node];
-      if (node.type === "componentContainer" && inNode.some(({ code, at }) => code === "F004" && at === range.start)) return asText(node, text, range.start);
-      const key = next.keyOf(node);
-      const good = key === undefined ? undefined : lastByKey.get(key);
-      if (!good) return [node];
-      kept.add(good);
-      return [good];
-    });
-    // A kept block is the last tree's, so its nodes' keys are the last ones.
-    const inKept = new Set<ExpandedNode>();
-    walk([...kept], (n) => inKept.add(n));
-    const keyOf: KeyOf = (node) => (inKept.has(node) ? last.keyOf(node) : next.keyOf(node));
-    return { tree: { ...next.tree, children }, keyOf };
-  }
+  const key = keys.get(node);
+  const good = key === undefined ? undefined : rules.good.get(key);
+  if (!good) return [node];
+  // A kept render is the last tree's, so its nodes' keys are the last ones.
+  walk([good.node], (n) => {
+    const kept = good.keys.get(n);
+    if (kept !== undefined) keys.set(n, kept);
+  });
+  return [good.node];
 }
 
 /** An unclosed container as its opener line, in a paragraph with the container's origin, followed by its content. */

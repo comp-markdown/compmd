@@ -2,7 +2,8 @@
 // - `process` on each document: each run is a keystroke, the document's text changed and the whole request processed
 //   again;
 // - a keystroke in an open document: a character typed into a paragraph in the middle of the body, then deleted, in
-//   turn, timed in the module alone (the processing) and through `OpenDocument`, which also applies the splice.
+//   turn, timed in the module alone (the processing, and the splice as JSON text) and through `OpenDocument`, which
+//   also parses and applies the splice.
 
 import { init, OpenDocument, process } from "../dist/index.js";
 import { Document } from "../pkg/compmd_wasm.js";
@@ -48,7 +49,15 @@ for (const { name, request } of keystrokes) {
   const at = text.indexOf(".", text.length / 2);
   const keystroke = (edit) => (run) => (run % 2 === 0 ? edit(at, at, "x") : edit(at, at + 1, ""));
   const kept = new Document(JSON.stringify(request));
-  results.push({ name: `${name}, processing`, ...timed(keystroke((start, end, inserted) => kept.edit(start, end, inserted))) });
+  results.push({
+    name: `${name}, processing`,
+    ...timed(
+      keystroke((start, end, inserted) => {
+        kept.edit(start, end, inserted);
+        kept.splice();
+      }),
+    ),
+  });
   kept.free();
   const open = new OpenDocument(request);
   results.push({ name: `${name}, with the splice applied`, ...timed(keystroke((start, end, inserted) => open.edit(start, end, inserted))) });

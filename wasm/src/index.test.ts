@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import { changelog, completeExample, completeJson, longBody } from "../bench/requests.ts";
-import { initSync, OpenDocument, process, sources, type Request } from "./index.ts";
+import { initSync, OpenDocument, OpenDocumentJson, process, sources, type Request } from "./index.ts";
 
 /** `value` without positions, as the conformance case compares it. */
 function withoutPositions(value: unknown): unknown {
@@ -124,6 +124,22 @@ describe("OpenDocument", () => {
     expect(document.expanded.children).toHaveLength(before + 1);
     expect(document.expanded.children.at(-1)?.origin?.start.offset).toBe(last + 8);
     expect(changes.diagnostics.map((d) => d.code)).toEqual(["F002"]);
+    // In code points: the emoji and the thumb with its skin tone before it are six UTF-16 units and three code points.
+    expect(changes.splice.edit).toEqual({ start: at("Last") - 3, end: at("Last") - 3, text: "Added.\n\n" });
+    document.free();
+  });
+
+  it("gives each change with its splice as JSON text, as OpenDocumentJson", () => {
+    const document = new OpenDocumentJson(request(text));
+    const opened = document.changes();
+    expect(JSON.parse(opened.splice)).toMatchObject({ from: 0, to: 0 });
+    expect(JSON.parse(opened.splice)).not.toHaveProperty("edit");
+    const changes = document.edit(at("Last"), at("Last"), "Added.\n\n");
+    expect(JSON.parse(changes.splice)).toMatchObject({ lines: 2, offset: 8, edit: { text: "Added.\n\n" } });
+    expect(changes.diagnostics.map((d) => d.code)).toEqual(["F002"]);
+    expect(changes).not.toHaveProperty("components");
+    expect(document.sources()).toEqual({ remote: [], host: [] });
+    expect(JSON.parse(document.reload({}).splice)).not.toHaveProperty("edit");
     document.free();
   });
 

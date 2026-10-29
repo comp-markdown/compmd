@@ -6,9 +6,10 @@ A text area on the left, the rendered page on the right, updated as you type. It
 
 ## How it works
 
-- **Processing runs in a worker,** never in the text area's input handler, so each key press is painted first and the preview follows it. The worker keeps the document open with [`@compmd/processor`](../wasm/README.md)'s `OpenDocument`, so an edit inside a block processes that block, not the document.
+- **Processing runs in a worker,** never in the text area's input handler, so each key press is painted first and the preview follows it. The worker keeps the document open with [`@compmd/processor`](../wasm/README.md)'s `OpenDocumentJson`, so an edit inside a block processes that block, not the document. Its nodes carry origins, which the renderer's keys come from.
 - **Each input is an edit.** The selection before the input is the range it replaced, so a cut or a paste is placed where the user made it. Backspace, Delete and undo change text outside the selection, so the range then also covers what changed (`src/edit.ts`). Edits made while the worker is busy go to it together, in order (`src/session.ts`).
-- **The page renders in a sandboxed iframe** (`sandbox="allow-scripts"`, an opaque origin), through [`@compmd/render`](../render/README.md)'s frame protocol. Each change goes with its text, its diagnostics and the edit's range, which the renderer's keys follow, so components keep their state through edits around them. Edits merged into one change have no range, and the keys follow a diff.
+- **Splices, not trees, cross to the frame.** The worker gives a splice per edit, as the processor's JSON text, and the editor passes it on unread with the text and its diagnostics. Only the frame holds the expanded tree, as the renderer's blocks.
+- **The page renders in a sandboxed iframe** (`sandbox="allow-scripts"`, an opaque origin), through [`@compmd/render`](../render/README.md)'s frame protocol. The renderer applies each splice and renders only the blocks it replaced; its keys follow each splice's edit, so components keep their state through edits around them, merged edits included.
 - **Inputs:** an input component's `set` (a select, a chart's column) opens the document again with the new value.
 
 ### Host-language components
@@ -41,7 +42,7 @@ The expanded tree names a component but holds no code, so the worker sends the f
 pnpm dev     # the shared libraries, then a dev server
 pnpm build   # the shared libraries, then the static site into dist/
 pnpm lint    # eslint and tsc
-pnpm test    # edits, the session and the editor's loop, the worker against processing from scratch, compiling and swapping components, every document
+pnpm test    # edits, the session and the editor's loop, every document's page after the worker's splices against processing from scratch, compiling and swapping components
 pnpm bench   # the budgets, in Chrome
 ```
 
@@ -55,15 +56,15 @@ Typing in a paragraph processes that block. Typing in a definition processes the
 
 | Edit | Key press to paint, p95 | Processing | The frame | Budget |
 |---|---|---|---|---|
-| The spec's complete example, in a paragraph | 6.1 ms | 1.6 ms | 2.8 ms | ≤ 16 ms |
-| The same, in the sparkline's JSX | 11.2 ms | 4.8 ms | 4.9 ms | ≤ 16 ms |
-| The changelog, in its heading | 8.2 ms | 1.5 ms | 4.0 ms | ≤ 50 ms |
-| The same, in a definition it uses 384 times | 19.9 ms | 10.5 ms | 7.2 ms | ≤ 50 ms |
-| Field notes (52 KB), in a paragraph | 15.6 ms | 0.9 ms | 9.0 ms | ≤ 50 ms |
+| The spec's complete example, in a paragraph | 4.8 ms | 1.7 ms | 1.8 ms | ≤ 16 ms |
+| The same, in the sparkline's JSX | 12.4 ms | 5.1 ms | 5.7 ms | ≤ 16 ms |
+| The changelog, in its heading | 5.3 ms | 1.9 ms | 2.4 ms | ≤ 50 ms |
+| The same, in a definition it uses 384 times | 20.5 ms | 11.1 ms | 8.2 ms | ≤ 50 ms |
+| Field notes (52 KB), in a paragraph | 7.7 ms | 1.0 ms | 2.4 ms | ≤ 50 ms |
 
 The text area's input latency is 32 ms (p95) at every edit point, against a budget of 50 ms. Measured on 2026-10-29 on an Apple M4, Chrome 156.
 
-**Where the time goes.** In a paragraph, the processor's own work is about a tenth of a millisecond, and the worker's part under 1 ms with the splice parsed and applied; the rest of an edit grows with the document. Each change sends the whole expanded tree from the worker to the page and from the page to the frame, two copies, and the renderer goes over all of it: it follows every origin to keep keys, compares the texts, and matches every top-level block. In the 52 KB body that is about 7 ms for the renderer, and about 5 ms for the copies and the page's own work. Sending splices instead, across both boundaries, with a renderer that applies them, would make an edit's cost follow the edit, as the processing's does.
+**Where the time goes.** In a paragraph, the worker processes the block and gives its splice in about 1 ms, and the renderer's own work in the frame, parsing the splice and rendering the block, is 0.2 ms (p50) in the 4 KB example and in the 52 KB body alike. The rest of the frame's part is the browser's: laying out and painting the frame's page, about 2 ms for the 52 KB body. Between them, the edit and the splice cross from the page to the worker, back, and to the frame. That trip grows with the text area's text: the worker's answer reaches the page about 2 ms after the worker is done in the 52 KB body, against 0.4 ms in the 4 KB example, and reading the text area and finding the edit take 0.7 ms against 0.3 ms. An edit to a definition gives a splice of the whole tree, since the whole document is processed again.
 
 ## License
 

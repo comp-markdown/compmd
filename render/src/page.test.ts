@@ -250,3 +250,106 @@ describe("host-language components", () => {
     expect(root.querySelector(".compmd-component")).toBeNull();
   });
 });
+
+describe("splices", () => {
+  /** A one-line block on `line`, at code points `start..end`. */
+  const on = <T extends ExpandedNode>(node: T, line: number, start: number, end: number): T => ({
+    ...node,
+    origin: { start: { line, column: 1, offset: start }, end: { line, column: end - start + 1, offset: end }, occurrence: 0 },
+  });
+  const typed = (at: number, value: string) => ({ start: at, end: at, text: value });
+  /** What a fresh page shows for `whole`. */
+  const fresh = (whole: ExpandedRoot, options: PageOptions = {}) => {
+    const other = document.createElement("main");
+    createPage(other, options).render(whole);
+    return other.innerHTML;
+  };
+
+  it("renders only the blocks a splice replaced, and the page is what the whole tree gives", () => {
+    const shown = page();
+    // "# A\n\none\n\ntwo\n"
+    shown.render(tree(on(heading(1, "A"), 1, 0, 3), on(paragraph(text("one")), 3, 5, 8), on(paragraph(text("two")), 5, 10, 13)));
+    const [h1, one, two] = [...root.children];
+    shown.splice([{ from: 1, to: 2, nodes: [on(paragraph(text("one!")), 3, 5, 9)], lines: 0, offset: 1, edit: typed(8, "!") }]);
+    expect(root.children[0]).toBe(h1);
+    expect(root.children[1]).toBe(one);
+    expect(root.children[2]).toBe(two);
+    // "two" is at 11..14 now, though its origin, from before, says 10..13; an edit in it keeps its element.
+    shown.splice([{ from: 2, to: 3, nodes: [on(paragraph(text("two?")), 5, 11, 15)], lines: 0, offset: 1, edit: typed(14, "?") }]);
+    expect(root.children[2]).toBe(two);
+    expect(root.innerHTML).toBe(fresh(tree(heading(1, "A"), paragraph(text("one!")), paragraph(text("two?")))));
+  });
+
+  it("applies several splices in order, and blocks added and replaced in between", () => {
+    const shown = page();
+    shown.render(tree(on(paragraph(text("a")), 1, 0, 1), on(paragraph(text("b")), 3, 3, 4)));
+    const b = root.children[1];
+    shown.splice([
+      { from: 0, to: 0, nodes: [on(paragraph(text("new")), 1, 0, 3)], lines: 2, offset: 5, edit: typed(0, "new\n\n") },
+      { from: 0, to: 1, nodes: [on(paragraph(text("newer")), 1, 0, 5)], lines: 0, offset: 2, edit: typed(3, "er") },
+    ]);
+    expect(root.textContent).toBe("newerab");
+    expect(root.children[2]).toBe(b);
+  });
+
+  it("numbers footnotes again when a splice elsewhere references one first", () => {
+    const shown = page();
+    const ref = (identifier: string) => ({ type: "footnoteReference", identifier });
+    const definition = (identifier: string) => ({ type: "footnoteDefinition", identifier, children: [paragraph(text(`Note ${identifier}.`))] });
+    shown.render(tree(on(paragraph(text("A"), ref("a")), 1, 0, 6), on(paragraph(text("B"), ref("b")), 3, 8, 14), on(definition("a"), 5, 16, 28), on(definition("b"), 6, 29, 41)));
+    shown.splice([{ from: 0, to: 0, nodes: [on(paragraph(text("first"), ref("b")), 1, 0, 10)], lines: 2, offset: 12, edit: typed(0, "first[^b]\n\n") }]);
+    expect([...root.querySelectorAll("sup a")].map((a) => a.textContent)).toEqual(["1", "2", "1"]);
+    expect(root.innerHTML).toBe(fresh(tree(paragraph(text("first"), ref("b")), paragraph(text("A"), ref("a")), paragraph(text("B"), ref("b")), definition("a"), definition("b"))));
+  });
+
+  it("resolves link references in other blocks again when a definition changes", () => {
+    const shown = page();
+    const reference = paragraph({ type: "linkReference", identifier: "x", referenceType: "full", children: [text("X")] });
+    shown.render(tree(on(reference, 1, 0, 6), on({ type: "definition", identifier: "x", url: "https://a.dev", title: null }, 3, 8, 26)));
+    shown.splice([{ from: 1, to: 2, nodes: [on({ type: "definition", identifier: "x", url: "https://b.dev", title: null }, 3, 8, 26)], lines: 0, offset: 0, edit: { start: 21, end: 22, text: "b" } }]);
+    expect(root.querySelector("a")?.getAttribute("href")).toBe("https://b.dev");
+  });
+
+  it("gives a new component the heading level of the last heading before it, in a block it didn't render", () => {
+    const mount = vi.fn<Mount>(() => undefined);
+    const shown = page({ components: { chart: mount } });
+    shown.render(tree(on(heading(2, "Sales"), 1, 0, 8), on(paragraph(text("x")), 3, 10, 11)));
+    shown.splice([{ from: 2, to: 2, nodes: [on(leaf("chart"), 5, 13, 21)], lines: 2, offset: 11, edit: typed(12, "\n:: chart[]") }]);
+    expect(mount.mock.calls[0]?.[1].headingLevel).toBe(3);
+  });
+
+  it("renders raw HTML that pairs across blocks as one element, as the whole tree does", () => {
+    const shown = page();
+    const html = (value: string) => ({ type: "html", value });
+    shown.render(tree(on(html("<details>"), 1, 0, 9), on(paragraph(text("inside")), 3, 11, 17), on(html("</details>"), 5, 19, 29), on(paragraph(text("after")), 7, 31, 36)));
+    const after = root.children[1];
+    shown.splice([{ from: 1, to: 2, nodes: [on(paragraph(text("inside!")), 3, 11, 18)], lines: 0, offset: 1, edit: typed(17, "!") }]);
+    expect(root.innerHTML).toBe("<details><p>inside!</p></details><p>after</p>");
+    expect(root.children[1]).toBe(after);
+    shown.splice([{ from: 2, to: 3, nodes: [], lines: -2, offset: -12, edit: { start: 19, end: 31, text: "" } }]);
+    expect(root.innerHTML).toBe(fresh(tree(html("<details>"), paragraph(text("inside!")), paragraph(text("after")))));
+  });
+
+  it("follows the inputs in blocks it didn't render, and the container breakpoints need", () => {
+    const shown = page();
+    const select = on(leaf("select-input", [param("bind", "r", { input: "r" })], [text("R")]), 1, 0, 20);
+    shown.render({ type: "root", inputs: { r: { type: "enum", members: ["a", "b"], value: "a" } }, children: [select, on(paragraph(text("x")), 3, 22, 23)] });
+    shown.splice([{ from: 1, to: 2, nodes: [on(container("box", [param("gap", "l", { breakpoint: "md" })], []), 3, 22, 40)], lines: 0, offset: 17, inputs: { r: { type: "enum", members: ["a", "b", "c"], value: "c" } } }]);
+    expect(root.querySelector("select")?.value).toBe("c");
+    expect(root.classList.contains("compmd-container")).toBe(true);
+    shown.splice([{ from: 1, to: 2, nodes: [], lines: -2, offset: -19 }]);
+    expect(root.classList.contains("compmd-container")).toBe(false);
+  });
+
+  it("keeps the last good page while the frontmatter doesn't parse, and follows every splice made meanwhile", () => {
+    const shown = page();
+    shown.render(tree(on(paragraph(text("a")), 1, 0, 1), on(paragraph(text("b")), 3, 3, 4)), { text: "a\n\nb\n" });
+    const b = root.children[1];
+    const broken = { text: "x", diagnostics: [{ code: "F001", line: 1, column: 1 }] };
+    shown.splice([{ from: 0, to: 1, nodes: [on(paragraph(text("a2")), 1, 0, 2)], lines: 0, offset: 1, edit: typed(1, "2") }], broken);
+    expect(root.textContent).toBe("ab");
+    shown.splice([{ from: 1, to: 2, nodes: [on(paragraph(text("b3")), 3, 4, 6)], lines: 0, offset: 1, edit: typed(5, "3") }], { text: "a2\n\nb3\n" });
+    expect(root.textContent).toBe("a2b3");
+    expect(root.children[1]).toBe(b);
+  });
+});

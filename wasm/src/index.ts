@@ -1,13 +1,13 @@
 // The CompMD processor as WebAssembly, typed: stages 1 to 4b of a document in one call, or a document kept open for an
 // editor, which takes edits and keeps its expanded tree.
 
-import type { ExpandedInput, ExpandedNode, ExpandedRoot } from "@compmd/render";
+import type { ExpandedRoot, Splice } from "@compmd/render";
 import { Document as Kept, process as processJson, sources as sourcesJson } from "../pkg/compmd_wasm.js";
 import type { ParseRoot } from "./parse-tree.ts";
 
 export { default as init, initSync } from "../pkg/compmd_wasm.js";
 export type * from "./parse-tree.ts";
-export type { ExpandedRoot } from "@compmd/render";
+export type { ExpandedRoot, Splice, TextEdit } from "@compmd/render";
 
 /** A document to process, with everything it needs. Only `path` and `now` are required. */
 export interface Request {
@@ -111,28 +111,20 @@ export function sources(request: Request): Needed {
   return JSON.parse(sourcesJson(JSON.stringify(request))) as Needed;
 }
 
-/**
- * What a change did to the expanded tree: its top-level nodes `from..to` became `nodes`, and every node after them
- * moved by `lines` lines and `offset` code points, which their origins show.
- */
-export interface Splice {
-  from: number;
-  /** The end of the nodes replaced, in the tree before the change. */
-  to: number;
-  nodes: ExpandedNode[];
-  lines: number;
-  offset: number;
-}
-
 /** What a change gave. */
 export interface Changes {
+  /** What it did to the expanded tree, with the root's inputs and, for an edit, the edit in code points. */
   splice: Splice;
-  /** The root's inputs after it, as {@link ExpandedRoot.inputs}. */
-  inputs?: Record<string, ExpandedInput>;
   /** Every diagnostic of the document, in stage order. */
   diagnostics: Diagnostic[];
   /** The host-language components, when the change changed them (and after opening). */
   components?: HostComponent[];
+}
+
+/** What a change gave, with the splice as JSON text, as {@link OpenDocumentJson} gives it. */
+export interface ChangesJson extends Omit<Changes, "splice"> {
+  /** The {@link Splice}, as JSON text. */
+  splice: string;
 }
 
 /**
@@ -180,35 +172,88 @@ interface Origin {
 }
 
 /**
+ * A document kept open, as {@link OpenDocument} is, for a host that passes each change on to where it renders without
+ * reading it, such as an editor's worker to the page's frame: each splice comes as JSON text, which is posted in one
+ * piece and parsed once, by the renderer (`@compmd/render`'s `splice`). It keeps no tree.
+ *
+ * @example
+ * // in the worker
+ * const document = new OpenDocumentJson({ ...request, origins: true });
+ * postMessage(document.changes());                   // the whole tree, as one splice
+ * postMessage(document.edit(start, end, inserted));  // { splice, diagnostics, components? }
+ *
+ * @throws Error when the request isn't valid, as {@link process} does.
+ */
+export class OpenDocumentJson {
+  readonly #kept: Kept;
+
+  constructor(request: Request) {
+    this.#kept = new Kept(JSON.stringify(request));
+  }
+
+  /** What the last change gave; after opening, the whole tree as one splice, and every component. */
+  changes(): ChangesJson {
+    const components = this.#kept.components();
+    return {
+      splice: this.#kept.splice(),
+      diagnostics: JSON.parse(this.#kept.diagnostics()) as Diagnostic[],
+      ...(components === undefined ? {} : { components: JSON.parse(components) as HostComponent[] }),
+    };
+  }
+
+  /** The text's UTF-16 `start..end` became `text`, as {@link OpenDocument.edit}. */
+  edit(start: number, end: number, text: string): ChangesJson {
+    this.#kept.edit(start, end, text);
+    return this.changes();
+  }
+
+  /** The remote and `host:` sources a render needs now, as {@link OpenDocument.sources}. */
+  sources(): Needed {
+    return JSON.parse(this.#kept.sources()) as Needed;
+  }
+
+  /** Loads and expands again with the data the host fetched, as {@link OpenDocument.reload}. */
+  reload(fetched: FetchedData): ChangesJson {
+    this.#kept.reload(JSON.stringify(fetched));
+    return this.changes();
+  }
+
+  /** Releases the module's memory for the document. */
+  free(): void {
+    this.#kept.free();
+  }
+}
+
+/**
  * A document kept open for an editor. It is processed once; each edit then processes only the blocks it touches, and
- * gives what changed. It keeps the expanded tree by applying each change, for `@compmd/render`, which updates the page
- * by key. The module must be loaded first, with {@link init} or {@link initSync}; {@link OpenDocument.free} releases it.
+ * gives what changed. It keeps the expanded tree by applying each change. The module must be loaded first, with
+ * {@link init} or {@link initSync}; {@link OpenDocument.free} releases it.
  *
  * Positions are the editor's, in UTF-16 units: `textarea.selectionStart`, CodeMirror's `from` and `to`. Give it the
  * editor's text (`textarea.value`, `state.doc.toString()`), not the file it was read from, so both count the same text.
  *
- * The tree it gives is updated in place by later changes: only the top-level array is new each time.
+ * The tree it gives is updated in place by later changes: only the top-level array is new each time. A page renders
+ * each change's splice (`page.splice`), or the whole tree.
  *
  * @example
  * const document = new OpenDocument({ path: "notes.comp.md", files: { "notes.comp.md": text }, now, origins: true });
  * page.render(document.expanded);
  * // The user selected `world` and typed `there`.
- * document.edit(6, 11, "there");
- * page.render(document.expanded, { text: textarea.value, edit: { start: 6, end: 11 } });
+ * page.splice([document.edit(6, 11, "there").splice]);
  *
  * @throws Error when the request isn't valid, as {@link process} does.
  */
 export class OpenDocument {
-  readonly #kept: Kept;
+  readonly #json: OpenDocumentJson;
   readonly #origins: boolean;
   #expanded: ExpandedRoot = { type: "root", children: [] };
   #diagnostics: Diagnostic[] = [];
   #components: HostComponent[] = [];
 
   constructor(request: Request) {
-    this.#kept = new Kept(JSON.stringify(request));
+    this.#json = new OpenDocumentJson(request);
     this.#origins = request.origins ?? false;
-    this.#apply(this.#kept.changes());
+    this.#apply(this.#json.changes());
   }
 
   /** The expanded tree. */
@@ -228,7 +273,7 @@ export class OpenDocument {
 
   /** The text's UTF-16 `start..end` became `text`; one edit per change, each in the text the one before left. */
   edit(start: number, end: number, text: string): Changes {
-    return this.#apply(this.#kept.edit(start, end, text));
+    return this.#apply(this.#json.edit(start, end, text));
   }
 
   /**
@@ -236,32 +281,32 @@ export class OpenDocument {
    * fetches what it hasn't yet and calls {@link reload}.
    */
   sources(): Needed {
-    return JSON.parse(this.#kept.sources()) as Needed;
+    return this.#json.sources();
   }
 
   /** Loads and expands again with the data the host fetched, in place of what it was given before. */
   reload(fetched: FetchedData): Changes {
-    return this.#apply(this.#kept.reload(JSON.stringify(fetched)));
+    return this.#apply(this.#json.reload(fetched));
   }
 
   /** Releases the module's memory for the document. */
   free(): void {
-    this.#kept.free();
+    this.#json.free();
   }
 
-  #apply(json: string): Changes {
-    const changes = JSON.parse(json) as Changes;
-    const { from, to, nodes, lines, offset } = changes.splice;
+  #apply({ splice: json, diagnostics, components }: ChangesJson): Changes {
+    const splice = JSON.parse(json) as Splice;
+    const { from, to, nodes, lines, offset } = splice;
     const children = this.#expanded.children;
     const after = children.slice(to);
     if (this.#origins && (lines !== 0 || offset !== 0)) move(after, lines, offset);
     this.#expanded = {
       type: "root",
       children: children.slice(0, from).concat(nodes, after),
-      ...(changes.inputs ? { inputs: changes.inputs } : {}),
+      ...(splice.inputs ? { inputs: splice.inputs } : {}),
     };
-    this.#diagnostics = changes.diagnostics;
-    if (changes.components) this.#components = changes.components;
-    return changes;
+    this.#diagnostics = diagnostics;
+    if (components) this.#components = components;
+    return { splice, diagnostics, ...(components ? { components } : {}) };
   }
 }

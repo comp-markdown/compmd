@@ -78,7 +78,7 @@ export function shapeOf(node: ExpandedNode): string {
  * Old entries (views, or slot items) to match new nodes to. Each entry is taken at most once: a keyed node takes the
  * entry with its key and shape, any other node the next unkeyed entry of its shape.
  */
-class Matcher<T> {
+export class Matcher<T> {
   readonly #keyed = new Map<string, T[]>();
   readonly #unkeyed = new Map<string, T[]>();
 
@@ -111,6 +111,24 @@ function arrange(parent: Node, nodes: readonly Node[]): void {
   }
 }
 
+/** Views for `nodes`: the old views `matcher` holds where they match, updated, and new ones for the rest. */
+export function viewsFor(surface: Surface, matcher: Matcher<View>, nodes: readonly ExpandedNode[], pass: Pass): View[] {
+  return nodes.map((node) => {
+    const old = matcher.take(node, pass);
+    if (!old) return createView(surface, node, pass);
+    old.update(node, pass);
+    return old;
+  });
+}
+
+/** Takes the views out of the document and destroys them. */
+export function discard(views: readonly View[]): void {
+  for (const view of views) {
+    view.dom.parentNode?.removeChild(view.dom);
+    view.destroy();
+  }
+}
+
 /**
  * Renders `nodes` into `parent`, which holds only these views, reusing `views` where they match.
  *
@@ -120,16 +138,8 @@ function arrange(parent: Node, nodes: readonly Node[]): void {
  */
 export function patch(surface: Surface, parent: Node, views: readonly View[], nodes: readonly ExpandedNode[], pass: Pass): View[] {
   const matcher = new Matcher(views, (view) => view);
-  const next = withHtml(nodes).map((node) => {
-    const old = matcher.take(node, pass);
-    if (!old) return createView(surface, node, pass);
-    old.update(node, pass);
-    return old;
-  });
-  for (const left of matcher.rest()) {
-    left.dom.parentNode?.removeChild(left.dom);
-    left.destroy();
-  }
+  const next = viewsFor(surface, matcher, withHtml(nodes), pass);
+  discard(matcher.rest());
   arrange(parent, next.map((view) => view.dom));
   return next;
 }
@@ -352,7 +362,7 @@ class CallbackView implements View {
 }
 
 /** The blocks placed in a box: down through Markdown containers, stopping at the next component (its own box). */
-function placedIn(nodes: readonly ExpandedNode[]): ExpandedComponent[] {
+export function placedIn(nodes: readonly ExpandedNode[]): ExpandedComponent[] {
   return nodes.flatMap((node) => (isComponent(node) ? [node] : placedIn(node.children ?? [])));
 }
 

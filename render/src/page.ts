@@ -1,12 +1,13 @@
-// The page layer: the region at the root, plus what only the whole tree has: the container breakpoints
-// query, the theme tokens, footnote numbering with the list at the end, and the inputs from the tree's root. Given a
-// change, it keys the tree through the edit and applies the rules for invalid text (`stable.ts`).
-import { definitionsOf, footnotesOf, type Footnotes } from "./document.ts";
-import { createRegion, type SurfaceOptions } from "./region.ts";
-import { markBox } from "./render.ts";
-import { Stable, type Change } from "./stable.ts";
-import type { Stylesheet } from "./styles.ts";
-import type { ExpandedNode, ExpandedRoot } from "./tree.ts";
+// The page layer: the tree's top-level blocks (`blocks.ts`), each rendered once and kept until a change replaces it,
+// plus what only the whole tree has: the container breakpoints query, the theme tokens, footnote numbering with the
+// list at the end, link definitions, and the inputs from the tree's root. A change is a splice of the blocks, or a
+// whole tree; keys follow its edit, and invalid text keeps the last good render (`stable.ts`).
+import { Blocks } from "./blocks.ts";
+import { diff, editOf, type Edit } from "./keys.ts";
+import { surfaceOf, type SurfaceOptions } from "./region.ts";
+import { breaksDocument, errorsOf, type Change } from "./stable.ts";
+import { Stylesheet } from "./styles.ts";
+import type { ExpandedRoot, Splice } from "./tree.ts";
 
 export interface PageOptions extends SurfaceOptions {
   /** The theme: `--compmd-*` custom properties and their values (spec §9.4). */
@@ -19,24 +20,17 @@ export interface Page {
    * changed). With it, keys follow the edit, and invalid text keeps the last good render (`stable.ts`).
    */
   render(tree: ExpandedRoot, change?: Change): void;
+  /**
+   * Brings the page up to date with `splices`, in order, each of the tree the one before left, as a processor that
+   * keeps the document open gives them: only the blocks they replaced render. Keys follow each splice's edit.
+   * `change` has the text after them and its diagnostics, for the rules for invalid text; its `edit` isn't read.
+   */
+  splice(splices: readonly Splice[], change?: Change): void;
   /** Replaces the theme tokens. */
   theme(tokens: Record<string, string>): void;
   destroy(): void;
   /** The document's stylesheet, for regions and components an editor renders inside the page. */
   readonly stylesheet: Stylesheet;
-}
-
-const element = (tag: string, attributes: Record<string, string>, content: { text?: string; children?: ExpandedNode[] }): ExpandedNode => ({ type: "compmdElement", tag, attributes, ...content });
-
-/** The footnotes' list, as GitHub shows it: a rule, then each definition with a link back to its first reference. */
-function footnotesList({ definitions }: Footnotes): ExpandedNode[] {
-  if (definitions.length === 0) return [];
-  const items = definitions.map(({ number, children }) =>
-    element("li", { id: `compmd-fn-${String(number)}` }, {
-      children: [...children, element("a", { href: `#compmd-fnref-${String(number)}`, class: "compmd-footnote-back", "aria-label": `Back to reference ${String(number)}` }, { text: "↩" })],
-    }),
-  );
-  return [element("section", { class: "compmd-footnotes" }, { children: [element("hr", {}, {}), element("ol", {}, { children: items })] })];
 }
 
 /**
@@ -46,11 +40,24 @@ function footnotesList({ definitions }: Footnotes): ExpandedNode[] {
  * const page = createPage(document.body, { components: { chart }, onSet: (input, value) => rerender({ [input]: value }) });
  * page.render(tree);                                   // an input changed: same text, same keys
  * page.render(tree, { text, diagnostics, edit });      // a keystroke in an editor
+ * page.splice([splice], { text, diagnostics });        // a keystroke, with a document kept open
  */
 export function createPage(root: HTMLElement, options: PageOptions = {}): Page {
   root.classList.add("compmd-page");
-  const region = createRegion(root, options);
-  const stable = new Stable();
+  const stylesheet = new Stylesheet(root.ownerDocument);
+  const blocks = new Blocks(root, surfaceOf(root.ownerDocument, stylesheet, options));
+  /** The text the blocks are of, as the last change gave it. */
+  let text: string | undefined;
+  let rendered = false;
+  const show = (change: Change | undefined) => {
+    if (change) text = change.text;
+    const errors = errorsOf(change);
+    // Rule 1: the blocks follow the change, and show when the frontmatter parses again.
+    if (rendered && breaksDocument(errors)) return;
+    blocks.render(errors, text);
+    stylesheet.flush();
+    rendered = true;
+  };
   let tokens: string[] = [];
   const theme = (next: Record<string, string>) => {
     for (const name of tokens) root.style.removeProperty(name);
@@ -59,22 +66,20 @@ export function createPage(root: HTMLElement, options: PageOptions = {}): Page {
   };
   theme(options.tokens ?? {});
   return {
-    stylesheet: region.stylesheet,
+    stylesheet,
     render(tree, change) {
-      const shown = stable.show(tree, change);
-      const footnotes = footnotesOf(shown.tree.children);
-      const nodes = [...shown.tree.children, ...footnotesList(footnotes)];
-      markBox(root, nodes, "block");
-      region.render(nodes, {
-        ...(shown.tree.inputs ? { inputs: shown.tree.inputs } : {}),
-        footnotes: footnotes.numbers,
-        definitions: definitionsOf(shown.tree.children),
-        keyOf: shown.keyOf,
-      });
+      const edit: Edit | undefined = change && text !== undefined && change.text !== text ? diff(text, change.text, change.edit) : undefined;
+      blocks.apply({ from: 0, to: blocks.length, nodes: tree.children, lines: 0, offset: 0, ...(tree.inputs ? { inputs: tree.inputs } : {}) }, edit);
+      show(change);
+    },
+    splice(splices, change) {
+      for (const splice of splices) blocks.apply(splice, splice.edit ? editOf(splice.edit) : undefined);
+      show(change);
     },
     theme,
     destroy() {
-      region.destroy();
+      blocks.destroy();
+      stylesheet.remove();
       theme({});
       root.classList.remove("compmd-page", "compmd-container", "compmd-fills");
     },

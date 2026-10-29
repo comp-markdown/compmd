@@ -76,6 +76,30 @@ function tokensOf(html: string): Token[] {
   return tokens;
 }
 
+/** An allowed tag of raw HTML that can pair across siblings: an opener of an element that isn't void, or a closer. */
+export interface Tag {
+  open: boolean;
+  tag: string;
+}
+
+/** The tags of `nodes`' raw HTML that can pair across them, in order. */
+export function tagsOf(nodes: readonly ExpandedNode[]): Tag[] {
+  return nodes
+    .filter((node) => node.type === "html")
+    .flatMap((node) => tokensOf(String((node as MarkdownNode).value)))
+    .flatMap((token): Tag[] => (token.kind === "close" ? [{ open: false, tag: token.tag }] : token.kind === "open" && !VOID.has(token.tag) ? [{ open: true, tag: token.tag }] : []));
+}
+
+/** The elements still open after `tags`, with `open` open before them, paired as {@link withHtml} pairs them. */
+export function stillOpen(open: readonly string[], tags: readonly Tag[]): string[] {
+  const stack = [...open];
+  for (const { open: opens, tag } of tags) {
+    if (opens) stack.push(tag);
+    else if (stack.at(-1) === tag) stack.pop();
+  }
+  return stack;
+}
+
 /**
  * `nodes` with their raw HTML made safe: allowed tags become elements holding what's between them, everything else
  * text. A list without `html` nodes comes back as it is.

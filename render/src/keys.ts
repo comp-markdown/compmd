@@ -1,7 +1,7 @@
 // Keys from origins (spec §12.3): the renderer keeps an id per origin range between renders and follows the
 // ranges through every edit, as an editor maps positions, so a node whose range lands where an old one went keeps
 // its id, and its view. A key is that id with the node's occurrence.
-import { walk, type ExpandedNode, type ExpandedRoot, type Origin } from "./tree.ts";
+import { walk, type ExpandedNode, type Origin, type TextEdit } from "./tree.ts";
 
 /** The range of the old text an edit replaced, as an editor reports it: UTF-16 offsets, as in a JavaScript string. */
 export interface EditRange {
@@ -68,6 +68,11 @@ export function diff(before: string, after: string, within?: EditRange): Edit {
   };
 }
 
+/** A processor's edit as the keys follow it. */
+export function editOf({ start, end, text }: TextEdit): Edit {
+  return { start, oldEnd: end, newEnd: start + codePointOffset(text, text.length), opensLine: text.startsWith("\n") };
+}
+
 /**
  * Where `range` is after `edit`: unchanged before it, moved after it, stretched over it; gone when the edit replaced
  * all of it. A start at an insertion stays with the text after it, so text typed right before a block isn't part of
@@ -96,78 +101,84 @@ export type KeyOf = (node: ExpandedNode) => string | undefined;
 
 const at = (range: Range): string => `${String(range.start)}-${String(range.end)}`;
 
-/** Code-point offsets of a 1-based line and column in `text`. */
-function pointOffset(lines: readonly number[], line: number, column: number): number {
-  return (lines[line - 1] ?? lines.at(-1) ?? 0) + column - 1;
-}
-
-/** The code-point offset where each line of `text` starts. */
-function lineStarts(text: string): number[] {
-  const starts = [0];
-  let offset = 0;
-  for (const char of text) {
-    offset++;
-    if (char === "\n") starts.push(offset);
-  }
-  return starts;
+/** A range as `at` wrote it, or none for an origin without offsets. */
+function parsed(where: string): Range | undefined {
+  const [start, end] = where.split("-").map(Number);
+  return start === undefined || end === undefined || Number.isNaN(start) || Number.isNaN(end) ? undefined : { start, end };
 }
 
 /**
- * An origin's range in code points: its offsets, or its lines and columns when it has no offsets and the text is
- * known. Without either it can't be followed through an edit, and only its own text identifies it.
+ * Where an origin is, `shift` code points on: its range, or, without offsets, its lines and columns, which can't be
+ * followed through an edit, so only its own text identifies it.
  */
-function rangeOf(origin: Origin, lines: (() => number[]) | undefined): Range | string {
-  const { start, end } = origin;
-  if (start.offset !== undefined && end.offset !== undefined) return { start: start.offset, end: end.offset };
-  if (!lines) return `${String(start.line)}:${String(start.column)}-${String(end.line)}:${String(end.column)}`;
-  return { start: pointOffset(lines(), start.line, start.column), end: pointOffset(lines(), end.line, end.column) };
+function whereOf({ start, end }: Origin, shift: number): string {
+  if (start.offset !== undefined && end.offset !== undefined) return at({ start: start.offset + shift, end: end.offset + shift });
+  return `${String(start.line)}:${String(start.column)}-${String(end.line)}:${String(end.column)}`;
+}
+
+/** A block's ids and keys: ids by the ranges its origins show, keys by node. */
+export interface Keyed {
+  ids: Map<string, number>;
+  keys: Map<ExpandedNode, string>;
 }
 
 /**
- * The keys of successive trees of one document. Without a change, the text is the one before (an input or data
- * changed), so equal origins keep their keys. With one, the old origins are followed through its edit first.
+ * The ids of one document's blocks. A block that goes releases its ids; each edit after that moves them, and a new
+ * block whose node has a range a released id has after the edits takes that id. Without an edit (an input or data
+ * changed), equal ranges keep their ids.
  *
  * @example
  * const keys = new Keys();
- * keys.assign(first, { text: "# A\n" });
- * const keyOf = keys.assign(second, { text: "Intro\n\n# A\n", edit: { start: 0, end: 0 } }); // the heading keeps its key
+ * const heading = keys.assign([node], 0);                    // "# A", at 0-3
+ * keys.release(heading.ids, 0);
+ * keys.edit({ start: 0, oldEnd: 0, newEnd: 7, opensLine: false }); // "Intro\n\n" typed before it
+ * keys.assign([moved], 0).keys.get(moved);                   // at 7-10: the heading's key
  */
 export class Keys {
-  #ids = new Map<string, number>();
-  #text: string | undefined;
   #next = 0;
+  /** The released ids, by range in the current text. */
+  #released = new Map<string, number>();
+  /** The ids assigned since the last render, by range: blocks an `each` made share their origins. */
+  readonly #assigned = new Map<string, number>();
 
-  assign(tree: ExpandedRoot, change?: { text: string; edit?: EditRange | undefined }): KeyOf {
-    const moved = this.#moved(change);
-    const text = change?.text ?? this.#text;
-    let lines: number[] | undefined;
-    const linesOf = text === undefined ? undefined : () => (lines ??= lineStarts(text));
-    const ids = new Map<string, number>();
-    const keys = new Map<ExpandedNode, string>();
-    walk(tree.children, (node) => {
-      if (!node.origin) return;
-      const range = rangeOf(node.origin, linesOf);
-      const where = typeof range === "string" ? range : at(range);
-      const id = moved.get(where) ?? ids.get(where) ?? this.#next++;
-      ids.set(where, id);
-      keys.set(node, `${String(id)}#${String(node.origin.occurrence)}`);
-    });
-    this.#ids = ids;
-    this.#text = text;
-    return (node) => keys.get(node);
+  /** Releases a block's `ids`, by the ranges its origins show, `shift` code points behind the current text. */
+  release(ids: ReadonlyMap<string, number>, shift: number): void {
+    for (const [where, id] of ids) {
+      const range = parsed(where);
+      const now = range ? at({ start: range.start + shift, end: range.end + shift }) : where;
+      if (!this.#released.has(now)) this.#released.set(now, id);
+    }
   }
 
-  /** The last ids, by the range each one's origin has after `change`'s edit. */
-  #moved(change: { text: string; edit?: EditRange | undefined } | undefined): Map<string, number> {
-    if (!change || this.#text === undefined || change.text === this.#text) return this.#ids;
-    const edit = diff(this.#text, change.text, change.edit);
+  /** Moves the released ids through `edit`; those whose ranges it replaced are gone. */
+  edit(edit: Edit): void {
     const moved = new Map<string, number>();
-    for (const [where, id] of this.#ids) {
-      const [start, end] = where.split("-").map(Number);
-      if (start === undefined || end === undefined || Number.isNaN(start) || Number.isNaN(end)) continue;
-      const range = mapRange({ start, end }, edit);
-      if (range && !moved.has(at(range))) moved.set(at(range), id);
+    for (const [where, id] of this.#released) {
+      const range = parsed(where);
+      const now = range ? mapRange(range, edit) : undefined;
+      if (now && !moved.has(at(now))) moved.set(at(now), id);
+      if (!range && !moved.has(where)) moved.set(where, id);
     }
-    return moved;
+    this.#released = moved;
+  }
+
+  /** The ids and keys of `nodes`, one block's, whose origins are `shift` code points behind the current text. */
+  assign(nodes: readonly ExpandedNode[], shift: number): Keyed {
+    const keyed: Keyed = { ids: new Map(), keys: new Map() };
+    walk(nodes, (node) => {
+      if (!node.origin) return;
+      const where = whereOf(node.origin, shift);
+      const id = this.#released.get(where) ?? this.#assigned.get(where) ?? this.#next++;
+      this.#assigned.set(where, id);
+      keyed.ids.set(whereOf(node.origin, 0), id);
+      keyed.keys.set(node, `${String(id)}#${String(node.origin.occurrence)}`);
+    });
+    return keyed;
+  }
+
+  /** Forgets the released ids no block took: after a render. */
+  settle(): void {
+    this.#released.clear();
+    this.#assigned.clear();
   }
 }

@@ -75,6 +75,26 @@ describe("the host and frame protocol", () => {
     expect(seen).toEqual([]);
   });
 
+  it("applies splices, as objects or JSON text, and one that replaces every block", async () => {
+    const [host, frame] = channel();
+    const container = document.body.appendChild(document.createElement("main"));
+    const served = serveFrame(frame, { container });
+    const connection = connectFrame(host);
+    const rendered: number[] = [];
+    connection.on("rendered", ({ ms }) => rendered.push(ms));
+    connection.render(tree("one"));
+    const second = { from: 1, to: 1, nodes: tree("two").children, lines: 0, offset: 0 };
+    connection.splice([second, JSON.stringify({ ...second, from: 2, to: 2, nodes: tree("three").children })]);
+    await settle();
+    expect(container.textContent).toBe("onetwothree");
+    connection.splice([JSON.stringify({ from: 0, to: 0, nodes: tree("again").children, lines: 0, offset: 0 }), { ...second, nodes: tree("more").children }], { text: "again\n\nmore\n" }, { replace: true });
+    await settle();
+    expect(container.textContent).toBe("againmore");
+    expect(rendered).toHaveLength(3);
+    served.close();
+    container.remove();
+  });
+
   it("applies theme tokens sent by the host", async () => {
     const [host, frame] = channel();
     const container = document.body.appendChild(document.createElement("main"));

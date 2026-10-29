@@ -3,7 +3,7 @@
 // both edits; lenient recovery alone (the same trees with no diagnostics) loses some in each case.
 import { describe, expect, it } from "vitest";
 import { createPage } from "../src/page.ts";
-import { components, scenarios, type Mounted, type Render, type Scenario } from "./support.ts";
+import { components, renderer, scenarios, type Mode, type Mounted, type Scenario } from "./support.ts";
 
 interface Outcome {
   /** Components mounted again, or whose clicks were lost, after each edit. */
@@ -12,13 +12,11 @@ interface Outcome {
   text: string[];
 }
 
-function run(scenario: Scenario, rules: boolean): Outcome {
+function run(scenario: Scenario, rules: boolean, mode: Mode = "trees"): Outcome {
   const root = document.body.appendChild(document.createElement("main"));
   const log: Mounted[] = [];
   const page = createPage(root, { components: components(log) });
-  const render = ({ tree, text, diagnostics, edit }: Render) => {
-    page.render(tree, { text, ...(rules ? { diagnostics } : {}), ...(edit ? { edit } : {}) });
-  };
+  const render = renderer(page, mode, rules);
   const [first, ...steps] = scenario.renders;
   if (!first) throw new Error("no renders");
   render(first);
@@ -51,6 +49,10 @@ describe("invalid text mid-typing", () => {
 
     it(`${scenario.name}: lenient recovery alone loses something`, () => {
       expect(run(scenario, false).broken.flat()).not.toEqual([]);
+    });
+
+    it(`${scenario.name}: splices give what whole trees give`, () => {
+      expect(run(scenario, true, "splices")).toEqual(run(scenario, true));
     });
   }
 

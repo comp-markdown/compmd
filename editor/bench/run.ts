@@ -130,7 +130,7 @@ for (const { name, doc, at, budget } of EDITS) {
   console.log(
     `${name}: key press to paint p95 ${p95(painted).toFixed(1)} ms (n ${String(painted.length)}), budget ${String(budget)} ms: ${paintedOk ? "ok" : "OVER BUDGET"}; input latency p95 ${input}, budget ${String(INPUT_BUDGET)} ms: ${inputOk ? "ok" : "OVER BUDGET"}${clean ? "" : "; PROBLEMS"}`,
   );
-  console.log(`  of which, p95: processing ${p95(processing).toFixed(2)} ms; the frame, from the tree's arrival to painted, ${p95(rendering).toFixed(1)} ms`);
+  console.log(`  of which, p95: processing ${p95(processing).toFixed(2)} ms; the frame, from the splices' arrival to painted, ${p95(rendering).toFixed(1)} ms`);
   await page.close();
 }
 await browser.close();

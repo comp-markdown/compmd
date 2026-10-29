@@ -76,6 +76,31 @@ export interface ExpandedRoot {
   inputs?: Record<string, ExpandedInput>;
 }
 
+/** An edit in code points (spec §10.5): the text's `start..end` became `text`. */
+export interface TextEdit {
+  start: number;
+  end: number;
+  text: string;
+}
+
+/**
+ * What a change did to the expanded tree, as a processor that keeps a document open gives it: the root's nodes
+ * `from..to` became `nodes`, and every node after them moved by `lines` lines and `offset` code points, which their
+ * origins don't show.
+ */
+export interface Splice {
+  from: number;
+  /** The end of the nodes replaced, in the tree before the change. */
+  to: number;
+  nodes: ExpandedNode[];
+  lines: number;
+  offset: number;
+  /** The root's inputs after the change. */
+  inputs?: Record<string, ExpandedInput>;
+  /** The edit that made it; absent when the text didn't change (opening, data loaded again). */
+  edit?: TextEdit;
+}
+
 /** A tree field as text: a string, number or boolean as written, anything else (absent, null) empty. */
 export function textOf(value: unknown): string {
   return typeof value === "string" ? value : typeof value === "number" || typeof value === "boolean" ? String(value) : "";

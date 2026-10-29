@@ -1,7 +1,6 @@
 // The messages between the editor, its worker and its frame.
 
 import type { Diagnostic, HostComponent, Request } from "@compmd/processor";
-import type { ExpandedRoot } from "@compmd/render";
 import type { Edit } from "./edit.ts";
 
 /** From the editor to its worker: open a document, or apply edits to it, each in the text the one before left. */
@@ -11,7 +10,10 @@ export type ToWorker = { type: "open"; request: Request } | { type: "edits"; edi
 export type FromWorker =
   | {
       type: "processed";
-      expanded: ExpandedRoot;
+      /** What each edit did to the expanded tree, as the processor's JSON text, which the editor passes on unread. */
+      splices: string[];
+      /** Whether the document was opened: its one splice is of an empty tree, and replaces the page. */
+      opened: boolean;
       diagnostics: Diagnostic[];
       /** The host-language components, when they changed (and after opening). */
       components?: readonly HostComponent[];

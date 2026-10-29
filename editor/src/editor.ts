@@ -1,6 +1,6 @@
-// The editor's loop: each input in the text area becomes an edit, the worker processes it, and the frame renders what
-// it gave, with the edit's range for the renderer's keys. An input component's `set` in the frame opens the
-// document again with the new value. It times each change from its first key press to the frame painted.
+// The editor's loop: each input in the text area becomes an edit, the worker processes it, and the frame applies the
+// splices it gave, which the editor passes on unread. An input component's `set` in the frame opens the document
+// again with the new value. It times each change from its first key press to the frame painted.
 
 import type { Diagnostic, Request } from "@compmd/processor";
 import type { Change } from "@compmd/render";
@@ -18,7 +18,7 @@ export interface EditorState {
   problems: string[];
   /** The worker's processing, per change. */
   processing: Timings;
-  /** The frame's part, per change: from the tree's arrival to the frame painted, as the frame reports it. */
+  /** The frame's part, per change: from the splices' arrival to the frame painted, as the frame reports it. */
   rendering: Timings;
   /** From a change's first key press (or opening) to the frame painted. */
   painted: Timings;
@@ -27,7 +27,7 @@ export interface EditorState {
 /** The frame's end the editor uses: the render protocol, and the port it shares for components. */
 export interface Frame {
   connection: FrameConnection;
-  /** Sends the components to compile, on the same port as the trees, so they come first. */
+  /** Sends the components to compile, on the same port as the splices, so they come first. */
   send(message: ComponentsMessage): void;
   /** Calls `listener` with each component the frame couldn't run. */
   onFailed(listener: (failed: ComponentFailed) => void): void;
@@ -83,13 +83,13 @@ export class Editor {
     });
   }
 
-  /** Opens `example`: its text is the text area's. */
+  /** Opens `example`: its text is the text area's. Its nodes carry origins, which the renderer's keys come from. */
   open(example: Example, at = performance.now()): string {
-    this.#request = example.request;
+    this.#request = { ...example.request, origins: true };
     this.#inputs = {};
     this.#text = example.request.files?.[example.request.path] ?? "";
     this.state.problems = [];
-    this.#session.open(example.request, this.#text, at);
+    this.#session.open(this.#request, this.#text, at);
     return this.#text;
   }
 
@@ -115,9 +115,9 @@ export class Editor {
 
   #updated(update: Update): void {
     if (update.components) this.#frame.send({ type: "components", components: update.components });
-    const change: Change = { text: update.text, diagnostics: forRenderer(update.diagnostics), ...(update.edit ? { edit: update.edit } : {}) };
+    const change: Change = { text: update.text, diagnostics: forRenderer(update.diagnostics) };
     this.#rendering.push(update.since);
-    this.#frame.connection.render(update.expanded, change);
+    this.#frame.connection.splice(update.splices, change, { replace: update.opened });
     this.state.diagnostics = update.diagnostics;
     this.state.processing.add(update.ms);
     if (update.components) this.state.problems = [];
