@@ -2,6 +2,7 @@ import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { defineConfig, type Plugin } from "vite";
+import { framePolicy } from "./frame-policy.ts";
 import { SHARED } from "./libraries.ts";
 
 /**
@@ -24,8 +25,12 @@ function shared(): Plugin {
       const url = map().imports[id];
       return serving && url ? { id: url.replace(/^\.\//, "/"), external: true } : { id, external: true };
     },
-    transformIndexHtml() {
-      return [{ tag: "script", attrs: { type: "importmap" }, children: JSON.stringify(map()), injectTo: "head-prepend" }];
+    transformIndexHtml(_html, { filename }) {
+      const importMap = JSON.stringify(map());
+      const tags = [{ tag: "script", attrs: { type: "importmap" }, children: importMap, injectTo: "head-prepend" as const }];
+      if (!filename.endsWith("frame.html")) return tags;
+      // Before the import map, which it allows by its hash.
+      return [{ tag: "meta", attrs: { "http-equiv": "Content-Security-Policy", content: framePolicy(importMap, serving) }, injectTo: "head-prepend" as const }, ...tags];
     },
   };
 }
