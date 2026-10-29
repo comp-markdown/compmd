@@ -346,7 +346,7 @@ impl<'r> Expander<'r> {
         resolved: &'r Resolved,
         validated: &'r Validated,
         loaded: &'r Loaded,
-        context: &'r RenderContext<'r>,
+        context: &'r RenderContext,
         options: &'r Options,
     ) -> Self {
         let md = resolved

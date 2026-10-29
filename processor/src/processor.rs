@@ -13,15 +13,16 @@
 //! use compmd::expand::Options;
 //! use compmd::{Ambient, ParseOptions, Processor};
 //! use std::collections::HashMap;
+//! use std::rc::Rc;
 //!
 //! let text = "---\nteam: [Ana, Kenji]\n---\n\n::: each {in=(md.doc.team) as=p join=inline sep=\", \"}\n{{p}}\n::: /each\n";
 //! let files: HashMap<String, String> = HashMap::new();
-//! let context = RenderContext { now: 0, tz: "UTC".into(), time: &(), inputs: Default::default() };
+//! let context = RenderContext { now: 0, tz: "UTC".into(), time: Rc::new(()), inputs: Default::default() };
 //! let processor = Processor::new("team.comp.md", text)
 //!     .parse(&ParseOptions::default())
-//!     .resolve(&files, &(), &Ambient::default())
+//!     .resolve(files, (), &Ambient::default())
 //!     .validate(&[])
-//!     .load(&context, &(), &())
+//!     .load(context, (), ())
 //!     .expand(&Options::default());
 //! assert!(processor.diagnostics().is_empty());
 //! let json = serde_json::to_value(processor.expanded()).unwrap();
@@ -80,10 +81,25 @@ pub struct Parsed {
     clippy::struct_field_names,
     reason = "`resolved` is stage 2's result, named as in the later states"
 )]
-pub struct Resolved<'h> {
-    store: Store<'h>,
+pub struct Resolved {
+    store: HostFiles,
     resolved: resolve::Resolved,
     edit_context: EditContext,
+}
+
+/// The host's files and packs, which stages 2 and 4a read.
+struct HostFiles {
+    files: Rc<dyn Files>,
+    packs: Rc<dyn Packs>,
+}
+
+impl HostFiles {
+    fn store(&self) -> Store<'_> {
+        Store {
+            files: &*self.files,
+            packs: &*self.packs,
+        }
+    }
 }
 
 /// What an edit needs to run stages 1 and 2 again: what stage 1 was given and made, and the ambient packs. The text
@@ -99,8 +115,8 @@ struct EditContext {
 }
 
 /// After stage 3: the checked documents, and what checking refused.
-pub struct Validated<'h> {
-    store: Store<'h>,
+pub struct Validated {
+    store: HostFiles,
     resolved: resolve::Resolved,
     checks: validate::Validated,
     /// How many diagnostics stages 1 to 3 gave, which a reload keeps.
@@ -110,24 +126,33 @@ pub struct Validated<'h> {
 }
 
 /// What stage 4 runs with: the render context, and the host's remote and `host:` data.
-#[derive(Clone, Copy)]
-struct RenderInputs<'c> {
-    context: &'c RenderContext<'c>,
-    fetch: &'c dyn Fetch,
-    data: &'c dyn Data,
+struct RenderInputs {
+    context: RenderContext,
+    fetch: Rc<dyn Fetch>,
+    data: Rc<dyn Data>,
+}
+
+impl RenderInputs {
+    fn new(context: RenderContext, fetch: impl Fetch + 'static, data: impl Data + 'static) -> Self {
+        Self {
+            context,
+            fetch: Rc::new(fetch),
+            data: Rc::new(data),
+        }
+    }
 }
 
 /// After stage 4a: the inputs' values and the data, for one render context.
-pub struct Loaded<'h, 'c> {
-    validated: Validated<'h>,
-    render: RenderInputs<'c>,
+pub struct Loaded {
+    validated: Validated,
+    render: RenderInputs,
     data: load::Loaded,
 }
 
 /// After stage 4b: the expanded tree.
-pub struct Expanded<'h, 'c> {
-    validated: Validated<'h>,
-    render: RenderInputs<'c>,
+pub struct Expanded {
+    validated: Validated,
+    render: RenderInputs,
     /// What stage 4a loaded, which an edit of the body keeps.
     data: load::Loaded,
     options: expand::Options,
@@ -142,7 +167,8 @@ pub struct Expanded<'h, 'c> {
 /// A host that keeps the expanded tree elsewhere, across a worker, WebAssembly or a process, applies it to its copy
 /// instead of taking the whole tree again.
 ///
-/// After the first expansion it replaces an empty tree: `from` and `to` are 0, and `nodes` is the whole tree.
+/// After the first expansion it replaces an empty tree: `from` and `to` are 0, and `nodes` is the whole tree. After a
+/// reload, it replaces the whole tree before it.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Splice {
     /// The first top-level node replaced.
@@ -227,27 +253,28 @@ impl Processor<Parsed> {
 
     /// Stage 2, resolving, with the host's `files` and `packs`, which loading reads data files from too, and the
     /// `ambient` packs: loads the document's imports and their imports, `@compmd/core` and the ambient packs, and
-    /// binds every name.
+    /// binds every name. The processor keeps `files` and `packs`; a host that needs them too passes an `Rc` it keeps
+    /// a clone of.
     #[must_use]
-    pub fn resolve<'h>(
+    pub fn resolve(
         self,
-        files: &'h impl Files,
-        packs: &'h impl Packs,
+        files: impl Files + 'static,
+        packs: impl Packs + 'static,
         ambient: &Ambient,
-    ) -> Processor<Resolved<'h>> {
-        self.resolve_in(
-            Store { files, packs },
-            ambient.clone(),
-            resolve::Parses::default(),
-        )
+    ) -> Processor<Resolved> {
+        let store = HostFiles {
+            files: Rc::new(files),
+            packs: Rc::new(packs),
+        };
+        self.resolve_in(store, ambient.clone(), resolve::Parses::default())
     }
 
     fn resolve_in(
         self,
-        store: Store<'_>,
+        store: HostFiles,
         ambient: Ambient,
         mut parses: resolve::Parses,
-    ) -> Processor<Resolved<'_>> {
+    ) -> Processor<Resolved> {
         self.then(|parsed, diagnostics| {
             let Parsed {
                 path,
@@ -259,7 +286,7 @@ impl Processor<Parsed> {
                 &path,
                 text,
                 document.for_resolving(),
-                store,
+                store.store(),
                 &ambient,
                 &mut parses,
             );
@@ -280,11 +307,11 @@ impl Processor<Parsed> {
     }
 }
 
-impl<'h> Processor<Resolved<'h>> {
+impl Processor<Resolved> {
     /// Stage 3, validating, with the origins remote data may come from (`https://api.example.com`; any other is
     /// F028): checks every invocation, slot, interpolation path, expression, bound input and data source.
     #[must_use]
-    pub fn validate(self, allowed_origins: &[String]) -> Processor<Validated<'h>> {
+    pub fn validate(self, allowed_origins: &[String]) -> Processor<Validated> {
         self.then(
             |Resolved {
                  store,
@@ -307,7 +334,7 @@ impl<'h> Processor<Resolved<'h>> {
     }
 }
 
-impl<'h> Processor<Validated<'h>> {
+impl Processor<Validated> {
     /// The remote and `host:` sources a render with `context` needs, each once, in the order they are first written,
     /// for the host to fetch before it loads.
     #[must_use]
@@ -318,30 +345,26 @@ impl<'h> Processor<Validated<'h>> {
     /// Stage 4a, loading, for a render with `context`: the inputs' values and every data import, with the host's
     /// remote data from `fetch` and its `host:` data from `data`. The processor keeps all three for a later edit.
     #[must_use]
-    pub fn load<'c>(
+    pub fn load(
         self,
-        context: &'c RenderContext<'c>,
-        fetch: &'c impl Fetch,
-        data: &'c impl Data,
-    ) -> Processor<Loaded<'h, 'c>> {
-        self.load_with(RenderInputs {
-            context,
-            fetch,
-            data,
-        })
+        context: RenderContext,
+        fetch: impl Fetch + 'static,
+        data: impl Data + 'static,
+    ) -> Processor<Loaded> {
+        self.load_with(RenderInputs::new(context, fetch, data))
     }
 
-    fn load_with(self, render: RenderInputs<'_>) -> Processor<Loaded<'h, '_>> {
+    fn load_with(self, render: RenderInputs) -> Processor<Loaded> {
         self.then(|validated, diagnostics| {
             let host = load::Host {
-                store: validated.store,
-                fetch: render.fetch,
-                data: render.data,
+                store: validated.store.store(),
+                fetch: &*render.fetch,
+                data: &*render.data,
             };
             let data = load::load(
                 &validated.resolved,
                 &validated.checks,
-                render.context,
+                &render.context,
                 &host,
             );
             diagnostics.extend_from_slice(&data.diagnostics);
@@ -354,7 +377,7 @@ impl<'h> Processor<Validated<'h>> {
     }
 }
 
-impl<'h, 'c> Processor<Loaded<'h, 'c>> {
+impl Processor<Loaded> {
     /// The processed document's inputs, with the values the render uses.
     #[must_use]
     pub fn inputs(&self) -> &Inputs {
@@ -363,7 +386,7 @@ impl<'h, 'c> Processor<Loaded<'h, 'c>> {
 
     /// Stage 4b, evaluating: the expanded tree.
     #[must_use]
-    pub fn expand(self, options: &expand::Options) -> Processor<Expanded<'h, 'c>> {
+    pub fn expand(self, options: &expand::Options) -> Processor<Expanded> {
         self.then(
             |Loaded {
                  validated,
@@ -375,7 +398,7 @@ impl<'h, 'c> Processor<Loaded<'h, 'c>> {
                     &validated.resolved,
                     &validated.checks,
                     &data,
-                    render.context,
+                    &render.context,
                     options,
                 );
                 diagnostics.extend_from_slice(&result.diagnostics);
@@ -398,18 +421,18 @@ impl<'h, 'c> Processor<Loaded<'h, 'c>> {
 
     /// Loads again for a render with `context`, `fetch` and `data`, without running stages 1 to 3 again.
     #[must_use]
-    pub fn reload<'d>(
+    pub fn reload(
         self,
-        context: &'d RenderContext<'d>,
-        fetch: &'d impl Fetch,
-        data: &'d impl Data,
-    ) -> Processor<Loaded<'h, 'd>> {
+        context: RenderContext,
+        fetch: impl Fetch + 'static,
+        data: impl Data + 'static,
+    ) -> Processor<Loaded> {
         self.then(|loaded, diagnostics| back(loaded.validated, diagnostics))
             .load(context, fetch, data)
     }
 }
 
-impl<'h> Processor<Expanded<'h, '_>> {
+impl Processor<Expanded> {
     /// The processed document's tree (spec §12.1).
     #[must_use]
     pub fn tree(&self) -> &tree::Root {
@@ -430,14 +453,15 @@ impl<'h> Processor<Expanded<'h, '_>> {
     /// use compmd::expand::Options;
     /// use compmd::{Ambient, ParseOptions, Processor, TextEdit};
     /// use std::collections::HashMap;
+    /// use std::rc::Rc;
     ///
     /// let files: HashMap<String, String> = HashMap::new();
-    /// let context = RenderContext { now: 0, tz: "UTC".into(), time: &(), inputs: Default::default() };
+    /// let context = RenderContext { now: 0, tz: "UTC".into(), time: Rc::new(()), inputs: Default::default() };
     /// let processor = Processor::new("a.comp.md", "One.\n\nTwo.\n\nThree.\n")
     ///     .parse(&ParseOptions::default())
-    ///     .resolve(&files, &(), &Ambient::default())
+    ///     .resolve(files, (), &Ambient::default())
     ///     .validate(&[])
-    ///     .load(&context, &(), &())
+    ///     .load(context, (), ())
     ///     .expand(&Options::default());
     /// assert_eq!(processor.splice().nodes.len(), 3);
     ///
@@ -463,16 +487,33 @@ impl<'h> Processor<Expanded<'h, '_>> {
     /// Loads and expands again for a render with `context`, `fetch` and `data`, with the same options, without
     /// running stages 1 to 3 again.
     #[must_use]
-    pub fn reload<'d>(
+    pub fn reload(
         self,
-        context: &'d RenderContext<'d>,
-        fetch: &'d impl Fetch,
-        data: &'d impl Data,
-    ) -> Processor<Expanded<'h, 'd>> {
+        context: RenderContext,
+        fetch: impl Fetch + 'static,
+        data: impl Data + 'static,
+    ) -> Processor<Expanded> {
         let options = self.state.options.clone();
-        self.then(|expanded, diagnostics| back(expanded.validated, diagnostics))
+        let before = self.state.result.root.children.len();
+        let mut processor = self
+            .then(|expanded, diagnostics| back(expanded.validated, diagnostics))
             .load(context, fetch, data)
-            .expand(&options)
+            .expand(&options);
+        processor.state.replaced.nodes = 0..before;
+        processor
+    }
+
+    /// The remote and `host:` sources a render needs with the context the processor keeps, as
+    /// [`sources`](Processor#method.sources) gives them before loading. After an edit to the frontmatter, a host that
+    /// fetches ahead fetches what it hasn't yet and calls [`reload`](Processor#method.reload-1).
+    #[must_use]
+    pub fn sources(&self) -> Needed {
+        let validated = &self.state.validated;
+        load::sources(
+            &validated.resolved,
+            &validated.checks,
+            &self.state.render.context,
+        )
     }
 
     /// The same processor after `edit` of its text: the trees and diagnostics a processor of the new text gives,
@@ -490,14 +531,15 @@ impl<'h> Processor<Expanded<'h, '_>> {
     /// use compmd::expand::Options;
     /// use compmd::{Ambient, ParseOptions, Processor, TextEdit};
     /// use std::collections::HashMap;
+    /// use std::rc::Rc;
     ///
     /// let files: HashMap<String, String> = HashMap::new();
-    /// let context = RenderContext { now: 0, tz: "UTC".into(), time: &(), inputs: Default::default() };
+    /// let context = RenderContext { now: 0, tz: "UTC".into(), time: Rc::new(()), inputs: Default::default() };
     /// let processor = Processor::new("a.comp.md", "Hello world\n")
     ///     .parse(&ParseOptions::default())
-    ///     .resolve(&files, &(), &Ambient::default())
+    ///     .resolve(files, (), &Ambient::default())
     ///     .validate(&[])
-    ///     .load(&context, &(), &())
+    ///     .load(context, (), ())
     ///     .expand(&Options::default());
     ///
     /// // Select `world` and type `there`.
@@ -580,7 +622,7 @@ impl<'h> Processor<Expanded<'h, '_>> {
             &validated.resolved,
             &validated.checks,
             &data,
-            render.context,
+            &render.context,
             &options,
             &spliced,
         );
@@ -606,7 +648,7 @@ impl<'h> Processor<Expanded<'h, '_>> {
 }
 
 /// The validated state again, with the diagnostics of stage 4 dropped.
-fn back<'h>(validated: Validated<'h>, diagnostics: &mut Vec<Diagnostic>) -> Validated<'h> {
+fn back(validated: Validated, diagnostics: &mut Vec<Diagnostic>) -> Validated {
     diagnostics.truncate(validated.kept);
     validated
 }
@@ -617,13 +659,13 @@ mod tests {
     use serde_json::{Map, json};
     use std::collections::HashMap;
 
-    fn context(inputs: serde_json::Value) -> RenderContext<'static> {
+    fn context(inputs: serde_json::Value) -> RenderContext {
         let inputs: Map<String, serde_json::Value> =
             serde_json::from_value(inputs).expect("an object");
         RenderContext {
             now: 0,
             tz: "UTC".into(),
-            time: &(),
+            time: Rc::new(()),
             inputs,
         }
     }
@@ -634,7 +676,7 @@ mod tests {
         let files: HashMap<String, String> = HashMap::new();
         let parsed = Processor::new("a.comp.md", text).parse(&ParseOptions::default());
         assert_eq!(parsed.tree().children.len(), 2);
-        let resolved = parsed.resolve(&files, &(), &Ambient::default());
+        let resolved = parsed.resolve(files, (), &Ambient::default());
         assert_eq!(
             resolved.state.resolved.documents.len(),
             2,
@@ -643,7 +685,7 @@ mod tests {
         let validated = resolved.validate(&[]);
         assert_eq!(validated.diagnostics().len(), 1, "F002 for `x`");
         let one = context(json!({}));
-        let loaded = validated.load(&one, &(), &());
+        let loaded = validated.load(one, (), ());
         let values = |loaded: &Processor<Loaded>| -> Vec<serde_json::Value> {
             loaded
                 .inputs()
@@ -654,7 +696,7 @@ mod tests {
         assert_eq!(values(&loaded), [json!(1)]);
         assert_eq!(loaded.diagnostics().len(), 2, "and F026 for the data");
         let two = context(json!({ "n": 2 }));
-        let loaded = loaded.reload(&two, &(), &());
+        let loaded = loaded.reload(two, (), ());
         assert_eq!(values(&loaded), [json!(2)]);
         assert_eq!(
             loaded.diagnostics().len(),
@@ -668,9 +710,12 @@ mod tests {
                 .clone()
         };
         assert_eq!(written(&expanded), json!("2 y"));
+        assert_eq!(expanded.sources(), Needed::default());
         let three = context(json!({ "n": 3 }));
-        let expanded = expanded.reload(&three, &(), &());
+        let expanded = expanded.reload(three, (), ());
         assert_eq!(written(&expanded), json!("3 y"));
+        let splice = expanded.splice();
+        assert_eq!((splice.from, splice.to, splice.nodes.len()), (0, 1, 1));
         assert_eq!(expanded.diagnostics().len(), 2);
         assert_eq!(expanded.tree().children.len(), 2);
     }
@@ -681,9 +726,9 @@ mod tests {
         let context = context(json!({}));
         let mut processor = Processor::new("a.comp.md", "One.\n\nTwo.\n")
             .parse(&ParseOptions::default())
-            .resolve(&files, &(), &Ambient::default())
+            .resolve(files, (), &Ambient::default())
             .validate(&[])
-            .load(&context, &(), &())
+            .load(context, (), ())
             .expand(&expand::Options::default());
         // As joining text across blocks leaves it.
         processor.state.result.blocks = None;

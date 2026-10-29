@@ -12,13 +12,14 @@ use std::rc::Rc;
 
 /// The render time, the processor's time zone, the host's time zone offsets and the input values one render uses.
 /// The same context gives the same expanded tree.
-pub struct RenderContext<'a> {
+#[derive(Clone)]
+pub struct RenderContext {
     /// The render time, in nanoseconds since 1970-01-01T00:00:00Z: what `md.now()` and `md.today()` give.
     pub now: i128,
     /// The processor's time zone, `md.tz` for a document without a `tz` key: an IANA name, or `UTC`.
     pub tz: String,
     /// The host's time zone offsets, for `md.tz` and the zones expressions name.
-    pub time: &'a dyn Time,
+    pub time: Rc<dyn Time>,
     /// The values given for the document's inputs, by name: from a command line, a URL query, a host. A value that
     /// doesn't fit its input's type is ignored, and the default is used (spec §8.7).
     pub inputs: Map<String, Json>,
@@ -40,7 +41,7 @@ pub fn parse_time(text: &str) -> Option<i128> {
 /// `md.lang` of a document without a `lang` key (spec §2.1).
 const DEFAULT_LANG: &str = "en";
 
-impl RenderContext<'_> {
+impl RenderContext {
     /// The `md.` functions for expressions written in a document with `settings`: its language, and its time zone
     /// or the processor's.
     pub(crate) fn functions(&self, settings: &Settings) -> Md<'_> {
@@ -48,7 +49,7 @@ impl RenderContext<'_> {
             self.now,
             settings.lang.as_deref().unwrap_or(DEFAULT_LANG),
             self.tz(settings),
-            self.time,
+            &*self.time,
         )
     }
 

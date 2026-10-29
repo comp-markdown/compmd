@@ -1,15 +1,17 @@
-//! The request `process` and `sources` take, and what they give: JSON (`camelCase`), as `src/index.ts` types it.
+//! The request `process`, `sources` and an open document take, and what `process` and `sources` give: JSON
+//! (`camelCase`), as `src/index.ts` types it.
 
 use compmd::context::{RenderContext, parse_time};
 use compmd::diagnostic::Diagnostic;
 use compmd::expand::Options;
 use compmd::host::{Fetched, LoadedRelease, Time};
-use compmd::processor::Validated;
+use compmd::processor::{Expanded, Validated};
 use compmd::{Ambient, ParseOptions, Processor, expanded, tree};
 use serde::de::Error as _;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::{Map, Value as Json};
 use std::collections::HashMap;
+use std::rc::Rc;
 
 /// A document to process, with everything it needs.
 #[derive(Debug, Deserialize)]
@@ -60,6 +62,17 @@ struct Processed<'a> {
     diagnostics: &'a [Diagnostic],
 }
 
+/// A request's document through stage 3, with what loading and expanding it take.
+pub(crate) struct Prepared {
+    /// The document's text.
+    pub(crate) text: String,
+    pub(crate) validated: Processor<Validated>,
+    pub(crate) context: RenderContext,
+    remote: HashMap<String, Fetched>,
+    host: HashMap<String, Json>,
+    options: Options,
+}
+
 /// Why a request can't be processed.
 #[derive(Debug, thiserror::Error)]
 pub(crate) enum Error {
@@ -72,17 +85,8 @@ pub(crate) enum Error {
 }
 
 /// Runs stages 1 to 4b on the request in `json`: `{parse, expanded, diagnostics}`.
-pub(crate) fn process(json: &str, time: &dyn Time) -> Result<String, Error> {
-    let request: Request = serde_json::from_str(json)?;
-    let context = request.context(time);
-    let options = Options {
-        origins: request.origins,
-        ..Options::default()
-    };
-    let processor = request
-        .validated()?
-        .load(&context, &request.remote, &request.host)
-        .expand(&options);
+pub(crate) fn process(json: &str, time: Rc<dyn Time>) -> Result<String, Error> {
+    let processor = prepare(json, time)?.expand();
     let processed = Processed {
         parse: processor.tree(),
         expanded: processor.expanded(),
@@ -92,36 +96,58 @@ pub(crate) fn process(json: &str, time: &dyn Time) -> Result<String, Error> {
 }
 
 /// The remote and `host:` sources a render of the request in `json` needs: `{remote, host}`.
-pub(crate) fn sources(json: &str, time: &dyn Time) -> Result<String, Error> {
-    let request: Request = serde_json::from_str(json)?;
-    let needed = request.validated()?.sources(&request.context(time));
+pub(crate) fn sources(json: &str, time: Rc<dyn Time>) -> Result<String, Error> {
+    let prepared = prepare(json, time)?;
+    let needed = prepared.validated.sources(&prepared.context);
     Ok(serde_json::to_string(&needed)?)
 }
 
+/// The request in `json` through stage 3.
+pub(crate) fn prepare(json: &str, time: Rc<dyn Time>) -> Result<Prepared, Error> {
+    let request: Request = serde_json::from_str(json)?;
+    request.prepare(time)
+}
+
 impl Request {
-    /// The processed document through stage 3.
-    fn validated(&self) -> Result<Processor<Validated<'_>>, Error> {
+    fn prepare(self, time: Rc<dyn Time>) -> Result<Prepared, Error> {
         let text = self
             .files
             .get(&self.path)
+            .cloned()
             .ok_or_else(|| Error::NoDocument(self.path.clone()))?;
         let ambient = Ambient {
-            packs: self.ambient.clone(),
+            packs: self.ambient,
             report: self.report_ambient,
         };
-        Ok(Processor::new(&self.path, text.as_str())
+        let validated = Processor::new(self.path, text.as_str())
             .parse(&ParseOptions::default())
-            .resolve(&self.files, &self.packs, &ambient)
-            .validate(&self.allowed_origins))
+            .resolve(self.files, self.packs, &ambient)
+            .validate(&self.allowed_origins);
+        Ok(Prepared {
+            text,
+            validated,
+            context: RenderContext {
+                now: self.now,
+                tz: self.tz,
+                time,
+                inputs: self.inputs,
+            },
+            remote: self.remote,
+            host: self.host,
+            options: Options {
+                origins: self.origins,
+                ..Options::default()
+            },
+        })
     }
+}
 
-    fn context<'t>(&self, time: &'t dyn Time) -> RenderContext<'t> {
-        RenderContext {
-            now: self.now,
-            tz: self.tz.clone(),
-            time,
-            inputs: self.inputs.clone(),
-        }
+impl Prepared {
+    /// Stages 4a and 4b.
+    pub(crate) fn expand(self) -> Processor<Expanded> {
+        self.validated
+            .load(self.context, self.remote, self.host)
+            .expand(&self.options)
     }
 }
 
@@ -145,18 +171,19 @@ mod tests {
 
     #[test]
     fn requests_need_a_time_and_their_document() {
-        let late = process(r#"{"path": "a", "now": "yesterday"}"#, &()).expect_err("an error");
+        let late =
+            process(r#"{"path": "a", "now": "yesterday"}"#, Rc::new(())).expect_err("an error");
         assert!(
             late.to_string()
                 .contains("`yesterday` isn't an RFC 3339 time")
         );
         let missing = json!({ "path": "a.comp.md", "now": "2026-10-22T09:00:00Z" }).to_string();
-        let error = process(&missing, &()).expect_err("an error");
+        let error = process(&missing, Rc::new(())).expect_err("an error");
         assert_eq!(
             error.to_string(),
             "`a.comp.md` isn't one of the request's files"
         );
-        assert!(sources(&missing, &()).is_err());
+        assert!(sources(&missing, Rc::new(())).is_err());
     }
 
     #[test]
@@ -168,7 +195,7 @@ mod tests {
             "origins": true
         });
         let processed: Json =
-            serde_json::from_str(&process(&request.to_string(), &()).expect("processed"))
+            serde_json::from_str(&process(&request.to_string(), Rc::new(())).expect("processed"))
                 .expect("JSON");
         assert_eq!(processed["parse"]["children"][0]["type"], "paragraph");
         assert_eq!(processed["expanded"]["children"][0]["type"], "paragraph");
@@ -205,7 +232,13 @@ mod tests {
             Some("application/json")
         );
         assert_eq!(request.host["tasks"], json!([]));
-        let context = request.context(&());
+        let context = Request {
+            files: HashMap::from([("a.comp.md".into(), String::new())]),
+            ..request
+        }
+        .prepare(Rc::new(()))
+        .expect("prepared")
+        .context;
         assert_eq!(context.now, 1_000_000_000);
         assert_eq!(context.tz, "Europe/Berlin");
         assert_eq!(context.inputs["region"], "us");
@@ -225,7 +258,7 @@ mod tests {
             "inputs": { "region": "us" }
         });
         let needed: Json =
-            serde_json::from_str(&sources(&request.to_string(), &()).expect("sources"))
+            serde_json::from_str(&sources(&request.to_string(), Rc::new(())).expect("sources"))
                 .expect("JSON");
         assert_eq!(
             needed,

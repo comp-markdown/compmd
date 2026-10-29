@@ -4,7 +4,7 @@ The CompMD processor, in Rust: it parses, validates and expands documents writte
 
 **Status: in development.** The processor implements stages 1 to 4b of the spec (§11) and its CEL profile (§8.2), does no I/O of its own, and passes every case of the [conformance set](https://github.com/comp-markdown/compmd/tree/main/conformance) that needs no host language: it is a "compmd/1 processor with remote data and origins" (§13.1). Running host-language components is a renderer's job; the processor expands their invocations to nodes for it.
 
-The stages are the states of a `compmd::Processor`: each stage takes the processor and gives it back in its next state, so they can only run in order, and each state gives what its stage made and the diagnostics so far (§10.5). What the host provides comes through the small traits of `compmd::host`, each stage taking only the ones it uses: `Files` (the document's root folder), `Packs`, `Fetch` (remote data), `Data` (`host:` data) and `Time` (time zones).
+The stages are the states of a `compmd::Processor`: each stage takes the processor and gives it back in its next state, so they can only run in order, and each state gives what its stage made and the diagnostics so far (§10.5). What the host provides comes through the small traits of `compmd::host`, each stage taking only the ones it uses: `Files` (the document's root folder), `Packs`, `Fetch` (remote data), `Data` (`host:` data) and `Time` (time zones). The processor owns what it is given, so a host can keep it as long as it likes; a host that needs its files or data too passes an `Rc` and keeps a clone of it.
 
 - Stage 1, `parse`: the document tree (§12).
 - Stage 2, `resolve`:
@@ -16,10 +16,10 @@ The stages are the states of a `compmd::Processor`: each stage takes the process
 - Stage 4a, `load`:
   - Gives the inputs their values for a render context.
   - Loads every data import, typed by its schema, from the root folder's files, packs, `https:` URLs (`Fetch`) and `host:` sources (`Data`).
-  - Before it, the validated processor's `sources` gives the URLs and host sources a render needs (`host::Needed`, each once), so the host can fetch them first.
+  - Before it, the validated processor's `sources` gives the URLs and host sources a render needs (`host::Needed`, each once), so the host can fetch them first. The expanded processor's `sources` gives them for the context it keeps, after an edit to the frontmatter.
 - Stage 4b, `expand`: makes the expanded tree (§12.3), with every node's origin when asked, and checks its layout.
 - `reload`, from the loaded or expanded state: loads (and expands) again for another render context or newly fetched data, without running stages 1 to 3 again.
-- `edit`, from the expanded state: the processor after a `compmd::TextEdit` of its text (a range in code points and its replacement), with everything it was given before, so the host's files, data and context must outlive it. Every stage only redoes the top-level blocks the edit touches and moves the rest ([incremental processing](docs/incremental.md)); an edit to the frontmatter or to a component definition redoes the stages after parsing on the whole document.
+- `edit`, from the expanded state: the processor after a `compmd::TextEdit` of its text (a range in code points and its replacement), with everything it was given before. Every stage only redoes the top-level blocks the edit touches and moves the rest ([incremental processing](docs/incremental.md)); an edit to the frontmatter or to a component definition redoes the stages after parsing on the whole document.
 - `splice`, from the expanded state: what the last edit changed in the expanded tree (`processor::Splice`), for a host that keeps its own copy of the tree.
 
 ```rust
@@ -27,12 +27,12 @@ use compmd::{Ambient, ParseOptions, Processor, TextEdit};
 
 let processor = Processor::new("notes.comp.md", text)
     .parse(&ParseOptions::default())
-    .resolve(&files, &packs, &Ambient::default())
+    .resolve(files, packs, &Ambient::default())
     .validate(&allowed_origins)
-    .load(&context, &fetch, &data)
+    .load(context, fetch, data)
     .expand(&Default::default());
 let tree = processor.expanded(); // and processor.diagnostics()
-let processor = processor.reload(&other_context, &fetch, &data); // another input value, the same document
+let processor = processor.reload(other_context, fetch, data); // another input value, the same document
 let processor = processor.edit(&TextEdit { start: 6, end: 11, text: "there".into() }); // the text changed
 let splice = processor.splice(); // nodes `from..to` became `splice.nodes`
 ```

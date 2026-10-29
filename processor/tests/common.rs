@@ -14,6 +14,7 @@ use serde_json::{Map, Value, json};
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::rc::Rc;
 
 /// A diagnostic as `(code, line, column)`.
 pub(crate) fn at(code: &str, line: usize, column: usize) -> (String, usize, usize) {
@@ -166,13 +167,13 @@ impl Time for Zones {
 
 /// What a document of a folder is processed with: the folder's files, and the rest from its `context.json`.
 pub(crate) struct Setup {
-    pub(crate) files: HashMap<String, String>,
-    packs: HashMap<String, Vec<LoadedRelease>>,
+    pub(crate) files: Rc<HashMap<String, String>>,
+    packs: Rc<HashMap<String, Vec<LoadedRelease>>>,
     ambient: Ambient,
     allowed_origins: Vec<String>,
-    render: RenderContext<'static>,
-    remote: HashMap<String, Fetched>,
-    host: HashMap<String, Value>,
+    render: RenderContext,
+    remote: Rc<HashMap<String, Fetched>>,
+    host: Rc<HashMap<String, Value>>,
     pub(crate) options: Options,
 }
 
@@ -188,8 +189,8 @@ impl Setup {
                 .collect()
         };
         Self {
-            files: files_of(dir),
-            packs: packs(dir, &context),
+            files: Rc::new(files_of(dir)),
+            packs: Rc::new(packs(dir, &context)),
             ambient: Ambient {
                 packs: context["ambient"]
                     .as_object()
@@ -204,11 +205,11 @@ impl Setup {
                 now: parse_time(context["now"].as_str().unwrap_or("2026-01-01T00:00:00Z"))
                     .expect("a time"),
                 tz: context["tz"].as_str().unwrap_or("UTC").to_string(),
-                time: &Zones,
+                time: Rc::new(Zones),
                 inputs: context["inputs"].as_object().cloned().unwrap_or_default(),
             },
-            remote: remote(dir, &context),
-            host: host(dir, &context),
+            remote: Rc::new(remote(dir, &context)),
+            host: Rc::new(host(dir, &context)),
             options: Options {
                 origins: case["requires"]
                     .as_array()
@@ -219,12 +220,20 @@ impl Setup {
     }
 
     /// `text`, as the document `path`, through stages 1 to 4b.
-    pub(crate) fn process(&self, path: &str, text: &str) -> Processor<Expanded<'_, '_>> {
+    pub(crate) fn process(&self, path: &str, text: &str) -> Processor<Expanded> {
         Processor::new(path, text)
             .parse(&ParseOptions::default())
-            .resolve(&self.files, &self.packs, &self.ambient)
+            .resolve(
+                Rc::clone(&self.files),
+                Rc::clone(&self.packs),
+                &self.ambient,
+            )
             .validate(&self.allowed_origins)
-            .load(&self.render, &self.remote, &self.host)
+            .load(
+                self.render.clone(),
+                Rc::clone(&self.remote),
+                Rc::clone(&self.host),
+            )
             .expand(&self.options)
     }
 }

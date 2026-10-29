@@ -50,7 +50,7 @@ fn run(files: &[(&str, &str)], packs: &Packs, ambient: &[&str]) -> Found {
     };
     let validated = Processor::new("input.comp.md", text)
         .parse(&ParseOptions::default())
-        .resolve(&files, packs, &ambient)
+        .resolve(files, packs.clone(), &ambient)
         .validate(&[]);
     let mut found: Found = validated
         .diagnostics()
@@ -384,7 +384,6 @@ fn a_pack_without_exports_exports_nothing() {
 
 #[test]
 fn an_empty_registry_has_no_packs() {
-    let files: HashMap<String, String> = HashMap::new();
     let ambient = Ambient {
         packs: vec!["@host/c".into()],
         report: true,
@@ -392,7 +391,7 @@ fn an_empty_registry_has_no_packs() {
     let text = "---\nmd:\n  import:\n    - from: \"@acme/kit@1\"\n      names: [chip]\n---\n";
     let resolved = Processor::new("a.comp.md", text)
         .parse(&ParseOptions::default())
-        .resolve(&files, &(), &ambient);
+        .resolve((), (), &ambient);
     let codes: Vec<String> = resolved
         .diagnostics()
         .iter()

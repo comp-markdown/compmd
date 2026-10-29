@@ -1,5 +1,5 @@
 // The documents the bench times, as requests: the spec's complete example (from its conformance case), a changelog
-// (12 releases, 128 changes) and a long body (52 KB).
+// (12 releases, 128 changes) and a long body (52 KB, or ten times that).
 
 import { readFileSync, readdirSync } from "node:fs";
 import { join, relative, sep } from "node:path";
@@ -54,12 +54,14 @@ export function changelog(): Request {
   return { path: "changelog.comp.md", files: filesOf(join(FIXTURES, "changelog")), now: "2026-10-22T09:00:00Z" };
 }
 
-/** A 52 KB body of prose, lists and charts from an ambient pack. */
-export function longBody(): Request {
+/** A 52 KB body of prose, lists and charts from an ambient pack; with `times`, that body repeated, after one frontmatter. */
+export function longBody(times = 1): Request {
   const pack = filesOf(join(FIXTURES, "notes/preview-pack"));
+  const notes = readFileSync(join(FIXTURES, "notes/notes.comp.md"), "utf8");
+  const bodyStart = notes.indexOf("\n# ") + 1;
   return {
     path: "notes.comp.md",
-    files: { "notes.comp.md": readFileSync(join(FIXTURES, "notes/notes.comp.md"), "utf8") },
+    files: { "notes.comp.md": notes.slice(0, bodyStart) + notes.slice(bodyStart).repeat(times) },
     packs: { "@preview/charts": [{ version: "1.0.0", files: pack }] },
     ambient: ["@preview/charts"],
     now: "2026-10-23T09:00:00Z",

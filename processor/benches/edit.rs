@@ -19,6 +19,7 @@ use criterion::{Criterion, SamplingMode, criterion_group, criterion_main};
 use std::collections::HashMap;
 use std::hint::black_box;
 use std::path::Path;
+use std::rc::Rc;
 use std::time::{Duration, Instant};
 
 /// Criterion's linear sampling runs at least 5,050 measurement iterations after warm-up, so the last 1,000 recorded
@@ -168,7 +169,7 @@ fn measured(
 }
 
 fn edits(c: &mut Criterion) {
-    let packs = packs();
+    let packs = Rc::new(packs());
     let ambient = Ambient {
         packs: vec!["@preview/charts".into()],
         report: false,
@@ -176,17 +177,17 @@ fn edits(c: &mut Criterion) {
     let context = RenderContext {
         now: 0,
         tz: "UTC".into(),
-        time: &(),
+        time: Rc::new(()),
         inputs: serde_json::Map::default(),
     };
     for (size, text) in documents() {
-        let files = HashMap::from([("notes.comp.md".to_string(), text.clone())]);
+        let files = Rc::new(HashMap::from([("notes.comp.md".to_string(), text.clone())]));
         let process = || {
             Processor::new("notes.comp.md", text.clone())
                 .parse(&ParseOptions::default())
-                .resolve(&files, &packs, &ambient)
+                .resolve(Rc::clone(&files), Rc::clone(&packs), &ambient)
                 .validate(&[])
-                .load(&context, &(), &())
+                .load(context.clone(), (), ())
                 .expand(&Options::default())
         };
         measured(c, "whole", size, true, None, || {

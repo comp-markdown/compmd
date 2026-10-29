@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import { changelog, completeExample, completeJson, longBody } from "../bench/requests.ts";
-import { initSync, process, sources } from "./index.ts";
+import { initSync, OpenDocument, process, sources, type Request } from "./index.ts";
 
 /** `value` without positions, as the conformance case compares it. */
 function withoutPositions(value: unknown): unknown {
@@ -62,5 +62,86 @@ describe("sources", () => {
       remote: ["https://status.rayplay.dev/today.json?region=all"],
       host: ["tasks?project=rayplay"],
     });
+  });
+});
+
+describe("OpenDocument", () => {
+  /** An edit as an editor gives it: UTF-16 `[start, end)` of the text became `text`. */
+  type Edit = [start: number, end: number, text: string];
+
+  /**
+   * `request` opened, then edited with each of `edits`: after each, the tree and diagnostics it keeps are those a new
+   * `process` of the same text gives.
+   */
+  function checkEdits(request: Request, edits: Edit[]): OpenDocument {
+    const document = new OpenDocument(request);
+    let text = request.files?.[request.path] ?? "";
+    for (const [start, end, inserted] of edits) {
+      document.edit(start, end, inserted);
+      text = text.slice(0, start) + inserted + text.slice(end);
+      const fresh = process({ ...request, files: { ...request.files, [request.path]: text } });
+      expect(document.expanded, `after ${JSON.stringify([start, end, inserted])}`).toEqual(fresh.expanded);
+      expect(document.diagnostics).toEqual(fresh.diagnostics);
+    }
+    return document;
+  }
+
+  const now = "2026-10-22T09:00:00Z";
+  const request = (text: string, origins = true): Request => ({ path: "a.comp.md", files: { "a.comp.md": text }, now, origins });
+  const text = "😀 Intro\n\n# Head\n\nOne 👍🏽 two.\n\n:: nope[N]\n\nLast.\n";
+  const at = (part: string) => text.indexOf(part);
+
+  it("keeps the tree a new process gives, through edits in UTF-16 positions", () => {
+    for (const origins of [true, false]) {
+      checkEdits(request(text, origins), [
+        [at(" Intro") + 6, at(" Intro") + 6, "!"], // after `Intro`, behind an emoji
+        [at("two"), at("two") + 3, "three"], // after a thumb with a skin tone
+        [at("# Head"), at("# Head"), "Pasted.\n\n## Sub\n\n"], // blocks above the heading
+        [0, 2, ""], // the emoji
+      ]);
+    }
+  });
+
+  it("follows the bench's long body", () => {
+    const body = longBody();
+    const notes = body.files?.[body.path] ?? "";
+    const middle = notes.indexOf("\n\n", notes.length / 2) + 2;
+    checkEdits({ ...body, origins: true }, [
+      [middle, middle, "x"],
+      [middle, middle + 1, ""],
+      [middle, middle, "New paragraph.\n\n"],
+    ]);
+  });
+
+  it("gives what changed", () => {
+    const document = new OpenDocument(request(text));
+    const before = document.expanded.children.length;
+    const last = document.expanded.children.at(-1)?.origin?.start.offset ?? 0;
+    // A paragraph above `Last.`: it comes, and `Last.` moves down two lines and eight code points.
+    const changes = document.edit(at("Last"), at("Last"), "Added.\n\n");
+    expect(changes.splice).toMatchObject({ from: before - 1, to: before - 1, lines: 2, offset: 8 });
+    expect(changes.splice.nodes).toHaveLength(1);
+    expect(document.expanded.children).toHaveLength(before + 1);
+    expect(document.expanded.children.at(-1)?.origin?.start.offset).toBe(last + 8);
+    expect(changes.diagnostics.map((d) => d.code)).toEqual(["F002"]);
+    document.free();
+  });
+
+  it("lists sources after an edit to the frontmatter, and reloads with what was fetched", () => {
+    const document = new OpenDocument({ ...request("Text.\n"), allowedOrigins: ["https://a.org"] });
+    const frontmatter = "---\nmd:\n  inputs:\n    n: number = 1\n  data:\n    - from: https://a.org/x.json\n      as: x\n---\n";
+    document.edit(0, 0, frontmatter);
+    document.edit(frontmatter.length + 6, frontmatter.length + 6, "\n{{md.data.x.n}}\n");
+    expect(document.sources()).toEqual({ remote: ["https://a.org/x.json"], host: [] });
+    expect(document.expanded.inputs?.["n"]).toMatchObject({ value: 1 });
+    expect(document.diagnostics[0]?.code).toBe("F026");
+    const changes = document.reload({ remote: { "https://a.org/x.json": { text: '{"n": "fetched"}', contentType: "application/json" } } });
+    expect(changes.splice).toMatchObject({ from: 0, to: 2 });
+    expect(document.expanded.children[1]).toMatchObject({ children: [{ value: "fetched" }] });
+    expect(document.diagnostics).toEqual([]);
+  });
+
+  it("throws on a request it can't open", () => {
+    expect(() => new OpenDocument({ path: "a.comp.md", files: {}, now })).toThrow("`a.comp.md` isn't one of the request's files");
   });
 });

@@ -1,6 +1,6 @@
 # Incremental processing
 
-**Status: phase 2 done** (every stage). How the processor handles an edit without processing the whole document again.
+**Status: done** (every stage, and the WebAssembly binding). How the processor handles an edit without processing the whole document again.
 
 Today every change runs stages 1 to 4b on the whole text. The WebAssembly build takes about 3 ms for the spec's complete example and 10 ms for a 52 KB body (p95, an Apple M4), and the time grows with the document: a body ten times as long would take about ten times as long. An editor that processes on every key press needs the time to depend on the edit, not on the document.
 
@@ -15,7 +15,7 @@ Today every change runs stages 1 to 4b on the whole text. The WebAssembly build 
    let processor = processor.edit(&TextEdit { start, end, text });
    ```
 
-   It gives the expanded processor back, whatever the edit touched, so a host never has to tell edits apart. The processor keeps the context, `fetch` and `data` its last load used, as it already keeps the host's `files` and `packs` from stage 2, and an edit to the frontmatter loads again with them.
+   It gives the expanded processor back, whatever the edit touched, so a host never has to tell edits apart. The processor keeps the context, `fetch` and `data` its last load used, as it already keeps the host's `files` and `packs` from stage 2, and an edit to the frontmatter loads again with them. It owns them, so a host can keep the processor in a struct of its own (the WebAssembly binding does); a host that needs them too passes an `Rc` and keeps a clone.
 
    A host with data it fetches ahead (remote or `host:` sources) does one more thing: an edit to the frontmatter may name a source it hasn't fetched yet. That source loads as missing (F026 and its `fallback`), as on any first render without it, and `sources()` lists it. The host fetches it and calls `reload`, as it does today when the context changes.
 
@@ -25,9 +25,9 @@ Today every change runs stages 1 to 4b on the whole text. The WebAssembly build 
    // Open: as today, then keep the processor.
    let mut processor = Processor::new(path, text)
        .parse(&parse_options)
-       .resolve(&files, &packs, &ambient)
+       .resolve(files, packs, &ambient)
        .validate(&allowed_origins)
-       .load(&context, &fetched, &data)
+       .load(context.clone(), fetched, Rc::clone(&data))
        .expand(&expand_options);
    render(processor.expanded());
 
@@ -38,9 +38,9 @@ Today every change runs stages 1 to 4b on the whole text. The WebAssembly build 
    // Only a host that fetches ahead, after an edit, or when it likes.
    // `sources` uses the context the processor keeps.
    let needed = processor.sources();
-   if not_fetched_yet(&needed, &fetched) {
-       fetched = fetch(&needed).await;
-       processor = processor.reload(&context, &fetched, &data);
+   if not_fetched_yet(&needed) {
+       let fetched = fetch(&needed).await;
+       processor = processor.reload(context.clone(), fetched, Rc::clone(&data));
        render(processor.expanded());
    }
    ```
@@ -205,15 +205,16 @@ The same expanded processor, with the full trees and diagnostics as today, and w
 pub struct Splice { pub from: usize, pub to: usize, pub nodes: Vec<expanded::Node>, pub lines: isize, pub offset: isize }
 ```
 
-`processor.splice()` gives it. A host that renders the whole tree each time ignores it; one that crosses a boundary (a worker, WebAssembly, a process) sends the splice instead of the tree. After the first expansion, the splice replaces an empty tree with the whole one. When a block after the edited ones is expanded again (it follows a heading that changed), the splice runs to it, so the nodes between come again too.
+`processor.splice()` gives it. A host that renders the whole tree each time ignores it; one that crosses a boundary (a worker, WebAssembly, a process) sends the splice instead of the tree. After the first expansion, the splice replaces an empty tree with the whole one; after a reload, the whole tree before it. When a block after the edited ones is expanded again (it follows a heading that changed), the splice runs to it, so the nodes between come again too.
 
 ## The WebAssembly binding
 
-- `open(request)` processes a document once and keeps the processor; `edit(start, end, text)` gives the splice, the diagnostics and the moved positions, as JSON.
-- An edit to the frontmatter gives a splice like any other. A host that fetches ahead asks for `sources()`, in the form `sources(request)` gives them today, and after fetching calls `reload(fetched)`, which gives the whole expanded tree.
-- Offsets cross the boundary in UTF-16, as a JavaScript string counts them, and the binding turns them into code points.
-- The TypeScript wrapper keeps the whole expanded tree by applying each splice, and gives it to `@compmd/render`, which already updates the page by key.
-- For an edit inside one block, neither the processing nor the JSON grows with the document.
+- `new Document(request)` processes a document once and keeps the processor; `edit(start, end, text)` gives `{splice, inputs, diagnostics}` as JSON: the splice with its moved positions, the root's inputs, which the splice doesn't cover, and every diagnostic.
+- An edit to the frontmatter gives a splice like any other. A host that fetches ahead asks for `sources()`, in the form `sources(request)` gives them, and after fetching calls `reload(fetched)`, whose splice replaces the whole tree.
+- Offsets cross the boundary in UTF-16, as a JavaScript string counts them. The binding keeps the text with each line's start in bytes, UTF-16 units and code points, so it finds a position in its line. An edit that removes a leading byte order mark, or writes text before it, changes where the processor starts counting, so the binding sends it as an edit of the whole text.
+- The TypeScript wrapper, `OpenDocument`, keeps the whole expanded tree by applying each splice, moving the origins of the nodes after it in place, and gives it to `@compmd/render`, which already updates the page by key. Its tests compare the tree and diagnostics after every edit with processing from scratch.
+- For an edit inside one block, neither the processing nor the JSON grows with the document. Moving the origins after it does.
+- **Measured** (`pnpm bench` in `wasm/`, p95, an Apple M4): a keystroke takes 0.10 ms in 52 KB and 0.29 ms in 500 KB in Chrome, 0.08 ms and 0.28 ms in WebKit. With the splice applied in JavaScript, it is 0.14 ms and 0.84 ms (Chrome), 0.14 ms and 0.78 ms (WebKit): at 500 KB, applying the splice, which moves the origins of every node after the edit, takes most of it.
 
 ## Where edits come from
 

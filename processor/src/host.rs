@@ -30,6 +30,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value as Json;
 use std::collections::HashMap;
 use std::hash::BuildHasher;
+use std::rc::Rc;
 
 /// The files of the document's root folder.
 pub trait Files {
@@ -182,6 +183,38 @@ impl<S: BuildHasher> Data for HashMap<String, Json, S> {
     }
 }
 
+/// Files a host shares with the processor and keeps a handle to.
+impl<T: Files + ?Sized> Files for Rc<T> {
+    fn file(&self, path: &str) -> Option<String> {
+        (**self).file(path)
+    }
+}
+
+/// Packs a host shares with the processor.
+impl<T: Packs + ?Sized> Packs for Rc<T> {
+    fn releases(&self, pack: &str) -> Vec<Release> {
+        (**self).releases(pack)
+    }
+
+    fn pack_file(&self, pack: &str, version: &Version, path: &str) -> Option<String> {
+        (**self).pack_file(pack, version, path)
+    }
+}
+
+/// Remote data a host shares with the processor.
+impl<T: Fetch + ?Sized> Fetch for Rc<T> {
+    fn fetch(&self, url: &str) -> Option<Fetched> {
+        (**self).fetch(url)
+    }
+}
+
+/// Host data a host shares with the processor.
+impl<T: Data + ?Sized> Data for Rc<T> {
+    fn data(&self, source: &str) -> Option<Json> {
+        (**self).data(source)
+    }
+}
+
 /// No time zone data: only `UTC` is known.
 impl Time for () {
     fn offset(&self, zone: &str, _at: i64) -> Option<i32> {
@@ -241,5 +274,19 @@ mod tests {
         let host = HashMap::from([("tasks".to_string(), json!([1]))]);
         assert_eq!(host.data("tasks"), Some(json!([1])));
         assert_eq!(host.data("notes"), None);
+    }
+
+    #[test]
+    fn a_shared_host_serves_what_it_holds() {
+        let files = Rc::new(HashMap::from([("a".to_string(), "A".to_string())]));
+        assert_eq!(files.file("a"), Some("A".to_string()));
+        let none = Rc::new(());
+        assert_eq!(none.releases("@acme/kit"), Vec::new());
+        assert_eq!(
+            none.pack_file("@acme/kit", &Version::new(1, 0, 0), "a"),
+            None
+        );
+        assert_eq!(none.fetch("https://a.org/x.json"), None);
+        assert_eq!(none.data("tasks"), None);
     }
 }

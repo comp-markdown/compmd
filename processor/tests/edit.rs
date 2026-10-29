@@ -8,8 +8,8 @@ use compmd::context::RenderContext;
 use compmd::expand::Options;
 use compmd::{Ambient, ParseOptions, Processor, TextEdit};
 use serde_json::{Value, json};
-use std::collections::HashMap;
 use std::path::Path;
+use std::rc::Rc;
 
 /// A small, seeded random number generator (xorshift), so a failure repeats.
 struct Random(u64);
@@ -258,16 +258,15 @@ fn spliced(
     let context = RenderContext {
         now: 0,
         tz: "UTC".into(),
-        time: &(),
+        time: Rc::new(()),
         inputs: serde_json::Map::default(),
     };
-    let files: HashMap<String, String> = HashMap::new();
     let process = |text: &str| {
         Processor::new("a.comp.md", text)
             .parse(&ParseOptions::default())
-            .resolve(&files, &(), &Ambient::default())
+            .resolve((), (), &Ambient::default())
             .validate(&[])
-            .load(&context, &(), &())
+            .load(context.clone(), (), ())
             .expand(options)
     };
     let mut text = text.to_string();
@@ -396,15 +395,14 @@ fn an_edit_past_the_end_appends() {
     let context = RenderContext {
         now: 0,
         tz: "UTC".into(),
-        time: &(),
+        time: Rc::new(()),
         inputs: serde_json::Map::default(),
     };
-    let files: HashMap<String, String> = HashMap::new();
     let processor = Processor::new("a.comp.md", "\u{feff}One.\n")
         .parse(&ParseOptions::default())
-        .resolve(&files, &(), &Ambient::default())
+        .resolve((), (), &Ambient::default())
         .validate(&[])
-        .load(&context, &(), &())
+        .load(context, (), ())
         .expand(&Options::default())
         .edit(&TextEdit {
             start: 99,

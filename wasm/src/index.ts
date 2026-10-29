@@ -1,7 +1,8 @@
-// The CompMD processor as WebAssembly: stages 1 to 4b of a document in one call, typed.
+// The CompMD processor as WebAssembly, typed: stages 1 to 4b of a document in one call, or a document kept open for an
+// editor, which takes edits and keeps its expanded tree.
 
-import type { ExpandedRoot } from "@compmd/render";
-import { process as processJson, sources as sourcesJson } from "../pkg/compmd_wasm.js";
+import type { ExpandedInput, ExpandedNode, ExpandedRoot } from "@compmd/render";
+import { Document as Kept, process as processJson, sources as sourcesJson } from "../pkg/compmd_wasm.js";
 import type { ParseRoot } from "./parse-tree.ts";
 
 export { default as init, initSync } from "../pkg/compmd_wasm.js";
@@ -108,4 +109,135 @@ export function process(request: Request): Processed {
  */
 export function sources(request: Request): Needed {
   return JSON.parse(sourcesJson(JSON.stringify(request))) as Needed;
+}
+
+/**
+ * What a change did to the expanded tree: its top-level nodes `from..to` became `nodes`, and every node after them
+ * moved by `lines` lines and `offset` code points, which their origins show.
+ */
+export interface Splice {
+  from: number;
+  /** The end of the nodes replaced, in the tree before the change. */
+  to: number;
+  nodes: ExpandedNode[];
+  lines: number;
+  offset: number;
+}
+
+/** What a change gave. */
+export interface Changes {
+  splice: Splice;
+  /** The root's inputs after it, as {@link ExpandedRoot.inputs}. */
+  inputs?: Record<string, ExpandedInput>;
+  /** Every diagnostic of the document, in stage order. */
+  diagnostics: Diagnostic[];
+}
+
+/** Data the host fetched for {@link OpenDocument.reload}, as a request gives it. */
+export interface FetchedData {
+  remote?: Record<string, Fetched>;
+  host?: Record<string, unknown>;
+}
+
+/** Moves every origin under `value` by `lines` and `offset`. */
+function move(value: unknown, lines: number, offset: number): void {
+  if (Array.isArray(value)) {
+    for (const item of value) move(item, lines, offset);
+  } else if (value !== null && typeof value === "object") {
+    for (const [key, field] of Object.entries(value)) {
+      if (key === "origin") {
+        for (const point of [(field as Origin).start, (field as Origin).end]) {
+          point.line += lines;
+          point.offset += offset;
+        }
+      } else if (typeof field === "object") {
+        move(field, lines, offset);
+      }
+    }
+  }
+}
+
+interface Origin {
+  start: { line: number; offset: number };
+  end: { line: number; offset: number };
+}
+
+/**
+ * A document kept open for an editor. It is processed once; each edit then processes only the blocks it touches, and
+ * gives what changed. It keeps the expanded tree by applying each change, for `@compmd/render`, which updates the page
+ * by key. The module must be loaded first, with {@link init} or {@link initSync}; {@link OpenDocument.free} releases it.
+ *
+ * Positions are the editor's, in UTF-16 units: `textarea.selectionStart`, CodeMirror's `from` and `to`. Give it the
+ * editor's text (`textarea.value`, `state.doc.toString()`), not the file it was read from, so both count the same text.
+ *
+ * The tree it gives is updated in place by later changes: only the top-level array is new each time.
+ *
+ * @example
+ * const document = new OpenDocument({ path: "notes.comp.md", files: { "notes.comp.md": text }, now, origins: true });
+ * page.render(document.expanded);
+ * // The user selected `world` and typed `there`.
+ * document.edit(6, 11, "there");
+ * page.render(document.expanded, { text: textarea.value, edit: { start: 6, end: 11 } });
+ *
+ * @throws Error when the request isn't valid, as {@link process} does.
+ */
+export class OpenDocument {
+  readonly #kept: Kept;
+  readonly #origins: boolean;
+  #expanded: ExpandedRoot = { type: "root", children: [] };
+  #diagnostics: Diagnostic[] = [];
+
+  constructor(request: Request) {
+    this.#kept = new Kept(JSON.stringify(request));
+    this.#origins = request.origins ?? false;
+    this.#apply(this.#kept.changes());
+  }
+
+  /** The expanded tree. */
+  get expanded(): ExpandedRoot {
+    return this.#expanded;
+  }
+
+  /** The diagnostics of every stage, in stage order. */
+  get diagnostics(): readonly Diagnostic[] {
+    return this.#diagnostics;
+  }
+
+  /** The text's UTF-16 `start..end` became `text`; one edit per change, each in the text the one before left. */
+  edit(start: number, end: number, text: string): Changes {
+    return this.#apply(this.#kept.edit(start, end, text));
+  }
+
+  /**
+   * The remote and `host:` sources a render needs now. After an edit to the frontmatter, a host that fetches ahead
+   * fetches what it hasn't yet and calls {@link reload}.
+   */
+  sources(): Needed {
+    return JSON.parse(this.#kept.sources()) as Needed;
+  }
+
+  /** Loads and expands again with the data the host fetched, in place of what it was given before. */
+  reload(fetched: FetchedData): Changes {
+    return this.#apply(this.#kept.reload(JSON.stringify(fetched)));
+  }
+
+  /** Releases the module's memory for the document. */
+  free(): void {
+    this.#kept.free();
+  }
+
+  #apply(json: string): Changes {
+    const changes = JSON.parse(json) as Changes;
+    const { from, to, nodes, lines, offset } = changes.splice;
+    const children = this.#expanded.children;
+    const after = children.slice(to);
+    if (this.#origins && (lines !== 0 || offset !== 0)) move(after, lines, offset);
+    this.#expanded = {
+      type: "root",
+      children: children.slice(0, from).concat(nodes, after),
+      ...(changes.inputs ? { inputs: changes.inputs } : {}),
+    };
+    this.#diagnostics = changes.diagnostics;
+    return changes;
+  }
 }

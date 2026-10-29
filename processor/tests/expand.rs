@@ -11,6 +11,7 @@ use compmd::{Ambient, ParseOptions, Processor};
 use semver::Version;
 use serde_json::{Value, json};
 use std::collections::HashMap;
+use std::rc::Rc;
 
 /// What a render is given besides the document.
 #[derive(Default)]
@@ -75,15 +76,15 @@ fn render(input: &str, setup: Setup) -> Rendered {
     let context = RenderContext {
         now: 1_792_576_800 * 1_000_000_000,
         tz: "UTC".into(),
-        time: &(),
+        time: Rc::new(()),
         inputs: setup.inputs.as_object().cloned().unwrap_or_default(),
     };
     let validated = Processor::new("input.comp.md", input)
         .parse(&ParseOptions::default())
-        .resolve(&files, &packs, &Ambient::default())
+        .resolve(files, packs, &Ambient::default())
         .validate(&allowed);
     let needed = validated.sources(&context);
-    let expanded = validated.load(&context, &web, &host).expand(&setup.options);
+    let expanded = validated.load(context, web, host).expand(&setup.options);
     let diagnostics = expanded.diagnostics();
     let mut found: Vec<(String, usize, usize)> = diagnostics.iter().map(place).collect();
     found.sort();
@@ -507,14 +508,14 @@ fn a_host_without_remote_or_host_data_loads_fallbacks() {
     let context = RenderContext {
         now: 0,
         tz: "UTC".into(),
-        time: &(),
+        time: Rc::new(()),
         inputs: serde_json::Map::new(),
     };
     let expanded = Processor::new("input.comp.md", input)
         .parse(&ParseOptions::default())
-        .resolve(&files, &(), &Ambient::default())
+        .resolve(files, (), &Ambient::default())
         .validate(&["https://a.org".into()])
-        .load(&context, &(), &())
+        .load(context, (), ())
         .expand(&expand::Options::default());
     let codes: Vec<String> = expanded
         .diagnostics()
@@ -534,14 +535,14 @@ fn a_reload_takes_newly_fetched_data() {
     let context = RenderContext {
         now: 0,
         tz: "UTC".into(),
-        time: &(),
+        time: Rc::new(()),
         inputs: serde_json::Map::new(),
     };
     let first = Processor::new("input.comp.md", input)
         .parse(&ParseOptions::default())
-        .resolve(&files, &(), &Ambient::default())
+        .resolve(files, (), &Ambient::default())
         .validate(&[])
-        .load(&context, &(), &())
+        .load(context.clone(), (), ())
         .expand(&expand::Options::default());
     let codes: Vec<String> = first
         .diagnostics()
@@ -554,7 +555,7 @@ fn a_reload_takes_newly_fetched_data() {
         "no `host:tasks` yet, so `.n` of null"
     );
     let fetched = HashMap::from([("tasks".to_string(), json!({ "n": "fresh" }))]);
-    let second = first.reload(&context, &(), &fetched);
+    let second = first.reload(context, (), fetched);
     assert_eq!(second.diagnostics(), []);
     let tree = serde_json::to_value(second.expanded()).expect("the tree serializes");
     assert_eq!(text(&tree), "fresh");
