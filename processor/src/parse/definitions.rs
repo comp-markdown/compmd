@@ -1,9 +1,9 @@
 //! Fenced code with `component=` in its info string: component definitions and signature fences (spec §7, §7.3).
 
-use super::Converter;
 use super::params::{self, is_name};
 use super::source::right;
 use super::yaml;
+use super::{Converter, Labels};
 use crate::diagnostic::Code;
 use crate::tree::{
     Declaration, DeclaredType, DefaultValue, Definition, DefinitionBody, Headings, Node, Param,
@@ -72,7 +72,9 @@ impl Converter<'_, '_> {
                     .map_or(start, |(_, origin)| origin);
                 (
                     lines[..index].join("\n"),
-                    self.placed(&body, origin).document(false).children,
+                    self.placed(&body, origin, &Labels::NONE)
+                        .document(false)
+                        .children,
                 )
             }
             None => (code.value.clone(), Vec::new()),

@@ -183,6 +183,48 @@ fn a_fallback_that_is_not_inline_content_is_empty() {
     assert_eq!(first(":: chart[# Sales]\n")["fallback"], json!([]));
 }
 
+/// The node types of `nodes`.
+fn types(nodes: &Value) -> Vec<String> {
+    nodes
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|node| node["type"].as_str().unwrap().to_string())
+        .collect()
+}
+
+#[test]
+fn a_fallback_sees_the_labels_its_document_defines() {
+    let tree = tree(
+        "> :: chart[See [the docs][docs] and[^1].]\n\nA :badge[[docs] :x[[x][Docs]]].\n\n- [docs]: https://example.com\n\n[^1]: A note.\n",
+    );
+    assert_eq!(
+        types(&tree["children"][0]["children"][0]["fallback"]),
+        ["text", "linkReference", "text", "footnoteReference", "text"]
+    );
+    let badge = &tree["children"][1]["children"][1];
+    assert_eq!(
+        types(&badge["fallback"]),
+        ["linkReference", "text", "componentInline"]
+    );
+    assert_eq!(types(&badge["fallback"][2]["fallback"]), ["linkReference"]);
+}
+
+#[test]
+fn a_definition_body_sees_only_its_own_labels() {
+    let tree = tree(
+        "```compmd component=note\n---\nSee [docs] and [own].\n\n:: chart[[own] [docs]]\n\n[own]: /own\n```\n\n[docs]: https://example.com\n",
+    );
+    let body = &tree["children"][0]["children"];
+    assert_eq!(
+        types(&body[0]["children"]),
+        ["text", "linkReference", "text"]
+    );
+    assert_eq!(body[0]["children"][0]["value"], "See [docs] and ");
+    assert_eq!(types(&body[1]["fallback"]), ["linkReference", "text"]);
+    assert_eq!(body[1]["fallback"][1]["value"], " [docs]");
+}
+
 #[test]
 fn definitions_need_a_valid_name_and_a_param_list_that_ends_the_line() {
     assert_eq!(first("```js component=1x\nx\n```\n")["type"], "code");

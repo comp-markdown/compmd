@@ -215,11 +215,18 @@ impl Converter<'_, '_> {
 
     /// A fallback's text as inline content, placed where it is written.
     pub(super) fn fallback(&mut self, text: &str, origin: Point) -> Vec<Node> {
-        let first = self.syntax.mdast(text, false).children.into_iter().next();
+        let labels = self.labels;
+        let first = self
+            .syntax
+            .mdast(text, false, labels)
+            .children
+            .into_iter()
+            .next();
         let Some(mdast::Node::Paragraph(paragraph)) = first else {
             return Vec::new();
         };
-        self.placed(text, origin).inlines(paragraph.children, false)
+        self.placed(text, origin, labels)
+            .inlines(paragraph.children, false)
     }
 
     /// A URL's parts, when it holds an interpolation (spec §12.2).

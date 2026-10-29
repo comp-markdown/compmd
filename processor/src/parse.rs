@@ -74,6 +74,7 @@ pub(crate) fn parse(text: &str, options: &ParseOptions) -> Parsed {
     let root = Converter {
         source: Source::new(text, START),
         syntax,
+        labels: &Labels::NONE,
         frontmatter: parsed,
         diagnostics: &mut diagnostics,
     }
@@ -94,10 +95,55 @@ struct Syntax {
     wiki_links: bool,
 }
 
+/// The labels a text defines or sees: those of its link reference definitions and footnote definitions, as the
+/// fork's mdast `identifier`s.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub(crate) struct Labels {
+    pub(crate) links: Vec<String>,
+    pub(crate) footnotes: Vec<String>,
+}
+
+impl Labels {
+    const NONE: Self = Self {
+        links: Vec::new(),
+        footnotes: Vec::new(),
+    };
+
+    /// These labels and those `root` defines, at any depth.
+    fn with(&self, root: &mdast::Root) -> Self {
+        let mut labels = self.clone();
+        labels.collect(&root.children);
+        labels
+    }
+
+    fn collect(&mut self, nodes: &[mdast::Node]) {
+        for node in nodes {
+            match node {
+                mdast::Node::Definition(definition) => {
+                    self.links.push(definition.identifier.clone());
+                }
+                mdast::Node::FootnoteDefinition(definition) => {
+                    self.footnotes.push(definition.identifier.clone());
+                }
+                _ => {}
+            }
+            if let Some(children) = node.children() {
+                self.collect(children);
+            }
+        }
+    }
+}
+
 impl Syntax {
-    /// The fork's mdast for `text`. Without MDX the fork has no syntax errors, so it always gives a root.
-    fn mdast(self, text: &str, frontmatter: bool) -> mdast::Root {
-        match markdown::to_mdast(text, &self.fork_options(frontmatter)) {
+    /// The fork's mdast for `text`, with `labels` defined outside it. Without MDX the fork has no syntax errors, so it
+    /// always gives a root.
+    fn mdast(self, text: &str, frontmatter: bool, labels: &Labels) -> mdast::Root {
+        let options = markdown::ParseOptions {
+            definitions: labels.links.clone(),
+            gfm_footnote_definitions: labels.footnotes.clone(),
+            ..self.fork_options(frontmatter)
+        };
+        match markdown::to_mdast(text, &options) {
             Ok(mdast::Node::Root(root)) => root,
             _ => mdast::Root {
                 children: Vec::new(),
@@ -131,6 +177,8 @@ impl Syntax {
 struct Converter<'s, 'd> {
     source: Source<'s>,
     syntax: Syntax,
+    /// The labels the text sees: its document's, for a fallback, or those of its own lines.
+    labels: &'d Labels,
     /// The parsed frontmatter, for the `yaml` node.
     frontmatter: Option<Value>,
     diagnostics: &'d mut Vec<Diagnostic>,
@@ -138,22 +186,35 @@ struct Converter<'s, 'd> {
 
 impl Converter<'_, '_> {
     /// The tree of the whole text, with frontmatter when it may have some.
-    fn document(mut self, frontmatter: bool) -> Root {
-        let root = self.syntax.mdast(self.source.text(), frontmatter);
-        let position = self.source.position(root.position.as_ref());
+    fn document(self, frontmatter: bool) -> Root {
+        let root = self
+            .syntax
+            .mdast(self.source.text(), frontmatter, self.labels);
+        let labels = self.labels.with(&root);
+        let mut converter = Converter {
+            labels: &labels,
+            ..self
+        };
+        let position = converter.source.position(root.position.as_ref());
         let end = position.map_or(START, |position| position.end);
         Root {
-            children: self.blocks(root.children, end, &[]).0,
+            children: converter.blocks(root.children, end, &[]).0,
             position,
         }
     }
 
-    /// A converter for `text`, parsed on its own and placed at `origin`, with the same syntax: for a fallback or a
-    /// definition's body.
-    fn placed<'t>(&mut self, text: &'t str, origin: Point) -> Converter<'t, '_> {
+    /// A converter for `text`, parsed on its own and placed at `origin`, with the same syntax and the labels it sees:
+    /// for a fallback, those of its document; for a definition's body, none, as it resolves its own (spec §6.3).
+    fn placed<'t, 'c>(
+        &'c mut self,
+        text: &'t str,
+        origin: Point,
+        labels: &'c Labels,
+    ) -> Converter<'t, 'c> {
         Converter {
             source: Source::new(text, origin),
             syntax: self.syntax,
+            labels,
             frontmatter: None,
             diagnostics: self.diagnostics,
         }
