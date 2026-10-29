@@ -22,6 +22,8 @@ export interface EditorState {
   rendering: Timings;
   /** From a change's first key press (or opening) to the frame painted. */
   painted: Timings;
+  /** How many times the worker's answers have changed the document, for views that follow it. */
+  updates: number;
 }
 
 /** The frame's end the editor uses: the render protocol, and the port it shares for components. */
@@ -38,7 +40,7 @@ const forRenderer = (diagnostics: Diagnostic[]): NonNullable<Change["diagnostics
   diagnostics.filter((d) => d.file === undefined).map((d) => ({ code: d.code, line: d.range.start.line, column: d.range.start.column }));
 
 export class Editor {
-  readonly state: EditorState = { diagnostics: [], problems: [], processing: new Timings(), rendering: new Timings(), painted: new Timings() };
+  readonly state: EditorState = { diagnostics: [], problems: [], processing: new Timings(), rendering: new Timings(), painted: new Timings(), updates: 0 };
   readonly #session: Session;
   readonly #frame: Frame;
   readonly #onChange: () => void;
@@ -119,12 +121,18 @@ export class Editor {
     return this.#text;
   }
 
+  /** The document as it is now, with the current text and the inputs' values: a request to process it from scratch. */
+  get document(): Request | undefined {
+    const request = this.#request;
+    if (!request) return undefined;
+    const files = { ...request.files, [request.path]: this.#text };
+    return { ...request, files, inputs: { ...request.inputs, ...this.#inputs } };
+  }
+
   /** The document again, with the current text and the inputs' values. */
   #reopen(): void {
-    const request = this.#request;
-    if (!request) return;
-    const files = { ...request.files, [request.path]: this.#text };
-    this.#session.open({ ...request, files, inputs: { ...request.inputs, ...this.#inputs } }, this.#text);
+    const document = this.document;
+    if (document) this.#session.open(document, this.#text);
   }
 
   #updated(update: Update): void {
@@ -134,6 +142,7 @@ export class Editor {
     this.#frame.connection.splice(update.splices, change, { replace: update.opened });
     this.state.diagnostics = update.diagnostics;
     this.#processed = update.text;
+    this.state.updates++;
     this.state.processing.add(update.ms);
     if (update.components) this.state.problems = [];
     this.#onChange();

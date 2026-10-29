@@ -128,7 +128,73 @@ li.error {
   color: var(--error);
 }
 
+.views {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px 8px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.tabs button {
+  border: 0;
+  border-bottom: 2px solid transparent;
+  padding: 6px 10px;
+  background: none;
+  color: var(--ink-secondary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.tabs button[aria-selected="true"] {
+  border-bottom-color: currentColor;
+  color: var(--ink);
+}
+
+.view {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.view[hidden] {
+  display: none;
+}
+
+.tree {
+  margin: 0;
+  padding: 16px;
+  font: 12px/1.45 ui-monospace, "SF Mono", Menlo, monospace;
+  tab-size: 2;
+}
+
+.note {
+  margin: 0;
+  padding: 16px;
+  color: var(--ink-secondary);
+}
+
+.note.error {
+  color: var(--error);
+}
+
+.diagnostics .place {
+  border: 0;
+  padding: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline dotted;
+  cursor: pointer;
+}
+
 iframe {
+  display: block;
   width: 100%;
   height: 100%;
   border: 0;

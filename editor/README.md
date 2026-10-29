@@ -11,6 +11,8 @@ A text area on the left, the rendered page on the right, updated as you type. It
 - **Splices, not trees, cross to the frame.** The worker gives a splice per edit, as the processor's JSON text, and the editor passes it on unread with the text and its diagnostics. Only the frame holds the expanded tree, as the renderer's blocks.
 - **The page renders in a sandboxed iframe** (`sandbox="allow-scripts"`, an opaque origin), through [`@compmd/render`](../render/README.md)'s frame protocol. The renderer applies each splice and renders only the blocks it replaced; its keys follow each splice's edit, so components keep their state through edits around them, merged edits included.
 - **Inputs:** an input component's `set` (a select, a chart's column) opens the document again with the new value.
+- **Diagnostics** are listed under the text, each with its code, place and message; clicking its place selects its range in the text (to the end of the line when it has no end).
+- **Trees:** tabs beside the page show the parse tree and the expanded tree as JSON (spec §12), the expanded one without origins. The editor's worker keeps no tree, so a second worker processes the current text from scratch while one of these tabs is open, the latest text only when it is busy (`src/trees.ts`). The page stays mounted under them, with its state.
 - **Fixes:** a diagnostic that suggests a name or a token (`did you mean `subtle`?`) has a button under the text that makes its fix, as an edit.
 
 ### Host-language components

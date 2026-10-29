@@ -91,6 +91,18 @@ describe("Editor", () => {
     expect(editor.state.processing.values).toEqual([2, 1]);
   });
 
+  it("gives the document as it is now, and counts the answers that changed it", () => {
+    const { worker, editor } = setup();
+    expect(editor.document).toBeUndefined();
+    editor.open(example);
+    editor.beforeInput({ start: 5, end: 5 });
+    editor.input("Hello!");
+    expect(editor.document).toEqual({ ...opened, files: { "a.comp.md": "Hello!", "b.csv": "x" }, inputs: {} });
+    worker.answer(processed(["whole"], { opened: true }));
+    worker.answer(processed(["typed"]));
+    expect(editor.state.updates).toBe(2);
+  });
+
   it("makes a diagnostic's fix as an edit, only in the text its diagnostic was found in", () => {
     const { worker, editor } = setup();
     editor.open(example);
