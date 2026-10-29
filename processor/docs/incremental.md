@@ -12,19 +12,40 @@ Today every change runs stages 1 to 4b on the whole text. The WebAssembly build 
 4. **One more method on the expanded processor**, next to `reload`, that takes only the edit:
 
    ```rust
-   let edited = processor.edit(&TextEdit { start, end, text });
+   let processor = processor.edit(&TextEdit { start, end, text });
    ```
 
-   The expanded processor keeps what its last load used and gave: the context, and the inputs and data loaded with the host's `fetch` and `data`. An edit to the body needs nothing else, since loading never reads the body. An edit to the frontmatter can change the imports, inputs and data sources, which may need data the host hasn't fetched yet, so it gives the processor back at stage 3, and the host loads and expands it as when it opened the document:
+   It gives the expanded processor back, whatever the edit touched, so a host never has to tell edits apart. The processor keeps the context, `fetch` and `data` its last load used, as it already keeps the host's `files` and `packs` from stage 2, and an edit to the frontmatter loads again with them.
+
+   A host with data it fetches ahead (remote or `host:` sources) does one more thing: an edit to the frontmatter may name a source it hasn't fetched yet. That source loads as missing (F026 and its `fallback`), as on any first render without it, and `sources()` lists it. The host fetches it and calls `reload`, as it does today when the context changes.
+
+   A host that renders a document with its editor:
 
    ```rust
-   pub enum Edited<'h, 'c> {
-       /// A body edit: the expanded processor, updated.
-       Expanded(Processor<Expanded<'h, 'c>>),
-       /// A frontmatter edit: the validated processor, to load and expand again.
-       Validated(Processor<Validated<'h>>),
+   // Open: as today, then keep the processor.
+   let mut processor = Processor::new(path, text)
+       .parse(&parse_options)
+       .resolve(&files, &packs, &ambient)
+       .validate(&allowed_origins)
+       .load(&context, &fetched, &data)
+       .expand(&expand_options);
+   render(processor.expanded());
+
+   // Each change in the editor: one call, one result.
+   processor = processor.edit(&TextEdit { start: 11, end: 11, text: "!".into() });
+   render(processor.expanded());
+
+   // Only a host that fetches ahead, after an edit, or when it likes.
+   // `sources` uses the context the processor keeps.
+   let needed = processor.sources();
+   if not_fetched_yet(&needed, &fetched) {
+       fetched = fetch(&needed).await;
+       processor = processor.reload(&context, &fetched, &data);
+       render(processor.expanded());
    }
    ```
+
+   A host whose `fetch` and `data` answer every source (a local file host, a test) never needs the last part.
 
    The `Processor` stays the only way in.
 5. **The markdown-rs fork gets a parse option for the labels defined elsewhere** in the document, so a slice parses as it would in place (see [Labels](#labels)).
@@ -179,7 +200,7 @@ A host that renders the whole tree each time ignores it; one that crosses a boun
 ## The WebAssembly binding
 
 - `open(request)` processes a document once and keeps the processor; `edit(start, end, text)` gives the splice, the diagnostics and the moved positions, as JSON.
-- An edit to the frontmatter gives instead the sources the render now needs, in the form `sources(request)` gives them today; the host fetches them and calls `load(fetched)`, which gives the whole expanded tree.
+- An edit to the frontmatter gives a splice like any other. A host that fetches ahead asks for `sources()`, in the form `sources(request)` gives them today, and after fetching calls `reload(fetched)`, which gives the whole expanded tree.
 - Offsets cross the boundary in UTF-16, as a JavaScript string counts them, and the binding turns them into code points.
 - The TypeScript wrapper keeps the whole expanded tree by applying each splice, and gives it to `@compmd/render`, which already updates the page by key.
 - For an edit inside one block, neither the processing nor the JSON grows with the document.
