@@ -23,6 +23,7 @@ use crate::reserved::Keyword;
 use crate::settings::Settings;
 use crate::tree::{Node, Param, Point, Position, Root, Signature};
 use std::collections::{BTreeMap, HashSet};
+use std::rc::Rc;
 
 /// The document of `@compmd/core`, built in (spec §9).
 const CORE_TEXT: &str = include_str!("core.comp.md");
@@ -91,7 +92,7 @@ pub(crate) struct Document {
     /// Its text.
     pub(crate) text: String,
     /// Its tree.
-    pub(crate) root: Root,
+    pub(crate) root: Rc<Root>,
     /// What each component name in it stands for.
     pub(crate) names: Names,
     /// What it exports, by public name.
@@ -199,11 +200,6 @@ impl Resolved {
     /// The document `id` names.
     pub(crate) fn document(&self, id: DocumentId) -> &Document {
         &self.documents[id.0]
-    }
-
-    /// The processed document, taken out of the result.
-    pub(crate) fn into_main(mut self) -> Document {
-        self.documents.swap_remove(self.main.0)
     }
 
     /// The component `id` names.

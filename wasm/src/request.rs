@@ -1,6 +1,6 @@
 //! The request `process` and `sources` take, and what they give: JSON (`camelCase`), as `src/index.ts` types it.
 
-use compmd::context::{Context, parse_time};
+use compmd::context::{RenderContext, parse_time};
 use compmd::diagnostic::Diagnostic;
 use compmd::expand::Options;
 use compmd::host::{Fetched, LoadedRelease, Time};
@@ -115,8 +115,8 @@ impl Request {
             .validate(&self.allowed_origins))
     }
 
-    fn context<'t>(&self, time: &'t dyn Time) -> Context<'t> {
-        Context {
+    fn context<'t>(&self, time: &'t dyn Time) -> RenderContext<'t> {
+        RenderContext {
             now: self.now,
             tz: self.tz.clone(),
             time,

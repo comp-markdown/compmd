@@ -12,7 +12,7 @@ mod inputs;
 mod schema;
 
 use crate::cel::{Key, Value};
-use crate::context::Context;
+use crate::context::RenderContext;
 use crate::diagnostic::{Code, Diagnostic, Location, Stage};
 use crate::expanded::Inputs;
 use crate::host::{Data, Fetch, Needed};
@@ -46,7 +46,11 @@ impl Loaded {
 }
 
 /// The remote and `host:` sources a render with `context` needs, each once, in the order they are first written.
-pub(crate) fn sources(resolved: &Resolved, validated: &Validated, context: &Context) -> Needed {
+pub(crate) fn sources(
+    resolved: &Resolved,
+    validated: &Validated,
+    context: &RenderContext,
+) -> Needed {
     let (inputs, _) = inputs::of(resolved, context);
     let input = inputs.value();
     let mut needed = Needed::default();
@@ -75,7 +79,7 @@ pub(crate) struct Host<'a> {
 pub(crate) fn load(
     resolved: &Resolved,
     validated: &Validated,
-    context: &Context,
+    context: &RenderContext,
     host: &Host,
 ) -> Loaded {
     let (inputs, diagnostics) = inputs::of(resolved, context);

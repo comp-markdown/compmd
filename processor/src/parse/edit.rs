@@ -12,6 +12,8 @@ use super::{Converter, Labels, ParseOptions, Parsed, Source, frontmatter, parse}
 use crate::diagnostic::{Diagnostic, Range};
 use crate::tree::{Move, Node, Point, Root, Shift};
 use std::collections::BTreeSet;
+use std::ops;
+use std::rc::Rc;
 
 /// An edit of a document's text: the code points `start..end` of the text the processor last saw became `text`.
 ///
@@ -130,10 +132,9 @@ fn same_set(one: &[String], other: &[String]) -> bool {
 }
 
 /// What parsing a slice of the units gave.
-#[derive(Debug)]
 enum Attempt {
-    /// The parse of the new text.
-    Done(Box<Parsed>),
+    /// The slice, to splice into the previous parse.
+    Done(Box<Slice>),
     /// The slice's last unit didn't come out as before: what follows it may parse differently, so the slice grows.
     Grow,
     /// The edit changed which labels the document defines, so every unit parses again.
@@ -142,20 +143,23 @@ enum Attempt {
 
 /// The parse of `text` after `edit`, from `previous`, the parse of `text`; and the new text.
 pub(crate) fn reparse(
-    previous: &Parsed,
+    previous: Parsed,
     text: &str,
     edit: &TextEdit,
     options: &ParseOptions,
 ) -> (String, Parsed) {
     let (new_text, bom, edit) = apply(text, edit);
-    let parsed = Slicer {
-        previous,
+    let slice = Slicer {
+        previous: &previous,
         old: &text[bom..],
         new: &new_text[bom..],
         edit,
     }
-    .parse(None)
-    .unwrap_or_else(|| parse(&new_text, options));
+    .parse(None);
+    let parsed = match slice {
+        Some(slice) => slice.splice_into(previous),
+        None => parse(&new_text, options),
+    };
     (new_text, parsed)
 }
 
@@ -209,9 +213,9 @@ struct Slicer<'a> {
 }
 
 impl Slicer<'_> {
-    /// The parse of the new text, or `None` when the whole text has to be parsed again: the edit may touch the
-    /// frontmatter, or the labels the document defines. With `tried`, notes each slice it tries.
-    fn parse(&self, mut tried: Option<&mut Vec<Tried>>) -> Option<Parsed> {
+    /// The slice to splice into the previous parse, or `None` when the whole text has to be parsed again: the edit
+    /// may touch the frontmatter, or the labels the document defines. With `tried`, notes each slice it tries.
+    fn parse(&self, mut tried: Option<&mut Vec<Tried>>) -> Option<Slice> {
         let units = &self.previous.units;
         let last = units.len().checked_sub(1)?;
         let frontmatter = matches!(self.previous.root.children.first(), Some(Node::Yaml(_)));
@@ -249,7 +253,7 @@ impl Slicer<'_> {
                 });
             }
             match attempt {
-                Attempt::Done(parsed) => return Some(*parsed),
+                Attempt::Done(slice) => return Some(*slice),
                 Attempt::Whole => return None,
                 Attempt::Grow => after *= 2,
             }
@@ -292,65 +296,91 @@ impl Slicer<'_> {
         if !Labels::of_units(&new_units).same(&Labels::of_units(&units[first..=last])) {
             return Attempt::Whole;
         }
+        let slice = Slice {
+            first,
+            last,
+            by,
+            to_end,
+            root,
+            diagnostics,
+            units: new_units,
+        };
+        if !to_end && !slice.ends_as(previous) {
+            return Attempt::Grow;
+        }
+        Attempt::Done(Box::new(slice))
+    }
+}
+
+/// Units `first..=last` of a parse, parsed again after an edit.
+struct Slice {
+    first: usize,
+    last: usize,
+    /// How far the edit moved what follows the slice.
+    by: Move,
+    /// Whether the slice reaches the end of the text.
+    to_end: bool,
+    root: Root,
+    diagnostics: Vec<Diagnostic>,
+    units: Vec<Unit>,
+}
+
+impl Slice {
+    /// Where units `first..last` of `previous` start, as blocks and diagnostics.
+    fn kept(
+        previous: &Parsed,
+        first: usize,
+        last: usize,
+    ) -> (ops::Range<usize>, ops::Range<usize>) {
+        let units = &previous.units;
         let nodes = |units: &[Unit]| units.iter().map(|unit| unit.nodes).sum::<usize>();
         let found = |units: &[Unit]| units.iter().map(|unit| unit.diagnostics).sum::<usize>();
         let head = previous.diagnostics.len() - found(units);
-        let kept_nodes = (nodes(&units[..first]), nodes(&units[..=last]));
-        let kept_diagnostics = (head + found(&units[..first]), head + found(&units[..=last]));
-        let mut later_nodes = previous.root.children[kept_nodes.1..].to_vec();
-        let mut later_diagnostics = previous.diagnostics[kept_diagnostics.1..].to_vec();
-        if !to_end {
-            let old_last = &units[last];
-            let mut unit = old_last.clone();
-            unit.shift(by);
-            let mut old_nodes =
-                previous.root.children[kept_nodes.1 - old_last.nodes..kept_nodes.1].to_vec();
-            old_nodes.shift(by);
-            let mut old_diagnostics = previous.diagnostics
-                [kept_diagnostics.1 - old_last.diagnostics..kept_diagnostics.1]
-                .to_vec();
-            shift_diagnostics(&mut old_diagnostics, by);
-            let same = new_units.last().is_some_and(|new_last| {
-                let nodes_from = root.children.len() - new_last.nodes;
-                let diagnostics_from = diagnostics.len() - new_last.diagnostics;
-                *new_last == unit
-                    && root.children[nodes_from..] == old_nodes[..]
-                    && diagnostics[diagnostics_from..] == old_diagnostics[..]
-            });
-            if !same {
-                return Attempt::Grow;
+        (
+            nodes(&units[..first])..nodes(&units[..last]),
+            head + found(&units[..first])..head + found(&units[..last]),
+        )
+    }
+
+    /// Whether its last unit came out as unit `last` of `previous`, moved: then what follows it parses as before.
+    fn ends_as(&self, previous: &Parsed) -> bool {
+        let (nodes, diagnostics) = Self::kept(previous, self.last, self.last + 1);
+        let mut unit = previous.units[self.last].clone();
+        unit.shift(self.by);
+        let mut old_nodes = previous.root.children[nodes].to_vec();
+        old_nodes.shift(self.by);
+        let mut old_diagnostics = previous.diagnostics[diagnostics].to_vec();
+        shift_diagnostics(&mut old_diagnostics, self.by);
+        self.units.last().is_some_and(|new| {
+            *new == unit
+                && self.root.children[self.root.children.len() - new.nodes..] == old_nodes[..]
+                && self.diagnostics[self.diagnostics.len() - new.diagnostics..]
+                    == old_diagnostics[..]
+        })
+    }
+
+    /// `previous` with the slice in place of its units `first..=last`, and what follows them moved. The tree changes
+    /// in place unless something else still shares it.
+    fn splice_into(self, mut previous: Parsed) -> Parsed {
+        let (nodes, diagnostics) = Self::kept(&previous, self.first, self.last + 1);
+        let root = Rc::make_mut(&mut previous.root);
+        if !self.to_end {
+            root.children[nodes.end..].shift(self.by);
+            shift_diagnostics(&mut previous.diagnostics[diagnostics.end..], self.by);
+            for unit in &mut previous.units[self.last + 1..] {
+                unit.shift(self.by);
             }
-            later_nodes.shift(by);
-            shift_diagnostics(&mut later_diagnostics, by);
         }
-        let position = previous.root.position.map(|mut position| {
-            match root.position {
-                Some(slice) if to_end => position.end = slice.end,
-                _ => position.end.shift(by),
+        if let Some(position) = &mut root.position {
+            match self.root.position {
+                Some(slice) if self.to_end => position.end = slice.end,
+                _ => position.end.shift(self.by),
             }
-            position
-        });
-        let mut later_units = units[last + 1..].to_vec();
-        for unit in &mut later_units {
-            unit.shift(by);
         }
-        let mut parsed = Parsed {
-            root: Root {
-                children: previous.root.children[..kept_nodes.0].to_vec(),
-                position,
-            },
-            settings: previous.settings.clone(),
-            diagnostics: previous.diagnostics[..kept_diagnostics.0].to_vec(),
-            units: units[..first].to_vec(),
-            syntax: previous.syntax,
-        };
-        parsed.root.children.extend(root.children);
-        parsed.root.children.extend(later_nodes);
-        parsed.diagnostics.extend(diagnostics);
-        parsed.diagnostics.extend(later_diagnostics);
-        parsed.units.extend(new_units);
-        parsed.units.extend(later_units);
-        Attempt::Done(Box::new(parsed))
+        root.children.splice(nodes, self.root.children);
+        previous.diagnostics.splice(diagnostics, self.diagnostics);
+        previous.units.splice(self.first..=self.last, self.units);
+        previous
     }
 }
 
@@ -543,7 +573,7 @@ mod tests {
             let mut parsed = parse(&text, &options);
             for _ in 0..40 {
                 let edit = random_edit(&text, &mut random);
-                let (new_text, incremental) = reparse(&parsed, &text, &edit, &options);
+                let (new_text, incremental) = reparse(parsed.clone(), &text, &edit, &options);
                 let whole = parse(&new_text, &options);
                 let first_difference = incremental
                     .root
@@ -601,6 +631,29 @@ mod tests {
         let defined = explain(&parsed, text, &typed(6, "[x]: /y\n\n"), &options);
         assert!(defined.contains("  units 0..=2: whole\n"), "{defined}");
         assert!(defined.contains("  parsed the whole text\n"), "{defined}");
+    }
+
+    #[test]
+    fn an_edit_changes_a_tree_nothing_else_shares_in_place() {
+        let options = ParseOptions::default();
+        let text = "One.\n\nTwo.\n\nThree.\n";
+        let parsed = parse(text, &options);
+        let tree = Rc::as_ptr(&parsed.root);
+        let edit = TextEdit {
+            start: 9,
+            end: 9,
+            text: "!".into(),
+        };
+        let (_, edited) = reparse(parsed, text, &edit, &options);
+        assert_eq!(Rc::as_ptr(&edited.root), tree);
+        let shared = Rc::clone(&edited.root);
+        let (_, copied) = reparse(edited, "One.\n\nTwo!.\n\nThree.\n", &edit, &options);
+        assert_ne!(Rc::as_ptr(&copied.root), Rc::as_ptr(&shared));
+        assert_eq!(
+            shared.children.len(),
+            3,
+            "a tree another holds stays as it was"
+        );
     }
 
     #[test]

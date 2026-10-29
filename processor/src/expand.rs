@@ -14,7 +14,7 @@ mod params;
 mod text;
 
 use crate::cel::{Error, Program, Value, Values};
-use crate::context::Context;
+use crate::context::RenderContext;
 use crate::diagnostic::{Code, Diagnostic, Location, Stage};
 use crate::expanded::{self, Content, Origin, Root};
 use crate::lines::Lines;
@@ -64,7 +64,7 @@ pub(crate) fn expand(
     resolved: &Resolved,
     validated: &Validated,
     loaded: &Loaded,
-    context: &Context,
+    context: &RenderContext,
     options: &Options,
 ) -> Expanded {
     let mut expander = Expander::new(resolved, validated, loaded, context, options);
@@ -114,7 +114,7 @@ impl<'r> Expander<'r> {
         resolved: &'r Resolved,
         validated: &'r Validated,
         loaded: &'r Loaded,
-        context: &'r Context<'r>,
+        context: &'r RenderContext<'r>,
         options: &'r Options,
     ) -> Self {
         let md = resolved

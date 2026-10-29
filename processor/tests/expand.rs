@@ -4,7 +4,7 @@
 mod common;
 
 use common::{at, place};
-use compmd::context::Context;
+use compmd::context::RenderContext;
 use compmd::expand;
 use compmd::host::{Fetched, LoadedRelease, Needed, Release};
 use compmd::{Ambient, ParseOptions, Processor};
@@ -72,7 +72,7 @@ fn render(input: &str, setup: Setup) -> Rendered {
         .iter()
         .map(|origin| (*origin).to_string())
         .collect();
-    let context = Context {
+    let context = RenderContext {
         now: 1_792_576_800 * 1_000_000_000,
         tz: "UTC".into(),
         time: &(),
@@ -504,7 +504,7 @@ fn a_host_without_remote_or_host_data_loads_fallbacks() {
         ("input.comp.md".to_string(), input.to_string()),
         ("x.json".to_string(), "{\"n\": \"local\"}".to_string()),
     ]);
-    let context = Context {
+    let context = RenderContext {
         now: 0,
         tz: "UTC".into(),
         time: &(),
@@ -531,7 +531,7 @@ fn a_reload_takes_newly_fetched_data() {
     let input =
         "---\nmd:\n  data:\n    - from: host:tasks\n      as: tasks\n---\n\n{{md.data.tasks.n}}\n";
     let files = HashMap::from([("input.comp.md".to_string(), input.to_string())]);
-    let context = Context {
+    let context = RenderContext {
         now: 0,
         tz: "UTC".into(),
         time: &(),

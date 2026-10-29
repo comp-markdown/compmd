@@ -26,6 +26,7 @@ use edit::Unit;
 use markdown::mdast;
 use serde_json::Value;
 use source::{START, Source};
+use std::rc::Rc;
 
 /// What a parse needs besides the text.
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -38,8 +39,8 @@ pub struct ParseOptions {
 /// The result of parsing a document.
 #[derive(Clone, Debug)]
 pub(crate) struct Parsed {
-    /// The document tree.
-    pub(crate) root: Root,
+    /// The document tree, which resolving shares rather than copies.
+    pub(crate) root: Rc<Root>,
     /// The settings its frontmatter gives: none without one, or when CompMD processing doesn't apply to it.
     pub(crate) settings: Settings,
     /// The parse diagnostics, in the order they were found.
@@ -49,35 +50,15 @@ pub(crate) struct Parsed {
     syntax: Syntax,
 }
 
-/// What the next edit needs of a parse besides its tree, settings and diagnostics, which the later stages hold.
-#[derive(Clone, Debug)]
-pub(crate) struct Kept {
-    units: Vec<Unit>,
-    syntax: Syntax,
-}
-
 impl Parsed {
-    /// Takes out what the next edit needs besides the tree, the settings and the diagnostics.
-    pub(crate) fn keep(&mut self) -> Kept {
-        Kept {
-            units: std::mem::take(&mut self.units),
-            syntax: self.syntax,
-        }
-    }
-
-    /// The parse again, from its tree, settings, diagnostics and what [`Self::keep`] took.
-    pub(crate) fn from_parts(
-        root: Root,
-        settings: Settings,
-        diagnostics: Vec<Diagnostic>,
-        kept: Kept,
-    ) -> Self {
+    /// The tree, shared, and the settings, for resolving: the caller keeps the diagnostics and the units.
+    pub(crate) fn for_resolving(&self) -> Self {
         Self {
-            root,
-            settings,
-            diagnostics,
-            units: kept.units,
-            syntax: kept.syntax,
+            root: Rc::clone(&self.root),
+            settings: self.settings.clone(),
+            diagnostics: Vec::new(),
+            units: Vec::new(),
+            syntax: self.syntax,
         }
     }
 }
@@ -122,7 +103,7 @@ pub(crate) fn parse(text: &str, options: &ParseOptions) -> Parsed {
     }
     .units(true);
     Parsed {
-        root,
+        root: Rc::new(root),
         settings,
         diagnostics,
         units,
@@ -301,7 +282,7 @@ mod tests {
         let options = ParseOptions {
             metadata: Some(serde_json::json!({ "md": { "syntax": ["wiki-links"] } })),
         };
-        let tree = serde_json::to_value(parse("[[Home]]", &options).root).unwrap();
+        let tree = serde_json::to_value(&*parse("[[Home]]", &options).root).unwrap();
         assert_eq!(tree["children"][0]["children"][0]["type"], "wikiLink");
     }
 }

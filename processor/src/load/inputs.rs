@@ -4,7 +4,7 @@
 
 use super::schema::read;
 use crate::cel::{Program, Value, Values};
-use crate::context::Context;
+use crate::context::RenderContext;
 use crate::diagnostic::{Code, Diagnostic, Stage};
 use crate::expanded::{Input, Inputs};
 use crate::resolve::Resolved;
@@ -13,7 +13,7 @@ use crate::tree::{DeclaredType, DefaultValue, ParamValue, StringPart};
 use serde_json::Value as Json;
 
 /// The inputs of the processed document, and the errors of their defaults (F024).
-pub(super) fn of(resolved: &Resolved, context: &Context) -> (Inputs, Vec<Diagnostic>) {
+pub(super) fn of(resolved: &Resolved, context: &RenderContext) -> (Inputs, Vec<Diagnostic>) {
     let settings = &resolved.document(resolved.main).settings;
     let mut diagnostics = Vec::new();
     let inputs = settings
@@ -59,7 +59,7 @@ fn default(
     default: Option<&DefaultValue>,
     declared: &DeclaredType,
     settings: &Settings,
-    context: &Context,
+    context: &RenderContext,
 ) -> Result<Json, String> {
     let value = match default {
         None => Value::Null,
@@ -79,7 +79,11 @@ fn default(
 }
 
 /// A quoted default's text, its interpolations filled in.
-fn text_of(parts: &[StringPart], settings: &Settings, context: &Context) -> Result<String, String> {
+fn text_of(
+    parts: &[StringPart],
+    settings: &Settings,
+    context: &RenderContext,
+) -> Result<String, String> {
     let mut text = String::new();
     for part in parts {
         match part {
@@ -94,7 +98,7 @@ fn text_of(parts: &[StringPart], settings: &Settings, context: &Context) -> Resu
 }
 
 /// An expression of a default, with `md` of the document and its functions.
-fn evaluate(source: &str, settings: &Settings, context: &Context) -> Result<Value, String> {
+fn evaluate(source: &str, settings: &Settings, context: &RenderContext) -> Result<Value, String> {
     let values = Values::default().with("md", context.md(settings).into());
     Program::parse(source)
         .and_then(|program| program.evaluate(&values, &context.functions(settings)))

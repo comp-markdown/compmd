@@ -12,7 +12,7 @@ use std::rc::Rc;
 
 /// The render time, the processor's time zone, the host's time zone offsets and the input values one render uses.
 /// The same context gives the same expanded tree.
-pub struct Context<'a> {
+pub struct RenderContext<'a> {
     /// The render time, in nanoseconds since 1970-01-01T00:00:00Z: what `md.now()` and `md.today()` give.
     pub now: i128,
     /// The processor's time zone, `md.tz` for a document without a `tz` key: an IANA name, or `UTC`.
@@ -24,7 +24,7 @@ pub struct Context<'a> {
     pub inputs: Map<String, Json>,
 }
 
-/// A render time for [`Context::now`] from RFC 3339 text, such as `2026-10-21T10:00:00Z` or
+/// A render time for [`RenderContext::now`] from RFC 3339 text, such as `2026-10-21T10:00:00Z` or
 /// `2026-10-21T12:00:00.5+02:00`: nanoseconds since 1970-01-01T00:00:00Z, or `None` when the text isn't one or is
 /// outside CEL's range (years 1 to 9999).
 ///
@@ -40,7 +40,7 @@ pub fn parse_time(text: &str) -> Option<i128> {
 /// `md.lang` of a document without a `lang` key (spec §2.1).
 const DEFAULT_LANG: &str = "en";
 
-impl Context<'_> {
+impl RenderContext<'_> {
     /// The `md.` functions for expressions written in a document with `settings`: its language, and its time zone
     /// or the processor's.
     pub(crate) fn functions(&self, settings: &Settings) -> Md<'_> {
@@ -75,7 +75,7 @@ impl Context<'_> {
     }
 }
 
-/// The value of `md` for a document (spec §8.1), built up from what [`Context::md`] gives.
+/// The value of `md` for a document (spec §8.1), built up from what [`RenderContext::md`] gives.
 pub(crate) struct MdValue(IndexMap<Key, Value>);
 
 impl MdValue {

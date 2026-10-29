@@ -9,14 +9,14 @@
 //! ([`Processor::edit`](Processor#method.edit-1)).
 //!
 //! ```
-//! use compmd::context::Context;
+//! use compmd::context::RenderContext;
 //! use compmd::expand::Options;
 //! use compmd::{Ambient, ParseOptions, Processor};
 //! use std::collections::HashMap;
 //!
 //! let text = "---\nteam: [Ana, Kenji]\n---\n\n::: each {in=(md.doc.team) as=p join=inline sep=\", \"}\n{{p}}\n::: /each\n";
 //! let files: HashMap<String, String> = HashMap::new();
-//! let context = Context { now: 0, tz: "UTC".into(), time: &(), inputs: Default::default() };
+//! let context = RenderContext { now: 0, tz: "UTC".into(), time: &(), inputs: Default::default() };
 //! let processor = Processor::new("team.comp.md", text)
 //!     .parse(&ParseOptions::default())
 //!     .resolve(&files, &(), &Ambient::default())
@@ -43,7 +43,7 @@
 //! assert_eq!(card.name, "card");
 //! ```
 
-use crate::context::Context;
+use crate::context::RenderContext;
 use crate::diagnostic::Diagnostic;
 use crate::expanded::{self, Inputs};
 use crate::host::{Data, Fetch, Files, Needed, Packs};
@@ -68,7 +68,7 @@ pub struct New {
 pub struct Parsed {
     path: String,
     text: String,
-    /// The tree and settings; its diagnostics are the processor's.
+    /// The tree and settings; the processor holds a copy of its diagnostics.
     document: parse::Parsed,
     options: ParseOptions,
 }
@@ -81,17 +81,16 @@ pub struct Parsed {
 pub struct Resolved<'h> {
     store: Store<'h>,
     resolved: resolve::Resolved,
-    again: Again,
+    edit_context: EditContext,
 }
 
-/// What an edit needs to run stages 1 and 2 again.
-struct Again {
+/// What an edit needs to run stages 1 and 2 again: what stage 1 was given and made, and the ambient packs.
+struct EditContext {
     path: String,
+    text: String,
     options: ParseOptions,
-    /// What the parse keeps besides the tree, the settings and the diagnostics.
-    kept: parse::Kept,
-    /// How many diagnostics stage 1 gave.
-    parsed: usize,
+    /// The parse of `text`, whose tree the resolved document shares.
+    parsed: parse::Parsed,
     ambient: Ambient,
 }
 
@@ -102,14 +101,14 @@ pub struct Validated<'h> {
     checks: validate::Validated,
     /// How many diagnostics stages 1 to 3 gave, which a reload keeps.
     kept: usize,
-    again: Again,
+    edit_context: EditContext,
     allowed_origins: Vec<String>,
 }
 
 /// What stage 4 runs with: the render context, and the host's remote and `host:` data.
 #[derive(Clone, Copy)]
-struct Render<'c> {
-    context: &'c Context<'c>,
+struct RenderInputs<'c> {
+    context: &'c RenderContext<'c>,
     fetch: &'c dyn Fetch,
     data: &'c dyn Data,
 }
@@ -117,14 +116,14 @@ struct Render<'c> {
 /// After stage 4a: the inputs' values and the data, for one render context.
 pub struct Loaded<'h, 'c> {
     validated: Validated<'h>,
-    render: Render<'c>,
+    render: RenderInputs<'c>,
     data: load::Loaded,
 }
 
 /// After stage 4b: the expanded tree.
 pub struct Expanded<'h, 'c> {
     validated: Validated<'h>,
-    render: Render<'c>,
+    render: RenderInputs<'c>,
     options: expand::Options,
     root: expanded::Root,
 }
@@ -172,15 +171,15 @@ impl Processor<New> {
 }
 
 impl Parsed {
-    /// The state after parsing `text` into `document`, whose diagnostics go to `diagnostics`.
+    /// The state after parsing `text` into `document`, whose diagnostics go to `diagnostics` too.
     fn new(
         path: String,
         text: String,
-        mut document: parse::Parsed,
+        document: parse::Parsed,
         options: ParseOptions,
         diagnostics: &mut Vec<Diagnostic>,
     ) -> Self {
-        diagnostics.append(&mut document.diagnostics);
+        diagnostics.extend_from_slice(&document.diagnostics);
         Self {
             path,
             text,
@@ -215,23 +214,23 @@ impl Processor<Parsed> {
             let Parsed {
                 path,
                 text,
-                mut document,
+                document,
                 options,
             } = parsed;
-            let again = Again {
-                kept: document.keep(),
-                parsed: diagnostics.len(),
+            let mut resolved =
+                resolve::resolve(&path, &text, document.for_resolving(), store, &ambient);
+            let edit_context = EditContext {
                 path,
+                text,
                 options,
+                parsed: document,
                 ambient,
             };
-            let mut resolved =
-                resolve::resolve(&again.path, &text, document, store, &again.ambient);
             diagnostics.append(&mut resolved.diagnostics);
             Resolved {
                 store,
                 resolved,
-                again,
+                edit_context,
             }
         })
     }
@@ -246,7 +245,7 @@ impl<'h> Processor<Resolved<'h>> {
             |Resolved {
                  store,
                  resolved,
-                 again,
+                 edit_context,
              },
              diagnostics| {
                 let mut checks = validate::validate(&resolved, allowed_origins);
@@ -256,7 +255,7 @@ impl<'h> Processor<Resolved<'h>> {
                     resolved,
                     checks,
                     kept: diagnostics.len(),
-                    again,
+                    edit_context,
                     allowed_origins: allowed_origins.to_vec(),
                 }
             },
@@ -268,7 +267,7 @@ impl<'h> Processor<Validated<'h>> {
     /// The remote and `host:` sources a render with `context` needs, each once, in the order they are first written,
     /// for the host to fetch before it loads.
     #[must_use]
-    pub fn sources(&self, context: &Context) -> Needed {
+    pub fn sources(&self, context: &RenderContext) -> Needed {
         load::sources(&self.state.resolved, &self.state.checks, context)
     }
 
@@ -277,18 +276,18 @@ impl<'h> Processor<Validated<'h>> {
     #[must_use]
     pub fn load<'c>(
         self,
-        context: &'c Context<'c>,
+        context: &'c RenderContext<'c>,
         fetch: &'c impl Fetch,
         data: &'c impl Data,
     ) -> Processor<Loaded<'h, 'c>> {
-        self.load_with(Render {
+        self.load_with(RenderInputs {
             context,
             fetch,
             data,
         })
     }
 
-    fn load_with(self, render: Render<'_>) -> Processor<Loaded<'h, '_>> {
+    fn load_with(self, render: RenderInputs<'_>) -> Processor<Loaded<'h, '_>> {
         self.then(|validated, diagnostics| {
             let host = load::Host {
                 store: validated.store,
@@ -350,7 +349,7 @@ impl<'h, 'c> Processor<Loaded<'h, 'c>> {
     #[must_use]
     pub fn reload<'d>(
         self,
-        context: &'d Context<'d>,
+        context: &'d RenderContext<'d>,
         fetch: &'d impl Fetch,
         data: &'d impl Data,
     ) -> Processor<Loaded<'h, 'd>> {
@@ -378,7 +377,7 @@ impl<'h> Processor<Expanded<'h, '_>> {
     #[must_use]
     pub fn reload<'d>(
         self,
-        context: &'d Context<'d>,
+        context: &'d RenderContext<'d>,
         fetch: &'d impl Fetch,
         data: &'d impl Data,
     ) -> Processor<Expanded<'h, 'd>> {
@@ -396,13 +395,13 @@ impl<'h> Processor<Expanded<'h, '_>> {
     /// them; an edit to the frontmatter or to the link and footnote definitions parses the whole text again.
     ///
     /// ```
-    /// use compmd::context::Context;
+    /// use compmd::context::RenderContext;
     /// use compmd::expand::Options;
     /// use compmd::{Ambient, ParseOptions, Processor, TextEdit};
     /// use std::collections::HashMap;
     ///
     /// let files: HashMap<String, String> = HashMap::new();
-    /// let context = Context { now: 0, tz: "UTC".into(), time: &(), inputs: Default::default() };
+    /// let context = RenderContext { now: 0, tz: "UTC".into(), time: &(), inputs: Default::default() };
     /// let processor = Processor::new("a.comp.md", "Hello world\n")
     ///     .parse(&ParseOptions::default())
     ///     .resolve(&files, &(), &Ambient::default())
@@ -417,35 +416,37 @@ impl<'h> Processor<Expanded<'h, '_>> {
     /// ```
     #[must_use]
     pub fn edit(self, edit: &TextEdit) -> Self {
-        let Processor { diagnostics, state } = self;
         let Expanded {
             validated,
             render,
             options,
             ..
-        } = state;
+        } = self.state;
         let Validated {
             store,
             resolved,
-            again,
+            edit_context: context,
             allowed_origins,
             ..
         } = validated;
-        let main = resolved.into_main();
-        let previous = parse::Parsed::from_parts(
-            main.root,
-            main.settings,
-            diagnostics[..again.parsed].to_vec(),
-            again.kept,
-        );
-        let (text, document) = parse::reparse(&previous, &main.text, edit, &again.options);
+        // Once the resolved documents are gone, the parse holds the only reference to the tree and changes it in
+        // place.
+        drop(resolved);
+        let (text, document) =
+            parse::reparse(context.parsed, &context.text, edit, &context.options);
         let mut diagnostics = Vec::new();
-        let parsed = Parsed::new(again.path, text, document, again.options, &mut diagnostics);
+        let parsed = Parsed::new(
+            context.path,
+            text,
+            document,
+            context.options,
+            &mut diagnostics,
+        );
         Processor {
             diagnostics,
             state: parsed,
         }
-        .resolve_in(store, again.ambient)
+        .resolve_in(store, context.ambient)
         .validate(&allowed_origins)
         .load_with(render)
         .expand(&options)
@@ -464,10 +465,10 @@ mod tests {
     use serde_json::{Map, json};
     use std::collections::HashMap;
 
-    fn context(inputs: serde_json::Value) -> Context<'static> {
+    fn context(inputs: serde_json::Value) -> RenderContext<'static> {
         let inputs: Map<String, serde_json::Value> =
             serde_json::from_value(inputs).expect("an object");
-        Context {
+        RenderContext {
             now: 0,
             tz: "UTC".into(),
             time: &(),

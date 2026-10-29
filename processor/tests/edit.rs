@@ -1,7 +1,7 @@
 //! Editing an expanded processor: after every edit, it gives the trees and diagnostics a new processor of the new
 //! text gives, through every stage.
 
-use compmd::context::Context;
+use compmd::context::RenderContext;
 use compmd::expand::Options;
 use compmd::{Ambient, ParseOptions, Processor, TextEdit};
 use std::collections::HashMap;
@@ -55,7 +55,7 @@ const TYPED: &[&str] = &[
 #[test]
 fn an_edited_processor_gives_what_a_new_one_gives() {
     let files = files();
-    let context = Context {
+    let context = RenderContext {
         now: 0,
         tz: "UTC".into(),
         time: &(),
@@ -110,7 +110,7 @@ fn an_edited_processor_gives_what_a_new_one_gives() {
 
 #[test]
 fn an_edit_past_the_end_appends() {
-    let context = Context {
+    let context = RenderContext {
         now: 0,
         tz: "UTC".into(),
         time: &(),

@@ -4,7 +4,7 @@
 mod common;
 
 use common::without_positions;
-use compmd::context::{Context, parse_time};
+use compmd::context::{RenderContext, parse_time};
 use compmd::diagnostic::Diagnostic;
 use compmd::expand::Options;
 use compmd::host::{Fetched, LoadedRelease, Time};
@@ -287,7 +287,7 @@ fn run_stages(dir: &Path, case: &Value) -> Run {
             .collect(),
         report: context["reportAmbient"] == json!(true),
     };
-    let render = Context {
+    let render = RenderContext {
         now: parse_time(context["now"].as_str().unwrap_or("2026-01-01T00:00:00Z")).expect("a time"),
         tz: context["tz"].as_str().unwrap_or("UTC").to_string(),
         time: &Zones,
