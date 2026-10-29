@@ -33,7 +33,13 @@ yaml-rust2 = "0.13.0"
 [dev-dependencies]
 # An oracle for the CEL profile, where it and CEL agree.
 cel = { version = "0.15.0", default-features = false, features = ["chrono", "json"] }
+# Benchmarks; each iteration is timed with `iter_custom`, for percentiles.
+criterion = { version = "0.8.2", default-features = false, features = ["cargo_bench_support"] }
 jsonschema = { version = "0.60.2", default-features = false }
+
+[[bench]]
+name = "edit"
+harness = false
 
 [lints]
 workspace = true
