@@ -93,6 +93,7 @@ describe("Editor", () => {
     worker.answer({ type: "processed", expanded: tree, diagnostics: [], ms: 1 });
     frame.emit({ type: "rendered", ms: 3 });
     expect(editor.state.painted.count).toBe(1);
+    expect(editor.state.rendering.values).toEqual([3]);
     frame.emit({ type: "rendered", ms: 3 });
     expect(editor.state.painted.count).toBe(1);
   });

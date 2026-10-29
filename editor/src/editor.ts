@@ -18,6 +18,8 @@ export interface EditorState {
   problems: string[];
   /** The worker's processing, per change. */
   processing: Timings;
+  /** The frame's part, per change: from the tree's arrival to the frame painted, as the frame reports it. */
+  rendering: Timings;
   /** From a change's first key press (or opening) to the frame painted. */
   painted: Timings;
 }
@@ -36,7 +38,7 @@ const forRenderer = (diagnostics: Diagnostic[]): NonNullable<Change["diagnostics
   diagnostics.filter((d) => d.file === undefined).map((d) => ({ code: d.code, line: d.range.start.line, column: d.range.start.column }));
 
 export class Editor {
-  readonly state: EditorState = { diagnostics: [], problems: [], processing: new Timings(), painted: new Timings() };
+  readonly state: EditorState = { diagnostics: [], problems: [], processing: new Timings(), rendering: new Timings(), painted: new Timings() };
   readonly #session: Session;
   readonly #frame: Frame;
   readonly #onChange: () => void;
@@ -62,9 +64,11 @@ export class Editor {
         onChange();
       },
     );
-    frame.connection.on("rendered", () => {
+    frame.connection.on("rendered", ({ ms }) => {
       const since = this.#rendering.shift();
-      if (since !== undefined) this.state.painted.add(performance.now() - since);
+      if (since === undefined) return;
+      this.state.painted.add(performance.now() - since);
+      this.state.rendering.add(ms);
       onChange();
     });
     frame.connection.on("set", ({ input, value }) => {

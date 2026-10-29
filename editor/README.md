@@ -49,15 +49,21 @@ The frame has an opaque origin, so it loads the site's scripts cross-origin: a s
 
 ## Budgets
 
-`pnpm bench` types into Chrome (the installed one, in a window of its own; `BENCH_HEADLESS=1` for headless) with real key presses: into a paragraph in the middle of the document, a character then Backspace, in turn, 20 to warm up, then 200, one every 80 ms. It times each change from its first key press to the frame painted, and the text area's input latency by Event Timing, and fails when a budget is exceeded or a document shows a diagnostic or a component problem.
+`pnpm bench` types into Chrome (the installed one, in a window of its own; `BENCH_HEADLESS=1` for headless) with real key presses at each edit point, a character then Backspace, in turn, 20 to warm up, then 200, one every 80 ms. It times each change from its first key press to the frame painted, with the worker's processing and the frame's part apart, and the text area's input latency by Event Timing. It fails when a budget is exceeded or a document shows a diagnostic or a component problem.
 
-| Document | Key press to paint, p95 | Budget | Input latency, p95 | Budget |
+Typing in a paragraph processes that block. Typing in a definition processes the whole document again, and in a host-language one the frame compiles and mounts it again too.
+
+| Edit | Key press to paint, p95 | Processing | The frame | Budget |
 |---|---|---|---|---|
-| The spec's complete example | 12.5 ms | ≤ 16 ms | 32 ms | ≤ 50 ms |
-| The changelog | 20.0 ms | ≤ 50 ms | 32 ms | ≤ 50 ms |
-| Field notes (52 KB) | 16.2 ms | ≤ 50 ms | 32 ms | ≤ 50 ms |
+| The spec's complete example, in a paragraph | 6.1 ms | 1.6 ms | 2.8 ms | ≤ 16 ms |
+| The same, in the sparkline's JSX | 11.2 ms | 4.8 ms | 4.9 ms | ≤ 16 ms |
+| The changelog, in its heading | 8.2 ms | 1.5 ms | 4.0 ms | ≤ 50 ms |
+| The same, in a definition it uses 384 times | 19.9 ms | 10.5 ms | 7.2 ms | ≤ 50 ms |
+| Field notes (52 KB), in a paragraph | 15.6 ms | 0.9 ms | 9.0 ms | ≤ 50 ms |
 
-Measured on 2026-10-29 on an Apple M4, Chrome 156.
+The text area's input latency is 32 ms (p95) at every edit point, against a budget of 50 ms. Measured on 2026-10-29 on an Apple M4, Chrome 156.
+
+**Where the time goes.** In a paragraph, the processor's own work is about a tenth of a millisecond, and the worker's part under 1 ms with the splice parsed and applied; the rest of an edit grows with the document. Each change sends the whole expanded tree from the worker to the page and from the page to the frame, two copies, and the renderer goes over all of it: it follows every origin to keep keys, compares the texts, and matches every top-level block. In the 52 KB body that is about 7 ms for the renderer, and about 5 ms for the copies and the page's own work. Sending splices instead, across both boundaries, with a renderer that applies them, would make an edit's cost follow the edit, as the processing's does.
 
 ## License
 
