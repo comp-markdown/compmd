@@ -37,6 +37,8 @@ describe("the split", () => {
         throw new Error("blocked");
       },
     };
-    expect(() => save(refusing, DEFAULT)).not.toThrow();
+    expect(() => {
+      save(refusing, DEFAULT);
+    }).not.toThrow();
   });
 });
