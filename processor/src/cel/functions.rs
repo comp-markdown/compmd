@@ -222,6 +222,50 @@ impl Library for Function {
         }
     }
 
+    fn doc(self) -> &'static str {
+        match self {
+            Self::Size => "the length of a string, a list or a map",
+            Self::Int => {
+                "an int: a number without its fraction, a string read, a timestamp's seconds"
+            }
+            Self::Double => "a double from a number or a string",
+            Self::String => "the value written as a string",
+            Self::Timestamp => "a timestamp from an RFC 3339 string",
+            Self::Duration => "a duration from a string such as `1h30m`",
+            Self::GetFullYear => "the year, in `md.tz` or the time zone given",
+            Self::GetMonth => "the month, from 0 for January, in `md.tz` or the time zone given",
+            Self::GetDate => "the day of the month, from 1, in `md.tz` or the time zone given",
+            Self::GetDayOfMonth => {
+                "the day of the month, from 0, in `md.tz` or the time zone given"
+            }
+            Self::GetDayOfWeek => {
+                "the day of the week, from 0 for Sunday, in `md.tz` or the time zone given"
+            }
+            Self::GetDayOfYear => "the day of the year, from 0, in `md.tz` or the time zone given",
+            Self::GetHours => "a timestamp's hour, or a duration's whole hours",
+            Self::GetMinutes => "a timestamp's minute, or a duration's whole minutes",
+            Self::GetSeconds => "a timestamp's second, or a duration's whole seconds",
+            Self::GetMilliseconds => {
+                "a timestamp's millisecond, or a duration's whole milliseconds"
+            }
+            Self::Contains => "whether the string holds the other",
+            Self::StartsWith => "whether the string starts with the other",
+            Self::EndsWith => "whether the string ends with the other",
+            Self::CharAt => "the character at a position, from 0",
+            Self::IndexOf => "the first position of a substring, or -1",
+            Self::LastIndexOf => "the last position of a substring, or -1",
+            Self::LowerAscii => "the string with ASCII letters in lower case",
+            Self::UpperAscii => "the string with ASCII letters in upper case",
+            Self::Replace => {
+                "the string with a substring replaced, every time or as many times as given"
+            }
+            Self::Split => "the parts between each separator",
+            Self::Substring => "the characters from a position up to another, or to the end",
+            Self::Trim => "the string without white space at either end",
+            Self::Join => "the strings of the list joined, with the separator given",
+        }
+    }
+
     fn counts(self) -> bool {
         matches!(
             self,

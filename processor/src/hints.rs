@@ -5,7 +5,11 @@
 //! the place's line again, and looks its names up. Reading the line again gives half-typed text a hint too, such as
 //! `border=` or a list whose `}` isn't written yet.
 
+mod expression;
+mod frontmatter;
 mod invocation;
+
+pub use expression::{FunctionHint, NameHint};
 
 use crate::components;
 use crate::diagnostic::{Diagnostic, Location, Range};
@@ -73,6 +77,37 @@ pub enum Subject {
         slot: String,
         /// The slots the component declares.
         slots: Vec<SlotDeclaration>,
+    },
+    /// A step of a path, in an interpolation or an expression.
+    Path {
+        /// The path up to the step, `md.data.sales`.
+        path: String,
+        /// What the step names.
+        name: NameHint,
+    },
+    /// A function called in an expression.
+    Function {
+        /// Its name, `md.sortBy` for an `md.` function.
+        name: String,
+        /// What it is; `None` for a name that is no function.
+        #[serde(skip_serializing_if = "Option::is_none")]
+        hint: Option<FunctionHint>,
+    },
+    /// A key in the frontmatter, or a value CompMD reads.
+    Frontmatter {
+        /// The keys to it, outermost first: `["md", "data", "schema"]`.
+        path: Vec<String>,
+        /// What it holds; `None` for a key CompMD doesn't know.
+        #[serde(skip_serializing_if = "Option::is_none")]
+        about: Option<String>,
+    },
+    /// A type name in a declaration: an input's, a schema field's.
+    Type {
+        /// The name as written.
+        name: String,
+        /// What a value of the type is; `None` for a name that is no type.
+        #[serde(skip_serializing_if = "Option::is_none")]
+        takes: Option<KindHint>,
     },
 }
 
@@ -219,12 +254,14 @@ pub(crate) fn at(
     let place = Place {
         resolved,
         document,
+        offset,
         line: caret.line,
         at: (caret.column - 1).min(text.len()),
         text,
     };
     let found = match surrounding(&document.root.children, offset) {
-        Surrounding::Text => invocation::hint(&place),
+        Surrounding::Text => expression::interpolation(&place).or_else(|| invocation::hint(&place)),
+        Surrounding::Frontmatter => frontmatter::hint(&place),
         Surrounding::Opaque => None,
     };
     let caret = Location::new(place.line, place.at + 1);
@@ -263,6 +300,8 @@ fn covers(range: &Range, at: Location) -> bool {
 struct Place<'r> {
     resolved: &'r Resolved,
     document: &'r Document,
+    /// The caret's code point in the document.
+    offset: usize,
     /// The line's number.
     line: usize,
     /// The line's code points.
@@ -404,11 +443,12 @@ struct Found {
     completions: Vec<Completion>,
 }
 
-/// Whether a place is in text whose component syntax counts, or in a block that holds other text: code, math, raw
-/// HTML, a signature, a definition's header or host-language code.
+/// Whether a place is in text whose component syntax counts, in the frontmatter, or in a block that holds other
+/// text: code, math, raw HTML, a signature, a definition's header or host-language code.
 #[derive(Debug, PartialEq, Eq)]
 enum Surrounding {
     Text,
+    Frontmatter,
     Opaque,
 }
 
@@ -426,12 +466,12 @@ fn surrounding(nodes: &[Node], offset: usize) -> Surrounding {
         .position()
         .is_some_and(|position| position.start.offset <= offset && offset <= position.end.offset);
     match block {
+        Node::Yaml(_) if inside => Surrounding::Frontmatter,
         Node::Code(_)
         | Node::Math(_)
         | Node::Html(_)
         | Node::InlineCode(_)
         | Node::InlineMath(_)
-        | Node::Yaml(_)
         | Node::ComponentSignature(_)
             if inside =>
         {
@@ -474,10 +514,10 @@ mod tests {
     use std::rc::Rc;
 
     /// The caret in the texts of these tests.
-    const CARET: char = '‸';
+    pub(super) const CARET: char = '‸';
 
     /// The hint at the caret of `text`, with `files`, as JSON.
-    fn hint_with(text: &str, files: &[(&str, &str)]) -> Value {
+    pub(super) fn hint_with(text: &str, files: &[(&str, &str)]) -> Value {
         let offset = text.chars().position(|c| c == CARET).expect("a caret");
         let text = text.replacen(CARET, "", 1);
         let files: HashMap<String, String> = files
@@ -499,17 +539,17 @@ mod tests {
         serde_json::to_value(processor.hint_at(offset)).expect("JSON")
     }
 
-    fn hint(text: &str) -> Value {
+    pub(super) fn hint(text: &str) -> Value {
         hint_with(text, &[])
     }
 
     /// The range on `line` from `start` to `end`, columns from 1.
-    fn range(line: usize, start: usize, end: usize) -> Value {
+    pub(super) fn range(line: usize, start: usize, end: usize) -> Value {
         json!({ "start": { "line": line, "column": start }, "end": { "line": line, "column": end } })
     }
 
     /// The texts of a hint's completions.
-    fn texts(hint: &Value) -> Vec<&str> {
+    pub(super) fn texts(hint: &Value) -> Vec<&str> {
         hint["completions"]
             .as_array()
             .expect("completions")
@@ -528,7 +568,7 @@ mod tests {
             .collect()
     }
 
-    const CARD: &str = "```compmd component=card\nparams:\n  kind: note | warning = note\n  title:\n    type: string\n    doc: The card's heading.\nslots: [default, footer]\n---\n{{title}}\n```\n\n";
+    pub(super) const CARD: &str = "```compmd component=card\nparams:\n  kind: note | warning = note\n  title:\n    type: string\n    doc: The card's heading.\nslots: [default, footer]\n---\n{{title}}\n```\n\n";
 
     #[test]
     fn a_name_is_the_component_it_stands_for() {
@@ -829,6 +869,8 @@ mod tests {
         });
         for (default, expected) in [
             (ParamValue::Bare("m".into()), "m"),
+            (ParamValue::Json("[1]".into()), "[1]"),
+            (ParamValue::Class("wide".into()), "wide"),
             (ParamValue::Expr("1 + 1".into()), "(1 + 1)"),
             (ParamValue::Flag, "true"),
             (
@@ -840,5 +882,66 @@ mod tests {
         }
         assert_eq!(written(&DefaultValue::Yaml(json!("a b"))), "a b");
         assert_eq!(written(&DefaultValue::Yaml(json!([1]))), "[1]");
+    }
+
+    #[test]
+    fn every_kinds_tokens_are_completions_it_accepts() {
+        for kind in Kind::ALL {
+            let hint = KindHint::of(kind);
+            assert!(
+                hint.tokens.iter().all(|token| kind.accepts_text(token)),
+                "{kind:?}"
+            );
+            assert_eq!(hint.description, kind.describe());
+        }
+    }
+
+    #[test]
+    fn the_edges_of_component_lines() {
+        let malformed = hint(&format!("::: ca{CARET}rd x\n"));
+        assert_eq!(malformed["subject"]["name"], "card");
+        assert_eq!(
+            hint(&format!("::: card {CARET}x\n"))["subject"],
+            Value::Null
+        );
+        let numbered = hint(&format!("1. ::: bo{CARET}x\n   B.\n   ::: /box\n"));
+        assert_eq!(numbered["subject"]["name"], "box");
+        let before = hint(&format!("::: box {CARET}{{gap=s}}\n::: /box\n"));
+        assert_eq!(before["subject"], Value::Null, "before the `{{`");
+        let continued = hint(&format!(
+            "::: box {{gap=s}}\n::: + padding=s\n::: + bor{CARET}der=subtle\nB.\n::: /box\n"
+        ));
+        assert_eq!(continued["subject"]["param"]["name"], "border");
+        let closed = hint(&format!("::: box\n::: /box\n::: + bor{CARET}der=subtle\n"));
+        assert_eq!(closed["subject"], Value::Null, "after a closer");
+        let class = hint(&format!("::: box {{.{CARET}"));
+        assert_eq!(
+            (
+                &class["subject"]["param"]["name"],
+                &class["subject"]["value"]
+            ),
+            (&json!("class"), &json!(""))
+        );
+        let colon = hint(&format!(
+            "{CARD}::: card {{title=x}}\n:{CARET}: #footer\n::: /card\n"
+        ));
+        assert_eq!(colon["subject"], Value::Null, "on the colons");
+        let nested = hint(&format!(
+            "{CARD}::: card {{title=x}}\nB.\n:: #footer\n::: each {{in=([1]) as=n}}\nN.\n:: #emp{CARET}ty\nNone.\n::: /each\n::: /card\n"
+        ));
+        assert_eq!(nested["subject"]["component"], "each", "in another's slot");
+        let inline = hint(&format!("a :1 and :b and :c[x and more{CARET}\n"));
+        assert_eq!(inline, Value::Null);
+        let unknown = hint_with(
+            &format!(
+                "---\nmd:\n  import:\n    - from: ./missing.comp.md\n      names: \"*\"\n---\n\n:: thi{CARET}ng[T]\n"
+            ),
+            &[],
+        );
+        assert_eq!(
+            unknown["subject"].get("component"),
+            None,
+            "a name from an import that failed"
+        );
     }
 }

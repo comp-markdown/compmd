@@ -8,7 +8,7 @@
 mod blocks;
 pub(crate) mod definitions;
 mod edit;
-mod frontmatter;
+pub(crate) mod frontmatter;
 mod inlines;
 pub(crate) mod line;
 pub(crate) mod params;

@@ -27,6 +27,32 @@ named! {
     }
 }
 
+impl Macro {
+    /// How it is written, for an editor's hint.
+    pub(crate) fn signature(self) -> &'static str {
+        match self {
+            Self::All => "list.all(x, predicate) → bool",
+            Self::Exists => "list.exists(x, predicate) → bool",
+            Self::ExistsOne => "list.exists_one(x, predicate) → bool",
+            Self::Filter => "list.filter(x, predicate) → list",
+            Self::Map => "list.map(x, expression) → list",
+        }
+    }
+
+    /// What it gives, in one line, for an editor's hint.
+    pub(crate) fn doc(self) -> &'static str {
+        match self {
+            Self::All => "true when every element satisfies the predicate",
+            Self::Exists => "true when any element satisfies the predicate",
+            Self::ExistsOne => "true when exactly one element satisfies the predicate",
+            Self::Filter => "the elements that satisfy the predicate",
+            Self::Map => {
+                "each element made into another; `map(x, filter, expression)` keeps those the filter keeps"
+            }
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) enum Expr {
     Literal(Literal, At),

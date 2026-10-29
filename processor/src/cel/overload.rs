@@ -168,10 +168,75 @@ pub(crate) trait Library: Copy + 'static {
     /// Its overloads.
     fn overloads(self) -> &'static [Overload<Self::Call>];
 
+    /// What it gives, in one line, for an editor's hint: "the length of a string, a list or a map".
+    fn doc(self) -> &'static str;
+
     /// Whether its `int` arguments are positions or counts, which a `double` from data is often given for.
     fn counts(self) -> bool {
         false
     }
+}
+
+impl Param {
+    /// How a signature writes it.
+    fn written(self) -> &'static str {
+        match self {
+            Self::Int => "int",
+            Self::Uint => "uint",
+            Self::Double => "double",
+            Self::Number => "number",
+            Self::String => "string",
+            Self::Bool => "bool",
+            Self::Timestamp => "timestamp",
+            Self::Duration => "duration",
+            Self::List => "list",
+            Self::Numbers => "list(number)",
+            Self::Strings => "list(string)",
+            Self::Map => "map",
+            Self::Sized => "string | list | map",
+        }
+    }
+}
+
+/// Each way to call `L`'s function `function`, as an editor shows it: `string.indexOf(string) → int`.
+pub(crate) fn signatures<L: Library>(function: L, name: &str) -> Vec<String> {
+    function
+        .overloads()
+        .iter()
+        .map(|overload| {
+            let all: Vec<Param> = overload
+                .receiver
+                .into_iter()
+                .chain(overload.params.iter().copied())
+                .collect();
+            let receiver = overload
+                .receiver
+                .map(|receiver| format!("{}.", receiver.written()))
+                .unwrap_or_default();
+            let params: Vec<&str> = overload
+                .params
+                .iter()
+                .map(|param| param.written())
+                .collect();
+            let returns = match overload.returns {
+                Returns::Int => "int",
+                Returns::Double => "double",
+                Returns::String => "string",
+                Returns::Bool => "bool",
+                Returns::Timestamp => "timestamp",
+                Returns::Duration => "duration",
+                Returns::Strings => "list(string)",
+                Returns::Same(i) => all.get(i).map_or("dyn", |param| param.written()),
+                Returns::Values(_) => "dyn",
+                Returns::Groups(_) => "map",
+            };
+            format!(
+                "{receiver}{}{name}({}) → {returns}",
+                L::PREFIX,
+                params.join(", ")
+            )
+        })
+        .collect()
 }
 
 /// The way out when a `double` is given where an `int` is needed: numbers from data are `double`s (spec §8.2).
@@ -329,6 +394,19 @@ mod tests {
                 ]
             }
         }
+
+        fn doc(self) -> &'static str {
+            "a test"
+        }
+    }
+
+    #[test]
+    fn signatures_write_each_overload() {
+        assert_eq!(
+            signatures(Test, "f"),
+            ["t.f(int) → int", "string.t.f(list(string)) → list(string)"]
+        );
+        assert_eq!(Test.doc(), "a test");
     }
 
     #[test]

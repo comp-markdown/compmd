@@ -12,13 +12,53 @@ use serde_json::{Map, Value};
 const MAJOR: u64 = 1;
 const MINOR: u64 = 0;
 
-/// The keys under `md` (spec §2.1).
-const MD_KEYS: [&str; 9] = [
-    "version", "import", "export", "data", "inputs", "lang", "dir", "tz", "syntax",
+/// The keys under `md` (spec §2.1), each with what it holds.
+pub(crate) const MD_KEYS: [(&str, &str); 9] = [
+    (
+        "version",
+        "the CompMD version: `1`, or a string with a minor version such as `\"1.1\"`",
+    ),
+    (
+        "import",
+        "component imports, each a `from` and the `names` it takes",
+    ),
+    (
+        "export",
+        "component exports: the `names` other documents may import",
+    ),
+    (
+        "data",
+        "data imports, each a `from` and the name `as` gives it under `md.data`",
+    ),
+    (
+        "inputs",
+        "values the reader can change, read as `md.input.<name>`",
+    ),
+    (
+        "lang",
+        "the document's language, a BCP 47 tag; `en` by default",
+    ),
+    (
+        "dir",
+        "the text direction, `ltr`, `rtl` or `auto`; by default the direction of `lang`'s script",
+    ),
+    (
+        "tz",
+        "the time zone of `md.today()`, an IANA name such as `Europe/Berlin`",
+    ),
+    (
+        "syntax",
+        "opt-in syntax the document uses, such as `[wiki-links]`",
+    ),
 ];
 
+/// The names of [`MD_KEYS`].
+fn md_key_names() -> impl Iterator<Item = &'static str> + Clone {
+    MD_KEYS.iter().map(|(name, _)| *name)
+}
+
 /// The opt-in syntax this processor knows (spec §2.3).
-const SYNTAX_NAMES: [&str; 1] = ["wiki-links"];
+pub(crate) const SYNTAX_NAMES: [&str; 1] = ["wiki-links"];
 
 /// The YAML text of the frontmatter at the start of `text`: a `---` line, the YAML, and a closing `---` line, as
 /// the fork of markdown-rs finds it. The YAML starts on line 2.
@@ -104,9 +144,9 @@ pub(crate) fn read(yaml_text: &str, diagnostics: &mut Vec<Diagnostic>) -> Option
     }
     for key in settings
         .keys()
-        .filter(|key| !MD_KEYS.contains(&key.as_str()))
+        .filter(|key| !md_key_names().any(|known| known == key.as_str()))
     {
-        let hint = nearest(key, MD_KEYS)
+        let hint = nearest(key, md_key_names())
             .map_or_else(String::new, |known| format!("; did you mean `{known}`?"));
         diagnostics.push(Diagnostic::new(
             Code::W111,

@@ -21,7 +21,7 @@ type Call = for<'m> fn(&Md<'m>, &[Value]) -> Result<Value, String>;
 
 named! {
     /// An `md.` function, named without `md.`.
-    enum MdFunction {
+    pub(crate) enum MdFunction {
         Currency = "currency",
         Number = "number",
         Date = "date",
@@ -170,6 +170,44 @@ impl Library for MdFunction {
             }
         }
     }
+
+    fn doc(self) -> &'static str {
+        match self {
+            Self::Currency => "an amount written in a currency, by `md.lang`: `\"$120.00\"`",
+            Self::Number => "a number written with the digits given, by `md.lang`",
+            Self::Date => {
+                "a date or timestamp written in a style, `short`, `medium`, `long` or `full`, by `md.lang`"
+            }
+            Self::Plural => "the plural form for a number, by `md.lang`",
+            Self::Today => "the render date, a `date`",
+            Self::Now => "the render time, a `timestamp`",
+            Self::DateOf => "the `date` of a `timestamp` in the render's time zone (`md.tz`)",
+            Self::AddDays => "a `date` some days after another; before it for a negative number",
+            Self::DaysBetween => "the days from one `date` to another, negative when it is before",
+            Self::StartOf => "the first `date` of its `\"week\"`, `\"month\"` or `\"year\"`",
+            Self::Sort => "the list in ascending order",
+            Self::SortBy => "the list of records in ascending order of a field",
+            Self::Reverse => "the list reversed",
+            Self::Slice => "the elements from a position up to another",
+            Self::Sum => "the sum of the numbers; `0` for an empty list",
+            Self::Min => "the smallest number, or `null` for an empty list",
+            Self::Max => "the largest number, or `null` for an empty list",
+            Self::Unique => "each element's first occurrence, in order",
+            Self::GroupBy => "a map from each value of a field to its records, in order",
+            Self::List => {
+                "the elements written as a list, by `md.lang`: `\"a, b, and c\"`, or with `\"or\"`"
+            }
+        }
+    }
+}
+
+/// The `md.` function written `md.<name>`, for an editor's hint.
+pub(crate) fn described(name: &str) -> Option<crate::cel::Described> {
+    let function = MdFunction::from_name(name)?;
+    Some(crate::cel::Described {
+        signatures: overload::signatures(function, name),
+        doc: function.doc(),
+    })
 }
 
 /// The types of the `md.` functions, for checking expressions without a render, as a definition's are when it is

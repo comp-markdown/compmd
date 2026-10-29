@@ -108,6 +108,48 @@ impl Error {
     }
 }
 
+/// What an editor's hint says of a function: each way to call it, and what it gives.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct Described {
+    pub(crate) signatures: Vec<String>,
+    pub(crate) doc: &'static str,
+}
+
+/// The profile's function or macro written `name`, `has` among them.
+pub(crate) fn described(name: &str) -> Option<Described> {
+    if name == "has" {
+        return Some(Described {
+            signatures: vec!["has(x.field) → bool".to_string()],
+            doc: "true when the map or record has the field",
+        });
+    }
+    if let Some(found) = ast::Macro::from_name(name) {
+        return Some(Described {
+            signatures: vec![found.signature().to_string()],
+            doc: found.doc(),
+        });
+    }
+    let function = functions::Function::from_name(name)?;
+    Some(Described {
+        signatures: overload::signatures(function, name),
+        doc: overload::Library::doc(function),
+    })
+}
+
+/// The names [`described`] knows: those called on a value when `method`, as `s.trim()`, and the others otherwise.
+pub(crate) fn function_names(method: bool) -> Vec<&'static str> {
+    let functions = functions::Function::NAMES.iter().copied().filter(|name| {
+        functions::Function::from_name(name).is_some_and(|function| {
+            overload::Library::overloads(function)
+                .iter()
+                .any(|overload| overload.receiver.is_some() == method)
+        })
+    });
+    let macros = ast::Macro::NAMES.iter().copied().filter(|_| method);
+    let has = (!method).then_some("has");
+    functions.chain(macros).chain(has).collect()
+}
+
 /// The types of the `md.` functions, for the checker.
 pub trait FunctionTypes {
     /// The type `md.<name>` gives for arguments of these types.
@@ -158,7 +200,8 @@ impl Scope {
         self.0.get(name)
     }
 
-    fn names(&self) -> impl Iterator<Item = &str> {
+    /// Every name, with its type.
+    pub(crate) fn names(&self) -> impl Iterator<Item = &str> {
         self.0.keys().map(String::as_str)
     }
 }

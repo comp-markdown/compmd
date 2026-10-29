@@ -2,7 +2,7 @@
 //! values, the params a list takes, and slots. The line is read again as the parser reads it, so a line being typed
 //! has a hint too.
 
-use super::{Completion, Found, ParameterHint, Place, Subject};
+use super::{Completion, Found, ParameterHint, Place, Subject, expression};
 use crate::parse::line::{Form, classify, matching_bracket};
 use crate::parse::params::{self, List, Written, name_len};
 use crate::tree::{Container, Node, ParamValue, SlotDeclaration};
@@ -180,6 +180,9 @@ fn params_of(
         .map(spot_of)
         .or_else(|| broken(line, list, at))
         .unwrap_or_else(|| token(line, at));
+    if let Some(found) = in_expression(place, line, at, &spot) {
+        return Some(found);
+    }
     let written: Vec<&str> = list.params.iter().filter_map(key_of).collect();
     let all = place.params(component);
     let others: Vec<ParameterHint> = all
@@ -236,6 +239,29 @@ fn params_of(
         },
     };
     Some(found)
+}
+
+/// The hint inside the expression that is the value at `spot`, `(…)`, when the caret is in it.
+fn in_expression(place: &Place, line: &[char], at: usize, spot: &Spot) -> Option<Found> {
+    let (start, end) = spot.value_at?;
+    if line.get(start) != Some(&'(') {
+        return None;
+    }
+    let inner = start + 1;
+    let inner_end = if end > inner && line[end - 1] == ')' {
+        end - 1
+    } else {
+        end
+    };
+    if at < inner || at > inner_end {
+        return None;
+    }
+    let found = expression::expression(place, &line[inner..inner_end], at - inner)?;
+    Some(Found {
+        start: found.start + inner,
+        end: found.end + inner,
+        ..found
+    })
 }
 
 /// The key a written param gives, `class` and `id` for `.name` and `#name`.
