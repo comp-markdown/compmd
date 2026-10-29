@@ -5,27 +5,54 @@ use crate::request::{self, Error};
 use crate::text::Text;
 use compmd::diagnostic::Diagnostic;
 use compmd::host::{Fetched, Time};
-use compmd::processor::Expanded;
+use compmd::processor::{Expanded, HostComponent};
 use compmd::{Processor, context::RenderContext, expanded};
 use serde::{Deserialize, Serialize};
 use serde_json::Value as Json;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-/// The processor of an open document, its text, and the render context its loads use.
+/// The processor of an open document, its text, the render context its loads use, and its host-language components.
 pub(crate) struct Document {
     text: Text,
     processor: Processor<Expanded>,
     context: RenderContext,
+    components: Vec<HostComponent>,
+    /// Whether the last change changed the components, so that it gives them.
+    components_changed: bool,
 }
 
-/// What the last change gave: the splice of the expanded tree, the root's inputs, and every diagnostic.
+/// What the last change gave: the splice of the expanded tree, the root's inputs, every diagnostic, and the
+/// host-language components when they changed.
 #[derive(Serialize)]
 struct Changes<'a> {
     splice: Splice<'a>,
     #[serde(skip_serializing_if = "expanded::Inputs::is_empty")]
     inputs: &'a expanded::Inputs,
     diagnostics: &'a [Diagnostic],
+    #[serde(skip_serializing_if = "Option::is_none")]
+    components: Option<Vec<Component<'a>>>,
+}
+
+/// A host-language component, for the renderer to run (`compmd::processor::HostComponent`).
+#[derive(Serialize)]
+struct Component<'a> {
+    name: &'a str,
+    language: &'static str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    runtime: Option<&'a str>,
+    code: &'a str,
+}
+
+impl<'a> From<&'a HostComponent> for Component<'a> {
+    fn from(component: &'a HostComponent) -> Self {
+        Self {
+            name: &component.name,
+            language: component.language.name(),
+            runtime: component.runtime.as_deref(),
+            code: &component.code,
+        }
+    }
 }
 
 /// The processed document's top-level expanded nodes `from..to` became `nodes`; every node after them moved by
@@ -60,14 +87,18 @@ impl Document {
         let mut prepared = request::prepare(json, time)?;
         let text = Text::new(std::mem::take(&mut prepared.text));
         let context = prepared.context.clone();
+        let processor = prepared.expand();
         Ok(Self {
             text,
-            processor: prepared.expand(),
+            components: processor.host_components(),
+            components_changed: true,
+            processor,
             context,
         })
     }
 
-    /// What the last change gave, `{splice, diagnostics}`; after opening, the splice is the whole tree.
+    /// What the last change gave, `{splice, inputs, diagnostics, components}`; after opening, the splice is the whole
+    /// tree, with every component.
     pub(crate) fn changes(&self) -> Result<String, Error> {
         let splice = self.processor.splice();
         let changes = Changes {
@@ -80,6 +111,9 @@ impl Document {
             },
             inputs: &self.processor.expanded().inputs,
             diagnostics: self.processor.diagnostics(),
+            components: self
+                .components_changed
+                .then(|| self.components.iter().map(Component::from).collect()),
         };
         Ok(serde_json::to_string(&changes)?)
     }
@@ -87,8 +121,16 @@ impl Document {
     /// The document after its text's UTF-16 `start..end` became `text`.
     pub(crate) fn edit(mut self, start: usize, end: usize, text: String) -> Self {
         let edit = self.text.edit(start, end, text);
+        let processor = self.processor.edit(&edit);
+        Self { processor, ..self }.settled()
+    }
+
+    /// With the components the processor gives now, noting whether they changed.
+    fn settled(self) -> Self {
+        let components = self.processor.host_components();
         Self {
-            processor: self.processor.edit(&edit),
+            components_changed: components != self.components,
+            components,
             ..self
         }
     }
@@ -103,7 +145,7 @@ impl Document {
         let processor = self
             .processor
             .reload(self.context.clone(), data.remote, data.host);
-        Self { processor, ..self }
+        Self { processor, ..self }.settled()
     }
 }
 
@@ -164,6 +206,30 @@ mod tests {
             json!({ "line": 1, "column": 8, "offset": 7 })
         );
         assert_eq!(changes["diagnostics"][0]["code"], "F002");
+    }
+
+    #[test]
+    fn components_come_on_open_and_when_their_code_changes() {
+        let text = "```jsx component=hi runtime=react@19\nexport default () => 'hi';\n```\n\n:: hi[Hi]\n\nText.\n";
+        let document = open(text);
+        assert_eq!(
+            changes(&document)["components"],
+            json!([{ "name": "hi", "language": "jsx", "runtime": "react@19", "code": "export default () => 'hi';" }])
+        );
+        let end = text.len() - 1;
+        let document = document.edit(end, end, "!".into());
+        assert!(
+            changes(&document).get("components").is_none(),
+            "a paragraph changed, not the code"
+        );
+        let quote = text.find("'hi'").expect("the code") + 1;
+        let document = document.edit(quote, quote + 2, "hello".into());
+        assert_eq!(
+            changes(&document)["components"][0]["code"],
+            "export default () => 'hello';"
+        );
+        let plain = open("```js component=p\nexport default () => {};\n```\n");
+        assert!(changes(&plain)["components"][0].get("runtime").is_none());
     }
 
     #[test]

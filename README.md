@@ -15,6 +15,7 @@ CompMD (Component Markdown) is a Markdown flavor that adds components, container
 | [markdown-rs/](https://github.com/comp-markdown/markdown-rs/tree/compmd) | The processor's parser: a fork of markdown-rs with CompMD's syntax, a git submodule (clone with `--recurse-submodules`) |
 | [wasm/](wasm/README.md) | `@compmd/processor`: the processor as WebAssembly for the browser, one typed call from text to trees |
 | [render/](render/README.md) | `@compmd/render`: an expanded tree as a live page, with the host contract's bindings; the reference rendering of the built-ins |
+| [editor/](editor/README.md) | The CompMD editor: a text area and the rendered page beside it, updated as you type; a static site that works offline once loaded |
 | [existing-specs-comparison.md](existing-specs-comparison.md) | The spec compared with MDX, Markdoc, Nuxt MDC and Comark, MyST, Quarto, Livebook's Live Markdown and Active Markdown |
 
 The spec is a document format of its own and doesn't depend on any application.

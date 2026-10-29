@@ -52,6 +52,16 @@ impl Names {
     pub fn all(&self) -> impl Iterator<Item = &str> {
         self.bindings.keys().map(String::as_str)
     }
+
+    /// Every name that stands for a component, with it.
+    pub(crate) fn components(&self) -> impl Iterator<Item = (&str, ComponentId)> {
+        self.bindings
+            .iter()
+            .filter_map(|(name, binding)| match binding {
+                Binding::Component(id, _) => Some((name.as_str(), *id)),
+                Binding::Ambiguous(_) | Binding::Dropped => None,
+            })
+    }
 }
 
 /// Collects a document's names level by level.

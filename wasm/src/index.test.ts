@@ -141,6 +141,15 @@ describe("OpenDocument", () => {
     expect(document.diagnostics).toEqual([]);
   });
 
+  it("keeps the host-language components, which a change gives only when they changed", () => {
+    const document = new OpenDocument(completeExample());
+    expect(document.components.map((c) => [c.name, c.language])).toEqual([["board", "jsx"], ["chart", "jsx"], ["sparkline", "jsx"]]);
+    const text = completeExample().files?.["input.comp.md"] ?? "";
+    const at = text.indexOf("## What changed") + 3;
+    expect(document.edit(at, at, "x").components).toBeUndefined();
+    expect(document.components).toHaveLength(3);
+  });
+
   it("throws on a request it can't open", () => {
     expect(() => new OpenDocument({ path: "a.comp.md", files: {}, now })).toThrow("`a.comp.md` isn't one of the request's files");
   });

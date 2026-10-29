@@ -1,7 +1,7 @@
 {
   "name": "compmd",
   "private": true,
-  "description": "The CompMD repository's pnpm workspace: the renderer, the processor as WebAssembly, and later the editor.",
+  "description": "The CompMD repository's pnpm workspace: the renderer, the processor as WebAssembly, and the editor.",
   "devEngines": {
     "packageManager": { "name": "pnpm", "version": "12.14.0", "onFail": "download" },
     "runtime": { "name": "node", "version": "24", "onFail": "download" }

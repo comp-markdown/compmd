@@ -7,7 +7,7 @@ use common::{at, place};
 use compmd::context::RenderContext;
 use compmd::expand;
 use compmd::host::{Fetched, LoadedRelease, Needed, Release};
-use compmd::{Ambient, ParseOptions, Processor};
+use compmd::{Ambient, Language, ParseOptions, Processor};
 use semver::Version;
 use serde_json::{Value, json};
 use std::collections::HashMap;
@@ -32,6 +32,8 @@ struct Rendered {
     found: Vec<(String, usize, usize)>,
     files: Vec<Option<String>>,
     sources: Needed,
+    /// The host-language components, by name and language.
+    components: Vec<(String, Language)>,
 }
 
 fn render(input: &str, setup: Setup) -> Rendered {
@@ -93,6 +95,11 @@ fn render(input: &str, setup: Setup) -> Rendered {
         found,
         files: diagnostics.iter().map(|d| d.file.clone()).collect(),
         sources: needed,
+        components: expanded
+            .host_components()
+            .into_iter()
+            .map(|c| (c.name, c.language))
+            .collect(),
     }
 }
 
@@ -559,6 +566,79 @@ fn a_reload_takes_newly_fetched_data() {
     assert_eq!(second.diagnostics(), []);
     let tree = serde_json::to_value(second.expanded()).expect("the tree serializes");
     assert_eq!(text(&tree), "fresh");
+}
+
+#[test]
+fn host_components_come_with_their_code_from_fences_files_and_packs() {
+    let dir = common::conformance().join("examples/complete-example-expanded");
+    let setup = common::Setup::of(&dir, &Value::Null);
+    let processor = setup.process("input.comp.md", &setup.files["input.comp.md"]);
+    let components = processor.host_components();
+    let found: Vec<(&str, Language, Option<&str>)> = components
+        .iter()
+        .map(|c| (c.name.as_str(), c.language, c.runtime.as_deref()))
+        .collect();
+    assert_eq!(
+        found,
+        [
+            ("board", Language::Jsx, None),
+            ("chart", Language::Jsx, None),
+            ("sparkline", Language::Jsx, Some("react@19")),
+        ],
+        "an imported file, a pack's file, a fence"
+    );
+    assert_eq!(components[0].code, setup.files["board.jsx"]);
+    let pack = dir.join("registry/acme-charts-1.4.2/chart.jsx");
+    assert_eq!(
+        components[1].code,
+        std::fs::read_to_string(pack).expect("chart.jsx")
+    );
+    assert!(
+        components[2]
+            .code
+            .starts_with("export default function Sparkline")
+    );
+}
+
+#[test]
+fn host_components_leave_out_what_no_binding_runs() {
+    let input = "---\nmd:\n  import:\n    - from: ./gone.jsx\n      names: [e]\n---\n\n```vue component=a\nx\n```\n\n```svelte component=b runtime=svelte@4\nx\n```\n\n```svelte component=c\n<p>c</p>\n```\n\n```compmd component=d\n---\nD\n```\n";
+    let rendered = Processor::new("input.comp.md", input)
+        .parse(&ParseOptions::default())
+        .resolve((), (), &Ambient::default())
+        .validate(&[])
+        .load(
+            RenderContext {
+                now: 0,
+                tz: "UTC".into(),
+                time: Rc::new(()),
+                inputs: serde_json::Map::new(),
+            },
+            (),
+            (),
+        )
+        .expand(&expand::Options::default());
+    let names: Vec<(String, Language)> = rendered
+        .host_components()
+        .into_iter()
+        .map(|c| (c.name, c.language))
+        .collect();
+    assert_eq!(names, [("c".into(), Language::Svelte)]);
+}
+
+#[test]
+fn a_name_two_documents_give_is_the_processed_documents() {
+    let rendered = render(
+        "---\nmd:\n  import:\n    - from: ./kit.comp.md\n      names: [wrap]\n---\n\n```jsx component=chip\nexport default () => 'mine';\n```\n\n:: wrap[W]\n",
+        Setup {
+            files: vec![(
+                "kit.comp.md",
+                "---\nmd:\n  export:\n    names: [wrap]\n---\n\n```js component=chip\nexport default () => {};\n```\n\n```compmd component=wrap\n---\n:: chip[C]\n```\n",
+            )],
+            ..Setup::default()
+        },
+    );
+    assert_eq!(rendered.components, [("chip".to_string(), Language::Jsx)]);
 }
 
 #[test]

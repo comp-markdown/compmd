@@ -43,7 +43,7 @@ document.reload({ remote: await fetchAll(remote), host: hostData(host) });
 ```
 
 - **Positions are the editor's**, in UTF-16 units, as a JavaScript string counts them (`selectionStart`, CodeMirror's `from` and `to`). The module turns them into the code points the processor counts. Give it the editor's text (`textarea.value`, `state.doc.toString()`), so both count the same text.
-- **Each change gives a splice**, `{splice, inputs, diagnostics}`. The top-level nodes `from..to` became `nodes`, and the nodes after them moved by `lines` and `offset`. `OpenDocument` applies it to the tree it keeps, moving those nodes' origins, so `expanded` is always the whole tree. Only its top-level array is new after a change; the nodes in it are updated in place.
+- **Each change gives a splice**, `{splice, inputs, diagnostics, components}`. `components` are the host-language components the tree can name, with their code, for a renderer that runs them; they come after opening, and after a change only when they changed. `OpenDocument.components` keeps the latest. The top-level nodes `from..to` became `nodes`, and the nodes after them moved by `lines` and `offset`. `OpenDocument` applies it to the tree it keeps, moving those nodes' origins, so `expanded` is always the whole tree. Only its top-level array is new after a change; the nodes in it are updated in place.
 - For an edit inside one block, neither the processing nor the splice grows with the document. Moving the origins after the edit does: it is a pass over those nodes.
 - `free()` releases the module's memory for the document.
 
@@ -54,7 +54,7 @@ Time zone offsets come from the page's `Intl`, so the module carries no zone dat
 - The Rust crate `compmd-wasm` in this folder is the binding: `process`, `sources` and the class `Document` take and give JSON text, through `wasm-bindgen`. The request (`src/request.rs`), the open document (`src/document.rs`) and the UTF-16 positions (`src/text.rs`) are tested natively, within the workspace's coverage gate; `src/lib.rs` only passes them through.
 - The text kept with an open document has each line's start in bytes, UTF-16 units and code points, so a position is found in its line. An edit that removes a leading byte order mark, or writes text before it, changes where the processor starts counting, so it is sent as an edit of the whole text.
 - It is built size-optimized: the workspace's `wasm` profile, with `opt-level = "z"`, LTO and one codegen unit.
-- `wasm-bindgen --target web` writes the JavaScript glue to `pkg/`.
+- `wasm-bindgen --target web` writes the JavaScript glue to `pkg/`. The `package.json` it writes there is removed, since it has no `"type": "module"`, which made TypeScript read the glue as CommonJS and `init` as no function.
 - `src/index.ts` parses both ways, gives the types, and keeps an open document's expanded tree (`OpenDocument`).
   - The expanded tree's types are `@compmd/render`'s.
   - The parse tree's types are in `src/parse-tree.ts`, following [the tree schema](../conformance/compmd-tree.schema.json).

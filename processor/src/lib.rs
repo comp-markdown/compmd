@@ -42,4 +42,4 @@ mod validate;
 
 pub use parse::{ParseOptions, TextEdit};
 pub use processor::Processor;
-pub use resolve::Ambient;
+pub use resolve::{Ambient, Language};

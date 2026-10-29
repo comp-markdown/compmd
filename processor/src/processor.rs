@@ -50,6 +50,7 @@ use crate::expanded::{self, Inputs};
 use crate::host::{Data, Fetch, Files, Needed, Packs};
 use crate::load;
 use crate::parse::{self, Change, ParseOptions, TextEdit};
+pub use crate::resolve::HostComponent;
 use crate::resolve::{self, Ambient, Store};
 use crate::tree::Move;
 use crate::{expand, tree, validate};
@@ -501,6 +502,34 @@ impl Processor<Expanded> {
             .expand(&options);
         processor.state.replaced.nodes = 0..before;
         processor
+    }
+
+    /// The host-language components the expanded tree can name, with their code, by name: what a renderer that
+    /// runs them needs, since the tree names a component but doesn't hold its code (spec §7.4, §12.3). Only those
+    /// one of the processor's bindings runs (others render their fallback, W102); a name two documents give
+    /// different components is the processed document's, or else the first loaded.
+    ///
+    /// ```
+    /// use compmd::context::RenderContext;
+    /// use compmd::{Ambient, Language, ParseOptions, Processor};
+    /// use std::rc::Rc;
+    ///
+    /// let text = "```jsx component=hello runtime=react@19\nexport default () => <b>Hi</b>;\n```\n\n:: hello[Hi]\n";
+    /// let context = RenderContext { now: 0, tz: "UTC".into(), time: Rc::new(()), inputs: Default::default() };
+    /// let processor = Processor::new("a.comp.md", text)
+    ///     .parse(&ParseOptions::default())
+    ///     .resolve((), (), &Ambient::default())
+    ///     .validate(&[])
+    ///     .load(context, (), ())
+    ///     .expand(&Default::default());
+    /// let [hello] = processor.host_components().try_into().unwrap();
+    /// assert_eq!((hello.name.as_str(), hello.language), ("hello", Language::Jsx));
+    /// assert_eq!(hello.code, "export default () => <b>Hi</b>;");
+    /// ```
+    #[must_use]
+    pub fn host_components(&self) -> Vec<HostComponent> {
+        let validated = &self.state.validated;
+        validated.resolved.host_components(validated.store.store())
     }
 
     /// The remote and `host:` sources a render needs with the context the processor keeps, as

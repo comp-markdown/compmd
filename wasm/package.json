@@ -7,10 +7,11 @@
   "sideEffects": false,
   "files": ["dist", "pkg"],
   "exports": {
-    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" }
+    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
+    "./compmd_wasm_bg.wasm": "./pkg/compmd_wasm_bg.wasm"
   },
   "scripts": {
-    "wasm": "cargo build --profile wasm --target wasm32-unknown-unknown -p compmd-wasm && wasm-bindgen --target web --out-dir pkg ../target/wasm32-unknown-unknown/wasm/compmd_wasm.wasm",
+    "wasm": "cargo build --profile wasm --target wasm32-unknown-unknown -p compmd-wasm && wasm-bindgen --target web --out-dir pkg ../target/wasm32-unknown-unknown/wasm/compmd_wasm.wasm && node -e \"require('node:fs').rmSync('pkg/package.json', { force: true })\"",
     "build": "pnpm wasm && tsc -p tsconfig.build.json",
     "lint": "pnpm wasm && eslint . && tsc --noEmit",
     "test": "pnpm wasm && vitest run",

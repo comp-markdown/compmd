@@ -11,7 +11,7 @@ mod origin;
 mod source;
 mod uses;
 
-pub(crate) use language::Language;
+pub use language::Language;
 pub(crate) use names::{Binding, Names};
 pub(crate) use origin::Origin;
 use origin::RESERVED_SCOPE;
@@ -174,7 +174,45 @@ pub(crate) struct Component {
     pub(crate) position: Option<Position>,
 }
 
+/// A host-language component, with what a renderer needs to run it (spec §7.4): the name the expanded tree gives it,
+/// its language and runtime, and its code.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HostComponent {
+    /// The name a document gives it, as its nodes in the expanded tree have it.
+    pub name: String,
+    /// The language: the definition fence's first word, or the component file's extension.
+    pub language: Language,
+    /// The fence's `runtime=`; `None` for the binding's default.
+    pub runtime: Option<String>,
+    /// The code: the fence's content, or the component file's text.
+    pub code: String,
+}
+
 impl Component {
+    /// It as a host-language component named `name`, when one of the processor's bindings runs it and its code is
+    /// there: a fence's, or its file's from `store`.
+    fn host_code(&self, name: &str, store: Store<'_>) -> Option<HostComponent> {
+        let (language, runtime, code) = match &self.body {
+            Body::Host {
+                language,
+                runtime,
+                source,
+            } => {
+                let language = Language::from_name(language)?;
+                language.runs(runtime.as_deref()).then_some(())?;
+                (language, runtime.clone(), source.clone())
+            }
+            Body::File { origin, language } => (*language, None, store.read(origin)?),
+            Body::Compmd(_) | Body::Processor => return None,
+        };
+        Some(HostComponent {
+            name: name.to_string(),
+            language,
+            runtime,
+            code,
+        })
+    }
+
     /// The built-in keyword it is, if any. Resolving admits a keyword as a name only in `@compmd/core` (F013), so a
     /// component with a keyword's name is always core's.
     pub(crate) fn keyword(&self) -> Option<Keyword> {
@@ -250,6 +288,25 @@ impl Resolved {
         main.root = Rc::default();
         let lines = std::mem::replace(&mut main.line_starts, LineStarts::new(""));
         (std::mem::take(&mut main.text), lines)
+    }
+
+    /// Every host-language component one of this processor's bindings runs, by each name a document gives it, with
+    /// its code from `store`; by name. A name two documents give different components is the processed document's,
+    /// or else the first document's in load order.
+    pub(crate) fn host_components(&self, store: Store<'_>) -> Vec<HostComponent> {
+        let mut found: BTreeMap<&str, HostComponent> = BTreeMap::new();
+        let main_first = std::iter::once(self.main).chain(self.ids().filter(|id| *id != self.main));
+        for id in main_first {
+            for (name, component) in self.document(id).names.components() {
+                if found.contains_key(name) {
+                    continue;
+                }
+                if let Some(host) = self.component(component).host_code(name, store) {
+                    found.insert(name, host);
+                }
+            }
+        }
+        found.into_values().collect()
     }
 
     /// The diagnostics of stage 2, and of stage 1 for the documents it imports, in order.

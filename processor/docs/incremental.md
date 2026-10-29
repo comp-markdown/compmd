@@ -209,7 +209,7 @@ pub struct Splice { pub from: usize, pub to: usize, pub nodes: Vec<expanded::Nod
 
 ## The WebAssembly binding
 
-- `new Document(request)` processes a document once and keeps the processor; `edit(start, end, text)` gives `{splice, inputs, diagnostics}` as JSON: the splice with its moved positions, the root's inputs, which the splice doesn't cover, and every diagnostic.
+- `new Document(request)` processes a document once and keeps the processor; `edit(start, end, text)` gives `{splice, inputs, diagnostics, components}` as JSON: the splice with its moved positions, the root's inputs, which the splice doesn't cover, every diagnostic, and the host-language components with their code when they changed.
 - An edit to the frontmatter gives a splice like any other. A host that fetches ahead asks for `sources()`, in the form `sources(request)` gives them, and after fetching calls `reload(fetched)`, whose splice replaces the whole tree.
 - Offsets cross the boundary in UTF-16, as a JavaScript string counts them. The binding keeps the text with each line's start in bytes, UTF-16 units and code points, so it finds a position in its line. An edit that removes a leading byte order mark, or writes text before it, changes where the processor starts counting, so the binding sends it as an edit of the whole text.
 - The TypeScript wrapper, `OpenDocument`, keeps the whole expanded tree by applying each splice, moving the origins of the nodes after it in place, and gives it to `@compmd/render`, which already updates the page by key. Its tests compare the tree and diagnostics after every edit with processing from scratch.

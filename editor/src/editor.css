@@ -1,0 +1,136 @@
+:root {
+  color-scheme: light dark;
+  --surface: #fcfcfb;
+  --plane: #f9f9f7;
+  --ink: #0b0b0b;
+  --ink-secondary: #52514e;
+  --hairline: #e1e0d9;
+  --error: #d03b3b;
+  --warning: #9a6700;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface: #1a1a19;
+    --plane: #0d0d0d;
+    --ink: #f0efec;
+    --ink-secondary: #c3c2b7;
+    --hairline: #2c2c2a;
+    --error: #e66767;
+    --warning: #fab219;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--plane);
+  color: var(--ink);
+  font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 24px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+h1 {
+  margin: 0;
+  font-size: 16px;
+}
+
+label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status {
+  margin: 0 0 0 auto;
+  color: var(--ink-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+main {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  flex: 1;
+  min-height: 0;
+}
+
+@media (max-width: 800px) {
+  main {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 1fr;
+  }
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-inline-end: 1px solid var(--hairline);
+}
+
+textarea {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  resize: none;
+  border: 0;
+  padding: 16px;
+  background: var(--surface);
+  color: var(--ink);
+  font: 13px/1.5 ui-monospace, "SF Mono", Menlo, monospace;
+  tab-size: 2;
+}
+
+textarea:focus {
+  outline: none;
+}
+
+.diagnostics {
+  max-height: 30%;
+  overflow: auto;
+  margin: 0;
+  padding: 8px 16px;
+  list-style: none;
+  border-top: 1px solid var(--hairline);
+}
+
+.diagnostics .error code {
+  color: var(--error);
+}
+
+.diagnostics .warning code {
+  color: var(--warning);
+}
+
+li.error {
+  color: var(--error);
+}
+
+iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: var(--surface);
+}

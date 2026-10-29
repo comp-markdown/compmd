@@ -131,6 +131,23 @@ export interface Changes {
   inputs?: Record<string, ExpandedInput>;
   /** Every diagnostic of the document, in stage order. */
   diagnostics: Diagnostic[];
+  /** The host-language components, when the change changed them (and after opening). */
+  components?: HostComponent[];
+}
+
+/**
+ * A host-language component the expanded tree can name, with its code, for a renderer that runs it (spec §7.4): the
+ * tree names a component but doesn't hold its code. A name two documents give different components is the processed
+ * document's, or else the first loaded.
+ */
+export interface HostComponent {
+  /** The name its nodes have in the expanded tree. */
+  name: string;
+  language: "jsx" | "tsx" | "svelte" | "js" | "ts";
+  /** The fence's `runtime=`; absent for the binding's default. */
+  runtime?: string;
+  /** A fence's content, or a component file's text. */
+  code: string;
 }
 
 /** Data the host fetched for {@link OpenDocument.reload}, as a request gives it. */
@@ -186,6 +203,7 @@ export class OpenDocument {
   readonly #origins: boolean;
   #expanded: ExpandedRoot = { type: "root", children: [] };
   #diagnostics: Diagnostic[] = [];
+  #components: HostComponent[] = [];
 
   constructor(request: Request) {
     this.#kept = new Kept(JSON.stringify(request));
@@ -201,6 +219,11 @@ export class OpenDocument {
   /** The diagnostics of every stage, in stage order. */
   get diagnostics(): readonly Diagnostic[] {
     return this.#diagnostics;
+  }
+
+  /** The host-language components the tree can name, with their code. */
+  get components(): readonly HostComponent[] {
+    return this.#components;
   }
 
   /** The text's UTF-16 `start..end` became `text`; one edit per change, each in the text the one before left. */
@@ -238,6 +261,7 @@ export class OpenDocument {
       ...(changes.inputs ? { inputs: changes.inputs } : {}),
     };
     this.#diagnostics = changes.diagnostics;
+    if (changes.components) this.#components = changes.components;
     return changes;
   }
 }
