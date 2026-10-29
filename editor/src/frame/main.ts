@@ -1,11 +1,15 @@
 // The frame: a sandboxed iframe that renders what the editor sends, through `@compmd/render`'s frame protocol, and
 // compiles the document's host-language components the editor sends on the same port, in the host's stylesheet the
-// editor picks.
+// editor picks, with its math typeset.
 
 import { serveFrame } from "@compmd/render/frame";
 import { FRAME_HELLO, type ComponentFailed, type ComponentsMessage, type HostStyleMessage } from "../protocol.ts";
 import { Components } from "./components.ts";
 import { load } from "./load.ts";
+import { typesetMath } from "./math.ts";
+
+/** Math typeset by Temml, which loads the first time a page has math. */
+const math = typesetMath(async () => (await import("temml")).default);
 
 /** Each component's stylesheet, adopted by the frame's document. */
 const sheets = new Map<string, CSSStyleSheet>();
@@ -40,5 +44,5 @@ addEventListener("message", (event: MessageEvent) => {
     if (data.type === "host-style") document.documentElement.dataset.host = (data as HostStyleMessage).style;
   });
   const container = document.getElementById("page");
-  if (container) serveFrame(port, { container, components: components.mounts });
+  if (container) serveFrame(port, { container, components: components.mounts, math });
 });

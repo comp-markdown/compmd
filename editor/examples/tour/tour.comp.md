@@ -49,7 +49,7 @@ Everything Markdown does still works, as CommonMark and GitHub write it: **bold*
 > [!NOTE]
 > Alerts come in five kinds: note, tip, important, warning and caution.
 
-Math is written in TeX, inline as $e^{i\pi} + 1 = 0$, or as a block. This page shows the TeX as code; a host with a math renderer typesets it:
+Math is written in TeX and typeset on the page: inline between single dollar signs, $e^{i\pi} + 1 = 0$, or as a block between lines of two, as below. Look at the text to see the TeX behind each; a renderer that doesn't typeset math shows that TeX instead.
 
 $$
 \sum_{n=1}^{\infty} \frac{1}{n^2} = \frac{\pi^2}{6}
