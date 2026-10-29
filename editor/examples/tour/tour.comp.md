@@ -28,7 +28,7 @@ md:
       as: books
       schema: {title: string, author: string, year: number, pages: number, read: boolean}
   inputs:
-    since: number = 1960
+    since: number = 1970
     unread: boolean = false
 ---
 
@@ -355,7 +355,7 @@ Read so far: :value[840 pages]{of=(md.number(md.sum(md.data.books.filter(b, b.re
 
 *Inputs* are values the reader changes. The frontmatter declares each with a type and a default, the page reads it as `md.input.<name>`, and an input component edits it:
 
-:: number-input[Published since: 1960] {bind=since}
+:: number-input[Published since: 1970] {bind=since}
 
 :: toggle-input[Unread only: no] {bind=unread}
 
@@ -467,7 +467,8 @@ import * as d3 from "d3";
 export default function mount(target, { params, fallback }) {
   const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const ms = (duration) => (still ? 0 : duration);
-  const color = d3.scaleOrdinal(d3.range(1, 9).map((n) => `var(--viz-series-${String(n)})`));
+  // A book's color comes from its title, so it's the same on every shelf.
+  const color = (title) => `var(--viz-series-${String((d3.sum([...title], (c) => c.codePointAt(0)) % 8) + 1)})`;
   const root = d3.select(target).append("div").attr("role", "group").attr("aria-label", fallback.text);
   const shelf = root
     .append("div")
@@ -594,8 +595,21 @@ export default function mount(target, { params, fallback }) {
 
 :: bookshelf[The reading list as a shelf: click a book to see its author, year and pages] {books=(md.data.books.filter(b, b.year >= md.input.since && (!md.input.unread || !b.read)))}
 
+A component written in code is used like any other, as often as you like, each time with its own params. And its params are expressions like any other, so they can use every input this document defines, just as before. This second shelf holds the books published *before* the year you picked in lesson 11, where the first holds those since:
+
+:: bookshelf[The books published before the year picked above] {books=(md.data.books.filter(b, b.year < md.input.since))}
+
+Components also nest, whatever they're written in. Here the `note` defined in lesson 8, written in CompMD, holds a shelf written in JavaScript, given only one author's books:
+
+::: note {title="Ursula K. Le Guin on the shelf"}
+:: bookshelf[The books by Ursula K. Le Guin] {books=(md.data.books.filter(b, b.author == "Ursula K. Le Guin"))}
+
+:: #footer
+*A note in CompMD, holding a component in JavaScript.*
+::: /note
+
 > [!TIP]
-> **Try it.** Click *Solaris*, then click it again. Turn on *unread only* in the bar above the tabs, and watch the read books leave the shelf; turn it off, and they come back.
+> **Try it.** Click *Solaris*, then click it again. Set the year above to 1975, and watch books move from one shelf to the other; turn on *unread only*, and the read books leave the first shelf. Then add `kind=warning` to the note.
 
 ## 14. Where next
 
