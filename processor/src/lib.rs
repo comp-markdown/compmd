@@ -40,6 +40,6 @@ mod settings;
 pub mod tree;
 mod validate;
 
-pub use parse::ParseOptions;
+pub use parse::{ParseOptions, TextEdit};
 pub use processor::Processor;
 pub use resolve::Ambient;

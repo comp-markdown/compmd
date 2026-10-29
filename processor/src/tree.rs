@@ -3,6 +3,10 @@
 //! Every type serializes to the JSON of spec §12.4 with `serde`, so `serde_json::to_value(&root)` is the tree
 //! `conformance/compmd-tree.schema.json` defines as `#/$defs/parseRoot`.
 
+mod shift;
+
+pub(crate) use shift::{Move, Shift};
+
 use crate::named::named;
 use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};

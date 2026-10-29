@@ -299,11 +299,12 @@ fn run_stages(dir: &Path, case: &Value) -> Run {
             .is_some_and(|features| features.contains(&json!("origins"))),
         ..Options::default()
     };
+    let (remote, host) = (remote(dir, &context), host(dir, &context));
     let processor = Processor::new("input.comp.md", files["input.comp.md"].clone())
         .parse(&ParseOptions::default())
         .resolve(&files, &packs, &ambient)
         .validate(&strings("allowedOrigins"))
-        .load(&render, &remote(dir, &context), &host(dir, &context))
+        .load(&render, &remote, &host)
         .expand(&options);
     Run {
         diagnostics: processor.diagnostics().to_vec(),

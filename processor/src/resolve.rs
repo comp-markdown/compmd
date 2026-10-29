@@ -201,6 +201,11 @@ impl Resolved {
         &self.documents[id.0]
     }
 
+    /// The processed document, taken out of the result.
+    pub(crate) fn into_main(mut self) -> Document {
+        self.documents.swap_remove(self.main.0)
+    }
+
     /// The component `id` names.
     pub(crate) fn component(&self, id: ComponentId) -> &Component {
         &self.components[id.0]

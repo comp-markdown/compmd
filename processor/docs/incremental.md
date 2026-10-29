@@ -1,12 +1,12 @@
 # Incremental processing
 
-**Status: proposal.** How the processor handles an edit without processing the whole document again.
+**Status: phase 1 done** (parsing). How the processor handles an edit without processing the whole document again.
 
 Today every change runs stages 1 to 4b on the whole text. The WebAssembly build takes about 3 ms for the spec's complete example and 10 ms for a 52 KB body (p95, an Apple M4), and the time grows with the document: a body ten times as long would take about ten times as long. An editor that processes on every key press needs the time to depend on the edit, not on the document.
 
 ## Decisions
 
-1. **The unit is a top-level block** of the processed document: a paragraph, a heading, a whole list, a whole block quote, a whole `:::` container, a fence. A block nested in a list or a container can't be parsed on its own, because Markdown's block structure depends on what is around it; a top-level block can.
+1. **The unit is a run of top-level blocks** of the processed document (a paragraph, a heading, a whole list, a whole block quote, a whole `:::` container, a fence), ended by a blank line where no container is open. A block nested in a list or a container can't be parsed on its own, because Markdown's block structure depends on what is around it; a run like this can. Blocks with no blank line between them stay in one unit, since they affect each other: a lazy line or a `===` line joins the paragraph above, and W108 reports a component line right after a paragraph line. A continuation line (`::: + params`) stays with the component line before it, even after a blank line.
 2. **An edit is classified, and its class decides what is redone** (see [Edits](#edits)). An edit inside one body block redoes that block, through every stage.
 3. **The result equals processing from scratch:** the same parse tree, expanded tree and diagnostics. A differential test checks this over random edits.
 4. **One more method on the expanded processor**, next to `reload`, that takes only the edit:
@@ -118,11 +118,11 @@ An edit is classified by the blocks it overlaps before and after it is parsed: t
 
 ## Stage 1: parsing
 
-- **What is kept.** The processed document's top-level blocks, each with its text range, its nodes and its parse diagnostics.
-- **What is parsed again.** The blocks the edit overlaps, and one block either side. An edit reaches across block boundaries: a `---` line turns the paragraph above it into a heading, a deleted blank line joins two blocks, a lazy continuation line joins the block before it.
-- **Resync.** The slice is parsed as a text of its own, placed at its origin, as the parser already does for fallbacks and definition bodies. Its last block has to end where the slice ends. If it doesn't (a fence or a container opened and not closed takes in what follows), the slice is parsed again with twice as many blocks after the edit, until it ends on a block boundary or reaches the end of the body. Doubling keeps the worst case, a fence opened at the top that takes in the whole rest, to about twice the cost of parsing the whole body, with no limit to tune.
+- **What is kept.** The processed document's units, each with its text range, how many of the tree's blocks and parse diagnostics it holds, and the labels it defines.
+- **What is parsed again.** The units the edit overlaps, and one unit either side. An edit reaches across unit boundaries: a deleted blank line joins two units, a typed `---` line turns the paragraph above it into a heading. The slice runs from the end of the unit before it to the start of the unit after it, so the blank lines and stray lines between units are always parsed with the units around them. A slice that starts at the start of the text is parsed as the document is, with frontmatter allowed.
+- **Resync.** The slice is parsed as a text of its own, placed at its origin, as the parser already does for fallbacks and definition bodies. Its last unit has to come out as it was before, moved: the same blocks and diagnostics. If it doesn't (a fence or a container opened and not closed takes in what follows), the slice is parsed again with twice as many units after the edit, until its last unit comes out as before or the slice reaches the end of the body. Doubling keeps the worst case, a fence opened at the top that takes in the whole rest, to about twice the cost of parsing the whole body, with no limit to tune.
 - **Labels.** The slice is parsed with the labels the rest of the document defines (decision 5), so references parse as they would in place.
-- **The blocks after the slice** keep their nodes. Their positions move by the edit's change in lines and offsets. Columns don't change: each block after the slice starts on a line of its own. Moving positions costs a pass over those nodes, far less than parsing them. Positions relative to each block would remove that pass, later.
+- **The units after the slice** keep their nodes. Their positions move by the edit's change in lines and offsets. Columns don't change: each block after the slice starts on a line of its own. Moving positions costs a pass over those nodes, far less than parsing them. Positions relative to each block would remove that pass, later.
 - **The frontmatter** is read only when the edit touches it.
 
 ### Labels
@@ -280,3 +280,5 @@ A collaborator's edit arrives like a local one, so the preview follows a shared 
   | the document that uses the component | A component could link to a target each user defines | The same body parses differently for each use, so it can't be parsed or checked once; its tree (spec §12.1) would depend on who uses it, against lexical scope everywhere else in the spec |
 
   Keeping the spec's choice also keeps incremental parsing simpler: a body never needs the labels option.
+
+- **A first `---` line that is never closed breaks the fork's parse of the lines after it.** With markdown-rs's frontmatter construct on, `---\nus\n- a\n` parses `- a` as part of the paragraph `us`, where CommonMark makes it a list, as it does with the construct off. The bug is upstream's, with CommonMark constructs alone. The differential test found it, since a slice is parsed without the construct. The processor now turns the construct on only when its own check finds closed frontmatter, which fixes the whole parse too; the fork itself is still to fix.

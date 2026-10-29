@@ -7,6 +7,7 @@
 
 mod blocks;
 pub(crate) mod definitions;
+mod edit;
 mod frontmatter;
 mod inlines;
 mod line;
@@ -14,9 +15,14 @@ pub(crate) mod params;
 mod source;
 pub(crate) mod yaml;
 
+pub use edit::TextEdit;
+pub(crate) use edit::reparse;
+
 use crate::diagnostic::{Code, Diagnostic, Location};
 use crate::settings::Settings;
 use crate::tree::{Point, Root};
+use blocks::Marks;
+use edit::Unit;
 use markdown::mdast;
 use serde_json::Value;
 use source::{START, Source};
@@ -38,6 +44,42 @@ pub(crate) struct Parsed {
     pub(crate) settings: Settings,
     /// The parse diagnostics, in the order they were found.
     pub(crate) diagnostics: Vec<Diagnostic>,
+    /// The units of the tree's blocks, which an edit parses again on their own.
+    units: Vec<Unit>,
+    syntax: Syntax,
+}
+
+/// What the next edit needs of a parse besides its tree, settings and diagnostics, which the later stages hold.
+#[derive(Clone, Debug)]
+pub(crate) struct Kept {
+    units: Vec<Unit>,
+    syntax: Syntax,
+}
+
+impl Parsed {
+    /// Takes out what the next edit needs besides the tree, the settings and the diagnostics.
+    pub(crate) fn keep(&mut self) -> Kept {
+        Kept {
+            units: std::mem::take(&mut self.units),
+            syntax: self.syntax,
+        }
+    }
+
+    /// The parse again, from its tree, settings, diagnostics and what [`Self::keep`] took.
+    pub(crate) fn from_parts(
+        root: Root,
+        settings: Settings,
+        diagnostics: Vec<Diagnostic>,
+        kept: Kept,
+    ) -> Self {
+        Self {
+            root,
+            settings,
+            diagnostics,
+            units: kept.units,
+            syntax: kept.syntax,
+        }
+    }
 }
 
 /// Parses a CompMD document: stage 1 of spec §11.
@@ -71,23 +113,25 @@ pub(crate) fn parse(text: &str, options: &ParseOptions) -> Parsed {
         compmd,
         wiki_links: metadata.as_ref().is_some_and(frontmatter::wiki_links),
     };
-    let root = Converter {
+    let (root, units) = Converter {
         source: Source::new(text, START),
         syntax,
         labels: &Labels::NONE,
         frontmatter: parsed,
         diagnostics: &mut diagnostics,
     }
-    .document(true);
+    .units(true);
     Parsed {
         root,
         settings,
         diagnostics,
+        units,
+        syntax,
     }
 }
 
 /// The syntax a document is parsed with.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 struct Syntax {
     /// CompMD's syntax; without it, plain CommonMark and GFM (F001, F033).
     compmd: bool,
@@ -137,11 +181,15 @@ impl Labels {
 impl Syntax {
     /// The fork's mdast for `text`, with `labels` defined outside it. Without MDX the fork has no syntax errors, so it
     /// always gives a root.
+    ///
+    /// The fork's frontmatter construct is on only when the text has frontmatter: when it fails, on a first `---`
+    /// line that is never closed, the fork parses the lines after it wrongly (a list no longer interrupts a
+    /// paragraph).
     fn mdast(self, text: &str, frontmatter: bool, labels: &Labels) -> mdast::Root {
         let options = markdown::ParseOptions {
             definitions: labels.links.clone(),
             gfm_footnote_definitions: labels.footnotes.clone(),
-            ..self.fork_options(frontmatter)
+            ..self.fork_options(frontmatter && frontmatter::find(text).is_some())
         };
         match markdown::to_mdast(text, &options) {
             Ok(mdast::Node::Root(root)) => root,
@@ -187,6 +235,19 @@ struct Converter<'s, 'd> {
 impl Converter<'_, '_> {
     /// The tree of the whole text, with frontmatter when it may have some.
     fn document(self, frontmatter: bool) -> Root {
+        self.convert(frontmatter, None).0
+    }
+
+    /// [`Self::document`], and the units of its blocks.
+    fn units(self, frontmatter: bool) -> (Root, Vec<Unit>) {
+        let mut marks = Marks::default();
+        let (root, diagnostics) = self.convert(frontmatter, Some(&mut marks));
+        let units = Unit::from_marks(&marks, &root.children, diagnostics);
+        (root, units)
+    }
+
+    /// The tree, and how many diagnostics there are after it.
+    fn convert(self, frontmatter: bool, marks: Option<&mut Marks>) -> (Root, usize) {
         let root = self
             .syntax
             .mdast(self.source.text(), frontmatter, self.labels);
@@ -197,10 +258,8 @@ impl Converter<'_, '_> {
         };
         let position = converter.source.position(root.position.as_ref());
         let end = position.map_or(START, |position| position.end);
-        Root {
-            children: converter.blocks(root.children, end, &[]).0,
-            position,
-        }
+        let children = converter.blocks(root.children, end, &[], marks).0;
+        (Root { children, position }, converter.diagnostics.len())
     }
 
     /// A converter for `text`, parsed on its own and placed at `origin`, with the same syntax and the labels it sees:

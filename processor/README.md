@@ -19,9 +19,10 @@ The stages are the states of a `compmd::Processor`: each stage takes the process
   - Before it, the validated processor's `sources` gives the URLs and host sources a render needs (`host::Needed`, each once), so the host can fetch them first.
 - Stage 4b, `expand`: makes the expanded tree (§12.3), with every node's origin when asked, and checks its layout.
 - `reload`, from the loaded or expanded state: loads (and expands) again for another render context or newly fetched data, without running stages 1 to 3 again.
+- `edit`, from the expanded state: the processor after a `compmd::TextEdit` of its text (a range in code points and its replacement), with everything it was given before, so the host's files, data and context must outlive it. Parsing only parses again the part of the text the edit touches ([incremental processing](docs/incremental.md)); the later stages still run on the whole document.
 
 ```rust
-use compmd::{Ambient, ParseOptions, Processor};
+use compmd::{Ambient, ParseOptions, Processor, TextEdit};
 
 let processor = Processor::new("notes.comp.md", text)
     .parse(&ParseOptions::default())
@@ -31,6 +32,7 @@ let processor = Processor::new("notes.comp.md", text)
     .expand(&Default::default());
 let tree = processor.expanded(); // and processor.diagnostics()
 let processor = processor.reload(&other_context, &fetch, &data); // another input value, the same document
+let processor = processor.edit(&TextEdit { start: 6, end: 11, text: "there".into() }); // the text changed
 ```
 
 - A host that holds everything in memory can use maps: `HashMap<String, String>` is `Files`, `HashMap<String, Vec<host::LoadedRelease>>` is `Packs`, `HashMap<String, host::Fetched>` is `Fetch` and `HashMap<String, serde_json::Value>` is `Data`. `compmd::context::parse_time` gives a render time from RFC 3339 text. The WebAssembly build, [`@compmd/processor`](../wasm/README.md), runs the stages this way on a JSON request.

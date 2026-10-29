@@ -102,6 +102,22 @@ impl Scope<'_> {
     }
 }
 
+/// Where a unit of the document's blocks starts (incremental processing): the blocks and diagnostics before it.
+pub(super) struct Mark {
+    pub(super) nodes: usize,
+    pub(super) diagnostics: usize,
+    pub(super) start: Point,
+    /// Where the block before it ends.
+    pub(super) after: Point,
+}
+
+/// Where the units of the document's blocks start, and where its last block ends.
+#[derive(Default)]
+pub(super) struct Marks {
+    pub(super) starts: Vec<Mark>,
+    pub(super) end: Point,
+}
+
 /// A component line, as the fork found it.
 struct ComponentLine {
     text: Vec<char>,
@@ -111,12 +127,14 @@ struct ComponentLine {
 
 impl Converter<'_, '_> {
     /// The children of one parent, which ends at `end`, with the containers in `outer` open around it. Returns them
-    /// and which of `outer` a closer in them closed.
+    /// and which of `outer` a closer in them closed. With `marks`, notes where each unit of them starts: a unit ends
+    /// where a blank line follows and no container is open, unless a continuation line comes next.
     pub(super) fn blocks(
         &mut self,
         nodes: Vec<mdast::Node>,
         end: Point,
         outer: &[Outer],
+        mut marks: Option<&mut Marks>,
     ) -> (Vec<Node>, Closed) {
         let mut scope = Scope {
             outer,
@@ -126,7 +144,28 @@ impl Converter<'_, '_> {
             owner: Owner::Nobody,
             paragraph_end: None,
         };
-        for node in nodes {
+        let mut before: Option<&markdown::unist::Point> = None;
+        let positions: Vec<Option<markdown::unist::Position>> =
+            nodes.iter().map(|node| node.position().cloned()).collect();
+        for (node, position) in nodes.into_iter().zip(&positions) {
+            if let (Some(marks), Some(position)) = (marks.as_deref_mut(), position) {
+                let starts = before.is_none_or(|before| {
+                    scope.open.is_empty()
+                        && blank_between(self.source.text(), before.offset, position.start.offset)
+                        && !is_continuation(&node)
+                });
+                if starts {
+                    let start = self.source.point(position.start.offset);
+                    marks.starts.push(Mark {
+                        nodes: scope.out.len(),
+                        diagnostics: self.diagnostics.len(),
+                        start,
+                        after: before.map_or(start, |before| self.source.point(before.offset)),
+                    });
+                }
+                marks.end = self.source.point(position.end.offset);
+                before = Some(&position.end);
+            }
             if let mdast::Node::CompmdRaw(raw) = node {
                 let position = self.source.position(raw.position.as_ref());
                 let line = ComponentLine {
@@ -182,7 +221,7 @@ impl Converter<'_, '_> {
         let mut children =
             |this: &mut Self, nodes: Vec<mdast::Node>, position: Option<Position>| {
                 let end = position.map_or(super::START, |position| position.end);
-                let (children, inner) = this.blocks(nodes, end, outer);
+                let (children, inner) = this.blocks(nodes, end, outer, None);
                 closed.extend(inner);
                 children
             };
@@ -627,6 +666,19 @@ impl Converter<'_, '_> {
             None => false,
         }
     }
+}
+
+/// Whether the text between byte `from` and byte `to` is white space with a blank line in it.
+fn blank_between(text: &str, from: usize, to: usize) -> bool {
+    let gap = &text[from..to];
+    let endings =
+        gap.matches('\n').count() + gap.matches('\r').count() - gap.matches("\r\n").count();
+    endings >= 2 && gap.chars().all(char::is_whitespace)
+}
+
+/// Whether `node` is a continuation line, `::: + params`, which belongs with the component line before it.
+fn is_continuation(node: &mdast::Node) -> bool {
+    matches!(node, mdast::Node::CompmdRaw(raw) if raw.value.strip_prefix(":::").is_some_and(|rest| rest.trim_start_matches([' ', '\t']).starts_with('+')))
 }
 
 fn param(written: Written, place: &impl Fn(usize) -> Point) -> Param {

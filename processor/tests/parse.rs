@@ -183,6 +183,14 @@ fn a_fallback_that_is_not_inline_content_is_empty() {
     assert_eq!(first(":: chart[# Sales]\n")["fallback"], json!([]));
 }
 
+#[test]
+fn a_first_dashes_line_never_closed_is_a_thematic_break() {
+    assert_eq!(
+        types(&tree("---\nus\n- a\n")["children"]),
+        ["thematicBreak", "paragraph", "list"]
+    );
+}
+
 /// The node types of `nodes`.
 fn types(nodes: &Value) -> Vec<String> {
     nodes
