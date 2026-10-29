@@ -45,9 +45,10 @@ document.reload({ remote: await fetchAll(remote), host: hostData(host) });
 - **Positions are the editor's**, in UTF-16 units, as a JavaScript string counts them (`selectionStart`, CodeMirror's `from` and `to`). The module turns them into the code points the processor counts. Give it the editor's text (`textarea.value`, `state.doc.toString()`), so both count the same text.
 - **Each change gives a splice**, `{splice, diagnostics, components}`. In the splice, the top-level nodes `from..to` became `nodes`, and the nodes after them moved by `lines` and `offset`; it has the root's `inputs`, and for an edit the `edit` in code points, which a renderer's keys follow. `components` are the host-language components the tree can name, with their code, for a renderer that runs them; they come after opening, and after a change only when they changed. `OpenDocument.components` keeps the latest.
 - **`OpenDocument` keeps the tree:** it applies each splice, moving the origins of the nodes after it, so `expanded` is always the whole tree. Only its top-level array is new after a change; the nodes in it are updated in place.
-- **`OpenDocumentJson` keeps none:** it gives each splice as the module's JSON text, for a host that passes it on to where it renders without reading it, such as an editor's worker to the page's frame (`frame.splice` in `@compmd/render/frame`). Posted text is copied in one piece, and the renderer parses it once.
+- **`OpenDocumentJson` keeps none:** it gives each change's inputs apart, and each splice as the module's JSON text, for a host that passes it on to where it renders without reading it, such as an editor's worker to the page's frame (`frame.splice` in `@compmd/render/frame`). Posted text is copied in one piece, and the renderer parses it once.
 - For an edit inside one block, neither the processing nor the splice grows with the document. Moving the origins after the edit does: it is a pass over those nodes.
 - `free()` releases the module's memory for the document.
+- **`plainHtml(text)`** gives what a plain CommonMark and GFM renderer shows of a document (spec §14), as HTML, for a view of how it degrades.
 
 Time zone offsets come from the page's `Intl`, so the module carries no zone data. Formatting has all of ICU4X's locales.
 

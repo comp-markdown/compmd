@@ -54,7 +54,7 @@ class FakeFrame implements Frame {
 
 const example: Example = { name: "A", request: { path: "a.comp.md", files: { "a.comp.md": "Hello", "b.csv": "x" }, now: "2026-10-22T09:00:00Z" } };
 const opened = { ...example.request, origins: true };
-const processed = (splices: string[], extra: Partial<Extract<FromWorker, { type: "processed" }>> = {}): FromWorker => ({ type: "processed", splices, opened: false, diagnostics: [], ms: 1, ...extra });
+const processed = (splices: string[], extra: Partial<Extract<FromWorker, { type: "processed" }>> = {}): FromWorker => ({ type: "processed", splices, opened: false, diagnostics: [], inputs: {}, ms: 1, ...extra });
 const diagnostic = (file?: string) => ({
   code: "F002",
   severity: "error" as const,
@@ -137,6 +137,11 @@ describe("Editor", () => {
       type: "open",
       request: { ...opened, files: { "a.comp.md": "Oh Hello", "b.csv": "x" }, inputs: { region: "eu" } },
     });
+    // The inputs panel sets them the same way, keeping the others.
+    worker.answer(processed(["whole"], { opened: true, inputs: { region: { type: "enum", members: ["all", "eu"], value: "eu" } } }));
+    expect(editor.state.inputs).toEqual({ region: { type: "enum", members: ["all", "eu"], value: "eu" } });
+    editor.setInput("live", true);
+    expect(worker.received[3]).toMatchObject({ type: "open", request: { inputs: { region: "eu", live: true } } });
   });
 
   it("lists what the worker and the frame couldn't do, once each, until the components change", () => {

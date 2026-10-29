@@ -33,6 +33,7 @@ mod md;
 mod named;
 mod nearest;
 mod parse;
+pub mod plain;
 pub mod processor;
 mod reserved;
 mod resolve;

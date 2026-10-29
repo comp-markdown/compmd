@@ -1,13 +1,15 @@
-<!-- The editor: the document's text on the left, with its diagnostics under it; on the right, tabs with the rendered
-     page in a sandboxed frame and the document's trees. Each document opens with a worker and a frame of its own. -->
+<!-- The editor: the document's text on the left, with its inputs and diagnostics under it; on the right, tabs with the
+     rendered page in a sandboxed frame, what a plain Markdown renderer shows, and the document's trees. Each document
+     opens with a worker and a frame of its own. -->
 <script lang="ts">
   import type { Diagnostic } from "@compmd/processor";
   import { connectFrame } from "@compmd/render/frame";
   import { EXAMPLES } from "./documents.ts";
   import { offsetOf } from "./edit.ts";
   import { Editor, type EditorState, type Frame } from "./editor.ts";
+  import Inputs from "./Inputs.svelte";
   import { FRAME_HELLO, type ComponentFailed } from "./protocol.ts";
-  import { TreesClient, type Trees } from "./trees.ts";
+  import { plainPage, ViewsClient, type View } from "./views.ts";
 
   const initial = Number(new URLSearchParams(location.search).get("doc") ?? 0);
   let chosen = $state(Number.isInteger(initial) && EXAMPLES[initial] ? initial : 0);
@@ -19,25 +21,26 @@
 
   const TABS = [
     { id: "page", label: "Page" },
+    { id: "plain", label: "Plain Markdown" },
     { id: "parse", label: "Parse tree" },
     { id: "expanded", label: "Expanded tree" },
   ] as const;
   type Tab = (typeof TABS)[number]["id"];
   let tab: Tab = $state("page");
-  let trees: Trees | undefined = $state.raw();
-  let treesClient: TreesClient | undefined;
+  let view: View | undefined = $state.raw();
+  let views: ViewsClient | undefined;
 
-  /** The trees of the document as it is now, while a tab shows them; the trees' worker starts the first time. */
+  /** The view the tab shows, of the document as it is now; the views' worker starts the first time one is asked for. */
   $effect(() => {
     if (tab === "page" || shown === undefined) return;
     void shown.updates;
     const document = editor?.document;
     if (!document) return;
-    treesClient ??= new TreesClient(new Worker(new URL("./trees-worker.ts", import.meta.url), { type: "module" }), (answer) => {
-      trees = answer;
+    views ??= new ViewsClient(new Worker(new URL("./views-worker.ts", import.meta.url), { type: "module" }), (answer) => {
+      view = answer;
     });
     // Without the origins the editor's keys need, which would make the expanded tree three times as long.
-    treesClient.request({ ...document, origins: false });
+    views.request({ ...document, origins: false }, tab === "plain" ? "plain" : "trees");
   });
 
   /** Selects a diagnostic's range in the text area (to the end of its line, when it has no end), and scrolls to it. */
@@ -111,6 +114,9 @@
         if (textarea) editor?.input(textarea.value, event.timeStamp);
       }}
     ></textarea>
+    {#if shown && Object.keys(shown.inputs).length > 0}
+      <Inputs inputs={shown.inputs} onset={(name, value) => editor?.setInput(name, value)} />
+    {/if}
     {#if shown && (shown.diagnostics.length > 0 || shown.problems.length > 0)}
       <ul class="diagnostics" aria-label="Diagnostics">
         {#each shown.diagnostics as d, i (i)}
@@ -151,14 +157,18 @@
         <iframe title="The rendered page" sandbox="allow-scripts" src="./frame.html" onload={(event) => start(event.currentTarget)}></iframe>
       {/key}
     </div>
-    {#if tab === "parse" || tab === "expanded"}
+    {#if tab !== "page"}
+      {@const wanted = tab === "plain" ? "plain" : "trees"}
       <div class="view" id="view-{tab}" role="tabpanel" aria-labelledby="tab-{tab}">
-        {#if trees === undefined}
+        {#if view === undefined || view.view !== wanted}
           <p class="note">Processing…</p>
-        {:else if "failed" in trees}
-          <p class="note error">{trees.failed}</p>
+        {:else if "failed" in view}
+          <p class="note error">{view.failed}</p>
+        {:else if "html" in view}
+          <!-- No scripts and an opaque origin: the HTML is markdown-rs's, with raw HTML escaped, but it is the document's. -->
+          <iframe title="What a plain Markdown renderer shows" sandbox="" srcdoc={plainPage(view.html)}></iframe>
         {:else}
-          <pre class="tree">{tab === "parse" ? trees.parse : trees.expanded}</pre>
+          <pre class="tree">{tab === "parse" ? view.parse : view.expanded}</pre>
         {/if}
       </div>
     {/if}

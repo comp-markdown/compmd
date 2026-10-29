@@ -2,7 +2,7 @@
 // together in the next message. Each answer is an update for the frame: a splice per edit, each with its edit, which
 // the renderer's keys follow, and the text they leave.
 
-import type { Diagnostic, HostComponent, Request } from "@compmd/processor";
+import type { Diagnostic, ExpandedInput, HostComponent, Request } from "@compmd/processor";
 import type { Edit } from "./edit.ts";
 import type { FromWorker, ToWorker } from "./protocol.ts";
 
@@ -19,6 +19,8 @@ export interface Update {
   /** Whether the document was opened: its splice replaces the page. */
   opened: boolean;
   diagnostics: Diagnostic[];
+  /** The document's inputs, by name, with their values. */
+  inputs: Record<string, ExpandedInput>;
   /** The host-language components, when they changed. */
   components?: readonly HostComponent[];
   /** The text after the splices. */
@@ -93,8 +95,8 @@ export class Session {
     if (sent?.generation === this.#generation) {
       if (answer.type === "failed") this.#onFailure(answer.message);
       else {
-        const { splices, opened, diagnostics, components, ms } = answer;
-        this.#onUpdate({ splices, opened, diagnostics, text: sent.text, since: sent.since, ms, ...(components ? { components } : {}) });
+        const { splices, opened, diagnostics, inputs, components, ms } = answer;
+        this.#onUpdate({ splices, opened, diagnostics, inputs, text: sent.text, since: sent.since, ms, ...(components ? { components } : {}) });
       }
     }
     if (this.#sent.length === 0) this.#flush();

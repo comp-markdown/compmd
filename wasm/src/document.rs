@@ -142,6 +142,11 @@ impl Document {
             .map_err(Error::from)
     }
 
+    /// The document's inputs, by name: what the splice carries too, without the nodes.
+    pub(crate) fn inputs(&self) -> Result<String, Error> {
+        Ok(serde_json::to_string(&self.processor.expanded().inputs)?)
+    }
+
     /// The document after its text's UTF-16 `start..end` became `text`.
     pub(crate) fn edit(mut self, start: usize, end: usize, text: String) -> Self {
         let edit = self.text.edit(start, end, text);
@@ -225,6 +230,9 @@ mod tests {
             self::changes(&with_inputs)["splice"]["inputs"]["n"]["value"],
             1
         );
+        let inputs: Json =
+            serde_json::from_str(&with_inputs.inputs().expect("inputs")).expect("JSON");
+        assert_eq!(inputs, json!({ "n": { "type": "number", "value": 1 } }));
     }
 
     #[test]

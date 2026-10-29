@@ -1,8 +1,8 @@
 // The editor's loop: each input in the text area becomes an edit, the worker processes it, and the frame applies the
-// splices it gave, which the editor passes on unread. An input component's `set` in the frame opens the document
-// again with the new value. It times each change from its first key press to the frame painted.
+// splices it gave, which the editor passes on unread. An input component's `set` in the frame, or the inputs panel,
+// opens the document again with the new value. It times each change from its first key press to the frame painted.
 
-import type { Diagnostic, Request } from "@compmd/processor";
+import type { Diagnostic, ExpandedInput, Request } from "@compmd/processor";
 import type { Change } from "@compmd/render";
 import type { FrameConnection } from "@compmd/render/frame";
 import { editOf, fixOf, type Selection } from "./edit.ts";
@@ -14,6 +14,8 @@ import { Timings } from "./timings.ts";
 /** What the editor shows besides the page. */
 export interface EditorState {
   diagnostics: Diagnostic[];
+  /** The document's inputs, by name, with the values the page shows. */
+  inputs: Record<string, ExpandedInput>;
   /** Components the frame couldn't compile, load or run, and why. */
   problems: string[];
   /** The worker's processing, per change. */
@@ -40,7 +42,7 @@ const forRenderer = (diagnostics: Diagnostic[]): NonNullable<Change["diagnostics
   diagnostics.filter((d) => d.file === undefined).map((d) => ({ code: d.code, line: d.range.start.line, column: d.range.start.column }));
 
 export class Editor {
-  readonly state: EditorState = { diagnostics: [], problems: [], processing: new Timings(), rendering: new Timings(), painted: new Timings(), updates: 0 };
+  readonly state: EditorState = { diagnostics: [], inputs: {}, problems: [], processing: new Timings(), rendering: new Timings(), painted: new Timings(), updates: 0 };
   readonly #session: Session;
   readonly #frame: Frame;
   readonly #onChange: () => void;
@@ -76,8 +78,7 @@ export class Editor {
       onChange();
     });
     frame.connection.on("set", ({ input, value }) => {
-      this.#inputs = { ...this.#inputs, [input]: value };
-      this.#reopen();
+      this.setInput(input, value);
     });
     frame.connection.on("error", ({ component, message }) => {
       if (component !== undefined) this.#problem(`${component}: ${message}`);
@@ -121,6 +122,12 @@ export class Editor {
     return this.#text;
   }
 
+  /** Gives the input `name` the value `value`, as the page's input components do: the document opens again with it. */
+  setInput(name: string, value: unknown): void {
+    this.#inputs = { ...this.#inputs, [name]: value };
+    this.#reopen();
+  }
+
   /** The document as it is now, with the current text and the inputs' values: a request to process it from scratch. */
   get document(): Request | undefined {
     const request = this.#request;
@@ -141,6 +148,7 @@ export class Editor {
     this.#rendering.push(update.since);
     this.#frame.connection.splice(update.splices, change, { replace: update.opened });
     this.state.diagnostics = update.diagnostics;
+    this.state.inputs = update.inputs;
     this.#processed = update.text;
     this.state.updates++;
     this.state.processing.add(update.ms);

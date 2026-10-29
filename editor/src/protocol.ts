@@ -1,6 +1,6 @@
 // The messages between the editor, its worker and its frame.
 
-import type { Diagnostic, HostComponent, Request } from "@compmd/processor";
+import type { Diagnostic, ExpandedInput, HostComponent, Request } from "@compmd/processor";
 import type { Edit } from "./edit.ts";
 
 /** From the editor to its worker: open a document, or apply edits to it, each in the text the one before left. */
@@ -15,6 +15,8 @@ export type FromWorker =
       /** Whether the document was opened: its one splice is of an empty tree, and replaces the page. */
       opened: boolean;
       diagnostics: Diagnostic[];
+      /** The document's inputs after them, by name, with their values. */
+      inputs: Record<string, ExpandedInput>;
       /** The host-language components, when they changed (and after opening). */
       components?: readonly HostComponent[];
       /** How long processing took, in the worker. */

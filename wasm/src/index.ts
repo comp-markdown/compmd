@@ -1,13 +1,13 @@
 // The CompMD processor as WebAssembly, typed: stages 1 to 4b of a document in one call, or a document kept open for an
 // editor, which takes edits and keeps its expanded tree.
 
-import type { ExpandedRoot, Splice } from "@compmd/render";
-import { Document as Kept, process as processJson, sources as sourcesJson } from "../pkg/compmd_wasm.js";
+import type { ExpandedInput, ExpandedRoot, Splice } from "@compmd/render";
+import { Document as Kept, plain, process as processJson, sources as sourcesJson } from "../pkg/compmd_wasm.js";
 import type { ParseRoot } from "./parse-tree.ts";
 
 export { default as init, initSync } from "../pkg/compmd_wasm.js";
 export type * from "./parse-tree.ts";
-export type { ExpandedRoot, Splice, TextEdit } from "@compmd/render";
+export type { ExpandedInput, ExpandedRoot, Splice, TextEdit } from "@compmd/render";
 
 /** A document to process, with everything it needs. Only `path` and `now` are required. */
 export interface Request {
@@ -127,6 +127,16 @@ export interface Changes {
 export interface ChangesJson extends Omit<Changes, "splice"> {
   /** The {@link Splice}, as JSON text. */
   splice: string;
+  /** The document's inputs after it, by name, as the splice holds them too, for a host that doesn't read the splice. */
+  inputs: Record<string, ExpandedInput>;
+}
+
+/**
+ * What a plain CommonMark and GFM renderer shows of `text` (spec §14), as HTML: CompMD's syntax as text, raw HTML
+ * escaped. The module must be loaded first.
+ */
+export function plainHtml(text: string): string {
+  return plain(text);
 }
 
 /**
@@ -199,6 +209,7 @@ export class OpenDocumentJson {
     return {
       splice: this.#kept.splice(),
       diagnostics: JSON.parse(this.#kept.diagnostics()) as Diagnostic[],
+      inputs: JSON.parse(this.#kept.inputs()) as Record<string, ExpandedInput>,
       ...(components === undefined ? {} : { components: JSON.parse(components) as HostComponent[] }),
     };
   }

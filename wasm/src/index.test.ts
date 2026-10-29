@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import { changelog, completeExample, completeJson, longBody } from "../bench/requests.ts";
-import { initSync, OpenDocument, OpenDocumentJson, process, sources, type Request } from "./index.ts";
+import { initSync, OpenDocument, OpenDocumentJson, plainHtml, process, sources, type Request } from "./index.ts";
 
 /** `value` without positions, as the conformance case compares it. */
 function withoutPositions(value: unknown): unknown {
@@ -53,6 +53,12 @@ describe("process", () => {
   it("throws on a request it can't process", () => {
     expect(() => process({ path: "a.comp.md", files: {}, now: "2026-10-22T09:00:00Z" })).toThrow("`a.comp.md` isn't one of the request's files");
     expect(() => process({ path: "a.comp.md", files: { "a.comp.md": "" }, now: "today" })).toThrow("`today` isn't an RFC 3339 time");
+  });
+});
+
+describe("plainHtml", () => {
+  it("shows the text as a plain GFM renderer does", () => {
+    expect(plainHtml(":badge[beta]{tone=info} ~~x~~\n")).toBe("<p>:badge[beta]{tone=info} <del>x</del></p>\n");
   });
 });
 
@@ -138,6 +144,7 @@ describe("OpenDocument", () => {
     expect(JSON.parse(changes.splice)).toMatchObject({ lines: 2, offset: 8, edit: { text: "Added.\n\n" } });
     expect(changes.diagnostics.map((d) => d.code)).toEqual(["F002"]);
     expect(changes).not.toHaveProperty("components");
+    expect(changes.inputs).toEqual({});
     expect(document.sources()).toEqual({ remote: [], host: [] });
     expect(JSON.parse(document.reload({}).splice)).not.toHaveProperty("edit");
     document.free();

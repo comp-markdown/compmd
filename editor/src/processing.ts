@@ -23,11 +23,13 @@ export class Processing {
       const document = this.#document;
       if (!document) return { type: "failed", message: "no document is open" };
       const components = changes.findLast((change) => change.components)?.components;
+      const last = changes.at(-1) ?? document.changes();
       return {
         type: "processed",
         splices: changes.map((change) => change.splice),
         opened: message.type === "open",
-        diagnostics: (changes.at(-1) ?? document.changes()).diagnostics,
+        diagnostics: last.diagnostics,
+        inputs: last.inputs,
         ...(components ? { components } : {}),
         ms: performance.now() - started,
       };

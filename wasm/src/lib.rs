@@ -53,6 +53,13 @@ pub fn sources(request: &str) -> Result<String, JsError> {
     Ok(request::sources(request, Rc::new(Intl))?)
 }
 
+/// What a plain CommonMark and GFM renderer shows of `text` (spec §14), as HTML.
+#[wasm_bindgen]
+#[must_use]
+pub fn plain(text: &str) -> String {
+    compmd::plain::html(text)
+}
+
 /// A document kept open for an editor. After each change, `splice`, `diagnostics` and `components` give what it
 /// did, each as JSON text.
 #[wasm_bindgen(js_name = Document)]
@@ -99,6 +106,15 @@ impl Handle {
     /// None in practice, as `splice`.
     pub fn components(&self) -> Result<Option<String>, JsError> {
         Ok(self.document()?.components()?)
+    }
+
+    /// The document's inputs after the last change, by name: each one's type, members and value.
+    ///
+    /// # Errors
+    ///
+    /// None in practice, as `splice`.
+    pub fn inputs(&self) -> Result<String, JsError> {
+        Ok(self.document()?.inputs()?)
     }
 
     /// The text's UTF-16 `start..end` became `text`.

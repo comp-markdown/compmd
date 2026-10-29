@@ -40,6 +40,7 @@ let splice = processor.splice(); // nodes `from..to` became `splice.nodes`
 
 - A host that holds everything in memory can use maps: `HashMap<String, String>` is `Files`, `HashMap<String, Vec<host::LoadedRelease>>` is `Packs`, `HashMap<String, host::Fetched>` is `Fetch` and `HashMap<String, serde_json::Value>` is `Data`. `compmd::context::parse_time` gives a render time from RFC 3339 text. The WebAssembly build, [`@compmd/processor`](../wasm/README.md), runs the stages this way on a JSON request.
 - **What a param takes** is `compmd::values` ([its design](docs/param-values.md)): one `Kind` per kind of value (its tokens, forms and examples), which checks a value, says in an F009 what the param takes, and suggests a misspelt token. `values::vocabulary()` is the fixed vocabulary every document can write, the common params, the attributes and `box`'s params, each with its kind; `conformance/params.json` is its JSON, for the renderer and editors. A diagnostic whose message suggests a name or a token carries the edit as its `fix`.
+- `compmd::plain::html` gives what a plain CommonMark and GFM renderer shows of a document (spec §14): markdown-rs with CompMD's syntax off.
 - Expressions follow the CEL profile with the `md.` functions: each is type-checked against the variables' declared types before it runs, and runs within a work budget. Formatting uses [ICU4X](https://github.com/unicode-org/icu4x) with all its compiled locale data, and time zone offsets come from the host's `Time`.
 - Parsing alone is the first two calls:
 

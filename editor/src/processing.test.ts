@@ -56,7 +56,7 @@ describe("Processing", () => {
     const { page: shown, root } = page();
     let text = "# Title\n\nOne.\n\n:: nope[N]\n";
     const opened = processing.handle({ type: "open", request: request(text) });
-    expect(opened).toMatchObject({ type: "processed", opened: true, components: [] });
+    expect(opened).toMatchObject({ type: "processed", opened: true, components: [], inputs: {} });
     apply(shown, opened, text);
     const edits = [
       { start: 7, end: 7, text: "!" },
@@ -98,6 +98,12 @@ describe("Processing", () => {
       }
     });
   }
+
+  it("gives the inputs with their values", () => {
+    const processing = new Processing(open);
+    const answer = processing.handle({ type: "open", request: { ...request("---\nmd:\n  inputs:\n    n: number = 2\n---\n"), inputs: { n: 5 } } });
+    expect(answer).toMatchObject({ inputs: { n: { type: "number", value: 5 } } });
+  });
 
   it("gives the components when an edit changes them", () => {
     const processing = new Processing(open);

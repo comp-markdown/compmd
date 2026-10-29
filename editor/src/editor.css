@@ -183,6 +183,22 @@ li.error {
   color: var(--error);
 }
 
+.inputs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin: 0;
+  padding: 8px 16px;
+  border: 0;
+  border-top: 1px solid var(--hairline);
+}
+
+.inputs legend {
+  float: left;
+  margin-inline-end: 8px;
+  color: var(--ink-secondary);
+}
+
 .diagnostics .place {
   border: 0;
   padding: 0;
