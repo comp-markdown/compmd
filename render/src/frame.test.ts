@@ -95,6 +95,24 @@ describe("the host and frame protocol", () => {
     container.remove();
   });
 
+  it("ignores messages of the host's own on the same port", async () => {
+    const [host, frame] = channel();
+    const container = document.body.appendChild(document.createElement("main"));
+    const served = serveFrame(frame, { container });
+    const connection = connectFrame(host);
+    const rendered: number[] = [];
+    connection.on("rendered", ({ ms }) => rendered.push(ms));
+    connection.render(tree("kept"));
+    await settle();
+    host.postMessage({ type: "host-style", style: "github" });
+    host.postMessage({ type: "components", components: [] });
+    await settle();
+    expect(container.textContent).toBe("kept");
+    expect(rendered, "a paint for the render alone").toHaveLength(1);
+    served.close();
+    container.remove();
+  });
+
   it("applies theme tokens sent by the host", async () => {
     const [host, frame] = channel();
     const container = document.body.appendChild(document.createElement("main"));

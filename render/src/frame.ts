@@ -19,7 +19,8 @@ export interface Port {
 
 /**
  * Messages from the host to the frame. A splice may be its JSON text, as a processor gives it: posted text is copied
- * in one piece, and the frame parses it once.
+ * in one piece, and the frame parses it once. The frame ignores any other message, so a host may send its own on the
+ * same port.
  */
 export type HostMessage =
   | { type: "render"; tree: ExpandedRoot; change?: Change }
@@ -85,13 +86,21 @@ export function serveFrame(port: Port, options: FrameOptions): { page: Page; clo
   const view = options.container.ownerDocument.defaultView;
   const listener = ({ data }: { data: unknown }) => {
     const message = data as HostMessage;
-    if (message.type === "theme") {
-      page.theme(message.tokens);
-      return;
-    }
     const started = performance.now();
-    if (message.type === "render") page.render(message.tree, message.change);
-    else applySplices(page, message);
+    switch (message.type) {
+      case "theme":
+        page.theme(message.tokens);
+        return;
+      case "render":
+        page.render(message.tree, message.change);
+        break;
+      case "splices":
+        applySplices(page, message);
+        break;
+      default:
+        // A host may share the port with messages of its own, such as an editor's components to compile.
+        return;
+    }
     // Painted: after the next frame, and once the browser has drawn it.
     const painted = () => {
       setTimeout(() => {
