@@ -57,7 +57,8 @@ function entries(library: Library): Plugin {
 }
 
 async function buildLibrary(library: Library): Promise<Record<string, string>> {
-  const { version } = JSON.parse(await readFile(require.resolve(`${library.name}/package.json`), "utf8")) as { version: string };
+  // From the editor's own `node_modules`, since a package's `exports` may not give its `package.json` (d3's doesn't).
+  const { version } = JSON.parse(await readFile(join(ROOT, "node_modules", library.name, "package.json"), "utf8")) as { version: string };
   const dir = `${library.name}@${version}`;
   await build({
     configFile: false,

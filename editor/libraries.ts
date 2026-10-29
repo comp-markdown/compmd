@@ -31,6 +31,8 @@ export const LIBRARIES: Library[] = [
       "svelte/attachments",
     ],
   },
+  // For components that draw with it; the page loads it only when one imports it.
+  { name: "d3", imports: ["d3"] },
 ];
 
 /** Every import name the import map resolves. */

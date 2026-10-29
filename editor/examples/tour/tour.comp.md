@@ -5,6 +5,21 @@ released: "2026-10-29"
 price: 12
 tags: [markdown, components, data]
 reading: {title: Piranesi, page: 120, pages: 272}
+ideas:
+  - {from: document, to: frontmatter}
+  - {from: document, to: Markdown}
+  - {from: document, to: components}
+  - {from: frontmatter, to: data}
+  - {from: frontmatter, to: inputs}
+  - {from: components, to: params}
+  - {from: components, to: slots}
+  - {from: components, to: definitions}
+  - {from: components, to: layout}
+  - {from: slots, to: templates}
+  - {from: definitions, to: JavaScript}
+  - {from: data, to: expressions}
+  - {from: inputs, to: expressions}
+  - {from: expressions, to: params}
 md:
   version: 1
   syntax: [wiki-links]
@@ -212,6 +227,94 @@ This sentence has a :tag[draft]{label="draft"} in it, and a :tag[second one]{lab
 > [!TIP]
 > **Try it.** Add `danger` to `kind: tip | warning = tip`, then write `kind=danger` on the note. Write `kind=dangr` instead: the diagnostic lists the kinds the note takes. The **Components** tab lists every component this document defines and uses.
 
+One more, as a taste of what's ahead. A component can also be code, and this one is JavaScript drawing with [d3](https://d3js.org): a map of the ideas in this tutorial, from the `ideas` key of the frontmatter. Drag a dot. Lesson 13, below, shows how such components work.
+
+```compmd component=idea-map signature
+params:
+  links: array
+```
+
+```js component=idea-map
+import * as d3 from "d3";
+
+// The ideas as a force-directed graph, colored by how far each is from the document.
+export default function mount(target, { params, fallback }) {
+  const width = 640;
+  const height = 320;
+  const svg = d3.select(target).append("svg").attr("viewBox", [0, 0, width, height]).attr("width", "100%").attr("role", "img").attr("aria-label", fallback.text);
+  let simulation;
+
+  function draw(links) {
+    simulation?.stop();
+    svg.selectAll("*").remove();
+    const nodes = [...new Set(links.flatMap((link) => [link.from, link.to]))].map((id) => ({ id }));
+    const edges = links.map((link) => ({ source: link.from, target: link.to }));
+    const depth = new Map([[nodes[0]?.id, 0]]);
+    for (let changed = true; changed; ) {
+      changed = false;
+      for (const { source, target: to } of edges) {
+        if (depth.has(source) && !depth.has(to)) {
+          depth.set(to, depth.get(source) + 1);
+          changed = true;
+        }
+      }
+    }
+    simulation = d3
+      .forceSimulation(nodes)
+      .force("link", d3.forceLink(edges).id((node) => node.id).distance(62))
+      .force("charge", d3.forceManyBody().strength(-280))
+      .force("center", d3.forceCenter(width / 2, height / 2))
+      .force("collide", d3.forceCollide(30));
+    const lines = svg.append("g").attr("stroke", "currentColor").attr("stroke-opacity", 0.25).selectAll("line").data(edges).join("line");
+    const dots = svg
+      .append("g")
+      .selectAll("g")
+      .data(nodes)
+      .join("g")
+      .style("cursor", "grab")
+      .call(
+        d3
+          .drag()
+          .on("start", (event, node) => {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            node.fx = node.x;
+            node.fy = node.y;
+          })
+          .on("drag", (event, node) => {
+            node.fx = event.x;
+            node.fy = event.y;
+          })
+          .on("end", (event, node) => {
+            if (!event.active) simulation.alphaTarget(0);
+            node.fx = null;
+            node.fy = null;
+          }),
+      );
+    dots.append("circle").attr("r", 8).attr("fill", (node) => `var(--viz-series-${String((depth.get(node.id) ?? 0) + 1)})`);
+    dots.append("text").text((node) => node.id).attr("x", 12).attr("y", 4).attr("font-size", 13).attr("fill", "currentColor");
+    simulation.on("tick", () => {
+      for (const node of nodes) {
+        node.x = Math.max(12, Math.min(width - 90, node.x));
+        node.y = Math.max(12, Math.min(height - 12, node.y));
+      }
+      lines.attr("x1", (edge) => edge.source.x).attr("y1", (edge) => edge.source.y).attr("x2", (edge) => edge.target.x).attr("y2", (edge) => edge.target.y);
+      dots.attr("transform", (node) => `translate(${node.x},${node.y})`);
+    });
+  }
+
+  draw(params.links);
+  return {
+    update: (next) => draw(next.links),
+    destroy: () => {
+      simulation?.stop();
+      svg.remove();
+    },
+  };
+}
+```
+
+:: idea-map[A map of the ideas in this tutorial: the document has frontmatter, Markdown and components; components have params, slots, definitions and layout] {links=(md.doc.ideas)}
+
 ## 9. Templates
 
 A component can repeat a template itself: a *template slot* renders once per element of a list param, under a name the caller picks. Here `ranked`, defined in the text, numbers whatever it's given:
@@ -297,21 +400,45 @@ You see this box when the page is narrower than 768px.
 
 ## 13. Components in JavaScript
 
-When CompMD isn't enough, a component can be code: JSX or TSX for React, Svelte, or plain JavaScript. The page runs it in a sandbox, with no network. In the text, a `jsx` fence holds `meter`'s code, and a signature fence types its params.
+When CompMD isn't enough, a component can be code: JSX or TSX for React, Svelte, or plain JavaScript. The page runs it in a sandbox, with no network. In the text, a `jsx` fence holds `progress`'s code: a React component, with its params as props. A signature fence types those params.
 
-```compmd component=meter signature
+```compmd component=progress signature
 params:
   value: number
   max: number
 ```
 
-```jsx component=meter runtime=react@19
-export default function Meter({ value, max, compmd }) {
+```jsx component=progress runtime=react@19
+import { useEffect, useRef, useState } from "react";
+
+// A ring that fills to `value` of `max`, easing from where it was to where it goes.
+export default function Progress({ value, max, compmd }) {
   const share = Math.max(0, Math.min(1, value / max));
+  const [shown, setShown] = useState(0);
+  const from = useRef(0);
+  useEffect(() => {
+    const begin = from.current;
+    const start = performance.now();
+    const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let frame = 0;
+    const step = (now) => {
+      const t = still ? 1 : Math.min(1, (now - start) / 900);
+      const next = begin + (share - begin) * (1 - (1 - t) ** 3);
+      from.current = next;
+      setShown(next);
+      if (t < 1) frame = requestAnimationFrame(step);
+    };
+    frame = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(frame);
+  }, [share]);
+  const around = 2 * Math.PI * 40;
   return (
-    <svg role="img" aria-label={compmd.fallback.text} viewBox="0 0 100 6" width="100%" height="10" preserveAspectRatio="none">
-      <rect width="100" height="6" rx="3" fill="currentColor" opacity="0.15" />
-      <rect width={share * 100} height="6" rx="3" fill="currentColor" />
+    <svg role="img" aria-label={compmd.fallback.text} viewBox="0 0 100 100" width="140" height="140">
+      <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeOpacity="0.12" strokeWidth="9" />
+      <circle cx="50" cy="50" r="40" fill="none" stroke="var(--viz-series-1)" strokeWidth="9" strokeLinecap="round" strokeDasharray={around} strokeDashoffset={around * (1 - shown)} transform="rotate(-90 50 50)" />
+      <text x="50" y="50" textAnchor="middle" dominantBaseline="central" fontSize="20" fontWeight="600" fill="currentColor">
+        {Math.round(shown * 100)}%
+      </text>
     </svg>
   );
 }
@@ -319,10 +446,12 @@ export default function Meter({ value, max, compmd }) {
 
 Reading *{{md.doc.reading.title}}*, page {{md.doc.reading.page}} of {{md.doc.reading.pages}}:
 
-:: meter[Page 120 of 272] {value=(md.doc.reading.page) max=(md.doc.reading.pages)}
+:: progress[44% read: page 120 of 272] {value=(md.doc.reading.page) max=(md.doc.reading.pages)}
+
+The idea map in lesson 8 is the plain JavaScript kind: its default export is a `mount` function that draws into the element it's given and returns `update` and `destroy`, and it imports `d3` as you'd write it anywhere. A component can import React, Svelte and d3, which the page provides.
 
 > [!TIP]
-> **Try it.** Change `page: 120` in the frontmatter to `page: 250`. Then change the code: `rx="3"` to `rx="0"` gives the bar square ends, and the page shows the new code as you type.
+> **Try it.** Change `page: 120` in the frontmatter to `page: 250`, and the ring sweeps on to the new value: the component keeps its state, and only its props change. Then change the code: `stroke="var(--viz-series-1)"` to `stroke="var(--viz-series-2)"`, and the page runs the new code as you type.
 
 ## 14. Where next
 

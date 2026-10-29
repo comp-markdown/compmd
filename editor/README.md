@@ -24,7 +24,7 @@ A text area on the left, the rendered page on the right, updated as you type. It
 The expanded tree names a component but holds no code, so the worker sends the frame each component's code from the processor (`host_components`): a `jsx`, `tsx`, `svelte`, `js` or `ts` fence, an imported file, a pack's file. The frame compiles it and mounts it through the spec's bindings (`src/frame/`):
 
 - **Compiling:** sucrase strips TypeScript's types and turns JSX into calls of React's JSX runtime; Svelte's compiler compiles Svelte, its CSS apart, which the frame adopts as a stylesheet. Each compiler loads the first time a component needs it.
-- **Linking:** a component imports `react` or `svelte` as its author writes it, and the page's import map resolves it. `pnpm libs` builds the shared libraries into `public/libs/`, one build per npm package, its import names as entries, so modules that share state share one copy; `react-dom` imports the one React through the map. The editor's own code imports them through the map too, so each page has one React and one Svelte runtime, and the Svelte runtime is the compiler's version.
+- **Linking:** a component imports `react`, `svelte` or `d3` as its author writes it, and the page's import map resolves it; the page loads a library only when a component imports it. `pnpm libs` builds the shared libraries into `public/libs/`, one build per npm package, its import names as entries, so modules that share state share one copy; `react-dom` imports the one React through the map. The editor's own code imports them through the map too, so each page has one React and one Svelte runtime, and the Svelte runtime is the compiler's version.
 - **Changing code:** each name's mount goes through the frame's own, so when a component's code changes, its instances on the page are mounted again with the new code and their last params and slots, and the rest of the page keeps its state. Code that doesn't compile or throws shows the component's fallback and is listed under the text.
 - **Runtimes:** React 19 for JSX and TSX, Svelte 5. A component for `preact@10` shows its fallback.
 
@@ -34,7 +34,7 @@ Each document in the menu shows one side of CompMD. The files it reads (its fold
 
 | `?doc=` | Document | From |
 |---|---|---|
-| `tour` (the default) | A tutorial in fourteen lessons, each with a change to try: the document, Markdown, containers, params, values, expressions, `if` and `each`, definitions, template slots, data, inputs, layout and a JSX component | `examples/tour/`, with a reading list in CSV |
+| `tour` (the default) | A tutorial in fourteen lessons, each with a change to try: the document, Markdown and math, containers, params, values, expressions, `if` and `each`, definitions (with a d3 map of the tutorial's ideas as a teaser), template slots, data, inputs, layout and an animated JSX component | `examples/tour/`, with a reading list in CSV |
 | `definitions` | Definitions and slots: a `compmd` component with params and named slots, used as a container and a leaf, one definition in another, `display=contents`, a template slot | `examples/definitions/` |
 | `changelog` | Expressions: a changelog of 12 releases and 128 changes | `../wasm/bench/fixtures/changelog/` |
 | `dashboard` | Data: a sales dashboard, with tiles, a column chart bound to an input, a timeline, an area chart, a donut, a sortable table | `examples/dashboard/`, with the charts of `examples/charts/` |
