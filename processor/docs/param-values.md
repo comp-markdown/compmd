@@ -15,7 +15,8 @@ A param value outside its type is F009, and today the message often says only "`
 7. **Tests tie the definition to everything that depends on it** (see [Guard rails](#guard-rails)): each kind's example and tokens are accepted, its description names them, the spec's tables and `llms.txt` list the same tokens and params, and the renderer has a CSS value for every token.
 8. **The processor writes what each param takes to `conformance/params.json`**, and a test fails when the file is out of date. It is how the renderer, written in TypeScript, checks itself against the processor, and what an editor's help at the caret can list later.
 9. **`cargo make ci` runs the TypeScript packages' tests too** (`pnpm -r test`), so the one command checks the renderer against `params.json`.
-10. **`Kind` is data an editor can use**, not only a message: its tokens, forms and example are public, and the suggestion is a structured fix, so completions, hovers and quick fixes come from the same definition (see [Editors](#editors-lsp-and-tree-sitter)).
+10. **`Kind` is data an editor can use**, not only a message: its tokens, forms and example are public, so completions and hovers come from the same definition (see [Editors](#editors-lsp-and-tree-sitter)).
+11. **A diagnostic with a suggestion carries it as a fix**, `fix: {range, text}`, besides its message, in this change: an optional field of diagnostics (spec §10.5) and their JSON, which a language server turns into a quick fix and the web editor into a click. F002, F006, F008 and F009, which suggest a name or a token, give one.
 
 ## Where it can drift today
 
@@ -255,7 +256,7 @@ An editor's support for CompMD has three parts, and this work is the base of one
 **What a language server needs, and what changes here because of it:**
 
 - **Structured data, not messages to parse.** `Kind` is public (`compmd::Kind`, with `tokens`, `forms`, `example`), so a server builds completion items from it rather than from a message. The message is for people.
-- **A fix with each suggestion.** A diagnostic with a suggestion carries it as `fix: {range, text}` besides its message: `subtl` at 3:22–3:27 → `subtle`. A server turns it into a code action, and the web editor into a click. This adds an optional field to diagnostics (spec §10.5); see [Open question](#open-question).
+- **A fix with each suggestion.** A diagnostic with a suggestion carries it as `fix: {range, text}` besides its message: `subtl` at 3:22–3:27 → `subtle`. A server turns it into a code action, and the web editor into a click. This adds an optional field to diagnostics (spec §10.5), in this change (decision 11).
 - **What is at the caret** (the component, the param, its kind, its default and its `doc`) is the query the caret help adds next; completions and hovers in a server are that query, so the server is a thin layer over it.
 - **Positions.** LSP counts columns in UTF-16 by default, as the binding does; the binding's line index (`wasm/src/text.rs`) moves into the processor crate when a server is built, so both share it. Not in this change.
 
@@ -269,15 +270,11 @@ So tree-sitter is work beside this, sharing only the conformance examples. A lan
 - **Codes, ranges and recovery.** An F009 is still at the value, and the param is still treated as absent.
 - **F024**, a typed expression of the wrong type, names CEL types (`string`, `double`) and stays as it is.
 
-## Open question
-
-**The fix in diagnostics now, or with the caret help.** Adding `fix` to diagnostics now gives the web editor a quick fix with no further processor work, and the field is designed with the suggestion it carries. It adds an optional field to spec §10.5 and the diagnostics' JSON. I recommend now, as part of this change.
-
 ## Plan
 
 1. `validate/values.rs`: `Kind`, `Form`, the kinds and `Kind::ALL`, `accepts`, `describe` and `suggest`, with `grammar.rs`'s checks moved into it; `TypeName::kind`, and `Universal::kind`, `takes_breakpoint` and `needs_box` exhaustive; `refused` on both paths. Tests of each kind's message and suggestion, of a document's own component's params, and the guard-rail tests over every kind.
 2. The type `areas`: the spec (§7.3, §9.4), `core.comp.md`, and the check by name removed.
-3. `fix` on diagnostics, if agreed: the spec (§10.5), the diagnostic, the JSON, and the editor's list.
+3. `fix` on diagnostics: the spec (§10.5), the diagnostic and its JSON, the binding's types, F002, F006, F008 and F009 giving one, and the editor showing it.
 4. `conformance/params.json` and its test; the spec and `llms.txt` test.
 5. The renderer test against `params.json`, and whatever it finds missing in `styles.ts`.
 6. `pnpm -r test` in `cargo make ci`, and it green.
