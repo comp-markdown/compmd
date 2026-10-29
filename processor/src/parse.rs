@@ -10,7 +10,7 @@ pub(crate) mod definitions;
 mod edit;
 mod frontmatter;
 mod inlines;
-mod line;
+pub(crate) mod line;
 pub(crate) mod params;
 mod source;
 pub(crate) mod yaml;

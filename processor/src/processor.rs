@@ -492,6 +492,37 @@ impl Processor<Expanded> {
         crate::components::of(&self.state.validated.resolved)
     }
 
+    /// What is at code point `offset` of the processed document's text, and what it takes: a component's name, a
+    /// param's key or value, a param list, a slot, with the diagnostics there and what may be written there. `None`
+    /// where there is nothing to say, such as in plain prose. It is a lookup in what the processor keeps, so it can
+    /// answer on every move of a caret.
+    ///
+    /// ```
+    /// use compmd::context::RenderContext;
+    /// use compmd::hints::Subject;
+    /// use compmd::{Ambient, ParseOptions, Processor};
+    /// use std::rc::Rc;
+    ///
+    /// let text = "::: box {border=subtle}\nText.\n::: /box\n";
+    /// let context = RenderContext { now: 0, tz: "UTC".into(), time: Rc::new(()), inputs: Default::default() };
+    /// let processor = Processor::new("a.comp.md", text)
+    ///     .parse(&ParseOptions::default())
+    ///     .resolve((), (), &Ambient::default())
+    ///     .validate(&[])
+    ///     .load(context, (), ())
+    ///     .expand(&Default::default());
+    /// // The caret in `subtle`.
+    /// let hint = processor.hint_at(18).unwrap();
+    /// let Some(Subject::Param { param, value, .. }) = &hint.subject else { panic!("a param") };
+    /// assert_eq!((param.name.as_str(), value.as_deref()), ("border", Some("subtle")));
+    /// let values: Vec<&str> = hint.completions.iter().map(|c| c.text.as_str()).collect();
+    /// assert_eq!(values, ["none", "subtle", "strong"]);
+    /// ```
+    #[must_use]
+    pub fn hint_at(&self, offset: usize) -> Option<crate::hints::PositionalHint> {
+        crate::hints::at(&self.state.validated.resolved, &self.diagnostics, offset)
+    }
+
     /// The processed document's tree (spec §12.1).
     #[must_use]
     pub fn tree(&self) -> &tree::Root {

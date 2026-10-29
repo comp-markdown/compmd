@@ -35,7 +35,7 @@ fn literal(value: &ParamValue) -> Option<String> {
 }
 
 /// Whether an input declared `input` can be bound to a param declared `input<param>` (spec §7.3).
-fn binds(param: &DeclaredType, input: &DeclaredType) -> bool {
+pub(crate) fn binds(param: &DeclaredType, input: &DeclaredType) -> bool {
     match (param, input) {
         (DeclaredType::Name(TypeName::Enum), DeclaredType::Enum { .. }) => true,
         (DeclaredType::Enum { members: wanted }, DeclaredType::Enum { members }) => {
@@ -93,16 +93,6 @@ struct Target<'r> {
 }
 
 impl Target<'_> {
-    /// Whether its declared params take breakpoints: a `compmd` component's, and `box`'s, which are layout params
-    /// (spec §9.3); not a host-language component's.
-    fn takes_breakpoints(&self) -> bool {
-        match self.component.body {
-            Body::Compmd(_) => true,
-            Body::Processor => self.is(Keyword::Box),
-            Body::Host { .. } | Body::File { .. } => false,
-        }
-    }
-
     /// Whether it is the built-in `keyword`.
     fn is(&self, keyword: Keyword) -> bool {
         self.component.keyword() == Some(keyword)
@@ -298,7 +288,7 @@ impl<'r> Checker<'r, '_> {
             .iter()
             .find(|declared| declared.name == key)
         {
-            if param.breakpoint.is_some() && !target.takes_breakpoints() {
+            if param.breakpoint.is_some() && !target.component.takes_breakpoints() {
                 self.no_breakpoint(param, key);
                 return Verdict::Refused;
             }

@@ -28,6 +28,7 @@ pub mod diagnostic;
 pub mod expand;
 pub mod expanded;
 pub mod frontmatter;
+pub mod hints;
 pub mod host;
 mod lines;
 mod load;

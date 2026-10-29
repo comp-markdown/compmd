@@ -220,6 +220,16 @@ impl Component {
         Keyword::from_name(&self.name)
     }
 
+    /// Whether its declared params take breakpoints: a `compmd` component's, and `box`'s, which are layout params
+    /// (spec §9.3); not a host-language component's.
+    pub(crate) fn takes_breakpoints(&self) -> bool {
+        match self.body {
+            Body::Compmd(_) => true,
+            Body::Processor => self.keyword() == Some(Keyword::Box),
+            Body::Host { .. } | Body::File { .. } => false,
+        }
+    }
+
     /// Whether it has no box: a `compmd` component whose fence has `display=contents` with no breakpoint (spec §9.2).
     pub(crate) fn is_contents(&self) -> bool {
         matches!(self.body, Body::Compmd(_))

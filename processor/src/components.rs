@@ -2,7 +2,7 @@
 //! them, each with its kind, its signature and where the document uses it.
 
 use crate::diagnostic::Range;
-use crate::resolve::{Body, DocumentId, Origin, Resolved, invocations};
+use crate::resolve::{Body, Component, DocumentId, Origin, Resolved, invocations};
 use crate::tree::Signature;
 use serde::Serialize;
 use std::collections::BTreeMap;
@@ -76,19 +76,11 @@ pub(crate) fn of(resolved: &Resolved) -> Components {
     for (name, id) in document.names.components() {
         let component = resolved.component(id);
         let defining = resolved.document(component.document);
-        let origin = match &component.body {
-            Body::File { origin, .. } => origin.clone(),
-            _ => defining.origin.clone(),
-        };
+        let origin = origin(resolved, component);
         let listed = Listed {
             name: name.to_string(),
             defined_as: (component.name != name).then(|| component.name.clone()),
-            kind: match &component.body {
-                Body::Compmd(_) => "compmd".to_string(),
-                Body::Processor => "processor".to_string(),
-                Body::Host { language, .. } => language.clone(),
-                Body::File { language, .. } => language.name().to_string(),
-            },
+            kind: kind(component),
             signature: component.signature.clone(),
             uses: uses.remove(name).unwrap_or_default(),
         };
@@ -129,6 +121,24 @@ pub(crate) fn of(resolved: &Resolved) -> Components {
     Components {
         groups: groups.into_iter().map(|(.., group)| group).collect(),
         unknown,
+    }
+}
+
+/// What implements `component`, as [`Listed::kind`] says it.
+pub(crate) fn kind(component: &Component) -> String {
+    match &component.body {
+        Body::Compmd(_) => "compmd".to_string(),
+        Body::Processor => "processor".to_string(),
+        Body::Host { language, .. } => language.clone(),
+        Body::File { language, .. } => language.name().to_string(),
+    }
+}
+
+/// The file that defines `component`: the file a document imports it from, or the document whose fence defines it.
+pub(crate) fn origin(resolved: &Resolved, component: &Component) -> Origin {
+    match &component.body {
+        Body::File { origin, .. } => origin.clone(),
+        _ => resolved.document(component.document).origin.clone(),
     }
 }
 

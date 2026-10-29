@@ -42,6 +42,12 @@ impl LineStarts {
             )
     }
 
+    /// The line and column of code point `offset`; past the end of the text, a column past its last line.
+    pub(crate) fn location(&self, offset: usize) -> Location {
+        let line = self.0.partition_point(|start| start.offset <= offset);
+        Location::new(line, offset - self.0[line - 1].offset + 1)
+    }
+
     /// The starts after the text from `start` to `end` became `inserted`; `text` is the new text, after its byte order
     /// mark.
     pub(crate) fn edit(&mut self, start: Place, end: Place, inserted: &str) {
@@ -85,7 +91,7 @@ impl<'a> Lines<'a> {
     }
 
     /// Line `number`, counted from 1.
-    fn line(&self, number: usize) -> Option<&'a str> {
+    pub(crate) fn line(&self, number: usize) -> Option<&'a str> {
         let index = number.checked_sub(1)?;
         let start = self.starts.0.get(index)?.byte;
         let end = self
@@ -224,6 +230,16 @@ mod tests {
             },
             "past the end"
         );
+    }
+
+    #[test]
+    fn an_offset_has_its_line_and_column() {
+        let starts = LineStarts::new("\u{feff}aé\n😀b\n");
+        assert_eq!(starts.location(0), Location::new(1, 1));
+        assert_eq!(starts.location(2), Location::new(1, 3), "the line's end");
+        assert_eq!(starts.location(4), Location::new(2, 2));
+        assert_eq!(starts.location(6), Location::new(3, 1));
+        assert_eq!(starts.location(9), Location::new(3, 4), "past the end");
     }
 
     #[test]
