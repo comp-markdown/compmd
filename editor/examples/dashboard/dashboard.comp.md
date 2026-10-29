@@ -21,16 +21,21 @@ Three plans sold in three regions. Pick a region, or click its column in the cha
 
 :: select-input[Region: all] {bind=region}
 
-```compmd component=kpi {display=flex flex-direction=column gap=s padding=m border=subtle border-radius=m}
-params:
-  label: string
-  value: string
-  note: string
----
-{{label}}, {{note}}
+::: grid {md:grid-template-columns="3fr 2fr" gap=l}
+::: stack {gap=s}
+## Revenue by region
 
-**{{value}}**
-```
+:: bar-chart[Revenue by region, January to September: the United States leads] {unit="USD" selected=region rows=(md.groupBy(md.data.sales, "region").map(g, {"label": g, "value": md.sum(md.groupBy(md.data.sales, "region")[g].map(r, r.revenue))}))}
+::: /stack
+
+::: stack {gap=s}
+## Milestones
+
+:: timeline[Releases, campaigns and partners through the year] {events=(md.data.milestones) kinds=(["release", "campaign", "partner"])}
+::: /stack
+::: /grid
+
+:: sales[Sales in the region picked above] {rows=(md.data.sales.filter(s, md.input.region == "all" || s.region == md.input.region)) place=(md.doc.regions[md.input.region]) months=(md.doc.months)}
 
 ```compmd component=sales {display=contents}
 params:
@@ -64,18 +69,13 @@ headings: absolute
 :: data-table[Units and revenue by month in {{place}}] {unit="USD" cols=([{"key": "month", "label": "Month"}, {"key": "units", "label": "Units"}, {"key": "revenue", "label": "Revenue"}]) rows=(md.groupBy(rows, "month").map(m, {"month": months[m.substring(5, 7)], "units": md.sum(md.groupBy(rows, "month")[m].map(r, r.units)), "revenue": md.sum(md.groupBy(rows, "month")[m].map(r, r.revenue))}))}
 ```
 
-::: grid {md:grid-template-columns="3fr 2fr" gap=l}
-::: stack {gap=s}
-## Revenue by region
+```compmd component=kpi {display=flex flex-direction=column gap=s padding=m border=subtle border-radius=m}
+params:
+  label: string
+  value: string
+  note: string
+---
+{{label}}, {{note}}
 
-:: bar-chart[Revenue by region, January to September: the United States leads] {unit="USD" selected=region rows=(md.groupBy(md.data.sales, "region").map(g, {"label": g, "value": md.sum(md.groupBy(md.data.sales, "region")[g].map(r, r.revenue))}))}
-::: /stack
-
-::: stack {gap=s}
-## Milestones
-
-:: timeline[Releases, campaigns and partners through the year] {events=(md.data.milestones) kinds=(["release", "campaign", "partner"])}
-::: /stack
-::: /grid
-
-:: sales[Sales in the region picked above] {rows=(md.data.sales.filter(s, md.input.region == "all" || s.region == md.input.region)) place=(md.doc.regions[md.input.region]) months=(md.doc.months)}
+**{{value}}**
+```
