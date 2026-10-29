@@ -162,15 +162,11 @@ impl Labels {
 impl Syntax {
     /// The fork's mdast for `text`, with `labels` defined outside it. Without MDX the fork has no syntax errors, so it
     /// always gives a root.
-    ///
-    /// The fork's frontmatter construct is on only when the text has frontmatter: when it fails, on a first `---`
-    /// line that is never closed, the fork parses the lines after it wrongly (a list no longer interrupts a
-    /// paragraph).
     fn mdast(self, text: &str, frontmatter: bool, labels: &Labels) -> mdast::Root {
         let options = markdown::ParseOptions {
             definitions: labels.links.clone(),
             gfm_footnote_definitions: labels.footnotes.clone(),
-            ..self.fork_options(frontmatter && frontmatter::find(text).is_some())
+            ..self.fork_options(frontmatter)
         };
         match markdown::to_mdast(text, &options) {
             Ok(mdast::Node::Root(root)) => root,
