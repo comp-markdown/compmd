@@ -43,7 +43,7 @@ pub struct TextEdit {
 
 The host knows nothing of blocks. It says only which range of the text changed and what replaced it; finding the blocks that range touches is the processor's job.
 
-`start` and `end` are positions in the whole text the processor last saw, counted in code points from its first character, which is position 0. They are the same positions the trees' `offset` fields hold. An editor already tracks them: a text area's `selectionStart` and `selectionEnd`, CodeMirror's `from` and `to`. Both count UTF-16 units, as JavaScript strings do; the WebAssembly binding turns them into code points (see [The WebAssembly binding](#the-webassembly-binding)). A Rust host counts `char`s.
+`start` and `end` are positions in the whole text the processor last saw. They are the same positions the trees' `offset` fields hold (spec §10.5), and [Positions](#positions) says exactly how they are counted.
 
 For example, with the text `Hello world` (positions 0 to 11):
 
@@ -58,6 +58,32 @@ For example, with the text `Hello world` (positions 0 to 11):
 Typing sends one edit per key press, each over the text the one before left: typing `abc` at position 5 is `{5, 5, "a"}`, then `{6, 6, "b"}`, then `{7, 7, "c"}`.
 
 A host with several changes at once (a CodeMirror transaction with several cursors, a collaborator's delta, key presses made while the last edit was processed) sends them one after another, each with positions in the text the edits before it left. It may also merge them into one edit that covers them all.
+
+### Positions
+
+An editor and the processor can count the same text differently. A position is only right when both agree on two things: which text is counted, and what one step counts.
+
+**One step is one code point**, a Unicode character as the standard numbers them. That is neither what the user sees nor what most editors count:
+
+| Text | The user sees | Code points (the processor) | UTF-16 units (JavaScript, a text area, CodeMirror) | UTF-8 bytes (a Rust `&str` index) |
+|---|---|---|---|---|
+| `a` | 1 | 1 | 1 | 1 |
+| `é`, written as one character (U+00E9) | 1 | 1 | 1 | 2 |
+| `é`, written as `e` and a combining accent (U+0065 U+0301) | 1 | 2 | 2 | 3 |
+| `😀` (U+1F600) | 1 | 1 | 2 | 4 |
+| `👍🏽`, a thumb and a skin tone (U+1F44D U+1F3FD) | 1 | 2 | 4 | 8 |
+| a tab | several columns | 1 | 1 | 1 |
+| a line ending written as CRLF | none | 2 | 2, or 1 where the editor turns it into LF | 2 |
+
+So with the text `😀 Hi`, typing `!` at the end is at position 4 for the processor, but CodeMirror's `from` and a text area's `selectionStart` say 5, and a Rust byte index says 7. The WebAssembly binding turns UTF-16 positions into code points, so a JavaScript host passes the editor's positions as they are (see [The WebAssembly binding](#the-webassembly-binding)). A Rust host that holds byte indexes turns them into code points (`text[..index].chars().count()`).
+
+**What is counted is the text the host gave the processor**, from its first character, which is position 0, with one exception: a byte order mark at the very start is dropped before counting, as the spec ignores it. Everything else counts, the frontmatter included. Editors change text in ways the user doesn't see:
+
+- A text area turns every line ending into LF in its `value`, and CodeMirror does by default. A file on disk written with CRLF then has one step more per line than the editor's text.
+- An editor may drop a byte order mark when it opens a file, or keep it and count it.
+- An editor that folds a section or shows a widget in place of some text still counts the hidden text in its positions. Positions on screen, a line and column the user sees, are not positions in the text.
+
+**The rule for a host:** give the processor the editor's text, not the file it was read from (`textarea.value`, CodeMirror's `state.doc.toString()`), and send edits from the editor's own text positions. Then both count the same text, whatever the editor turned into what. Saving the file is the host's business and changes nothing for the processor.
 
 | The edit touches | What is redone |
 |---|---|
@@ -100,7 +126,9 @@ See [the docs][docs] and the note[^1].
 
 With the two definitions, `[the docs][docs]` is a link and `[^1]` a footnote reference. Without them, both are plain text with the brackets in it.
 
-Parsed alone, the slice `See [the docs][docs] and the note[^1].` has no definitions, so the fork would read both as text, and the tree would differ from parsing from scratch. The fork already collects the labels while it parses, in two lists (`definitions` and `gfm_footnote_definitions` in its parse state), and decides each reference against them. The new option fills those lists before parsing starts:
+Parsed alone, the slice `See [the docs][docs] and the note[^1].` has no definitions, so the fork would read both as text, and the tree would differ from parsing from scratch.
+
+**What the fork lacks.** The fork collects the labels while it parses, in two lists (`definitions` and `gfm_footnote_definitions` in its parse state), and decides each reference against them. But it only knows the labels of the text it is given: it has no way to be told about definitions outside that text. That is the change: a new parse option whose labels fill those lists before parsing starts. The rest of the fork stays as it is.
 
 ```rust
 markdown::ParseOptions {
@@ -180,7 +208,7 @@ A collaborator's edit arrives like a local one, so the preview follows a shared 
 
 ## Phases
 
-1. **Parsing.** The labels option in the fork, the slice parse with resync, moving positions, classifying edits, and the splice of the parse tree. Stages 2 to 4b still run on the whole document. The differential test starts here.
+1. **Parsing.** The labels option in the fork, fallbacks parsed with the document's labels (see [Found while designing](#found-while-designing)), the slice parse with resync, moving positions, classifying edits, and the splice of the parse tree. Stages 2 to 4b still run on the whole document. The differential test starts here.
 2. **The other stages.** Imported documents kept; validating and expanding block by block; the result's `Splice`. The differential test covers every stage.
 3. **The WebAssembly binding.** `open` and `edit`, the UTF-16 offsets, and the TypeScript wrapper that applies splices; the bench in a browser.
 
@@ -200,9 +228,9 @@ A collaborator's edit arrives like a local one, so the preview follows a shared 
 - **Incremental inside markdown-rs, below the block level** (re-parsing part of a paragraph or a list item). Finer, but the fork would have to keep its tokenizer's state at each block, a deep change to a parser we don't own. A top-level block is small enough: a paragraph, or one list.
 - **Positions relative to each block, now.** It would remove moving positions after an edit, but every reader of positions (diagnostics, origins, the renderer's keys) would add the block's start. It is kept for later, if moving positions shows in the bench.
 
-## Open questions
+## Found while designing
 
-- **Fallbacks and definition bodies don't see the document's labels today.** The parser parses each of them as a text of its own, without the labels the rest of the document defines. Checked on today's processor with:
+- **Fallbacks don't see the document's labels today.** The parser parses each fallback and each definition body as a text of its own, without the labels the rest of the document defines. Checked on today's processor with:
 
   ````markdown
   ```compmd component=note
@@ -217,6 +245,17 @@ A collaborator's edit arrives like a local one, so the preview follows a shared 
   [docs]: https://example.com
   ````
 
-  The paragraph gives a `linkReference`, as it should. The definition's body and the `chart` fallback both give the text `See [the docs][docs].` with the brackets in it. For the fallback this is a bug: it is part of the document and should parse as it would in place. Phase 1 fixes it with the labels option.
+  The paragraph gives a `linkReference`, as it should. The definition's body and the `chart` fallback both give the text `See [the docs][docs].` with the brackets in it.
 
-  For a definition's body, the spec has to say which labels it sees. The body is written in the document that defines the component, but it is expanded where the component is used, which may be another document that imports it. The suggestion is the defining document's labels, since the author of the body wrote it next to them.
+  - **The fallback is a bug.** A fallback is inline Markdown of the document it is written in (spec §3.1), and a plain renderer shows the line as a paragraph in which `[the docs][docs]` is a link. Slot content, the other text the caller writes, resolves in the caller's document too (spec §6.3). Phase 1 fixes it by parsing fallbacks with the labels option.
+  - **The definition body is right.** The spec already settles it (§6.3, "Scope is lexical"): a `compmd` definition's body is a document of its own, and resolves footnotes and link reference definitions among its own lines. A body that needs `[docs]` defines it in the body.
+
+  For the record, the choices the spec had for a body:
+
+  | A body sees the labels of | Gains | Loses |
+  |---|---|---|
+  | **its own lines only** (the spec) | A body means the same wherever it is used, from any document; it parses on its own, once; editing the document around it never changes it | A label defined next to the definition doesn't reach into it, which can surprise; a body repeats the definitions it needs |
+  | its own lines and the defining document | Labels written next to the definition work in it | A body imported from a pack depends on labels outside its fence; editing a definition anywhere in the defining document changes how every body in it parses |
+  | the document that uses the component | A component could link to a target each user defines | The same body parses differently for each use, so it can't be parsed or checked once; its tree (spec §12.1) would depend on who uses it, against lexical scope everywhere else in the spec |
+
+  Keeping the spec's choice also keeps incremental parsing simpler: a body never needs the labels option.
