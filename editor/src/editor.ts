@@ -7,7 +7,7 @@ import type { Change } from "@compmd/render";
 import type { FrameConnection } from "@compmd/render/frame";
 import { editOf, fixOf, type Selection } from "./edit.ts";
 import type { Example } from "./documents.ts";
-import type { ComponentFailed, ComponentsMessage } from "./protocol.ts";
+import type { ComponentFailed, ComponentsMessage, HostStyleMessage } from "./protocol.ts";
 import { Session, type Update, type WorkerPort } from "./session.ts";
 import { Timings } from "./timings.ts";
 
@@ -31,8 +31,8 @@ export interface EditorState {
 /** The frame's end the editor uses: the render protocol, and the port it shares for components. */
 export interface Frame {
   connection: FrameConnection;
-  /** Sends the components to compile, on the same port as the splices, so they come first. */
-  send(message: ComponentsMessage): void;
+  /** Sends the components to compile, on the same port as the splices, so they come first; or the host's stylesheet. */
+  send(message: ComponentsMessage | HostStyleMessage): void;
   /** Calls `listener` with each component the frame couldn't run. */
   onFailed(listener: (failed: ComponentFailed) => void): void;
 }

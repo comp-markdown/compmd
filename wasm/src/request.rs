@@ -95,6 +95,12 @@ pub(crate) fn process(json: &str, time: Rc<dyn Time>) -> Result<String, Error> {
     Ok(serde_json::to_string(&processed)?)
 }
 
+/// What the frontmatter of the request in `json` gives its render: `{doc, settings, data, inputs}`.
+pub(crate) fn frontmatter(json: &str, time: Rc<dyn Time>) -> Result<String, Error> {
+    let processor = prepare(json, time)?.expand();
+    Ok(serde_json::to_string(&processor.frontmatter())?)
+}
+
 /// The remote and `host:` sources a render of the request in `json` needs: `{remote, host}`.
 pub(crate) fn sources(json: &str, time: Rc<dyn Time>) -> Result<String, Error> {
     let prepared = prepare(json, time)?;
@@ -184,6 +190,22 @@ mod tests {
             "`a.comp.md` isn't one of the request's files"
         );
         assert!(sources(&missing, Rc::new(())).is_err());
+        assert!(frontmatter(&missing, Rc::new(())).is_err());
+    }
+
+    #[test]
+    fn a_request_gives_its_frontmatter() {
+        let request = json!({
+            "path": "a.comp.md",
+            "files": { "a.comp.md": "---\ntitle: T\nmd:\n  data:\n    - from: ./n.json\n      as: n\n---\n", "n.json": "[1, 2]" },
+            "now": "2026-10-22T09:00:00Z"
+        });
+        let given: Json = serde_json::from_str(
+            &frontmatter(&request.to_string(), Rc::new(())).expect("frontmatter"),
+        )
+        .expect("JSON");
+        assert_eq!(given["doc"]["title"], "T");
+        assert_eq!(given["data"][0]["value"], json!([1, 2]));
     }
 
     #[test]

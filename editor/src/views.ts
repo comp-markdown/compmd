@@ -1,12 +1,12 @@
-// The views of the document beside the page: its trees (spec §12), the parse tree and the expanded tree as JSON, and
-// what a plain CommonMark and GFM renderer shows (spec §14). The editor's worker keeps the document open and gives
-// only what changed, so these come from a second worker that processes the document from scratch, and only while a
-// tab shows one.
+// The views of the document beside the page: what a plain CommonMark and GFM renderer shows (spec §14), what its
+// frontmatter gives the render (its fields, settings, data and inputs), and its trees (spec §12). The editor's worker
+// keeps the document open and gives only what changed, so these come from a second worker that processes the
+// document from scratch, and only while a tab shows one.
 
-import { plainHtml, process, type Request } from "@compmd/processor";
+import { frontmatterOf, plainHtml, process, type Frontmatter, type Request } from "@compmd/processor";
 
 /** A view the second worker makes. */
-export type ViewKind = "trees" | "plain";
+export type ViewKind = "trees" | "plain" | "data";
 
 /** From the editor to the views' worker: the document as it is now, and the view to make of it. */
 export interface ViewRequest {
@@ -15,14 +15,19 @@ export interface ViewRequest {
 }
 
 /** A view of a document, or why it couldn't be made. */
-export type View = { view: "trees"; parse: string; expanded: string } | { view: "plain"; html: string } | { view: ViewKind; failed: string };
+export type View =
+  | { view: "trees"; parse: unknown; expanded: unknown }
+  | { view: "plain"; html: string }
+  | { view: "data"; frontmatter: Frontmatter }
+  | { view: ViewKind; failed: string };
 
 /** What the views' worker does with each request. */
 export function viewOf({ request, view }: ViewRequest): View {
   try {
     if (view === "plain") return { view, html: plainHtml(request.files?.[request.path] ?? "") };
+    if (view === "data") return { view, frontmatter: frontmatterOf(request) };
     const { parse, expanded } = process(request);
-    return { view, parse: JSON.stringify(parse, null, 2), expanded: JSON.stringify(expanded, null, 2) };
+    return { view, parse, expanded };
   } catch (error) {
     return { view, failed: error instanceof Error ? error.message : String(error) };
   }

@@ -30,6 +30,22 @@ export interface ComponentsMessage {
   components: readonly HostComponent[];
 }
 
+/** The stylesheets a host might give the page, which the editor lets the author try. */
+export const HOST_STYLES = [
+  { id: "reference", label: "Reference" },
+  { id: "github", label: "GitHub-like" },
+  { id: "docs", label: "Documentation" },
+  { id: "unstyled", label: "Unstyled" },
+] as const;
+
+export type HostStyle = (typeof HOST_STYLES)[number]["id"];
+
+/** From the editor to the frame, on the same port: the host's stylesheet to show the page with. */
+export interface HostStyleMessage {
+  type: "host-style";
+  style: HostStyle;
+}
+
 /** From the frame to the editor, on the same port: a component that couldn't be compiled or loaded. */
 export interface ComponentFailed {
   type: "component-failed";

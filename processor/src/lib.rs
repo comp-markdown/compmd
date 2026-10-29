@@ -26,6 +26,7 @@ pub mod context;
 pub mod diagnostic;
 pub mod expand;
 pub mod expanded;
+pub mod frontmatter;
 pub mod host;
 mod lines;
 mod load;

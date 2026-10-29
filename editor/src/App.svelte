@@ -1,16 +1,20 @@
 <!-- The editor: the document's text on the left, with its inputs and diagnostics under it; on the right, tabs with the
-     rendered page in a sandboxed frame, what a plain Markdown renderer shows, and the document's trees. Each document
-     opens with a worker and a frame of its own. -->
+     rendered page in a sandboxed frame (in a host's stylesheet the author picks), what a plain Markdown renderer
+     shows, what the frontmatter gives the render, and the document's trees. Each document opens with a worker and a
+     frame of its own. -->
 <script lang="ts">
   import type { Diagnostic } from "@compmd/processor";
   import { connectFrame } from "@compmd/render/frame";
+  import DataView from "./DataView.svelte";
   import { EXAMPLES } from "./documents.ts";
   import { offsetOf } from "./edit.ts";
   import { Editor, type EditorState, type Frame } from "./editor.ts";
   import Inputs from "./Inputs.svelte";
+  import JsonTree from "./JsonTree.svelte";
   import Split from "./Split.svelte";
-  import { FRAME_HELLO, type ComponentFailed } from "./protocol.ts";
-  import { plainPage, ViewsClient, type View } from "./views.ts";
+  import { FRAME_HELLO, HOST_STYLES, type ComponentFailed, type HostStyle } from "./protocol.ts";
+  import { keep, recall } from "./stored.ts";
+  import { plainPage, ViewsClient, type View, type ViewKind } from "./views.ts";
 
   const initial = Number(new URLSearchParams(location.search).get("doc") ?? 0);
   let chosen = $state(Number.isInteger(initial) && EXAMPLES[initial] ? initial : 0);
@@ -23,6 +27,7 @@
   const TABS = [
     { id: "page", label: "Page" },
     { id: "plain", label: "Plain Markdown" },
+    { id: "data", label: "Data" },
     { id: "parse", label: "Parse tree" },
     { id: "expanded", label: "Expanded tree" },
   ] as const;
@@ -30,6 +35,11 @@
   let tab: Tab = $state("page");
   let view: View | undefined = $state.raw();
   let views: ViewsClient | undefined;
+  /** How deep the trees open: two levels at first; "Open all" and "Fold all" set it. */
+  let treeDepth = $state(2);
+
+  /** The view the views' worker makes for `tab`. */
+  const kindOf = (shown: Exclude<Tab, "page">): ViewKind => (shown === "parse" || shown === "expanded" ? "trees" : shown);
 
   /** The view the tab shows, of the document as it is now; the views' worker starts the first time one is asked for. */
   $effect(() => {
@@ -41,8 +51,25 @@
       view = answer;
     });
     // Without the origins the editor's keys need, which would make the expanded tree three times as long.
-    views.request({ ...document, origins: false }, tab === "plain" ? "plain" : "trees");
+    views.request({ ...document, origins: false }, kindOf(tab));
   });
+
+  /** The host's stylesheet the page shows in, remembered between visits. */
+  const STYLE_KEY = "compmd-editor-host-style";
+  let hostStyle: HostStyle = $state(HOST_STYLES.find(({ id }) => id === recall(STYLE_KEY))?.id ?? "reference");
+  let frame: Frame | undefined;
+  $effect(() => {
+    keep(STYLE_KEY, hostStyle);
+    frame?.send({ type: "host-style", style: hostStyle });
+  });
+
+  /** What the page is for: open on the first visit, until it is closed. */
+  const ABOUT_KEY = "compmd-editor-about";
+  let about = $state(recall(ABOUT_KEY) !== "closed");
+  function toggleAbout(): void {
+    about = !about;
+    keep(ABOUT_KEY, about ? "open" : "closed");
+  }
 
   /** Selects a diagnostic's range in the text area (to the end of its line, when it has no end), and scrolls to it. */
   function select({ range }: Diagnostic): void {
@@ -62,7 +89,7 @@
     worker = new Worker(new URL("./worker.ts", import.meta.url), { type: "module" });
     const { port1, port2 } = new MessageChannel();
     iframe.contentWindow?.postMessage(FRAME_HELLO, "*", [port2]);
-    const frame: Frame = {
+    const connected: Frame = {
       connection: connectFrame(port1),
       send: (message) => {
         port1.postMessage(message);
@@ -73,7 +100,9 @@
         });
       },
     };
-    const opened = new Editor(worker, frame, () => {
+    frame = connected;
+    connected.send({ type: "host-style", style: hostStyle });
+    const opened = new Editor(worker, connected, () => {
       shown = { ...opened.state };
     });
     editor = opened;
@@ -106,11 +135,32 @@
       <dd>{ms(shown?.painted.last)}</dd>
     </div>
   </dl>
+  <button type="button" class="about-toggle" aria-expanded={about} aria-controls="about" onclick={toggleAbout}>About</button>
 </header>
+
+{#if about}
+  <section class="about" id="about" aria-label="About this editor">
+    <p>
+      Write a <a href="https://github.com/comp-markdown/compmd" target="_blank" rel="noreferrer">CompMD</a> document on the left and see it
+      rendered on the right as you type: components, data, layout and all. The tabs show what a plain Markdown renderer makes of the same
+      text, what the frontmatter gives the page, and the trees the processor builds. Diagnostics under the text point at what's wrong and
+      offer fixes; the inputs under it try other values. Under the page, try the stylesheets a host might give it. Nothing leaves your
+      browser.
+    </p>
+    <button type="button" class="close" aria-label="Close" onclick={toggleAbout}>
+      <svg viewBox="0 0 12 12" aria-hidden="true"><path d="m3 3 6 6m0-6-6 6" /></svg>
+    </button>
+  </section>
+{/if}
 
 <main>
   <Split text={source} views={panes} />
 </main>
+
+<footer class="statusbar">
+  <span>Copyright © 2026 Hakan Serce.</span>
+  <span>The editor is <a href="https://github.com/comp-markdown/compmd/blob/main/LICENSE-CODE" target="_blank" rel="noreferrer">MIT licensed</a>.</span>
+</footer>
 
 {#snippet source()}
   <div class="sheet text">
@@ -168,23 +218,39 @@
       {/each}
     </div>
     <!-- The page stays mounted under the other tabs, so its components keep their state. -->
-    <div class="view" id="view-page" role="tabpanel" aria-labelledby="tab-page" hidden={tab !== "page"}>
+    <div class="view page-view" id="view-page" role="tabpanel" aria-labelledby="tab-page" hidden={tab !== "page"}>
       {#key chosen}
         <iframe title="The rendered page" sandbox="allow-scripts" src="./frame.html" onload={(event) => start(event.currentTarget)}></iframe>
       {/key}
+      <div class="host-style" role="radiogroup" aria-label="The host's stylesheet">
+        <span title="The page's look is its host's, not the document's: try the stylesheets a host might give it.">Host stylesheet</span>
+        {#each HOST_STYLES as { id, label } (id)}
+          <label>
+            <input type="radio" name="host-style" value={id} bind:group={hostStyle} />
+            {label}
+          </label>
+        {/each}
+      </div>
     </div>
     {#if tab !== "page"}
-      {@const wanted = tab === "plain" ? "plain" : "trees"}
       <div class="view" id="view-{tab}" role="tabpanel" aria-labelledby="tab-{tab}">
-        {#if view === undefined || view.view !== wanted}
+        {#if view === undefined || view.view !== kindOf(tab)}
           <p class="note">Processing…</p>
         {:else if "failed" in view}
           <p class="note error">{view.failed}</p>
         {:else if "html" in view}
           <!-- No scripts and an opaque origin: the HTML is markdown-rs's, with raw HTML escaped, but it is the document's. -->
           <iframe title="What a plain Markdown renderer shows" sandbox="" srcdoc={plainPage(view.html)}></iframe>
+        {:else if "frontmatter" in view}
+          <DataView frontmatter={view.frontmatter} />
         {:else}
-          <pre class="tree">{tab === "parse" ? view.parse : view.expanded}</pre>
+          <div class="tree-tools">
+            <button type="button" onclick={() => (treeDepth = Number.POSITIVE_INFINITY)}>Open all</button>
+            <button type="button" onclick={() => (treeDepth = 1)}>Fold all</button>
+          </div>
+          <div class="tree">
+            <JsonTree value={tab === "parse" ? view.parse : view.expanded} open={treeDepth} />
+          </div>
         {/if}
       </div>
     {/if}

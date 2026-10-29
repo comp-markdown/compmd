@@ -48,6 +48,7 @@ document.reload({ remote: await fetchAll(remote), host: hostData(host) });
 - **`OpenDocumentJson` keeps none:** it gives each change's inputs apart, and each splice as the module's JSON text, for a host that passes it on to where it renders without reading it, such as an editor's worker to the page's frame (`frame.splice` in `@compmd/render/frame`). Posted text is copied in one piece, and the renderer parses it once.
 - For an edit inside one block, neither the processing nor the splice grows with the document. Moving the origins after the edit does: it is a pass over those nodes.
 - `free()` releases the module's memory for the document.
+- **`frontmatterOf(request)`** gives what a document's frontmatter gives its render: its own fields, its settings, each data import with what was loaded, and its inputs.
 - **`plainHtml(text)`** gives what a plain CommonMark and GFM renderer shows of a document (spec §14), as HTML, for a view of how it degrades.
 
 Time zone offsets come from the page's `Intl`, so the module carries no zone data. Formatting has all of ICU4X's locales.

@@ -11,12 +11,16 @@ beforeAll(() => {
 const request = (text: string): Request => ({ path: "a.comp.md", files: { "a.comp.md": text }, now: "2026-10-29T09:00:00Z" });
 
 describe("viewOf", () => {
-  it("gives both trees as indented JSON", () => {
+  it("gives both trees", () => {
     const view = viewOf({ request: request("# Hi\n\n:: chip[x]\n"), view: "trees" });
     if (view.view !== "trees" || !("parse" in view)) throw new Error(JSON.stringify(view));
-    expect(JSON.parse(view.parse)).toMatchObject({ type: "root", children: [{ type: "heading" }, { type: "componentLeaf", name: "chip" }] });
-    expect(JSON.parse(view.expanded)).toMatchObject({ type: "root" });
-    expect(view.parse).toContain('\n  "children"');
+    expect(view.parse).toMatchObject({ type: "root", children: [{ type: "heading" }, { type: "componentLeaf", name: "chip" }] });
+    expect(view.expanded).toMatchObject({ type: "root" });
+  });
+
+  it("gives what the frontmatter gives the render", () => {
+    const view = viewOf({ request: request("---\ntitle: T\n---\n"), view: "data" });
+    expect(view).toMatchObject({ view: "data", frontmatter: { doc: { title: "T" }, data: [], inputs: {} } });
   });
 
   it("gives what a plain GFM renderer shows", () => {
@@ -51,7 +55,7 @@ describe("ViewsClient", () => {
     client.request(request("b"), "trees");
     client.request(request("c"), "plain");
     expect(worker.received.map(({ request }) => request.files?.["a.comp.md"])).toEqual(["a"]);
-    worker.answer({ view: "trees", parse: "1", expanded: "1" });
+    worker.answer({ view: "trees", parse: {}, expanded: {} });
     expect(worker.received.map(({ request, view }) => [request.files?.["a.comp.md"], view])).toEqual([
       ["a", "trees"],
       ["c", "plain"],

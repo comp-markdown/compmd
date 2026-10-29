@@ -136,7 +136,7 @@ input:hover {
 main {
   flex: 1;
   min-height: 0;
-  padding: 0 12px 12px;
+  padding: 0 12px 10px;
 }
 
 .split {
@@ -395,7 +395,9 @@ textarea::selection {
   display: flex;
   gap: 2px;
   padding: 0 12px;
-  overflow-x: auto;
+  /* Tabs scroll sideways on a narrow screen; never up and down, which the selected tab's underline would set off. */
+  overflow: auto hidden;
+  scrollbar-width: thin;
   border-bottom: 1px solid var(--rule);
 }
 
@@ -430,11 +432,287 @@ textarea::selection {
   display: none;
 }
 
-.tree {
+/* The header's About, and the paragraph it opens. */
+
+.about-toggle {
+  padding: 4px 10px;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--sheet);
+  color: var(--ink-secondary);
+  cursor: pointer;
+}
+
+.about-toggle:hover,
+.about-toggle[aria-expanded="true"] {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--rule));
+  color: var(--ink);
+}
+
+.about {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin: 0 12px 10px;
+  padding: 12px 14px 12px 18px;
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, var(--rule));
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--accent) 5%, var(--sheet));
+}
+
+.about p {
+  flex: 1;
+  max-width: 78ch;
   margin: 0;
-  padding: 18px 22px;
-  font: 12px/1.55 var(--mono);
-  tab-size: 2;
+  line-height: 1.55;
+}
+
+.about a {
+  color: var(--accent);
+}
+
+.close {
+  margin-inline-start: auto;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--ink-secondary);
+  cursor: pointer;
+}
+
+.close:hover {
+  background: var(--accent-wash);
+  color: var(--accent);
+}
+
+.close svg {
+  width: 10px;
+  height: 10px;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+
+/* The page, with the host's stylesheets under it. */
+
+.page-view:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.page-view iframe {
+  flex: 1;
+  min-height: 0;
+  height: auto;
+}
+
+.host-style {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  padding: 8px 16px;
+  border-top: 1px solid var(--rule);
+  color: var(--ink-secondary);
+}
+
+.host-style > span {
+  margin-inline-end: 2px;
+  cursor: help;
+}
+
+.host-style label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.host-style input {
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+/* The trees: JSON that folds. */
+
+.tree-tools {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 10px 16px;
+  background: color-mix(in srgb, var(--sheet) 92%, transparent);
+  backdrop-filter: blur(4px);
+}
+
+.tree-tools button {
+  padding: 3px 10px;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--sheet);
+  color: var(--ink-secondary);
+  cursor: pointer;
+}
+
+.tree-tools button:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--rule));
+  color: var(--ink);
+}
+
+.tree {
+  padding: 0 22px 18px;
+  font: 12.5px/1.65 var(--mono);
+}
+
+.branch > .children {
+  margin-inline-start: 7px;
+  padding-inline-start: 13px;
+  border-inline-start: 1px solid var(--rule);
+}
+
+.branch > .toggle {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 0 4px 0 0;
+  border: 0;
+  border-radius: 3px;
+  background: none;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.branch > .toggle:hover {
+  background: var(--accent-wash);
+}
+
+.toggle svg {
+  flex: none;
+  align-self: center;
+  width: 9px;
+  height: 9px;
+  fill: none;
+  stroke: var(--ink-secondary);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 120ms;
+}
+
+.toggle[aria-expanded="true"] svg {
+  transform: rotate(90deg);
+}
+
+.leaf {
+  padding-inline-start: 15px;
+}
+
+.key {
+  color: var(--ink-secondary);
+}
+
+.key::after {
+  content: ":";
+}
+
+.summary {
+  color: var(--ink-secondary);
+  font-style: italic;
+}
+
+.toggle[aria-expanded="true"] .summary {
+  font-style: normal;
+}
+
+.value.string {
+  color: color-mix(in srgb, var(--accent) 80%, var(--ink));
+}
+
+.value.number,
+.value.boolean {
+  color: color-mix(in srgb, #2e8b57 75%, var(--ink));
+}
+
+.value.null {
+  color: var(--ink-secondary);
+}
+
+/* The data: the frontmatter's fields, data and inputs. */
+
+.data {
+  padding: 6px 22px 22px;
+}
+
+.data section + section {
+  margin-top: 6px;
+  padding-top: 14px;
+  border-top: 1px solid var(--rule);
+}
+
+.data h2 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  margin: 10px 0 8px;
+  font: 600 15px/1.3 var(--sans);
+}
+
+.data h2 span,
+.import h3 span {
+  color: var(--ink-secondary);
+  font-weight: 400;
+  font-size: 13px;
+}
+
+.import {
+  margin: 10px 0 14px;
+}
+
+.import h3 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  margin: 0 0 4px;
+  font: 600 13.5px/1.4 var(--sans);
+}
+
+.data code {
+  font: 12.5px var(--mono);
+}
+
+.schema {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 6px;
+}
+
+.schema code {
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--accent-wash);
+}
+
+.data .tree,
+.data .branch {
+  font: 12.5px/1.65 var(--mono);
+}
+
+.empty {
+  margin: 0;
+  color: var(--ink-secondary);
 }
 
 .note {
@@ -453,6 +731,27 @@ iframe {
   height: 100%;
   border: 0;
   background: var(--sheet);
+}
+
+/* The status bar, pinned under the desk. */
+
+.statusbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  padding: 6px 20px 8px;
+  border-top: 1px solid var(--rule);
+  color: var(--ink-secondary);
+  font-size: 12px;
+}
+
+.statusbar a {
+  color: inherit;
+  text-underline-offset: 2px;
+}
+
+.statusbar a:hover {
+  color: var(--accent);
 }
 
 /* A narrow screen: the sheets stack, each half the height, and the handle goes. */
@@ -493,7 +792,8 @@ iframe {
 
 @media (prefers-reduced-motion: reduce) {
   .grip,
-  .fold {
+  .fold,
+  .toggle svg {
     transition: none;
   }
 }

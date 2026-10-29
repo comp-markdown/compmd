@@ -2,7 +2,7 @@
 // editor, which takes edits and keeps its expanded tree.
 
 import type { ExpandedInput, ExpandedRoot, Splice } from "@compmd/render";
-import { Document as Kept, plain, process as processJson, sources as sourcesJson } from "../pkg/compmd_wasm.js";
+import { Document as Kept, frontmatter as frontmatterJson, plain, process as processJson, sources as sourcesJson } from "../pkg/compmd_wasm.js";
 import type { ParseRoot } from "./parse-tree.ts";
 
 export { default as init, initSync } from "../pkg/compmd_wasm.js";
@@ -129,6 +129,34 @@ export interface ChangesJson extends Omit<Changes, "splice"> {
   splice: string;
   /** The document's inputs after it, by name, as the splice holds them too, for a host that doesn't read the splice. */
   inputs: Record<string, ExpandedInput>;
+}
+
+/** What a document's frontmatter gives its render (spec §2.1, §8.6, §8.7). */
+export interface Frontmatter {
+  /** The author's own fields, what `md.doc` holds. */
+  doc: Record<string, unknown>;
+  /** The settings under `md` other than data and inputs. */
+  settings: {
+    version?: string;
+    lang?: string;
+    tz?: string;
+    /** Each component import, with the names it takes (`badge as tag` when renamed), or `*`. */
+    import?: { from: string; names: string[] }[];
+  };
+  /** Each data import, in written order, with what was loaded: `null` when it failed, which a diagnostic says. */
+  data: { name: string; from: string; schema?: [string, unknown][]; fallback?: string; value: unknown }[];
+  /** The inputs, by name, with the values the render used. */
+  inputs: Record<string, ExpandedInput>;
+}
+
+/**
+ * What the frontmatter of `request`'s document gives its render: its fields, its settings, each data import with what
+ * was loaded, its inputs.
+ *
+ * @throws Error as {@link process} does.
+ */
+export function frontmatterOf(request: Request): Frontmatter {
+  return JSON.parse(frontmatterJson(JSON.stringify(request))) as Frontmatter;
 }
 
 /**

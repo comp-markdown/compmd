@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import { changelog, completeExample, completeJson, longBody } from "../bench/requests.ts";
-import { initSync, OpenDocument, OpenDocumentJson, plainHtml, process, sources, type Request } from "./index.ts";
+import { frontmatterOf, initSync, OpenDocument, OpenDocumentJson, plainHtml, process, sources, type Request } from "./index.ts";
 
 /** `value` without positions, as the conformance case compares it. */
 function withoutPositions(value: unknown): unknown {
@@ -53,6 +53,16 @@ describe("process", () => {
   it("throws on a request it can't process", () => {
     expect(() => process({ path: "a.comp.md", files: {}, now: "2026-10-22T09:00:00Z" })).toThrow("`a.comp.md` isn't one of the request's files");
     expect(() => process({ path: "a.comp.md", files: { "a.comp.md": "" }, now: "today" })).toThrow("`today` isn't an RFC 3339 time");
+  });
+});
+
+describe("frontmatterOf", () => {
+  it("gives the document's fields, settings, data and inputs", () => {
+    const frontmatter = frontmatterOf(completeExample());
+    expect(frontmatter.doc).toMatchObject({ title: "RayPlay 1.4" });
+    expect(frontmatter.settings).toMatchObject({ lang: "en", tz: "Europe/Berlin" });
+    expect(frontmatter.data.map((data) => data.name).length).toBeGreaterThan(0);
+    expect(Object.keys(frontmatter.inputs)).toContain("region");
   });
 });
 

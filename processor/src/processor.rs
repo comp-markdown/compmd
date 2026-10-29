@@ -434,6 +434,35 @@ impl Processor<Loaded> {
 }
 
 impl Processor<Expanded> {
+    /// What the processed document's frontmatter gives the render: its own fields, its settings, each data import
+    /// with what was loaded, and its inputs.
+    ///
+    /// ```
+    /// use compmd::context::RenderContext;
+    /// use compmd::expand::Options;
+    /// use compmd::{Ambient, ParseOptions, Processor};
+    /// use std::collections::HashMap;
+    /// use std::rc::Rc;
+    ///
+    /// let text = "---\ntitle: Team\nmd:\n  data:\n    - from: ./team.csv\n      as: team\n---\n";
+    /// let files = HashMap::from([("team.csv".to_string(), "name\nAna\n".to_string())]);
+    /// let context = RenderContext { now: 0, tz: "UTC".into(), time: Rc::new(()), inputs: Default::default() };
+    /// let processor = Processor::new("a.comp.md", text)
+    ///     .parse(&ParseOptions::default())
+    ///     .resolve(files, (), &Ambient::default())
+    ///     .validate(&[])
+    ///     .load(context, (), ())
+    ///     .expand(&Options::default());
+    /// let frontmatter = processor.frontmatter();
+    /// assert_eq!(frontmatter.doc["title"], "Team");
+    /// assert_eq!(frontmatter.data[0].value, serde_json::json!([{ "name": "Ana" }]));
+    /// ```
+    #[must_use]
+    pub fn frontmatter(&self) -> crate::frontmatter::Frontmatter {
+        let resolved = &self.state.validated.resolved;
+        crate::frontmatter::of(resolved, resolved.main, &self.state.data)
+    }
+
     /// The processed document's tree (spec §12.1).
     #[must_use]
     pub fn tree(&self) -> &tree::Root {

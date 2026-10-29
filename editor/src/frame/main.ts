@@ -1,8 +1,9 @@
 // The frame: a sandboxed iframe that renders what the editor sends, through `@compmd/render`'s frame protocol, and
-// compiles the document's host-language components the editor sends on the same port.
+// compiles the document's host-language components the editor sends on the same port, in the host's stylesheet the
+// editor picks.
 
 import { serveFrame } from "@compmd/render/frame";
-import { FRAME_HELLO, type ComponentFailed, type ComponentsMessage } from "../protocol.ts";
+import { FRAME_HELLO, type ComponentFailed, type ComponentsMessage, type HostStyleMessage } from "../protocol.ts";
 import { Components } from "./components.ts";
 import { load } from "./load.ts";
 
@@ -35,6 +36,8 @@ addEventListener("message", (event: MessageEvent) => {
   // Before `serveFrame` starts the port, so the components come before the first splice.
   port.addEventListener("message", ({ data }: MessageEvent<{ type?: string }>) => {
     if (data.type === "components") void components.set((data as ComponentsMessage).components);
+    // The host's stylesheet: `frame.css` holds each, by this attribute, so a switch reloads nothing.
+    if (data.type === "host-style") document.documentElement.dataset.host = (data as HostStyleMessage).style;
   });
   const container = document.getElementById("page");
   if (container) serveFrame(port, { container, components: components.mounts });
