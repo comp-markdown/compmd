@@ -142,6 +142,13 @@ impl Document {
             .map_err(Error::from)
     }
 
+    /// What is at UTF-16 position `utf16` of the text as the last change left it (`compmd::hints::PositionalHint`),
+    /// or `null` where there is nothing to say.
+    pub(crate) fn hint(&self, utf16: usize) -> Result<String, Error> {
+        let hint = self.processor.hint_at(self.text.offset(utf16));
+        Ok(serde_json::to_string(&hint)?)
+    }
+
     /// The document's inputs, by name: what the splice carries too, without the nodes.
     pub(crate) fn inputs(&self) -> Result<String, Error> {
         Ok(serde_json::to_string(&self.processor.expanded().inputs)?)
@@ -261,6 +268,21 @@ mod tests {
             "the edit, in code points"
         );
         assert_eq!(changes["diagnostics"][0]["code"], "F002");
+    }
+
+    #[test]
+    fn a_hint_is_at_a_utf16_position() {
+        // `😀` is two UTF-16 units: `subtle` starts at 18 for JavaScript, at 17 for the processor.
+        let document = open("😀 :box[b]{border=subtle}\n");
+        let hint: Json = serde_json::from_str(&document.hint(20).expect("a hint")).expect("JSON");
+        assert_eq!(hint["subject"]["value"], "subtle");
+        assert_eq!(
+            hint["range"]["start"],
+            json!({ "line": 1, "column": 18 }),
+            "in code points"
+        );
+        let document = open("Plain.\n");
+        assert_eq!(document.hint(2).expect("no hint"), "null");
     }
 
     #[test]

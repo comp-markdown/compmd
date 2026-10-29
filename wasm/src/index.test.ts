@@ -193,6 +193,19 @@ describe("OpenDocument", () => {
     expect(document.components).toHaveLength(3);
   });
 
+  it("gives the hint at a UTF-16 position of the text as the last edit left it", () => {
+    const document = new OpenDocument(request("😀 :box[b]{border=subtle}\n"));
+    // `subtle` starts at 18 in UTF-16 units: the emoji is two.
+    const hint = document.hintAt(20);
+    expect(hint?.subject).toMatchObject({ kind: "param", component: "box", value: "subtle", param: { name: "border" } });
+    expect(hint?.range.start).toEqual({ line: 1, column: 18 });
+    expect(hint?.completions.map((c) => c.text)).toEqual(["none", "subtle", "strong"]);
+    document.edit(18, 24, "nope");
+    expect(document.hintAt(20)?.diagnostics.map((d) => d.code)).toEqual(["F009"]);
+    expect(new OpenDocumentJson(request("Plain.\n")).hintAt(2)).toBeUndefined();
+    document.free();
+  });
+
   it("throws on a request it can't open", () => {
     expect(() => new OpenDocument({ path: "a.comp.md", files: {}, now })).toThrow("`a.comp.md` isn't one of the request's files");
   });

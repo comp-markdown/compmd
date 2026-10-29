@@ -55,6 +55,11 @@ impl Text {
         }
     }
 
+    /// The code point UTF-16 position `utf16` is at, as [`place`](Self::place) finds it.
+    pub(crate) fn offset(&self, utf16: usize) -> usize {
+        self.place(utf16).offset
+    }
+
     /// Where UTF-16 position `utf16` is: in its line, at the start of a character it is inside; past the end, at the
     /// end.
     fn place(&self, utf16: usize) -> Place {

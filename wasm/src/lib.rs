@@ -138,6 +138,16 @@ impl Handle {
         Ok(self.document()?.inputs()?)
     }
 
+    /// What is at UTF-16 position `at` of the text as the last change left it, or `null`: the processor's positional
+    /// hint, with its completions and the diagnostics there.
+    ///
+    /// # Errors
+    ///
+    /// None in practice, as `splice`.
+    pub fn hint(&self, at: usize) -> Result<String, JsError> {
+        Ok(self.document()?.hint(at)?)
+    }
+
     /// The text's UTF-16 `start..end` became `text`.
     ///
     /// # Errors

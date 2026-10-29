@@ -202,6 +202,95 @@ export function componentsOf(request: Request): Components {
 }
 
 /**
+ * What is at a place in an open document's text, and what it takes: the processor's positional hint. Ranges are in
+ * lines and code point columns, as diagnostics' are.
+ */
+export interface PositionalHint {
+  /** The text the hint is about: a name, a key, a value. A completion replaces it; empty where nothing is written yet. */
+  range: Required<Range>;
+  /** What the text is; absent where only a diagnostic has something to say. */
+  subject?: HintSubject;
+  /** What may be written at `range`, each replacing it. */
+  completions: Completion[];
+  /** The diagnostics whose range holds the place. */
+  diagnostics: Diagnostic[];
+}
+
+/** What the text at a place is. */
+export type HintSubject =
+  | { kind: "component"; name: string; component?: ComponentHint }
+  | { kind: "params"; component: string; params: ParameterHint[] }
+  | { kind: "param"; component: string; param: ParameterHint; value?: string }
+  | { kind: "slot"; component: string; slot: string; slots: NonNullable<Signature["slots"]> }
+  | { kind: "path"; path: string; name: NameHint }
+  | { kind: "function"; name: string; hint?: FunctionHint }
+  | { kind: "frontmatter"; path: string[]; about?: string }
+  | { kind: "type"; name: string; takes?: KindHint };
+
+/** A component a name stands for. */
+export interface ComponentHint {
+  definedAs?: string;
+  /** `compmd`, `processor`, or the host language as written. */
+  kind: string;
+  signature?: Signature;
+  /** The file that defines it; absent for the processed document. */
+  file?: string;
+  /** Whether the processor provides it: `@compmd/core` or an ambient pack. */
+  provided: boolean;
+  /** Where in that file it is defined. */
+  defined?: Required<Range>;
+}
+
+/** A param: what it is and what it takes. */
+export interface ParameterHint {
+  name: string;
+  origin: "declared" | "common" | "attribute";
+  takes: KindHint;
+  required: boolean;
+  default?: string;
+  doc?: string;
+  /** Whether it may carry a breakpoint, `md:gap=l`. */
+  breakpoints: boolean;
+}
+
+/** What a value may be, and how a message says it. */
+export interface KindHint {
+  /** The words it takes; for a bound input, the inputs it can bind. */
+  tokens: string[];
+  forms: string[];
+  examples: string[];
+  upTo: number;
+  flag: boolean;
+  quoted: boolean;
+  /** What it takes, as F009 says it. */
+  description: string;
+}
+
+/** What a step of a path names. */
+export interface NameHint {
+  name: string;
+  /** Its type, as CEL writes it; absent for a name nothing has. */
+  type?: string;
+  about?: string;
+  /** The fields of a record, or of a list's records, each `name: type`. */
+  fields?: string[];
+}
+
+/** A function of the profile, or an `md.` function. */
+export interface FunctionHint {
+  /** Each way to call it: `string.indexOf(string) → int`. */
+  signatures: string[];
+  doc: string;
+}
+
+/** What may be written at a hint's range. */
+export interface Completion {
+  label: string;
+  text: string;
+  detail?: string;
+}
+
+/**
  * What a plain CommonMark and GFM renderer shows of `text` (spec §14), as HTML: CompMD's syntax as text, raw HTML
  * escaped. The module must be loaded first.
  */
@@ -290,6 +379,11 @@ export class OpenDocumentJson {
     return this.changes();
   }
 
+  /** What is at UTF-16 position `offset`, as {@link OpenDocument.hintAt}. */
+  hintAt(offset: number): PositionalHint | undefined {
+    return (JSON.parse(this.#kept.hint(offset)) as PositionalHint | null) ?? undefined;
+  }
+
   /** The remote and `host:` sources a render needs now, as {@link OpenDocument.sources}. */
   sources(): Needed {
     return JSON.parse(this.#kept.sources()) as Needed;
@@ -357,6 +451,19 @@ export class OpenDocument {
   /** The text's UTF-16 `start..end` became `text`; one edit per change, each in the text the one before left. */
   edit(start: number, end: number, text: string): Changes {
     return this.#apply(this.#json.edit(start, end, text));
+  }
+
+  /**
+   * What is at UTF-16 position `offset` (as `edit` takes it) of the text as the last change left it, and what it
+   * takes: a component's name, a param's key or value, a slot, a path, a function, a frontmatter key; with what may be
+   * written there and the diagnostics there. `undefined` where there is nothing to say, such as in plain prose.
+   *
+   * @example
+   * const hint = document.hintAt(textarea.selectionStart);
+   * if (hint?.subject?.kind === "param") show(hint.subject.param.takes.description, hint.completions);
+   */
+  hintAt(offset: number): PositionalHint | undefined {
+    return this.#json.hintAt(offset);
   }
 
   /**
