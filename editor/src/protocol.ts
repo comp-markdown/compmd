@@ -60,5 +60,14 @@ export interface SourceLink {
   fragment: string;
 }
 
+/**
+ * From the frame to the editor, on the same port: the reader clicked a link to another page, which the editor opens in
+ * a new tab, since the sandboxed frame may not leave the playground and most sites refuse to be shown in a frame.
+ */
+export interface OpenLink {
+  type: "open-link";
+  url: string;
+}
+
 /** What the editor sends the frame first, with the port. */
 export const FRAME_HELLO = "compmd-editor";

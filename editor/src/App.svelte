@@ -14,8 +14,9 @@
   import Inputs from "./Inputs.svelte";
   import JsonTree from "./JsonTree.svelte";
   import Split from "./Split.svelte";
+  import { caretTop } from "./caret.ts";
   import { directiveFor, findPassage, fragmentOf, parseFragment, type Passage } from "./fragment.ts";
-  import { FRAME_HELLO, HOST_STYLES, type ComponentFailed, type HostStyle, type SourceLink } from "./protocol.ts";
+  import { FRAME_HELLO, HOST_STYLES, type ComponentFailed, type HostStyle, type OpenLink, type SourceLink } from "./protocol.ts";
   import { keep, recall } from "./stored.ts";
   import { plainPage, ViewsClient, type View, type ViewKind } from "./views.ts";
 
@@ -88,14 +89,13 @@
     selectText({ start, end });
   }
 
-  /** Selects `passage` of the text area, and scrolls it to near the top. */
+  /** Selects `passage` of the text area, and scrolls it to near the top, a few lines below it. */
   function selectText({ start, end }: Passage): void {
     if (!textarea) return;
     textarea.focus();
     textarea.setSelectionRange(start, end);
-    const line = textarea.value.slice(0, start).split("\n").length;
     const lineHeight = Number.parseFloat(getComputedStyle(textarea).lineHeight) || 20;
-    textarea.scrollTop = Math.max(0, (line - 3) * lineHeight);
+    textarea.scrollTop = Math.max(0, caretTop(textarea, start) - 2 * lineHeight);
     noteSelection();
   }
 
@@ -161,6 +161,8 @@
     };
     port1.addEventListener("message", ({ data }: MessageEvent<{ type?: string }>) => {
       if (data.type === "source-link") void showPassage((data as SourceLink).fragment);
+      // Only to another site, as the frame sends it: never a script or a page of the playground's own.
+      if (data.type === "open-link" && /^(https?|mailto):/i.test((data as OpenLink).url)) open((data as OpenLink).url, "_blank", "noopener,noreferrer");
     });
     frame = connected;
     connected.send({ type: "host-style", style: hostStyle });

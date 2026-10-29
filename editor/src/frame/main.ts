@@ -3,7 +3,7 @@
 // editor picks, with its math typeset.
 
 import { serveFrame } from "@compmd/render/frame";
-import { FRAME_HELLO, type ComponentFailed, type ComponentsMessage, type HostStyleMessage, type SourceLink } from "../protocol.ts";
+import { FRAME_HELLO, type ComponentFailed, type ComponentsMessage, type HostStyleMessage, type OpenLink, type SourceLink } from "../protocol.ts";
 import { Components } from "./components.ts";
 import { load } from "./load.ts";
 import { typesetMath } from "./math.ts";
@@ -43,12 +43,24 @@ addEventListener("message", (event: MessageEvent) => {
     // The host's stylesheet: `frame.css` holds each, by this attribute, so a switch reloads nothing.
     if (data.type === "host-style") document.documentElement.dataset.host = (data as HostStyleMessage).style;
   });
-  // A link to a passage of the text selects it in the editor, rather than looking for it on the page.
+  // A link to a passage of the text selects it in the editor, rather than looking for it on the page; a link to
+  // another page opens in a new tab, which the editor opens: only for the reader's own clicks, since a component may
+  // not navigate (spec §15).
+  const linkOf = (target: EventTarget | null) => (target instanceof Element ? target.closest("a[href]") : null);
+  // A press on a link to the text doesn't take the focus into the frame, which would take it from the selection.
+  document.addEventListener("mousedown", (event) => {
+    if (linkOf(event.target)?.getAttribute("href")?.includes(":~:text=")) event.preventDefault();
+  });
   document.addEventListener("click", (event) => {
-    const link = event.target instanceof Element ? event.target.closest("a[href*=':~:text=']") : null;
-    if (!link) return;
-    event.preventDefault();
-    port.postMessage({ type: "source-link", fragment: link.getAttribute("href") ?? "" } satisfies SourceLink);
+    const link = linkOf(event.target);
+    const href = link?.getAttribute("href") ?? "";
+    if (href.includes(":~:text=")) {
+      event.preventDefault();
+      port.postMessage({ type: "source-link", fragment: href } satisfies SourceLink);
+    } else if (/^(https?|mailto):/i.test(href)) {
+      event.preventDefault();
+      if (event.isTrusted) port.postMessage({ type: "open-link", url: href } satisfies OpenLink);
+    }
   });
   const container = document.getElementById("page");
   if (container) serveFrame(port, { container, components: components.mounts, math });
