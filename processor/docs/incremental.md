@@ -1,6 +1,6 @@
 # Incremental processing
 
-**Status: phase 1 done** (parsing). How the processor handles an edit without processing the whole document again.
+**Status: phase 2 done** (every stage). How the processor handles an edit without processing the whole document again.
 
 Today every change runs stages 1 to 4b on the whole text. The WebAssembly build takes about 3 ms for the spec's complete example and 10 ms for a 52 KB body (p95, an Apple M4), and the time grows with the document: a body ten times as long would take about ten times as long. An editor that processes on every key press needs the time to depend on the edit, not on the document.
 
@@ -162,28 +162,38 @@ markdown::ParseOptions {
 
 The processor keeps the document's labels with its blocks. An edit that adds, removes or renames a definition changes them, which is why it parses the whole body again (see [Edits](#edits)).
 
+## The later stages
+
+Parsing says which units changed. The stages after it keep what they give for each top-level block, so that an edit redoes only the blocks of those units. A unit that comes out of the slice parse as it was, or moved, counts as unchanged, so the unit on either side of the edit, parsed again to resync, isn't redone.
+
+The text and where its lines start are kept with the processed document, and an edit updates both. The line starts count bytes and code points, so a position in code points is found in its line, without counting from the start of the text.
+
 ## Stage 2: resolving
 
 - Imported documents depend only on the host's files and packs, not on the processed document's text, so they are kept across edits. A host that changes a file or a pack starts a new processor.
-- For an edit inside one body block, the names and definitions of the processed document don't change. Only that block's name diagnostics (F002, F023, W113) are found again.
+- For an edit inside one body block, the names and definitions of the processed document don't change. Only that block's name diagnostics (F002, F023, W113) are found again. The definitions after the edit, and the diagnostics at them, move.
+- A unit that changed and holds a definition or a signature fence counts as a change to a definition, even when the edit is outside the fence: stages 2 to 4b run on the whole document.
 
 ## Stage 3: validating
 
 - The processed document is validated block by block, and each block keeps what validating gave it: its diagnostics, its refused params, its invocations that render their fallback, and its parsed expressions.
-- **One fact crosses blocks:** the inputs bound to params of host-language components, which a data import's `from` may not interpolate (F031). Each block keeps its share, and the data imports are checked again only when the whole set changes.
+- **One fact crosses blocks:** the inputs bound to params of host-language components, which a data import's `from` may not interpolate (F031). Each block keeps its share, and the data imports, which are few, are checked again after every edit.
+- An expression's parsed program is shared by every block that writes it, and dropped when no block writes it any more.
 - Definitions, the processed document's and the imported ones', are validated once and kept until a definition changes.
 
 ## Stage 4a: loading
 
-- Loading depends on the frontmatter and the render context, never on the body, so an edit to the body keeps what was loaded.
+- Loading depends on the frontmatter and the render context, and on which data imports validating refused. An edit to the body keeps what was loaded, unless it changed which data imports are refused (F031): then loading and expanding run again.
 
 ## Stage 4b: expanding
 
-- The processed document is expanded block by block, and each block keeps its expanded nodes, its diagnostics and the state it starts and ends with.
-- **Two things cross blocks:**
-  - **The last heading.** Headings in a `compmd` definition are relative to the heading before them (spec §7.2). When a block's last heading changes, the blocks after it are expanded again, until one starts with the state it had before.
-  - **The node limit.** Each block keeps how many nodes it made, and the limit applies to their running total.
+- The processed document is expanded block by block, and each block keeps how many expanded nodes it gave, its diagnostics and the state it starts and ends with.
+- **Three things cross blocks:**
+  - **The last heading.** Headings in a `compmd` definition are relative to the heading before them (spec §7.2). Each block notes whether it reads the depth of the heading before it (a `compmd` component with relative headings, before any heading of its own) and whether it leaves the depth as it found it. When the depth before a block changes, the block is expanded again only if it reads it.
+  - **The node limit.** Each block keeps how many nodes it made, and the limit applies to their running total. A block whose start is past the limit, or that would cross it, is expanded again.
+  - **Errors reported once** (spec §10.4). An evaluation error is reported once per code and place, however many blocks reach it, for example in a definition that several blocks use. Each block keeps all the errors it found, and the diagnostics keep the first of each, so removing the block that reported one moves the report to the next block that finds it.
 - Origins hold absolute positions, so a block after the edit has its origins moved as its parse tree is. An origin's occurrence counts the nodes before it in the same list with the same range, and nodes of different top-level blocks never share a range, so occurrences stay right.
+- Adjacent text is joined in any list (spec §8.1). Every top-level block gives blocks, never bare text, so no text of two blocks is joined today. If it ever were, the blocks couldn't be told apart, and the next edit expands the whole document.
 
 ## What `edit` gives
 
@@ -195,7 +205,7 @@ The same expanded processor, with the full trees and diagnostics as today, and w
 pub struct Splice { pub from: usize, pub to: usize, pub nodes: Vec<expanded::Node>, pub lines: isize, pub offset: isize }
 ```
 
-A host that renders the whole tree each time ignores it; one that crosses a boundary (a worker, WebAssembly, a process) sends the splice instead of the tree.
+`processor.splice()` gives it. A host that renders the whole tree each time ignores it; one that crosses a boundary (a worker, WebAssembly, a process) sends the splice instead of the tree. After the first expansion, the splice replaces an empty tree with the whole one. When a block after the edited ones is expanded again (it follows a heading that changed), the splice runs to it, so the nodes between come again too.
 
 ## The WebAssembly binding
 
@@ -218,19 +228,32 @@ A collaborator's edit arrives like a local one, so the preview follows a shared 
 ## Correctness
 
 - **Differential test.** For every document of the conformance set and the bench: a sequence of random edits (typing and deleting characters, pasting blocks, adding and removing blank lines, opening and closing fences and containers, editing the frontmatter and definitions, link and footnote definitions). After each edit, the incremental result is compared with a new processor on the same text and context: parse tree, expanded tree and diagnostics. A failure prints the document and the edits.
-- **Unit tests** for each piece: classifying an edit, resync, moving positions, the heading state, the node limit.
+  - Parsing (`parse/edit.rs`): the tree, the diagnostics and the units, over the conformance set and the examples; the blocks outside those it says changed are as they were, or moved.
+  - Every stage (`tests/edit.rs`): every processor case with its context, the examples and the bench's document, each with origins and without; and the splice turns the expanded tree before the edit into the one after it.
+- **Unit tests** for each piece: classifying an edit, resync, moving positions, the line starts, the heading state, the node limit, loading again, joined text.
 
 ## Performance
 
 - **Bench:** time per keystroke inside one block of the 52 KB body and of a 500 KB body, and for each edit class.
 - **What to expect.** Today the WebAssembly build takes about 10 ms for a 52 KB body, about 0.2 µs a byte. A keystroke parses, validates and expands its block and one block either side, a few hundred bytes to a few KB: tens to a few hundred microseconds, not nanoseconds. Moving the positions of the blocks after the edit adds a pass over their nodes, a few nanoseconds each, which does grow with the document: about 0.1 ms for 500 KB.
 - **The target:** a keystroke inside a block of ordinary size takes under 1 ms (p95) in both documents.
+- **Measured** (`cargo bench --bench edit`, p95, an Apple M4, native):
+
+  | Edit | 52 KB | 500 KB |
+  |---|---|---|
+  | A keystroke in a paragraph | 0.03 ms | 0.11 ms |
+  | A paragraph split by a blank line | 0.04 ms | 0.14 ms |
+  | A link definition's label (the whole body parsed again) | 3.5 ms | 53 ms |
+  | The frontmatter (every stage run again) | 3.7 ms | 57 ms |
+  | The whole document, from scratch | 4.0 ms | 56 ms |
+
+  Before the later stages kept their blocks, a keystroke took 0.43 ms and 3.7 ms.
 - The browser budgets stay as they are: a key press is painted within 16 ms for a short document and 50 ms for a long one.
 
 ## Phases
 
 1. **Parsing.** The labels option in the fork, fallbacks parsed with the document's labels (see [Found while designing](#found-while-designing)), the slice parse with resync, moving positions, classifying edits, and the splice of the parse tree. Stages 2 to 4b still run on the whole document. The differential test starts here.
-2. **The other stages.** Imported documents kept; validating and expanding block by block; the result's `Splice`. The differential test covers every stage.
+2. **The other stages.** Imported documents kept; resolving, validating and expanding block by block; the result's `Splice`. The differential test covers every stage.
 3. **The WebAssembly binding.** `open` and `edit`, the UTF-16 offsets, and the TypeScript wrapper that applies splices; the bench in a browser.
 
 ## Alternatives considered
@@ -282,3 +305,8 @@ A collaborator's edit arrives like a local one, so the preview follows a shared 
   Keeping the spec's choice also keeps incremental parsing simpler: a body never needs the labels option.
 
 - **A first `---` line that is never closed broke the fork's parse of the lines after it.** With markdown-rs's frontmatter construct on, `---\nus\n- a\n` parsed `- a` as part of the paragraph `us`, where CommonMark makes it a list, as it does with the construct off. The differential test found it, since a slice is parsed without the construct. The bug was upstream's tokenizer, with CommonMark constructs alone: it recorded each line's start one index early, which nothing read until a failed attempt that crossed line endings left entries behind, and the next pass then skipped lines. The fork fixes it, and `tests/frontmatter.rs` there checks that such text parses the same with the construct on and off.
+
+## Found while building
+
+- **Counting code points from the start of the text cost most of an edit.** The slice parse turned each position into a byte index by counting the code points before it, several times per edit: 0.8 ms of the 0.9 ms a keystroke took in the 500 KB body. The line starts kept with the text, in bytes and code points, now find a position in its line.
+- **Some text makes the fork panic.** `[l]:x\n-\n1\n-` (a link reference definition, then `-` lines) panics in markdown-rs, in `to_html` with its default options too, and in upstream's release as well, so the bug is upstream's. The differential test found it from a random edit. Until the fork is fixed, the test leaves out an edit whose text panics when parsed; a document with such text crashes the processor, edited or not.

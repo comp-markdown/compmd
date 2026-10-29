@@ -4,7 +4,7 @@
 
 use super::env::Env;
 use crate::expanded::{Content, Node, Origin};
-use crate::tree::{self, Point};
+use crate::tree::{self, Moved, Point};
 use std::collections::HashMap;
 
 /// The origin of what `node` makes in `env`: the invocation's in a body, else where `node` is written.
@@ -96,6 +96,27 @@ fn numbered(origin: Option<Origin>, seen: &mut HashMap<(Point, Point), usize>) -
     origin.occurrence = *count;
     *count += 1;
     Some(origin)
+}
+
+/// Every origin moved, as an edit before it moved the processed document.
+pub(super) fn shift(nodes: &mut [Node], moved: Moved) {
+    let shift = |origin: &mut Option<Origin>| {
+        if let Some(origin) = origin {
+            moved.point(&mut origin.start);
+            moved.point(&mut origin.end);
+        }
+    };
+    for node in nodes {
+        shift(&mut node.origin);
+        if let Content::ComponentContainer(container) = &mut node.content {
+            for slot in &mut container.slots {
+                shift(&mut slot.origin);
+            }
+        }
+        for list in node.content.lists_mut() {
+            self::shift(list, moved);
+        }
+    }
 }
 
 /// Every origin removed, for a render without the `origins` feature.

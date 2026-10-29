@@ -5,10 +5,11 @@ use super::names::{Binding, Builder, Level, Names};
 use super::origin::CORE;
 use super::source::{PackSpec, Source};
 use super::{
-    Ambient, Body, Component, ComponentId, Document, DocumentId, Language, Origin, Parses,
+    Ambient, Body, Component, ComponentId, Document, DocumentId, Found, Language, Origin, Parses,
     Resolved, Store, uses,
 };
 use crate::diagnostic::{Code, Diagnostic, Location, Stage};
+use crate::lines::LineStarts;
 use crate::parse::{ParseOptions, Parsed, parse};
 use crate::reserved;
 use crate::settings::{self, Import};
@@ -70,7 +71,7 @@ impl<'h, 'p> Loader<'h, 'p> {
     }
 
     /// Loads `@compmd/core`, the ambient packs and the processed document, then reports the names its bodies use.
-    pub(super) fn resolve(mut self, text: &str, parsed: Parsed, ambient: &Ambient) -> Resolved {
+    pub(super) fn resolve(mut self, text: String, parsed: Parsed, ambient: &Ambient) -> Resolved {
         self.core = self
             .document_at(Origin::core(), Location::new(1, 1), true)
             .ok();
@@ -79,13 +80,16 @@ impl<'h, 'p> Loader<'h, 'p> {
             .iter()
             .filter_map(|pack| self.ambient_pack(pack))
             .collect();
-        let main = self.load(self.main.clone(), text.to_string(), parsed, false);
+        let main = self.load(self.main.clone(), text, parsed, false);
         let mut resolved = Resolved {
             documents: self.documents,
             components: self.components,
             main,
             cycles: HashSet::new(),
-            diagnostics: self.diagnostics,
+            diagnostics: Found {
+                before: self.diagnostics,
+                ..Found::default()
+            },
         };
         uses::report(&mut resolved, ambient.report);
         resolved
@@ -103,6 +107,7 @@ impl<'h, 'p> Loader<'h, 'p> {
         );
         self.documents.push(Document {
             origin: origin.clone(),
+            line_starts: LineStarts::new(&text),
             text,
             settings: parsed.settings,
             root: parsed.root,

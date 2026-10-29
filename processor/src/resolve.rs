@@ -18,10 +18,11 @@ use origin::RESERVED_SCOPE;
 
 use crate::diagnostic::Diagnostic;
 use crate::host::{Files, Packs, Release};
-use crate::parse::Parsed;
+use crate::lines::{LineStarts, Lines};
+use crate::parse::{Parsed, Spliced};
 use crate::reserved::Keyword;
 use crate::settings::Settings;
-use crate::tree::{Node, Param, Point, Position, Root, Signature};
+use crate::tree::{Move, Node, Param, Point, Position, Root, Shift, Signature};
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::rc::Rc;
 
@@ -91,6 +92,8 @@ pub(crate) struct Document {
     pub(crate) origin: Origin,
     /// Its text.
     pub(crate) text: String,
+    /// Where the lines of its text start.
+    pub(crate) line_starts: LineStarts,
     /// Its tree.
     pub(crate) root: Rc<Root>,
     /// What each component name in it stands for.
@@ -101,6 +104,13 @@ pub(crate) struct Document {
     /// is a component the processor implements.
     pub(crate) provided: bool,
     pub(crate) settings: Settings,
+}
+
+impl Document {
+    /// The lines of its text.
+    pub(crate) fn lines(&self) -> Lines<'_> {
+        Lines::new(&self.text, &self.line_starts)
+    }
 }
 
 /// What implements a component.
@@ -192,8 +202,18 @@ pub(crate) struct Resolved {
     pub(crate) main: DocumentId,
     /// The invocations that close a cycle of definitions (F019), by their document and where they start.
     pub(crate) cycles: HashSet<(DocumentId, Point)>,
-    /// The diagnostics of stage 2, and of stage 1 for the documents it imports; the processor holds them.
-    pub(crate) diagnostics: Vec<Diagnostic>,
+    /// The diagnostics of stage 2, and of stage 1 for the documents it imports.
+    diagnostics: Found,
+}
+
+/// The diagnostics of resolving, in three parts: loading's, then those of the names the documents before the
+/// processed one use; those of the names each top-level block of the processed document uses; those of the
+/// documents after it, then the cycles of definitions (F019).
+#[derive(Clone, Debug, Default)]
+struct Found {
+    before: Vec<Diagnostic>,
+    blocks: Vec<Vec<Diagnostic>>,
+    after: Vec<Diagnostic>,
 }
 
 impl Resolved {
@@ -222,6 +242,85 @@ impl Resolved {
     pub(crate) fn closes_cycle(&self, id: DocumentId, position: Option<Position>) -> bool {
         position.is_some_and(|position| self.cycles.contains(&(id, position.start)))
     }
+
+    /// The processed document's text and line starts, taken for an edit. Its tree is let go too, so that the parse,
+    /// which holds the only other reference to it, changes it in place.
+    pub(crate) fn take_text(&mut self) -> (String, LineStarts) {
+        let main = &mut self.documents[self.main.0];
+        main.root = Rc::default();
+        let lines = std::mem::replace(&mut main.line_starts, LineStarts::new(""));
+        (std::mem::take(&mut main.text), lines)
+    }
+
+    /// The diagnostics of stage 2, and of stage 1 for the documents it imports, in order.
+    pub(crate) fn diagnostics(&self) -> impl Iterator<Item = &Diagnostic> {
+        let found = &self.diagnostics;
+        found
+            .before
+            .iter()
+            .chain(found.blocks.iter().flatten())
+            .chain(&found.after)
+    }
+
+    /// The processed document after an edit that changed its top-level blocks `spliced.blocks` and gave it `text`,
+    /// with the line starts `lines`, and the tree `root`: the names those blocks use are found again, and everything
+    /// after them moves. The edit changed no definition or signature fence, so no name stands for anything else.
+    pub(crate) fn splice(
+        &mut self,
+        (text, lines): (String, LineStarts),
+        root: Rc<Root>,
+        spliced: &Spliced,
+        report_ambient: bool,
+    ) {
+        let main = self.main;
+        let moved = spliced.moved;
+        let document = &mut self.documents[main.0];
+        document.text = text;
+        document.line_starts = lines;
+        document.root = root;
+        for component in &mut self.components {
+            if component.document == main
+                && component
+                    .position
+                    .is_some_and(|position| moved.moves(position.start))
+            {
+                component.shift(moved.by);
+            }
+        }
+        self.cycles = self
+            .cycles
+            .drain()
+            .map(|(id, mut start)| {
+                if id == main {
+                    moved.point(&mut start);
+                }
+                (id, start)
+            })
+            .collect();
+        let start = spliced.blocks.start;
+        let blocks = &self.document(main).root.children[start..start + spliced.inserted];
+        let found: Vec<Vec<Diagnostic>> = blocks
+            .iter()
+            .map(|block| uses::block(self, block, report_ambient))
+            .collect();
+        let diagnostics = &mut self.diagnostics;
+        let kept = diagnostics.before.iter_mut().chain(&mut diagnostics.after);
+        for diagnostic in kept.chain(diagnostics.blocks.iter_mut().flatten()) {
+            moved.diagnostic(diagnostic);
+        }
+        diagnostics.blocks.splice(spliced.blocks.clone(), found);
+    }
+}
+
+impl Shift for Component {
+    fn shift(&mut self, by: Move) {
+        self.signature.shift(by);
+        if let Body::Compmd(body) = &mut self.body {
+            body.shift(by);
+        }
+        self.fence.shift(by);
+        self.position.shift(by);
+    }
 }
 
 /// The parses of the documents resolving loaded, by where they come from, with the text each was parsed from: a
@@ -237,7 +336,7 @@ pub(crate) struct Parses(HashMap<Origin, (String, Parsed)>);
 /// `known`.
 pub(crate) fn resolve(
     path: &str,
-    text: &str,
+    text: String,
     parsed: Parsed,
     store: Store,
     ambient: &Ambient,
@@ -278,7 +377,7 @@ mod tests {
         };
         resolve(
             "input.comp.md",
-            text,
+            text.clone(),
             parsed,
             store,
             &ambient,
@@ -309,7 +408,7 @@ mod tests {
             let parsed = parse(text, &ParseOptions::default());
             let resolved = resolve(
                 "input.comp.md",
-                text,
+                text.to_string(),
                 parsed,
                 store,
                 &Ambient::default(),

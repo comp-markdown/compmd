@@ -16,7 +16,7 @@ mod source;
 pub(crate) mod yaml;
 
 pub use edit::TextEdit;
-pub(crate) use edit::reparse;
+pub(crate) use edit::{Change, Spliced, reparse};
 
 use crate::diagnostic::{Code, Diagnostic, Location};
 use crate::settings::Settings;

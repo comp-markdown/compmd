@@ -9,8 +9,9 @@
 use super::blocks::Marks;
 use super::source::START;
 use super::{Converter, Labels, ParseOptions, Parsed, Source, frontmatter, parse};
-use crate::diagnostic::{Diagnostic, Range};
-use crate::tree::{Move, Node, Point, Root, Shift};
+use crate::diagnostic::Diagnostic;
+use crate::lines::{LineStarts, Place};
+use crate::tree::{Move, Moved, Node, Point, Root, Shift};
 use std::collections::BTreeSet;
 use std::ops;
 use std::rc::Rc;
@@ -141,55 +142,210 @@ enum Attempt {
     Whole,
 }
 
-/// The parse of `text` after `edit`, from `previous`, the parse of `text`; and the new text.
+/// What an edit changed in the parse of a document, for the stages after parsing.
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) enum Change {
+    /// The frontmatter, or a component definition or signature fence of the document: the later stages run on the
+    /// whole document again.
+    Whole,
+    /// The top-level blocks of some units changed, and the blocks after them moved.
+    Blocks(Spliced),
+}
+
+/// The top-level blocks an edit changed, those of whole units. The blocks of the old tree before them are the new
+/// tree's, as they were; those after them are the new tree's after `inserted`, moved.
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct Spliced {
+    /// The blocks of the old tree that changed.
+    pub(crate) blocks: ops::Range<usize>,
+    /// How many blocks of the new tree replace them.
+    pub(crate) inserted: usize,
+    /// How the blocks after them moved.
+    pub(crate) moved: Moved,
+}
+
+/// The parse of `text` after `edit`, from `previous`, the parse of `text`; the new text; and what changed. `lines`, the
+/// line starts of `text`, become those of the new text.
 pub(crate) fn reparse(
     previous: Parsed,
     text: &str,
+    lines: &mut LineStarts,
     edit: &TextEdit,
     options: &ParseOptions,
-) -> (String, Parsed) {
-    let (new_text, bom, edit) = apply(text, edit);
+) -> (String, Parsed, Change) {
+    let (new_text, bom, edit) = apply(text, lines, edit);
+    let (old, new) = (&text[bom..], &new_text[bom..]);
     let slice = Slicer {
         previous: &previous,
-        old: &text[bom..],
-        new: &new_text[bom..],
-        edit,
+        old,
+        new,
+        lines,
+        edit: edit.clone(),
     }
     .parse(None);
-    let parsed = match slice {
-        Some(slice) => slice.splice_into(previous),
-        None => parse(&new_text, options),
-    };
-    (new_text, parsed)
+    lines.edit(
+        edit.from,
+        edit.to,
+        &new[edit.from.byte..edit.from.byte + edit.written],
+    );
+    if let Some(slice) = slice {
+        let change = slice.change(&previous, &edit);
+        return (new_text, slice.splice_into(previous), change);
+    }
+    let parsed = parse(&new_text, options);
+    let change = whole_change(&previous, &parsed, old, new, &edit);
+    (new_text, parsed, change)
 }
 
-/// `text` after `edit`, the length of its byte order mark, and the edit in code points of the text after it.
-fn apply(text: &str, edit: &TextEdit) -> (String, usize, Edit) {
+/// What changed from `previous` to `parsed`, the parse of the whole text after `edit`.
+fn whole_change(previous: &Parsed, parsed: &Parsed, old: &str, new: &str, edit: &Edit) -> Change {
+    let frontmatter = |parsed: &Parsed| {
+        parsed
+            .root
+            .children
+            .first()
+            .filter(|node| matches!(node, Node::Yaml(_)))
+            .cloned()
+    };
+    if previous.settings != parsed.settings
+        || previous.syntax != parsed.syntax
+        || frontmatter(previous) != frontmatter(parsed)
+    {
+        return Change::Whole;
+    }
+    let by = Move {
+        lines: line_endings(new).cast_signed() - line_endings(old).cast_signed(),
+        offset: edit.offset,
+    };
+    let old = Run::new(&previous.units, &previous.root.children);
+    let new = Run::new(&parsed.units, &parsed.root.children);
+    change(0, &old, &new, None, edit, by)
+}
+
+/// Units of a parse with their blocks.
+struct Run<'p> {
+    units: &'p [Unit],
+    nodes: &'p [Node],
+    /// Where each unit's blocks start in `nodes`, and where the last one's end.
+    starts: Vec<usize>,
+}
+
+impl<'p> Run<'p> {
+    fn new(units: &'p [Unit], nodes: &'p [Node]) -> Self {
+        let starts = std::iter::once(0)
+            .chain(units.iter().scan(0, |start, unit| {
+                *start += unit.nodes;
+                Some(*start)
+            }))
+            .collect();
+        Self {
+            units,
+            nodes,
+            starts,
+        }
+    }
+
+    /// The blocks of the units `units`.
+    fn blocks(&self, units: ops::Range<usize>) -> &'p [Node] {
+        &self.nodes[self.starts[units.start]..self.starts[units.end]]
+    }
+
+    /// Whether unit `index`, moved `by`, is unit `other` of `new`.
+    fn moved_is(&self, index: usize, by: Move, new: &Self, other: usize) -> bool {
+        let mut unit = self.units[index].clone();
+        unit.shift(by);
+        let mut blocks = self.blocks(index..index + 1).to_vec();
+        blocks.shift(by);
+        unit == new.units[other] && blocks == new.blocks(other..other + 1)
+    }
+}
+
+/// What changed from the units `old`, whose first block is block `first` of the old tree, to the units `new`, after
+/// `edit`, which moved what follows it `by`; `after` is where the unit after `old` starts, if one does. A unit that
+/// ends before the edit and comes out the same, or starts after it and comes out moved, didn't change.
+fn change(
+    first: usize,
+    old: &Run,
+    new: &Run,
+    after: Option<Point>,
+    edit: &Edit,
+    by: Move,
+) -> Change {
+    let shortest = old.units.len().min(new.units.len());
+    let head = (0..shortest)
+        .take_while(|&index| {
+            old.units[index].end.offset <= edit.start
+                && old.units[index] == new.units[index]
+                && old.blocks(index..index + 1) == new.blocks(index..index + 1)
+        })
+        .count();
+    let tail = (0..shortest - head)
+        .take_while(|&back| {
+            let (index, other) = (old.units.len() - 1 - back, new.units.len() - 1 - back);
+            old.units[index].start.offset >= edit.end && old.moved_is(index, by, new, other)
+        })
+        .count();
+    let removed = head..old.units.len() - tail;
+    let inserted = head..new.units.len() - tail;
+    let defines = |nodes: &[Node]| {
+        nodes.iter().any(|node| {
+            matches!(
+                node,
+                Node::ComponentDefinition(_) | Node::ComponentSignature(_)
+            )
+        })
+    };
+    if defines(old.blocks(removed.clone())) || defines(new.blocks(inserted.clone())) {
+        return Change::Whole;
+    }
+    let from = old.units.get(removed.end).map(|unit| unit.start).or(after);
+    Change::Blocks(Spliced {
+        blocks: first + old.starts[removed.start]..first + old.starts[removed.end],
+        inserted: new.starts[inserted.end] - new.starts[inserted.start],
+        moved: from.map_or(Moved::NOTHING, |from| Moved { from, by }),
+    })
+}
+
+/// `text` after `edit`, the length of its byte order mark, and the edit in the text after it; `lines` are the line
+/// starts of `text`.
+fn apply(text: &str, lines: &LineStarts, edit: &TextEdit) -> (String, usize, Edit) {
     let bom = if text.starts_with('\u{feff}') {
         "\u{feff}"
     } else {
         ""
     };
     let body = &text[bom.len()..];
-    let end = byte_index(body, edit.end);
-    let start = byte_index(body, edit.start).min(end);
-    let new_text = [bom, &body[..start], &edit.text, &body[end..]].concat();
-    let replaced = body[start..end].chars().count();
-    let before = body[..start].chars().count();
-    let edit = Edit {
-        start: before,
-        end: before + replaced,
-        offset: edit.text.chars().count().cast_signed() - replaced.cast_signed(),
+    let to = lines.place(body, edit.end);
+    let from = lines.place(body, edit.start.min(to.offset));
+    let new_text = [bom, &body[..from.byte], &edit.text, &body[to.byte..]].concat();
+    let applied = Edit {
+        start: from.offset,
+        end: to.offset,
+        offset: edit.text.chars().count().cast_signed() - (to.offset - from.offset).cast_signed(),
+        from,
+        to,
+        written: edit.text.len(),
     };
-    (new_text, bom.len(), edit)
+    (new_text, bom.len(), applied)
 }
 
-/// The edit, in code points of the old text, with how many code points it adds.
-#[derive(Clone, Copy)]
+/// The edit, in code points of the old text, with how many code points it adds; and where it is in bytes, with how
+/// many bytes it writes.
+#[derive(Clone)]
 struct Edit {
     start: usize,
     end: usize,
     offset: isize,
+    from: Place,
+    to: Place,
+    written: usize,
+}
+
+impl Edit {
+    /// Where `place` of the old text, at or after the edit, is in the new text, in bytes.
+    fn byte_after(&self, place: Place) -> usize {
+        place.byte + self.written - (self.to.byte - self.from.byte)
+    }
 }
 
 /// A slice an edit tried, for explaining a parse: the units it parsed again, and what came of it.
@@ -209,6 +365,8 @@ struct Slicer<'a> {
     previous: &'a Parsed,
     old: &'a str,
     new: &'a str,
+    /// The line starts of the old text.
+    lines: &'a LineStarts,
     edit: Edit,
 }
 
@@ -222,15 +380,13 @@ impl Slicer<'_> {
         if !frontmatter && frontmatter::find(self.new).is_some() {
             return None;
         }
-        let Edit { start, end, .. } = self.edit;
+        let (start, end) = (self.edit.start, self.edit.end);
         let touched_first = units
-            .iter()
-            .position(|unit| unit.end.offset >= start)
-            .unwrap_or(last);
+            .partition_point(|unit| unit.end.offset < start)
+            .min(last);
         let touched_last = units
-            .iter()
-            .rposition(|unit| unit.start.offset <= end)
-            .unwrap_or(0);
+            .partition_point(|unit| unit.start.offset <= end)
+            .saturating_sub(1);
         let low = touched_first.min(touched_last);
         let high = touched_first.max(touched_last);
         let first = low.saturating_sub(1);
@@ -270,14 +426,14 @@ impl Slicer<'_> {
         } else {
             units[first - 1].end
         };
+        let start = self.lines.place(self.old, from.offset).byte;
         let old_to = if to_end {
-            self.old.chars().count()
+            self.lines.place(self.old, usize::MAX)
         } else {
-            units[last + 1].start.offset
+            self.lines.place(self.old, units[last + 1].start.offset)
         };
-        let new_to = old_to.saturating_add_signed(self.edit.offset);
-        let old_slice = slice(self.old, from.offset, old_to);
-        let new_slice = slice(self.new, from.offset, new_to);
+        let old_slice = &self.old[start..old_to.byte];
+        let new_slice = &self.new[start..self.edit.byte_after(old_to)];
         let by = Move {
             lines: line_endings(new_slice).cast_signed() - line_endings(old_slice).cast_signed(),
             offset: self.edit.offset,
@@ -326,6 +482,18 @@ struct Slice {
 }
 
 impl Slice {
+    /// What `edit` changed from units `first..=last` of `previous` to the slice.
+    fn change(&self, previous: &Parsed, edit: &Edit) -> Change {
+        let (nodes, _) = Self::kept(previous, self.first, self.last + 1);
+        let old = Run::new(
+            &previous.units[self.first..=self.last],
+            &previous.root.children[nodes.clone()],
+        );
+        let new = Run::new(&self.units, &self.root.children);
+        let after = previous.units.get(self.last + 1).map(|unit| unit.start);
+        change(nodes.start, &old, &new, after, edit, self.by)
+    }
+
     /// Where units `first..last` of `previous` start, as blocks and diagnostics.
     fn kept(
         previous: &Parsed,
@@ -350,7 +518,7 @@ impl Slice {
         let mut old_nodes = previous.root.children[nodes].to_vec();
         old_nodes.shift(self.by);
         let mut old_diagnostics = previous.diagnostics[diagnostics].to_vec();
-        shift_diagnostics(&mut old_diagnostics, self.by);
+        old_diagnostics.shift(self.by);
         self.units.last().is_some_and(|new| {
             *new == unit
                 && self.root.children[self.root.children.len() - new.nodes..] == old_nodes[..]
@@ -366,7 +534,7 @@ impl Slice {
         let root = Rc::make_mut(&mut previous.root);
         if !self.to_end {
             root.children[nodes.end..].shift(self.by);
-            shift_diagnostics(&mut previous.diagnostics[diagnostics.end..], self.by);
+            previous.diagnostics[diagnostics.end..].shift(self.by);
             for unit in &mut previous.units[self.last + 1..] {
                 unit.shift(self.by);
             }
@@ -382,38 +550,6 @@ impl Slice {
         previous.units.splice(self.first..=self.last, self.units);
         previous
     }
-}
-
-/// Moves the places of parse diagnostics in the processed document.
-fn shift_diagnostics(diagnostics: &mut [Diagnostic], by: Move) {
-    let shift = |range: &mut Range| {
-        range.start.line = range.start.line.saturating_add_signed(by.lines);
-        if let Some(end) = &mut range.end {
-            end.line = end.line.saturating_add_signed(by.lines);
-        }
-    };
-    for diagnostic in diagnostics {
-        shift(&mut diagnostic.range);
-        for related in diagnostic
-            .related
-            .iter_mut()
-            .filter(|related| related.file.is_none())
-        {
-            shift(&mut related.range);
-        }
-    }
-}
-
-/// The byte index of code point `offset` of `text`, or its length past the end.
-fn byte_index(text: &str, offset: usize) -> usize {
-    text.char_indices()
-        .nth(offset)
-        .map_or(text.len(), |(index, _)| index)
-}
-
-/// Code points `from..to` of `text`.
-fn slice(text: &str, from: usize, to: usize) -> &str {
-    &text[byte_index(text, from)..byte_index(text, to)]
 }
 
 /// How many line endings `text` has: LF, CR or CRLF.
@@ -513,6 +649,7 @@ mod tests {
 
     /// The units of `parsed`, each with its text from `text`.
     fn units_of(parsed: &Parsed, text: &str) -> String {
+        let chars: Vec<char> = text.chars().collect();
         let mut written = String::new();
         for (index, unit) in parsed.units.iter().enumerate() {
             let _ = writeln!(
@@ -520,7 +657,9 @@ mod tests {
                 "  {index}: {}..{} {:?}, {} blocks, {} diagnostics",
                 unit.start.offset,
                 unit.end.offset,
-                slice(text, unit.start.offset, unit.end.offset),
+                chars[unit.start.offset..unit.end.offset]
+                    .iter()
+                    .collect::<String>(),
                 unit.nodes,
                 unit.diagnostics
             );
@@ -528,15 +667,30 @@ mod tests {
         written
     }
 
+    /// `text` after `edit`, parsed again from `previous`, the parse of `text`.
+    fn reparsed(
+        previous: Parsed,
+        text: &str,
+        edit: &TextEdit,
+        options: &ParseOptions,
+    ) -> (String, Parsed, Change) {
+        let mut lines = LineStarts::new(text);
+        let reparsed = reparse(previous, text, &mut lines, edit, options);
+        assert_eq!(lines, LineStarts::new(&reparsed.0), "the line starts");
+        reparsed
+    }
+
     /// How `edit` of `text`, parsed as `previous`, parses incrementally: the units before, each slice it tried and
     /// what came of it, and the units a parse of the whole new text gives.
     fn explain(previous: &Parsed, text: &str, edit: &TextEdit, options: &ParseOptions) -> String {
-        let (new_text, bom, applied) = apply(text, edit);
+        let lines = LineStarts::new(text);
+        let (new_text, bom, applied) = apply(text, &lines, edit);
         let mut tried = Vec::new();
         let outcome = Slicer {
             previous,
             old: &text[bom..],
             new: &new_text[bom..],
+            lines: &lines,
             edit: applied,
         }
         .parse(Some(&mut tried));
@@ -560,8 +714,37 @@ mod tests {
         )
     }
 
+    /// Why `change`, from `previous` to `parsed`, is wrong: a block outside its changed blocks isn't as it was, or
+    /// moved.
+    fn wrong_blocks(previous: &Parsed, parsed: &Parsed, change: &Change) -> Option<String> {
+        let Change::Blocks(spliced) = change else {
+            return None;
+        };
+        let (old, new) = (&previous.root.children, &parsed.root.children);
+        if old.len() - spliced.blocks.len() != new.len() - spliced.inserted {
+            return Some(format!("{spliced:?} doesn't count the blocks"));
+        }
+        if old[..spliced.blocks.start] != new[..spliced.blocks.start] {
+            return Some(format!("a block before {spliced:?} changed"));
+        }
+        let after = &old[spliced.blocks.end..];
+        if after.iter().any(|block| {
+            !block
+                .position()
+                .is_some_and(|at| spliced.moved.moves(at.start))
+        }) {
+            return Some(format!(
+                "a block after {spliced:?} isn't after where it moves"
+            ));
+        }
+        let mut moved = after.to_vec();
+        moved.shift(spliced.moved.by);
+        (moved[..] != new[spliced.blocks.start + spliced.inserted..])
+            .then(|| format!("a block after {spliced:?} didn't move"))
+    }
+
     /// After every edit, the parse after an edit equals the parse of the whole new text: the tree, the diagnostics
-    /// and the units.
+    /// and the units; and what it says changed did.
     #[test]
     fn an_edit_parses_as_the_whole_new_text_does() {
         let options = ParseOptions::default();
@@ -573,7 +756,8 @@ mod tests {
             let mut parsed = parse(&text, &options);
             for _ in 0..40 {
                 let edit = random_edit(&text, &mut random);
-                let (new_text, incremental) = reparse(parsed.clone(), &text, &edit, &options);
+                let (new_text, incremental, change) =
+                    reparsed(parsed.clone(), &text, &edit, &options);
                 let whole = parse(&new_text, &options);
                 let first_difference = incremental
                     .root
@@ -604,10 +788,54 @@ mod tests {
                     whole.units,
                     context()
                 );
+                if let Some(wrong) = wrong_blocks(&parsed, &incremental, &change) {
+                    panic!("{wrong}: {}", context());
+                }
                 text = new_text;
                 parsed = incremental;
             }
         }
+    }
+
+    #[test]
+    fn an_edit_says_which_blocks_changed() {
+        let options = ParseOptions::default();
+        let text =
+            "One.\n\nTwo.\n\n```compmd component=note\n---\nHi.\n```\n\nThree.\n\nSee [l].\n";
+        let change = |start, inserted: &str| {
+            let edit = TextEdit {
+                start,
+                end: start,
+                text: inserted.into(),
+            };
+            reparsed(parse(text, &options), text, &edit, &options).2
+        };
+        let Change::Blocks(typed) = change(9, "!") else {
+            panic!("a block changed");
+        };
+        assert_eq!((typed.blocks, typed.inserted), (1..2, 1));
+        assert_eq!(typed.moved.from.offset, 12, "from the definition on");
+        assert_eq!(
+            typed.moved.by,
+            Move {
+                lines: 0,
+                offset: 1
+            }
+        );
+        assert_eq!(change(43, "!"), Change::Whole, "in a definition");
+        assert_eq!(
+            change(0, "---\na: 1\n---\n\n"),
+            Change::Whole,
+            "frontmatter"
+        );
+        let Change::Blocks(defined) = change(50, "[l]: /y\n\n") else {
+            panic!("blocks changed");
+        };
+        assert_eq!(
+            (defined.blocks, defined.inserted, defined.moved),
+            (3..5, 3, Moved::NOTHING),
+            "the definition, and the reference it makes a link"
+        );
     }
 
     #[test]
@@ -644,56 +872,15 @@ mod tests {
             end: 9,
             text: "!".into(),
         };
-        let (_, edited) = reparse(parsed, text, &edit, &options);
+        let (_, edited, _) = reparsed(parsed, text, &edit, &options);
         assert_eq!(Rc::as_ptr(&edited.root), tree);
         let shared = Rc::clone(&edited.root);
-        let (_, copied) = reparse(edited, "One.\n\nTwo!.\n\nThree.\n", &edit, &options);
+        let (_, copied, _) = reparsed(edited, "One.\n\nTwo!.\n\nThree.\n", &edit, &options);
         assert_ne!(Rc::as_ptr(&copied.root), Rc::as_ptr(&shared));
         assert_eq!(
             shared.children.len(),
             3,
             "a tree another holds stays as it was"
-        );
-    }
-
-    #[test]
-    fn diagnostics_move_with_their_ends_and_related_places() {
-        let place = |line| Range {
-            start: crate::diagnostic::Location::new(line, 2),
-            end: Some(crate::diagnostic::Location::new(line + 1, 1)),
-        };
-        let mut diagnostic = Diagnostic::new(
-            crate::diagnostic::Code::F004,
-            crate::diagnostic::Location::new(3, 2),
-            "x",
-        );
-        diagnostic.range = place(3);
-        diagnostic.related = vec![
-            crate::diagnostic::Related {
-                file: None,
-                range: place(5),
-                message: "here".into(),
-            },
-            crate::diagnostic::Related {
-                file: Some("other.comp.md".into()),
-                range: place(5),
-                message: "there".into(),
-            },
-        ];
-        let mut diagnostics = [diagnostic];
-        shift_diagnostics(
-            &mut diagnostics,
-            Move {
-                lines: 2,
-                offset: 9,
-            },
-        );
-        assert_eq!(diagnostics[0].range, place(5));
-        assert_eq!(diagnostics[0].related[0].range, place(7));
-        assert_eq!(
-            diagnostics[0].related[1].range,
-            place(5),
-            "another file's place stays"
         );
     }
 }

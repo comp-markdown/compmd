@@ -5,6 +5,7 @@ use super::{
     DefaultValue, DefinitionBody, Leaf, Node, Param, ParamValue, Point, Position, Signature,
     StringPart,
 };
+use crate::diagnostic::{Diagnostic, Location, Range};
 
 /// How far an edit moved what follows it.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -15,9 +16,88 @@ pub(crate) struct Move {
     pub(crate) offset: isize,
 }
 
+/// How an edit moved a document: what is at or after `from` in the old text moved `by`, what is before it stayed.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct Moved {
+    pub(crate) from: Point,
+    pub(crate) by: Move,
+}
+
+impl Moved {
+    /// Nothing moved.
+    pub(crate) const NOTHING: Self = Self {
+        from: Point {
+            line: usize::MAX,
+            column: usize::MAX,
+            offset: usize::MAX,
+        },
+        by: Move {
+            lines: 0,
+            offset: 0,
+        },
+    };
+
+    /// Whether `point` of the old text moved.
+    pub(crate) fn moves(&self, point: Point) -> bool {
+        point.offset >= self.from.offset
+    }
+
+    /// `point`, moved if it is at or after `from`.
+    pub(crate) fn point(&self, point: &mut Point) {
+        if self.moves(*point) {
+            point.shift(self.by);
+        }
+    }
+
+    /// `location`, in the processed document, moved if it is on `from`'s line or after it: whatever is on that line
+    /// is at or after `from`.
+    pub(crate) fn location(&self, location: &mut Location) {
+        if location.line >= self.from.line {
+            location.line = location.line.saturating_add_signed(self.by.lines);
+        }
+    }
+
+    /// The places of `diagnostic` in the processed document, each moved if it is on `from`'s line or after it.
+    pub(crate) fn diagnostic(&self, diagnostic: &mut Diagnostic) {
+        for range in main_ranges(diagnostic) {
+            if range.start.line >= self.from.line {
+                shift_range(range, self.by);
+            }
+        }
+    }
+}
+
 /// What has positions that an edit before it moves.
 pub(crate) trait Shift {
     fn shift(&mut self, by: Move);
+}
+
+/// A diagnostic's places in the processed document: its own when it is there, and those of its related places there.
+fn main_ranges(diagnostic: &mut Diagnostic) -> impl Iterator<Item = &mut Range> {
+    let own = diagnostic.file.is_none().then_some(&mut diagnostic.range);
+    own.into_iter().chain(
+        diagnostic
+            .related
+            .iter_mut()
+            .filter(|related| related.file.is_none())
+            .map(|related| &mut related.range),
+    )
+}
+
+fn shift_range(range: &mut Range, by: Move) {
+    range.start.line = range.start.line.saturating_add_signed(by.lines);
+    if let Some(end) = &mut range.end {
+        end.line = end.line.saturating_add_signed(by.lines);
+    }
+}
+
+/// A diagnostic's places in the processed document move; those in other documents stay.
+impl Shift for Diagnostic {
+    fn shift(&mut self, by: Move) {
+        for range in main_ranges(self) {
+            shift_range(range, by);
+        }
+    }
 }
 
 impl Shift for Point {
@@ -197,6 +277,7 @@ impl Shift for Node {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::diagnostic::{Code, Location, Related};
     use crate::{ParseOptions, Processor};
 
     fn blocks(text: &str) -> Vec<Node> {
@@ -250,6 +331,87 @@ mod tests {
         assert_eq!(moved.children[1].position().unwrap().start.line, 7);
         assert_eq!(slot.position().unwrap().start.line, 7);
         assert_eq!(slot.children()[1], moved.children[1]);
+    }
+
+    fn place(line: usize) -> Range {
+        Range {
+            start: Location::new(line, 2),
+            end: Some(Location::new(line + 1, 1)),
+        }
+    }
+
+    /// A diagnostic at line 3, with related places at line 5 of the processed document and of another.
+    fn diagnostic(file: Option<&str>) -> Diagnostic {
+        let mut diagnostic = Diagnostic::new(Code::F004, Location::new(3, 2), "x");
+        diagnostic.file = file.map(String::from);
+        diagnostic.range = place(3);
+        diagnostic.related = vec![
+            Related {
+                file: None,
+                range: place(5),
+                message: "here".into(),
+            },
+            Related {
+                file: Some("other.comp.md".into()),
+                range: place(5),
+                message: "there".into(),
+            },
+        ];
+        diagnostic
+    }
+
+    #[test]
+    fn diagnostics_move_with_their_ends_and_related_places() {
+        let by = Move {
+            lines: 2,
+            offset: 9,
+        };
+        let mut moved = diagnostic(None);
+        moved.shift(by);
+        assert_eq!(moved.range, place(5));
+        assert_eq!(moved.related[0].range, place(7));
+        assert_eq!(
+            moved.related[1].range,
+            place(5),
+            "another file's place stays"
+        );
+        let mut elsewhere = diagnostic(Some("other.comp.md"));
+        elsewhere.shift(by);
+        assert_eq!(
+            elsewhere.range,
+            place(3),
+            "a diagnostic of another file stays"
+        );
+        assert_eq!(elsewhere.related[0].range, place(7));
+    }
+
+    #[test]
+    fn only_what_is_after_the_start_of_a_move_moves() {
+        let from = Point {
+            line: 4,
+            column: 1,
+            offset: 20,
+        };
+        let moved = Moved {
+            from,
+            by: Move {
+                lines: 1,
+                offset: 3,
+            },
+        };
+        let mut diagnostic = diagnostic(None);
+        moved.diagnostic(&mut diagnostic);
+        assert_eq!(diagnostic.range, place(3), "before the move");
+        assert_eq!(diagnostic.related[0].range, place(6), "after it");
+        let mut before = Point { offset: 19, ..from };
+        moved.point(&mut before);
+        assert_eq!(before.offset, 19);
+        let mut at = from;
+        moved.point(&mut at);
+        assert_eq!((at.line, at.offset), (5, 23));
+        let mut far = from;
+        Moved::NOTHING.point(&mut far);
+        assert_eq!(far, from);
     }
 
     #[test]

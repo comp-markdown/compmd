@@ -7,7 +7,6 @@
 use super::names::{Binding, Level};
 use super::{Body, ComponentId, DocumentId, Resolved};
 use crate::diagnostic::{Code, Diagnostic, Location, Stage};
-use crate::lines::Lines;
 use crate::nearest::nearest;
 use crate::tree::{Node, Point};
 use std::collections::HashSet;
@@ -43,41 +42,66 @@ fn invocations<'a>(nodes: &'a [Node], out: &mut Vec<Invocation<'a>>) {
     }
 }
 
+/// Reports the names the documents use, the processed one's by top-level block, and the cycles.
 pub(super) fn report(resolved: &mut Resolved, report_ambient: bool) {
+    let main = resolved.main;
+    for id in resolved.ids() {
+        let root = &resolved.document(id).root;
+        if id == main {
+            let blocks = root
+                .children
+                .iter()
+                .map(|block| {
+                    names_used(resolved, id, &[std::slice::from_ref(block)], report_ambient)
+                })
+                .collect();
+            resolved.diagnostics.blocks = blocks;
+            continue;
+        }
+        let bodies: Vec<&[Node]> = root
+            .children
+            .iter()
+            .filter(|node| matches!(node, Node::ComponentDefinition(_)))
+            .map(Node::children)
+            .collect();
+        let found = names_used(resolved, id, &bodies, report_ambient);
+        let list = if id < main {
+            &mut resolved.diagnostics.before
+        } else {
+            &mut resolved.diagnostics.after
+        };
+        list.extend(found);
+    }
     let mut found = Vec::new();
-    for index in 0..resolved.documents.len() {
-        names_used(resolved, DocumentId(index), report_ambient, &mut found);
-    }
     resolved.cycles = recursion(resolved, &mut found);
-    resolved.diagnostics.extend(found);
+    resolved.diagnostics.after.extend(found);
 }
 
-/// The bodies of a document that are used: all of the processed one, the `compmd` definitions of others.
-fn used_bodies(resolved: &Resolved, id: DocumentId) -> Vec<&[Node]> {
-    let root = &resolved.document(id).root;
-    if id == resolved.main {
-        return vec![&root.children];
-    }
-    root.children
-        .iter()
-        .filter(|node| matches!(node, Node::ComponentDefinition(_)))
-        .map(Node::children)
-        .collect()
+/// The diagnostics of the names the top-level block `block` of the processed document uses.
+pub(super) fn block(resolved: &Resolved, block: &Node, report_ambient: bool) -> Vec<Diagnostic> {
+    names_used(
+        resolved,
+        resolved.main,
+        &[std::slice::from_ref(block)],
+        report_ambient,
+    )
 }
 
+/// The diagnostics of the names `bodies`, of the document `id`, use.
 fn names_used(
     resolved: &Resolved,
     id: DocumentId,
+    bodies: &[&[Node]],
     report_ambient: bool,
-    found: &mut Vec<Diagnostic>,
-) {
+) -> Vec<Diagnostic> {
     let document = resolved.document(id);
-    let lines = Lines::new(&document.text);
+    let lines = document.lines();
     let file = resolved.file(id);
     let mut used = Vec::new();
-    for body in used_bodies(resolved, id) {
+    for body in bodies {
         invocations(body, &mut used);
     }
+    let mut found = Vec::new();
     for invocation in used {
         let at = lines.name_at(invocation.start);
         let name = invocation.name;
@@ -106,6 +130,7 @@ fn names_used(
         };
         found.push(diagnostic.in_stage(Stage::Resolve).in_file(file.clone()));
     }
+    found
 }
 
 /// An invocation of a `compmd` definition in another's body: the callee, where the name is, where the invocation
@@ -123,7 +148,7 @@ fn recursion(resolved: &Resolved, found: &mut Vec<Diagnostic>) -> HashSet<(Docum
                 return Vec::new();
             };
             let document = resolved.document(component.document);
-            let lines = Lines::new(&document.text);
+            let lines = document.lines();
             let mut used = Vec::new();
             invocations(body, &mut used);
             used.into_iter()

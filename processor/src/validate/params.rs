@@ -502,7 +502,7 @@ impl<'r> Checker<'r, '_> {
             return Verdict::Refused;
         }
         if target.component.body.is_host() {
-            self.bound_by_hosts.insert(name.clone());
+            self.found.bound_by_hosts.push(name.clone());
         }
         Verdict::Declared(None)
     }

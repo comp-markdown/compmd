@@ -5,7 +5,7 @@
 
 mod shift;
 
-pub(crate) use shift::{Move, Shift};
+pub(crate) use shift::{Move, Moved, Shift};
 
 use crate::named::named;
 use serde::ser::SerializeMap;

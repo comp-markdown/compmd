@@ -359,12 +359,12 @@ impl<'r> Expander<'r> {
         let Some(body_env) = body_env else {
             return self.fallback(invocation, env, out);
         };
-        let heading = self.last_heading;
+        let heading = (self.last_heading, self.heading_kept);
         let made = self.expanding(env, invocation.at(), |this| {
             this.compmd_body(invocation, component, body, given, env, &body_env)
         });
         // The body's headings are its own: the caller's next invocation is still under the caller's heading.
-        self.last_heading = heading;
+        (self.last_heading, self.heading_kept) = heading;
         match made.flatten() {
             Some(nodes) => {
                 out.extend(nodes);
@@ -492,6 +492,7 @@ impl<'r> Expander<'r> {
             }
         }
         let relative = signature.is_none_or(|signature| signature.headings == Headings::Relative);
+        let shift = relative.then(|| self.heading_depth());
         Some(Env {
             document,
             scope: Scope::definition(&self.resolved.document(document).settings, signature),
@@ -503,7 +504,7 @@ impl<'r> Expander<'r> {
                 templates,
             })),
             breakpoints: responsive.then(|| Rc::new(at_breakpoints)),
-            shift: relative.then_some(self.last_heading),
+            shift,
             origin: origins::of(invocation.node, env),
         })
     }

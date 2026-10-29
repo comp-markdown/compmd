@@ -48,9 +48,11 @@ use crate::diagnostic::Diagnostic;
 use crate::expanded::{self, Inputs};
 use crate::host::{Data, Fetch, Files, Needed, Packs};
 use crate::load;
-use crate::parse::{self, ParseOptions, TextEdit};
+use crate::parse::{self, Change, ParseOptions, TextEdit};
 use crate::resolve::{self, Ambient, Store};
+use crate::tree::Move;
 use crate::{expand, tree, validate};
+use std::rc::Rc;
 
 /// A document on its way through the stages, in the state `S`.
 pub struct Processor<S> {
@@ -84,12 +86,12 @@ pub struct Resolved<'h> {
     edit_context: EditContext,
 }
 
-/// What an edit needs to run stages 1 and 2 again: what stage 1 was given and made, and the ambient packs.
+/// What an edit needs to run stages 1 and 2 again: what stage 1 was given and made, and the ambient packs. The text
+/// is the resolved document's.
 struct EditContext {
     path: String,
-    text: String,
     options: ParseOptions,
-    /// The parse of `text`, whose tree the resolved document shares.
+    /// The parse of the text, whose tree the resolved document shares.
     parsed: parse::Parsed,
     ambient: Ambient,
     /// The parses of the documents resolving loaded, which it reuses while their text stays the same.
@@ -126,8 +128,33 @@ pub struct Loaded<'h, 'c> {
 pub struct Expanded<'h, 'c> {
     validated: Validated<'h>,
     render: RenderInputs<'c>,
+    /// What stage 4a loaded, which an edit of the body keeps.
+    data: load::Loaded,
     options: expand::Options,
-    root: expanded::Root,
+    /// Stage 4b's result.
+    result: expand::Expanded,
+    /// What the expansion replaced in the expanded tree before it.
+    replaced: expand::Replaced,
+}
+
+/// What an edit changed in the expanded tree: its top-level nodes `from..to` became `nodes`, and every node after
+/// them moved by `lines` lines and `offset` code points, which changes their origins (spec §12.3), if they have any.
+/// A host that keeps the expanded tree elsewhere, across a worker, WebAssembly or a process, applies it to its copy
+/// instead of taking the whole tree again.
+///
+/// After the first expansion it replaces an empty tree: `from` and `to` are 0, and `nodes` is the whole tree.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Splice {
+    /// The first top-level node replaced.
+    pub from: usize,
+    /// The end of the top-level nodes replaced, in the tree before the edit.
+    pub to: usize,
+    /// The nodes that replace them.
+    pub nodes: Vec<expanded::Node>,
+    /// The lines the nodes after them moved by.
+    pub lines: isize,
+    /// The code points the nodes after them moved by.
+    pub offset: isize,
 }
 
 impl<S> Processor<S> {
@@ -228,9 +255,9 @@ impl Processor<Parsed> {
                 document,
                 options,
             } = parsed;
-            let mut resolved = resolve::resolve(
+            let resolved = resolve::resolve(
                 &path,
-                &text,
+                text,
                 document.for_resolving(),
                 store,
                 &ambient,
@@ -238,13 +265,12 @@ impl Processor<Parsed> {
             );
             let edit_context = EditContext {
                 path,
-                text,
                 options,
                 parsed: document,
                 ambient,
                 parses,
             };
-            diagnostics.append(&mut resolved.diagnostics);
+            diagnostics.extend(resolved.diagnostics().cloned());
             Resolved {
                 store,
                 resolved,
@@ -266,8 +292,8 @@ impl<'h> Processor<Resolved<'h>> {
                  edit_context,
              },
              diagnostics| {
-                let mut checks = validate::validate(&resolved, allowed_origins);
-                diagnostics.append(&mut checks.diagnostics);
+                let checks = validate::validate(&resolved, allowed_origins);
+                diagnostics.extend(checks.diagnostics().cloned());
                 Validated {
                     store,
                     resolved,
@@ -312,13 +338,13 @@ impl<'h> Processor<Validated<'h>> {
                 fetch: render.fetch,
                 data: render.data,
             };
-            let mut data = load::load(
+            let data = load::load(
                 &validated.resolved,
                 &validated.checks,
                 render.context,
                 &host,
             );
-            diagnostics.append(&mut data.diagnostics);
+            diagnostics.extend_from_slice(&data.diagnostics);
             Loaded {
                 validated,
                 render,
@@ -345,19 +371,26 @@ impl<'h, 'c> Processor<Loaded<'h, 'c>> {
                  data,
              },
              diagnostics| {
-                let expanded = expand::expand(
+                let result = expand::expand(
                     &validated.resolved,
                     &validated.checks,
                     &data,
                     render.context,
                     options,
                 );
-                diagnostics.extend(expanded.diagnostics);
+                diagnostics.extend_from_slice(&result.diagnostics);
+                let replaced = expand::Replaced {
+                    nodes: 0..0,
+                    inserted: result.root.children.len(),
+                    by: Move::default(),
+                };
                 Expanded {
                     validated,
                     render,
+                    data,
                     options: options.clone(),
-                    root: expanded.root,
+                    result,
+                    replaced,
                 }
             },
         )
@@ -387,7 +420,44 @@ impl<'h> Processor<Expanded<'h, '_>> {
     /// The expanded tree (spec §12.3).
     #[must_use]
     pub fn expanded(&self) -> &expanded::Root {
-        &self.state.root
+        &self.state.result.root
+    }
+
+    /// What the last edit changed in the expanded tree; after the first expansion, all of it.
+    ///
+    /// ```
+    /// use compmd::context::RenderContext;
+    /// use compmd::expand::Options;
+    /// use compmd::{Ambient, ParseOptions, Processor, TextEdit};
+    /// use std::collections::HashMap;
+    ///
+    /// let files: HashMap<String, String> = HashMap::new();
+    /// let context = RenderContext { now: 0, tz: "UTC".into(), time: &(), inputs: Default::default() };
+    /// let processor = Processor::new("a.comp.md", "One.\n\nTwo.\n\nThree.\n")
+    ///     .parse(&ParseOptions::default())
+    ///     .resolve(&files, &(), &Ambient::default())
+    ///     .validate(&[])
+    ///     .load(&context, &(), &())
+    ///     .expand(&Options::default());
+    /// assert_eq!(processor.splice().nodes.len(), 3);
+    ///
+    /// // Type a new line into `Two.`: the paragraph is replaced, and `Three.` moves a line down.
+    /// let processor = processor.edit(&TextEdit { start: 9, end: 9, text: "\n2".into() });
+    /// let splice = processor.splice();
+    /// assert_eq!((splice.from, splice.to, splice.nodes.len()), (1, 2, 1));
+    /// assert_eq!((splice.lines, splice.offset), (1, 2));
+    /// ```
+    #[must_use]
+    pub fn splice(&self) -> Splice {
+        let replaced = &self.state.replaced;
+        let from = replaced.nodes.start;
+        Splice {
+            from,
+            to: replaced.nodes.end,
+            nodes: self.state.result.root.children[from..from + replaced.inserted].to_vec(),
+            lines: replaced.by.lines,
+            offset: replaced.by.offset,
+        }
     }
 
     /// Loads and expands again for a render with `context`, `fetch` and `data`, with the same options, without
@@ -410,7 +480,10 @@ impl<'h> Processor<Expanded<'h, '_>> {
     /// the allowed origins, the render context and the expansion options.
     ///
     /// Parsing only parses again the blocks the edit touches and one block either side, and moves the blocks after
-    /// them; an edit to the frontmatter or to the link and footnote definitions parses the whole text again.
+    /// them; an edit to the link and footnote definitions parses the whole text again. The later stages then only
+    /// run on the top-level blocks whose tree changed, and move what the others gave. An edit to the frontmatter or to
+    /// a component definition or signature fence runs them on the whole document again; an edit that changes which
+    /// data imports may load loads again.
     ///
     /// ```
     /// use compmd::context::RenderContext;
@@ -437,37 +510,98 @@ impl<'h> Processor<Expanded<'h, '_>> {
         let Expanded {
             validated,
             render,
+            data,
             options,
+            result,
             ..
         } = self.state;
         let Validated {
             store,
-            resolved,
+            mut resolved,
+            mut checks,
             edit_context: context,
             allowed_origins,
             ..
         } = validated;
-        // Once the resolved documents are gone, the parse holds the only reference to the tree and changes it in
-        // place.
-        drop(resolved);
-        let (text, document) =
-            parse::reparse(context.parsed, &context.text, edit, &context.options);
-        let mut diagnostics = Vec::new();
-        let parsed = Parsed::new(
-            context.path,
-            text,
-            document,
-            context.options,
-            &mut diagnostics,
+        let before = result.root.children.len();
+        let (text, mut lines) = resolved.take_text();
+        let (text, document, change) =
+            parse::reparse(context.parsed, &text, &mut lines, edit, &context.options);
+        let Change::Blocks(spliced) = change else {
+            drop(resolved);
+            let mut diagnostics = Vec::new();
+            let parsed = Parsed::new(
+                context.path,
+                text,
+                document,
+                context.options,
+                &mut diagnostics,
+            );
+            let mut processor = Processor {
+                diagnostics,
+                state: parsed,
+            }
+            .resolve_in(store, context.ambient, context.parses)
+            .validate(&allowed_origins)
+            .load_with(render)
+            .expand(&options);
+            processor.state.replaced.nodes = 0..before;
+            return processor;
+        };
+        let report = context.ambient.report;
+        resolved.splice((text, lines), Rc::clone(&document.root), &spliced, report);
+        let reload = checks.splice(&resolved, &spliced, &allowed_origins);
+        let mut diagnostics = document.diagnostics.clone();
+        diagnostics.extend(resolved.diagnostics().cloned());
+        diagnostics.extend(checks.diagnostics().cloned());
+        let validated = Validated {
+            store,
+            resolved,
+            checks,
+            kept: diagnostics.len(),
+            edit_context: EditContext {
+                parsed: document,
+                ..context
+            },
+            allowed_origins,
+        };
+        if reload {
+            let mut processor = Processor {
+                diagnostics,
+                state: validated,
+            }
+            .load_with(render)
+            .expand(&options);
+            processor.state.replaced.nodes = 0..before;
+            return processor;
+        }
+        let result = expand::splice(
+            result,
+            &validated.resolved,
+            &validated.checks,
+            &data,
+            render.context,
+            &options,
+            &spliced,
         );
+        diagnostics.extend_from_slice(&data.diagnostics);
+        diagnostics.extend_from_slice(&result.diagnostics);
+        let replaced = result.replaced.clone().unwrap_or(expand::Replaced {
+            nodes: 0..before,
+            inserted: result.root.children.len(),
+            by: Move::default(),
+        });
         Processor {
             diagnostics,
-            state: parsed,
+            state: Expanded {
+                validated,
+                render,
+                data,
+                options,
+                result,
+                replaced,
+            },
         }
-        .resolve_in(store, context.ambient, context.parses)
-        .validate(&allowed_origins)
-        .load_with(render)
-        .expand(&options)
     }
 }
 
@@ -539,5 +673,28 @@ mod tests {
         assert_eq!(written(&expanded), json!("3 y"));
         assert_eq!(expanded.diagnostics().len(), 2);
         assert_eq!(expanded.tree().children.len(), 2);
+    }
+
+    #[test]
+    fn an_edit_after_text_of_two_blocks_was_joined_expands_the_whole_document() {
+        let files: HashMap<String, String> = HashMap::new();
+        let context = context(json!({}));
+        let mut processor = Processor::new("a.comp.md", "One.\n\nTwo.\n")
+            .parse(&ParseOptions::default())
+            .resolve(&files, &(), &Ambient::default())
+            .validate(&[])
+            .load(&context, &(), &())
+            .expand(&expand::Options::default());
+        // As joining text across blocks leaves it.
+        processor.state.result.blocks = None;
+        let processor = processor.edit(&TextEdit {
+            start: 9,
+            end: 9,
+            text: "!".into(),
+        });
+        let splice = processor.splice();
+        assert_eq!((splice.from, splice.to, splice.nodes.len()), (0, 2, 2));
+        let json = serde_json::to_value(processor.expanded()).expect("a tree");
+        assert_eq!(json["children"][1]["children"][0]["value"], "Two!.");
     }
 }
