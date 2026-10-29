@@ -14,7 +14,8 @@
   import Inputs from "./Inputs.svelte";
   import JsonTree from "./JsonTree.svelte";
   import Split from "./Split.svelte";
-  import { FRAME_HELLO, HOST_STYLES, type ComponentFailed, type HostStyle } from "./protocol.ts";
+  import { directiveFor, findPassage, fragmentOf, parseFragment, type Passage } from "./fragment.ts";
+  import { FRAME_HELLO, HOST_STYLES, type ComponentFailed, type HostStyle, type SourceLink } from "./protocol.ts";
   import { keep, recall } from "./stored.ts";
   import { plainPage, ViewsClient, type View, type ViewKind } from "./views.ts";
 
@@ -84,10 +85,61 @@
     const start = offsetOf(textarea.value, range.start);
     const lineEnd = textarea.value.indexOf("\n", start);
     const end = range.end ? offsetOf(textarea.value, range.end) : lineEnd === -1 ? textarea.value.length : lineEnd;
+    selectText({ start, end });
+  }
+
+  /** Selects `passage` of the text area, and scrolls it to near the top. */
+  function selectText({ start, end }: Passage): void {
+    if (!textarea) return;
     textarea.focus();
     textarea.setSelectionRange(start, end);
+    const line = textarea.value.slice(0, start).split("\n").length;
     const lineHeight = Number.parseFloat(getComputedStyle(textarea).lineHeight) || 20;
-    textarea.scrollTop = Math.max(0, (range.start.line - 3) * lineHeight);
+    textarea.scrollTop = Math.max(0, (line - 3) * lineHeight);
+    noteSelection();
+  }
+
+  /** Why a link to a passage of the text found none; cleared by the next input. */
+  let linkNote: string | undefined = $state();
+
+  /** Selects the passage of the text a text-fragment `link` names (`#:~:text=…`), or says it isn't there. */
+  async function showPassage(link: string): Promise<void> {
+    const directive = parseFragment(link);
+    if (!directive) return;
+    file = undefined;
+    await tick();
+    const passage = textarea && findPassage(textarea.value, directive);
+    if (!passage) {
+      linkNote = `The linked text, “${directive.start}”, isn't in the document now.`;
+      return;
+    }
+    linkNote = undefined;
+    selectText(passage);
+  }
+
+  /** The passage a shared link names (`?select=`), as written: its parts are percent-encoded as a text fragment's. */
+  let shared = /[?&]select=([^&]*)/.exec(location.search)?.[1];
+
+  /** Whether text is selected, which offers a link to it. */
+  let selected = $state(false);
+  let copied = $state(false);
+  function noteSelection(): void {
+    selected = textarea !== undefined && textarea.selectionStart !== textarea.selectionEnd;
+  }
+
+  /** Copies a link to the playground with this document and the selected passage, or shows it when it can't. */
+  async function copyLink(): Promise<void> {
+    if (!textarea || !example) return;
+    const directive = directiveFor(textarea.value, { start: textarea.selectionStart, end: textarea.selectionEnd });
+    if (!directive) return;
+    const url = `${location.origin}${location.pathname}?doc=${example.id}&select=${fragmentOf(directive).slice(":~:text=".length)}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      copied = true;
+      setTimeout(() => (copied = false), 1500);
+    } catch {
+      prompt("Copy this link:", url);
+    }
   }
 
   /** Opens the chosen document once its frame has loaded. */
@@ -107,6 +159,9 @@
         });
       },
     };
+    port1.addEventListener("message", ({ data }: MessageEvent<{ type?: string }>) => {
+      if (data.type === "source-link") void showPassage((data as SourceLink).fragment);
+    });
     frame = connected;
     connected.send({ type: "host-style", style: hostStyle });
     const opened = new Editor(worker, connected, () => {
@@ -114,6 +169,9 @@
     });
     editor = opened;
     if (example) text = opened.open(example);
+    // A shared link selects its passage once, in the document it opened with.
+    if (shared !== undefined) void showPassage(`:~:text=${shared}`);
+    shared = undefined;
     // For the bench, which reads the timings.
     (window as { compmdEditor?: Editor }).compmdEditor = opened;
   }
@@ -186,22 +244,37 @@
         {/each}
       </div>
     {/if}
-    {#if file}
-      <pre class="file" aria-label="{file.name}, read-only">{file.text}</pre>
+    <div class="text-area">
+      {#if file}
+        <pre class="file" aria-label="{file.name}, read-only">{file.text}</pre>
+      {/if}
+      <textarea
+        hidden={file !== undefined}
+        bind:this={textarea}
+        value={text}
+        spellcheck="false"
+        aria-label="The document's text"
+        onbeforeinput={() => {
+          if (textarea) editor?.beforeInput({ start: textarea.selectionStart, end: textarea.selectionEnd });
+        }}
+        oninput={(event) => {
+          if (textarea) editor?.input(textarea.value, event.timeStamp);
+          linkNote = undefined;
+          noteSelection();
+        }}
+        onselect={noteSelection}
+        onkeyup={noteSelection}
+        onmouseup={noteSelection}
+      ></textarea>
+      {#if selected && file === undefined}
+        <button type="button" class="copy-link" title="Copy a link that opens this document with this text selected" onclick={() => void copyLink()}>
+          {copied ? "Copied" : "Copy link to selection"}
+        </button>
+      {/if}
+    </div>
+    {#if linkNote}
+      <p class="link-note" role="status">{linkNote}</p>
     {/if}
-    <textarea
-      hidden={file !== undefined}
-      bind:this={textarea}
-      value={text}
-      spellcheck="false"
-      aria-label="The document's text"
-      onbeforeinput={() => {
-        if (textarea) editor?.beforeInput({ start: textarea.selectionStart, end: textarea.selectionEnd });
-      }}
-      oninput={(event) => {
-        if (textarea) editor?.input(textarea.value, event.timeStamp);
-      }}
-    ></textarea>
     {#if shown && (shown.diagnostics.length > 0 || shown.problems.length > 0)}
       <ul class="diagnostics" aria-label="Diagnostics">
         {#each shown.diagnostics as d, i (i)}

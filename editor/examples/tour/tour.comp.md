@@ -45,7 +45,7 @@ A CompMD document is a Markdown file that starts with *frontmatter*: YAML betwee
 The heading above is written `# {{md.doc.title}}`: the `title` key, inserted where `{{…}}` stands. This document is by {{md.doc.author}}, the `author` key, which is a record: a record with a `name` reads as its name.
 
 > [!TIP]
-> **Try it.** Change `title: Learn CompMD` in the frontmatter, and watch the heading follow. Then open the **Data** tab beside the page: it shows every key the frontmatter gives the page.
+> **Try it.** Change [`title: Learn CompMD`](#:~:text=title:%20Learn%20CompMD) in the frontmatter, and watch the heading follow. (A link like this one selects what it names in the text.) Then open the **Data** tab beside the page: it shows every key the frontmatter gives the page.
 
 ## 2. The Markdown you know
 
@@ -90,7 +90,7 @@ A box inside a box. Each closer names its container, so it's always clear which 
 Every component line stands on a line of its own, with a blank line before and after it.
 
 > [!TIP]
-> **Try it.** Delete the last `::: /box` line. The page still renders, and a diagnostic under the text says which container was never closed, and clicking its place selects the line it means. Put the closer back, or press undo.
+> **Try it.** Delete the [last `::: /box` line](#:~:text=:::%20/box-,:::%20/box). The page still renders, and a diagnostic under the text says which container was never closed, and clicking its place selects the line it means. Put the closer back, or press undo.
 
 ## 4. Params
 
@@ -120,7 +120,7 @@ A pill.
 ::: /box
 
 > [!TIP]
-> **Try it.** Change `border=strong` to `border=strng`. The box loses its border, and the diagnostic says what `border` takes, with a button that writes `strong` back.
+> **Try it.** Change [`border=strong`](#:~:text=border=strong) to `border=strng`. The box loses its border, and the diagnostic says what `border` takes, with a button that writes `strong` back.
 
 ## 5. Values
 
@@ -136,7 +136,7 @@ Anything computed or formatted comes from the inline component `value`, whose `o
 To write braces that aren't a value, start them with a backslash: \{{like this}}.
 
 > [!TIP]
-> **Try it.** Change `price: 12` to `price: 9.5`, and watch every price follow. Then change `"long"` to `"full"` in the date.
+> **Try it.** Change [`price: 12`](#:~:text=price:%2012) to `price: 9.5`, and watch every price follow. Then change [`"long"`](#:~:text=%22long%22) to `"full"` in the date.
 
 ## 6. Expressions
 
@@ -149,7 +149,7 @@ This box has the accent background while the price is over 10, and the subtle on
 On a list, an expression counts, filters and adds: the reading list has :value[6 books]{of=(string(size(md.data.books)) + " books")}, :value[3 of them read]{of=(string(size(md.data.books.filter(b, b.read))) + " of them read")}, :value[1,719 pages]{of=(md.number(md.sum(md.data.books.map(b, b.pages)), 0) + " pages")} in all.
 
 > [!TIP]
-> **Try it.** Change `price: 12` to `price: 8`: the box above turns subtle. An expression with a mistake, say `md.doc.prise`, gives a diagnostic that points into the expression.
+> **Try it.** Change [`price: 12`](#:~:text=price:%2012) to `price: 8`: the box above turns subtle. An expression with a mistake, say `md.doc.prise`, gives a diagnostic that points into the expression.
 
 ## 7. Showing and repeating
 
@@ -181,11 +181,11 @@ The ordered list numbers on from one item to the next, and inside `each`, `md.lo
 ::: /each
 
 > [!TIP]
-> **Try it.** Change `md.sortBy(md.data.books, "year")` to `md.data.books.filter(b, b.pages > 300)`: only the two books over 300 pages stay, numbered 1 and 2.
+> **Try it.** Change [`md.sortBy(md.data.books, "year")`](#:~:text=md.sortBy(md.data.books%2C%20%22year%22)) to `md.data.books.filter(b, b.pages > 300)`: only the two books over 300 pages stay, numbered 1 and 2.
 
 ## 8. Your own components
 
-A component of your own is a fence: `compmd component=<name>`, the params that style its box, then a *signature* (its params with their types, and its slots), a `---` line, and the body. A definition doesn't show on the page, so look for `note` in the text on the left.
+A component of your own is a fence: `compmd component=<name>`, the params that style its box, then a *signature* (its params with their types, and its slots), a `---` line, and the body. A definition doesn't show on the page, so look for [`note`](#:~:text=compmd%20component=note) in the text on the left.
 
 ```compmd component=note {padding=m border=subtle border-radius=m background=(kind == "warning" ? "subtle" : "none")}
 params:
@@ -213,7 +213,7 @@ Without a body, it's a *leaf*: two colons, and a fallback in brackets.
 
 :: note[A note without a body] {title="A leaf"}
 
-A component whose body is one paragraph can also be *inline*, inside a sentence, as `tag`, defined in the text, is:
+A component whose body is one paragraph can also be *inline*, inside a sentence, as [`tag`](#:~:text=compmd%20component=tag), defined in the text, is:
 
 ```compmd component=tag {padding="1px 8px" border-radius=full background=subtle}
 params:
@@ -225,7 +225,7 @@ params:
 This sentence has a :tag[draft]{label="draft"} in it, and a :tag[second one]{label="second one"}.
 
 > [!TIP]
-> **Try it.** Add `danger` to `kind: tip | warning = tip`, then write `kind=danger` on the note. Write `kind=dangr` instead: the diagnostic lists the kinds the note takes. The **Components** tab lists every component this document defines and uses.
+> **Try it.** Add `danger` to [`kind: tip | warning = tip`](#:~:text=kind:%20tip%20%7C%20warning%20=%20tip), then write `kind=danger` on [the note](#:~:text=:::%20note%20%7Btitle=%22Before%20you%20start%22). Write `kind=dangr` instead: the diagnostic lists the kinds the note takes. The **Components** tab lists every component this document defines and uses.
 
 One more, as a taste of what's ahead. A component can also be code, and this one is JavaScript drawing with [d3](https://d3js.org): a map of the ideas in this tutorial, from the `ideas` key of the frontmatter. Drag a dot. Lesson 13, below, shows how such components work.
 
@@ -317,7 +317,7 @@ export default function mount(target, { params, fallback }) {
 
 ## 9. Templates
 
-A component can repeat a template itself: a *template slot* renders once per element of a list param, under a name the caller picks. Here `ranked`, defined in the text, numbers whatever it's given:
+A component can repeat a template itself: a *template slot* renders once per element of a list param, under a name the caller picks. Here [`ranked`](#:~:text=compmd%20component=ranked), defined in the text, numbers whatever it's given:
 
 ```compmd component=ranked {display=flex flex-direction=column gap=s}
 params:
@@ -336,7 +336,7 @@ slots:
 The caller decides what each element looks like; the component decides where it goes.
 
 > [!TIP]
-> **Try it.** Change `"pages"` to `"title"`, or `as=b` to `as=book`, and the template's `b.` to `book.`.
+> **Try it.** In [`items=(md.sortBy(md.data.books, "pages")) as=b`](#:~:text=items=(md.sortBy(md.data.books%2C%20%22pages%22))%20as=b), change `"pages"` to `"title"`, or `as=b` to `as=book` and [the template's](#:~:text=**%7B%7Bmd.loop.number%7D%7D.**) `b.` to `book.`.
 
 ## 10. Data
 
@@ -349,7 +349,7 @@ Data comes in through the frontmatter's `data` key: a file, a URL or a source th
 Read so far: :value[840 pages]{of=(md.number(md.sum(md.data.books.filter(b, b.read).map(b, b.pages)), 0) + " pages")}.
 
 > [!TIP]
-> **Try it.** Open `books.csv` in the tabs above the text, then come back to `tour.comp.md` and change `b.read` to `!b.read`.
+> **Try it.** Open `books.csv` in the tabs above the text, then come back to `tour.comp.md` and change `b.read` [in the list's filter](#:~:text=in=(md.data.books.filter(b%2C%20b.read))%20as=b) to `!b.read`.
 
 ## 11. Inputs
 
@@ -369,7 +369,7 @@ No book fits.
 The same inputs are in the bar above the tabs. There are five kinds: `date-input`, `number-input`, `text-input`, `select-input` for a list of choices, and `toggle-input`. **Inputs: plan a stay**, in the menu, uses them all.
 
 > [!TIP]
-> **Try it.** Set the year to 2000, or turn on *unread only*, and watch the list follow.
+> **Try it.** Set the year to 2000, or turn on *unread only*, and watch the list follow. Then change the year's default, [`since: number = 1970`](#:~:text=since:%20number%20=%201970), in the frontmatter.
 
 ## 12. Layout
 
@@ -400,7 +400,7 @@ You see this box when the page is narrower than 768px.
 
 ## 13. Components in JavaScript
 
-When CompMD isn't enough, a component can be code: JSX or TSX for React, Svelte, or plain JavaScript. The page runs it in a sandbox, with no network. In the text, a `jsx` fence holds `progress`'s code: a React component, with its params as props. A signature fence types those params.
+When CompMD isn't enough, a component can be code: JSX or TSX for React, Svelte, or plain JavaScript. The page runs it in a sandbox, with no network. In the text, a `jsx` fence holds [`progress`'s code](#:~:text=jsx%20component=progress): a React component, with its params as props. A signature fence types those params.
 
 ```compmd component=progress signature
 params:
@@ -451,9 +451,9 @@ Reading *{{md.doc.reading.title}}*, page {{md.doc.reading.page}} of {{md.doc.rea
 The idea map in lesson 8 is the plain JavaScript kind: its default export is a `mount` function that draws into the element it's given and returns `update` and `destroy`, and it imports `d3` as you'd write it anywhere. A component can import React, Svelte and d3, which the page provides.
 
 > [!TIP]
-> **Try it.** Change `page: 120` in the frontmatter to `page: 250`, and the ring sweeps on to the new value: the component keeps its state, and only its props change. Then change the code: `stroke="var(--viz-series-1)"` to `stroke="var(--viz-series-2)"`, and the page runs the new code as you type.
+> **Try it.** Change [`page: 120`](#:~:text=page:%20120) in the frontmatter to `page: 250`, and the ring sweeps on to the new value: the component keeps its state, and only its props change. Then change the code: [`stroke="var(--viz-series-1)"`](#:~:text=stroke=%22var(%2D%2Dviz%2Dseries%2D1)%22) to `stroke="var(--viz-series-2)"`, and the page runs the new code as you type.
 
-**Your imagination is the limit.** A component is any code a browser runs, so a page can hold whatever you can build. Here is the reading list as a shelf, drawn and animated with d3: the books follow the inputs of lesson 11, and a click takes one off the shelf and opens it.
+**Your imagination is the limit.** A component is any code a browser runs, so a page can hold whatever you can build. Here is the reading list as a shelf, [drawn and animated with d3](#:~:text=js%20component=bookshelf): the books follow the inputs of lesson 11, and a click takes one off the shelf and opens it.
 
 ```compmd component=bookshelf signature
 params:
@@ -609,7 +609,7 @@ Components also nest, whatever they're written in. Here the `note` defined in le
 ::: /note
 
 > [!TIP]
-> **Try it.** Click *Solaris*, then click it again. Set the year above to 1975, and watch books move from one shelf to the other; turn on *unread only*, and the read books leave the first shelf. Then add `kind=warning` to the note.
+> **Try it.** Click *Solaris*, then click it again. Set the year above to 1975, and watch books move from one shelf to the other; turn on *unread only*, and the read books leave the first shelf. Then add `kind=warning` to [the note](#:~:text=:::%20note%20%7Btitle=%22Ursula).
 
 ## 14. Where next
 

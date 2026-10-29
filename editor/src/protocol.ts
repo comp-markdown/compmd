@@ -53,5 +53,12 @@ export interface ComponentFailed {
   message: string;
 }
 
+/** From the frame to the editor, on the same port: the reader clicked a link to a passage of the text (`#:~:text=…`). */
+export interface SourceLink {
+  type: "source-link";
+  /** The link, its text fragment with it. */
+  fragment: string;
+}
+
 /** What the editor sends the frame first, with the port. */
 export const FRAME_HELLO = "compmd-editor";

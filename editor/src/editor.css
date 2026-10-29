@@ -281,6 +281,41 @@ textarea:focus {
   outline: none;
 }
 
+/* The text and what sits on it: a link to the selection, and a note when a link finds nothing. */
+
+.text-area {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.copy-link {
+  position: absolute;
+  inset-block-start: 8px;
+  inset-inline-end: 14px;
+  padding: 3px 10px;
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--rule));
+  border-radius: 999px;
+  background: var(--sheet);
+  box-shadow: var(--shadow);
+  color: var(--accent);
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.copy-link:hover {
+  border-color: var(--accent);
+}
+
+.link-note {
+  margin: 0;
+  padding: 8px 22px;
+  border-top: 1px solid var(--rule);
+  color: var(--warning);
+}
+
 /* The files the document reads, over the text, and one of them shown read-only in its place. */
 
 .files button {

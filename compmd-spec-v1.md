@@ -2,7 +2,7 @@
 
 CompMD (Component Markdown) is a Markdown flavor that adds components, containers, slots and CSS-like layout to CommonMark + GFM, while staying readable in any plain Markdown renderer.
 
-**Version 1, draft. Last changed 2026-10-27.** Every change is listed in the [changelog](CHANGELOG.md).
+**Version 1, draft. Last changed 2026-10-29.** Every change is listed in the [changelog](CHANGELOG.md).
 
 **Author:** Hakan Serce.
 
@@ -120,6 +120,7 @@ CompMD's base syntax is what GitHub renders, plus math. Each part is common in r
   Every parser makes math nodes, so trees agree; a renderer without a math engine shows the TeX source. A fenced code block whose language is `math` is display math, as on GitHub.
 - **Diagrams need no syntax.** A fenced code block keeps its language (`mermaid`, …); a processor MAY render a code block by its language, as GitHub renders Mermaid.
 - **Opt-in syntax** changes how existing text parses, so a document asks for it in `md.syntax`. `[[foo]]` next to a `[foo]: url` definition is a link inside brackets in CommonMark, and a wiki link only when the document opts in. What a wiki link's `target` points to is the processor's business; without pages to link to, it renders its label as text. In a GFM table, a wiki link's `|` is written `\|` (section 3.2). A name in `md.syntax` that a processor doesn't know is W111. Further opt-ins come in minor versions.
+- **Links to a passage** of the document are ordinary links whose destination is a text fragment, the web's [text directive](https://wicg.github.io/scroll-to-text-fragment/) (`#:~:text=[prefix-,]start[,end][,-suffix]`, each part percent-encoded): `[price: 12](#:~:text=price:%2012)`. A browser shows the passage on the rendered page. A tool that shows the document's source, such as an editor beside its preview, MAY select the passage in the source instead, its first match after the prefix and before the suffix, so a tutorial can point at the text to change. They are not CompMD syntax, and a plain renderer shows them as links.
 - **Processors don't add syntax.** A CompMD document parses the same in every conforming parser. Anything else a processor offers is a component, for example in an ambient pack (section 6.3): `:mark[text]` rather than `==text==`.
 - **Raw HTML** is parsed as CommonMark says: HTML blocks and inline HTML are `html` nodes. A processor MUST NOT render raw HTML from a document its user doesn't trust; by default it sanitizes it with an allowlist like GitHub's (`details`, `summary`, `sub`, `sup`, `kbd`, `br`, `img` with `src` and `alt`, `a` with `href`; no scripts, styles or event attributes) or shows it as text. HTML is opaque to CompMD: no component lines inside an HTML block (section 3.2) and no interpolation in it (section 8.1).
 

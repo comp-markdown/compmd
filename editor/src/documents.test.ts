@@ -4,6 +4,7 @@ import { createRequire } from "node:module";
 import { beforeAll, describe, expect, it } from "vitest";
 import { EXAMPLES, exampleIndex, textOf, type Example } from "./documents.ts";
 import { fixOf } from "./edit.ts";
+import { findPassage, parseFragment } from "./fragment.ts";
 
 beforeAll(() => {
   initSync({ module: readFileSync(createRequire(import.meta.url).resolve("@compmd/processor/compmd_wasm_bg.wasm")) });
@@ -49,6 +50,30 @@ describe("EXAMPLES", () => {
       text = text.slice(0, start) + inserted + text.slice(end);
     }
     expect(diagnosticsOf(example, text)).toEqual([]);
+  });
+
+  it("links the tutorial's steps to passages of its text, each found where it isn't the link itself", () => {
+    const text = textOf(byId("tour"));
+    // Each link destination that is a text fragment, its parentheses balanced, as CommonMark reads a destination.
+    const links: string[] = [];
+    for (let at = text.indexOf("](#:~:text="); at !== -1; at = text.indexOf("](#:~:text=", at + 1)) {
+      let depth = 0;
+      let end = at + 2;
+      for (; end < text.length; end++) {
+        if (text[end] === "(") depth++;
+        else if (text[end] === ")" && depth-- === 0) break;
+      }
+      links.push(text.slice(at + 2, end));
+    }
+    expect(links.length).toBeGreaterThan(15);
+    for (const link of links) {
+      const directive = parseFragment(link);
+      const passage = directive && findPassage(text, directive);
+      expect(passage, link).toBeDefined();
+      if (!passage) continue;
+      const line = text.slice(text.lastIndexOf("\n", passage.start) + 1, text.indexOf("\n", passage.start));
+      expect(line, link).not.toContain(link);
+    }
   });
 
   it("gives the dashboard and the field notes the charts with their code", () => {

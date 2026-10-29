@@ -4,6 +4,10 @@ Changes to the [CompMD specification](compmd-spec-v1.md), newest first. Every ch
 
 ## Version 1 (draft)
 
+### 2026-10-29
+
+- **Links to a passage (§2.3).** A link to a text fragment (`#:~:text=…`) names a passage of the document by its text; a tool that shows the source, such as an editor beside its preview, may select the passage there. No new syntax: they are ordinary links, and the spec says how such tools may read them.
+
 ### 2026-10-27
 
 - **Timestamp and duration getters (§8.2).** The profile's timestamp and duration operations include CEL's getters, `getFullYear` to `getMilliseconds`, so a document can show the time of day. A timestamp's getters take a time zone and, unlike CEL's, use `md.tz` without one. Before, the getters weren't named, and a processor could leave them out.

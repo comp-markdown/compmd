@@ -3,7 +3,7 @@
 // editor picks, with its math typeset.
 
 import { serveFrame } from "@compmd/render/frame";
-import { FRAME_HELLO, type ComponentFailed, type ComponentsMessage, type HostStyleMessage } from "../protocol.ts";
+import { FRAME_HELLO, type ComponentFailed, type ComponentsMessage, type HostStyleMessage, type SourceLink } from "../protocol.ts";
 import { Components } from "./components.ts";
 import { load } from "./load.ts";
 import { typesetMath } from "./math.ts";
@@ -42,6 +42,13 @@ addEventListener("message", (event: MessageEvent) => {
     if (data.type === "components") void components.set((data as ComponentsMessage).components);
     // The host's stylesheet: `frame.css` holds each, by this attribute, so a switch reloads nothing.
     if (data.type === "host-style") document.documentElement.dataset.host = (data as HostStyleMessage).style;
+  });
+  // A link to a passage of the text selects it in the editor, rather than looking for it on the page.
+  document.addEventListener("click", (event) => {
+    const link = event.target instanceof Element ? event.target.closest("a[href*=':~:text=']") : null;
+    if (!link) return;
+    event.preventDefault();
+    port.postMessage({ type: "source-link", fragment: link.getAttribute("href") ?? "" } satisfies SourceLink);
   });
   const container = document.getElementById("page");
   if (container) serveFrame(port, { container, components: components.mounts, math });
