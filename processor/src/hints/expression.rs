@@ -363,7 +363,11 @@ fn path(
     }
     let named = &segments[..=step];
     let ty = resolve(&scope, named);
-    let about = about(place, sees, named, locals);
+    let about = match ty {
+        None => sees.scope.missing_space(&named.join(".")),
+        Some(_) => None,
+    }
+    .or_else(|| about(place, sees, named, locals));
     let name = NameHint {
         name: segments[step].to_string(),
         ty: ty.as_ref().map(ToString::to_string),
@@ -581,6 +585,13 @@ mod tests {
         assert_eq!(
             input["subject"]["name"]["about"],
             "the input `since`, a number"
+        );
+        let colon = hint(&format!(
+            "---\nreading: {{page:120}}\n---\n\n{{{{md.doc.reading.pa{CARET}ge}}}}\n"
+        ));
+        assert_eq!(
+            colon["subject"]["name"]["about"],
+            "`reading` has a key `page:120`; a colon needs a space after it to give `page` a value"
         );
         let unknown = books(&format!("{{{{md.doc.nothin{CARET}g}}}}\n"));
         assert_eq!(unknown["subject"]["name"].get("type"), None);

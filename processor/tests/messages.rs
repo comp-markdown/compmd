@@ -1,5 +1,6 @@
 //! What the diagnostics that refuse a value or a name say: F009 says what the param takes, of a built-in and of a
-//! document's own component, and F002, F006, F008 and F009 give the fix their "did you mean" suggests.
+//! document's own component, F002, F006, F008 and F009 give the fix their "did you mean" suggests, and F014 says when a
+//! colon without a space after it in the frontmatter took a key's value.
 
 use compmd::diagnostic::{Code, Diagnostic, Location};
 use compmd::host::LoadedRelease;
@@ -53,6 +54,59 @@ fn a_common_param_says_what_it_takes() {
     assert!(background.message.starts_with(
         "`background` takes `none`, `subtle`, `strong`, `accent` or a CSS color, such as `#f6f8fa`"
     ));
+}
+
+#[test]
+fn an_unknown_path_says_when_a_colon_had_no_space_after_it() {
+    let message = |frontmatter: &str, path: &str| {
+        one(
+            &format!("---\n{frontmatter}\n---\n\n{{{{{path}}}}}\n"),
+            Code::F014,
+        )
+        .message
+    };
+    let flow = "reading: {title: Piranesi, page:120, pages: 272}";
+    assert_eq!(
+        message(flow, "md.doc.reading.page"),
+        "unknown interpolation path `md.doc.reading.page`; `reading` has a key `page:120`; a colon needs a space after it to give `page` a value"
+    );
+    assert_eq!(
+        message(
+            "reading:\n  title: Piranesi\n  page:120:",
+            "md.doc.reading.page"
+        ),
+        "unknown interpolation path `md.doc.reading.page`; `reading` has a key `page:120`; a colon needs a space after it to give `page` a value",
+        "a block mapping"
+    );
+    assert_eq!(
+        message("page:120:", "md.doc.page"),
+        "unknown interpolation path `md.doc.page`; the frontmatter has a key `page:120`; a colon needs a space after it to give `page` a value"
+    );
+    assert_eq!(
+        message("reading:\n  page:120", "md.doc.reading.page"),
+        "unknown interpolation path `md.doc.reading.page`; `reading` is the text `page:120`; a colon needs a space after it to make `page` a key with a value",
+        "the only line of a block mapping is its text"
+    );
+    let plain = "unknown interpolation path `md.doc.reading.chapter`; to write braces as text, use `\\{{` or a code span";
+    assert_eq!(
+        message(flow, "md.doc.reading.chapter"),
+        plain,
+        "no such key"
+    );
+    assert_eq!(
+        message("reading: {pages: 272}", "md.doc.reading.pages.x"),
+        "unknown interpolation path `md.doc.reading.pages.x`; to write braces as text, use `\\{{` or a code span",
+        "a number has no keys"
+    );
+    assert_eq!(
+        message("reading: Piranesi", "md.doc.reading.page"),
+        "unknown interpolation path `md.doc.reading.page`; to write braces as text, use `\\{{` or a code span",
+        "text without the key"
+    );
+    assert!(
+        message(flow, "md.data.x").ends_with("or a code span"),
+        "not the frontmatter"
+    );
 }
 
 #[test]

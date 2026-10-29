@@ -39,17 +39,20 @@ impl<'r> Checker<'r, '_> {
         }
     }
 
-    /// F014 for a path nothing in `scope` gives, reported at the path.
+    /// F014 for a path nothing in `scope` gives, reported at the path: with why, when a colon without a space after
+    /// it in the frontmatter took the key's value.
     pub(super) fn path(&mut self, path: &str, at: Location, scope: &Scope) {
-        if !scope.knows(path) {
-            self.report(
-                Code::F014,
-                at,
-                format!(
-                    "unknown interpolation path `{path}`; to write braces as text, use `\\{{{{` or a code span"
-                ),
-            );
+        if scope.knows(path) {
+            return;
         }
+        let why = scope
+            .missing_space(path)
+            .unwrap_or_else(|| "to write braces as text, use `\\{{` or a code span".to_string());
+        self.report(
+            Code::F014,
+            at,
+            format!("unknown interpolation path `{path}`; {why}"),
+        );
     }
 
     fn interpolation(&mut self, interpolation: &Interpolation, scope: &Scope) {

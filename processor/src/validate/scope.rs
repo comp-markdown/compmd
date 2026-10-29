@@ -121,6 +121,46 @@ impl<'r> Scope<'r> {
         }
     }
 
+    /// When the frontmatter path `path` (`md.doc.…`) is unknown because a colon without a space after it made one
+    /// key of its step and its value, as YAML 1.2 reads `page:120`: what happened, for F014 and the hints.
+    pub(crate) fn missing_space(&self, path: &str) -> Option<String> {
+        let segments: Vec<&str> = path.split('.').collect();
+        let ["md", "doc", keys @ ..] = &segments[..] else {
+            return None;
+        };
+        let mut fields = &self.settings.doc;
+        for (i, key) in keys.iter().enumerate() {
+            let parent = i.checked_sub(1).map_or_else(
+                || "the frontmatter".to_string(),
+                |before| format!("`{}`", keys[before]),
+            );
+            let joined = format!("{key}:");
+            if let Some(value) = fields.get(*key) {
+                match value {
+                    Value::Object(inner) => {
+                        fields = inner;
+                        continue;
+                    }
+                    Value::String(text) => {
+                        let next = keys.get(i + 1)?;
+                        return text.starts_with(&format!("{next}:")).then(|| {
+                            format!("`{key}` is the text `{text}`; a colon needs a space after it to make `{next}` a key with a value")
+                        });
+                    }
+                    _ => return None,
+                }
+            }
+            let written = fields
+                .iter()
+                .find(|(name, value)| name.starts_with(&joined) && value.is_null())?
+                .0;
+            return Some(format!(
+                "{parent} has a key `{written}`; a colon needs a space after it to give `{key}` a value"
+            ));
+        }
+        None
+    }
+
     fn has_slot(&self, name: &str) -> bool {
         self.definition
             .and_then(|signature| signature.slots.as_ref())
