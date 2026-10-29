@@ -453,6 +453,150 @@ The idea map in lesson 8 is the plain JavaScript kind: its default export is a `
 > [!TIP]
 > **Try it.** Change `page: 120` in the frontmatter to `page: 250`, and the ring sweeps on to the new value: the component keeps its state, and only its props change. Then change the code: `stroke="var(--viz-series-1)"` to `stroke="var(--viz-series-2)"`, and the page runs the new code as you type.
 
+**Your imagination is the limit.** A component is any code a browser runs, so a page can hold whatever you can build. Here is the reading list as a shelf, drawn and animated with d3: the books follow the inputs of lesson 11, and a click takes one off the shelf and opens it.
+
+```compmd component=bookshelf signature
+params:
+  books: array
+```
+
+```js component=bookshelf
+import * as d3 from "d3";
+
+// The reading list as a shelf: the books rise in one after another, and a click takes one out and opens it.
+export default function mount(target, { params, fallback }) {
+  const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const ms = (duration) => (still ? 0 : duration);
+  const color = d3.scaleOrdinal(d3.range(1, 9).map((n) => `var(--viz-series-${String(n)})`));
+  const root = d3.select(target).append("div").attr("role", "group").attr("aria-label", fallback.text);
+  const shelf = root
+    .append("div")
+    .style("display", "flex")
+    .style("align-items", "flex-end")
+    .style("gap", "6px")
+    .style("height", "220px")
+    .style("padding", "0 12px")
+    .style("overflow", "hidden")
+    .style("perspective", "900px")
+    .style("border-bottom", "8px solid color-mix(in srgb, currentColor 22%, transparent)");
+  const detail = root.append("p").attr("aria-live", "polite").style("min-height", "3em").style("margin", "12px 4px 0");
+  let books = [];
+  let open;
+
+  const isOpen = (book) => book.title === open;
+  const height = (book) => `${String(120 + Math.round((book.pages / 400) * 80))}px`;
+  const width = (book) => (isOpen(book) ? "190px" : `${String(28 + Math.round(book.pages / 25))}px`);
+
+  // Each book as it is now: open or on the shelf.
+  function show() {
+    shelf
+      .selectAll("button")
+      .attr("aria-expanded", (book) => String(isOpen(book)))
+      .style("width", width)
+      .style("transform", (book) => (isOpen(book) ? "translateY(-14px)" : "none"));
+    shelf.selectAll(".cover").style("transform", (book) => (isOpen(book) ? "rotateY(-64deg)" : "none"));
+    shelf.selectAll(".page").style("opacity", (book) => (isOpen(book) ? 1 : 0));
+    const book = books.find(isOpen);
+    detail.text(book ? `${book.title}, by ${book.author}: ${String(book.year)}, ${String(book.pages)} pages, ${book.read ? "read" : "not read yet"}.` : "Click a book to take it off the shelf.");
+  }
+
+  function draw(next) {
+    books = next;
+    if (!books.some(isOpen)) open = undefined;
+    shelf
+      .selectAll("button")
+      .data(books, (book) => book.title)
+      .join(
+        (enter) => {
+          const button = enter
+            .append("button")
+            .attr("type", "button")
+            .attr("aria-label", (book) => book.title)
+            .style("position", "relative")
+            .style("flex", "none")
+            .style("height", height)
+            .style("padding", "0")
+            .style("border", "1px solid color-mix(in srgb, currentColor 18%, transparent)")
+            .style("border-radius", "3px 3px 1px 1px")
+            .style("background", "var(--viz-surface)")
+            .style("color", "inherit")
+            .style("font", "inherit")
+            .style("cursor", "pointer")
+            .style("transform-style", "preserve-3d")
+            .style("transition", still ? "none" : "width 500ms ease, transform 500ms ease")
+            .style("opacity", 0)
+            .style("translate", "0 80px")
+            .on("click", (_event, book) => {
+              open = isOpen(book) ? undefined : book.title;
+              show();
+            });
+          button
+            .append("span")
+            .attr("class", "page")
+            .style("position", "absolute")
+            .style("inset", "0")
+            .style("display", "flex")
+            .style("flex-direction", "column")
+            .style("justify-content", "flex-end")
+            .style("gap", "4px")
+            .style("padding", "12px 12px 12px 52px")
+            .style("font-size", "12px")
+            .style("text-align", "start")
+            .style("transition", still ? "none" : "opacity 400ms ease 150ms")
+            .selectAll("span")
+            .data((book) => [book.title, book.author, `${String(book.year)}, ${String(book.pages)} pages`, book.read ? "Read" : "To read"])
+            .join("span")
+            .style("font-weight", (_line, i) => (i === 0 ? "700" : "400"))
+            .style("font-style", (_line, i) => (i === 1 ? "italic" : "normal"))
+            .text((line) => line);
+          button
+            .append("span")
+            .attr("class", "cover")
+            .style("position", "absolute")
+            .style("inset", "0")
+            .style("display", "flex")
+            .style("align-items", "center")
+            .style("justify-content", "center")
+            .style("padding", "8px 0")
+            .style("overflow", "hidden")
+            .style("border-radius", "2px")
+            .style("background", (book) => color(book.title))
+            .style("color", "#fff")
+            .style("font-size", "12px")
+            .style("font-weight", "600")
+            .style("white-space", "nowrap")
+            .style("writing-mode", "sideways-lr")
+            .style("transform-origin", "left center")
+            .style("transition", still ? "none" : "transform 650ms cubic-bezier(0.2, 0.8, 0.2, 1)")
+            .text((book) => book.title);
+          button
+            .transition()
+            .delay((_book, i) => ms(i * 90))
+            .duration(ms(650))
+            .ease(d3.easeBackOut)
+            .style("opacity", 1)
+            .style("translate", "0 0px");
+          return button;
+        },
+        (update) => update,
+        (exit) => exit.transition().duration(ms(350)).style("opacity", 0).style("translate", "0 80px").remove(),
+      );
+    show();
+  }
+
+  draw(params.books);
+  return {
+    update: (next) => draw(next.books),
+    destroy: () => root.remove(),
+  };
+}
+```
+
+:: bookshelf[The reading list as a shelf: click a book to see its author, year and pages] {books=(md.data.books.filter(b, b.year >= md.input.since && (!md.input.unread || !b.read)))}
+
+> [!TIP]
+> **Try it.** Click *Solaris*, then click it again. Turn on *unread only* in the bar above the tabs, and watch the read books leave the shelf; turn it off, and they come back.
+
 ## 14. Where next
 
 The other documents in the menu go further, each on one side of CompMD:

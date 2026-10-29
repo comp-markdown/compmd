@@ -34,7 +34,7 @@ Each document in the menu shows one side of CompMD. The files it reads (its fold
 
 | `?doc=` | Document | From |
 |---|---|---|
-| `tour` (the default) | A tutorial in fourteen lessons, each with a change to try: the document, Markdown and math, containers, params, values, expressions, `if` and `each`, definitions (with a d3 map of the tutorial's ideas as a teaser), template slots, data, inputs, layout and an animated JSX component | `examples/tour/`, with a reading list in CSV |
+| `tour` (the default) | A tutorial in fourteen lessons, each with a change to try: the document, Markdown and math, containers, params, values, expressions, `if` and `each`, definitions (with a d3 map of the tutorial's ideas as a teaser), template slots, data, inputs, layout, an animated JSX component, and a d3 bookshelf whose books open on a click | `examples/tour/`, with a reading list in CSV |
 | `definitions` | Definitions and slots: a `compmd` component with params and named slots, used as a container and a leaf, one definition in another, `display=contents`, a template slot | `examples/definitions/` |
 | `changelog` | Expressions: a changelog of 12 releases and 128 changes | `../wasm/bench/fixtures/changelog/` |
 | `dashboard` | Data: a sales dashboard, with tiles, a column chart bound to an input, a timeline, an area chart, a donut, a sortable table | `examples/dashboard/`, with the charts of `examples/charts/` |
