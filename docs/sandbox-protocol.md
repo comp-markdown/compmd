@@ -46,9 +46,9 @@ When a frame loads, its parent posts `hello` to its window with one end of a new
 
 | Message | Says | From |
 |---|---|---|
-| `ready {version}` | `@compmd/render`'s, with the sandbox's version beside it | every frame |
+| `ready {sandbox}` | the frame listens, with the sandbox protocol's version; a page frame's renderer then sends `@compmd/render`'s own `ready` too | every frame |
 | `loaded` | the code last sent is loaded, or shows fallbacks | P, U |
-| `set {path, param, value}` | a component set an input: `path` says which use, from the frame's part down; the parent checks that the param is bound to an input in that use's node, and passes it up | P, U |
+| `set {input, value}` | a component set an input, in `@compmd/render`'s shape; the parent checks that one of the frame's uses binds a param to that input, and passes it up | P, U |
 | `error {reason, component, message}` | `@compmd/render`'s, plus `failed` (code that didn't compile or load) and `not-here` (a use whose level this frame can't hold, Q2 of the design) | P, U |
 | `link {url}` | a link was clicked; H decides what opens, and shows the reader the URL first (spec §15 rule 4) | P, U |
 | `rendered {ms}` | `@compmd/render`'s | P, U |

@@ -1,0 +1,215 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://compmd.hakanserce.com/schema/sandbox-protocol.schema.json",
+  "title": "The CompMD sandbox's frame protocol",
+  "description": "The messages between a frame and its parent, the window that made it (docs/sandbox-protocol.md), version 1. `@compmd/render`'s frame protocol travels on the same port beside them. `host` carries a MessagePort in the message's ports, which JSON can't hold.",
+  "oneOf": [{ "$ref": "#/$defs/toFrame" }, { "$ref": "#/$defs/fromFrame" }],
+  "$defs": {
+    "toFrame": {
+      "description": "From a parent to its frame.",
+      "oneOf": [
+        { "$ref": "#/$defs/level" },
+        { "$ref": "#/$defs/code" },
+        { "$ref": "#/$defs/part" },
+        { "$ref": "#/$defs/styles" },
+        { "$ref": "#/$defs/host" },
+        { "$ref": "#/$defs/ping" },
+        { "$ref": "#/$defs/compile" }
+      ]
+    },
+    "fromFrame": {
+      "description": "From a frame to its parent.",
+      "oneOf": [
+        { "$ref": "#/$defs/ready" },
+        { "$ref": "#/$defs/loaded" },
+        { "$ref": "#/$defs/set" },
+        { "$ref": "#/$defs/error" },
+        { "$ref": "#/$defs/link" },
+        { "$ref": "#/$defs/rendered" },
+        { "$ref": "#/$defs/size" },
+        { "$ref": "#/$defs/pong" },
+        { "$ref": "#/$defs/compiled" },
+        { "$ref": "#/$defs/failed" }
+      ]
+    },
+    "level": {
+      "description": "The frame's level, first and once; a permissive frame's second policy, which it adds before anything else.",
+      "type": "object",
+      "properties": {
+        "type": { "const": "level" },
+        "level": { "enum": ["strict", "permissive"] },
+        "policy": { "type": "string" }
+      },
+      "required": ["type", "level"],
+      "additionalProperties": false
+    },
+    "code": {
+      "description": "Each component's code: compiled text with its binding, or a built module by its URL and its file's hash.",
+      "type": "object",
+      "properties": {
+        "type": { "const": "code" },
+        "components": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "binding": { "enum": ["react", "svelte", "plain"] },
+                  "code": { "type": "string" },
+                  "css": { "type": "string" }
+                },
+                "required": ["name", "binding", "code"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "module": {
+                    "type": "object",
+                    "properties": { "url": { "type": "string" }, "integrity": { "type": "string" } },
+                    "required": ["url", "integrity"],
+                    "additionalProperties": false
+                  }
+                },
+                "required": ["name", "module"],
+                "additionalProperties": false
+              }
+            ]
+          }
+        }
+      },
+      "required": ["type", "components"],
+      "additionalProperties": false
+    },
+    "part": {
+      "description": "The use the frame renders, an expanded component node (conformance/compmd-tree.schema.json) with its slots, and the document's inputs.",
+      "type": "object",
+      "properties": {
+        "type": { "const": "part" },
+        "part": {
+          "type": "object",
+          "properties": {
+            "node": { "type": "object", "properties": { "type": { "enum": ["componentContainer", "componentLeaf", "componentInline"] } }, "required": ["type"] },
+            "inputs": { "type": "object" }
+          },
+          "required": ["node", "inputs"],
+          "additionalProperties": false
+        }
+      },
+      "required": ["type", "part"],
+      "additionalProperties": false
+    },
+    "styles": {
+      "description": "The host's stylesheets.",
+      "type": "object",
+      "properties": { "type": { "const": "styles" }, "urls": { "type": "array", "items": { "type": "string" } } },
+      "required": ["type", "urls"],
+      "additionalProperties": false
+    },
+    "host": {
+      "description": "A port for `host`, in the message's ports; only to a permissive frame of a pack given `host`.",
+      "type": "object",
+      "properties": { "type": { "const": "host" } },
+      "required": ["type"],
+      "additionalProperties": false
+    },
+    "ping": {
+      "description": "Answer with `pong`, or be stopped.",
+      "type": "object",
+      "properties": { "type": { "const": "ping" }, "n": { "type": "integer" } },
+      "required": ["type", "n"],
+      "additionalProperties": false
+    },
+    "compile": {
+      "description": "A source for the compile frame to compile.",
+      "type": "object",
+      "properties": {
+        "type": { "const": "compile" },
+        "name": { "type": "string" },
+        "language": { "enum": ["jsx", "tsx", "svelte", "js", "ts"] },
+        "runtime": { "type": "string" },
+        "code": { "type": "string" }
+      },
+      "required": ["type", "name", "language", "code"],
+      "additionalProperties": false
+    },
+    "ready": {
+      "description": "The frame is listening, with the sandbox protocol's version.",
+      "type": "object",
+      "properties": { "type": { "const": "ready" }, "sandbox": { "type": "integer" } },
+      "required": ["type", "sandbox"],
+      "additionalProperties": false
+    },
+    "loaded": {
+      "description": "The code last sent is loaded, or shows fallbacks.",
+      "type": "object",
+      "properties": { "type": { "const": "loaded" } },
+      "required": ["type"],
+      "additionalProperties": false
+    },
+    "set": {
+      "description": "A component set an input; the parent checks that one of the frame's uses binds a param to it.",
+      "type": "object",
+      "properties": { "type": { "const": "set" }, "input": { "type": "string" }, "value": {} },
+      "required": ["type", "input", "value"],
+      "additionalProperties": false
+    },
+    "error": {
+      "description": "A component shows its fallback: missing, threw (W118), its code failed, or its level can't be held here (not-here).",
+      "type": "object",
+      "properties": {
+        "type": { "const": "error" },
+        "reason": { "enum": ["missing", "threw", "failed", "not-here"] },
+        "component": { "type": "string" },
+        "message": { "type": "string" }
+      },
+      "required": ["type", "reason", "message"],
+      "additionalProperties": false
+    },
+    "link": {
+      "description": "A link was clicked; the host's page decides what opens, after showing the reader the URL.",
+      "type": "object",
+      "properties": { "type": { "const": "link" }, "url": { "type": "string" } },
+      "required": ["type", "url"],
+      "additionalProperties": false
+    },
+    "rendered": {
+      "description": "The frame's last render is painted.",
+      "type": "object",
+      "properties": { "type": { "const": "rendered" }, "ms": { "type": "number" } },
+      "required": ["type", "ms"],
+      "additionalProperties": false
+    },
+    "size": {
+      "description": "The frame's content's size, for its parent to set on the frame.",
+      "type": "object",
+      "properties": { "type": { "const": "size" }, "width": { "type": "number" }, "height": { "type": "number" } },
+      "required": ["type", "width", "height"],
+      "additionalProperties": false
+    },
+    "pong": {
+      "description": "The answer to `ping`.",
+      "type": "object",
+      "properties": { "type": { "const": "pong" }, "n": { "type": "integer" } },
+      "required": ["type", "n"],
+      "additionalProperties": false
+    },
+    "compiled": {
+      "description": "A compile's result: the module's text, and a Svelte component's CSS.",
+      "type": "object",
+      "properties": { "type": { "const": "compiled" }, "name": { "type": "string" }, "code": { "type": "string" }, "css": { "type": "string" } },
+      "required": ["type", "name", "code"],
+      "additionalProperties": false
+    },
+    "failed": {
+      "description": "A source that didn't compile, with the compiler's message.",
+      "type": "object",
+      "properties": { "type": { "const": "failed" }, "name": { "type": "string" }, "message": { "type": "string" } },
+      "required": ["type", "name", "message"],
+      "additionalProperties": false
+    }
+  }
+}
