@@ -52,4 +52,7 @@ Measured on 2026-10-30 on an Apple M4. Without the prerender, the page painted a
 - on every `spec-v*` tag;
 - by hand.
 
-It needs the repository's Pages source set to "GitHub Actions" (Settings, Pages).
+It needs the repository's Pages source set to "GitHub Actions" (Settings, Pages). For the site's own address, `compmd.hakanserce.com`:
+1. A DNS `CNAME` record from `compmd.hakanserce.com` to `comp-markdown.github.io`.
+2. The domain verified for the `comp-markdown` organization (its settings, Pages), so no one else's Pages can claim it.
+3. The custom domain set in the repository's Pages settings, with HTTPS enforced once GitHub has its certificate.

@@ -4,6 +4,10 @@ Changes to the [CompMD specification](compmd-spec-v1.md), newest first. Every ch
 
 ## Version 1 (draft)
 
+### 2026-10-30
+
+- **Website.** The spec links to the CompMD website, which has the spec as a page and a playground. The spec itself is unchanged.
+
 ### 2026-10-29
 
 - **Links to a passage (§2.3).** A link to a text fragment (`#:~:text=…`) names a passage of the document by its text; a tool that shows the source, such as an editor beside its preview, may select the passage there. No new syntax: they are ordinary links, and the spec says how such tools may read them.
