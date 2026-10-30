@@ -1,6 +1,6 @@
 # Components from apps and packs
 
-**Status: proposed (second draft).**
+**Status: accepted (2026-10-30).** S3 (libraries from the registry) is still open.
 
 A document names components; their code comes from somewhere. This design answers two questions that turn out to be one:
 

@@ -1,6 +1,6 @@
 # Code renderers
 
-**Status: proposed.** Part of [components from apps and packs](components-from-apps-and-packs.md), where it is option W2 for Mermaid.
+**Status: accepted (2026-10-30).** Part of [components from apps and packs](components-from-apps-and-packs.md), where it is option W2 for Mermaid.
 
 A **code renderer** is a component that also renders the code blocks of one language: a pack's `mermaid` draws every ` ```mermaid ` block of a document that imports it. The document writes the block as it would anywhere:
 
