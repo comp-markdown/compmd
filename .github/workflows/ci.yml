@@ -25,4 +25,6 @@ jobs:
           submodules: recursive
       - uses: ./.github/actions/setup
       - run: pnpm install --frozen-lockfile
+      # The sandbox's browser tests run in the runner's Chrome and in Playwright's WebKit.
+      - run: pnpm --dir sandbox exec playwright install --with-deps webkit
       - run: cargo make ci
