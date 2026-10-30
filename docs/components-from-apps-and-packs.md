@@ -2,11 +2,7 @@
 
 **Status: accepted (2026-10-30).** S3 (libraries from the registry) is still open.
 
-**Settled while building `@compmd/sandbox`.** A frame is one box on the screen, so it shows a component in one place only, and its code can't place elements in another frame or in the host's page. So:
-
-- **The host chooses where the page renders.** By default, in the document's strict frame: the page and the document's strict components share it, and a trusted component shows its fallback, since the app's page isn't there. Or in the host's own page: trusted components mount there, and each use of a strict or permissive component gets a frame of its own, with its slots rendered inside it. A host with components of its own renders the page itself; a host that renders others' documents keeps the frame.
-- **A permissive frame is per use, not per pack**, with its pack's origins in its policy. It takes code and `host` only from the host's page, never from the frame around it, which strict code shares.
-- **A built module is checked by a hash of its file.** npm's integrity covers a pack's whole tarball, which a frame loading one file can't check: the host checks the tarball when it gets the pack, and gives the sandbox each module's URL with the file's hash, which the frame's import map checks.
+How the sandbox builds the three levels, where the page renders, a frame per use and how a built module's file is checked, is its own design: [the sandbox](sandbox.md).
 
 A document names components; their code comes from somewhere. This design answers two questions that turn out to be one:
 
