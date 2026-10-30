@@ -6,8 +6,8 @@
 
 1. **A frame runs one trust level.** Each frame renders a part of the tree, the page or one component with its slots, and runs only code of one level. A component of another level inside it gets a frame of its own, nested where it is used. A frame is as trusted as the least trusted code in it, so whatever a frame says is believed only as far as that.
 2. **The host chooses where the page renders** (`page: "frame" | "host"`). In **frame mode** (the default) the page is one strict frame per document: strict code shares it, permissive uses are nested frames, and a trusted component shows its fallback. In **host mode** the page renders in the host's page: trusted components mount inline, and each use of a strict or permissive component is a frame of its own, with its slots rendered inside it.
-3. **Every frame gets its level and its code from the host's page; only params, slots and sizes come from its parent.** The host's page is the only window whose origin is not opaque, so a frame can tell its messages apart from anything strict code sends. So strict code can't give a frame code, raise its level or widen its network.
-4. **`host` goes only to frames the host's page made itself,** whose windows it holds. A permissive use nested in a strict frame (any permissive use in frame mode) gets its network, but not `host`, with a warning: strict code can make a frame that claims to be it, and the host's page can't tell the two apart.
+3. **Every frame gets everything from the host's page: its level, its code, its params and slots; its parent only places it.** The host's page is the only window whose origin is not opaque, so a frame can tell its messages apart from anything strict code sends. So strict code can't give a frame code, raise its level, widen its network or choose what a permissive component sends. The messages are their own design: [the sandbox's frame protocol](sandbox-protocol.md).
+4. **`host` goes only to frames the host's page made itself,** whose windows it holds. A permissive use nested in a strict frame (any permissive use in frame mode) gets its network, but not `host`: strict code can make a frame that claims to be it, and the host's page can't tell the two apart. The configuration says which permissive packs get `host`; their uses show fallbacks there, with a warning.
 5. **One frame document, `frame.html`, served by the host** with the package's other files. Its content security policy is fixed and allows no network until the host's page sends the frame its level: the host's page then adds the policy of that level, which can only narrow what the first allows.
 6. **Source is compiled once per document, in a compile frame** that runs no component code, and every frame loads the compiled text. **A built module loads by its URL** with `<script type="module" integrity>`, so the browser checks the file's hash the host gives, and runs nothing that doesn't match.
 7. **Every threat in the threat model is a browser test.** Where a browser can't keep a rule (WebRTC, below), the design says so, and the test records what the browser does.
@@ -85,29 +85,29 @@ What each threat needs, and what stops it:
 
 ## Q2. Who tells a frame what
 
-A frame hears from two windows: its parent, which may be strict, and the host's page, which is never.
+A frame talks only to the host's page, and the host's page is the only window it believes; a nested frame tells its parent nothing but its size. Every message, who may send it, and what each end checks: [the sandbox's frame protocol](sandbox-protocol.md).
 
-| Message | From | Over |
-|---|---|---|
-| the frame's level, its policy, its code (compiled text or a module's URL and hash) | the host's page only | the frame's host port |
-| `host`, as calls on a port | the host's page, only to frames it made | the frame's host port |
-| a ping, to stop a frame that hangs | the host's page, to frames it made; a parent, to its own nested frames | the host port; the parent port |
-| the part to render: the use's params and slots as expanded nodes, the inputs, the theme, the host's stylesheet | its parent | the parent port |
-| `set`, its size, links clicked, errors | the frame, to its parent | the parent port |
-
-How each frame gets its ports:
-
-- **A frame the host's page made** gets one port, from the host's page, which is its parent too.
-- **A nested frame** gets its parent port from its parent. It then posts a hello to `top`, the host's page, with a new port. The host's page answers on that port with the frame's level, policy and code, for the component the frame names, if that component is in the document the frame is nested in (the host's page finds it through the frame's `parent` chain, which it can read across origins).
-- **A frame checks** that its host port's first message came from the host's origin (its own URL's origin, never `null`), and accepts its level and code only on that port.
-
-**Why this holds** (T5, T6): strict code can make a nested frame, but only of `frame.html` (T7), which waits for the host's page. Its fake frame gets, at most, the code and network origins of a component the document uses anyway: public code, and a network its own params already reach, since a document can give the map any params it likes. It can't get `host`: the host's page gives `host` only on a host port of a window it holds itself (`iframe.contentWindow === event.source`).
+**Why this holds** (T5, T6): strict code can make a nested frame, but only of `frame.html` (T7), which waits for the host's page. A frame that claims a use gets that use's level, code and params, which its document gives it anyway, and strict code can't give it params of its own. It can't get `host`: the host's page gives `host` only on a port to a window it holds itself (`iframe.contentWindow === event.source`).
 
 **Options considered for `host` in frame mode:**
 
-- **H1. Network only (recommended):** a permissive use in frame mode gets its origins, and `host` is absent, with a warning; `rating-summary` needs host mode.
+- **H1. Network only (recommended):** a permissive use in frame mode gets its origins, and no `host`.
 - **H2. Neither:** permissive in frame mode is strict. Simpler, but `map` in the playground couldn't load its tiles.
 - **H3. A secret in the frame's URL:** the host's page puts a token in the nested frame's URL. The strict frame makes that frame, so it sees the URL: rejected.
+
+**H1, challenged with the examples, in frame mode:**
+
+| Use | What happens | Holds? |
+|---|---|---|
+| `stars` (trusted) | its fallback, with a warning | yes: the app's page isn't there |
+| `rating-summary` (permissive, needs `host`) | mounts with `host` absent, and shows nothing useful | **no**: the sandbox can't tell that it needs `host`, so neither the reader nor the host is told why |
+| `bar-chart`, `sparkline` (strict) | in the page's frame | yes |
+| `mermaid` (strict, a built module) | in the page's frame, its file checked | yes |
+| `map` (permissive) | a nested frame, its tiles from `tiles.example.com`, its params from the host's page | yes |
+| `map`, while a malicious `bar-chart` reads the sales data it is given | with params from its parent, `bar-chart` could make a second `map` frame and give it the sales data as its place, which `map` sends to `tiles.example.com` | **only with params from the host's page**, which is why decision 3 sends them so: then strict code can only make a frame that gets the real `map`'s params |
+| ten `map`s in an `each` | ten nested frames | yes, at ten frames' cost |
+
+So H1 needs one more thing: **the configuration says which permissive packs get `host`** (`{"level": "permissive", "network": […], "host": true}`, on the processor's `Trust`). A use of such a pack in frame mode shows its fallback, with a warning that it needs host mode, instead of mounting without it. A permissive pack without `host` (`map`) works in both modes.
 
 ## Q3. The frame document and its policies
 
@@ -193,7 +193,7 @@ view.destroy();
 
 ## Q7. The browser tests
 
-Vitest's browser mode, with the installed Chrome through Playwright (decided in T-298's conversation). The tests serve the package's built files, as a host would, and run documents with components that try each threat:
+Vitest's browser mode, with the installed Chrome through Playwright (decided in T-298's conversation), and WebKit through Playwright too: an application's web view is WebKit on macOS and Linux (WKWebView, WebKitGTK), and a browser's rules for frames and policies are what the sandbox rests on. The tests serve the package's built files, as a host would, and run documents with components that try each threat:
 
 | Test | Threat |
 |---|---|
@@ -223,6 +223,6 @@ Nothing changes in the rules: §15 already allows a sandbox per use, trusted cod
 ## Not in this design
 
 - Serving the sandbox's files from a separate site, for process isolation and WebRTC: an option for later, which this design leaves room for: the frame would then learn the host's origin when it is built, instead of taking its own URL's.
-- A sandbox outside a browser (a build server's), which spec §15 also asks for.
+- A sandbox outside a browser, which spec §15 also asks for: for a host that runs component code where there is no browser, such as a site's build that renders components into static HTML, or a processor that runs components to report W118. An application that renders documents in its own web view (a desktop app) needs only this one.
 - Caching compiled code across visits.
 - S3, libraries from the registry.
