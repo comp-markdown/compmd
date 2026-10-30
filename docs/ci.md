@@ -51,6 +51,8 @@ The README's commands section says what CI runs and when, with the tool versions
 - The first run, pushed to a branch with a pull request, green; then a deliberate break (a formatting change) on the same branch, red, with the failing task named; then reverted.
 - A run's time cold and warm, recorded in this document.
 
+**The first runs (2026-10-30, pull request #1, then `main`).** Green on the first run; red on a deliberate formatting break, with the step's log naming the task (`fmt`) and showing the diff; green again once reverted. A run takes 3 to 6 minutes: 3 min 48 s cold and 3 min 20 s warm on the pull request, and 5 min 50 s for the first run on `main`, which can't use a pull request's caches. Coverage is 99.30% on the runner, as locally.
+
 ## Not in this change
 
 - Publishing packages or the crate from CI (releases).
