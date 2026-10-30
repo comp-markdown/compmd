@@ -3,10 +3,12 @@
 
 use super::Checker;
 use super::scope::Scope;
-use crate::diagnostic::{Code, Location};
+use crate::diagnostic::{Code, Location, Stage};
 use crate::parse::params::interpolations;
-use crate::resolve::{Binding, Body};
-use crate::tree::{Container, Definition, Interpolation, Node, Position, StringPart};
+use crate::resolve::{Binding, Body, Renderer};
+use crate::tree::{
+    Code as CodeBlock, Container, Definition, Interpolation, Node, Position, StringPart,
+};
 
 impl<'r> Checker<'r, '_> {
     pub(super) fn nodes(&mut self, nodes: &'r [Node], scope: &Scope<'r>) {
@@ -35,7 +37,55 @@ impl<'r> Checker<'r, '_> {
                 self.nodes(&leaf.fallback, scope);
             }
             Node::ComponentDefinition(definition) => self.definition(definition),
+            Node::Code(code) => self.code_block(code, scope),
             _ => self.nodes(node.children(), scope),
+        }
+    }
+
+    /// A code block a code renderer renders (spec §7.7): F023 when two at one level render its language; otherwise
+    /// what is wrong with its info string, its params as a leaf's, and W101 without `alt`.
+    fn code_block(&mut self, code: &'r CodeBlock, scope: &Scope<'r>) {
+        let resolved = self.resolved;
+        let renderers = &resolved.document(self.id).renderers;
+        let (Some(language), Some(info)) = (code.lang.as_deref(), &code.info) else {
+            return;
+        };
+        let Some(renderer) = renderers.get(language) else {
+            return;
+        };
+        let at = code
+            .position
+            .map_or(Location::new(1, 1), |position| position.start.into());
+        match renderer {
+            Renderer::Ambiguous(names) => {
+                self.report(
+                    Code::F023,
+                    at,
+                    format!(
+                        "`{language}` blocks are rendered by {}; list one in its import to choose",
+                        names.join(" and ")
+                    ),
+                );
+                self.fall_back(code.position);
+            }
+            Renderer::Component(name, _) => {
+                for problem in &info.problems {
+                    self.found.diagnostics.push(
+                        problem
+                            .clone()
+                            .in_stage(Stage::Validate)
+                            .in_file(self.file.clone()),
+                    );
+                }
+                self.invocation(name, &info.params, code.position, None, scope);
+                if info.alt.is_none() {
+                    self.report(
+                        Code::W101,
+                        at,
+                        format!("`{name}` draws this block, which has no text alternative for screen readers; add `alt=\"…\"` after the language"),
+                    );
+                }
+            }
         }
     }
 

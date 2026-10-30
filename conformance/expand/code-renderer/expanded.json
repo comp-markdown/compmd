@@ -1,0 +1,106 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "A block rendered by the host's renderer, one in another name of its language, the same component as a leaf, a block a\n"
+        },
+        {
+          "type": "inlineCode",
+          "value": "compmd"
+        },
+        {
+          "type": "text",
+          "value": " definition renders, and a block no renderer renders."
+        }
+      ]
+    },
+    {
+      "type": "code",
+      "lang": "mermaid",
+      "meta": "{theme=dark alt=\"Draft, then review\"}",
+      "value": "graph LR; Draft --> Review",
+      "component": {
+        "name": "mermaid",
+        "params": [
+          {
+            "key": "code",
+            "breakpoint": null,
+            "value": "graph LR; Draft --> Review"
+          },
+          {
+            "key": "theme",
+            "breakpoint": null,
+            "value": "dark"
+          }
+        ]
+      },
+      "alt": "Draft, then review"
+    },
+    {
+      "type": "code",
+      "lang": "mmd",
+      "meta": "{alt=\"A, then B\"}",
+      "value": "graph LR; A --> B",
+      "component": {
+        "name": "mermaid",
+        "params": [
+          {
+            "key": "code",
+            "breakpoint": null,
+            "value": "graph LR; A --> B"
+          }
+        ]
+      },
+      "alt": "A, then B"
+    },
+    {
+      "type": "componentLeaf",
+      "name": "mermaid",
+      "params": [
+        {
+          "key": "code",
+          "breakpoint": null,
+          "value": "graph LR; Draft --> Review"
+        }
+      ],
+      "fallback": [
+        {
+          "type": "text",
+          "value": "Draft, then review"
+        }
+      ]
+    },
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [],
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "strong",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "hello"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "slots": []
+    },
+    {
+      "type": "code",
+      "lang": "sh",
+      "meta": null,
+      "value": "echo plain"
+    }
+  ]
+}

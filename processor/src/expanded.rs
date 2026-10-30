@@ -8,7 +8,7 @@
 
 use crate::cel;
 use crate::tree::{
-    Blockquote, Code, FootnoteDefinition, Heading, Image, ImageReference, Link, LinkDefinition,
+    Blockquote, FootnoteDefinition, Heading, Image, ImageReference, Link, LinkDefinition,
     LinkReference, List, ListItem, Literal, Math, Parent, Point, Reference, Table, Void, WikiLink,
 };
 use serde::ser::SerializeMap;
@@ -308,6 +308,32 @@ pub struct Instance {
     pub value: Value,
     /// The slot's content, expanded with the element bound.
     pub children: Vec<Node>,
+}
+
+/// A code block; one a code renderer renders names it, with its params, and its text alternative (spec §7.7, §12.3).
+#[derive(Clone, Debug, Default, PartialEq, Serialize)]
+pub struct Code {
+    /// The first word of the info string.
+    pub lang: Option<String>,
+    /// The rest of the info string.
+    pub meta: Option<String>,
+    /// The code.
+    pub value: String,
+    /// The code renderer that renders it, when one does.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub component: Option<Rendered>,
+    /// Its text alternative, `alt`, when a code renderer renders it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub alt: Option<String>,
+}
+
+/// The code renderer of a code block, with its params, the block's text as `code` (spec §7.7).
+#[derive(Clone, Debug, Default, PartialEq, Serialize)]
+pub struct Rendered {
+    /// The component's name, as the document gives it.
+    pub name: String,
+    /// Its params, evaluated.
+    pub params: Vec<Param>,
 }
 
 /// A leaf or an inline component the processor renders.

@@ -63,6 +63,24 @@ export interface MarkdownNode {
 /** A node in a list of blocks or inline content. (Named slots are only ever in a component's `slots`.) */
 export type ExpandedNode = ExpandedComponent | MarkdownNode;
 
+/** A code block; one a code renderer renders (spec §7.7) names it in `component`, with its params, and has its `alt`. */
+export interface ExpandedCode extends MarkdownNode {
+  type: "code";
+  lang: string | null;
+  meta: string | null;
+  value: string;
+  component?: { name: string; params: ExpandedParam[] };
+  alt?: string;
+}
+
+/** The leaf of the code renderer that renders `node`, a code block, as it is mounted; `undefined` when none does. */
+export function rendererOf(node: ExpandedNode): ExpandedComponent | undefined {
+  if (node.type !== "code") return undefined;
+  const { component, origin } = node as ExpandedCode;
+  if (!component) return undefined;
+  return { type: "componentLeaf", name: component.name, params: component.params, ...(origin ? { origin } : {}) };
+}
+
 /** One of the document's inputs, as the root lists it. */
 export interface ExpandedInput {
   type: string;

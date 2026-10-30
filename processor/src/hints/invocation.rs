@@ -5,7 +5,8 @@
 use super::{Completion, Found, ParameterHint, Place, Subject, expression};
 use crate::parse::line::{Form, classify, matching_bracket};
 use crate::parse::params::{self, List, Written, name_len};
-use crate::tree::{Container, Node, ParamValue, SlotDeclaration};
+use crate::resolve::Renderer;
+use crate::tree::{Code, Container, Node, ParamValue, SlotDeclaration};
 
 /// The hint at the caret of `place`, on a component line or in an inline component.
 pub(super) fn hint(place: &Place) -> Option<Found> {
@@ -21,6 +22,47 @@ pub(super) fn hint(place: &Place) -> Option<Found> {
             ..found
         });
     found.or_else(|| inline(place))
+}
+
+/// The hint on the opening line of a code block a code renderer renders (spec §7.7): its language stands for the
+/// renderer, and the param list after it is the renderer's, as a leaf's is.
+pub(super) fn code_block(place: &Place, code: &Code) -> Option<Found> {
+    let start = code.position?.start;
+    if place.line != start.line {
+        return None;
+    }
+    let language = code.lang.as_deref()?;
+    let Some(Renderer::Component(name, _)) = place.document.renderers.get(language) else {
+        return None;
+    };
+    let at = place.document.lines().language_at(start).column - 1;
+    let end = at + language.chars().count();
+    if (at..=end).contains(&place.at) {
+        let languages = place
+            .document
+            .renderers
+            .iter()
+            .filter_map(|(language, renderer)| {
+                let Renderer::Component(name, _) = renderer else {
+                    return None;
+                };
+                Some(Completion::new(
+                    language,
+                    Some(format!("drawn by `{name}`")),
+                ))
+            });
+        return Some(Found {
+            completions: languages.collect(),
+            ..component(place, name, at, end)
+        });
+    }
+    let brace = end + place.text[end..].iter().position(|c| *c == '{')?;
+    if place.at <= brace {
+        return None;
+    }
+    let list = params::braced(&place.text, brace);
+    let params = place.block_params(name);
+    params_taking(place, &place.text, place.at, name, &list, brace + 1, params)
 }
 
 /// How many code points of `line` come before what a component line starts with: indentation, and the markers of
@@ -165,6 +207,27 @@ fn params_of(
     list: &List,
     from: usize,
 ) -> Option<Found> {
+    params_taking(
+        place,
+        line,
+        at,
+        component,
+        list,
+        from,
+        place.params(component),
+    )
+}
+
+/// [`params_of`], for a list that takes `all`.
+fn params_taking(
+    place: &Place,
+    line: &[char],
+    at: usize,
+    component: &str,
+    list: &List,
+    from: usize,
+    all: Vec<ParameterHint>,
+) -> Option<Found> {
     let closed = list.broke_at.is_none()
         && list
             .end
@@ -184,7 +247,6 @@ fn params_of(
         return Some(found);
     }
     let written: Vec<&str> = list.params.iter().filter_map(key_of).collect();
-    let all = place.params(component);
     let others: Vec<ParameterHint> = all
         .iter()
         .filter(|param| param.name == spot.key || !written.contains(&param.name.as_str()))

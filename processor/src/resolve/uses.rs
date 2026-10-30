@@ -4,11 +4,11 @@
 //! The processed document's body is checked, and the `compmd` definitions of every document, since their bodies
 //! are what is used of an imported one.
 
-use super::names::{Binding, Level};
+use super::names::{Binding, Level, Renderer};
 use super::{Body, ComponentId, DocumentId, Resolved};
 use crate::diagnostic::{Code, Diagnostic, Fix, Location, Stage};
 use crate::nearest::nearest;
-use crate::tree::{Node, Point};
+use crate::tree::{Code as CodeBlock, Node, Point};
 use std::collections::HashSet;
 
 /// A component a body invokes: its name, and where its line or inline component starts.
@@ -37,6 +37,21 @@ pub(crate) fn invocations<'a>(nodes: &'a [Node], out: &mut Vec<Invocation<'a>>) 
         if let Node::ComponentContainer(container) = node {
             for slot in &container.slots {
                 invocations(&slot.children, out);
+            }
+        }
+    }
+}
+
+/// Every code block among the nodes, in source order, in slots too.
+pub(crate) fn code_blocks<'a>(nodes: &'a [Node], out: &mut Vec<&'a CodeBlock>) {
+    for node in nodes {
+        if let Node::Code(code) = node {
+            out.push(code);
+        }
+        code_blocks(node.children(), out);
+        if let Node::ComponentContainer(container) = node {
+            for slot in &container.slots {
+                code_blocks(&slot.children, out);
             }
         }
     }
@@ -131,6 +146,33 @@ fn names_used(
             _ => continue,
         };
         found.push(diagnostic.in_stage(Stage::Resolve).in_file(file.clone()));
+    }
+    if report_ambient {
+        let mut blocks = Vec::new();
+        for body in bodies {
+            code_blocks(body, &mut blocks);
+        }
+        for code in blocks {
+            let renderer = code
+                .lang
+                .as_deref()
+                .and_then(|language| document.renderers.get(language));
+            let (Some(Renderer::Component(name, _)), Some(position)) = (renderer, code.position)
+            else {
+                continue;
+            };
+            if let Some(Binding::Component(_, Level::Ambient)) = document.names.get(name) {
+                found.push(
+                    Diagnostic::new(
+                        Code::W113,
+                        lines.language_at(position.start),
+                        format!("`{name}` draws this block and comes from a pack this processor provides, so other processors show the code"),
+                    )
+                    .in_stage(Stage::Resolve)
+                    .in_file(file.clone()),
+                );
+            }
+        }
     }
     found
 }

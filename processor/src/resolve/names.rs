@@ -55,13 +55,39 @@ impl Names {
 
     /// Every name that stands for a component, with it.
     pub(crate) fn components(&self) -> impl Iterator<Item = (&str, ComponentId)> {
+        self.leveled().map(|(name, id, _)| (name, id))
+    }
+
+    /// Every name that stands for a component, with it and its level.
+    pub(crate) fn leveled(&self) -> impl Iterator<Item = (&str, ComponentId, Level)> {
         self.bindings
             .iter()
             .filter_map(|(name, binding)| match binding {
-                Binding::Component(id, _) => Some((name.as_str(), *id)),
+                Binding::Component(id, level) => Some((name.as_str(), *id, *level)),
                 Binding::Ambiguous(_) | Binding::Dropped => None,
             })
     }
+}
+
+impl Level {
+    /// Its rank among the levels of spec §6.3, 0 the highest: wildcard imports and `@compmd/core` share one.
+    pub(crate) fn rank(self) -> u8 {
+        match self {
+            Self::Local => 0,
+            Self::Listed => 1,
+            Self::Wildcard | Self::Core => 2,
+            Self::Ambient => 3,
+        }
+    }
+}
+
+/// The code renderer of a language in a document (spec §6.3, §7.7).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) enum Renderer {
+    /// The component, by the name the document gives it.
+    Component(String, ComponentId),
+    /// Two or more at the highest level that has one, by their names: a block of the language is F023.
+    Ambiguous(Vec<String>),
 }
 
 /// Collects a document's names level by level.

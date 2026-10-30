@@ -151,7 +151,7 @@ pub(crate) fn type_pointer(pointer: &str, written: &Value) -> String {
 
 /// A signature read from its YAML `value`; `text_at` gives where the text of the value at a JSON pointer starts.
 fn signature(value: &Value, text_at: &dyn Fn(&str) -> Option<Location>) -> Signature {
-    let params = value
+    let mut params: Vec<Declaration> = value
         .get("params")
         .and_then(Value::as_object)
         .map(|params| {
@@ -169,11 +169,46 @@ fn signature(value: &Value, text_at: &dyn Fn(&str) -> Option<Location>) -> Signa
     } else {
         Headings::Relative
     };
+    let renders = renders(value.get("renders"));
+    if renders.is_some() && !params.iter().any(|param| param.name == CODE) {
+        params.insert(0, code_declaration());
+    }
     Signature {
         params,
         slots: slots(value.get("slots")),
         headings,
+        renders,
     }
+}
+
+/// The param a code block's text fills when a code renderer renders it (spec §7.7).
+pub(crate) const CODE: &str = "code";
+
+/// `code` as a code renderer has it without declaring it: a required string.
+fn code_declaration() -> Declaration {
+    Declaration {
+        name: CODE.to_string(),
+        declared: DeclaredType::Name(TypeName::String),
+        optional: false,
+        default: None,
+        doc: None,
+        unknown_at: None,
+        type_at: None,
+    }
+}
+
+/// `renders`: a language, or a list of names of one (spec §7.3).
+fn renders(value: Option<&Value>) -> Option<Vec<String>> {
+    let languages: Vec<String> = match value? {
+        Value::String(language) => vec![language.clone()],
+        Value::Array(languages) => languages
+            .iter()
+            .filter_map(Value::as_str)
+            .map(str::to_string)
+            .collect(),
+        _ => Vec::new(),
+    };
+    (!languages.is_empty()).then_some(languages)
 }
 
 /// `slots`: a list of names, or a mapping from names to options, where `{each, as}` makes a template slot.
@@ -229,6 +264,7 @@ pub(crate) fn declaration(name: &str, written: &Value, type_at: Option<Location>
             default,
             doc: None,
             unknown_at,
+            type_at,
         };
     }
     let type_text = written.get("type").and_then(Value::as_str).unwrap_or("");
@@ -236,6 +272,7 @@ pub(crate) fn declaration(name: &str, written: &Value, type_at: Option<Location>
     Declaration {
         name: name.to_string(),
         unknown_at: unknown_at(&declared, type_text, type_at),
+        type_at,
         declared,
         optional,
         default: written.get("default").cloned().map(DefaultValue::Yaml),

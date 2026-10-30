@@ -2,7 +2,9 @@
 //! them, each with its kind, its signature and where the document uses it.
 
 use crate::diagnostic::Range;
-use crate::resolve::{Body, Component, DocumentId, Origin, Resolved, invocations};
+use crate::resolve::{
+    Body, Component, DocumentId, Origin, Renderer, Resolved, code_blocks, invocations,
+};
 use crate::tree::Signature;
 use serde::Serialize;
 use std::collections::BTreeMap;
@@ -73,6 +75,23 @@ pub(crate) fn of(resolved: &Resolved) -> Components {
         uses.entry(invocation.name)
             .or_default()
             .push(Range::spanning(at, invocation.name));
+    }
+    // A code block a code renderer renders uses it, at the block's language (spec §7.7).
+    let mut blocks = Vec::new();
+    code_blocks(&document.root.children, &mut blocks);
+    for code in blocks {
+        let (Some(language), Some(position)) = (code.lang.as_deref(), code.position) else {
+            continue;
+        };
+        if let Some(Renderer::Component(name, _)) = document.renderers.get(language) {
+            let at = lines.language_at(position.start);
+            uses.entry(name)
+                .or_default()
+                .push(Range::spanning(at, language));
+        }
+    }
+    for list in uses.values_mut() {
+        list.sort_by_key(|range| (range.start.line, range.start.column));
     }
     // Each group with the file it is and the document that loaded it, which orders it.
     let mut groups: Vec<(Origin, DocumentId, Group)> = Vec::new();
@@ -244,6 +263,16 @@ mod tests {
         );
         assert_eq!(groups.len(), 4);
         assert_eq!(json["unknown"], json!([]));
+    }
+
+    #[test]
+    fn a_code_renderer_is_used_by_its_blocks_at_their_language() {
+        let text = "```compmd component=shout\nrenders: [shout, yell]\n---\n{{code}}\n```\n\n```yell\nhi\n```\n\n:: shout[Hi] {code=\"hi\"}\n\n```sh\nno\n```\n";
+        let json = components(text, &[]);
+        let shout = &json["groups"][0]["components"][0];
+        assert_eq!(shout["signature"]["renders"], json!(["shout", "yell"]));
+        assert_eq!(shout["signature"]["params"][0]["name"], "code");
+        assert_eq!(shout["uses"], json!([at(7, 4, 4), at(11, 4, 5)]));
     }
 
     #[test]

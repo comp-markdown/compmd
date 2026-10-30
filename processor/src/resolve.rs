@@ -12,10 +12,10 @@ mod source;
 mod uses;
 
 pub use language::Language;
-pub(crate) use names::{Binding, Names};
+pub(crate) use names::{Binding, Names, Renderer};
 pub(crate) use origin::Origin;
 use origin::RESERVED_SCOPE;
-pub(crate) use uses::invocations;
+pub(crate) use uses::{code_blocks, invocations};
 
 use crate::diagnostic::Diagnostic;
 use crate::host::{Files, Packs, Release};
@@ -101,6 +101,8 @@ pub(crate) struct Document {
     pub(crate) names: Names,
     /// What it exports, by public name.
     pub(crate) exports: BTreeMap<String, Binding>,
+    /// The code renderer of each language its names give one to (spec §7.7).
+    pub(crate) renderers: BTreeMap<String, Renderer>,
     /// Whether the processor provides it (`@compmd/core`, an ambient pack), so that a signature fence alone in it
     /// is a component the processor implements.
     pub(crate) provided: bool,

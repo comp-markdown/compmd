@@ -153,6 +153,18 @@ impl<'a> Lines<'a> {
             .count();
         Location::new(start.line, start.column + colons + spaces)
     }
+
+    /// Where the language of the fenced code block that starts at `start` is: past its fence and the white space
+    /// after it.
+    pub(crate) fn language_at(&self, start: Point) -> Location {
+        let rest = self.from(start);
+        let fence = rest.iter().take_while(|c| matches!(c, '`' | '~')).count();
+        let spaces = rest[fence..]
+            .iter()
+            .take_while(|c| c.is_whitespace())
+            .count();
+        Location::new(start.line, start.column + fence + spaces)
+    }
 }
 
 #[cfg(test)]
@@ -177,6 +189,15 @@ mod tests {
         assert_eq!(lines.name_at(point(3, 6)), Location::new(3, 7));
         assert_eq!(lines.from(point(9, 1)), Vec::<char>::new());
         assert_eq!(lines.from(point(0, 1)), Vec::<char>::new());
+    }
+
+    #[test]
+    fn a_code_blocks_language_follows_its_fence() {
+        let text = "```mermaid\n  ~~~~ dot {a=1}";
+        let starts = LineStarts::new(text);
+        let lines = Lines::new(text, &starts);
+        assert_eq!(lines.language_at(point(1, 1)), Location::new(1, 4));
+        assert_eq!(lines.language_at(point(2, 3)), Location::new(2, 8));
     }
 
     #[test]

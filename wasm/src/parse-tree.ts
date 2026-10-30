@@ -76,6 +76,8 @@ export interface Signature {
   /** `null` when the component takes no slots; a template slot is `{name, each, as}`. */
   slots: (string | { name: string; each: string; as: string })[] | null;
   headings: "relative" | "absolute";
+  /** A code renderer's languages, names of one (spec §7.7); its `params` then include `code`, the block's text. */
+  renders?: string[];
 }
 
 /** A definition fence: `children` for `compmd`, `source` and `runtime` for host languages. */

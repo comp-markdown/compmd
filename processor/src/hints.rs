@@ -13,11 +13,12 @@ pub use expression::{FunctionHint, NameHint};
 
 use crate::components;
 use crate::diagnostic::{Diagnostic, Location, Range};
+use crate::parse::CODE;
 use crate::resolve::{Component, Document, Resolved};
 use crate::settings::Input;
 use crate::tree::{
-    Declaration, DeclaredType, DefaultValue, Node, ParamValue, Signature, SlotDeclaration,
-    StringPart,
+    Code, Declaration, DeclaredType, DefaultValue, Node, ParamValue, Signature, SlotDeclaration,
+    StringPart, TypeName,
 };
 use crate::validate::params::binds;
 use crate::validate::universal::Universal;
@@ -262,6 +263,7 @@ pub(crate) fn at(
     let found = match surrounding(&document.root.children, offset) {
         Surrounding::Text => expression::interpolation(&place).or_else(|| invocation::hint(&place)),
         Surrounding::Frontmatter => frontmatter::hint(&place),
+        Surrounding::Code(code) => invocation::code_block(&place, code),
         Surrounding::Opaque => None,
     };
     let caret = Location::new(place.line, place.at + 1);
@@ -388,6 +390,26 @@ impl Place<'_> {
         params.extend(universal);
         params
     }
+
+    /// The params a code block the code renderer `name` renders takes on its info string (spec §7.7): the
+    /// renderer's, but `code`, which is the block's text, and `alt`.
+    fn block_params(&self, name: &str) -> Vec<ParameterHint> {
+        let mut params: Vec<ParameterHint> = self
+            .params(name)
+            .into_iter()
+            .filter(|param| param.name != CODE)
+            .collect();
+        params.push(ParameterHint {
+            name: "alt".to_string(),
+            origin: ParamOrigin::Attribute,
+            takes: KindHint::of(&Kind::declared(&DeclaredType::Name(TypeName::String))),
+            required: false,
+            default: None,
+            doc: Some("The text alternative for screen readers.".to_string()),
+            breakpoints: false,
+        });
+        params
+    }
 }
 
 /// The hint of a declared param of `component`.
@@ -442,16 +464,18 @@ struct Found {
 
 /// Whether a place is in text whose component syntax counts, in the frontmatter, or in a block that holds other
 /// text: code, math, raw HTML, a signature, a definition's header or host-language code.
-#[derive(Debug, PartialEq, Eq)]
-enum Surrounding {
+#[derive(Debug, PartialEq)]
+enum Surrounding<'a> {
     Text,
     Frontmatter,
+    /// A code block, which a code renderer may render (spec §7.7).
+    Code(&'a Code),
     Opaque,
 }
 
 /// What surrounds code point `offset` of the blocks `nodes`. The blocks are in order, so the one a place is in is the
 /// last that starts before it.
-fn surrounding(nodes: &[Node], offset: usize) -> Surrounding {
+fn surrounding(nodes: &[Node], offset: usize) -> Surrounding<'_> {
     let starts_before = nodes.partition_point(|node| {
         node.position()
             .is_none_or(|position| position.start.offset <= offset)
@@ -464,8 +488,8 @@ fn surrounding(nodes: &[Node], offset: usize) -> Surrounding {
         .is_some_and(|position| position.start.offset <= offset && offset <= position.end.offset);
     match block {
         Node::Yaml(_) if inside => Surrounding::Frontmatter,
-        Node::Code(_)
-        | Node::Math(_)
+        Node::Code(code) if inside => Surrounding::Code(code),
+        Node::Math(_)
         | Node::Html(_)
         | Node::InlineCode(_)
         | Node::InlineMath(_)
@@ -591,6 +615,35 @@ mod tests {
         let closer = hint(&format!("{CARD}::: card {{title=x}}\n::: /c{CARET}ard\n"));
         assert_eq!(closer["range"], range(13, 6, 10));
         assert_eq!(closer["subject"]["name"], "card");
+    }
+
+    #[test]
+    fn a_rendered_code_blocks_language_and_params_are_its_renderers() {
+        let shout = "```compmd component=shout\nrenders: [shout, yell]\nparams:\n  loud: boolean = false\n---\n{{code}}\n```\n\n";
+        let language = hint(&format!("{shout}  ```ye{CARET}ll {{loud}}\nhi\n```\n"));
+        assert_eq!(language["range"], range(9, 6, 10));
+        assert_eq!(language["subject"]["name"], "shout");
+        assert_eq!(language["subject"]["component"]["kind"], "compmd");
+        assert_eq!(texts(&language), ["shout", "yell"]);
+        let key = hint(&format!("{shout}```shout {{lo{CARET}ud}}\nhi\n```\n"));
+        assert_eq!(key["subject"]["param"]["name"], "loud");
+        assert_eq!(key["range"], range(9, 11, 15));
+        let keys = texts(&key);
+        assert!(keys.contains(&"alt") && keys.contains(&"width"));
+        assert!(!keys.contains(&"code"), "the block's text is `code`");
+        let alt = hint(&format!("{shout}```shout {{al{CARET}t=\"Hi\"}}\nhi\n```\n"));
+        assert_eq!(alt["subject"]["param"]["origin"], "attribute");
+        let before = hint(&format!("{shout}```shout {CARET}{{loud}}\nhi\n```\n"));
+        assert_eq!(before.get("subject"), None, "before the list");
+        assert_eq!(before["diagnostics"][0]["code"], "W101", "no `alt`");
+        let body = hint(&format!("{shout}```shout\nh{CARET}i\n```\n"));
+        assert_eq!(body, Value::Null, "the code itself");
+        let plain = hint(&format!("```sh {{lo{CARET}ud}}\nhi\n```\n"));
+        assert_eq!(plain, Value::Null, "no renderer");
+        let no_list = hint(&format!("{shout}```shout {{alt=x}} {CARET}\nhi\n```\n"));
+        assert_eq!(no_list, Value::Null, "past the list");
+        let none = hint(&format!("{shout}```shout {CARET}\nhi\n```\n"));
+        assert_eq!(none.get("subject"), None, "no list");
     }
 
     #[test]

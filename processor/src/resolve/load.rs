@@ -2,7 +2,7 @@
 //! imports, F029, F035, W105, W112, W117, F002 for a signature fence with nothing to attach to, and F037 for a
 //! declaration whose type isn't a type name.
 
-use super::names::{Binding, Builder, Level, Names};
+use super::names::{Binding, Builder, Level, Names, Renderer};
 use super::origin::CORE;
 use super::source::{PackSpec, Source};
 use super::{
@@ -12,7 +12,7 @@ use super::{
 use crate::diagnostic::{Code, Diagnostic, Fix, Location, Stage};
 use crate::lines::LineStarts;
 use crate::nearest::nearest;
-use crate::parse::{ParseOptions, Parsed, parse};
+use crate::parse::{CODE, ParseOptions, Parsed, parse};
 use crate::reserved;
 use crate::settings::{self, Import};
 use crate::tree::{
@@ -116,6 +116,7 @@ impl<'h, 'p> Loader<'h, 'p> {
             root: parsed.root,
             names: Names::default(),
             exports: BTreeMap::new(),
+            renderers: BTreeMap::new(),
             provided,
         });
         self.loaded.insert(origin.clone(), id);
@@ -130,9 +131,11 @@ impl<'h, 'p> Loader<'h, 'p> {
         let names = names.build();
         let exports = self.exports(id, &names);
         self.untyped(id, &exports);
+        let renderers = renderers(&names, &self.components);
         let document = &mut self.documents[id.0];
         document.names = names;
         document.exports = exports;
+        document.renderers = renderers;
         self.loading.pop();
         id
     }
@@ -623,6 +626,28 @@ impl<'h, 'p> Loader<'h, 'p> {
             }
             self.check_type(id, param);
         }
+        self.check_code(id, signature, at);
+    }
+
+    /// F009 for a code renderer that declares `code` as anything but a required string: the block's text fills it
+    /// (spec §7.3).
+    fn check_code(&mut self, id: DocumentId, signature: &Signature, at: Location) {
+        if signature.renders.is_none() {
+            return;
+        }
+        let declared = signature.params.iter().find(|param| param.name == CODE);
+        if let Some(declared) = declared.filter(|declared| {
+            declared.declared != DeclaredType::Name(TypeName::String)
+                || declared.optional
+                || declared.default.is_some()
+        }) {
+            self.report(
+                id,
+                Code::F009,
+                declared.type_at.unwrap_or(at),
+                "a code renderer's `code` holds the block's text, so it is a required `string`, with no default",
+            );
+        }
     }
 
     /// F037 for the declarations of the document's frontmatter: its inputs, and its data imports' schemas.
@@ -795,6 +820,45 @@ fn drop_names(listed: &settings::Names, names: &mut Builder) {
             }
         }
     }
+}
+
+/// The code renderer of each language the components of `names` render (spec §6.3, §7.7): the one at the highest
+/// level that has one; two or more there are ambiguous.
+fn renderers(names: &Names, components: &[Component]) -> BTreeMap<String, Renderer> {
+    /// The rank of the highest level with a renderer for a language, and the renderers there, by name.
+    type Best<'n> = (u8, Vec<(&'n str, ComponentId)>);
+    let mut found: BTreeMap<&str, Best> = BTreeMap::new();
+    for (name, id, level) in names.leveled() {
+        let languages = components[id.0]
+            .signature
+            .iter()
+            .flat_map(|signature| signature.renders.iter().flatten());
+        for language in languages {
+            let rank = level.rank();
+            let (best, candidates) = found.entry(language).or_insert((rank, Vec::new()));
+            if rank < *best {
+                (*best, *candidates) = (rank, Vec::new());
+            }
+            if rank == *best && !candidates.iter().any(|(_, known)| *known == id) {
+                candidates.push((name, id));
+            }
+        }
+    }
+    found
+        .into_iter()
+        .map(|(language, (_, candidates))| {
+            let renderer = match candidates[..] {
+                [(name, id)] => Renderer::Component(name.to_string(), id),
+                _ => Renderer::Ambiguous(
+                    candidates
+                        .iter()
+                        .map(|(name, _)| (*name).to_string())
+                        .collect(),
+                ),
+            };
+            (language.to_string(), renderer)
+        })
+        .collect()
 }
 
 /// Where a node starts.

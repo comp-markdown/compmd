@@ -7,7 +7,7 @@ mod shift;
 
 pub(crate) use shift::{Move, Moved, Shift};
 
-use crate::diagnostic::Location;
+use crate::diagnostic::{Diagnostic, Location};
 use crate::named::named;
 use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
@@ -260,6 +260,20 @@ pub struct Code {
     /// Where the block is.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub position: Option<Position>,
+    /// What a code renderer is given when it renders the block (spec §7.7); not in the tree, since a block is content
+    /// until a code renderer takes it.
+    #[serde(skip)]
+    pub(crate) info: Option<Info>,
+}
+
+/// A code block as a code renderer's invocation (spec §7.7): its params, the block's text as `code` first, then the
+/// info string's; its text alternative; and what was wrong with the info string's params, reported only when a code
+/// renderer renders the block.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub(crate) struct Info {
+    pub(crate) params: Vec<Param>,
+    pub(crate) alt: Option<String>,
+    pub(crate) problems: Vec<Diagnostic>,
 }
 
 /// Display math.
@@ -719,6 +733,10 @@ pub struct Signature {
     pub slots: Option<Vec<SlotDeclaration>>,
     /// How headings in a `compmd` body are leveled.
     pub headings: Headings,
+    /// For a code renderer, the languages whose code blocks it renders, names of one language (spec §7.7); its
+    /// `params` then include `code`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub renders: Option<Vec<String>>,
 }
 
 /// A slot of a signature.
@@ -768,6 +786,9 @@ pub struct Declaration {
     /// Where its type is written when that isn't a type name (F037), in the document that declares it.
     #[serde(skip)]
     pub(crate) unknown_at: Option<Location>,
+    /// Where its type is written, in the document that declares it, when known.
+    #[serde(skip)]
+    pub(crate) type_at: Option<Location>,
 }
 
 named! {

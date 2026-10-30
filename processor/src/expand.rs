@@ -21,7 +21,7 @@ use crate::lines::Lines;
 use crate::load::Loaded;
 use crate::md::Md;
 use crate::parse::Spliced;
-use crate::resolve::{DocumentId, Resolved};
+use crate::resolve::{DocumentId, Renderer, Resolved};
 use crate::tree::{self, Move, Moved, Node};
 use crate::validate::Validated;
 use crate::validate::scope::Scope;
@@ -515,10 +515,13 @@ impl<'r> Expander<'r> {
                 position: None,
             }),
             Node::Break(_) => Content::Break(tree::Void::default()),
-            Node::Code(code) => Content::Code(tree::Code {
-                position: None,
-                ..code.clone()
-            }),
+            Node::Code(code) => {
+                if let Some(name) = self.renderer(code, env) {
+                    let invocation = components::Invocation::code(node, code, name);
+                    return self.component(invocation, env, out);
+                }
+                Content::Code(plain_code(code))
+            }
             Node::Definition(definition) => {
                 Content::Definition(self.definition(definition, node, env))
             }
@@ -586,6 +589,16 @@ impl<'r> Expander<'r> {
         };
         let made = self.made(content, origins::of(node, env));
         out.push(made);
+    }
+
+    /// The name of the code renderer that renders `code` in `env`'s document, when one alone does (spec §7.7).
+    fn renderer(&self, code: &tree::Code, env: &Env<'r>) -> Option<&'r str> {
+        code.info.as_ref()?;
+        let renderers = &self.resolved.document(env.document).renderers;
+        match renderers.get(code.lang.as_deref()?)? {
+            Renderer::Component(name, _) => Some(name),
+            Renderer::Ambiguous(_) => None,
+        }
     }
 
     /// A link reference definition, its URL's interpolations filled in; empty when they would give it a scheme it
@@ -690,6 +703,17 @@ fn literal(value: &str) -> tree::Literal {
     tree::Literal {
         value: value.to_string(),
         position: None,
+    }
+}
+
+/// A code block as content, as no code renderer renders it.
+fn plain_code(code: &tree::Code) -> expanded::Code {
+    expanded::Code {
+        lang: code.lang.clone(),
+        meta: code.meta.clone(),
+        value: code.value.clone(),
+        component: None,
+        alt: None,
     }
 }
 

@@ -3,15 +3,45 @@
 //! with lists and quotes (spec §4.1).
 
 use super::Converter;
+use super::definitions::CODE;
 use super::line::{Form, classify};
-use super::params::{List, Written, identity};
+use super::params::{self, List, Written, identity};
 use super::source::right;
 use crate::diagnostic::{Code, Diagnostic, Location};
 use crate::tree::{
-    Alert, Align, Blockquote, Code as CodeBlock, Container, FootnoteDefinition, Heading,
+    Alert, Align, Blockquote, Code as CodeBlock, Container, FootnoteDefinition, Heading, Info,
     Interpolation, Leaf, LinkDefinition, List as ListNode, ListItem, Literal, Math, Node, Param,
-    Parent, Point, Position, Slot, Table, Void, Yaml,
+    ParamValue, Parent, Point, Position, Slot, StringPart, Table, Void, Yaml,
 };
+
+/// The text alternative a rendered code block takes (spec §7.7).
+const ALT: &str = "alt";
+
+/// The text of a bare or quoted value, interpolations as written: `alt`'s.
+fn literal_text(value: &ParamValue) -> Option<String> {
+    match value {
+        ParamValue::Bare(text) => Some(text.clone()),
+        ParamValue::String(parts) => Some(
+            parts
+                .iter()
+                .map(|part| match part {
+                    StringPart::Text(text) => text.value.clone(),
+                    StringPart::Interpolation(interpolation) => {
+                        format!("{{{{{}}}}}", interpolation.path)
+                    }
+                })
+                .collect(),
+        ),
+        _ => None,
+    }
+}
+
+/// Where a param starts.
+fn param_start(param: &Param) -> Location {
+    param
+        .position
+        .map_or(Location::new(1, 1), |position| position.start.into())
+}
 use markdown::mdast;
 use std::collections::HashSet;
 
@@ -358,6 +388,7 @@ impl Converter<'_, '_> {
     /// when its language is `math` (spec §2.3).
     fn code(&mut self, code: mdast::Code) -> Node {
         let position = self.source.position(code.position.as_ref());
+        let mut info = None;
         if self.syntax.compmd {
             if let Some(definition) = self.definition(&code, position) {
                 return definition;
@@ -369,13 +400,73 @@ impl Converter<'_, '_> {
                     position,
                 });
             }
+            if code.lang.is_some() {
+                info = Some(self.info(&code.value, position));
+            }
         }
         Node::Code(CodeBlock {
             lang: code.lang,
             meta: code.meta,
             value: code.value,
             position,
+            info,
         })
+    }
+
+    /// The block at `position`, whose text is `text`, as a code renderer's invocation (spec §7.7): its text as `code`,
+    /// the param list after its language, and `alt`. What is wrong with them is kept, not reported: the block is
+    /// content unless a code renderer renders it.
+    fn info(&mut self, text: &str, position: Option<Position>) -> Info {
+        let before = self.diagnostics.len();
+        let mut params = Vec::new();
+        let start = position.map_or(super::START, |position| position.start);
+        let (line, line_start) = self.source.line(start.line).unwrap_or(("", start));
+        let chars: Vec<char> = line.chars().collect();
+        if let Some(brace) = chars.iter().position(|c| *c == '{') {
+            let list = params::braced(&chars, brace);
+            self.add_params_at(&mut params, list, |index| right(line_start, index));
+        }
+        let mut problems = self.diagnostics.split_off(before);
+        let mut alt = None;
+        params.retain(|param| match param.key.as_deref() {
+            Some(CODE) => {
+                problems.push(Diagnostic::new(
+                    Code::F017,
+                    param_start(param),
+                    "`code` is the block's text, so it can't be given here; ignored",
+                ));
+                false
+            }
+            Some(ALT) => {
+                match literal_text(&param.value) {
+                    Some(text) => alt = Some(text),
+                    None => problems.push(Diagnostic::new(
+                        Code::F009,
+                        param_start(param),
+                        "`alt` is text: write it bare or quoted; ignored",
+                    )),
+                }
+                false
+            }
+            _ => true,
+        });
+        params.insert(
+            0,
+            Param {
+                key: Some(CODE.to_string()),
+                breakpoint: None,
+                value: ParamValue::String(vec![StringPart::Text(Literal {
+                    value: text.to_string(),
+                    position: None,
+                })]),
+                position: None,
+            },
+        );
+        Info {
+            params,
+            alt,
+            problems,
+        }
     }
 
     /// W116: a line inside an HTML block that starts with `::` is HTML, not a component line (spec §3.2).

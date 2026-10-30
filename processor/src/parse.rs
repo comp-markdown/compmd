@@ -15,6 +15,7 @@ pub(crate) mod params;
 mod source;
 pub(crate) mod yaml;
 
+pub(crate) use definitions::CODE;
 pub use edit::TextEdit;
 pub(crate) use edit::{Change, Spliced, reparse};
 

@@ -2,7 +2,7 @@
 //! offsets. Columns stay, since each node after an edit starts on a line of its own.
 
 use super::{
-    DefaultValue, DefinitionBody, Leaf, Node, Param, ParamValue, Point, Position, Signature,
+    DefaultValue, DefinitionBody, Info, Leaf, Node, Param, ParamValue, Point, Position, Signature,
     StringPart,
 };
 use crate::diagnostic::{Diagnostic, Location, Range};
@@ -180,7 +180,15 @@ impl Shift for Signature {
                 value.shift(by);
             }
             declaration.unknown_at.shift(by);
+            declaration.type_at.shift(by);
         }
+    }
+}
+
+impl Shift for Info {
+    fn shift(&mut self, by: Move) {
+        self.params.shift(by);
+        self.problems.shift(by);
     }
 }
 
@@ -200,7 +208,10 @@ impl Shift for Node {
                 quote.position.shift(by);
             }
             Self::Break(void) | Self::ThematicBreak(void) => void.position.shift(by),
-            Self::Code(code) => code.position.shift(by),
+            Self::Code(code) => {
+                code.info.shift(by);
+                code.position.shift(by);
+            }
             Self::ComponentContainer(container) => {
                 container.params.shift(by);
                 container.children.shift(by);

@@ -24,6 +24,8 @@ pub(super) enum Kind<'r> {
     Container(&'r tree::Container),
     Leaf(&'r tree::Leaf),
     Inline(&'r tree::Leaf),
+    /// A code block a code renderer renders (spec §7.7), a leaf whose fallback is the block.
+    Code(&'r tree::Code),
 }
 
 /// An invocation as written.
@@ -63,6 +65,19 @@ impl<'r> Invocation<'r> {
         }
     }
 
+    /// The code block `code` as an invocation of the code renderer `name`; the caller has checked it has its info.
+    pub(super) fn code(node: &'r Node, code: &'r tree::Code, name: &'r str) -> Self {
+        Self {
+            node,
+            name,
+            params: code
+                .info
+                .as_ref()
+                .map_or(&[], |info| info.params.as_slice()),
+            kind: Kind::Code(code),
+        }
+    }
+
     /// Where it starts.
     pub(super) fn at(&self) -> Location {
         self.node
@@ -74,7 +89,7 @@ impl<'r> Invocation<'r> {
     pub(super) fn default_slot(&self) -> &'r [Node] {
         match self.kind {
             Kind::Container(container) => &container.children,
-            Kind::Leaf(_) | Kind::Inline(_) => &[],
+            Kind::Leaf(_) | Kind::Inline(_) | Kind::Code(_) => &[],
         }
     }
 
@@ -82,7 +97,7 @@ impl<'r> Invocation<'r> {
     pub(super) fn named_slots(&self) -> &'r [tree::Slot] {
         match self.kind {
             Kind::Container(container) => &container.slots,
-            Kind::Leaf(_) | Kind::Inline(_) => &[],
+            Kind::Leaf(_) | Kind::Inline(_) | Kind::Code(_) => &[],
         }
     }
 
@@ -181,6 +196,13 @@ impl<'r> Expander<'r> {
                 out.push(made);
             }
             Kind::Inline(leaf) => out.extend(self.inline(&leaf.fallback, env)),
+            Kind::Code(code) => {
+                let made = self.made(
+                    Content::Code(super::plain_code(code)),
+                    origins::of(invocation.node, env),
+                );
+                out.push(made);
+            }
         }
     }
 
@@ -246,6 +268,11 @@ impl<'r> Expander<'r> {
                 name,
                 params,
                 fallback: self.inline(&leaf.fallback, env),
+            }),
+            Kind::Code(code) => Content::Code(expanded::Code {
+                component: Some(expanded::Rendered { name, params }),
+                alt: code.info.as_ref().and_then(|info| info.alt.clone()),
+                ..super::plain_code(code)
             }),
         };
         let made = self.made(content, origins::of(invocation.node, env));

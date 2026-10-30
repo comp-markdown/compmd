@@ -7,7 +7,7 @@ import { applyBox } from "./box.ts";
 import { plainText, type LinkDefinition } from "./document.ts";
 import { safeUrl, withHtml } from "./html.ts";
 import { fills, layoutOf, ownParams, usesBreakpoints, type ParentLayout, type Stylesheet } from "./styles.ts";
-import { contentOf, isComponent, textOf, type ExpandedComponent, type ExpandedInput, type ExpandedInstance, type ExpandedNode, type MarkdownNode } from "./tree.ts";
+import { contentOf, isComponent, rendererOf, textOf, type ExpandedCode, type ExpandedComponent, type ExpandedInput, type ExpandedInstance, type ExpandedNode, type MarkdownNode } from "./tree.ts";
 
 /** Renders a fenced code block of one language, such as a Mermaid diagram, into `target`. */
 export type CodeRenderer = (source: string, target: HTMLElement) => void;
@@ -67,7 +67,10 @@ export function shapeOf(node: ExpandedNode): string {
   const { type } = node;
   if (type === "heading") return `heading:${textOf(node.depth)}`;
   if (type === "list") return `list:${String(node.ordered === true)}`;
-  if (type === "code") return `code:${textOf(node.lang)}`;
+  if (type === "code") {
+    const renderer = rendererOf(node);
+    return renderer ? `code:${textOf(node.lang)}:${renderer.name}` : `code:${textOf(node.lang)}`;
+  }
   if (type === "compmdElement" || type === "compmdHtml") return `${type}:${textOf(node.tag)}`;
   return type;
 }
@@ -158,6 +161,8 @@ export function createView(surface: Surface, node: ExpandedNode, pass: Pass): Vi
     return new ComponentView(surface, node, pass, key);
   }
   if (node.type === "text") return textView(surface, node, key);
+  const renderer = rendererOf(node);
+  if (renderer) return new RenderedCodeView(surface, node, renderer, pass, key);
   if ((node.type === "code" && typeof node.lang === "string" && surface.code[node.lang]) || ((node.type === "math" || node.type === "inlineMath") && surface.math)) {
     return new CallbackView(surface, node, key);
   }
@@ -363,9 +368,65 @@ class CallbackView implements View {
   }
 }
 
+/**
+ * A code block a code renderer draws (spec §7.7): the renderer's component in its box, the block's text among its
+ * params as `code` and `alt` as its fallback text; the code block is its fallback.
+ */
+class RenderedCodeView implements View {
+  readonly shape: string;
+  readonly key: string | undefined;
+  readonly #handle: ComponentHandle;
+  readonly #code: View;
+
+  constructor(surface: Surface, node: MarkdownNode, renderer: ExpandedComponent, pass: Pass, key: string | undefined) {
+    this.shape = shapeOf(node);
+    this.key = key;
+    this.#code = new ElementView(surface, plainCode(node), pass, undefined);
+    const fallback = surface.document.createElement("div");
+    fallback.appendChild(this.#code.dom);
+    // The component layer appends the box to its target; the region places it, so it starts in a fragment.
+    this.#handle = mountComponent(surface.document.createDocumentFragment(), renderer, {
+      mount: surface.components[renderer.name],
+      slots: {},
+      fallback: { text: textOf((node as ExpandedCode).alt), element: fallback },
+      headingLevel: Math.min(6, pass.heading.level + 1),
+      onSet: surface.onSet,
+      ...(surface.onError ? { onError: surface.onError } : {}),
+      host: surface.host,
+      stylesheet: surface.stylesheet,
+      parent: pass.parent,
+    });
+  }
+
+  get dom(): Node {
+    return this.#handle.element;
+  }
+
+  update(node: ExpandedNode, pass: Pass): void {
+    this.#code.update(plainCode(node), pass);
+    const renderer = rendererOf(node);
+    if (renderer) this.#handle.update(renderer, { slots: {}, parent: pass.parent });
+  }
+
+  destroy(): void {
+    this.#handle.destroy();
+    this.#code.destroy();
+  }
+}
+
+/** A code block as content, as a plain renderer shows it: without its code renderer. */
+function plainCode(node: ExpandedNode): MarkdownNode {
+  const { lang, meta, value } = node as ExpandedCode;
+  return { type: "code", lang, meta, value };
+}
+
 /** The blocks placed in a box: down through Markdown containers, stopping at the next component (its own box). */
 export function placedIn(nodes: readonly ExpandedNode[]): ExpandedComponent[] {
-  return nodes.flatMap((node) => (isComponent(node) ? [node] : placedIn(node.children ?? [])));
+  return nodes.flatMap((node) => {
+    if (isComponent(node)) return [node];
+    const renderer = rendererOf(node);
+    return renderer ? [renderer] : placedIn(node.children ?? []);
+  });
 }
 
 /** Whether blocks placed in the box around `nodes` use breakpoints, so that box must be a container. */
