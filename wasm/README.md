@@ -33,7 +33,7 @@ const { remote, host } = sources(request); // the URLs and host: sources to fetc
 const { parse, expanded, diagnostics } = process(request);
 ```
 
-A request holds the files of the document's root folder by path, the registry's packs with their files, the ambient packs, the origins remote data may come from, remote data fetched beforehand by URL (`{text, contentType}`), host data by source, the render time (RFC 3339), the time zone, the inputs' values, and whether expanded nodes carry origins. `process` throws when the request isn't valid or its document isn't one of its files; everything wrong with the document itself is a diagnostic.
+A request holds the files of the document's root folder by path, the registry's packs with their files, the ambient packs, the host's `policy` for packs (those it lists with their trust, whether a document may import others, those it denies or left out; spec §6.4, §15), the origins remote data may come from, remote data fetched beforehand by URL (`{text, contentType}`), host data by source, the render time (RFC 3339), the time zone, the inputs' values, and whether expanded nodes carry origins. `process` throws when the request isn't valid or its document isn't one of its files; everything wrong with the document itself is a diagnostic.
 
 An editor keeps the document open instead, and sends each edit ([incremental processing](../processor/docs/incremental.md)):
 

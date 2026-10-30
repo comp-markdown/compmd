@@ -28,6 +28,8 @@ export interface Request {
   ambient?: string[];
   /** Whether to report each use of a name from an ambient pack (W113). */
   reportAmbient?: boolean;
+  /** The host's policy for packs: those it lists with their trust, which a document may import, those it denies. */
+  policy?: Policy;
   /** The origins remote data may come from, such as `https://status.example.org`. */
   allowedOrigins?: string[];
   /** Remote data fetched beforehand, by URL; {@link sources} lists the URLs a render needs. */
@@ -311,8 +313,27 @@ export interface HostComponent {
   language: "jsx" | "tsx" | "svelte" | "js" | "ts";
   /** The fence's `runtime=`; absent for the binding's default. */
   runtime?: string;
-  /** A fence's content, or a component file's text. */
+  /** A fence's content, or a component file's text; empty for a built module, which loads from `module`. */
   code: string;
+  /** For a built module, a `.js` file in a pack (spec §6.4): where it is, for the renderer to load from the pack's files. */
+  module?: { pack: string; version: string; path: string; integrity?: string };
+  /** How far its code is trusted: its pack's level in the request's `policy` (spec §15). */
+  trust: Trust;
+}
+
+/** How far a pack's code is trusted (spec §15). */
+export type Trust = { level: "strict" } | { level: "permissive"; network: string[] } | { level: "trusted" };
+
+/** The host's policy for packs (spec §6.4, §15). Every key is optional: the default allows any pack, in the strict sandbox. */
+export interface Policy {
+  /** The packs the host lists, each with its trust level; any other is strict. `network` defaults to none. */
+  packs?: Record<string, { level: "strict" } | { level: "permissive"; network?: string[] } | { level: "trusted" }>;
+  /** `listed`: a document may import only the packs listed here and the ambient ones (F026 otherwise). */
+  imports?: "any" | "listed";
+  /** Packs the host denies, as its own policy: all versions, or those in the semver range `version` (F026, with `reason`). */
+  deny?: { pack: string; version?: string; reason: string }[];
+  /** Packs the host left out, such as those larger than it serves, each with why (F026). */
+  refused?: Record<string, string>;
 }
 
 /** Data the host fetched for {@link OpenDocument.reload}, as a request gives it. */

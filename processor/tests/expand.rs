@@ -7,6 +7,8 @@ use common::{at, place};
 use compmd::context::RenderContext;
 use compmd::expand;
 use compmd::host::{Fetched, LoadedRelease, Needed, Release};
+use compmd::policy::{Policy, Trust};
+use compmd::processor::Module;
 use compmd::{Ambient, Language, ParseOptions, Processor};
 use semver::Version;
 use serde_json::{Value, json};
@@ -598,6 +600,80 @@ fn host_components_come_with_their_code_from_fences_files_and_packs() {
         components[2]
             .code
             .starts_with("export default function Sparkline")
+    );
+}
+
+#[test]
+fn a_packs_built_module_comes_by_its_place_and_components_have_their_packs_trust() {
+    let kit = LoadedRelease {
+        release: Release {
+            version: Version::new(1, 2, 0),
+            integrity: Some("sha512-KIT".into()),
+        },
+        files: HashMap::from([
+            (
+                "package.json".to_string(),
+                r#"{"name": "@acme/maps", "version": "1.2.0"}"#.to_string(),
+            ),
+            (
+                "index.comp.md".to_string(),
+                "---\nmd:\n  import:\n    - from: ./map.js\n      names: [map]\n    - from: ./Pin.jsx\n      names: [{name: Pin, as: pin}]\n  export:\n    names: [map, pin]\n---\n\n```compmd component=map signature\nparams: {}\n```\n\n```compmd component=pin signature\nparams: {}\n```\n".to_string(),
+            ),
+            ("map.js".to_string(), "export default () => {};".to_string()),
+            ("Pin.jsx".to_string(), "export default () => null;".to_string()),
+        ]),
+    };
+    let packs = HashMap::from([("@acme/maps".to_string(), vec![kit])]);
+    let input = "---\nmd:\n  import:\n    - from: \"@acme/maps@1\"\n      names: [map, pin]\n---\n\n```jsx component=own\nexport default () => null;\n```\n\n```compmd component=own signature\nparams: {}\n```\n\n:: map[Map]\n\n:: pin[Pin]\n\n:: own[Own]\n";
+    let policy: Policy = serde_json::from_value(json!({ "packs": {
+        "@acme/maps": { "level": "permissive", "network": ["https://tiles.example.com"] }
+    } }))
+    .expect("a policy");
+    let expanded = Processor::new("input.comp.md", input)
+        .parse(&ParseOptions::default())
+        .resolve_with((), packs, &Ambient::default(), &policy)
+        .validate(&[])
+        .load(
+            RenderContext {
+                now: 0,
+                tz: "UTC".into(),
+                time: Rc::new(()),
+                inputs: serde_json::Map::new(),
+            },
+            (),
+            (),
+        )
+        .expand(&expand::Options::default());
+    assert_eq!(expanded.diagnostics(), []);
+    let components = expanded.host_components();
+    let permissive = Trust::Permissive {
+        network: vec!["https://tiles.example.com".into()],
+    };
+    let [map, own, pin] = &components[..] else {
+        panic!("three components: {components:?}");
+    };
+    assert_eq!(
+        (map.name.as_str(), map.code.as_str(), &map.trust),
+        ("map", "", &permissive)
+    );
+    assert_eq!(
+        map.module,
+        Some(Module {
+            pack: "@acme/maps".into(),
+            version: Version::new(1, 2, 0),
+            path: "map.js".into(),
+            integrity: Some("sha512-KIT".into()),
+        })
+    );
+    assert_eq!(
+        (pin.code.as_str(), &pin.module, &pin.trust),
+        ("export default () => null;", &None, &permissive),
+        "a pack's source file comes as text"
+    );
+    assert_eq!(
+        (&own.module, &own.trust),
+        (&None, &Trust::Strict),
+        "the document's own"
     );
 }
 

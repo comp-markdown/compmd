@@ -1,0 +1,10 @@
+{
+  "registry": {
+    "@acme/kit": [{"version": "1.0.0", "path": "registry/kit", "integrity": "sha512-AAA"}],
+    "@acme/charts": [{"version": "1.0.0", "path": "registry/charts", "integrity": "sha512-BBB"}]
+  },
+  "policy": {
+    "imports": "listed",
+    "packs": {"@acme/charts": {"level": "strict"}}
+  }
+}

@@ -37,6 +37,7 @@ mod named;
 mod nearest;
 mod parse;
 pub mod plain;
+pub mod policy;
 pub mod processor;
 mod reserved;
 mod resolve;

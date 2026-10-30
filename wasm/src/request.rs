@@ -5,6 +5,7 @@ use compmd::context::{RenderContext, parse_time};
 use compmd::diagnostic::Diagnostic;
 use compmd::expand::Options;
 use compmd::host::{Fetched, LoadedRelease, Time};
+use compmd::policy::Policy;
 use compmd::processor::{Expanded, Validated};
 use compmd::{Ambient, ParseOptions, Processor, expanded, tree};
 use serde::de::Error as _;
@@ -31,6 +32,9 @@ struct Request {
     /// Whether to report each use of a name from an ambient pack (W113).
     #[serde(default)]
     report_ambient: bool,
+    /// The host's policy for packs: those it lists with their trust, which it allows, denies and left out.
+    #[serde(default)]
+    policy: Policy,
     /// The origins remote data may come from.
     #[serde(default)]
     allowed_origins: Vec<String>,
@@ -134,7 +138,7 @@ impl Request {
         };
         let validated = Processor::new(self.path, text.as_str())
             .parse(&ParseOptions::default())
-            .resolve(self.files, self.packs, &ambient)
+            .resolve_with(self.files, self.packs, &ambient, &self.policy)
             .validate(&self.allowed_origins);
         Ok(Prepared {
             text,

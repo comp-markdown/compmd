@@ -8,6 +8,7 @@ use compmd::context::{RenderContext, parse_time};
 use compmd::diagnostic::Diagnostic;
 use compmd::expand::Options;
 use compmd::host::{Fetched, LoadedRelease, Time};
+use compmd::policy::Policy;
 use compmd::processor::Expanded;
 use compmd::{Ambient, ParseOptions, Processor};
 use serde_json::{Map, Value, json};
@@ -170,6 +171,7 @@ pub(crate) struct Setup {
     pub(crate) files: Rc<HashMap<String, String>>,
     packs: Rc<HashMap<String, Vec<LoadedRelease>>>,
     ambient: Ambient,
+    policy: Policy,
     allowed_origins: Vec<String>,
     render: RenderContext,
     remote: Rc<HashMap<String, Fetched>>,
@@ -200,6 +202,10 @@ impl Setup {
                     .collect(),
                 report: context["reportAmbient"] == json!(true),
             },
+            policy: context
+                .get("policy")
+                .map(|policy| serde_json::from_value(policy.clone()).expect("a policy"))
+                .unwrap_or_default(),
             allowed_origins: strings("allowedOrigins"),
             render: RenderContext {
                 now: parse_time(context["now"].as_str().unwrap_or("2026-01-01T00:00:00Z"))
@@ -223,10 +229,11 @@ impl Setup {
     pub(crate) fn process(&self, path: &str, text: &str) -> Processor<Expanded> {
         Processor::new(path, text)
             .parse(&ParseOptions::default())
-            .resolve(
+            .resolve_with(
                 Rc::clone(&self.files),
                 Rc::clone(&self.packs),
                 &self.ambient,
+                &self.policy,
             )
             .validate(&self.allowed_origins)
             .load(

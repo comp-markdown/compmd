@@ -50,8 +50,9 @@ use crate::expanded::{self, Inputs};
 use crate::host::{Data, Fetch, Files, Needed, Packs};
 use crate::load;
 use crate::parse::{self, Change, ParseOptions, TextEdit};
-pub use crate::resolve::HostComponent;
+use crate::policy::Policy;
 use crate::resolve::{self, Ambient, Store};
+pub use crate::resolve::{HostComponent, Module};
 use crate::tree::Move;
 use crate::{expand, tree, validate};
 use std::rc::Rc;
@@ -111,6 +112,7 @@ struct EditContext {
     /// The parse of the text, whose tree the resolved document shares.
     parsed: parse::Parsed,
     ambient: Ambient,
+    policy: Policy,
     /// The parses of the documents resolving loaded, which it reuses while their text stays the same.
     parses: resolve::Parses,
 }
@@ -263,17 +265,36 @@ impl Processor<Parsed> {
         packs: impl Packs + 'static,
         ambient: &Ambient,
     ) -> Processor<Resolved> {
+        self.resolve_with(files, packs, ambient, &Policy::default())
+    }
+
+    /// [`Self::resolve`], with the host's `policy` for packs (spec §6.4, §15): the packs it lists and their trust,
+    /// whether a document may import others, and the packs it denies or left out, which are F026.
+    #[must_use]
+    pub fn resolve_with(
+        self,
+        files: impl Files + 'static,
+        packs: impl Packs + 'static,
+        ambient: &Ambient,
+        policy: &Policy,
+    ) -> Processor<Resolved> {
         let store = HostFiles {
             files: Rc::new(files),
             packs: Rc::new(packs),
         };
-        self.resolve_in(store, ambient.clone(), resolve::Parses::default())
+        self.resolve_in(
+            store,
+            ambient.clone(),
+            policy.clone(),
+            resolve::Parses::default(),
+        )
     }
 
     fn resolve_in(
         self,
         store: HostFiles,
         ambient: Ambient,
+        policy: Policy,
         mut parses: resolve::Parses,
     ) -> Processor<Resolved> {
         self.then(|parsed, diagnostics| {
@@ -288,7 +309,10 @@ impl Processor<Parsed> {
                 text,
                 document.for_resolving(),
                 store.store(),
-                &ambient,
+                resolve::Host {
+                    ambient: &ambient,
+                    policy: &policy,
+                },
                 &mut parses,
             );
             let edit_context = EditContext {
@@ -296,6 +320,7 @@ impl Processor<Parsed> {
                 options,
                 parsed: document,
                 ambient,
+                policy,
                 parses,
             };
             diagnostics.extend(resolved.diagnostics().cloned());
@@ -701,7 +726,7 @@ impl Processor<Expanded> {
                 diagnostics,
                 state: parsed,
             }
-            .resolve_in(store, context.ambient, context.parses)
+            .resolve_in(store, context.ambient, context.policy, context.parses)
             .validate(&allowed_origins)
             .load_with(render)
             .expand(&options);

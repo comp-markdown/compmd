@@ -21,6 +21,7 @@ use crate::diagnostic::Diagnostic;
 use crate::host::{Files, Packs, Release};
 use crate::lines::{LineStarts, Lines};
 use crate::parse::{Parsed, Spliced};
+use crate::policy::{Policy, Trust};
 use crate::reserved::Keyword;
 use crate::settings::Settings;
 use crate::tree::{Move, Node, Param, Point, Position, Root, Shift, Signature};
@@ -187,15 +188,34 @@ pub struct HostComponent {
     pub language: Language,
     /// The fence's `runtime=`; `None` for the binding's default.
     pub runtime: Option<String>,
-    /// The code: the fence's content, or the component file's text.
+    /// The code: the fence's content, or the component file's text; empty for a built module, which loads from
+    /// `module`.
     pub code: String,
+    /// For a built module, a `.js` file in a pack (spec §6.4), where it is: the renderer loads it from the pack's
+    /// files instead of passing its text.
+    pub module: Option<Module>,
+    /// How far its code is trusted: its pack's level in the host's policy (spec §15).
+    pub trust: Trust,
+}
+
+/// Where a built module is in its pack (spec §6.4).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Module {
+    /// The pack.
+    pub pack: String,
+    /// Its version.
+    pub version: semver::Version,
+    /// The file's path in the pack.
+    pub path: String,
+    /// The integrity the registry publishes for the pack, which the files it is loaded from are checked against.
+    pub integrity: Option<String>,
 }
 
 impl Component {
     /// It as a host-language component named `name`, when one of the processor's bindings runs it and its code is
-    /// there: a fence's, or its file's from `store`.
-    fn host_code(&self, name: &str, store: Store<'_>) -> Option<HostComponent> {
-        let (language, runtime, code) = match &self.body {
+    /// there: a fence's, its file's from `store`, or a built module's place; trusted as `trust`.
+    fn host_code(&self, name: &str, store: Store<'_>, trust: Trust) -> Option<HostComponent> {
+        let (language, runtime, code, module) = match &self.body {
             Body::Host {
                 language,
                 runtime,
@@ -203,9 +223,31 @@ impl Component {
             } => {
                 let language = Language::from_name(language)?;
                 language.runs(runtime.as_deref()).then_some(())?;
-                (language, runtime.clone(), source.clone())
+                (language, runtime.clone(), source.clone(), None)
             }
-            Body::File { origin, language } => (*language, None, store.read(origin)?),
+            Body::File {
+                origin:
+                    Origin::Pack {
+                        name: pack,
+                        version,
+                        path,
+                    },
+                language: Language::Js,
+            } => {
+                let integrity = store
+                    .releases(pack)
+                    .into_iter()
+                    .find(|release| release.version == *version)
+                    .and_then(|release| release.integrity);
+                let module = Module {
+                    pack: pack.clone(),
+                    version: version.clone(),
+                    path: path.clone(),
+                    integrity,
+                };
+                (Language::Js, None, String::new(), Some(module))
+            }
+            Body::File { origin, language } => (*language, None, store.read(origin)?, None),
             Body::Compmd(_) | Body::Processor => return None,
         };
         Some(HostComponent {
@@ -213,6 +255,8 @@ impl Component {
             language,
             runtime,
             code,
+            module,
+            trust,
         })
     }
 
@@ -253,6 +297,8 @@ pub(crate) struct Resolved {
     pub(crate) main: DocumentId,
     /// The invocations that close a cycle of definitions (F019), by their document and where they start.
     pub(crate) cycles: HashSet<(DocumentId, Point)>,
+    /// The host's policy, which gives each component's trust.
+    pub(crate) policy: Policy,
     /// The diagnostics of stage 2, and of stage 1 for the documents it imports.
     diagnostics: Found,
 }
@@ -314,7 +360,12 @@ impl Resolved {
                 if found.contains_key(name) {
                     continue;
                 }
-                if let Some(host) = self.component(component).host_code(name, store) {
+                let component = self.component(component);
+                let trust = match &self.document(component.document).origin {
+                    Origin::Pack { name, .. } => self.policy.trust(name),
+                    Origin::File(_) => Trust::Strict,
+                };
+                if let Some(host) = component.host_code(name, store, trust) {
                     found.insert(name, host);
                 }
             }
@@ -409,10 +460,21 @@ pub(crate) fn resolve(
     text: String,
     parsed: Parsed,
     store: Store,
-    ambient: &Ambient,
+    host: Host<'_>,
     known: &mut Parses,
 ) -> Resolved {
-    load::Loader::new(store, Origin::File(path.to_string()), known).resolve(text, parsed, ambient)
+    load::Loader::new(store, Origin::File(path.to_string()), known, host.policy).resolve(
+        text,
+        parsed,
+        host.ambient,
+    )
+}
+
+/// What the host configures about packs: the ambient ones, and its policy.
+#[derive(Clone, Copy)]
+pub(crate) struct Host<'a> {
+    pub(crate) ambient: &'a Ambient,
+    pub(crate) policy: &'a Policy,
 }
 
 #[cfg(test)]
@@ -445,12 +507,16 @@ mod tests {
             files: &files,
             packs: &packs,
         };
+        let host = Host {
+            ambient: &ambient,
+            policy: &Policy::default(),
+        };
         resolve(
             "input.comp.md",
             text.clone(),
             parsed,
             store,
-            &ambient,
+            host,
             &mut Parses::default(),
         )
     }
@@ -481,7 +547,10 @@ mod tests {
                 text.to_string(),
                 parsed,
                 store,
-                &Ambient::default(),
+                Host {
+                    ambient: &Ambient::default(),
+                    policy: &Policy::default(),
+                },
                 &mut known,
             );
             resolved

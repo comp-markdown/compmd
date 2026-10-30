@@ -1,0 +1,12 @@
+{
+  "registry": {
+    "@acme/kit": [
+      {"version": "1.4.2", "path": "registry/kit-1.4.2", "integrity": "sha512-AAA"},
+      {"version": "2.0.0", "path": "registry/kit-2.0.0", "integrity": "sha512-BBB"}
+    ]
+  },
+  "policy": {
+    "deny": [{"pack": "@acme/kit", "version": "<2", "reason": "a flaw found in 1.x"}],
+    "refused": {"@huge/pack": "larger than this host serves"}
+  }
+}

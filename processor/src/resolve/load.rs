@@ -13,6 +13,7 @@ use crate::diagnostic::{Code, Diagnostic, Fix, Location, Stage};
 use crate::lines::LineStarts;
 use crate::nearest::nearest;
 use crate::parse::{CODE, ParseOptions, Parsed, parse};
+use crate::policy::Policy;
 use crate::reserved;
 use crate::settings::{self, Import};
 use crate::tree::{
@@ -55,10 +56,19 @@ pub(super) struct Loader<'h, 'p> {
     loaded: HashMap<Origin, DocumentId>,
     core: Option<DocumentId>,
     ambient: Vec<DocumentId>,
+    /// The ambient packs, by name.
+    ambient_names: Vec<String>,
+    /// The host's policy, which may refuse a pack.
+    policy: &'h Policy,
 }
 
 impl<'h, 'p> Loader<'h, 'p> {
-    pub(super) fn new(store: Store<'h>, main: Origin, parses: &'p mut Parses) -> Self {
+    pub(super) fn new(
+        store: Store<'h>,
+        main: Origin,
+        parses: &'p mut Parses,
+        policy: &'h Policy,
+    ) -> Self {
         Self {
             store,
             parses,
@@ -70,6 +80,8 @@ impl<'h, 'p> Loader<'h, 'p> {
             loaded: HashMap::new(),
             core: None,
             ambient: Vec::new(),
+            ambient_names: Vec::new(),
+            policy,
         }
     }
 
@@ -78,6 +90,7 @@ impl<'h, 'p> Loader<'h, 'p> {
         self.core = self
             .document_at(Origin::core(), Location::new(1, 1), true)
             .ok();
+        self.ambient_names.clone_from(&ambient.packs);
         self.ambient = ambient
             .packs
             .iter()
@@ -89,6 +102,7 @@ impl<'h, 'p> Loader<'h, 'p> {
             components: self.components,
             main,
             cycles: HashSet::new(),
+            policy: self.policy.clone(),
             diagnostics: Found {
                 before: self.diagnostics,
                 ..Found::default()
@@ -308,6 +322,13 @@ impl<'h, 'p> Loader<'h, 'p> {
         import: &Import,
     ) -> Result<DocumentId, Refusal> {
         let from = &import.from;
+        if let Some(why) = self.policy.refusal(&spec.name, &self.ambient_names) {
+            return Err(Refusal::new(
+                Code::F026,
+                from.at,
+                format!("{why}; the import is dropped"),
+            ));
+        }
         let release = self
             .store
             .releases(&spec.name)
@@ -321,6 +342,13 @@ impl<'h, 'p> Loader<'h, 'p> {
                     format!("no release of `{}` matches `{}`", spec.name, from.value),
                 )
             })?;
+        if let Some(why) = self.policy.denial(&spec.name, &release.version) {
+            return Err(Refusal::new(
+                Code::F026,
+                from.at,
+                format!("{why}; the import is dropped"),
+            ));
+        }
         if let Some(integrity) = &import.integrity {
             if !spec.exact {
                 self.report(

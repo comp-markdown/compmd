@@ -6,6 +6,7 @@
 use crate::request::{self, Error};
 use crate::text::Text;
 use compmd::host::{Fetched, Time};
+use compmd::policy::Trust;
 use compmd::processor::{Expanded, HostComponent};
 use compmd::{Processor, TextEdit, context::RenderContext, expanded};
 use serde::{Deserialize, Serialize};
@@ -34,6 +35,19 @@ struct Component<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     runtime: Option<&'a str>,
     code: &'a str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    module: Option<Module<'a>>,
+    trust: &'a Trust,
+}
+
+/// Where a built module is in its pack (`compmd::processor::Module`).
+#[derive(Serialize)]
+struct Module<'a> {
+    pack: &'a str,
+    version: String,
+    path: &'a str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    integrity: Option<&'a str>,
 }
 
 impl<'a> From<&'a HostComponent> for Component<'a> {
@@ -43,6 +57,13 @@ impl<'a> From<&'a HostComponent> for Component<'a> {
             language: component.language.name(),
             runtime: component.runtime.as_deref(),
             code: &component.code,
+            module: component.module.as_ref().map(|module| Module {
+                pack: &module.pack,
+                version: module.version.to_string(),
+                path: &module.path,
+                integrity: module.integrity.as_deref(),
+            }),
+            trust: &component.trust,
         }
     }
 }
@@ -286,12 +307,37 @@ mod tests {
     }
 
     #[test]
+    fn a_packs_built_module_comes_by_its_place_with_its_packs_trust() {
+        let index = "---\nmd:\n  import:\n    - from: ./map.js\n      names: [map]\n  export:\n    names: [map]\n---\n\n```compmd component=map signature\nparams: {}\n```\n";
+        let request = json!({
+            "path": "a.comp.md",
+            "files": { "a.comp.md": "---\nmd:\n  import:\n    - from: \"@acme/maps\"\n      names: [map]\n---\n\n:: map[Map]\n" },
+            "packs": { "@acme/maps": [{ "version": "1.2.0", "integrity": "sha512-KIT", "files": {
+                "package.json": "{\"name\": \"@acme/maps\", \"version\": \"1.2.0\"}",
+                "index.comp.md": index,
+                "map.js": "export default () => {};"
+            } }] },
+            "policy": { "packs": { "@acme/maps": { "level": "permissive", "network": ["https://tiles.example.com"] } } },
+            "now": "2026-10-22T09:00:00Z"
+        });
+        let document = Document::open(&request.to_string(), Rc::new(())).expect("opened");
+        assert_eq!(
+            changes(&document)["components"],
+            json!([{
+                "name": "map", "language": "js", "code": "",
+                "module": { "pack": "@acme/maps", "version": "1.2.0", "path": "map.js", "integrity": "sha512-KIT" },
+                "trust": { "level": "permissive", "network": ["https://tiles.example.com"] }
+            }])
+        );
+    }
+
+    #[test]
     fn components_come_on_open_and_when_their_code_changes() {
         let text = "```jsx component=hi runtime=react@19\nexport default () => 'hi';\n```\n\n:: hi[Hi]\n\nText.\n";
         let document = open(text);
         assert_eq!(
             changes(&document)["components"],
-            json!([{ "name": "hi", "language": "jsx", "runtime": "react@19", "code": "export default () => 'hi';" }])
+            json!([{ "name": "hi", "language": "jsx", "runtime": "react@19", "code": "export default () => 'hi';", "trust": { "level": "strict" } }])
         );
         let end = text.len() - 1;
         let document = document.edit(end, end, "!".into());
