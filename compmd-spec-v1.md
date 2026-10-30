@@ -1,3 +1,8 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="logo/compmd-dark.svg">
+  <img src="logo/compmd-light.svg" alt="CompMD" width="220">
+</picture>
+
 # CompMD Specification v1 (draft)
 
 CompMD (Component Markdown) is a Markdown flavor that adds components, containers, slots and CSS-like layout to CommonMark + GFM, while staying readable in any plain Markdown renderer.

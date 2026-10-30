@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 344 70" role="img" aria-label="CompMD">
+  <g fill="none" stroke="#1b2430" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M76 8H16A10 10 0 0 0 6 18v38a10 10 0 0 0 10 10h76a10 10 0 0 0 10-10V36"/>
+    <path d="M20 52V24l11 14 11-14v28"/>
+  </g>
+  <g fill="#1b2430">
+    <rect x="56" y="26" width="11" height="11" rx="2.5"/>
+    <rect x="56" y="41" width="11" height="11" rx="2.5"/>
+    <rect x="71" y="41" width="11" height="11" rx="2.5"/>
+  </g>
+  <rect x="84" y="0" width="24" height="24" rx="5" fill="#3557c4"/>
+  <g transform="translate(126 4.56) scale(0.872)" fill="none" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+    <g stroke="#1b2430">
+      <path d="M33.7 15.3A18 18 0 1 0 33.7 40.7"/>
+      <circle cx="60.5" cy="34" r="12"/>
+      <path d="M87.5 46V30a8 8 0 0 1 16 0v16M103.5 30a8 8 0 0 1 16 0v16M87.5 22v8"/>
+      <path d="M134.5 22v36"/>
+      <circle cx="146.5" cy="34" r="12"/>
+    </g>
+    <g stroke="#3557c4">
+      <path d="M175.5 46V10l14 18 14-18v36"/>
+      <path d="M218.5 10H224a18 18 0 0 1 0 36h-5.5Z"/>
+    </g>
+  </g>
+</svg>

@@ -588,6 +588,10 @@ textarea::selection {
   gap: 10px;
 }
 
+.logo img {
+  display: block;
+}
+
 /* About, as an "i" in a circle beside the name. */
 .title .about-toggle {
   display: grid;

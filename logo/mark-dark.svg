@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 70" role="img" aria-label="CompMD">
+  <g fill="none" stroke="#e4e9ef" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M76 8H16A10 10 0 0 0 6 18v38a10 10 0 0 0 10 10h76a10 10 0 0 0 10-10V36"/>
+    <path d="M20 52V24l11 14 11-14v28"/>
+  </g>
+  <g fill="#e4e9ef">
+    <rect x="56" y="26" width="11" height="11" rx="2.5"/>
+    <rect x="56" y="41" width="11" height="11" rx="2.5"/>
+    <rect x="71" y="41" width="11" height="11" rx="2.5"/>
+  </g>
+  <rect x="84" y="0" width="24" height="24" rx="5" fill="#8da6ee"/>
+</svg>

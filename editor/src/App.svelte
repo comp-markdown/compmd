@@ -20,6 +20,8 @@
   import { FRAME_HELLO, HOST_STYLES, type ComponentFailed, type HostStyle, type OpenLink, type SourceLink } from "./protocol.ts";
   import { keep, recall } from "./stored.ts";
   import { plainPage, ViewsClient, type View, type ViewKind } from "./views.ts";
+  import markDark from "../../logo/mark-dark.svg";
+  import markLight from "../../logo/mark-light.svg";
 
   let chosen = $state(exampleIndex(new URLSearchParams(location.search).get("doc")));
   let text = $state("");
@@ -194,6 +196,10 @@
 
 <header>
   <div class="title">
+    <picture class="logo">
+      <source media="(prefers-color-scheme: dark)" srcset={markDark} />
+      <img src={markLight} alt="" width="40" height="26" />
+    </picture>
     <h1>CompMD Playground</h1>
     <button type="button" class="about-toggle" aria-label="About" title="About" aria-expanded={about} aria-controls="about" onclick={toggleAbout}>i</button>
   </div>

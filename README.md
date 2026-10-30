@@ -1,4 +1,9 @@
-# CompMD
+<h1>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="logo/compmd-dark.svg">
+    <img src="logo/compmd-light.svg" alt="CompMD" width="300">
+  </picture>
+</h1>
 
 CompMD (Component Markdown) is a Markdown flavor that adds components, containers, slots and layout to CommonMark and GFM, and stays readable in any plain Markdown renderer. Files end in `.comp.md`.
 
@@ -16,6 +21,7 @@ CompMD (Component Markdown) is a Markdown flavor that adds components, container
 | [wasm/](wasm/README.md) | `@compmd/processor`: the processor as WebAssembly for the browser, one typed call from text to trees |
 | [render/](render/README.md) | `@compmd/render`: an expanded tree as a live page, with the host contract's bindings; the reference rendering of the built-ins |
 | [editor/](editor/README.md) | The CompMD editor: a text area and the rendered page beside it, updated as you type; a static site that works offline once loaded |
+| [logo/](logo/README.md) | The CompMD logo: the mark and the name, light, dark and in one color, and the favicon |
 | [existing-specs-comparison.md](existing-specs-comparison.md) | The spec compared with MDX, Markdoc, Nuxt MDC and Comark, MyST, Quarto, Livebook's Live Markdown and Active Markdown |
 
 The spec is a document format of its own and doesn't depend on any application.
