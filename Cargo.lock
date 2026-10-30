@@ -321,9 +321,10 @@ checksum = "1c133bc6a41be0d194c306b5506d15e6feeea7b1d6604bd3f8310dfb2ca96486"
 
 [[package]]
 name = "compmd"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "cel",
+ "compmd-markdown",
  "criterion",
  "csv",
  "fixed_decimal",
@@ -331,12 +332,18 @@ dependencies = [
  "icu_experimental",
  "indexmap",
  "jsonschema",
- "markdown",
  "semver",
  "serde",
  "serde_json",
  "thiserror",
  "yaml-rust2",
+]
+
+[[package]]
+name = "compmd-markdown"
+version = "0.1.0"
+dependencies = [
+ "unicode-id",
 ]
 
 [[package]]
@@ -1185,13 +1192,6 @@ name = "log"
 version = "0.4.34"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f9f8bd3e56ce4dfc153cf470fffbfa98c7620958b312ca5c3a4b8d5181fd13c6"
-
-[[package]]
-name = "markdown"
-version = "1.0.0"
-dependencies = [
- "unicode-id",
-]
 
 [[package]]
 name = "memchr"

@@ -1,16 +1,14 @@
 [package]
 name = "compmd"
-version = "0.0.1"
+version = "0.1.0"
 description = "The CompMD processor: parses, validates and expands CompMD (Component Markdown) documents. In development."
 readme = "README.md"
+homepage = "https://compmd.hakanserce.com/"
 keywords = ["markdown", "compmd", "commonmark", "components", "parser"]
 categories = ["parser-implementations", "text-processing"]
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
-# Not publishable while the fork is a path dependency: crates.io takes no path dependencies. Its release as
-# `compmd-markdown` makes the dependency a version, and this line goes.
-publish = false
 
 [dependencies]
 # CSV and TSV data (spec §8.6), as RFC 4180 reads it.
@@ -21,8 +19,8 @@ icu = "2.4.0"
 # `md.currency`: ICU4X's currency formatter is still experimental, so its version is pinned.
 icu_experimental = "=0.7.0"
 indexmap = "2.14.2"
-# The fork of markdown-rs with CompMD's syntax (`markdown-rs/`, a submodule), to be published as `compmd-markdown`.
-markdown = { path = "../markdown-rs" }
+# The fork of markdown-rs with CompMD's syntax: `markdown-rs/`, a submodule, here; `compmd-markdown` on crates.io.
+markdown = { package = "compmd-markdown", path = "../markdown-rs", version = "0.1.0" }
 # Import version ranges (`@1`, `@^1.4.2`) matched against a registry's releases.
 semver = { version = "1.0.28", features = ["serde"] }
 serde ={ version = "1.0.228", features = ["derive"] }
