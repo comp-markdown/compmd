@@ -1,0 +1,22 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentLeaf",
+      "name": "stars",
+      "params": [
+        {
+          "key": "value",
+          "breakpoint": null,
+          "value": 4
+        }
+      ],
+      "fallback": [
+        {
+          "type": "text",
+          "value": "4 of 5"
+        }
+      ]
+    }
+  ]
+}

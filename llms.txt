@@ -382,6 +382,7 @@ export default function Chart({ rows, selected, compmd }) {
 - The code has no network and sees only its params and slots. Use `fallback.text` as the accessible label of non-text content.
 - A signature fence (`compmd component=<name> signature`) holds only the YAML signature, no `---`, no body, no param list.
 - A component file (`./chart.jsx`) imported by path exports its default export, named after the file stem.
+- A host application may provide components of its own, declared in its pack by a signature alone. Use them like any component, importing the host's pack by name to say so (`from: "@acme/app"`); they work only in that host (W113), so write fallbacks other processors can show.
 
 ## Imports and exports
 

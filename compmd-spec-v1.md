@@ -391,6 +391,9 @@ Rules:
 
 **Ambient packs.** A processor MAY provide packs that every document imports implicitly, like `@compmd/core`, at the lowest priority, so local names and imports always win. Names from them are not portable: another processor reports F002 and renders fallbacks. A processor SHOULD also let documents import an ambient pack explicitly (`from: "@host/components"`), so a document can state what it depends on, and MAY report W113 for each ambient name used.
 
+- **An ambient pack's name is the processor's.** A document that imports an ambient pack by name gets the processor's pack, never a registry package of the same name, as for `@compmd/*` (section 6.4). So a package published under a host's pack name can't stand in for the host's components.
+- An ambient pack MAY declare components the host implements, by their signatures alone (section 7.1).
+
 ### 6.4 Packages and the registry
 
 - **`@scope/pack` is the npm package of that name**, fetched from the [npm registry](https://www.npmjs.com) or an npm-compatible registry the processor is configured with (a private registry, a mirror). A processor MAY resolve from a local cache or installed packages, so documents work offline. It MAY offer other registries with the same naming.
@@ -453,6 +456,14 @@ slots: [default, footer]
 ````
 
 - A signature fence uses the `compmd` language with the `signature` flag, holds only the signature (section 7.3; no `---` or body), and attaches to the component of that name, whether defined in the same document or imported from a component file.
+- **Components the host implements.** In an ambient pack (section 6.3), a signature fence with no component of its name declares one whose code the processor provides, such as a component built with the host application. Its uses are validated against the signature and rendered through the host contract with the processor's code, at the trust level its configuration gives it (section 15). In any other document, a signature fence with no component of its name is F002.
+
+````md
+```compmd component=stars signature
+params:
+  value: number
+```
+````
 - **Exported** host-language components MUST have a signature fence (F029). Packs are used by processors that may not run the component, and still need validation and fallbacks.
 - **Local** host-language components MAY omit it. The processor then derives what it can: TypeScript prop types, Svelte `$props()`, Vue `defineProps`/`defineSlots`, destructuring defaults, and node or snippet props as slots. Anything not derivable is `dyn` and passed through unchecked, with W105.
 - When a signature fence is present it is authoritative. A processor that can analyse the component SHOULD check that it conforms and report W104 for any mismatch (for example a signature param with no matching prop).
@@ -538,7 +549,7 @@ mount(target: Element, context: {
   set(param: string, value: unknown): void, // changes the input bound to an `input` param
   fallback: { text: string; element: Element }, // the invocation's fallback, as plain text and rendered
   headingLevel: number,                   // the level the component's top heading should have (section 7.2)
-  host?: unknown,                         // what the processor gives components it trusts (below); absent otherwise
+  host?: unknown,                         // what the processor gives components of permissive packs (below); absent otherwise
 }): { update?(params, slots): void; destroy?(): void }
 
 type SlotItem = { element: Element; component?: { name: string; params: Record<string, unknown> } }
@@ -552,7 +563,7 @@ type SlotInstance = { value: unknown; items: SlotItem[] }   // a template slot: 
 - **Every slot is rendered up front**, including content the component hides; hiding is the component's own styling. A component may be laid out while hidden or at zero width, and SHOULD lay itself out again when it's resized.
 - **Updates, not remounts.** When params or slots change (an input or data changes, section 8.5), the processor calls `update`; the component keeps its state. `destroy` is called before `target` is removed.
 - **A component that throws** while mounting or updating renders its fallback, with W118.
-- **What a host gives components it trusts.** A processor MAY give components from packs its own configuration trusts more than this contract, in `host`: an API to the host's data, events to the host. What `host` holds is the processor's; trust comes from the processor's configuration, never from a document. A document that uses such components works only in that host, as with names from ambient packs (section 6.3). Section 15 says what such components may do with it.
+- **What a host gives permissive components.** A processor MAY give components from packs its configuration makes permissive (section 15) more than this contract, in `host`: an API to the host's data, events to the host. What `host` holds is the processor's; the trust level comes from the processor's configuration, never from a document. A document that uses such components works only in that host, as with names from ambient packs (section 6.3). Section 15 says what such components may do with it.
 - **Accessible text.** A component that renders non-text content (a chart, a map, a canvas) SHOULD use `fallback.text` as its text alternative, for example `<svg role="img" aria-label="…">`, since the leaf's fallback is the sentence plain renderers show in its place. Only the component knows the role of its content, so the processor doesn't label `target`.
 - **Changing an input.** A param declared `input<type>` (section 7.3) is bound to an input by the document (`selected=region`): the component receives the input's current value, and `set("selected", value)` changes the input, checked against its type, after which the processor renders again (section 8.5). `set` on any other param, or during `update`, is refused. Components have no other outputs in version 1.
 
@@ -1480,28 +1491,37 @@ Authors SHOULD separate component lines from surrounding paragraphs with blank l
 
 ## 15. Security
 
-Any component definition that runs code (jsx, tsx, svelte, vue) MUST run sandboxed, wherever it runs: in a reader's browser, on a build server, in an application. This applies to inline definitions and to imported ones.
+Code from a host-language component runs at one of three **trust levels**. The processor's configuration sets the level of each pack; a document can never raise one.
 
+| Level | Where the code runs | What it reaches | For |
+| --- | --- | --- | --- |
+| Strict sandbox | in a sandbox | only its contract (the rules below) | the default: code from documents, and from every pack the configuration gives no other level |
+| Permissive sandbox | in a sandbox | its contract, plus the network to the origins the configuration lists for its pack, and `host` (section 7.4) | packs the configuration makes permissive, such as a map that loads its tiles |
+| Trusted | where the processor's own code runs, such as the host application's page | what the processor's own code reaches | packs built with the host application, which the processor's configuration names by their place in the application, never a registry package |
+
+- **Every component's code but trusted code MUST run sandboxed**, strict or permissive, wherever it runs: in a reader's browser, on a build server, in an application. This applies to inline definitions and to imported ones, so code from a document or a registry pack always does.
+- **Trusted code is the host's own:** built, reviewed and shipped with the application, as the processor's own code is, so a sandbox would protect the application from itself. Its params and slots still come from documents, which may be someone else's, so it MUST treat them as untrusted input: no HTML from a param, URLs checked as interpolation checks them (section 8.1), and actions outside the document only as for components given `host` (below).
 - `compmd` definitions run no code: they only expand Markdown, params and slots, so they need no sandbox.
 - Interpolated text values MUST be escaped for the output format; they are never parsed as Markdown or HTML.
 - A processor MUST NOT fetch remote component imports or remote data unless the user or host configuration allows that origin; a document can never grant itself access (section 8.6).
 
-**The sandbox.** The spec states what a sandbox guarantees, not how it is built. Code from a host-language component:
+**The sandbox.** The spec states what a sandbox guarantees, not how it is built. Code in a strict sandbox:
 
-1. **Sees only what the host contract gives it** (section 7.4): its params, its slots, its target element, `set` for its bound inputs, and `host` when the processor trusts its pack. Not the rest of the document, its data, or the page around it.
+1. **Sees only what the host contract gives it** (section 7.4): its params, its slots, its target element and `set` for its bound inputs. Not the rest of the document, its data, or the page around it.
 2. **Has no network**: no requests, images, fonts, style sheets or sockets from anywhere. Its code and assets come from its pack. Data reaches a component only as params, from data imports (section 8.6), which are declared in the frontmatter and cannot carry `md.data` or inputs the component can change (F031).
 3. **Can't reach the reader's or the host's session**: no cookies, storage, credentials, host APIs, file system, environment variables or processes.
 4. **Can't navigate or open windows.** A link in a component doesn't open on its own; a processor MAY offer to open it after showing the reader the full URL. Links written in Markdown are unaffected.
 5. **Can be stopped**: a processor SHOULD stop a component that runs too long and render its fallback (W118).
 
-- Components of one document MAY share a sandbox, and so MAY the documents a processor shows together as one application, when it gives all their code the same trust. Code it trusts differently runs in a separate sandbox. The boundary is between code of one trust and everything else, not between components.
-- A processor MAY give network access to packs its host configuration trusts (a host's own map component loading tiles), never because a document or a reader prompt asks for it.
+A permissive sandbox keeps rules 3 to 5 and adds to rules 1 and 2 only what the configuration lists for its pack: `host`, and the network to those origins (a map component loading its tiles), never because a document or a reader prompt asks for it.
 
-**Components the host trusts.** A component given `host` (section 7.4) acts with someone's access, but the document that invokes it, and so its params, may be someone else's: a shared document can aim a trusted component at what it shouldn't touch.
+- Components of one document MAY share a sandbox, and so MAY the documents a processor shows together as one application, when it gives all their code the same trust. Code it trusts differently runs in a separate sandbox, and so does each permissive pack, so the network one pack is given reaches no other code. The boundary is between code of one trust and everything else, not between components.
 
-- **Acting:** such a component MUST act outside the document (send, write, share, pay) only on the reader's action, after showing the reader what it will do: "Send *accounts.csv* to attacker@evil.example?". A processor with no reader present, such as a build, gives no such action. In documents that come with the trusted pack (an application's own screens), the component acts within what the configuration grants: whoever trusted the pack trusted those documents with it. In any other document, the rule above applies.
-- **Reading for others:** a processor that renders for people other than those whose access its components use (a site built with its operator's credentials and published) MUST give `host` only in documents it trusts, such as the site's own pages and not a contributor's change. Rendering for the reader with the reader's own access needs no such rule: the reader sees only what they may see.
-- A component not given `host` gets only the contract and no network (rule 2), so private data passed to it as params has no way out.
+**Components that act with someone's access.** A component given `host` (section 7.4), and a trusted one, acts with someone's access, but the document that invokes it, and so its params, may be someone else's: a shared document can aim such a component at what it shouldn't touch.
+
+- **Acting:** such a component MUST act outside the document (send, write, share, pay) only on the reader's action, after showing the reader what it will do: "Send *accounts.csv* to attacker@evil.example?". A processor with no reader present, such as a build, gives no such action. In documents that come with the component's pack (an application's own screens), the component acts within what the configuration grants: whoever gave the pack its level trusted those documents with it. In any other document, the rule above applies.
+- **Reading for others:** a processor that renders for people other than those whose access its components use (a site built with its operator's credentials and published) MUST give `host`, and render trusted components, only in documents it trusts, such as the site's own pages and not a contributor's change. Rendering for the reader with the reader's own access needs no such rule: the reader sees only what they may see.
+- A component in a strict sandbox gets only the contract and no network (rule 2), so private data passed to it as params has no way out.
 - Without rule 2, a component that is passed private data and allowed to reach its own origin "for the weather" can send the data with the weather request; a reader can't tell the two apart. With it, private data has no way out of the sandbox.
 - *Informative:* in a browser, a cross-origin iframe with `sandbox="allow-scripts"` and a content security policy that allows only the pack's own files; on a server, an isolated JavaScript runtime with no I/O.
 
@@ -1592,8 +1612,9 @@ In a plain renderer, this shows the title and badge text, the release sentence, 
 - [x] **Vue binding (deferred past version 1):** a later minor version adds it; nothing in the host contract blocks it.
 - [x] **Control flow (decided, section 8.3):** `if` and `each` are ordinary `@compmd/core` containers, with `else`, `before` and `empty` slots and join modes.
 - [x] **Signatures for host components (decided, section 7.1):** exported host-language components need a signature fence (F029); local ones MAY derive theirs from the component (W105 for what can't be typed).
-- [x] **What hosts give their own components (decided, sections 7.4, 15):** a processor MAY give components from packs its configuration trusts more than the contract, in `host`; such components act outside the document only on the reader's action, and a processor rendering for others gives `host` only in documents it trusts.
-- [x] **Sandbox (decided, section 15):** requirements, not a mechanism: a component sees only its contract, has no network (data comes only through data imports), no session, no navigation, and can be stopped; one sandbox per document; network only for packs the host trusts.
+- [x] **What hosts give their own components (decided, sections 7.4, 15):** a processor MAY give components from permissive packs more than the contract, in `host`; such components, and trusted ones, act outside the document only on the reader's action, and a processor rendering for others gives `host`, and renders trusted components, only in documents it trusts.
+- [x] **Sandbox (decided, section 15):** requirements, not a mechanism: a component sees only its contract, has no network (data comes only through data imports), no session, no navigation, and can be stopped; one sandbox per document.
+- [x] **Trust levels (decided, sections 6.3, 7.1, 15):** three, set per pack by the processor's configuration: a strict sandbox (the default), a permissive sandbox (the network to listed origins, and `host`), and trusted (the host's own code, built with the application, outside a sandbox, its inputs untrusted). A signature fence alone in an ambient pack declares a component the host implements; an ambient pack's name never resolves to a registry package.
 - [x] **Layout (decided, section 9):** params named after the CSS property they set; `box`, `stack`, `row` (wrapping), `grid` (cards by `min`, or exact with `grid-area`) and positioned layout: any block placed in its box with `inset-*` (no canvas component, no `z-index`); spacing as tokens or lengths; size, padding, order, self-alignment, `aspect-ratio`, `scroll`, `fill`, `sticky`, `show` and `hide` on any component; logical directions only; breakpoint prefixes `sm:`, `md:`, `lg:` at fixed 480, 768 and 1024 px, from that width up, following the block's container; a closed vocabulary, each param meaning its CSS property, which other outputs follow as far as they can.
 - [x] **Visual styling (decided, sections 9.2, 9.4):** `background`, `border` and `border-radius` on any component take a token (`subtle`, `strong`, `accent`; `s` to `full`) or a CSS value, plus `class` and `id`. The tokens are custom properties with defaults built from the text color, so a document looks right in light and dark mode without a stylesheet.
 - [x] **Accessibility and direction (decided, sections 2.1, 5.1, 7.2, 7.4, 9.2):** output order is source order whatever the layout; hidden blocks are hidden from assistive technology; host components get their fallback as text alternative; headings in `compmd` definitions are relative unless the signature says `headings: absolute`; `md.dir` derived from `lang`; `lang` and `dir` on any component.

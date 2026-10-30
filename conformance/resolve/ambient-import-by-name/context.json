@@ -1,0 +1,1 @@
+{"registry": {"@acme/app": [{"version": "2.0.0", "path": "registry/app-2.0.0", "integrity": "sha512-AAA"}]}, "ambient": {"@acme/app": "host"}}

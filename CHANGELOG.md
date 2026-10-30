@@ -6,6 +6,8 @@ Changes to the [CompMD specification](compmd-spec-v1.md), newest first. Every ch
 
 ### 2026-10-30
 
+- **Trust levels (§7.4, §15, §17).** A pack's code runs at one of three levels the processor's configuration sets: a strict sandbox (the default, the sandbox as before), a permissive sandbox (the network to the origins listed for its pack, and `host`), or trusted (the host's own code, built with its application, outside a sandbox, which treats params and slots as untrusted input). Before, all component code ran sandboxed, and "packs the host trusts" meant what is now a permissive pack. Not breaking: documents are unchanged.
+- **Components the host implements (§6.3, §7.1).** A signature fence alone in an ambient pack declares a component whose code the processor provides, validated against the signature; elsewhere it stays F002. An ambient pack imported by name is always the processor's, never a registry package of that name. New cases `expand/host-signature`, `validate/host-signature-params-F008-F009` and `resolve/ambient-import-by-name`.
 - **Unknown type names are F037 (§7.3, §10.2).** A declaration whose type isn't in the grammar, such as `count: numbr`, in a signature, an input or a data `schema`, is F037 at the type name, with the nearest type name. The declaration is kept and takes any value. Before, such a type was accepted silently and checked nothing. Breaking for documents with a misspelt type, which now have an error.
 - **Website.** The spec links to the CompMD website, which has the spec as a page and a playground. The spec itself is unchanged.
 
