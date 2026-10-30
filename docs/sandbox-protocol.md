@@ -1,104 +1,94 @@
 # The sandbox's frame protocol
 
-**Status: proposed (2026-10-30).** The messages between the host's page and the frames of [the sandbox](sandbox.md): who may send what to whom, on which port, and what each end checks. It builds on `@compmd/render`'s frame protocol ([render README, "In a frame"](../render/README.md#in-a-frame)) and replaces the playground's own messages (`editor/src/protocol.ts`).
+**Status: proposed (2026-10-30; revised the same day from a star, where every frame believed the host's page, to a tree).** The messages between the windows of [the sandbox](sandbox.md): who sends what to whom, and what each end checks. It builds on `@compmd/render`'s frame protocol ([render README, "In a frame"](../render/README.md#in-a-frame)) and replaces the playground's own messages (`editor/src/protocol.ts`).
 
 ## Proposed decisions
 
-1. **The protocol is a star.** Every frame talks to the host's page, and only to it: its level, its policy, its code, its part of the tree, `host`, pings, and everything it sends back (`set`, links, errors). A nested frame tells its parent one thing, its size.
-2. **The host's page is believed, and nothing else is.** It is the only window whose origin isn't opaque, so a frame knows its messages by their origin. Whatever a frame sends, the host's page treats as coming from the least trusted code in that frame.
-3. **A frame is named by its use.** The host's page gives every use it frames an id, written into the tree it sends; a frame for a use carries that id in its URL (`frame.html#use=u3`), so the host's page knows which use a frame asks for. Ids follow edits, as the renderer's keys do, so an edit updates a frame instead of making it again.
-4. **A frame made by strict code gets no more than its use already gives.** A frame that claims a use gets that use's level, code and part, which its document gives it anyway; the policy of that level, which a `srcdoc` frame can't widen; and never `host`, which goes only to windows the host's page made itself.
-5. **`@compmd/render`'s protocol stays as it is,** for the page's tree: `render`, `splices`, `theme`, `ready`, `set`, `error`, `rendered`. The sandbox's messages travel on the same port, with their own version, as the playground's do today.
+1. **The protocol is a tree.** Each frame has one port, to its parent, the window that made it, and talks to nothing else. Everything it gets (its level, policy, code, part, `host`, pings) comes from its parent; everything it sends (`set`, links, errors, its size) goes to it. A parent passes on what concerns the windows above it.
+2. **A frame believes its parent only,** by its window (`event.source === window.parent`), never by its origin: the host's page may have an opaque origin itself. Parents are never less trusted than their children ([sandbox, decision 1](sandbox.md#proposed-decisions)), and the frame documents' policies make sure of it, so a message from a parent is one the frame may act on.
+3. **The protocol is a layer of its own, with no DOM.** The message types, with their version, and each end's rules as plain state machines over `@compmd/render`'s `Port`: a frame takes `code` only after `level`; a parent gives `host` only to children it was told to; `set` is checked against the use's node. It is tested in Node, apart from the browser, and its messages are published as a JSON Schema (`sandbox/protocol.schema.json`), so a frame runtime or host runtime written elsewhere, a host's own or a sandbox outside a browser, can check itself against it.
+4. **Two runtimes implement it,** the frame runtime (one end in each frame) and the host runtime (the other end, in the host's page and in every frame that has children). The browser's part, making frames, adding the policy, the ping timer, is theirs, not the protocol's.
+5. **`@compmd/render`'s protocol stays as it is,** for a page's tree: `render`, `splices`, `theme`, `ready`, `set`, `error`, `rendered`. The sandbox's messages travel on the same port, with their own version, as the playground's do today.
 
 ## The windows
 
-| Window | Made by | Runs | Its origin |
+| Window | Made by | Runs | May make |
 |---|---|---|---|
-| **H**, the host's page | the application | the sandbox's host side, the renderer in host mode, trusted components | the application's |
-| **P**, the page frame (frame mode) | H, one per document | the renderer, the document's strict components | opaque |
-| **U**, a use frame | H (host mode, or a use the page renders in host mode); or the frame around it, for a use nested in a frame | the renderer for one use and its slots, that use's component and those of its level in its slots | opaque |
-| **C**, the compile frame | H, one per document | the compilers, no components | opaque |
+| **H**, the host's page | the application; may itself be a sandboxed frame | the host runtime; the renderer and trusted components in host mode | P, U at any level, C |
+| **P**, the page frame (frame mode) | H, one per document | the frame runtime, the renderer, the document's strict components | nothing |
+| **U**, a use frame, `strict.html` or `permissive.html` | H; a permissive U, for a strict use in its slots | the frame runtime, the renderer for one use and its slots, components of its level | a permissive U: strict U |
+| **C**, the compile frame | H, one per document | the compilers, no components | nothing |
 
-In our [example](sandbox.md#the-examples), in frame mode: H makes P and C; P makes U frames for `map` and `rating-summary`. In host mode: H renders the page and makes U frames for `bar-chart` (with `sparkline` inside it), `mermaid`, `map` and `rating-summary`, and C.
+In our [example](sandbox.md#the-examples), in frame mode: H makes P and C. In host mode: H renders the page, makes C, and makes U frames for `bar-chart` (with `sparkline` inside it), `mermaid`, `map` and `rating-summary`; a strict `legend` in `map`'s slot would be a U that `map`'s frame makes.
 
-## The ports
+## The port
 
-Each frame has one **host port**, a `MessageChannel` port shared with H.
-
-- **A frame H made:** when it loads, H posts `hello` to its window with the port. The frame takes the first window message whose origin is H's (its own URL's origin; `null` is never H's) and listens on that port only.
-- **A nested frame:** it makes a channel itself and posts `hello {use, version}` to `top`, which is H, with one end. H answers on that port, or not at all.
-
-A frame accepts no other window messages, except a nested frame's `size` from its own child.
+When a frame loads, its parent posts `hello` to its window with one end of a new `MessageChannel`. The frame takes the first window message whose `source` is its parent, and listens on that port only; it ignores every other window message. The parent knows the frame by the window it made (`iframe.contentWindow`).
 
 ## Messages
 
-**H to a frame**, on its host port:
+**A parent to its frame:**
 
 | Message | Says | To |
 |---|---|---|
-| `hello {version}` (a window message, with the port) | this is your host port | frames H made |
-| `level {level, policy}` | your level, `strict` or `permissive`, and its policy, which the frame adds as a second `<meta>` before anything else | every frame, first |
-| `code {components}` | each component's code: compiled text with its binding (`react`, `svelte`, `plain`) and CSS, or a module's `{url, integrity}` | P, U |
-| `render`, `splices` | `@compmd/render`'s, with use ids in the tree | P |
+| `hello {version}` (a window message, with the port) | this is your port | every frame |
+| `level {level, policy?}` | your level; for `permissive.html`, the second policy, with the pack's origins, which the frame adds before anything else | every frame, first |
+| `code {components}` | each component's code: compiled text with its binding (`react`, `svelte`, `plain`) and CSS, or a module's `{url, integrity}`; for a permissive frame, its strict children's code too, which it passes on | P, U |
+| `render`, `splices` | `@compmd/render`'s | P |
 | `part {node, inputs}` | the use to render, with its slots as expanded nodes, and the document's inputs | U |
 | `theme {tokens}` | `@compmd/render`'s | P, U |
 | `styles {urls}` | the host's stylesheets | P, U |
-| `host {port}` | a port for `host`, as calls and events | U frames H made, of permissive packs given `host` |
+| `host {port}` | a port for `host`, as calls and events | U frames of permissive packs given `host`, from H only |
 | `ping {n}` | answer, or be stopped | every frame |
 | `compile {name, language, runtime, code}` | compile this | C |
 
-**A frame to H**, on its host port:
+**A frame to its parent:**
 
 | Message | Says | From |
 |---|---|---|
-| `ready {version}` | `@compmd/render`'s, with the sandbox's version beside it | P, U, C |
+| `ready {version}` | `@compmd/render`'s, with the sandbox's version beside it | every frame |
 | `loaded` | the code last sent is loaded, or shows fallbacks | P, U |
-| `set {use, param, value}` | a component set an input; H checks that the param is bound to an input in that use's node | P, U |
-| `error {reason, component, message}` | `@compmd/render`'s, and `failed` for code that didn't compile or load | P, U |
+| `set {path, param, value}` | a component set an input: `path` says which use, from the frame's part down; the parent checks that the param is bound to an input in that use's node, and passes it up | P, U |
+| `error {reason, component, message}` | `@compmd/render`'s, plus `failed` (code that didn't compile or load) and `not-here` (a use whose level this frame can't hold, Q2 of the design) | P, U |
 | `link {url}` | a link was clicked; H decides what opens, and shows the reader the URL first (spec §15 rule 4) | P, U |
 | `rendered {ms}` | `@compmd/render`'s | P, U |
-| `size {width, height}` | the content's size, for H to set on the frame | U frames H made |
+| `size {width, height}` | the content's size, for the parent to set on the frame | U |
 | `pong {n}` | the answer to `ping` | every frame |
 | `compiled {name, code, css?}`, `failed {name, message}` | a compile's result | C |
 
-**A nested frame to its parent**, as a window message: `size {width, height}`. The parent sets the frame's size if the message came from that frame's window.
+A parent passes its children's `set`, `link` and `error` up, each with what it knows of where they came from, so H gets them all.
 
 ## Sequences
 
-**Opening a document, frame mode.**
+**Opening a document, frame mode.** H makes C and P, each a `strict.html`. Each sends `ready`; H sends `level {strict}`, then C each component's source, and P `code` and `render`. P renders the page and mounts `bar-chart`, `sparkline` and `mermaid`; `stars`, `rating-summary` and `map` show their fallbacks, and P sends `error {not-here}` for each.
 
-1. H makes C and P, each with `src` `frame.html`. Each sends `ready`; H sends `level {strict, …}`.
-2. H sends C each component's source; C answers `compiled` or `failed`.
-3. H sends P `code` and `render`, with ids on the uses P can't run (`map` is `u5`).
-4. P renders the page, mounts `bar-chart`, `sparkline` and `mermaid`, and puts `<iframe src="frame.html#use=u5">` in `map`'s box.
-5. The `map` frame posts `hello {use: "u5"}` to `top`. H finds the document from the frame's `parent` chain (P's window), and `u5` in it, and sends `level {permissive, …tiles.example.com}`, `code` and `part`; no `host`, since H didn't make this frame.
-6. The `map` frame reports its `size` to P; it sends `set` and `link` to H.
+**Opening a document, host mode.** H renders the page; `stars` mounts in it. For `bar-chart` it makes a `strict.html` frame in the chart's box and sends `hello`, `level {strict}`, `code` (the bar chart's and the sparkline's) and `part` (the chart's node, the sparkline in its slot). For `map` it makes a `permissive.html` frame and sends `level {permissive, policy}` with `tiles.example.com`, then `code` and `part`; for `rating-summary` the same, plus `host`.
 
-**Opening a document, host mode.** H renders the page. For `bar-chart` it makes a frame in the chart's box, and sends `hello`, `level {strict}`, `code` (the bar chart's and the sparkline's) and `part` (the chart's node, the sparkline in its slot). For `rating-summary` it does the same at `permissive`, plus `host`. `stars` mounts in H's page.
+**A strict use inside a permissive one.** `map`'s frame renders its slot, finds `legend`, makes a `strict.html` frame there, and sends it `hello`, `level {strict}`, `code` (from what H sent it) and `part`. It pings it, and passes its `set`, `link` and `error` up to H.
 
-**An edit.** H sends P `splices` (frame mode) or renders them (host mode), and sends `part` to every frame whose use changed, by its id. A use that is gone loses its frame; a new one gets one. When the document's components change, H compiles them in C and sends `code` to the frames that have them.
+**An edit.** H sends P `splices` (frame mode) or renders them (host mode), and sends `part` to every frame whose use changed; a frame does the same for its children. Uses keep their frames through edits, as the renderer's keys keep its views, so an edit updates a frame instead of making it again. A use that is gone loses its frame; a new one gets one. When the document's components change, H compiles them in C and sends `code` to the frames that have them, which pass on their children's.
 
-**A frame that hangs.** H pings each frame every second; one that hasn't answered within `timeout` is stopped: a frame H made is removed and its use shows its fallback (W118). For a nested frame, H tells the frame around it to do so, which strict code there could ignore: it can only keep its own document's frame frozen.
+**A frame that hangs.** Each parent pings its frames every second; a frame that hasn't answered within `timeout` is removed, and its use shows its fallback (W118).
 
-**Strict code makes a frame.**
+**Strict code tries to break out.**
 
-| It makes | H gives it | So |
-|---|---|---|
-| `frame.html#use=u5`, a second `map` | `map`'s level, code and part, as the real one's | the same params reach the same origin: nothing the document doesn't already send |
-| `frame.html#use=u5` and sends it params of its own, as a window message | nothing: the frame takes params only from H | strict code can't make `map` send what it chose (T5) |
-| a `srcdoc` frame claiming `u5` | the same as the real one | it inherits P's policy, which `level` can't widen: no network |
-| a frame claiming a use its document doesn't have | nothing | — |
-| any frame asking for `host` | never | `host` goes only to windows H made (T6) |
+| It tries | What happens |
+|---|---|
+| to make a frame of `permissive.html` or `strict.html` | refused: `strict.html` has `frame-src 'none'` |
+| a `srcdoc` frame | it inherits the strict policy: no network, whatever it is sent |
+| to send a frame a second policy, code or params | the frame takes them only on its port, from its parent |
+| to post `set` for an input its use isn't bound to | its parent checks `set` against the use's node, and drops it |
+| to get `host` | only H gives `host`, and only to a `permissive.html` frame of a pack given `host` |
 
 ## Checks, by end
 
-- **A frame:** its host port comes from a window message of H's origin, or is its own channel to `top`; it adds the `level` policy before it loads any code; it runs code and renders parts only from its host port; it answers `ping`.
-- **H:** it gives a nested frame only a use of the document the frame is nested in; `host` only on a port to a window it made; it checks `set` against the use's node; it never acts on `link` without the reader.
-- **A parent frame:** it sets a nested frame's size only from that frame's window.
+- **A frame:** its port comes in a window message from its parent; it adds the `level` policy before it loads any code; it runs code and renders parts only from its port; it answers `ping`.
+- **A parent:** it makes children only of a lower level than its own (a permissive frame, only strict ones); it sends each child only its own use's part and code; it checks each `set` against the use's node; it pings its children.
+- **H:** it gives `host` only to permissive frames of packs the configuration gives `host`; it never acts on `link` without the reader.
 
 ## Versions
 
-The sandbox's version travels in `hello` and `ready`, beside `@compmd/render`'s. H and its frames come from one package, but a host may serve `frame.html` from an older deploy: a frame with another version gets nothing, and H reports it.
+The sandbox's version travels in `hello` and `ready`, beside `@compmd/render`'s. A host may serve the frame documents from an older deploy than its page: a frame with another version gets nothing, and its parent reports it.
 
 ## From the playground's messages
 
@@ -113,4 +103,4 @@ The sandbox's version travels in `hello` and `ready`, beside `@compmd/render`'s.
 
 ## Open
 
-- **`@compmd/render`'s protocol** could take the sandbox's messages into its own, as T-298's description first said, or stay as it is with the sandbox's beside it on the same port (recommended, decision 5): a host that builds its own sandbox can still use `connectFrame` and `serveFrame` alone.
+- **`@compmd/render`'s protocol** could take the sandbox's messages into its own, or stay as it is with the sandbox's beside it on the same port (recommended, decision 5): a host that builds its own sandbox can still use `connectFrame` and `serveFrame` alone.
