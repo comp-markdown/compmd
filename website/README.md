@@ -16,6 +16,7 @@ The landing page, with the playground and the spec, assembled into one static si
 - **The contents wheel** (`src/SectionWheel.svelte`) shows the section being read, and turns as the page scrolls.
 - **The spec page** is the spec's Markdown as plain GFM HTML (the processor's `plainHtml`), with the code highlighted by [Shiki](https://shiki.style) at build time (`build/highlight.ts`, with grammars of our own for CompMD's syntax and ABNF in `build/grammars.ts`). It has ids on the headings as GitHub gives them, a link to each heading's source, and the requirement words marked (`build/spec.ts`). It is static HTML: `src/spec.ts` only adds the scroll-spy and the phone menu. Each version goes in a folder of its own (`build/versions.ts`).
 - **The snippets** of "Use it in your app" are the files in `snippets/`, which tests run as they are written.
+- **Visits are counted** with [GoatCounter](https://www.goatcounter.com), without cookies (`src/count.ts`). Its script loads once a page has loaded, on the landing page and the spec page, never in the playground's frame. It counts only on the published site: served from this machine, as by `pnpm dev` and `pnpm check`, it doesn't load.
 
 `pnpm build` runs:
 1. `vite build`: the two pages' scripts and styles.

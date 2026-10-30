@@ -1,6 +1,7 @@
 // The spec page's script, on top of its static HTML: the contents mark the section being read, and fold into a menu on
 // a narrow screen. Without it the page reads the same, with the contents in full above the text.
 import "./base.css";
+import { countAfterLoad } from "./count.ts";
 import { currentOf } from "./current.ts";
 import "./spec.css";
 
@@ -68,3 +69,4 @@ if (toc) {
   scrollSpy(toc);
   menu(toc);
 }
+countAfterLoad(window);
