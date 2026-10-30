@@ -1,6 +1,6 @@
 //! A document's lines, to find where a part of a line is: a component's name, a param's value, a path in a string.
 
-use crate::diagnostic::Location ;
+use crate::diagnostic::Location;
 use crate::parse::params::interpolations;
 use crate::tree::{Point, Position};
 
