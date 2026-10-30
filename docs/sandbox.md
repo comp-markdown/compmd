@@ -1,6 +1,6 @@
 # The sandbox
 
-**Status: proposed (2026-10-30).** How `@compmd/sandbox` runs component code in a browser at the three trust levels of spec §15. Part of [components from apps and packs](components-from-apps-and-packs.md), which decided *that* the sandbox is a package (decision 4) and *what* each level may reach (Q1); this design decides *how*. The messages between its windows are their own design: [the sandbox's frame protocol](sandbox-protocol.md).
+**Status: accepted (2026-10-30).** How `@compmd/sandbox` runs component code in a browser at the three trust levels of spec §15. Part of [components from apps and packs](components-from-apps-and-packs.md), which decided *that* the sandbox is a package (decision 4) and *what* each level may reach (Q1); this design decides *how*. The messages between its windows are their own design: [the sandbox's frame protocol](sandbox-protocol.md).
 
 ## Proposed decisions
 

@@ -1,6 +1,6 @@
 # The sandbox's frame protocol
 
-**Status: proposed (2026-10-30; revised the same day from a star, where every frame believed the host's page, to a tree).** The messages between the windows of [the sandbox](sandbox.md): who sends what to whom, and what each end checks. It builds on `@compmd/render`'s frame protocol ([render README, "In a frame"](../render/README.md#in-a-frame)) and replaces the playground's own messages (`editor/src/protocol.ts`).
+**Status: accepted (2026-10-30; revised the same day from a star, where every frame believed the host's page, to a tree).** The messages between the windows of [the sandbox](sandbox.md): who sends what to whom, and what each end checks. It builds on `@compmd/render`'s frame protocol ([render README, "In a frame"](../render/README.md#in-a-frame)) and replaces the playground's own messages (`editor/src/protocol.ts`).
 
 ## Proposed decisions
 
