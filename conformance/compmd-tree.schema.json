@@ -200,12 +200,11 @@
           ]
         },
         "headings": { "enum": ["relative", "absolute"] },
-        "code": {
-          "description": "A code renderer's language, and the param a code block's text fills (§7.7); absent when the signature has none.",
-          "type": "object",
-          "required": ["language", "param"],
-          "properties": { "language": { "type": "string" }, "param": { "type": "string" } },
-          "additionalProperties": false
+        "renders": {
+          "description": "A code renderer's languages, names of one language (§7.3, §7.7); absent when the signature has none.",
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
         }
       },
       "additionalProperties": false
