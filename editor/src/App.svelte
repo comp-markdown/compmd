@@ -192,15 +192,24 @@
   }
 
   const ms = (value: number | undefined) => (value === undefined ? "–" : `${value.toFixed(1)} ms`);
+
+  /**
+   * The CompMD website, which the playground is part of, at `playground/`: relative, so the links work wherever the
+   * site is published. The repository.
+   */
+  const SITE = "../";
+  const REPOSITORY = "https://github.com/comp-markdown/compmd";
 </script>
 
 <header>
   <div class="title">
-    <picture class="logo">
-      <source media="(prefers-color-scheme: dark)" srcset={markDark} />
-      <img src={markLight} alt="" width="40" height="26" />
-    </picture>
-    <h1>CompMD Playground</h1>
+    <a class="home" href={SITE} title="The CompMD website">
+      <picture class="logo">
+        <source media="(prefers-color-scheme: dark)" srcset={markDark} />
+        <img src={markLight} alt="" width="40" height="26" />
+      </picture>
+      <h1>CompMD Playground</h1>
+    </a>
     <button type="button" class="about-toggle" aria-label="About" title="About" aria-expanded={about} aria-controls="about" onclick={toggleAbout}>i</button>
   </div>
   <label class="document">
@@ -230,8 +239,9 @@
     </div>
   </dl>
   <nav class="links" aria-label="CompMD">
-    <a href="https://github.com/comp-markdown/compmd/blob/main/compmd-spec-v1.md" target="_blank" rel="noreferrer">Spec</a>
-    <a href="https://github.com/comp-markdown/compmd" target="_blank" rel="noreferrer">GitHub</a>
+    <a href={SITE}>Website</a>
+    <a href="{SITE}spec/">Spec</a>
+    <a href={REPOSITORY} target="_blank" rel="noreferrer">GitHub</a>
   </nav>
 </header>
 
@@ -244,6 +254,9 @@
       builds. Beside the document, try the stylesheets a host might give the page; above the tabs, other values for the document's inputs. Under the text,
       a line says what is at the caret and what it takes, with its values to click, and the diagnostics point at what's wrong and offer
       fixes. Nothing leaves your browser.
+      {#if __COMMIT__}
+        Built from commit <a href="{REPOSITORY}/commit/{__COMMIT__}" target="_blank" rel="noreferrer"><code>{__COMMIT__.slice(0, 7)}</code></a>.
+      {/if}
     </p>
     <button type="button" class="close" aria-label="Close" onclick={toggleAbout}>
       <svg viewBox="0 0 12 12" aria-hidden="true"><path d="m3 3 6 6m0-6-6 6" /></svg>

@@ -88,19 +88,19 @@ pnpm bench   # size and speed against the budgets
 - **`process`:** each run is a keystroke. The text changes, and the whole request is processed again.
 - **A keystroke in an open document:** a character typed into a paragraph in the middle of the body, then deleted, in turn. It is timed in the module alone (the processing, with the splice as JSON text), and through `OpenDocument`, which also parses the splice and moves the origins after it. The 500 KB body is the 52 KB one ten times.
 
-The module is 758 KB gzipped, against a budget of 1 MB. Times, p95:
+The module is 808 KB gzipped, against a budget of 1 MB. Times, p95:
 
 | Document | Budget | Chrome 156 | WebKit (Safari 27.2) |
 |---|---|---|---|
-| `process`: the spec's complete example (4 KB) | ≤ 14 ms | 2.5 ms | 2.4 ms |
-| `process`: a changelog of 12 releases and 128 changes | ≤ 48 ms | 3.9 ms | 3.3 ms |
-| `process`: a 52 KB body | ≤ 48 ms | 10.0 ms | 8.4 ms |
-| A keystroke in 52 KB, processing | ≤ 1 ms | 0.10 ms | 0.08 ms |
-| A keystroke in 52 KB, with the splice applied | | 0.14 ms | 0.14 ms |
-| A keystroke in 500 KB, processing | ≤ 1 ms | 0.29 ms | 0.28 ms |
-| A keystroke in 500 KB, with the splice applied | | 0.84 ms | 0.78 ms |
+| `process`: the spec's complete example (4 KB) | ≤ 14 ms | 3.0 ms | 2.4 ms |
+| `process`: a changelog of 12 releases and 128 changes | ≤ 48 ms | 4.0 ms | 3.4 ms |
+| `process`: a 52 KB body | ≤ 48 ms | 10.3 ms | 10.4 ms |
+| A keystroke in 52 KB, processing | ≤ 1 ms | 0.10 ms | 0.10 ms |
+| A keystroke in 52 KB, with the splice applied | | 0.15 ms | 0.16 ms |
+| A keystroke in 500 KB, processing | ≤ 1 ms | 0.30 ms | 0.28 ms |
+| A keystroke in 500 KB, with the splice applied | | 0.82 ms | 0.82 ms |
 
-The budgets for `process` are one frame (16 ms) from key press to paint for a short document and 50 ms for a long one, less the renderer's 2 ms. A keystroke's budget is the target of incremental processing. Measured on 2026-10-29 on an Apple M4; loading the module takes 6 to 9 ms.
+The budgets for `process` are one frame (16 ms) from key press to paint for a short document and 50 ms for a long one, less the renderer's 2 ms. A keystroke's budget is the target of incremental processing. Measured on 2026-10-29 on an Apple M4, after the positional hints; loading the module takes 10 to 15 ms.
 
 ## License
 

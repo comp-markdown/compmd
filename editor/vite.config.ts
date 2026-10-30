@@ -1,4 +1,5 @@
 import { svelte } from "@sveltejs/vite-plugin-svelte";
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { defineConfig, type Plugin } from "vite";
@@ -35,12 +36,22 @@ function shared(): Plugin {
   };
 }
 
+/** The commit the playground is built from, which its About names; empty outside a git checkout. */
+function commit(): string {
+  try {
+    return execFileSync("git", ["rev-parse", "HEAD"], { cwd: import.meta.dirname, encoding: "utf8" }).trim();
+  } catch {
+    return "";
+  }
+}
+
 // The frame is a sandboxed iframe with an opaque origin, so its modules load cross-origin.
 const cors = { origin: "*" };
 
 export default defineConfig({
   base: "./",
   plugins: [shared(), svelte()],
+  define: { __COMMIT__: JSON.stringify(commit()) },
   build: {
     target: "es2024",
     rolldownOptions: { input: { index: "index.html", frame: "frame.html" } },

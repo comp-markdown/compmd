@@ -1,0 +1,64 @@
+# The site on GitHub Pages: the landing page, the playground and the spec, built from this repository, checked in
+# Chrome, and deployed (website/docs/design.md).
+name: Pages
+
+on:
+  push:
+    branches: [main]
+    # Only what the site is built from. Path filters don't apply to tags: a release tag always deploys.
+    paths:
+      - compmd-spec-v1.md
+      - website/**
+      - editor/**
+      - render/**
+      - wasm/**
+      - processor/**
+      - markdown-rs
+      - logo/**
+      - pnpm-lock.yaml
+      - Cargo.lock
+      - .github/workflows/pages.yml
+      - .github/actions/setup/**
+    # A released version of the spec (docs/releases.md) adds its own page.
+    tags: ["spec-v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One deployment at a time, and none cut off halfway: a newer run waits for the one going.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+          # Every tag, for the released versions of the spec.
+          fetch-depth: 0
+      - uses: ./.github/actions/setup
+      - run: pnpm install --frozen-lockfile
+      # The processor as WebAssembly, the renderer, the playground, then the site, which assembles them.
+      - run: pnpm -r build
+      # The runner's Chrome; the paint budget is measured locally, since a shared runner's timings vary.
+      - run: pnpm --dir website check --no-timing
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: website/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

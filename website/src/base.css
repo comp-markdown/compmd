@@ -1,0 +1,159 @@
+/* What every page of the site shares: the playground's look, carried over. A document is a manuscript and its page the
+   proof, sheets on a cool desk, in blue-black ink with an editor's blue pencil as the one accent. Every font is the
+   system's, so nothing loads to show a page. */
+
+:root {
+  color-scheme: light dark;
+  --desk: #e9edf1;
+  --sheet: #fbfcfd;
+  --ink: #1b2430;
+  --ink-secondary: #5b6776;
+  --rule: #d3dae2;
+  --accent: #3557c4;
+  --accent-ink: #fbfcfd;
+  --accent-wash: color-mix(in srgb, var(--accent) 9%, transparent);
+  --error: #be3b34;
+  --shadow: 0 1px 2px rgb(27 36 48 / 6%), 0 8px 28px rgb(27 36 48 / 7%);
+  --serif: "Iowan Old Style", Charter, "Bitstream Charter", "Sitka Text", Cambria, serif;
+  --sans: "Avenir Next", "Segoe UI Variable Text", "Segoe UI", Seravek, "Helvetica Neue", system-ui, sans-serif;
+  --mono: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
+  --radius: 6px;
+  --gutter: clamp(16px, 4vw, 40px);
+  --header: 3.5rem;
+  --compmd-accent: var(--accent);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --desk: #101419;
+    --sheet: #161b22;
+    --ink: #e4e9ef;
+    --ink-secondary: #97a3b1;
+    --rule: #29313c;
+    --accent: #8da6ee;
+    --accent-ink: #101419;
+    --error: #ee8a82;
+    --shadow: 0 1px 2px rgb(0 0 0 / 40%), 0 8px 28px rgb(0 0 0 / 28%);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-padding-top: calc(var(--header) + 1rem);
+}
+
+body {
+  margin: 0;
+  background: var(--desk);
+  color: var(--ink);
+  font: 17px/1.55 var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--accent);
+  text-underline-offset: 0.18em;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* No ligatures: source shows what is typed, `>=` and not `≥`. */
+code,
+pre,
+textarea {
+  font-family: var(--mono);
+  font-variant-ligatures: none;
+}
+
+:not(pre) > code {
+  font-size: 0.88em;
+  padding: 0.08em 0.3em;
+  border-radius: 4px;
+  background: var(--accent-wash);
+}
+
+.wrap {
+  max-inline-size: 76rem;
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+h1,
+h2,
+h3,
+h4,
+dt {
+  font-family: var(--serif);
+  font-weight: 600;
+  text-wrap: balance;
+}
+
+/* The header: the logo and the three places, thin and always there. */
+
+header.site {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 2;
+  background: color-mix(in srgb, var(--desk) 88%, transparent);
+  backdrop-filter: blur(8px);
+  border-block-end: 1px solid var(--rule);
+}
+
+header.site .wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-block-size: var(--header);
+}
+
+header.site .home {
+  color: var(--ink);
+}
+
+.logo {
+  display: block;
+  block-size: 1.5rem;
+  inline-size: auto;
+}
+
+.logo .tile {
+  fill: var(--accent);
+}
+
+.logo .accent {
+  stroke: var(--accent);
+}
+
+header.site nav {
+  display: flex;
+  gap: clamp(14px, 3vw, 28px);
+}
+
+header.site nav a {
+  color: var(--ink);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+header.site nav a:hover,
+header.site nav a[aria-current="page"] {
+  color: var(--accent);
+}
+
+footer.site {
+  padding-block: 28px 40px;
+  border-block-start: 1px solid var(--rule);
+  color: var(--ink-secondary);
+  font-size: 0.9rem;
+}
+
+footer.site p {
+  margin: 0;
+}

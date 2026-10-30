@@ -1,0 +1,2 @@
+# The server build of the landing page, which the prerender reads.
+dist-server/

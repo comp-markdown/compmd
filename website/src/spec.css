@@ -1,0 +1,279 @@
+/* The spec page, on `base.css`: made for reading a long document. The text in one column of readable width, the
+   contents beside it, the requirement words and the tables set to be scanned, code highlighted in the page's light and
+   dark. */
+
+/* The status line: draft or released, and the other versions. */
+
+.status {
+  border-block-end: 1px solid var(--rule);
+  background: var(--sheet);
+  font-size: 0.92rem;
+}
+
+.status.draft {
+  background: var(--accent-wash);
+}
+
+.status .wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 24px;
+  padding-block: 10px;
+}
+
+.status p {
+  margin: 0;
+  color: var(--ink-secondary);
+}
+
+.status strong {
+  color: var(--ink);
+}
+
+.status p a {
+  margin-inline-start: 0.4em;
+}
+
+.status nav {
+  display: flex;
+  gap: 14px;
+}
+
+.status nav a[aria-current="page"] {
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+/* The contents beside the text. */
+
+.reading {
+  display: grid;
+  grid-template-columns: 17rem minmax(0, 46rem);
+  gap: clamp(24px, 4vw, 64px);
+  padding-block: 40px 80px;
+}
+
+.toc {
+  position: sticky;
+  inset-block-start: calc(var(--header) + 16px);
+  align-self: start;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.toc ol {
+  max-block-size: calc(100vh - var(--header) - 48px);
+  margin: 0;
+  padding: 0 8px 0 0;
+  overflow-y: auto;
+  list-style: none;
+  overscroll-behavior: contain;
+}
+
+.toc li.level-2 {
+  margin-block-start: 10px;
+  font-weight: 600;
+}
+
+.toc li.level-3 a {
+  padding-inline-start: 22px;
+  font-weight: 400;
+}
+
+.toc a {
+  display: block;
+  padding: 3px 10px;
+  border-inline-start: 2px solid transparent;
+  color: var(--ink-secondary);
+  text-decoration: none;
+}
+
+.toc a:hover {
+  color: var(--ink);
+}
+
+.toc a[aria-current="location"] {
+  border-inline-start-color: var(--accent);
+  color: var(--accent);
+}
+
+.toc-toggle {
+  inline-size: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--sheet);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+  text-align: start;
+  cursor: pointer;
+}
+
+@media (width < 960px) {
+  /* Below the header and the contents bar, both sticky. */
+  html {
+    scroll-padding-top: calc(var(--header) + 4.5rem);
+  }
+
+  .reading {
+    grid-template-columns: minmax(0, 1fr);
+    padding-block-start: 16px;
+  }
+
+  .toc {
+    z-index: 1;
+    inset-block-start: calc(var(--header) + 8px);
+  }
+
+  .toc ol {
+    margin-block-start: 6px;
+    padding: 6px 4px 12px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    background: var(--sheet);
+    box-shadow: var(--shadow);
+    max-block-size: 70vh;
+  }
+
+  .toc.folded ol {
+    display: none;
+  }
+
+  /* Without the script, the contents read in full above the text. */
+  .toc:not(.folded):has(.toc-toggle[hidden]) {
+    position: static;
+  }
+}
+
+/* The text. */
+
+.spec {
+  font-size: 1.02rem;
+  line-height: 1.65;
+  overflow-wrap: break-word;
+}
+
+.spec h1 {
+  margin: 0 0 0.6em;
+  font-size: clamp(2rem, 4.5vw, 2.8rem);
+  line-height: 1.1;
+}
+
+.spec h2 {
+  margin: 2.4em 0 0.6em;
+  padding-block-start: 0.6em;
+  border-block-start: 1px solid var(--rule);
+  font-size: 1.75rem;
+  line-height: 1.2;
+}
+
+.spec h3 {
+  margin: 2em 0 0.5em;
+  font-size: 1.3rem;
+  line-height: 1.25;
+}
+
+.spec h4 {
+  margin: 1.6em 0 0.4em;
+  font-size: 1.08rem;
+}
+
+/* A heading's own link and its source, shown when it is pointed at. */
+.spec :is(h2, h3, h4) .anchor,
+.spec :is(h2, h3, h4) .source {
+  margin-inline-start: 0.5em;
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-decoration: none;
+  opacity: 0;
+}
+
+.spec :is(h2, h3, h4):is(:hover, :focus-within) :is(.anchor, .source),
+.spec :is(h2, h3, h4) :is(.anchor, .source):focus-visible {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .spec :is(h2, h3, h4) :is(.anchor, .source) {
+    opacity: 0.7;
+  }
+}
+
+/* MUST, SHOULD, MAY: what a reader scans for. */
+.spec em.rule {
+  font-style: normal;
+  font-weight: 650;
+  letter-spacing: 0.03em;
+  color: var(--ink);
+}
+
+.spec :is(ul, ol) {
+  padding-inline-start: 1.4em;
+}
+
+.spec li + li {
+  margin-block-start: 0.3em;
+}
+
+.spec blockquote {
+  margin: 1.2em 0;
+  padding: 0.6em 1em;
+  border-inline-start: 3px solid var(--accent);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  background: var(--accent-wash);
+}
+
+.spec blockquote > :first-child {
+  margin-block-start: 0;
+}
+
+.spec blockquote > :last-child {
+  margin-block-end: 0;
+}
+
+/* Tables scroll on their own when they are wider than the text. */
+.spec table {
+  display: block;
+  max-inline-size: 100%;
+  margin-block: 1.2em;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.spec :is(th, td) {
+  padding: 7px 14px 7px 0;
+  border-block-end: 1px solid var(--rule);
+  text-align: start;
+  vertical-align: top;
+}
+
+.spec th {
+  border-block-end-width: 2px;
+  font-weight: 600;
+}
+
+/* Code: Shiki's colors for light, and its dark ones under a dark scheme. */
+.spec pre {
+  margin-block: 1.2em;
+  padding: 14px 16px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--sheet) !important;
+  font-size: 0.86rem;
+  line-height: 1.6;
+  overflow-x: auto;
+}
+
+@media (prefers-color-scheme: dark) {
+  .spec .shiki,
+  .spec .shiki span {
+    color: var(--shiki-dark) !important;
+  }
+}

@@ -1,0 +1,542 @@
+/* The landing page, on `base.css`: each document beside its page, the manuscript and its proof. The logo's corner
+   tile marks the pages the reader can change. */
+
+/* The contents wheel, at the right on a wide screen: the section being read in the middle, the others above and below,
+   smaller and fainter the further they are, the ends fading out. Each item is placed by its distance from the reader's
+   place (`--offset`, in rows) and sized by it (`--scale`), which `SectionWheel.svelte` sets as the page scrolls. */
+
+.wheel {
+  display: none;
+}
+
+@media (width >= 1100px) {
+  main .wrap {
+    padding-inline-end: calc(var(--gutter) + 12rem);
+  }
+
+  .wheel {
+    display: block;
+    position: fixed;
+    inset-block: calc(var(--header) + 2rem) 2rem;
+    inset-inline-end: var(--gutter);
+    z-index: 1;
+    inline-size: 11rem;
+    mask-image: linear-gradient(transparent, #000 30%, #000 70%, transparent);
+  }
+}
+
+.wheel ol {
+  position: relative;
+  block-size: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wheel li {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-end: 0;
+  transform: translateY(calc(var(--offset) * 2.4rem - 50%)) scale(var(--scale));
+  transform-origin: right center;
+  white-space: nowrap;
+}
+
+.wheel a {
+  display: block;
+  padding: 4px 14px 4px 0;
+  border-inline-end: 2px solid transparent;
+  color: var(--ink-secondary);
+  font-size: 0.95rem;
+  text-decoration: none;
+}
+
+.wheel a:hover {
+  color: var(--ink);
+}
+
+/* An item reached by the keyboard shows whole, however far it is. */
+.wheel li:has(a:focus-visible) {
+  opacity: 1 !important;
+}
+
+.wheel a[aria-current="location"] {
+  border-inline-end-color: var(--accent);
+  color: var(--accent);
+  font-family: var(--serif);
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+/* The wheel eases between scroll positions, and a chosen section scrolls into view, for a reader who doesn't ask for
+   less motion. */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  .wheel li {
+    transition:
+      transform 180ms ease-out,
+      opacity 180ms ease-out;
+  }
+}
+
+/* Sections: a heading, a line on what it shows, and the thing to look at. */
+
+main > section {
+  padding-block: clamp(48px, 7vw, 88px);
+}
+
+main > section + section {
+  border-block-start: 1px solid var(--rule);
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(2.6rem, 7vw, 5rem);
+  line-height: 1.02;
+  letter-spacing: -0.015em;
+}
+
+h2 {
+  margin: 0 0 0.4em;
+  font-size: clamp(1.9rem, 4vw, 2.6rem);
+  line-height: 1.1;
+}
+
+h3 {
+  margin: 0 0 0.35em;
+  font-size: 1.3rem;
+  line-height: 1.25;
+}
+
+.lede {
+  max-inline-size: 40rem;
+  margin: 0 0 2.2rem;
+  color: var(--ink-secondary);
+  font-size: 1.12rem;
+  text-wrap: pretty;
+}
+
+/* The hero leaves room at the bottom of a laptop's screen for the next section to show, so the page reads as going on. */
+main > section.hero {
+  padding-block: clamp(28px, 4vw, 48px) clamp(32px, 4vw, 48px);
+}
+
+.hero .lede {
+  margin-block: 1rem 0;
+}
+
+.hero .actions {
+  margin-block: 1.4rem 1.8rem;
+}
+
+/* A document beside its page: the manuscript on the left, the proof on the right, stacked on a phone. */
+
+.pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: clamp(12px, 2vw, 24px);
+  align-items: start;
+}
+
+/* The hero's text is as tall as its page, and scrolls for the rest. */
+.hero-pair {
+  align-items: stretch;
+}
+
+@media (width < 760px) {
+  .pair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.manuscript {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--sheet) 55%, var(--desk));
+  overflow: hidden;
+}
+
+.manuscript figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  padding: 8px 14px;
+  border-block-end: 1px solid var(--rule);
+  font: 500 13px/1.4 var(--mono);
+  color: var(--ink-secondary);
+}
+
+.manuscript pre,
+.manuscript textarea {
+  margin: 0;
+  padding: 14px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  tab-size: 2;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.manuscript textarea {
+  display: block;
+  inline-size: 100%;
+  flex: 1;
+  min-block-size: 14em;
+  border: 0;
+  resize: vertical;
+  background: transparent;
+  color: var(--ink);
+}
+
+.manuscript textarea:focus-visible {
+  outline-offset: -2px;
+}
+
+.hint {
+  font-family: var(--sans);
+}
+
+.diagnostic {
+  margin: 0;
+  padding: 8px 14px;
+  border-block-start: 1px solid var(--rule);
+  color: var(--error);
+  font-size: 14px;
+}
+
+.proof {
+  position: relative;
+  padding: clamp(18px, 3vw, 32px);
+  border-radius: var(--radius);
+  background: var(--sheet);
+  box-shadow: var(--shadow);
+  font-family: var(--serif);
+  font-size: 1.05rem;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+/* The corner tile: this page changes when the reader does something. */
+.proof.live::after {
+  content: "";
+  position: absolute;
+  inset-block-start: -7px;
+  inset-inline-end: -7px;
+  inline-size: 20px;
+  block-size: 20px;
+  border-radius: 5px;
+  background: var(--accent);
+}
+
+/* The page's typography, at the specificity of `.proof` alone, so the renderer's own rules (a tight list) win. */
+.proof :where(h1, h2, h3) {
+  margin: 0 0 0.5em;
+  font-size: 1.6rem;
+  line-height: 1.2;
+}
+
+.proof :where(p, ul, ol, table, .compmd-alert, .compmd-input) {
+  margin-block: 0 0.8em;
+}
+
+.proof > :last-child > :last-child {
+  margin-block-end: 0;
+}
+
+.proof table {
+  border-collapse: collapse;
+}
+
+.proof :is(th, td) {
+  padding: 4px 14px 4px 0;
+  border-block-end: 1px solid var(--rule);
+  text-align: start;
+}
+
+.proof ul:has(> .compmd-task) {
+  padding-inline-start: 0;
+}
+
+.proof .compmd-footnotes li > p {
+  display: inline;
+  margin-inline-end: 0.4em;
+}
+
+.proof .compmd-alert-title {
+  margin-block-end: 0.2em;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.proof .compmd-input input {
+  font: inherit;
+  font-family: var(--sans);
+}
+
+.proof .compmd-input input[type="number"] {
+  inline-size: 6em;
+}
+
+/* A page in the playground's sandboxed frame, whose surface is the sheet's and which pads the page itself. */
+.proof.framing iframe {
+  display: block;
+  inline-size: 100%;
+  border: 0;
+}
+
+.proof.framing:not(.framed) iframe {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.proof.framed {
+  padding: 0;
+  overflow: hidden;
+}
+
+/* The page assembling: once, on load, block by block, for a reader who doesn't ask for less motion. */
+@media (prefers-reduced-motion: no-preference) {
+  .hero .proof:not(.ready) .compmd-page > * {
+    animation: assemble 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+
+  .hero .proof .compmd-page > :nth-child(2) {
+    animation-delay: 140ms;
+  }
+
+  .hero .proof .compmd-page > :nth-child(3) {
+    animation-delay: 280ms;
+  }
+
+  .hero .proof .compmd-page > :nth-child(4) {
+    animation-delay: 420ms;
+  }
+}
+
+@keyframes assemble {
+  from {
+    opacity: 0;
+    translate: 0 10px;
+  }
+}
+
+/* As a plain renderer shows it: GitHub's look, sans and flat. */
+.proof.plain {
+  font-family: var(--sans);
+  font-size: 1rem;
+}
+
+.proof.plain p {
+  margin-block: 0 1em;
+}
+
+/* Buttons and the toggle. */
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 2rem 0 0;
+}
+
+.button {
+  display: inline-block;
+  padding: 0.65em 1.25em;
+  border: 1.5px solid var(--accent);
+  border-radius: var(--radius);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.button.primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.toggle,
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-block-end: 16px;
+}
+
+.toggle button,
+.tabs button {
+  padding: 0.45em 0.95em;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--sheet);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.toggle button[aria-pressed="true"],
+.tabs button[aria-selected="true"] {
+  border-color: var(--accent);
+  background: var(--accent-wash);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Why: three beats side by side. */
+
+.beats,
+.columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+  gap: clamp(24px, 4vw, 48px);
+}
+
+.beats p,
+.columns p,
+.columns li {
+  color: var(--ink-secondary);
+  text-wrap: pretty;
+}
+
+.columns ul {
+  margin: 0;
+  padding-inline-start: 1.1em;
+}
+
+.columns li + li {
+  margin-block-start: 0.5em;
+}
+
+/* What: each feature, its line beside its pair. */
+
+.feature {
+  display: grid;
+  grid-template-columns: minmax(0, 17rem) minmax(0, 1fr);
+  gap: clamp(16px, 3vw, 40px);
+  align-items: start;
+}
+
+.feature + .feature {
+  margin-block-start: clamp(40px, 6vw, 64px);
+}
+
+.feature .about p {
+  margin: 0;
+  color: var(--ink-secondary);
+}
+
+@media (width < 960px) {
+  .feature {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.claims {
+  margin: 0;
+  padding-inline-start: 1.1em;
+  color: var(--ink-secondary);
+}
+
+.claims li + li {
+  margin-block-start: 0.75em;
+}
+
+/* Use it in your app. */
+
+.install,
+.snippet pre {
+  margin: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--sheet);
+  font-size: 14px;
+  line-height: 1.6;
+  overflow-x: auto;
+}
+
+.note {
+  margin: 10px 0 32px;
+  color: var(--ink-secondary);
+  font-size: 0.95rem;
+}
+
+.snippet p {
+  margin: 0 0 10px;
+  color: var(--ink-secondary);
+}
+
+/* Under the hood: one point per row, its name beside what it says. */
+
+.points {
+  margin: 0;
+}
+
+.points div {
+  display: grid;
+  grid-template-columns: minmax(0, 20rem) minmax(0, 1fr);
+  gap: 8px clamp(16px, 3vw, 40px);
+  padding-block: 18px;
+  border-block-start: 1px solid var(--rule);
+}
+
+.points dt {
+  font-size: 1.15rem;
+}
+
+.points dd {
+  margin: 0;
+  max-inline-size: 40rem;
+  color: var(--ink-secondary);
+}
+
+@media (width < 760px) {
+  .points div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Where next: the places, each a sheet. */
+
+.places {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12.5rem), 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.places a {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  block-size: 100%;
+  padding: 18px 20px;
+  border-radius: var(--radius);
+  background: var(--sheet);
+  box-shadow: var(--shadow);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.places a:hover strong {
+  color: var(--accent);
+}
+
+.places strong {
+  font: 600 1.2rem/1.25 var(--serif);
+}
+
+.places span {
+  color: var(--ink-secondary);
+  font-size: 0.95rem;
+}

@@ -1,0 +1,36 @@
+{
+  "name": "@compmd/website",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The CompMD website: the landing page, with the playground and the spec, assembled into one static site.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && vite build --ssr src/server.ts --outDir dist-server && node scripts/prerender.ts && node scripts/assemble.ts",
+    "preview": "node scripts/serve.ts",
+    "lint": "eslint . && tsc --noEmit && svelte-check --tsconfig ./tsconfig.json --fail-on-warnings --output machine",
+    "test": "vitest run",
+    "check": "node scripts/check.ts"
+  },
+  "dependencies": {
+    "@compmd/processor": "workspace:*",
+    "@compmd/render": "workspace:*",
+    "svelte": "5.57.2"
+  },
+  "devDependencies": {
+    "@compmd/editor": "workspace:*",
+    "@eslint/js": "10.0.1",
+    "@sveltejs/vite-plugin-svelte": "7.3.1",
+    "@types/node": "26.6.5",
+    "eslint": "10.13.0",
+    "happy-dom": "21.0.3",
+    "playwright-core": "1.64.1",
+    "shiki": "4.5.0",
+    "svelte-check": "4.7.7",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.0",
+    "vite": "8.3.4",
+    "vitest": "5.0.5"
+  }
+}

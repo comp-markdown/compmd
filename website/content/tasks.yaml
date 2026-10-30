@@ -1,0 +1,3 @@
+- {name: The parser, done: true, points: 5}
+- {name: The playground, done: true, points: 8}
+- {name: The website, done: false, points: 3}
