@@ -73,7 +73,8 @@ export default async function setup(project: TestProject): Promise<() => Promise
   await rm(OUT, { recursive: true, force: true });
   await buildFrames({ out: OUT, base, from: join(ROOT, "dist/frames") });
   await mkdir(join(OUT, "packs"), { recursive: true });
-  await writeFile(join(OUT, "packs/hello.js"), "export default function mount(target) { target.textContent = 'built module'; }\n");
+  // A pack's built module, which sets the input `result` when it mounts.
+  await writeFile(join(OUT, "packs/built.js"), 'export default function mount(target, { set }) { target.textContent = "built"; set("result", JSON.stringify("built module")); }\n');
   project.provide("frames", base);
   project.provide("allowed", allowed ?? "");
   project.provide("denied", denied ?? "");

@@ -10,13 +10,15 @@ export const frames = inject("frames");
 export const allowed = inject("allowed");
 export const denied = inject("denied");
 
-/** What reached `server` since it was last reset. */
-export async function hits(server: string): Promise<string[]> {
-  return (await (await fetch(`${server}hits`)).json()) as string[];
-}
+/**
+ * A tag for one test's requests. Chrome and WebKit run at once against the same servers, so a test counts only what
+ * carries its tag.
+ */
+export const tagged = () => `t${crypto.randomUUID().replaceAll("-", "")}`;
 
-export async function reset(...servers: string[]): Promise<void> {
-  await Promise.all(servers.map((server) => fetch(`${server}reset`)));
+/** The requests that reached `server` with `tag` in them, each as `<path>?<query>`. */
+export async function hits(server: string, tag: string): Promise<string[]> {
+  return ((await (await fetch(`${server}hits`)).json()) as string[]).filter((hit) => hit.includes(tag));
 }
 
 /** Waits `ms`, for requests that would have been made to arrive. */

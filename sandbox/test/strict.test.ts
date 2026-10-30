@@ -1,20 +1,15 @@
 // A strict frame (docs/sandbox.md, threat model T1, T2, T3, T5): its code reaches nothing outside its contract.
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { ATTEMPT, allowed, denied, frames, hits, pause, probe, type Probe } from "./harness.ts";
+import { afterEach, describe, expect, it } from "vitest";
+import { ATTEMPT, denied, frames, hits, pause, probe, tagged, type Probe } from "./harness.ts";
 
 let probes: Probe[] = [];
-const run = (body: string, ...rest: Parameters<typeof probe> extends [unknown, unknown, ...infer R] ? R : never): Promise<unknown> => {
-  const started = probe("strict", body, ...rest);
+const run = (body: string): Promise<unknown> => {
+  const started = probe("strict", body);
   probes.push(started);
   return started.result;
 };
 
-beforeEach(async () => {
-  await fetch(`${allowed}reset`);
-  await fetch(`${denied}reset`);
-  await fetch(`${frames}reset`);
-});
 afterEach(() => {
   for (const { frame } of probes) frame.destroy();
   probes = [];
@@ -30,12 +25,13 @@ describe("a strict frame", () => {
   });
 
   it("sends nothing anywhere: requests, sockets, images, fonts, styles, beacons, prefetches (T1)", async () => {
+    const tag = tagged();
     const targets = [denied, frames];
     const result = await run(`async () => {
       ${ATTEMPT}
       const out = {};
       for (const base of ${JSON.stringify(targets)}) {
-        const at = (kind) => base + "attempt?" + kind;
+        const at = (kind) => base + "attempt?${tag}-" + kind;
         out[base] = {
           fetch: await attempt(() => fetch(at("fetch"))),
           xhr: await attempt(() => new Promise((resolve, reject) => { const x = new XMLHttpRequest(); x.open("GET", at("xhr")); x.onload = resolve; x.onerror = reject; x.send(); })),
@@ -54,11 +50,11 @@ describe("a strict frame", () => {
     const refused = { fetch: "refused", xhr: "refused", websocket: "refused", eventSource: "refused", image: "refused", font: "refused", style: "refused" };
     expect(result).toEqual({ [denied]: refused, [frames]: refused });
     await pause(200);
-    expect(await hits(denied)).toEqual([]);
+    expect(await hits(denied, tag)).toEqual([]);
     // What a browser can't stop (docs/sandbox.md): styles, fonts and prefetches the policy allows from the frames'
     // own origin, the host's, carry a query string there, and nothing else does.
-    const atHost = new Set((await hits(frames)).filter((hit) => hit.startsWith("/attempt")).map((hit) => hit.slice("/attempt?".length)));
-    expect([...atHost].filter((kind) => !["font", "style", "prefetch"].includes(kind))).toEqual([]);
+    const atHost = (await hits(frames, tag)).map((hit) => hit.slice(`/attempt?${tag}-`.length));
+    expect(atHost.filter((kind) => !["font", "style", "prefetch"].includes(kind))).toEqual([]);
   });
 
   it("can't reach the host's session or page (T2)", async () => {
@@ -78,11 +74,12 @@ describe("a strict frame", () => {
   });
 
   it("can't navigate, open windows or submit forms (T3)", async () => {
+    const tag = tagged();
     const result = await run(`async () => {
       const tries = (act) => { try { return act(); } catch { return "refused"; } };
-      const opened = tries(() => window.open(${JSON.stringify(denied)} + "attempt?open") === null ? "refused" : "opened");
-      tries(() => { top.location.href = ${JSON.stringify(denied)} + "attempt?top"; });
-      const form = Object.assign(document.createElement("form"), { action: ${JSON.stringify(denied)} + "attempt?form", method: "post" });
+      const opened = tries(() => window.open(${JSON.stringify(denied)} + "attempt?${tag}-open") === null ? "refused" : "opened");
+      tries(() => { top.location.href = ${JSON.stringify(denied)} + "attempt?${tag}-top"; });
+      const form = Object.assign(document.createElement("form"), { action: ${JSON.stringify(denied)} + "attempt?${tag}-form", method: "post" });
       document.body.append(form);
       tries(() => form.submit());
       await new Promise((resolve) => setTimeout(resolve, 300));
@@ -90,23 +87,25 @@ describe("a strict frame", () => {
     }`);
     expect(result).toEqual({ opened: "refused", here: "/strict.html" });
     await pause(200);
-    expect(await hits(denied)).toEqual([]);
+    expect(await hits(denied, tag)).toEqual([]);
   });
 
   it("can't make frames, and a srcdoc frame it makes has no network (T5)", async () => {
+    const tag = tagged();
     const result = await run(`async () => {
       const framed = (frame) => new Promise((resolve) => { frame.onload = () => resolve("loaded"); document.body.append(frame); setTimeout(() => resolve("timed out"), 500); });
-      for (const src of [${JSON.stringify(frames)} + "permissive.html?attempt=nested", ${JSON.stringify(frames)} + "strict.html?attempt=nested", ${JSON.stringify(denied)} + "attempt?frame"]) {
+      for (const src of [${JSON.stringify(frames)} + "permissive.html?${tag}", ${JSON.stringify(frames)} + "strict.html?${tag}", ${JSON.stringify(denied)} + "attempt?${tag}-frame"]) {
         await framed(Object.assign(document.createElement("iframe"), { src }));
       }
-      await framed(Object.assign(document.createElement("iframe"), { src: URL.createObjectURL(new Blob(["<script>fetch(" + JSON.stringify(${JSON.stringify(denied)} + "attempt?blob") + ")<\\/script>"], { type: "text/html" })) }));
-      await framed(Object.assign(document.createElement("iframe"), { srcdoc: "<script>fetch(" + JSON.stringify(${JSON.stringify(denied)} + "attempt?srcdoc") + ").catch(() => {})<\\/script>" }));
+      const fetching = (kind) => "<script>fetch(" + JSON.stringify(${JSON.stringify(denied)} + "attempt?${tag}-" + kind) + ").catch(() => {})<\\/script>";
+      await framed(Object.assign(document.createElement("iframe"), { src: URL.createObjectURL(new Blob([fetching("blob")], { type: "text/html" })) }));
+      await framed(Object.assign(document.createElement("iframe"), { srcdoc: fetching("srcdoc") }));
       await new Promise((resolve) => setTimeout(resolve, 300));
       return "done";
     }`);
     expect(result).toBe("done");
     await pause(200);
-    expect(await hits(denied)).toEqual([]);
-    expect((await hits(frames)).filter((hit) => hit.includes("attempt"))).toEqual([]);
+    expect(await hits(denied, tag)).toEqual([]);
+    expect(await hits(frames, tag)).toEqual([]);
   });
 });
