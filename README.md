@@ -48,7 +48,7 @@ The spec is a document format of its own and doesn't depend on any application.
 | 8 | A review of the whole spec, start to end, with its editor | To do |
 | 9 | License files: [`LICENSE`](LICENSE) (CC BY 4.0) for the text, [`LICENSE-CODE`](LICENSE-CODE) (MIT) for the conformance set and code | Done |
 | 10 | The media type `text/markdown; variant=compmd` submitted to IANA's Markdown Variants registry (RFC 7764) | To do, at publication |
-| 11 | The spec, conformance set and examples in `comp-markdown/compmd`, tagged `v1.0.0`; applications that implement it use it pinned (for example, as a git submodule) | Partly: the repository exists as a public draft; tagged `v1.0.0` at publication |
+| 11 | The spec, conformance set and examples in `comp-markdown/compmd`, tagged `spec-v1.0` ([releases](docs/releases.md)); applications that implement it use it pinned (for example, as a git submodule) | Partly: the repository exists as a public draft; tagged `spec-v1.0` at publication |
 
 ## The AI authoring guide
 
@@ -76,6 +76,18 @@ AI models know MDX, Markdoc and MDC far better than CompMD, so [llms.txt](llms.t
 - **Without the guide, models write other formats' syntax.** The most frequent baseline diagnostics: components used without importing the pack (F002, 48), guessed params such as `each {items=…}`, `if {test=…}` and inputs with `label=` (F008, 40), malformed component lines such as bare `:::` closers and `::: component name` definitions (F016, 25), and computed `{{ }}` (W106, 27).
 - **CompMD's syntax wasn't the cause** of any failure with the guide. Without it, failures come from what a model can't guess (names, params, the definition fence), not from syntax that misleads it.
 - **Limits:** one run per task and model, tasks written by the guide's author, and the prototype as the only processor. A later measurement should use tasks from real documents and more runs.
+
+## Checks and CI
+
+`cargo make ci` runs every check of the repository: formatting, clippy with warnings as errors, the tests with the conformance set, the WebAssembly build, cargo-deny, line coverage of at least 99%, and every TypeScript package built, linted and tested. CI on GitHub runs the same command on every push to `main` and every pull request ([how](docs/ci.md)); the browser benches stay local.
+
+It needs the tools at the versions CI uses: the Rust toolchain `rust-toolchain.toml` names, with `llvm-tools-preview`; [cargo-make](https://github.com/sagiegurari/cargo-make) 0.37.24, [cargo-deny](https://github.com/EmbarkStudios/cargo-deny) 0.20.2, [cargo-llvm-cov](https://github.com/taiki-e/cargo-llvm-cov) 0.8.4 and `wasm-bindgen-cli` 0.2.129; Node 24 and pnpm 12.14.0.
+
+```sh
+git submodule update --init
+pnpm install
+cargo make ci
+```
 
 ## License
 

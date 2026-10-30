@@ -1,0 +1,8 @@
+# The GitHub Actions the workflows pin by commit, kept current: a weekly pull request when one has a new release
+# (docs/ci.md). Cargo and npm dependencies are updated by hand.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directories: ["/", "/.github/actions/*"]
+    schedule:
+      interval: weekly
