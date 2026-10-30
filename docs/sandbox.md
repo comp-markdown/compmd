@@ -27,7 +27,7 @@ The playground (`editor/`) renders each document in one iframe, `sandbox="allow-
 
 The five examples of [components from apps and packs](components-from-apps-and-packs.md#the-examples), in one document:
 
-```md
+````md
 :: stars {value=4}                        ← the app's own, trusted
 :: rating-summary {product=p}             ← the app's own Svelte, permissive with `host`
 ::: bar-chart {rows=(md.data.sales)}      ← @acme/charts, unlisted: strict
@@ -37,7 +37,7 @@ The five examples of [components from apps and packs](components-from-apps-and-p
 graph LR; Draft --> Review
 ```
 :: map {place="Kyoto"}                    ← @acme/maps, permissive, tiles.example.com
-```
+````
 
 ## Threat model
 
