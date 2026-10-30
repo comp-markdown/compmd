@@ -28,6 +28,7 @@ This is a working draft of CompMD version 1. It specifies document format only; 
 - **Box.** The rectangle a block is laid out in. Every component invocation that is a block has one *outer box* ([section 9.2](#92-common-params)): a host-language component's `target`, or the box holding a `compmd` component's body. A `display=contents` component has none.
 - **Breakpoint.** One of the widths `sm` (480 px), `md` (768 px) and `lg` (1024 px). A param with a breakpoint prefix, such as `md:gap=l`, applies from that width up, measured on the block's nearest box ([section 9.3](#93-breakpoints)).
 - **Built-in.** A component defined by this spec, in the `@compmd/core` pack ([section 9](#9-built-ins-the-compmdcore-pack)).
+- **Code renderer.** A leaf whose signature also names a language, so it renders the code blocks of that language, the block's text as one of its params ([section 7.7](#77-code-renderers)).
 - **Component.** A named, reusable piece of content invoked from a document: a container, a leaf or an inline component ([section 4](#4-containers-leaves-inline-components-and-slots)), defined in CompMD or in a host language ([section 7](#7-defining-components)).
 - **CompMD processor.** Any tool that parses CompMD: a renderer, a linter, a formatter. Section 13 defines what conforming parsers and processors implement ([section 13](#13-conformance)).
 - **Container.** A component written as `::: name` … `::: /name`, with a body ([section 4.1](#41-containers)). The box a block's breakpoints follow is its *nearest box*, not a container.
@@ -130,7 +131,7 @@ CompMD's base syntax is what GitHub renders, plus math. Each part is common in r
   - GitHub differs: it doesn't close math before a letter or digit, and it ignores braces, so `$x$y` is math here and text there. Authors who want the same result everywhere put a space or punctuation after a closing `$`.
 
   Every parser makes math nodes, so trees agree; a renderer without a math engine shows the TeX source. A fenced code block whose language is `math` is display math, as on GitHub.
-- **Diagrams need no syntax.** A fenced code block keeps its language (`mermaid`, …); a processor MAY render a code block by its language, as GitHub renders Mermaid.
+- **Diagrams need no syntax.** A fenced code block keeps its language (`mermaid`, …); a processor MAY render a code block by its language, as GitHub renders Mermaid. A document that imports a code renderer for a language renders its code blocks of that language through it (section 7.7); without one they stay code blocks.
 - **Opt-in syntax** changes how existing text parses, so a document asks for it in `md.syntax`. `[[foo]]` next to a `[foo]: url` definition is a link inside brackets in CommonMark, and a wiki link only when the document opts in. What a wiki link's `target` points to is the processor's business; without pages to link to, it renders its label as text. In a GFM table, a wiki link's `|` is written `\|` (section 3.2). A name in `md.syntax` that a processor doesn't know is W111. Further opt-ins come in minor versions.
 - **Links to a passage** of the document are ordinary links whose destination is a text fragment, the web's [text directive](https://wicg.github.io/scroll-to-text-fragment/) (`#:~:text=[prefix-,]start[,end][,-suffix]`, each part percent-encoded): `[price: 12](#:~:text=price:%2012)`. A browser shows the passage on the rendered page. A tool that shows the document's source, such as an editor beside its preview, MAY select the passage in the source instead, its first match after the prefix and before the suffix, so a tutorial can point at the text to change. They are not CompMD syntax, and a plain renderer shows them as links.
 - **Processors don't add syntax.** A CompMD document parses the same in every conforming parser. Anything else a processor offers is a component, for example in an ambient pack (section 6.3): `:mark[text]` rather than `==text==`.
@@ -148,6 +149,8 @@ CompMD adds five block-level line forms and one inline form. The number of colon
 | Leaf               | `::`    | `:: chart[Weekly installs] {src=installs.csv}` | end of line            |
 | Slot               | `:: #`  | `:: #footer`                                   | end of line            |
 | Inline             | `:`     | `:badge[beta]{tone=info}`                      | the closing `]` or `}` |
+
+A code block's info string MAY also hold a param list after its language, ```` ```mermaid {theme=dark} ````. It is read only when a code renderer renders the block (section 7.7); otherwise the info string stays as written, so other tools' conventions there (`{.class}`, `title="…"`) are untouched.
 
 ### 3.1 Grammar
 
@@ -265,6 +268,7 @@ An inline component `:name[fallback]{params}` appears within paragraph text, hea
 When a CompMD processor cannot render a component (unsupported definition language, runtime error, missing import in lenient mode), it MUST render its fallback and report the matching diagnostic:
 
 - a leaf or inline component: its fallback text;
+- a code block a code renderer renders (section 7.7): the code block, as a plain renderer shows it;
 - a container: its default slot, then each named slot in source order, as plain Markdown, so no slot's content is lost;
 - an `if` whose `when` fails: both branches, as a container;
 - an `each` that fails: its template once, as a plain renderer shows it.
@@ -289,7 +293,7 @@ Parameters are `key=value` pairs, checked against the component's signature. The
 
 - A bare value is converted using the declared type: `number`, `boolean` (`true`/`false`), `string`, or an enum member. Conversion failure is F009.
 - Each key MAY appear once per component invocation, counting continuation lines (F017 on a repeat).
-- `class` and `id` are accepted by every component and need no declaration. `class` and `.name` add up: `{.person class=(p.team) .wide}` gives the classes `person`, the value of `p.team` and `wide`, in written order, without duplicates. `id` and `#name` set the same thing, so both together is F017. So are `lang` (a BCP 47 tag) and `dir` (`ltr`, `rtl`, `auto`), for a part in another language: `::: box {lang=fr}` around a French quote, or `dir=auto` around text from data whose direction isn't known.
+- `class` and `id` are accepted by every component and need no declaration. `class` and `.name` add up: `{.person class=(p.team) .wide}` gives the classes `person`, the value of `p.team` and `wide`, in written order, without duplicates. `id` and `#name` set the same thing, so both together is F017. So are `lang` (a BCP 47 tag) and `dir` (`ltr`, `rtl`, `auto`), for a part in another language: `::: box {lang=fr}` around a French quote, or `dir=auto` around text from data whose direction isn't known. A code block a code renderer renders also accepts `alt`, its text alternative (section 7.7).
 - A param name may contain `-`. In expressions and interpolation paths, which follow CEL's identifier rules, it is written with `_`: inside a definition, `align-items` is read as `align_items`. Two params of one component whose names differ only in `-` and `_` are F013.
 
 `name=(expr)` passes the result of an expression (section 8.2), typed by the expression. `{{path}}` is allowed in param values only inside quoted strings.
@@ -388,6 +392,7 @@ Rules:
 - Two local names from levels 1 and 2 that are equal are F013, reported on the second declaration.
 - A wildcard name equal to a level 1 or 2 name is silently shadowed, so a pack update can never change the meaning of a name you defined or listed.
 - A name provided by two sources at level 3 (two wildcard imports, or a wildcard import and `@compmd/core`) is not an error until it is used; using it is F023, and listing it explicitly resolves it. So neither a pack update nor a new `@compmd/core` version can silently change what a name means.
+- **Code blocks resolve by language** (section 7.7): a code block's language selects the code renderer, among the components the document can name, whose signature names that language, through the same levels. Two at the same level are F023 when a block of that language is used; listing one explicitly resolves it. Renaming a code renderer on import (`as`) renames it as a leaf only; it still renders its language.
 - **Keywords.** `if`, `each`, `value` and `box` are fixed for a major version: no document may define, import, export or rename to them (F013).
 - A local definition or explicit import with the name of another `@compmd/core` component shadows it, with W112. A name `@compmd/core` adds in a later version therefore never breaks a document that already uses it.
 - Importing a name its source does not export is F021, reported on that `names` entry.
@@ -413,7 +418,7 @@ Rules:
 
 ## 7. Defining components
 
-A component is defined in a fenced code block whose info string is the source language followed by `component=<name>`. Plain renderers show it as highlighted code; CompMD processors remove it from the rendered output. The first word is always the source language, so plain renderers can highlight it; anything else goes in attributes after it.
+A component is defined in a fenced code block whose info string is the source language followed by `component=<name>`, the language one of the definition languages in the table below. Plain renderers show it as highlighted code; CompMD processors remove it from the rendered output. The first word is always the source language, so plain renderers can highlight it; anything else goes in attributes after it. A code block in any other language is content, even with `component=` in its info string.
 
 | Language | `runtime` (default first)        | Defined in                     |
 | -------- | -------------------------------- | ------------------------------ |
@@ -543,6 +548,7 @@ params:
 - A short form whose default contains `: ` (a JSON object, some strings) isn't valid YAML; use the long form.
 - `slots` lists slot names; `default` names the default slot. A component with no `slots` key takes no body: using it as a container is F018. `slots` may instead be a mapping from slot name to options, for template slots (section 7.5): `slots: {default: {each: rows, as: as}, footer: {}}`.
 - `headings` is `relative` (the default) or `absolute`: whether headings in a `compmd` definition's body are shifted to fit where it is used (section 7.2).
+- `code` is `{language, param}`: the component is also a code renderer for that language, and a code block's text fills `param` (section 7.7). The param MUST be a required `string`, with no default (F009 at the `code` key otherwise), and the component takes no slots.
 - A `name` param is a bare value that must be a CEL identifier and is never evaluated: the name a template slot binds. A `name` param given an expression or anything but an identifier is F009. There is no `expression` type: any param accepts `(…)`, and its type says what the value is, not how it's written.
 - A `compmd` definition's body MAY invoke other components, including built-ins. Direct or indirect recursion is F019.
 
@@ -629,6 +635,44 @@ export default function mount(target, { params, fallback }) {
   return { update: (next) => chart.update(next.rows), destroy: () => chart.remove() };
 }
 ```
+
+### 7.7 Code renderers
+
+A **code renderer** is a leaf whose signature also names a language: it renders the code blocks of that language in documents that can name it, as well as being invoked as a leaf. A document writes the block as it would anywhere, so a plain renderer shows the code, and GitHub draws a Mermaid diagram itself.
+
+````md
+```compmd component=mermaid signature
+code: {language: mermaid, param: source}
+params:
+  source: string
+  theme: default | dark | neutral = default
+```
+````
+
+````md
+---
+md:
+  import:
+    - from: "@acme/diagrams@1"
+      names: [mermaid]
+steps: [Draft, Review, Published]
+---
+
+```mermaid {theme=dark alt="Draft, then review, then published"}
+graph LR; Draft --> Review --> Published
+```
+
+:: mermaid[Our process: draft, review, published] {source=("graph LR; " + md.doc.steps.join(" --> "))}
+````
+
+- **Which form.** Source in a language that exists outside CompMD, which a reader of the plain Markdown should see as source, is a code block. Source computed from data or inputs is the same component as a leaf, its source as a param, since a code block is never interpolated (section 8.1).
+- **The block's text** is the value of the param `code` names. The block's info string gives the other params, as a param list after the language (section 3); giving the `code` param there too is F017. The component can't tell the two forms apart, and the host contract is the same (section 7.4).
+- **Resolution** is by the block's language (section 6.3). A block whose language no code renderer renders stays a code block, with no diagnostic, since most code blocks are just code.
+- **A box.** A rendered block has an outer box, as a leaf does, so the common params apply (section 9.2).
+- **The text alternative** is `alt`, which every rendered block accepts, as every component accepts `class` and `id`; it is the component's `fallback.text`. A rendered block without `alt` is W101, as a leaf without fallback text is.
+- **The fallback** is the code block itself (section 4.5).
+- **Blocks only.** CommonMark gives a code span no language, so a code renderer renders no inline code.
+- Math is not a code renderer: a ` ```math ` block is display math in every processor (section 2.3), and a code renderer for `math` is never used.
 
 ## 8. Interpolation, expressions and control flow
 
@@ -1227,7 +1271,7 @@ Every diagnostic MUST name its code, the line and column where it was detected, 
 | F006 | Undeclared slot name                                                                                                                  | the slot line                                                        |
 | F007 | Named slot given twice in one container                                                                                               | the second slot line, naming the first                               |
 | F008 | Unknown param, or a breakpoint the param doesn't take                                                                                 | the param                                                            |
-| F009 | Param value does not match its type or CSS grammar                                                                                    | the value                                                            |
+| F009 | Param value does not match its type or CSS grammar, or a signature's `code` names a param that isn't a required `string` (section 7.3) | the value, or the `code` key                                         |
 | F010 | Required param missing                                                                                                                | the opener or leaf                                                   |
 | F011 | Malformed param list (unterminated string, unbalanced bracket, invalid JSON, a character a bare value can't hold, an empty value)    | the `"`, `(`, `[` or `{` that doesn't close, the character a bare value can't hold, or the `=` with no value |
 | F012 | Continuation line not following an opener, leaf, or continuation                                                                      | the line                                                             |
@@ -1235,13 +1279,13 @@ Every diagnostic MUST name its code, the line and column where it was detected, 
 | F014 | Unknown interpolation path                                                                                                            | the path                                                             |
 | F015 | Slot line outside a container                                                                                                         | the line                                                             |
 | F016 | Malformed component line (starts with `::` but matches no form)                                                                             | the line, with the expected form                                     |
-| F017 | Param given twice, or `id` together with `#name`                                                                                      | the second occurrence                                                |
+| F017 | Param given twice, or `id` together with `#name`, or a code renderer's `code` param given on a code block's info string (section 7.7) | the second occurrence, or the param                                  |
 | F018 | Body given to a component that declares no slots                                                                                         | the opener                                                           |
 | F019 | Recursive component definition                                                                                                           | the invocation that closes the cycle                                 |
 | F020 | Import cycle                                                                                                                          | the `from` that closes the cycle                                     |
 | F021 | Imported name not exported by its source                                                                                              | the `names` entry                                                    |
 | F022 | `export.pack` or `export.version` disagrees with the registry manifest                                                                | the `export` key                                                     |
-| F023 | Name provided by two wildcard imports, or by a wildcard import and `@compmd/core`, is used                                               | the use, naming both sources                                         |
+| F023 | Name provided by two wildcard imports, or by a wildcard import and `@compmd/core`, is used; or a code block's language rendered by two code renderers at the same level (section 6.3) | the use, naming both sources                                         |
 | F024 | Expression parse, type or evaluation error, or a list or a map without a `name` interpolated into text                               | the column inside the expression, or the interpolation               |
 | F025 | each iteration does not match the shape its join mode requires                                                                        | the each opener, naming the first offending line                     |
 | F026 | Data or import source missing, unreachable, unparseable or not provided (`host:`), a relative path leaving its root, a bad CSV header, or a pack the processor's configuration doesn't allow or that exceeds its size cap (section 6.4) | the data entry or the import's `from`, and the position inside the data file when available |
@@ -1256,7 +1300,7 @@ Every diagnostic MUST name its code, the line and column where it was detected, 
 | F035 | Pack does not match its import's `integrity` hash                                                                                  | the `integrity` key                                                  |
 | F036 | Param list on a signature fence; ignored                                                                                            | the `{`                                                              |
 | F037 | A declaration's type isn't in the type grammar (section 7.3), in a signature, an input or a data `schema`; the declaration takes any value (diagnostic SHOULD suggest the nearest type name) | the type name                                                        |
-| W101 | Leaf without fallback text (plain renderers show nothing, and a host component has no text alternative)                                  | the leaf                                                             |
+| W101 | Leaf without fallback text (plain renderers show nothing, and a host component has no text alternative), or a code block a code renderer renders without `alt` (section 7.7) | the leaf, or the code block's opening fence                          |
 | W102 | Definition language not supported by this processor; fallback rendered                                                                | the invocation                                                       |
 | W103 | each default slot is a single list item and join is unset                                                                             | the each opener                                                      |
 | W104 | Signature fence and component disagree (missing prop, type or slot)                                                                   | the signature entry, naming the component's declaration              |
@@ -1354,8 +1398,8 @@ A processor works in stages. Each stage needs only what its row lists, and repor
 | Stage           | Needs                                                  | Produces                                       | Diagnostics                                                    |
 | --------------- | ------------------------------------------------------ | ---------------------------------------------- | -------------------------------------------------------------- |
 | 1. Parse        | the document's text                                    | the document tree (section 12)                 | F001, F003–F005, F007, F011, F012, F015–F017, F032, F033, F036, W101, W106–W108, W110, W111, W115, W116 |
-| 2. Resolve      | the tree, imported documents and packs                 | each name bound to a definition and signature  | F002, F013, F019–F023, F026 (imports), F029, F035, W104, W105, W112, W113, W117      |
-| 3. Validate     | the resolved tree and signatures                       | a checked tree, params typed                   | F006, F008–F010, F014, F018, F024 (types), F028, F030, F031, W102, W103, W120 |
+| 2. Resolve      | the tree, imported documents and packs                 | each name bound to a definition and signature  | F002, F009 (a signature's `code`), F013, F019–F023, F026 (imports), F029, F035, W104, W105, W112, W113, W117      |
+| 3. Validate     | the resolved tree and signatures                       | a checked tree, params typed                   | F006, F008–F010, F011 and F017 (a rendered code block's info string), F014, F018, F023 (a code block's language), F024 (types), F028, F030, F031, W101 (a rendered code block), W102, W103, W120 |
 | 4a. Load        | the checked tree and the input values                  | the loaded data                                | F026, F027, W113 (`host:`)                                     |
 | 4b. Evaluate    | the checked tree, the loaded data, the render context  | the expanded tree (section 12.3)               | F024 (evaluation), F025, F034, W109, W114, W119                |
 | 5. Render       | the expanded tree                                      | output (HTML, PDF, …)                          | W118                                                           |
@@ -1390,7 +1434,7 @@ A param is `{key, breakpoint, kind, value, position}`:
 - Params from continuation lines join their opener's or leaf's `params`; their positions keep the line they came from.
 - A repeated param (F017) keeps only its first occurrence.
 
-A signature is `{params, slots, headings}`: `slots` is the list of slots, or null when the signature has no `slots` key, each a slot name or, for a template slot, `{name, each, as}`; `headings` is `"relative"` or `"absolute"` (section 7.2); each param is `{name, type, optional, default, doc}`:
+A signature is `{params, slots, headings}`, plus `code`, `{language, param}`, for a code renderer (section 7.7): `slots` is the list of slots, or null when the signature has no `slots` key, each a slot name or, for a template slot, `{name, each, as}`; `headings` is `"relative"` or `"absolute"` (section 7.2); each param is `{name, type, optional, default, doc}`:
 
 - `type` is a type name (`"string"`, `"length"`, …), `{"enum": [members]}`, or `{"input": type}` for `input<type>`.
 - `default` is null, or a param value from the short form (`{"kind": "bare", "value": "tip"}`), or `{"kind": "yaml", "value": …}` from the long form.
@@ -1413,6 +1457,7 @@ Stage 4b replaces every `compmd` definition, `if`, `each`, `value` and `interpol
 - **Slots** are expanded. A template slot (section 7.5) has `children: []` and `instances`, one `{value, children}` per element, with the slot content expanded for that element.
 - **A block `compmd` component** expands to a `box` holding its expanded body. The box's params are the fence's, evaluated, with the caller's common params, `class` and `id` applied over them: a fence param that a caller's param covers (the same property, or a part of it), at the caller's breakpoint or a wider one, is left out, and a fence shorthand the caller covers only in part is written as its longhands first. A `display=contents` component expands to its body alone. A host-language component's params hold its fence's params the same way.
 - **Headings** from `compmd` definition bodies have their computed `depth` (section 7.2).
+- **A code block a code renderer renders** (section 7.7) stays a `code` node, with its `lang` and `value`, and adds `component`, `{name, params}`, with params as a component node's, the `code` param holding the block's text; and `alt`, when given: `{"type": "code", "lang": "mermaid", "value": "graph LR; A --> B", "component": {"name": "mermaid", "params": [{"key": "source", "breakpoint": null, "value": "graph LR; A --> B"}]}, "alt": "A, then B"}`. A renderer runs the component, and shows the code block as its fallback.
 - **Origins** (the `origins` feature, section 13.1). Every expanded node except the root has `origin`, the range of the processed document that made it: `start` and `end` points as in `position`, and `occurrence`, how many nodes before it in the same list of children have the same range (a template slot's instances count as one list). Lines and columns are 1-based, offsets 0-based, and columns and offsets count code points (section 10.5). The range is:
   - for a node from a `compmd` definition's body, local or imported, at any depth: the origin of the invocation in this document that led to it;
   - for text that a `value` or an interpolation produced: its parent's origin;
@@ -1617,6 +1662,7 @@ In a plain renderer, this shows the title and badge text, the release sentence, 
 - [x] **The `md.` namespace (decided, section 8.1):** every variable and function CompMD provides is under `md.`; there is no `$` sigil.
 - [x] **Expressions (decided, sections 8.1, 8.2, 8.5):** numbers are CEL `double`s, with mixed `int` and `double` arithmetic and CEL's integer division kept; a `date` is an ISO date string, times are CEL timestamps, with `md.addDays`, `md.daysBetween`, `md.startOf` and `md.dateOf`; an exact function list (CEL standard, the strings extension, CompMD's formatting, date and list functions; no `matches`); locale data from an unpinned recent CLDR, `md.plural` with CLDR categories; how `{{ }}` writes values that aren't strings, a map with a `name` as its name; a 100,000-node expansion every processor renders (F034 beyond).
 - [x] **Host-language components (decided, sections 7, 7.4, 7.6):** one host contract (params, slots as lists of items rendered up front, `update` and `destroy`, an outer box the processor owns), bindings for React and Svelte 5 in version 1, `runtime=<framework>@<major>` after the source language; a component changes an input only through a param of type `input<…>`; a signature fence in a processor's pack marks a component the processor implements (no `native` language).
+- [x] **Code renderers (decided, sections 2.3, 6.3, 7.3, 7.7, 12.3):** a leaf whose signature names a language and the param a block's text fills renders the code blocks of that language; one component for both forms, so the host contract is unchanged; params on the info string, read only for rendered blocks; `alt` as the text alternative; resolution by language, F023 for two renderers at one level; the code block is the fallback; no inline form; `component=` only on definition languages.
 - [x] **Template slots (decided, section 7.5):** a slot rendered once per element of an array param, binding a name the author picks (a `name` param); host components get `{value, items}` instances; one level; no `expression` type. `each` is declared the same way.
 - [x] **General events (deferred past version 1):** components emitting events that documents route to inputs or hosts. Inputs bound through `input<…>` params cover version 1's interactive documents; events can be added in a minor version without changing them.
 - [x] **Vue binding (deferred past version 1):** a later minor version adds it; nothing in the host contract blocks it.

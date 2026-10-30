@@ -199,7 +199,14 @@
             }
           ]
         },
-        "headings": { "enum": ["relative", "absolute"] }
+        "headings": { "enum": ["relative", "absolute"] },
+        "code": {
+          "description": "A code renderer's language, and the param a code block's text fills (§7.7); absent when the signature has none.",
+          "type": "object",
+          "required": ["language", "param"],
+          "properties": { "language": { "type": "string" }, "param": { "type": "string" } },
+          "additionalProperties": false
+        }
       },
       "additionalProperties": false
     },
@@ -289,6 +296,7 @@
         { "if": { "properties": { "type": { "const": "componentContainer" } } }, "then": { "$ref": "#/$defs/expandedContainer" } },
         { "if": { "properties": { "type": { "enum": ["componentLeaf", "componentInline"] } } }, "then": { "$ref": "#/$defs/expandedLeaf" } },
         { "if": { "properties": { "type": { "const": "componentSlot" } } }, "then": { "$ref": "#/$defs/expandedSlot" } },
+        { "if": { "properties": { "type": { "const": "code" } }, "required": ["component"] }, "then": { "$ref": "#/$defs/renderedCode" } },
         {
           "if": { "properties": { "type": { "not": { "enum": ["componentContainer", "componentLeaf", "componentInline", "componentSlot"] } } } },
           "then": {
@@ -355,6 +363,29 @@
         "name": { "type": "string" },
         "params": { "type": "array", "items": { "$ref": "#/$defs/expandedParam" } },
         "fallback": { "type": "array", "items": { "$ref": "#/$defs/expandedNode" } }
+      },
+      "additionalProperties": false
+    },
+    "renderedCode": {
+      "description": "A code block a code renderer renders (§7.7, §12.3): the mdast code node, with the component and its params, and its text alternative.",
+      "required": ["value", "component"],
+      "properties": {
+        "type": true,
+        "position": true,
+        "origin": true,
+        "lang": { "type": "string" },
+        "meta": { "type": ["string", "null"] },
+        "value": { "type": "string" },
+        "component": {
+          "type": "object",
+          "required": ["name", "params"],
+          "properties": {
+            "name": { "type": "string" },
+            "params": { "type": "array", "items": { "$ref": "#/$defs/expandedParam" } }
+          },
+          "additionalProperties": false
+        },
+        "alt": { "type": "string" }
       },
       "additionalProperties": false
     }
