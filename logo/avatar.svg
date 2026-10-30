@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="CompMD">
+  <rect width="64" height="64" fill="#fbfcfd"/>
+  <g transform="translate(13 14) scale(0.6)">
+    <g fill="none" stroke="#1b2430" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M40 12H12a8 8 0 0 0-8 8v28a8 8 0 0 0 8 8h36a8 8 0 0 0 8-8V32"/>
+      <path d="M15 46V24l8.5 11L32 24v22"/>
+    </g>
+    <rect x="44" y="0" width="20" height="20" rx="4.5" fill="#3557c4"/>
+  </g>
+</svg>

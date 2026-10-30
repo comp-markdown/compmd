@@ -7,7 +7,8 @@ The Markdown mark (a frame, an M and an arrow, which its author dedicated to the
 | `compmd-light.svg`, `compmd-dark.svg` | The mark and the name | READMEs and the spec, on a light or a dark background |
 | `mark-light.svg`, `mark-dark.svg` | The mark alone, wide | Where the name is written beside it, such as the playground's header |
 | `mark-mono.svg` | The mark in one color | Print, stamps, places with one ink |
-| `icon.svg` | The mark, square, without the inner blocks so the corner tile reads at 16 px; light or dark as the browser is | Favicons, avatars |
+| `icon.svg` | The mark, square, without the inner blocks so the corner tile reads at 16 px; light or dark as the browser is | Favicons |
+| `avatar.svg`, `avatar.png` | The square mark on a light tile of its own, so it reads on GitHub's light and dark themes alike; the PNG is 1024 px, made from the SVG with Chrome | The `comp-markdown` organization's avatar on GitHub, and other places that take no SVG |
 
 Colors: ink `#1b2430` and accent `#3557c4` on light; ink `#e4e9ef` and accent `#8da6ee` on dark: the playground's own.
 
