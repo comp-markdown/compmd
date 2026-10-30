@@ -15,6 +15,10 @@ npm install @compmd/render @compmd/processor
 
 It implements the draft of the [CompMD specification](https://compmd.hakanserce.com/spec/), version 1. Its versions are `0.x` until the spec's version 1 is published, and it shares its version with `@compmd/processor` ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
 
+**Versions:**
+- **0.1.1:** the same as 0.1.0; the first version the release workflow publishes.
+- **0.1.0:** the first version.
+
 ## Commands
 
 ```sh

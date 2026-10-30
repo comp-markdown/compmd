@@ -2,7 +2,7 @@
 
 **Status: accepted.**
 
-What this repository releases, how each is versioned, and what a release does. Two things are released, apart: **the spec**, and **the implementation** (the npm packages and the crate). Drafts follow `main`; releases are frozen.
+What this repository releases, how each is versioned, and what a release does. The steps, with what publishing 0.1.0 taught, are in [RELEASING.md](../RELEASING.md). Two things are released, apart: **the spec**, and **the implementation** (the npm packages and the crate). Drafts follow `main`; releases are frozen.
 
 ## Decisions
 

@@ -1,6 +1,6 @@
 [package]
 name = "compmd"
-version = "0.1.0"
+version = "0.1.1"
 description = "The CompMD processor: parses, validates and expands CompMD (Component Markdown) documents. In development."
 readme = "README.md"
 homepage = "https://compmd.hakanserce.com/"

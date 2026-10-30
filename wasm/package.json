@@ -1,6 +1,6 @@
 {
   "name": "@compmd/processor",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "The CompMD processor as WebAssembly: parses, validates and expands a CompMD document in the browser.",
   "keywords": ["compmd", "markdown", "components", "commonmark", "webassembly"],
   "homepage": "https://compmd.hakanserce.com/",

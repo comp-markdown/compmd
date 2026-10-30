@@ -55,7 +55,7 @@ let parsed = Processor::new("a.comp.md", "::: card {title=\"Setup\"}\nInstall it
 let tree = serde_json::to_value(parsed.tree())?; // the JSON of §12.4
 ```
 
-It is published on crates.io as `compmd`, from version 0.1.0. Its parser, the fork of markdown-rs in `markdown-rs/`, is published first, as `compmd-markdown`. The library keeps the name `markdown`, so here it is a path dependency with that version, and the published crate depends on the version.
+It is published on crates.io as `compmd`, from version 0.1.0; 0.1.1 is the same, released with the npm packages of that version. Its parser, the fork of markdown-rs in `markdown-rs/`, is published first, as `compmd-markdown`. The library keeps the name `markdown`, so here it is a path dependency with that version, and the published crate depends on the version.
 
 ## Commands
 
