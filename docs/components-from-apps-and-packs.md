@@ -15,7 +15,7 @@ Both are about who supplies a component's code, and so how much it is trusted, h
 2. **Trust is the host's configuration, per pack** (Q1). Three levels: *strict sandbox* (the default, spec §15 today), *permissive sandbox* (network to listed origins, `host` for the host's data: §15 and §7.4 allow both today), and *trusted* (in the page, with the app's own trust; new, and only for a pack built with the app). A document never raises a pack's trust.
 3. **A host adds a component with one line of configuration, not code** (Q2): `compmd.config.json` lists the packs a host gives its documents, with their versions and trust. A host fills it the way it is built: a bundler plugin for a web app (packs are npm dependencies, served from the app's own origin), a folder of packs for a desktop app, the registry at run time for a host where readers pick packs, as the playground.
 4. **The sandbox is a package**, `@compmd/sandbox`, and it carries the security, not the host: the frames, their content security policies, one sandbox per trust and per document, the network a permissive pack is given and nothing more, the import map, loading and compiling component code. A host gives it the configuration and the trees; it never writes a policy itself. Today all of it is the playground's own code, so every other app would build its own.
-5. **A document may import any npm pack, into the strict sandbox** (Q2, which packs a document may import): a host lists packs only to give them more (a permissive sandbox, trusted) or to make them ambient, and may deny packs by name. The host fetches packs for the reader, through its own cache.
+5. **A document may import any npm pack, into the strict sandbox** (Q2, which packs a document may import): a host lists packs only to give them more (a permissive sandbox, trusted) or to make them ambient, and may deny packs by name, as its own policy (content, cost, licences), not for security, which the strict sandbox gives. The host fetches packs for the reader, through its own cache.
 6. **A pack ships source or built modules; large code loads by URL** (Q3): from the host's origin, checked against the pack's integrity, cached across documents and visits. Whether a pack may also name libraries the host resolves from the registry, instead of bundling them, is open (Q3, S3).
 7. **A host's pack name is the host's.** A document may import a pack the host configures by name to say what it depends on; a processor resolves that name to the host's pack, never to a registry package of the same name, as it does for `@compmd/*`.
 8. **Mermaid is written as a plain fenced block** (Q4): a pack can render the code blocks of a language, so a document writes ` ```mermaid ` alone, as on GitHub. This is not a way to invoke components: components are still invoked only with `:::`, `::` and `:` (spec §3).
@@ -184,7 +184,17 @@ P2 gives authors the most: a document written for one host works in any other wi
 | Is a typo of a good pack (`@acme/chart` for `@acme/charts`) | renders the wrong thing, inside the sandbox | the deny list, and the import's version shown in `componentsOf` |
 | Breaks other documents | doesn't: only documents that import it, in their own sandbox | as above |
 
-So "only their pages fail" holds, with three conditions: the sandbox is per document for unlisted packs, the host fetches packs, and packs have a size limit. A deny list is for packs known to be bad or too large, as a quick fix; it isn't what keeps readers safe, since a new bad pack isn't on it yet.
+So "only their pages fail" holds, with three conditions: the sandbox is per document for unlisted packs, the host fetches packs, and packs have a size limit.
+
+**The deny list is not for security.** The strict sandbox keeps readers safe from any pack, known or not; a deny list can only name packs someone already knows about. It is the host's own policy, for reasons that aren't the reader's safety:
+
+- **Content:** a school's host denies a pack of games, a company's host a pack that draws content it doesn't want shown.
+- **Cost and size:** a pack the host doesn't want to fetch, cache and serve.
+- **Licences:** a pack whose licence the host can't redistribute.
+- **Misuse:** a pack used to draw fake prompts or ads in documents on the host.
+- **A flaw found in a widely used pack or browser:** denying it, or one version of it, stops it at once while a fix is published. The sandbox still holds, so this is defence in depth, not the defence.
+
+A denied import is F026, with the host's reason in its message, and its uses render fallbacks.
 
 - **Hosts that render for others** (a published site) still give no unlisted pack anything but the strict sandbox, so P2 changes nothing for `host` (§15, "Reading for others").
 - **A host may still choose P1**, for example a company's internal app that allows only reviewed packs: `"imports": "listed"`.
@@ -284,7 +294,53 @@ params:
 - The document imports `@kit/mermaid` as any pack; every ` ```mermaid ` block then renders through it, and a block without a component stays a code block.
 - Params come from the fence's info string, after the language, as a definition fence's attributes do (spec §7): ```` ```mermaid {theme=dark} ````.
 - A plain renderer shows the fence, and GitHub draws it. `@compmd/render`'s `code` option (`code: { mermaid: … }`) is the same idea for a host; W2 lets a pack supply it.
-- **Spec:** new: a `code` key in a signature (§7.3), a code block rendered by a component in the expanded tree (§12.3), params on the info string validated (§5.3).
+- **Spec:** new: a `code` key in a signature (§7.3), a code block rendered by a component in the expanded tree (§12.3), params on the info string validated (§5.3). In depth below.
+
+### W2 in depth: a leaf, a container or a code block
+
+With W2, a component author has one more choice. A container takes Markdown; a leaf takes params and nothing else; a code block takes source text in a language of its own.
+
+**Which form, by what the content is:**
+
+| The content is | The form | Examples |
+|---|---|---|
+| Params only, on one line | a leaf | `:: stars[4 of 5] {value=4}`, `:: chart[Sales] {rows=(md.data.sales)}` |
+| Markdown, which plain renderers should show as Markdown | a container | `::: card`, `::: tabs`, `::: callout` |
+| Source in a language that exists outside CompMD, which plain renderers should show as source | a code block | ` ```mermaid `, ` ```dot ` (Graphviz), ` ```abc ` (music), ` ```vega-lite ` (a chart as JSON), ` ```geojson ` (a map; GitHub draws it) |
+| Source computed from data or inputs | a leaf with a param | `:: diagram[Our process] {source=(md.data.steps.map(s, s.name).join(" --> "))}`, since a code block is never interpolated (§8.1) |
+
+The test for a code block: would a reader of the plain Markdown want to see that source, and does a tool outside CompMD already know the language? If not, it's a leaf or a container.
+
+**Precedent.** The spec does this already for one language: a ` ```math ` block is display math (§2.3). W2 lets packs do the same for theirs.
+
+**A pack may offer both forms** of the same thing: `mermaid` for a written diagram, and a leaf for a computed one (the last row). They share the mount function: the leaf passes `source` where the code block passes its text.
+
+**The questions W2 has to answer, with proposed answers:**
+
+1. **Is it a component?** It has a signature, params, a box and the host contract, so it is one; but it is chosen by the block's language, never by name. Proposed: a *code renderer*, a component whose signature has `code: <language>`. Its name is what a document imports and what diagnostics name.
+2. **How a document gets it.** Proposed: by importing it, as any component: `names: [mermaid]`, or `"*"`. A ` ```mermaid ` block in a document that doesn't import one stays a code block, with no diagnostic, since most code blocks are just code. An ambient pack may provide one, at the lowest priority (§6.3).
+3. **Two renderers for one language.** Two imports that both render `mermaid` are F023 when a ` ```mermaid ` block is used, as two wildcard imports of one name are, and listing one explicitly resolves it. A code renderer named like another component (`mermaid` the renderer and `mermaid` a leaf) is F013, as any duplicate name.
+4. **Params on the info string.** CommonMark leaves everything after the language to the writer, and tools use it in different ways (Pandoc's `{.class}`, a `title="…"`). Proposed: a param list in braces after the language, with the param grammar of §3.1: ```` ```mermaid {theme=dark width=50%} ````. Without a code renderer, the info string's rest is kept, as now. Only definition languages (§7) take `component=`; ```` ```mermaid component=x ```` is an ordinary code block whose info string has `component=x` in it.
+5. **The code's text in the contract.** Proposed: a new `code` in the mount context (§7.4), `{ language, text }`, with no slots: `mount(target, { params, code, fallback, … })`.
+6. **The box.** A rendered code block is a block with an outer box, as any component, so the common params apply (`width`, `padding`, `border`, breakpoints).
+7. **Fallback and accessible text.** The fallback is the code block itself (§4.5): what a plain renderer shows. A diagram needs a text alternative for screen readers, which a code block doesn't have: an `alt` param (```` ```mermaid {alt="Draft, review, published"} ````), and W101 when it's missing, as for a leaf without fallback text.
+8. **No interpolation.** `{{md.doc.x}}` in a ` ```mermaid ` block stays as written (§8.1); computed source is the leaf's job (the table above).
+9. **The host's own renderers.** `@compmd/render`'s `code` option stays: a host that renders `mermaid` itself is an ambient code renderer, and a document's import wins over it (§6.3).
+10. **No inline form.** CommonMark has no language for a code span, so code renderers are blocks only.
+
+**What it means for the spec,** for when it is written:
+
+| Section | Change | Conflict with today's text |
+|---|---|---|
+| §2.3 | code blocks of a language rendered by a pack's code renderer, next to "a processor MAY render a code block by its language" | none: it extends it |
+| §3 | the param list on a code block's info string | §3 lists every CompMD form; this is a sixth, inside a fence's info string, which parsing reads only for code renderers |
+| §4.5 | a code renderer's fallback is its code block | none |
+| §6.3 | resolution by language; F023 for two renderers of one language | none |
+| §7, §7.3 | `code: <language>` in a signature; `component=` only on definition languages | §7 says a fence whose info string has `component=` defines a component; it needs "in a definition language" |
+| §7.4 | `code` in the mount context | none: a new field |
+| §8.1 | no interpolation in code blocks, as now | none |
+| §12.3 | a code block in the expanded tree carries its renderer and params, as a component node does | the schema's `code` node gains fields |
+| §10.2 | W101 for a rendered code block without `alt` | W101 names leaves only |
 
 ### W3. A container with raw text (rejected)
 
