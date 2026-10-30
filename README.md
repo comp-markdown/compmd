@@ -7,7 +7,7 @@
 
 CompMD (Component Markdown) is a Markdown flavor that adds components, containers, slots and layout to CommonMark and GFM, and stays readable in any plain Markdown renderer. Files end in `.comp.md`.
 
-**[The website](https://comp-markdown.github.io/compmd/)** shows CompMD live, with [the playground](https://comp-markdown.github.io/compmd/playground/) and [the spec](https://comp-markdown.github.io/compmd/spec/) as a page.
+**[The website](https://compmd.hakanserce.com/)** shows CompMD live, with [the playground](https://compmd.hakanserce.com/playground/) and [the spec](https://compmd.hakanserce.com/spec/) as a page.
 
 **Status: draft.** Version 1 isn't published yet, and a change can still break documents written against the draft; the [changelog](CHANGELOG.md) says when one does.
 
@@ -24,7 +24,7 @@ CompMD (Component Markdown) is a Markdown flavor that adds components, container
 | [render/](render/README.md) | `@compmd/render`: an expanded tree as a live page, with the host contract's bindings; the reference rendering of the built-ins |
 | [editor/](editor/README.md) | The CompMD editor: a text area and the rendered page beside it, updated as you type; a static site that works offline once loaded |
 | [logo/](logo/README.md) | The CompMD logo: the mark and the name, light, dark and in one color, and the favicon |
-| [website/](website/README.md) | [The CompMD website](https://comp-markdown.github.io/compmd/): the landing page, with the playground and the spec, published on GitHub Pages |
+| [website/](website/README.md) | [The CompMD website](https://compmd.hakanserce.com/): the landing page, with the playground and the spec, published on GitHub Pages |
 | [docs/](docs/releases.md) | How the repository is run: [releases and versions](docs/releases.md), [CI on GitHub](docs/ci.md) |
 | [existing-specs-comparison.md](existing-specs-comparison.md) | The spec compared with MDX, Markdoc, Nuxt MDC and Comark, MyST, Quarto, Livebook's Live Markdown and Active Markdown |
 
