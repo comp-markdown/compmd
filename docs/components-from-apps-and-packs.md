@@ -12,12 +12,13 @@ Both are about who supplies a component's code, and so how much it is trusted, h
 ## Proposed decisions
 
 1. **One pack format for every component's code**, whoever supplies it: an app's own `stars`, a shared chart kit, Mermaid. A pack is a folder or an npm package with a `package.json` and a document of signatures and imports, as today (spec §6.4). An app's own components are a pack too, a folder in the app's repository, so no host writes signatures in code and every host reads the same pack the same way.
-2. **Trust is the host's configuration, per pack** (Q1). Three levels: *sandboxed* (the default, spec §15 today), *sandboxed with more* (network to listed origins, `host` for the host's data: §15 and §7.4 allow both today), and *in the page* (the app's own trust; new, and only for a pack built with the app). A document never raises a pack's trust.
+2. **Trust is the host's configuration, per pack** (Q1). Three levels: *strict sandbox* (the default, spec §15 today), *permissive sandbox* (network to listed origins, `host` for the host's data: §15 and §7.4 allow both today), and *trusted* (in the page, with the app's own trust; new, and only for a pack built with the app). A document never raises a pack's trust.
 3. **A host adds a component with one line of configuration, not code** (Q2): `compmd.config.json` lists the packs a host gives its documents, with their versions and trust. A host fills it the way it is built: a bundler plugin for a web app (packs are npm dependencies, served from the app's own origin), a folder of packs for a desktop app, the registry at run time for a host where readers pick packs, as the playground.
-4. **The sandbox is a package**, `@compmd/sandbox`: the frame, its content security policy, the import map, loading and compiling component code. Today all of it is the playground's own code, so every other app would build its own.
-5. **A pack ships source or built modules; large code loads by URL** (Q3): from the host's origin, checked against the pack's integrity, cached across documents and visits. Whether a pack may also name libraries the host resolves from the registry, instead of bundling them, is open (Q3, S3).
-6. **A host's pack name is the host's.** A document may import a pack the host configures by name to say what it depends on; a processor resolves that name to the host's pack, never to a registry package of the same name, as it does for `@compmd/*`.
-7. **Mermaid is written as a plain fenced block** (Q4): a pack can render fenced code of a language, so a document writes ` ```mermaid ` alone, as on GitHub.
+4. **The sandbox is a package**, `@compmd/sandbox`, and it carries the security, not the host: the frames, their content security policies, one sandbox per trust and per document, the network a permissive pack is given and nothing more, the import map, loading and compiling component code. A host gives it the configuration and the trees; it never writes a policy itself. Today all of it is the playground's own code, so every other app would build its own.
+5. **A document may import any npm pack, into the strict sandbox** (Q2, which packs a document may import): a host lists packs only to give them more (a permissive sandbox, trusted) or to make them ambient, and may deny packs by name. The host fetches packs for the reader, through its own cache.
+6. **A pack ships source or built modules; large code loads by URL** (Q3): from the host's origin, checked against the pack's integrity, cached across documents and visits. Whether a pack may also name libraries the host resolves from the registry, instead of bundling them, is open (Q3, S3).
+7. **A host's pack name is the host's.** A document may import a pack the host configures by name to say what it depends on; a processor resolves that name to the host's pack, never to a registry package of the same name, as it does for `@compmd/*`.
+8. **Mermaid is written as a plain fenced block** (Q4): a pack can render the code blocks of a language, so a document writes ` ```mermaid ` alone, as on GitHub. This is not a way to invoke components: components are still invoked only with `:::`, `::` and `:` (spec §3).
 
 ## Today
 
@@ -64,7 +65,7 @@ Each option below is weighed on these.
 
 ## Q1. Where code runs, and with what trust
 
-| | T1. Sandboxed | T2. Sandboxed, with more | T3. In the page |
+| | T1. Strict sandbox (`strict`) | T2. Permissive sandbox (`permissive`) | T3. Trusted (`trusted`) |
 |---|---|---|---|
 | What the code can reach | its contract: params, slots, its target, `set` (spec §15) | T1, plus the network to origins the host lists, and `host` | everything the app's page can: its session, its data, the network |
 | Example | `@acme/charts`, `@kit/mermaid` | `@acme/maps` (its tile origin), `rating-summary` (`host`) | `stars`, `rating-summary` built with the app |
@@ -78,6 +79,8 @@ Each option below is weighed on these.
 - **T2** keeps the sandbox, so a trusted pack still sees only its contract, plus what the host chose to add. A map pack given its tile origin can send params to that origin; the host chose that when it listed the origin. `host` acts outside the document only on the reader's action (spec §15, "Components the host trusts").
 - **T3** is for code that is already the app's: built from the app's repository, reviewed with it, shipped in its bundle. Running it sandboxed would protect the app from itself. It costs nothing to load and mounts synchronously, without the frame's message hop. Its inputs still come from documents, so it treats params and slot content as untrusted: no `innerHTML` from a param, URLs checked, actions outside the page only on the reader's action.
 - **T3 for a registry pack** would give a third party the app's session. The design allows T3 only for a pack whose path is in the app's own repository (`./components`), not for a registry name: a registry pack that needs more gets T2.
+- **The names.** The spec says "packs its configuration trusts" for what is T2 here (§7.4, §15). With T3 named *trusted*, the spec's wording becomes "permissive packs", so the word means one thing.
+- **Who enforces them:** `@compmd/sandbox` (decision 4). The host names each pack's level in its configuration; the package makes the frames and their policies: T1 packs of one document share a frame with no network; each T2 pack gets a frame of its own, whose policy allows only its listed origins; T3 components are mounted in the page by the renderer, as `components` does today.
 
 ## Q2. How a host makes components available
 
@@ -97,16 +100,16 @@ const { expanded } = process({ path: "notes.comp.md", files, now, ...app });
   "packs": {
     "@acme/charts": { "version": "^2.1.0" },
     "@kit/mermaid": { "version": "1.0.0", "integrity": "sha512-…" },
-    "@acme/maps": { "version": "3", "network": ["https://tiles.example.com"] },
-    "./components": { "trust": "page" }
+    "@acme/maps": { "version": "3", "trust": "permissive", "network": ["https://tiles.example.com"] },
+    "./components": { "trust": "trusted" }
   },
   "ambient": ["@acme/app"]
 }
 ```
 
-`compmd.config.json` (or the `compmd` key of the app's `package.json`) lists the packs, their versions and their trust: an allowlist. A document imports any of them; any other import is F026. `ambient` lists the packs every document gets without importing them.
+`compmd.config.json` (or the `compmd` key of the app's `package.json`) lists the packs that get more than the strict sandbox, with their versions and trust, and the packs every document gets without importing them (`ambient`). Which other packs a document may import is the next section's question.
 
-- **Security:** the host lists every pack and its trust; a document can't add one. Pinned versions and integrity as for imports (spec §6.1).
+- **Security:** only the host gives a pack more than the strict sandbox; a document can't. Pinned versions and integrity as for imports (spec §6.1).
 - **Speed and size:** packs are fetched on first use from the registry or a cache, then cached.
 - **Experience:** one line per pack. Suits a host where readers or authors pick packs (the playground), with an allowlist of what they may pick.
 
@@ -161,6 +164,31 @@ A host reads packs from a folder (`~/.config/acme/packs/`, or `packs/` next to a
 | The app's own components | signatures in code | — | a pack folder, built with the app | a pack folder |
 | Fetched at run time | no | yes, on first use | no | no |
 | Spec, processor, render, playground today | none | none | none | none |
+
+### Which packs a document may import
+
+- **P1. Only listed packs:** the configuration is an allowlist, and any other import is F026.
+- **P2. Any npm pack, in the strict sandbox (recommended):** a document imports any pack; the configuration lists only the packs that get more, and may deny packs by name (`"deny": ["@bad/pack"]`).
+
+P2 gives authors the most: a document written for one host works in any other with the same packs, and nobody has to ask a host to add a pack. The strict sandbox is what makes it safe. Challenged, case by case:
+
+| A bad or broken pack | With P2 | What it needs |
+|---|---|---|
+| Sends the reader's data somewhere | can't: no network, no session (§15 rules 2, 3) | the strict sandbox, enforced by `@compmd/sandbox`, not by each host |
+| Reads another document's data | can't, if each document has its own sandbox. §15 today lets documents shown together share one when the host trusts their code the same: with P2 a host can't vouch for packs it never saw | one strict sandbox per document for packs the host didn't list |
+| Writes a document's inputs to leak them through a data URL | can't: a `from` can't use an input a component can change (F031) | nothing new |
+| Draws something misleading in its box ("Your session expired: password") | can: its box is its own, and a reader may believe it. What's typed in can't leave, though | the sandbox's frames drawn as the document's content, never over the host's own interface |
+| Uses the reader's CPU or memory, or downloads 50 MB | can, until stopped | the stop rule (§15 rule 5), and a size limit per pack in the host's configuration |
+| Tells the registry who reads what | a fetch from the registry at view time gives it the reader's address | packs fetched through the host's cache, never from the reader's browser to the registry (§15, privacy) |
+| Changes under the document (a new release of a range) | can, as any import | `integrity` on exact versions (§6.1), as today |
+| Is a typo of a good pack (`@acme/chart` for `@acme/charts`) | renders the wrong thing, inside the sandbox | the deny list, and the import's version shown in `componentsOf` |
+| Breaks other documents | doesn't: only documents that import it, in their own sandbox | as above |
+
+So "only their pages fail" holds, with three conditions: the sandbox is per document for unlisted packs, the host fetches packs, and packs have a size limit. A deny list is for packs known to be bad or too large, as a quick fix; it isn't what keeps readers safe, since a new bad pack isn't on it yet.
+
+- **Hosts that render for others** (a published site) still give no unlisted pack anything but the strict sandbox, so P2 changes nothing for `host` (§15, "Reading for others").
+- **A host may still choose P1**, for example a company's internal app that allows only reviewed packs: `"imports": "listed"`.
+- **Spec:** §6.4 says a processor fetches packs from a registry it is configured with; P2 adds the per-document sandbox for unlisted packs (§15), and fetching through the host.
 
 ## Q3. How a pack ships its code
 
@@ -236,7 +264,14 @@ graph LR; Draft --> Review --> Published
 ```
 ````
 
-A pack declares that a component renders fenced code of a language:
+**Fences and components, today.** The spec uses fences for two things, and neither invokes a component:
+
+- **A code block** (` ```mermaid `, ` ```sh `) is content. A processor MAY render it by its language, as GitHub renders Mermaid (§2.3), and `@compmd/render` takes a function per language for it (`code: { mermaid: … }`).
+- **A definition fence** (` ```jsx component=chart `, ` ```compmd component=card signature `) defines a component or its signature (§7). Processors remove it from the output.
+
+Components are invoked only with `:::`, `::` and `:` (§3): every component, in every document.
+
+**What W2 adds** is a third case of the first: a pack can supply the renderer of a code block's language, as a host already can. The block stays a code block in the document and in plain renderers; it is never a way to invoke other components, and only a language a pack names renders this way. A pack declares it with a signature:
 
 ````md
 ```compmd component=mermaid signature
@@ -272,7 +307,7 @@ None of this exists today.
 **The spec:**
 - §6.3: a pack the host configures resolves to the host's pack, never to a registry (decision 6).
 - §7.1: a signature fence alone, in a pack whose code the host provides, declares a component the host implements (as §17 already records).
-- §15: the three trust levels (T1 to T3), set per pack by the host's configuration; T3 only for packs built with the app; host code's inputs are untrusted.
+- §15: the three trust levels (strict, permissive, trusted), set per pack by the host's configuration; trusted only for packs built with the app; host code's inputs are untrusted; one strict sandbox per document for packs the host didn't list; packs fetched by the host, with a size limit. §7.4's "packs its configuration trusts" becomes "permissive packs".
 - §6.4 and §15: a pack's built module is loaded from the pack's files and checked against its integrity (S2).
 - §7.3, §12.3: components that render fenced code of a language (W2).
 - After Q3 is decided: what a host that compiles source (S1) provides (the import map, the compilers).
@@ -280,7 +315,7 @@ None of this exists today.
 **The processor:** `HostComponent` gives a built module's place (pack, version, path, integrity) instead of its text (S2); code blocks rendered by a component (W2); the configuration's packs and trust in the request.
 
 **The packages:**
-- `@compmd/sandbox`: the frame, its policy, the import map, loading and compiling code, from the playground's `editor/src/frame/`.
+- `@compmd/sandbox`: the frames and their policies for each trust level, one per document for unlisted packs, the import map, loading and compiling code, from the playground's `editor/src/frame/`; with tests that a component can't reach the network, the page or another document.
 - `@compmd/vite`: the bundler plugin (H3).
 - `@compmd/create-pack`: the pack template (S2).
 - `@compmd/render`: the frame protocol takes a module's URL to load (S2).
@@ -293,7 +328,7 @@ None of this exists today.
 
 ## What this means for the Mermaid pack
 
-`@kit/mermaid` is a built module (S2), written as a fenced block (W2), sandboxed (T1), added to a host with `npm install` and a line of configuration (H3). It could be written now with today's spec as W1 and S1, its module as a component file whose 3.57 MB pass through the processor as text; this design makes it fast and plain to write.
+`@kit/mermaid` is a built module (S2), written as a fenced block (W2), in the strict sandbox (T1). A document imports it like any npm pack (P2); a host that wants it bundled adds it with `npm install` (H3). It could be written now with today's spec as W1 and S1, its module as a component file whose 3.57 MB pass through the processor as text; this design makes it fast and plain to write.
 
 ## Not in this change
 
