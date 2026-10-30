@@ -25,7 +25,7 @@ CompMD (Component Markdown) is a Markdown flavor that adds components, container
 | [editor/](editor/README.md) | The CompMD editor: a text area and the rendered page beside it, updated as you type; a static site that works offline once loaded |
 | [logo/](logo/README.md) | The CompMD logo: the mark and the name, light, dark and in one color, and the favicon |
 | [website/](website/README.md) | [The CompMD website](https://compmd.hakanserce.com/): the landing page, with the playground and the spec, published on GitHub Pages |
-| [docs/](docs/releases.md) | How the repository is run: [releases and versions](docs/releases.md), [CI on GitHub](docs/ci.md) |
+| [docs/](docs/releases.md) | How the repository is run: [releases and versions](docs/releases.md), [CI on GitHub](docs/ci.md); designs: [components from apps and packs](docs/components-from-apps-and-packs.md) |
 | [RELEASING.md](RELEASING.md) | How to release the packages, the crates and the spec, step by step |
 | [existing-specs-comparison.md](existing-specs-comparison.md) | The spec compared with MDX, Markdoc, Nuxt MDC and Comark, MyST, Quarto, Livebook's Live Markdown and Active Markdown |
 
