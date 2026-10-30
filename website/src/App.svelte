@@ -70,7 +70,7 @@
     { href: "playground/", title: "The playground", text: "Write CompMD and watch the page, with a tour, examples and the diagnostics." },
     { href: `${REPOSITORY}/tree/main/conformance`, title: "The conformance set", text: "177 cases any implementation can run, with their expected trees." },
     { href: REPOSITORY, title: "GitHub", text: "The spec, the processor in Rust, the packages and this site." },
-    { href: `${REPOSITORY}/tree/main/wasm`, title: "The packages", text: "@compmd/processor and @compmd/render, to be published on npm." },
+    { href: "https://www.npmjs.com/org/compmd", title: "The packages", text: "@compmd/processor and @compmd/render on npm, and the compmd crate." },
   ];
 </script>
 
@@ -159,7 +159,7 @@
       <h2>Use it in your app</h2>
       <p class="lede">Two packages: the processor, which turns text into a tree, and the renderer, which turns the tree into a page.</p>
       <pre class="install"><code>npm install @compmd/processor @compmd/render</code></pre>
-      <p class="note">Not on npm yet. Until they are, the packages are in the repository: <a href="{REPOSITORY}/tree/main/wasm">wasm/</a> and <a href="{REPOSITORY}/tree/main/render">render/</a>.</p>
+      <p class="note">On npm: <a href="https://www.npmjs.com/package/@compmd/processor">@compmd/processor</a> and <a href="https://www.npmjs.com/package/@compmd/render">@compmd/render</a>, versions <code>0.x</code> while the spec is a draft. In Rust, the processor is the crate <a href="https://crates.io/crates/compmd">compmd</a>.</p>
       <Snippets />
     </div>
   </section>

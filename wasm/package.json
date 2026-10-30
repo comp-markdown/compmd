@@ -2,6 +2,15 @@
   "name": "@compmd/processor",
   "version": "0.1.0",
   "description": "The CompMD processor as WebAssembly: parses, validates and expands a CompMD document in the browser.",
+  "keywords": ["compmd", "markdown", "components", "commonmark", "webassembly"],
+  "homepage": "https://compmd.hakanserce.com/",
+  "bugs": "https://github.com/comp-markdown/compmd/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/comp-markdown/compmd.git",
+    "directory": "wasm"
+  },
+  "author": "Hakan Serce",
   "license": "MIT",
   "type": "module",
   "sideEffects": false,

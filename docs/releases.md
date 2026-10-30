@@ -22,7 +22,15 @@ What this repository releases, how each is versioned, and what a release does. T
 
 A release of the spec is a tag `spec-v<version>` on a commit whose changelog says what the version holds; the website deploys with its new address.
 
+## The release workflow
+
+`.github/workflows/release.yml` runs on a tag `v*`. It checks the tag is the version in both `package.json` files, runs `cargo make ci`, packs both packages with pnpm (which writes the renderer's version into the processor's dependency), and publishes them with npm 11.6.2 by trusted publishing, the renderer first.
+
+It needs both packages to exist on npm, and each set up once on npmjs.com (the package's settings, **Trusted publisher**, GitHub Actions): the organization `comp-markdown`, the repository `compmd`, the workflow `release.yml`, no environment.
+
+The crates are published by hand for now: `compmd-markdown` from the fork when its code changes, then `compmd` with the release's number.
+
 ## Not in this change
 
-- Writing the release workflow, which comes after the first version is published by hand.
 - A changelog for the implementation apart from the spec's: until the first release, the packages' READMEs say what changed.
+- Publishing the crates from the workflow.

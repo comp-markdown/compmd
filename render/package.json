@@ -2,6 +2,22 @@
   "name": "@compmd/render",
   "version": "0.1.0",
   "description": "Renders a CompMD expanded tree as a live page: Markdown, layout, inputs and host-language components through the host contract.",
+  "keywords": [
+    "compmd",
+    "markdown",
+    "components",
+    "renderer",
+    "react",
+    "svelte"
+  ],
+  "homepage": "https://compmd.hakanserce.com/",
+  "bugs": "https://github.com/comp-markdown/compmd/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/comp-markdown/compmd.git",
+    "directory": "render"
+  },
+  "author": "Hakan Serce",
   "license": "MIT",
   "type": "module",
   "sideEffects": false,

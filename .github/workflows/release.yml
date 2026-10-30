@@ -1,0 +1,55 @@
+# A release of the implementation (docs/releases.md): a tag v<version> builds and checks the repository, then publishes
+# @compmd/render and @compmd/processor to npm with trusted publishing: GitHub proves to npm which repository and
+# workflow publishes, so no npm token is stored, and each version carries its provenance.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+# One release at a time, and none cut off halfway.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      # Trusted publishing and provenance.
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+      - uses: ./.github/actions/setup
+      - run: pnpm install --frozen-lockfile
+      - name: The tag is both packages' version
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          for package in render wasm; do
+            written="$(node -p "require('./$package/package.json').version")"
+            if [ "$written" != "$version" ]; then
+              echo "::error::$package/package.json is $written, the tag $GITHUB_REF_NAME"
+              exit 1
+            fi
+          done
+      # Every check, and every package built.
+      - run: cargo make ci
+      # pnpm writes the version `workspace:*` stands for into the processor's dependency on the renderer.
+      - name: Pack
+        run: |
+          pnpm --dir render pack --pack-destination "$RUNNER_TEMP/packages"
+          pnpm --dir wasm pack --pack-destination "$RUNNER_TEMP/packages"
+      # Trusted publishing needs npm 11.5.1 or newer.
+      - run: npm install --global npm@11.6.2
+      # Outside the repository, whose devEngines name pnpm; the renderer first, which the processor depends on.
+      - name: Publish
+        working-directory: ${{ runner.temp }}/packages
+        run: |
+          npm publish ./compmd-render-*.tgz --access public
+          npm publish ./compmd-processor-*.tgz --access public

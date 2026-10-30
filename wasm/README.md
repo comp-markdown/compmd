@@ -7,7 +7,11 @@
 
 The [CompMD processor](../processor/README.md) as WebAssembly, for the browser: one call takes a document with everything it needs and gives its parse tree, its expanded tree and its diagnostics, typed. The expanded tree is what [`@compmd/render`](../render/README.md) draws.
 
-**Status: in development,** as the crate is; not published yet.
+```sh
+npm install @compmd/processor @compmd/render
+```
+
+It implements the draft of the [CompMD specification](https://compmd.hakanserce.com/spec/), version 1, as the crate [`compmd`](https://crates.io/crates/compmd) does. Its versions are `0.x` until the spec's version 1 is published, and it shares its version with `@compmd/render` ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
 
 ```ts
 import { init, process, sources } from "@compmd/processor";
