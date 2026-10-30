@@ -56,6 +56,14 @@ export interface HostStyleMessage {
   style: HostStyle;
 }
 
+/**
+ * From the frame to its host, on the same port: the components last sent are loaded, or show their fallbacks, and the
+ * page shows them. A host that shows the frame only once it has its components waits for this.
+ */
+export interface ComponentsLoaded {
+  type: "components-loaded";
+}
+
 /** From the frame to the editor, on the same port: a component that couldn't be compiled or loaded. */
 export interface ComponentFailed {
   type: "component-failed";

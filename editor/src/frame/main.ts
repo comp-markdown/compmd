@@ -3,7 +3,7 @@
 // editor picks, with its math typeset.
 
 import { serveFrame } from "@compmd/render/frame";
-import { FRAME_HELLO, type ComponentFailed, type ComponentsMessage, type HostStyleMessage, type OpenLink, type SourceLink } from "../protocol.ts";
+import { FRAME_HELLO, type ComponentFailed, type ComponentsLoaded, type ComponentsMessage, type HostStyleMessage, type OpenLink, type SourceLink } from "../protocol.ts";
 import { Components } from "./components.ts";
 import { load } from "./load.ts";
 import { typesetMath } from "./math.ts";
@@ -39,7 +39,11 @@ addEventListener("message", (event: MessageEvent) => {
   });
   // Before `serveFrame` starts the port, so the components come before the first splice.
   port.addEventListener("message", ({ data }: MessageEvent<{ type?: string }>) => {
-    if (data.type === "components") void components.set((data as ComponentsMessage).components);
+    if (data.type === "components") {
+      void components.set((data as ComponentsMessage).components).then(() => {
+        port.postMessage({ type: "components-loaded" } satisfies ComponentsLoaded);
+      });
+    }
     // The host's stylesheet: `frame.css` holds each, by this attribute, so a switch reloads nothing.
     if (data.type === "host-style") document.documentElement.dataset.host = (data as HostStyleMessage).style;
   });
