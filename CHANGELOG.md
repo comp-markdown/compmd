@@ -6,6 +6,7 @@ Changes to the [CompMD specification](compmd-spec-v1.md), newest first. Every ch
 
 ### 2026-10-30
 
+- **Unknown type names are F037 (§7.3, §10.2).** A declaration whose type isn't in the grammar, such as `count: numbr`, in a signature, an input or a data `schema`, is F037 at the type name, with the nearest type name. The declaration is kept and takes any value. Before, such a type was accepted silently and checked nothing. Breaking for documents with a misspelt type, which now have an error.
 - **Website.** The spec links to the CompMD website, which has the spec as a page and a playground. The spec itself is unchanged.
 
 ### 2026-10-29

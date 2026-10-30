@@ -479,6 +479,7 @@ F codes are errors, W codes warnings. Each line: what it means → how to fix it
 - F034 expansion too large → filter or slice the data (`md.slice`), or nest fewer `each` blocks.
 - F035 pack doesn't match its `integrity` → update the hash or the version.
 - F036 param list on a signature fence → remove it; box params go on the definition fence.
+- F037 a declaration's type isn't a type → use one: `string`, `number`, `boolean`, `date`, `array`, `object`, `length`, `space`, `color`, `tracks`, `areas`, `surface`, `border`, `radius`, `name`, an enum `a | b`, or `input<…>`.
 - W101 leaf without fallback → add `[readable text]`.
 - W102 language or runtime not supported → expect the fallback; write a good one.
 - W103 `each` with one list item per iteration and no `join` → add `join=list`.

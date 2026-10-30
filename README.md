@@ -43,7 +43,7 @@ The spec is a document format of its own and doesn't depend on any application.
 | 1 | No open issues: every item in §17 is decided or deferred with a reason | To do: record keys are open |
 | 2 | The tree schema (§12.4), and every expected tree in the conformance set fits it | Done |
 | 3 | The changelog, with a version line in the spec | Done |
-| 4 | The conformance set covers every construct and every diagnostic code | Done: 174 cases, all 56 codes |
+| 4 | The conformance set covers every construct and every diagnostic code | Done: 177 cases, all 57 codes |
 | 5 | An implementation passes the whole set, including the `js` case (the plain binding) | Partly: the prototype passes all 172 cases it can run; the `js` case needs a plain-JavaScript runner, and the `origins` case an implementation of the `origins` feature |
 | 6 | Plain renderers: every case degrades cleanly in a CommonMark and a GFM renderer | Done (the prototype's degradation report: 174/174 each) |
 | 7 | The AI authoring guide, `llms.txt`, measured with an AI writing documents | Done (see below) |

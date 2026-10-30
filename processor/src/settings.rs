@@ -2,7 +2,7 @@
 //! diagnostics of stages 2 and 3. Entries that don't have the shape the spec gives them are left out.
 
 use crate::diagnostic::Location;
-use crate::parse::definitions::declaration;
+use crate::parse::definitions::{declaration, type_pointer};
 use crate::parse::yaml::{self, Mark};
 use crate::tree::Declaration;
 use serde_json::{Map, Value};
@@ -250,7 +250,11 @@ impl Reader<'_> {
                 fields
                     .iter()
                     .map(|(name, declared)| Field {
-                        declaration: declaration(name, declared),
+                        declaration: self.declaration(
+                            &format!("{pointer}/schema/{name}"),
+                            name,
+                            declared,
+                        ),
                         key: declared
                             .get("from")
                             .and_then(Value::as_str)
@@ -278,10 +282,16 @@ impl Reader<'_> {
             .into_iter()
             .flatten()
             .map(|(name, declared)| Input {
-                declaration: declaration(name, declared),
+                declaration: self.declaration(&format!("/md/inputs/{name}"), name, declared),
                 at: self.key_at(&format!("/md/inputs/{name}")),
             })
             .collect()
+    }
+
+    /// The declaration of `name` at `pointer`, with where its type is written.
+    fn declaration(&self, pointer: &str, name: &str, declared: &Value) -> Declaration {
+        let at = self.content_at(&type_pointer(pointer, declared));
+        declaration(name, declared, Some(at))
     }
 }
 

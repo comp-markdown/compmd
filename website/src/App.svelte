@@ -68,7 +68,7 @@
   const PLACES = [
     { href: "spec/", title: "The spec", text: "Version 1, a draft: the syntax, the components, expressions, data and security." },
     { href: "playground/", title: "The playground", text: "Write CompMD and watch the page, with a tour, examples and the diagnostics." },
-    { href: `${REPOSITORY}/tree/main/conformance`, title: "The conformance set", text: "174 cases any implementation can run, with their expected trees." },
+    { href: `${REPOSITORY}/tree/main/conformance`, title: "The conformance set", text: "177 cases any implementation can run, with their expected trees." },
     { href: REPOSITORY, title: "GitHub", text: "The spec, the processor in Rust, the packages and this site." },
     { href: `${REPOSITORY}/tree/main/wasm`, title: "The packages", text: "@compmd/processor and @compmd/render, to be published on npm." },
   ];
@@ -217,7 +217,7 @@
         </div>
         <div>
           <dt>A conformance set</dt>
-          <dd>174 cases, with every diagnostic code, that any implementation can run against its own processor. <a href="{REPOSITORY}/tree/main/conformance">The cases</a></dd>
+          <dd>177 cases, with every diagnostic code, that any implementation can run against its own processor. <a href="{REPOSITORY}/tree/main/conformance">The cases</a></dd>
         </div>
       </dl>
     </div>

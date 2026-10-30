@@ -115,7 +115,7 @@ mod tests {
 
     fn field(name: &str, written: &Value) -> Field {
         Field {
-            declaration: declaration(name, written),
+            declaration: declaration(name, written, None),
             key: written
                 .get("from")
                 .and_then(Value::as_str)

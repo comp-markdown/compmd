@@ -7,6 +7,7 @@ mod shift;
 
 pub(crate) use shift::{Move, Moved, Shift};
 
+use crate::diagnostic::Location;
 use crate::named::named;
 use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
@@ -764,6 +765,9 @@ pub struct Declaration {
     pub default: Option<DefaultValue>,
     /// The long form's `doc`.
     pub doc: Option<String>,
+    /// Where its type is written when that isn't a type name (F037), in the document that declares it.
+    #[serde(skip)]
+    pub(crate) unknown_at: Option<Location>,
 }
 
 named! {
@@ -835,6 +839,15 @@ impl DeclaredType {
     /// The type a name stands for: one of the type names, or another name as written.
     pub(crate) fn named(name: &str) -> Self {
         TypeName::from_name(name).map_or_else(|| Self::Other(name.to_string()), Self::Name)
+    }
+
+    /// The name it is written with when that isn't a type name: `numbr`, alone or in `input<numbr>`.
+    pub(crate) fn unknown(&self) -> Option<&str> {
+        match self {
+            Self::Other(name) => Some(name),
+            Self::Input { input } => input.unknown(),
+            Self::Name(_) | Self::Enum { .. } => None,
+        }
     }
 
     /// The type as messages write it: `a number`, `one of a, b`, `an input of a date`.

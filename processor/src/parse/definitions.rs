@@ -4,10 +4,10 @@ use super::params::{self, is_name};
 use super::source::right;
 use super::yaml;
 use super::{Converter, Labels};
-use crate::diagnostic::Code;
+use crate::diagnostic::{Code, Location};
 use crate::tree::{
     Declaration, DeclaredType, DefaultValue, Definition, DefinitionBody, Headings, Node, Param,
-    Point, Position, Signature, SignatureFence, SlotDeclaration,
+    Point, Position, Signature, SignatureFence, SlotDeclaration, TypeName,
 };
 use markdown::mdast;
 use serde_json::Value;
@@ -56,7 +56,7 @@ impl Converter<'_, '_> {
             }
             return Some(Node::ComponentSignature(SignatureFence {
                 name: name.to_string(),
-                signature: signature(&code.value),
+                signature: self.signature(&code.value, start.line + 1),
                 position,
             }));
         }
@@ -82,7 +82,7 @@ impl Converter<'_, '_> {
         Some(Node::ComponentDefinition(Definition {
             name: name.to_string(),
             language,
-            signature: signature(&header),
+            signature: self.signature(&header, start.line + 1),
             params: fence_params,
             body: DefinitionBody::Compmd { children },
             position,
@@ -113,18 +113,54 @@ impl Converter<'_, '_> {
         self.add_params_at(&mut fence_params, list, |index| right(line_start, index));
         fence_params
     }
+
+    /// A signature: YAML whose `params` are declarations in short or long form (spec §7.3), written from line
+    /// `first` of the document; `None` when it isn't YAML.
+    fn signature(&self, yaml_text: &str, first: usize) -> Option<Signature> {
+        let document = yaml::parse(yaml_text).ok()?;
+        let yaml_lines: Vec<&str> = yaml_text.split('\n').collect();
+        // Where the text of the value at a pointer starts in the document: past its quote, and past what the fence's
+        // container (a list item, a quote) puts before each of its lines.
+        let text_at = |pointer: &str| -> Option<Location> {
+            let mark = document.values.get(pointer)?;
+            let yaml_line = yaml_lines.get(mark.line.checked_sub(1)?)?;
+            let (line, start) = self.source.line(first + mark.line - 1)?;
+            let before = line
+                .chars()
+                .count()
+                .saturating_sub(yaml_line.chars().count());
+            let quoted = yaml_line
+                .chars()
+                .nth(mark.column)
+                .is_some_and(|c| c == '"' || c == '\'');
+            Some(right(start, before + mark.column + usize::from(quoted)).into())
+        };
+        Some(signature(&document.value, &text_at))
+    }
 }
 
-/// A signature: YAML whose `params` are declarations in short or long form (spec §7.3); `None` when it isn't YAML.
-fn signature(yaml_text: &str) -> Option<Signature> {
-    let value = yaml::parse(yaml_text).ok()?.value;
+/// The JSON pointer where a declaration at `pointer` writes its type: the short form itself, or the long form's
+/// `type`.
+pub(crate) fn type_pointer(pointer: &str, written: &Value) -> String {
+    if written.is_string() {
+        pointer.to_string()
+    } else {
+        format!("{pointer}/type")
+    }
+}
+
+/// A signature read from its YAML `value`; `text_at` gives where the text of the value at a JSON pointer starts.
+fn signature(value: &Value, text_at: &dyn Fn(&str) -> Option<Location>) -> Signature {
     let params = value
         .get("params")
         .and_then(Value::as_object)
         .map(|params| {
             params
                 .iter()
-                .map(|(name, declared)| declaration(name, declared))
+                .map(|(name, declared)| {
+                    let at = text_at(&type_pointer(&format!("/params/{name}"), declared));
+                    declaration(name, declared, at)
+                })
                 .collect()
         })
         .unwrap_or_default();
@@ -133,11 +169,11 @@ fn signature(yaml_text: &str) -> Option<Signature> {
     } else {
         Headings::Relative
     };
-    Some(Signature {
+    Signature {
         params,
         slots: slots(value.get("slots")),
         headings,
-    })
+    }
 }
 
 /// `slots`: a list of names, or a mapping from names to options, where `{each, as}` makes a template slot.
@@ -176,25 +212,30 @@ fn slots(value: Option<&Value>) -> Option<Vec<SlotDeclaration>> {
     }
 }
 
-/// A declaration, short form (`info | warn = info`) or long form (`{type, default, doc}`).
-pub(crate) fn declaration(name: &str, written: &Value) -> Declaration {
+/// A declaration, short form (`info | warn = info`) or long form (`{type, default, doc}`); `type_at` is where its
+/// type's text starts in the document, when known.
+pub(crate) fn declaration(name: &str, written: &Value, type_at: Option<Location>) -> Declaration {
     if let Some(short) = written.as_str() {
         let (type_text, default) = match split_default(short) {
             Some((type_text, default)) => (type_text, short_default(default.trim())),
             None => (short, None),
         };
         let (declared, optional) = type_of(type_text);
+        let unknown_at = unknown_at(&declared, type_text, type_at);
         return Declaration {
             name: name.to_string(),
             declared,
             optional,
             default,
             doc: None,
+            unknown_at,
         };
     }
-    let (declared, optional) = type_of(written.get("type").and_then(Value::as_str).unwrap_or(""));
+    let type_text = written.get("type").and_then(Value::as_str).unwrap_or("");
+    let (declared, optional) = type_of(type_text);
     Declaration {
         name: name.to_string(),
+        unknown_at: unknown_at(&declared, type_text, type_at),
         declared,
         optional,
         default: written.get("default").cloned().map(DefaultValue::Yaml),
@@ -203,6 +244,21 @@ pub(crate) fn declaration(name: &str, written: &Value) -> Declaration {
             .and_then(Value::as_str)
             .map(str::to_string),
     }
+}
+
+/// Where the name of `declared` that isn't a type name is, in `type_text`, which starts at `type_at`: the last place
+/// it is written, since in `input<…>` it is the inner one.
+fn unknown_at(
+    declared: &DeclaredType,
+    type_text: &str,
+    type_at: Option<Location>,
+) -> Option<Location> {
+    let unknown = declared.unknown()?;
+    let at = type_at?;
+    let before = type_text
+        .rfind(unknown)
+        .map_or(0, |byte| type_text[..byte].chars().count());
+    Some(Location::new(at.line, at.column + before))
 }
 
 /// A short form split at its `=` with white space on both sides: the type, and the default.
@@ -224,13 +280,18 @@ fn short_default(text: &str) -> Option<DefaultValue> {
     }
 }
 
-/// A type and whether it ends in `?`.
+/// A type and whether it ends in `?`. `enum` is a type only inside `input<…>`: alone, it isn't one.
 fn type_of(text: &str) -> (DeclaredType, bool) {
     let text = text.trim();
-    match text.strip_suffix('?') {
-        Some(required) => (declared_type(required.trim()), true),
-        None => (declared_type(text), false),
-    }
+    let (text, optional) = match text.strip_suffix('?') {
+        Some(required) => (required.trim(), true),
+        None => (text, false),
+    };
+    let declared = match declared_type(text) {
+        DeclaredType::Name(TypeName::Enum) => DeclaredType::Other(text.to_string()),
+        declared => declared,
+    };
+    (declared, optional)
 }
 
 /// A type name, an enum (`a | b`), or `input<type>`.

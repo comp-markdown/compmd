@@ -1,5 +1,6 @@
 //! Loads a document and everything it imports, and binds the names of each (spec §6): F013, F020–F022, F026 for
-//! imports, F029, F035, W105, W112, W117, and F002 for a signature fence with nothing to attach to.
+//! imports, F029, F035, W105, W112, W117, F002 for a signature fence with nothing to attach to, and F037 for a
+//! declaration whose type isn't a type name.
 
 use super::names::{Binding, Builder, Level, Names};
 use super::origin::CORE;
@@ -8,13 +9,15 @@ use super::{
     Ambient, Body, Component, ComponentId, Document, DocumentId, Found, Language, Origin, Parses,
     Resolved, Store, uses,
 };
-use crate::diagnostic::{Code, Diagnostic, Location, Stage};
+use crate::diagnostic::{Code, Diagnostic, Fix, Location, Stage};
 use crate::lines::LineStarts;
+use crate::nearest::nearest;
 use crate::parse::{ParseOptions, Parsed, parse};
 use crate::reserved;
 use crate::settings::{self, Import};
 use crate::tree::{
-    DeclaredType, Definition, DefinitionBody, Node, Position, Signature, SignatureFence, TypeName,
+    Declaration, DeclaredType, Definition, DefinitionBody, Node, Position, Signature,
+    SignatureFence, TypeName,
 };
 use semver::Version;
 use serde_json::Value;
@@ -123,6 +126,7 @@ impl<'h, 'p> Loader<'h, 'p> {
         }
         self.implicit(id, &mut names);
         self.define(id, &mut names);
+        self.check_frontmatter_types(id);
         let names = names.build();
         let exports = self.exports(id, &names);
         self.untyped(id, &exports);
@@ -138,12 +142,24 @@ impl<'h, 'p> Loader<'h, 'p> {
     }
 
     fn report(&mut self, id: DocumentId, code: Code, at: Location, message: impl Into<String>) {
+        self.report_fixed(id, code, at, message, None);
+    }
+
+    fn report_fixed(
+        &mut self,
+        id: DocumentId,
+        code: Code,
+        at: Location,
+        message: impl Into<String>,
+        fix: Option<Fix>,
+    ) {
         let origin = &self.document(id).origin;
         let file = (*origin != self.main).then(|| origin.to_string());
         self.diagnostics.push(
             Diagnostic::new(code, at, message)
                 .in_stage(Stage::Resolve)
-                .in_file(file),
+                .in_file(file)
+                .with_fix(fix),
         );
     }
 
@@ -605,7 +621,57 @@ impl<'h, 'p> Loader<'h, 'p> {
             {
                 self.report(id, Code::F013, at, why);
             }
+            self.check_type(id, param);
         }
+    }
+
+    /// F037 for the declarations of the document's frontmatter: its inputs, and its data imports' schemas.
+    fn check_frontmatter_types(&mut self, id: DocumentId) {
+        let settings = &self.document(id).settings;
+        let fields = settings
+            .data
+            .iter()
+            .flat_map(|data| data.schema.iter().flatten())
+            .map(|field| &field.declaration);
+        let declarations: Vec<Declaration> = settings
+            .inputs
+            .iter()
+            .map(|input| &input.declaration)
+            .chain(fields)
+            .cloned()
+            .collect();
+        for declaration in &declarations {
+            self.check_type(id, declaration);
+        }
+    }
+
+    /// F037 for a declaration whose type isn't a type name (spec §7.3), with the nearest one and the fix that writes
+    /// it. The declaration is kept: its type takes any value.
+    fn check_type(&mut self, id: DocumentId, declaration: &Declaration) {
+        let (Some(at), Some(written)) = (declaration.unknown_at, declaration.declared.unknown())
+        else {
+            return;
+        };
+        // `enum` is a type only inside `input<…>`.
+        let near = nearest(
+            written,
+            TypeName::NAMES
+                .iter()
+                .copied()
+                .filter(|name| *name != "enum"),
+        );
+        let hint = near.map_or_else(String::new, |near| format!("; did you mean `{near}`?"));
+        let fix = near.map(|near| Fix::replacing(at, written, near));
+        self.report_fixed(
+            id,
+            Code::F037,
+            at,
+            format!(
+                "`{written}` isn't a type, so `{}` takes any value{hint}",
+                declaration.name
+            ),
+            fix,
+        );
     }
 
     /// The document's exports (spec §6.2): F013 for a keyword, F029 and W117 for host-language components.

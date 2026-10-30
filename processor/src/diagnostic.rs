@@ -81,6 +81,8 @@ named! {
         F035 = "F035",
         /// A param list on a signature fence.
         F036 = "F036",
+        /// A declaration whose type isn't in the type grammar.
+        F037 = "F037",
         /// A leaf without fallback text.
         W101 = "W101",
         /// A definition language or runtime this processor doesn't support.

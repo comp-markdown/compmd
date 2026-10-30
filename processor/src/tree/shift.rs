@@ -114,6 +114,12 @@ impl Shift for Point {
     }
 }
 
+impl Shift for Location {
+    fn shift(&mut self, by: Move) {
+        self.line = self.line.saturating_add_signed(by.lines);
+    }
+}
+
 impl Shift for Position {
     fn shift(&mut self, by: Move) {
         self.start.shift(by);
@@ -173,6 +179,7 @@ impl Shift for Signature {
             if let Some(DefaultValue::Param(value)) = &mut declaration.default {
                 value.shift(by);
             }
+            declaration.unknown_at.shift(by);
         }
     }
 }

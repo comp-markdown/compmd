@@ -518,6 +518,7 @@ params:
 | `from`    | data `schema` only; the key in the data, when it differs from the declared name           |
 
 - A param without a default is required, unless its type ends in `?` (optional, no value).
+- A type that isn't in the grammar, such as a misspelt `numbr`, is F037, reported at the type name, inside `input<…>` too. The declaration is kept, but its type is `dyn`: it takes any value and checks none, so the one mistake gives one diagnostic, not one at each use. A single name is never an enum, which has at least two members.
 - `input<enum>` binds an input of any enum type, whose members the component reads as its choices (`select-input`, section 8.7); `input<a | b>` binds only an input of that enum.
 - Enum members are names, written without quotes, so every short form is a valid YAML string. A member with spaces needs the whole declaration quoted (`status: '"to do" | done = done'`).
 - A short form whose default contains `: ` (a JSON object, some strings) isn't valid YAML; use the long form.
@@ -1235,6 +1236,7 @@ Every diagnostic MUST name its code, the line and column where it was detected, 
 | F034 | Expansion larger than the processor allows (at least 100,000 nodes, section 8.5)                                                     | the `each`, template slot or invocation that crossed the limit       |
 | F035 | Pack does not match its import's `integrity` hash                                                                                  | the `integrity` key                                                  |
 | F036 | Param list on a signature fence; ignored                                                                                            | the `{`                                                              |
+| F037 | A declaration's type isn't in the type grammar (section 7.3), in a signature, an input or a data `schema`; the declaration takes any value (diagnostic SHOULD suggest the nearest type name) | the type name                                                        |
 | W101 | Leaf without fallback text (plain renderers show nothing, and a host component has no text alternative)                                  | the leaf                                                             |
 | W102 | Definition language not supported by this processor; fallback rendered                                                                | the invocation                                                       |
 | W103 | each default slot is a single list item and join is unset                                                                             | the each opener                                                      |

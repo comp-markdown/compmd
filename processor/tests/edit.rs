@@ -40,6 +40,7 @@ const PASTED: &[&str] = &[
     "::: /box\n",
     "\n```\n",
     "```compmd component=note\n---\n# Note {{md.doc.title}}\n```\n",
+    "```compmd component=pill\nparams:\n  size: numbr\n---\nPill.\n```\n",
     "\n[l]: /x\n",
     "\n[^1]: A note.\n",
     "See [l] and[^1].",
