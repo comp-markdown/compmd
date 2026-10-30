@@ -25,11 +25,14 @@ pub enum Trust {
     /// A sandbox that sees only the host contract, with no network: the default.
     #[default]
     Strict,
-    /// A sandbox of its own, which also reaches `network`, and is given `host` (spec §7.4).
+    /// A sandbox of its own, which also reaches `network`, and `host` if given it (spec §7.4).
     Permissive {
         /// The origins its code may reach, `https://tiles.example.com`.
         #[serde(default)]
         network: Vec<String>,
+        /// Whether its components are given `host`.
+        #[serde(default)]
+        host: bool,
     },
     /// The host's own code, built with its application: it runs where the processor's code does.
     Trusted,
@@ -125,19 +128,21 @@ mod tests {
         let policy = policy(json!({ "packs": {
             "@acme/app": { "level": "trusted" },
             "@acme/maps": { "level": "permissive", "network": ["https://tiles.example.com"] },
-            "@acme/charts": { "level": "permissive" }
+            "@acme/charts": { "level": "permissive", "host": true }
         } }));
         assert_eq!(policy.trust("@acme/app"), Trust::Trusted);
         assert_eq!(
             policy.trust("@acme/maps"),
             Trust::Permissive {
-                network: vec!["https://tiles.example.com".into()]
+                network: vec!["https://tiles.example.com".into()],
+                host: false,
             }
         );
         assert_eq!(
             policy.trust("@acme/charts"),
             Trust::Permissive {
-                network: Vec::new()
+                network: Vec::new(),
+                host: true,
             }
         );
         assert_eq!(policy.trust("@other/kit"), Trust::Strict);

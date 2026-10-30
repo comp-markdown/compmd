@@ -326,7 +326,7 @@ mod tests {
             json!([{
                 "name": "map", "language": "js", "code": "",
                 "module": { "pack": "@acme/maps", "version": "1.2.0", "path": "map.js", "integrity": "sha512-KIT" },
-                "trust": { "level": "permissive", "network": ["https://tiles.example.com"] }
+                "trust": { "level": "permissive", "network": ["https://tiles.example.com"], "host": false }
             }])
         );
     }

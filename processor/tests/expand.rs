@@ -626,7 +626,7 @@ fn a_packs_built_module_comes_by_its_place_and_components_have_their_packs_trust
     let packs = HashMap::from([("@acme/maps".to_string(), vec![kit])]);
     let input = "---\nmd:\n  import:\n    - from: \"@acme/maps@1\"\n      names: [map, pin]\n---\n\n```jsx component=own\nexport default () => null;\n```\n\n```compmd component=own signature\nparams: {}\n```\n\n:: map[Map]\n\n:: pin[Pin]\n\n:: own[Own]\n";
     let policy: Policy = serde_json::from_value(json!({ "packs": {
-        "@acme/maps": { "level": "permissive", "network": ["https://tiles.example.com"] }
+        "@acme/maps": { "level": "permissive", "network": ["https://tiles.example.com"], "host": true }
     } }))
     .expect("a policy");
     let expanded = Processor::new("input.comp.md", input)
@@ -648,6 +648,7 @@ fn a_packs_built_module_comes_by_its_place_and_components_have_their_packs_trust
     let components = expanded.host_components();
     let permissive = Trust::Permissive {
         network: vec!["https://tiles.example.com".into()],
+        host: true,
     };
     let [map, own, pin] = &components[..] else {
         panic!("three components: {components:?}");

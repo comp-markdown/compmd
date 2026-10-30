@@ -321,13 +321,13 @@ export interface HostComponent {
   trust: Trust;
 }
 
-/** How far a pack's code is trusted (spec §15). */
-export type Trust = { level: "strict" } | { level: "permissive"; network: string[] } | { level: "trusted" };
+/** How far a pack's code is trusted (spec §15); a permissive pack's components get `host` when `host` is true. */
+export type Trust = { level: "strict" } | { level: "permissive"; network: string[]; host: boolean } | { level: "trusted" };
 
 /** The host's policy for packs (spec §6.4, §15). Every key is optional: the default allows any pack, in the strict sandbox. */
 export interface Policy {
-  /** The packs the host lists, each with its trust level; any other is strict. `network` defaults to none. */
-  packs?: Record<string, { level: "strict" } | { level: "permissive"; network?: string[] } | { level: "trusted" }>;
+  /** The packs the host lists, each with its trust level; any other is strict. `network` defaults to none, `host` to false. */
+  packs?: Record<string, { level: "strict" } | { level: "permissive"; network?: string[]; host?: boolean } | { level: "trusted" }>;
   /** `listed`: a document may import only the packs listed here and the ambient ones (F026 otherwise). */
   imports?: "any" | "listed";
   /** Packs the host denies, as its own policy: all versions, or those in the semver range `version` (F026, with `reason`). */
