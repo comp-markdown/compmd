@@ -6,6 +6,7 @@ import type { ComponentError, Fallback, Mount, SlotInstance, SlotItem, Slots } f
 import { applyBox } from "./box.ts";
 import { plainText, type LinkDefinition } from "./document.ts";
 import { safeUrl, withHtml } from "./html.ts";
+import { nodesMountOf, runnable } from "./nodes.ts";
 import { fills, layoutOf, ownParams, usesBreakpoints, type ParentLayout, type Stylesheet } from "./styles.ts";
 import { contentOf, isComponent, rendererOf, textOf, type ExpandedCode, type ExpandedComponent, type ExpandedInput, type ExpandedInstance, type ExpandedNode, type MarkdownNode } from "./tree.ts";
 
@@ -377,16 +378,18 @@ class RenderedCodeView implements View {
   readonly key: string | undefined;
   readonly #handle: ComponentHandle;
   readonly #code: View;
+  #current: { node: ExpandedComponent; inputs: Pass["inputs"] };
 
   constructor(surface: Surface, node: MarkdownNode, renderer: ExpandedComponent, pass: Pass, key: string | undefined) {
     this.shape = shapeOf(node);
     this.key = key;
+    this.#current = { node: renderer, inputs: pass.inputs };
     this.#code = new ElementView(surface, plainCode(node), pass, undefined);
     const fallback = surface.document.createElement("div");
     fallback.appendChild(this.#code.dom);
     // The component layer appends the box to its target; the region places it, so it starts in a fragment.
     this.#handle = mountComponent(surface.document.createDocumentFragment(), renderer, {
-      mount: surface.components[renderer.name],
+      mount: runnable(surface.components[renderer.name], () => this.#current),
       slots: {},
       fallback: { text: textOf((node as ExpandedCode).alt), element: fallback },
       headingLevel: Math.min(6, pass.heading.level + 1),
@@ -405,7 +408,9 @@ class RenderedCodeView implements View {
   update(node: ExpandedNode, pass: Pass): void {
     this.#code.update(plainCode(node), pass);
     const renderer = rendererOf(node);
-    if (renderer) this.#handle.update(renderer, { slots: {}, parent: pass.parent });
+    if (!renderer) return;
+    this.#current = { node: renderer, inputs: pass.inputs };
+    this.#handle.update(renderer, { slots: {}, parent: pass.parent });
   }
 
   destroy(): void {
@@ -578,19 +583,25 @@ class ComponentView implements View {
   #fallback: View[] = [];
   readonly #fallbackElement: HTMLElement;
   #node: ExpandedComponent;
+  #inputs: Pass["inputs"];
+  /** Whether the component renders its slots itself, from their nodes (`rendersSlots`). */
+  readonly #ownSlots: boolean;
 
   constructor(surface: Surface, node: ExpandedComponent, pass: Pass, key: string | undefined) {
     this.#surface = surface;
     this.shape = shapeOf(node);
     this.key = key;
     this.#node = node;
+    this.#inputs = pass.inputs;
+    const mount = surface.components[node.name];
+    this.#ownSlots = nodesMountOf(mount) !== undefined;
     const headingLevel = Math.min(6, pass.heading.level + 1);
     this.#fallbackElement = surface.document.createElement(node.fallback ? "span" : "div");
     const fallback = this.#renderFallback(node, pass);
-    const slots = this.#patchSlots(node, pass);
+    const slots = this.#ownSlots ? {} : this.#patchSlots(node, pass);
     // The component layer appends the box to its target; the region places it, so it starts in a fragment.
     this.#handle = mountComponent(surface.document.createDocumentFragment(), node, {
-      mount: surface.components[node.name],
+      mount: runnable(mount, () => ({ node: this.#node, inputs: this.#inputs })),
       slots,
       fallback,
       headingLevel,
@@ -612,6 +623,7 @@ class ComponentView implements View {
   update(node: ExpandedNode, pass: Pass): void {
     const next = node as ExpandedComponent;
     this.#node = next;
+    this.#inputs = pass.inputs;
     if (this.#handle.failed) {
       this.#handle.update(next, { slots: {}, parent: pass.parent });
       const into = next.fallback ? this.#fallbackElement : this.#handle.element;
@@ -619,7 +631,7 @@ class ComponentView implements View {
       return;
     }
     this.#renderFallback(next, pass);
-    this.#handle.update(next, { slots: this.#patchSlots(next, pass), parent: pass.parent });
+    this.#handle.update(next, { slots: this.#ownSlots ? {} : this.#patchSlots(next, pass), parent: pass.parent });
   }
 
   destroy(): void {

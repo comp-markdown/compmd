@@ -94,6 +94,8 @@ addEventListener("message", ({ ports: [port] }) => serveFrame(port, { container:
 
 Host to frame: `render {tree, change?}`, `splices {splices, change?, replace?}`, `theme {tokens}`. A splice can be the JSON text a processor gives (`@compmd/processor`'s `OpenDocumentJson`), which a host passes on unread: posted text is copied in one piece, and the frame parses it once. `replace` says the first splice is of an empty tree, as after opening a document again. The frame ignores any other message, so a host can send its own on the same port, as an editor does with the components to compile. Frame to host: `ready {version}`, `set {input, value}`, `error {reason, component?, message}`, `rendered {ms}` (after the render is painted). The host's messages wait for `ready` with this protocol's version, since a host page and its frame may be deployed apart. Component code stays in the frame: modules can't be posted.
 
+**A component that renders its slots itself.** `rendersSlots(mount)` makes a component for `components` whose slots the renderer doesn't render: `mount` gets the use's node, with its slots as expanded nodes, and the document's inputs, and its `update` gets them again. A sandbox uses it to render a use and its slots inside the use's own frame ([`@compmd/sandbox`](../sandbox/README.md)); a code block's renderer gets its leaf, with the block's text as `code`.
+
 ## The reference rendering of the built-ins
 
 The HTML and CSS this package writes for the built-ins is the reference rendering spec §13.1 calls informative. Every layout param means the CSS property it names (§9.4); the stylesheet is one per document (a constructed stylesheet, which a sandbox's CSP allows), and each styled block gets a class.
