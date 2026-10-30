@@ -41,9 +41,14 @@ This is a working draft of CompMD version 1. It specifies document format only; 
 - **Origin.** The range of the processed document that made an expanded node, with its occurrence ([section 12.3](#123-the-expanded-tree)).
 - **Pack.** A document or published package that exports components ([section 6](#6-imports-and-exports)).
 - **Parse tree.** The result of stage 1: the document as written, as mdast nodes and CompMD's own ([section 12](#12-document-tree)).
+- **Permissive sandbox.** The trust level of a pack the processor's configuration gives more than the strict sandbox: the network to the origins listed for it, and `host` ([section 15](#15-security)).
 - **Plain renderer.** Any CommonMark or GFM renderer without CompMD support ([section 14](#14-degradation-contract)).
+- **Sandbox.** Where a host-language component's code runs when it isn't trusted: it sees only its contract, and reaches nothing else unless its pack is permissive ([section 15](#15-security)).
 - **Slot.** A named part of a container's body, started by `:: #name`. Content before the first slot line is the *default slot* ([section 4.2](#42-slots)).
+- **Strict sandbox.** The default trust level: a sandbox with no network, in which code sees only its contract ([section 15](#15-security)).
 - **Template slot.** A slot rendered once per element of an array param ([section 7.5](#75-template-slots)).
+- **Trust level.** How far a pack's code is trusted, which the processor's configuration sets per pack and a document can never raise: a strict sandbox, a permissive sandbox, or trusted ([section 15](#15-security)).
+- **Trusted.** The trust level of the host's own code, built with its application: it runs outside a sandbox, and treats its params and slots as untrusted input ([section 15](#15-security)).
 
 ## 2. Documents
 
