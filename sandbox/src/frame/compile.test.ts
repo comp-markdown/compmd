@@ -1,8 +1,8 @@
-import type { HostComponent } from "@compmd/processor";
 import { describe, expect, it } from "vitest";
-import { compile } from "./compile.ts";
+import type { CompileRequest } from "../protocol/messages.ts";
+import { bindingOf, compile } from "./compile.ts";
 
-const component = (language: HostComponent["language"], code: string, runtime?: string): HostComponent => ({
+const component = (language: CompileRequest["language"], code: string, runtime?: string): CompileRequest => ({
   name: "card",
   language,
   code,
@@ -35,8 +35,8 @@ describe("compile", () => {
     expect(await compile(component("js", "export default () => {};"))).toEqual({ code: "export default () => {};" });
   });
 
-  it("compiles every component of the examples' charts", async () => {
-    const files = import.meta.glob("../../examples/charts/*.{jsx,svelte}", { query: "?raw", import: "default", eager: true });
+  it("compiles every component of the playground's charts", async () => {
+    const files = import.meta.glob("../../../editor/examples/charts/*.{jsx,svelte}", { query: "?raw", import: "default", eager: true });
     const compiled = await Promise.all(
       Object.entries(files).map(([path, code]) => compile(component(path.endsWith(".svelte") ? "svelte" : "jsx", code))),
     );
@@ -44,9 +44,13 @@ describe("compile", () => {
     for (const { code } of compiled) expect(code).toMatch(/from ['"](react\/jsx-runtime|svelte\/internal\/client)['"]/);
   });
 
-  it("fails on code that doesn't compile, and on a runtime the editor hasn't", async () => {
+  it("fails on code that doesn't compile, and on a runtime the sandbox hasn't", async () => {
     await expect(compile(component("jsx", "export default () => <b>;"))).rejects.toThrow();
     await expect(compile(component("svelte", "{#if}"))).rejects.toThrow();
-    await expect(compile(component("jsx", "x", "preact@10"))).rejects.toThrow("this editor has no preact@10 to run `card`");
+    await expect(compile(component("jsx", "x", "preact@10"))).rejects.toThrow("this sandbox has no preact@10 to run `card`");
+  });
+
+  it("names each language's binding", () => {
+    expect([bindingOf("jsx"), bindingOf("tsx"), bindingOf("svelte"), bindingOf("js"), bindingOf("ts")]).toEqual(["react", "react", "svelte", "plain", "plain"]);
   });
 });

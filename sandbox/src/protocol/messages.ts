@@ -12,10 +12,20 @@ export const HELLO = "compmd-sandbox";
 /** A frame's trust level; trusted code never runs in a frame. */
 export type Level = "strict" | "permissive";
 
-/** A component's code, as a frame loads it: compiled text with its binding, or a built module by its URL. */
-export type ComponentCode =
-  | { name: string; binding: "react" | "svelte" | "plain"; code: string; css?: string }
-  | { name: string; module: { url: string; integrity: string } };
+/**
+ * A component as a frame gets it, with its level: compiled text with its binding, or a built module by its URL. One of
+ * a level above the frame's comes without code: the frame can't hold it, and its uses show their fallbacks.
+ */
+export type ComponentCode = Runnable | { name: string; level: Level | "trusted" };
+
+/** A component with its code. */
+export type Runnable = { name: string; level: Level | "trusted" } & (
+  | { binding: "react" | "svelte" | "plain"; code: string; css?: string }
+  | { module: { url: string; integrity: string } }
+);
+
+/** Whether `component` comes with code to run. */
+export const hasCode = (component: ComponentCode): component is Runnable => "code" in component || "module" in component;
 
 /** The use a frame renders: its node, its slots as expanded nodes in it, and the document's inputs. */
 export interface Part {

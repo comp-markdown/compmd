@@ -66,7 +66,7 @@ describe("the frame's end", () => {
     serveParent(frame, handlers);
     parent.postMessage({ type: "level", level: "strict" });
     parent.postMessage({ type: "level", level: "permissive", policy: "connect-src *" });
-    parent.postMessage({ type: "code", components: [{ name: "chart", binding: "plain", code: "export default () => {}" }] });
+    parent.postMessage({ type: "code", components: [{ name: "chart", level: "strict", binding: "plain", code: "export default () => {}" }] });
     parent.postMessage({ type: "part", part: { node: chart, inputs: {} } });
     parent.postMessage({ type: "styles", urls: ["/docs.css"] });
     parent.postMessage({ type: "ping", n: 7 });

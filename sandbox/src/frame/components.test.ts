@@ -1,16 +1,18 @@
-import type { HostComponent } from "@compmd/processor";
+// @vitest-environment happy-dom
 import type { Mount, MountContext } from "@compmd/render";
 import { describe, expect, it } from "vitest";
+import type { Runnable } from "../protocol/messages.ts";
 import { Components, type Loaded } from "./components.ts";
 
 /** A component whose code is the text it shows; `fail` in its code fails to load, `throw` throws when mounted. */
-const component = (name: string, code: string): HostComponent => ({ name, language: "js", code });
+const component = (name: string, code: string): Runnable & { code: string } => ({ name, level: "strict", binding: "plain", code });
 
 function setup() {
   const reports: [string, string][] = [];
   const adopted: [string, string | undefined][] = [];
   const log: string[] = [];
-  const load = (c: HostComponent): Promise<Loaded> => {
+  const load = (loaded: Runnable): Promise<Loaded> => {
+    const c = loaded as Runnable & { code: string };
     if (c.code === "fail") return Promise.reject(new Error("does not compile"));
     const mount: Mount = (target, context) => {
       if (c.code === "throw") throw new Error("throws");
@@ -94,6 +96,23 @@ describe("Components", () => {
       ["b", undefined],
       ["a", undefined],
     ]);
+  });
+
+  it("loads a built module again only when its URL or hash changes", async () => {
+    const loads: string[] = [];
+    const components = new Components({
+      load: (c) => {
+        loads.push("module" in c ? c.module.integrity : "");
+        return Promise.resolve({ mount: () => undefined });
+      },
+      report: () => undefined,
+      adopt: () => undefined,
+    });
+    const mermaid = (integrity: string): Runnable => ({ name: "mermaid", level: "strict", module: { url: "/packs/mermaid.js", integrity } });
+    await components.set([mermaid("sha384-a")]);
+    await components.set([mermaid("sha384-a")]);
+    await components.set([mermaid("sha384-b")]);
+    expect(loads).toEqual(["sha384-a", "sha384-b"]);
   });
 
   it("keeps the newest code when loads finish out of order", async () => {

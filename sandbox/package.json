@@ -22,7 +22,8 @@
   "type": "module",
   "sideEffects": false,
   "files": [
-    "dist"
+    "dist",
+    "protocol.schema.json"
   ],
   "exports": {
     ".": {
@@ -32,24 +33,46 @@
     "./protocol": {
       "types": "./dist/protocol/index.d.ts",
       "default": "./dist/protocol/index.js"
-    }
+    },
+    "./build": {
+      "types": "./dist/build/index.d.ts",
+      "default": "./dist/build/index.js"
+    },
+    "./protocol.schema.json": "./protocol.schema.json"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "tsc -p tsconfig.build.json && node scripts/frames.ts",
     "lint": "eslint . && tsc --noEmit",
     "test": "vitest run"
   },
   "dependencies": {
     "@compmd/render": "workspace:*"
   },
+  "peerDependencies": {
+    "vite": ">=8"
+  },
+  "peerDependenciesMeta": {
+    "vite": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@compmd/processor": "workspace:*",
     "@eslint/js": "10.0.1",
+    "@sveltejs/vite-plugin-svelte": "7.3.1",
     "@types/node": "26.6.5",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
     "@vitest/browser-playwright": "5.0.5",
     "ajv": "8.20.0",
     "eslint": "10.13.0",
+    "happy-dom": "21.0.3",
     "playwright": "1.64.1",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "sucrase": "3.35.1",
+    "svelte": "5.57.2",
+    "temml": "0.14.0",
     "typescript": "6.0.3",
     "typescript-eslint": "8.72.0",
     "vite": "8.3.4",

@@ -11,9 +11,10 @@
     "erasableSyntaxOnly": true,
     "allowImportingTsExtensions": true,
     "rewriteRelativeImportExtensions": true,
-    "types": ["node", "@vitest/browser-playwright"],
+    "types": ["node", "vite/client", "@vitest/browser-playwright"],
     "noEmit": true,
     "skipLibCheck": true
   },
-  "include": ["src", "test", "*.ts", "*.js"]
+  "include": ["src", "test", "scripts", "*.ts", "*.js"],
+  "exclude": ["test/.frames"]
 }

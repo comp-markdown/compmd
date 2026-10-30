@@ -1,10 +1,9 @@
-// The frame's host-language components, by name, for the renderer. Each name's mount goes through one of these
+// A frame's host-language components, by name, for the renderer. Each name's mount goes through one of these
 // entries, so when its code changes, the instances on the page are mounted again with the new code and their last
-// params and slots, and the rest of the page keeps its state. Code that doesn't compile or load shows each
-// instance's fallback.
+// params and slots, and the rest of the page keeps its state. Code that doesn't load shows each instance's fallback.
 
-import type { HostComponent } from "@compmd/processor";
 import type { Mount, Mounted, MountContext, Params, Slots } from "@compmd/render";
+import type { Runnable } from "../protocol/messages.ts";
 
 /** A component's code, compiled and loaded: its mount, and a Svelte component's CSS. */
 export interface Loaded {
@@ -13,8 +12,8 @@ export interface Loaded {
 }
 
 export interface ComponentsOptions {
-  load: (component: HostComponent) => Promise<Loaded>;
-  /** A component couldn't be compiled, loaded or mounted again. */
+  load: (component: Runnable) => Promise<Loaded>;
+  /** A component couldn't be loaded or mounted again. */
   report: (component: string, message: string) => void;
   /** A component's CSS, or none, in place of what it had. */
   adopt: (component: string, css: string | undefined) => void;
@@ -35,7 +34,8 @@ interface Entry {
   instances: Set<Instance>;
 }
 
-const keyOf = ({ language, runtime, code }: HostComponent): string => `${language}\n${runtime ?? ""}\n${code}`;
+const keyOf = (component: Runnable): string =>
+  "module" in component ? `${component.module.url}\n${component.module.integrity}` : `${component.binding}\n${component.css ?? ""}\n${component.code}`;
 const messageOf = (error: unknown): string => (error instanceof Error ? error.message : String(error));
 
 export class Components {
@@ -49,7 +49,7 @@ export class Components {
   }
 
   /** The components are now `components`; resolves once each changed one is loaded, or has failed. */
-  async set(components: readonly HostComponent[]): Promise<void> {
+  async set(components: readonly Runnable[]): Promise<void> {
     const names = new Set(components.map((component) => component.name));
     for (const name of this.#entries.keys()) {
       if (names.has(name)) continue;
@@ -60,7 +60,7 @@ export class Components {
     await Promise.all(components.map((component) => this.#update(component)));
   }
 
-  async #update(component: HostComponent): Promise<void> {
+  async #update(component: Runnable): Promise<void> {
     const key = keyOf(component);
     let entry = this.#entries.get(component.name);
     if (entry?.key === key) return;

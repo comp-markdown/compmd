@@ -32,8 +32,9 @@
         { "$ref": "#/$defs/failed" }
       ]
     },
+    "componentLevel": { "description": "A component's trust level.", "enum": ["strict", "permissive", "trusted"] },
     "level": {
-      "description": "The frame's level, first and once; a permissive frame's second policy, which it adds before anything else.",
+      "description": "The frame's level, first and once; for a permissive frame, the network directives of its second policy (connect-src, img-src, font-src, media-src), which it adds before anything else.",
       "type": "object",
       "properties": {
         "type": { "const": "level" },
@@ -44,7 +45,7 @@
       "additionalProperties": false
     },
     "code": {
-      "description": "Each component's code: compiled text with its binding, or a built module by its URL and its file's hash.",
+      "description": "Each component with its level: compiled text with its binding, or a built module by its URL and its file's hash; one of a level above the frame's comes without code, and its uses show their fallbacks.",
       "type": "object",
       "properties": {
         "type": { "const": "code" },
@@ -56,17 +57,19 @@
                 "type": "object",
                 "properties": {
                   "name": { "type": "string" },
+                  "level": { "$ref": "#/$defs/componentLevel" },
                   "binding": { "enum": ["react", "svelte", "plain"] },
                   "code": { "type": "string" },
                   "css": { "type": "string" }
                 },
-                "required": ["name", "binding", "code"],
+                "required": ["name", "level", "binding", "code"],
                 "additionalProperties": false
               },
               {
                 "type": "object",
                 "properties": {
                   "name": { "type": "string" },
+                  "level": { "$ref": "#/$defs/componentLevel" },
                   "module": {
                     "type": "object",
                     "properties": { "url": { "type": "string" }, "integrity": { "type": "string" } },
@@ -74,7 +77,13 @@
                     "additionalProperties": false
                   }
                 },
-                "required": ["name", "module"],
+                "required": ["name", "level", "module"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": { "name": { "type": "string" }, "level": { "$ref": "#/$defs/componentLevel" } },
+                "required": ["name", "level"],
                 "additionalProperties": false
               }
             ]

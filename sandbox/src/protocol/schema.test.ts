@@ -16,7 +16,14 @@ const typesOf = (direction: "toFrame" | "fromFrame"): string[] =>
 /** One of each message, as the protocol's ends send them. */
 const MESSAGES: (ToFrame | FromFrame)[] = [
   { type: "level", level: "permissive", policy: "connect-src https://tiles.example.com" },
-  { type: "code", components: [{ name: "chart", binding: "react", code: "export default () => null" }, { name: "mermaid", module: { url: "/packs/m.js", integrity: "sha384-x" } }] },
+  {
+    type: "code",
+    components: [
+      { name: "chart", level: "strict", binding: "react", code: "export default () => null" },
+      { name: "mermaid", level: "strict", module: { url: "/packs/m.js", integrity: "sha384-x" } },
+      { name: "stars", level: "trusted" },
+    ],
+  },
   { type: "part", part: { node: { type: "componentLeaf", name: "map", params: [] }, inputs: {} } },
   { type: "styles", urls: ["/docs.css"] },
   { type: "host" },

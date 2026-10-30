@@ -12,6 +12,7 @@ export default defineConfig({
         test: {
           name: "browser",
           include: ["test/**/*.test.ts"],
+          globalSetup: ["test/setup.ts"],
           browser: {
             enabled: true,
             headless: true,
