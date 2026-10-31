@@ -138,6 +138,52 @@ What changes between them: who the host's page is (a top-level page, or a frame 
 
 ## Q1. Where the page renders
 
+**In short:** the mode names where the *document* goes. In **frame mode**, the whole document goes in one frame, and everything in it is strict. In **host mode**, the document goes in the host's page, and each component that isn't trusted goes in a frame of its own.
+
+The example document, as the reader sees it in each mode (each box is a window; dashed is a fallback):
+
+```mermaid
+flowchart LR
+    subgraph FM["Frame mode"]
+        direction TB
+        subgraph FH["The host's page"]
+            direction TB
+            subgraph FP["One strict frame: the whole document"]
+                direction TB
+                ft["text, tables, box, grid"]
+                fb["bar-chart, sparkline"]
+                fm["mermaid"]
+                fs["stars"]:::fallback
+                fr["rating-summary"]:::fallback
+                fmap["map"]:::fallback
+            end
+        end
+    end
+    subgraph HM["Host mode"]
+        direction TB
+        subgraph HH["The host's page: the document"]
+            direction TB
+            ht["text, tables, box, grid"]
+            hs["stars, inline (trusted)"]
+            hb["strict frame: bar-chart, sparkline in its slot"]
+            hm["strict frame: mermaid"]
+            hr["permissive frame: rating-summary, with host"]
+            hmap["permissive frame: map, tiles.example.com"]
+        end
+    end
+    classDef fallback stroke-dasharray: 4 4
+```
+
+| | Frame mode | Host mode |
+|---|---|---|
+| Remember it as | the document in a frame | components in frames |
+| Frames | one per document | one per use of a component that isn't trusted |
+| What runs | strict code only | every level, each in its place |
+| Costs | the least: one frame, one copy of each runtime and module | a frame, and a runtime, per use |
+| Pick it when | the documents are others' and their packs strict | the host has components of its own, or permissive packs |
+
+The options, in full:
+
 | | F1. Frame mode | F2. Host mode |
 |---|---|---|
 | The page | one strict frame per document | the host's page |

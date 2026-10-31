@@ -13,8 +13,9 @@ The spec settles most of what a pack on npm is (§6.4): `@scope/pack` is the npm
 3. **A pack is checked against the hash npm publishes, the one an import's `integrity` holds** (R3). The resolver downloads the version's tarball, checks it against `dist.integrity` (and against the import's `integrity`, when the document pins one), and unpacks it in memory. Nothing is trusted that the tarball's hash doesn't cover.
 4. **A registry pack's built module reaches its frame as text, already checked** (R2). The host's page holds the checked files, so it sends a built module to the frame as it sends compiled source, as a `Blob` whose bytes the frames share, and the frame loads it as a `blob:` module; what that costs is in R2. The strict frame's policy doesn't change: it still loads nothing from the network.
 5. **Who fetches is the host's choice, said in its configuration; the reader's browser fetches directly only when the host says so** (R1). By default a host points its registries at its own proxy or cache, so the registry learns nothing about readers, as §6.4 requires. A host with no server (a static site, the playground) may choose `direct`: the reader's browser fetches from the registry, which then learns the reader's address and the names of the packs, never the document. The spec's privacy rule gains that exception, opt-in and stated.
-6. **A registry pack is a CompMD pack as §6.4 says, plus three rules** (R6): it says it is one, in a typed field and for search (the `compmd` field of its `package.json`, written even when it names the default document, and the keyword `compmd-pack`, which only packs use); each built module is one file, with no chunks of its own; and its size is under the host's cap, which the registry's metadata states before anything is downloaded. Its npm `dependencies` are never installed: a pack bundles what it uses, but the runtimes the frames give.
-7. **Documents work while packs load, and say so.** The spec has no such state today: all loading happens in stage 4a, before anything is evaluated (§11), so a pack is there or it is F026. A processor MAY now render before a pack has arrived: a use of one of its components is **pending**, marked in the expanded tree, and renders its fallback with `aria-busy="true"`, which a host may style (a placeholder, a spinner) and assistive technology announces. A pending use has no diagnostic: nothing is wrong yet. When the pack arrives, the document renders again; when it can't be had (no such pack, no matching version, a hash that doesn't match, over the cap, denied, the fetch failed), the use renders its plain fallback with F026, as today. So a reader and a host can tell "loading" from "won't load".
+6. **A registry pack is a CompMD pack as §6.4 says, plus three rules** (R6): it says it is one, in a typed field and for search (the `compmd` field of its `package.json`, written even when it names the default document, and the keyword `compmd-pack`, which only packs use); each built module is one file, with no chunks of its own; and its size is under the host's cap, which the registry's metadata states before anything is downloaded. Its npm `dependencies` are never installed: a pack bundles what it uses, but the runtimes the frames give and the libraries it shares (decision 8).
+7. **Documents work while packs load, as the spec already allows.** A processor may render with the packs it has: a pack it doesn't hold yet renders as the spec says for any pack it doesn't hold (its uses show their fallback text, F026), and when the pack arrives the document renders again, as §8.5 allows when an input of rendering changes. The spec has no state for "on its way" (all loading is stage 4a, §11), so a reader can't yet tell a pack that is loading from one that won't load; that is its own design, [imports that haven't arrived yet](pending.md).
+8. **Packs can share a library through the registry** (R9). A library published as one module file, and marked as a library pack, is fetched and checked like a pack; packs that name it in `peerDependencies` share one copy per document, the newest version every pack's range allows. A library that can't have two copies in a frame says so, and a second version of it is refused.
 
 ## Today
 
@@ -64,7 +65,19 @@ O1 changes nothing in the frames and keeps rule 2 (no network) exactly as it is;
 | A visit after the first | the tarball from the resolver's cache, compiled again | the file from the HTTP cache, compiled code too |
 | Many uses of a small module (ten charts, 50 KB each) | ten compiles of a small file: little | about the same |
 
-So O1's extra cost is compiling a large module again where a URL would have it cached, about the cost of the first compile each time. A host that minds (an editor with Mermaid) uses O3, whose files are URLs; the measurements belong in the implementation (as sandbox.md Q9), with Mermaid as the case.
+So O1's extra cost is compiling a large module again where a URL would have it cached, about the cost of the first compile each time.
+
+**Making it cheaper.** What compiling costs depends on what we can avoid: compiling the same code in many frames, compiling code that never runs, and compiling again what was compiled before.
+
+| Way | What it saves | What it needs |
+|---|---|---|
+| **A service worker serving the checked files as URLs** at the frames' origin, so a static host gets URLs without a server | it would have given the code cache and chunks for free | **not possible:** a frame with an opaque origin has no service worker, so its requests go to the network (checked 2026-10-31: the Service Worker spec's issue 1390 says no major browser hands them to one, and Chromium stopped doing it on purpose; the spike below confirms it in Chrome and WebKit) |
+| **Fewer frames that load the module** | one compile per frame that runs it | frame mode (one frame for the page), or keeping frames alive while an editor scrolls (`moveBefore`, sandbox.md Q6); host mode with ten diagrams stays ten compiles |
+| **Compile only what a document uses** | Mermaid's chunks for the diagram drawn, not all 2.7 MB | chunks (R7) |
+| **The code cache** | compiling again on later visits and in later frames | URLs from an origin the strict frame may load: the host's own (O3, a proxy) |
+| **Less than it looks** | browsers compile a function only when it first runs; a module's full cost is parsing it and compiling what it runs | measuring it |
+
+**Recommendation:** measure first, with a spike before the sandbox's part is built: Mermaid's module loaded as a `blob:` module and by URL, in Chrome and WebKit, in one frame, in two (host mode), and in a frame an editor rebuilds, on a laptop and a phone. If a frame's compile is small next to its boot, O1 stands; if not, the remedies above in that order: frame mode and frames kept alive first, chunks next, O3 for hosts with a server.
 
 ## R3. What is checked
 
@@ -144,8 +157,9 @@ Beyond §6.4:
   - **the `compmd` field**, written even when it names the default (`"compmd": "index.comp.md"`), is the typed marker: npm keeps every `package.json` field in a version's manifest (`GET <registry>/<name>/<version>`, checked 2026-10-31 with a package's custom `svelte` field), so a tool can confirm a search result is a pack without its tarball. A resolver still reads a package without it as §6.4 says.
   - **the keyword `compmd-pack`**, so `GET <registry>/-/v1/search?text=keywords:compmd-pack` lists them. Only packs use it; tools that help build packs (`@compmd/create-pack`, the Vite plugin) use `compmd` instead, so a search for packs finds packs. A search tool keeps only the results whose manifest has the field.
   The resolver needs neither: an import names its pack.
+- **No required name prefix.** npm's prefixes (`eslint-plugin-x`, `babel-plugin-x`, `prettier-plugin-x`, `vite-plugin-x`, `remark-x`) exist mostly so a tool can expand a short name (ESLint turns `x` into `eslint-plugin-x`) and so unscoped names don't collide. A CompMD import is always written in full and always scoped, so a prefix would only make names longer (`@kit/compmd-pack-mermaid`); the field and the keyword already say what it is. A scope that publishes both a pack and a library of the same name MAY write `compmd-` (`@acme/charts`, the React library, beside `@acme/compmd-charts`, the pack).
 - **Each built module is one file**, with no relative imports (R2, O1); its only imports are the runtimes the frames give (React, React DOM, Svelte). `npm create @compmd/pack` already builds one file per component; it should also turn off code splitting, so a library that loads parts of itself on demand (Mermaid does) stays in the one file. What that costs, and what chunks would need, is R7.
-- **Libraries are bundled in each pack** that uses them, so ten chart packs that use d3 bring ten copies of the parts of d3 each uses: ten downloads, cached by each pack's integrity, and ten compiles in a frame that runs all ten. d3 is about 280 KB minified in full, and a chart pack's bundler keeps only the modules it imports (scales, shapes, axes: tens of KB), so ten such packs cost hundreds of KB, not megabytes. The cases where sharing pays are large libraries that several packs use (three.js, KaTeX, a chart library used whole). Sharing them needs one copy loaded once per frame and found by name: the import map's job, which today is fixed when the frames are built (its hash is in the policy), so a library from the registry can't join it at run time. That is S3, under *Not in this change*, and it meets an open spec question: whether a pack may name the libraries it expects from the host.
+- **Libraries are bundled in each pack** that uses them, so ten chart packs that use d3 bring ten copies of the parts of d3 each uses: ten downloads, cached by each pack's integrity, and ten compiles in a frame that runs all ten. d3 is about 280 KB minified in full, and a chart pack's bundler keeps only the modules it imports (scales, shapes, axes: tens of KB), so ten such packs cost hundreds of KB, not megabytes. The cases where sharing pays are large libraries that several packs use (three.js, KaTeX, a chart library used whole). Sharing them needs one copy loaded once per frame and found by name: the import map's job, which today is fixed when the frames are built (its hash is in the policy), so a library from the registry can't join it at run time. R9 is how packs share them.
 - **Its npm `dependencies` are never installed** by a host that fetches it: what a pack's components use is bundled into their modules, and its own imports of other packs go through `md.import`, which the resolver follows. `dependencies` may still list what the build used.
 - **A size cap**, the host's `maxPackSize`, applied to the version's `unpackedSize` in the metadata before anything is downloaded. Today the key has no default; for packs from a registry, 5 MB when the host sets none, enough for Mermaid's module with room to spare.
 - **`files` in `package.json`** should leave out what a host never reads (sources, tests), so the tarball is small; the template sets it.
@@ -180,7 +194,7 @@ A team's quarterly report, read on a static site with `"fetch": "direct"`, in ho
 | 2 | `charts` and `mermaid` together: versions, tarballs | 0.2 s, plus 0.4 s for Mermaid's tarball |
 | Then | nothing: no further imports | |
 
-About 0.8 s until every pack is there. The text, the tables and the CompMD containers render at once; the charts and diagrams are pending (decision 7) until their packs arrive. An import with an exact version and `integrity` skips its versions request (npm's tarball URL follows from the name and version); a host's proxy (F1) could resolve a whole tree in one request, a later addition. On a later visit, nothing is fetched but expired versions lists (R4).
+About 0.8 s until every pack is there. The text, the tables and the CompMD containers render at once; the charts and diagrams show their fallback text (decision 7) until their packs arrive. An import with an exact version and `integrity` skips its versions request (npm's tarball URL follows from the name and version); a host's proxy (F1) could resolve a whole tree in one request, a later addition. On a later visit, nothing is fetched but expired versions lists (R4).
 
 **Frames.** A pack's imports don't make frames: frames follow trust (sandbox.md decision 1), so they are at most three deep (the host's page, a permissive frame, a strict frame), whatever the depth of the pack tree. Here, in host mode: seven strict frames (five charts, two diagrams) and the compile frame; in frame mode, one page frame and the compile frame.
 
@@ -195,17 +209,54 @@ About 0.8 s until every pack is there. The text, the tables and the CompMD conta
 
 So what grows with a document is frames, which the host chooses (sandbox.md Q1), not the depth of its packs; a large module costs a compile per frame that uses it, which frame mode or K3's code cache (R7) keeps down.
 
-## R9. What changes
+## R9. Libraries packs share (S3)
 
-**The spec:** §6.4 *The processor gets packs*: the exception for a host that lets the reader's browser fetch from a registry its configuration names (R1); §15 *Privacy*: the same, with what it discloses; §6.4 *Built modules*: a built module SHOULD be one file, and MUST be for a host that loads it as text; §11 and §12.3: pending uses (decision 7), a stage 4a that may finish after a first render, and the expanded tree's `pending` mark; §4.5: a pending use's fallback, with `aria-busy`. F026's row keeps its cases. Data that arrives late could be pending the same way; that is not in this change.
+**Today** a pack bundles every library it uses, but the runtimes, which every frame shares through its import map (one React, so hooks work). Ten chart packs that use d3 bring ten copies of the parts they use: cheap for d3 (tens of KB each, R6), not for large libraries several packs use whole (three.js, about 700 KB minified; KaTeX, 270 KB).
+
+**Do different versions conflict?** Two copies of a library, of one version or two, are separate modules, so they don't see each other. They meet only in one frame (in frame mode, the page's frame holds every strict use; in host mode, a use and the uses in its slots), and they conflict only through what a browser keeps once per frame:
+
+| What | Example | With two copies in one frame |
+|---|---|---|
+| Custom elements | a pack built with Lit or Shoelace defines `<sl-button>` | the second `customElements.define` throws: the second pack's component fails (W118) |
+| Global styles | a library injects CSS for its own classes | the later copy's rules win for both |
+| Globals and patched prototypes | a UMD build sets `window.d3`; a polyfill patches `Array.prototype` | the last one wins |
+| One instance by design | React, a store, an i18n singleton | two states that don't know each other: why the runtimes are shared |
+| Objects passed between packs | a d3 scale handed from one pack to another, checked with `instanceof` | can't happen: params are values (§8) and slots are rendered content, so packs never pass each other library objects |
+
+So most libraries mix versions safely; the ones that don't are those with global effects. Bundling has these conflicts today; sharing can remove them, by loading one copy.
+
+**Ways to share:**
+
+| | L1. Libraries the host offers (today) | L2. Library packs from the registry (recommended) | L3. A CDN that builds npm packages into modules (esm.sh) |
+|---|---|---|---|
+| How | the host's configuration lists `libraries`; they are in the frames' import map, built with the app; a pack leaves them out of its build | a library is published as one module file and says so (`"compmd": { "library": "dist/index.js" }`, for example `@kit/d3`); a pack names the ones it shares in `peerDependencies` (`"@kit/d3": "^7.9"`) and imports them by that name; the resolver gets them as it gets packs, and the frame loads each as a `blob:` module, with the pack's imports of it written as that module's URL | the host's page imports `https://esm.sh/d3@7` |
+| Any library at run time | no: only what the host built in | yes, once someone publishes it as a library pack (the pack's author can) | yes, by its npm name |
+| Checked against | the app's lock file | the library pack's tarball, like any pack (R3) | nothing npm published: esm.sh builds the file |
+| A pack that needs one, on a host without it | fails (its components' fallbacks) | works: the resolver gets it | works |
+| New in the frames | nothing | an import parser (es-module-lexer's plain JavaScript build, about 4 KB, since the strict policy has no WebAssembly) to write a library's name as its URL; no cycles, since a library imports only other libraries | network to the CDN |
+
+**L2's rules:**
+- **One version per document:** for each library, the newest version that satisfies every range the document's packs ask for, so a frame has one copy. When no version satisfies them all, each range gets its own; a library that can't have two copies in a frame says so (`"compmd": { "library": …, "single": true }`), and then the pack asking for the second gets F026 for its uses, naming the library and both ranges.
+- **A library runs at the level of the pack that imports it,** in its frame; it adds no trust of its own, and a library pack has no document and no components.
+- **The policy applies as to packs:** `deny`, the size cap, `imports: listed`.
+- **What the frame trusts:** the host's page writes the library's URL into the pack's text after checking both, as K1 would (R7); a library's own imports are only library names, so there is no relative path to write.
+
+**It meets the spec where its rules for a component's imports are open:** what a bare import in a component may resolve to. With L2, the answer would be the binding's runtime, a library the host offers (L1), or a library the pack names in `peerDependencies` (L2); anything else is its fallback with a diagnostic. Those rules are settled first; L2 builds on them.
+
+## R10. What changes
+
+**A companion to the spec:** *CompMD packs on a registry* (`compmd-registry-v1.md`, next to the spec), the normative part of this design for pack authors and registry hosts: what R6 says a registry pack is (the field, the keyword, names, one file per module, `files`, the size cap and how it is read), how a host reads one (R3), and what a library pack is (R9). The spec's §6.4 links to it, as it stays about documents; it is versioned with the spec.
+
+**The spec:** §6.4 *The processor gets packs*: the exception for a host that lets the reader's browser fetch from a registry its configuration names (R1); §15 *Privacy*: the same, with what it discloses; §6.4 *Built modules*: a built module SHOULD be one file, and MUST be for a host that loads it as text; F026's row keeps its cases. Telling a loading pack from one that can't be had is [its own design](pending.md).
 
 **The processor:** `sources` lists the packs a request doesn't hold, from the document and from the packs it holds, with ranges and pinned integrity.
 
 **The packages:**
 - `@compmd/registry`, new: `Registry`, `NpmRegistry`, `resolvePacks`, the tarball reader (gzip, tar, integrity), the cache, and a proxy handler for Node and workers; tests against a local registry, and in Chrome and WebKit.
-- `@compmd/sandbox`: `modules(place)` may give `{ code }` (R2).
+- `@compmd/sandbox`: `modules(place)` may give `{ code }` (R2); library packs loaded as `blob:` modules, and a pack's imports of them written as their URLs (R9).
+- `@compmd/registry`, for R9: library packs resolved with packs, one version per document, `single`.
 - `@compmd/vite`: `registries`, `fetch` and the size cap in the configuration and its schema; `registry` in `virtual:compmd`; the dev server as a proxy.
-- `@compmd/create-pack`: the keyword, one file per module with no code splitting, `files`.
+- `@compmd/create-pack`: the keyword, one file per module with no code splitting, `files`; shared libraries as `peerDependencies`, left out of the build; a template for a library pack.
 
 **The playground:** registries with `direct`, said in its *About*, so a document can import any published pack; a document that does.
 
@@ -213,7 +264,6 @@ So what grows with a document is frames, which the host chooses (sandbox.md Q1),
 
 ## Not in this change
 
-- Libraries a host resolves for packs from the registry (S3 in the earlier design): deferred until two published packs want the same large library.
 - Checking npm's signatures or provenance (`dist.signatures`, attestations): the tarball's hash is checked; signatures can follow.
 - Registries other than npm's protocol. Nearly every registry a host would use speaks it: Verdaccio, GitHub Packages, GitLab, Artifactory, Nexus, AWS CodeArtifact (those that need a token only behind the host's proxy, F1, never with `direct`), and JSR through its npm endpoint (`https://npm.jsr.io/`, which answers cross-origin requests, checked 2026-10-31), where `@std/path` is named `@jsr/std__path`. A registry that doesn't (a CDN such as esm.sh) is a file server, not a registry: F3.
 - Pack chunks (R7): one file per module first.
