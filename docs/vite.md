@@ -4,7 +4,7 @@
 
 ## Proposed decisions
 
-1. **One configuration file, `compmd.config.json`** (or the `compmd` key of the app's `package.json`), the same for every kind of host: it lists the packs that get more than a strict sandbox or are ambient, which packs a document may import, the packs denied, and a size limit. A JSON schema ships with it. The plugin reads it at build; the playground (T-301) reads the same format at run time.
+1. **One configuration file, `compmd.config.json`** (or the `compmd` key of the app's `package.json`), the same for every kind of host: it lists the packs that get more than a strict sandbox or are ambient, which packs a document may import, the packs denied, and a size limit. A JSON schema ships with it. The plugin reads it at build; the playground reads the same format at run time.
 2. **The configuration is written for people, then translated.** Trust is a word (`"trust": "permissive"`), not the processor's `{"level": …}`; a pack is a name or a folder path. One function, `policyOf(config)`, turns it into the processor's `Policy` and `ambient`, so every host translates it the same way.
 3. **Every installed pack is available, strict by default.** The plugin gives the processor every dependency of the app that is a pack (its `package.json` has a `compmd` field, or the package has `index.comp.md`), so `npm install` is enough for a document to import it (P2). Listing a pack is only to give it more, or to make it ambient.
 4. **Trusted only for a folder in the app.** `"trust": "trusted"` is allowed only on a path (`./components`), never on a registry name: the plugin stops the build otherwise. A trusted pack's components are imported by the app's own build, compiled by the app's Vite plugins (React, Svelte), and mounted inline.
@@ -48,11 +48,12 @@
 | `imports` | `any` (the default) or `listed` | `policy.imports` |
 | `deny` | packs denied, all versions or a range, with the reason readers see | `policy.deny` |
 | `maxPackSize` | a pack whose files are larger is left out, with this reason | `policy.refused` |
-| `libraries` | npm packages the frames offer through their import map, besides React and Svelte | `buildLibraries` |
+| `libraries` | npm package names, installed in the app, that the frames offer components through their import map, besides React and Svelte | `buildLibraries` |
 
 - A folder pack's name is its `package.json`'s `name`, which its document's `export.pack` matches (F022): the policy and `ambient` use that name, so documents can import `@acme/app` by name too (decision 7 of the design: a configured name is the host's).
 - `ambient` is per pack, not a list of names, so a folder pack needs no second spelling.
 - `network` takes origins only: a path, a wildcard or `http:` other than `localhost` stops the build.
+- `libraries` names npm packages, as `npm install` does: `"d3"` is the package `d3`, which the app installs (`npm install d3`). The plugin builds each one once into `compmd/libs/`, and the frames' import map resolves a component's `import * as d3 from "d3"` to that copy, as the playground offers d3 today. A package whose components import more than its name gives its import names: `{ "name": "d3", "imports": ["d3", "d3-scale"] }`. A library that isn't installed stops the build.
 
 ## What the plugin does
 
@@ -89,9 +90,9 @@ view.render(document.expanded);
 
 **V3. A trusted pack's source in `request`.** The processor reads a component file a pack imports to know it exists and to check it (W104). Proposed: the request at run time carries a trusted pack's component files as empty text, since the app's bundle already holds their code and their checks ran at build; to be confirmed against the processor's loading.
 
-**V4. Which Vite.** Proposed: Vite 7 and 8 (the repository uses 8), as a peer dependency; the plugin uses only `configResolved`, `buildStart`, `resolveId`/`load` for the virtual module, `configureServer` and `generateBundle`. Other bundlers later, with the same configuration.
+**V4. Which Vite.** Proposed: Vite 8 and later, as a peer dependency, as `@compmd/sandbox`'s build needs (its `buildLibraries` uses Vite 8's bundler); the plugin uses only `configResolved`, `buildStart`, `resolveId`/`load` for the virtual module, `configureServer` and `generateBundle`. Other bundlers later, with the same configuration.
 
-**V5. Where `policyOf` and the schema live.** The playground (T-301) reads the configuration without Vite. Proposed: in `@compmd/vite` as a Node-free entry, `@compmd/vite/config` (`readConfig`, `policyOf`, the schema), so a host that isn't a Vite app imports it alone. A separate package would hold one function and a schema.
+**V5. Where `policyOf` and the schema live.** The playground reads the configuration without Vite. Proposed: in `@compmd/vite` as a Node-free entry, `@compmd/vite/config` (`readConfig`, `policyOf`, the schema), so a host that isn't a Vite app imports it alone. A separate package would hold one function and a schema.
 
 ## The example and the tests
 
@@ -104,5 +105,5 @@ view.render(document.expanded);
 ## Not in this change
 
 - Other bundlers (Rollup alone, webpack, esbuild).
-- Libraries from the registry for packs (S3, T-303): `libraries` is the host offering libraries, as the playground offers d3, not packs naming theirs.
-- The playground's own use of the configuration (T-301).
+- Libraries from the registry for packs (S3, still open): `libraries` is the host offering libraries, as the playground offers d3, not packs naming theirs.
+- The playground's own use of the configuration.

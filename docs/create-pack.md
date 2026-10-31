@@ -69,5 +69,5 @@ Without `--renders`, the signature has `params: { value: string }` and the demo 
 ## Not in this change
 
 - Publishing for the author: the README gives the steps (`npm login`, `npm publish --access public`, provenance from CI).
-- The playground loading the built pack (T-301).
-- Libraries from the registry instead of bundled (S3, T-303).
+- The playground loading the built pack.
+- Libraries from the registry instead of bundled (S3, still open).

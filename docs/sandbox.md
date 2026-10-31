@@ -148,7 +148,7 @@ What changes between them: who the host's page is (a top-level page, or a frame 
 | Frames for 10 charts | 1 | 10 |
 | For | the playground, published sites, any host of others' documents with strict packs only | an app with components of its own, or a host with permissive packs |
 
-**Both**, and the host chooses (decided in T-298's conversation). The document can't choose, since it must not decide how its own code is isolated, and the sandbox doesn't switch by itself: one edit adding `:: stars` would move the whole page.
+**Both**, and the host chooses (decided when this design was reviewed). The document can't choose, since it must not decide how its own code is isolated, and the sandbox doesn't switch by itself: one edit adding `:: stars` would move the whole page.
 
 ## Q2. Why the tree only goes down, and what that costs
 
@@ -291,7 +291,7 @@ view.destroy();
 
 ## Q8. The browser tests
 
-Vitest's browser mode, with the installed Chrome and WebKit through Playwright (decided in T-298's conversation; WebKit, since an application's web view is WebKit on macOS and Linux). The tests serve the built frame documents, as a host would, from a top-level page and from a page that is itself in a sandboxed frame, and run documents with components that try each threat:
+Vitest's browser mode, with the installed Chrome and WebKit through Playwright (decided when this design was reviewed; WebKit, since an application's web view is WebKit on macOS and Linux). The tests serve the built frame documents, as a host would, from a top-level page and from a page that is itself in a sandboxed frame, and run documents with components that try each threat:
 
 | Test | Threat |
 |---|---|
