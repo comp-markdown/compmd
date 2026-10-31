@@ -89,8 +89,8 @@ async function landingPage(browser: Browser): Promise<void> {
   };
   const meter = await (await framed("Components of your own")).locator("progress").getAttribute("value");
   check(meter === "72", `the JSX example rendered ${String(meter)} in the sandbox, not 72`);
-  const diagram = await (await framed("Code renderers")).locator("body").innerText();
-  check(diagram.includes("Draft → Review → Published"), `the code renderer example rendered "${diagram}" in the sandbox`);
+  const steps = await (await framed("Code renderers")).locator('svg[aria-label="Draft, then review, then published"] text').allTextContents();
+  check(steps.join(" ") === "Draft Review Published", `the code renderer example drew "${steps.join(", ")}" in the sandbox`);
 
   // The page scrolls smoothly, so the section arrives, and the wheel marks it, a moment after the click.
   await page.locator(".wheel a[href='#safe']").click();

@@ -709,23 +709,29 @@ export default function mount(target, { params, fallback }) {
     const { across, labels, edges } = parse(code);
     const rank = ranks(labels, edges);
     const colors = THEMES[theme];
-    const width = Math.max(0, ...[...labels.values()].map((label) => label.length * 8.5 + 36));
     const height = 42;
+    // Each box as wide as its label; each column as wide as its widest box, the steps centred in it.
+    const widths = new Map([...labels].map(([id, label]) => [id, label.length * 8.5 + 36]));
+    const widest = Math.max(0, ...widths.values());
+    const columns = [];
+    for (const [id, r] of rank) columns[r] = Math.max(columns[r] ?? 0, widths.get(id));
+    const left = (r) => columns.slice(0, r).reduce((sum, column) => sum + (column ?? 0) + 56, 0);
     const filled = new Map();
     const at = new Map();
     for (const id of labels.keys()) {
       const r = rank.get(id);
       const n = filled.get(r) ?? 0;
+      const width = widths.get(id);
       filled.set(r, n + 1);
-      at.set(id, across ? { x: r * (width + 76), y: n * (height + 24) } : { x: n * (width + 24), y: r * (height + 56) });
+      at.set(id, across ? { x: left(r) + (columns[r] - width) / 2, y: n * (height + 24), width } : { x: n * (widest + 24) + (widest - width) / 2, y: r * (height + 56), width });
     }
-    const size = [...at.values()].reduce((max, { x, y }) => [Math.max(max[0], x + width), Math.max(max[1], y + height)], [0, 0]);
+    const size = [...at.values()].reduce((max, { x, y, width }) => [Math.max(max[0], x + width), Math.max(max[1], y + height)], [0, 0]);
     svg.attr("viewBox", [-10, -10, size[0] + 20, size[1] + 20]).attr("width", size[0] + 20);
     const ink = svg.append("g").attr("fill", "none").attr("stroke", "currentColor").attr("stroke-width", 1.6).attr("stroke-linecap", "round").attr("stroke-opacity", 0.7);
     for (const [from, to] of edges) {
       const a = at.get(from);
       const b = at.get(to);
-      const ends = across ? [a.x + width + 4, a.y + height / 2, b.x - 6, b.y + height / 2] : [a.x + width / 2, a.y + height + 4, b.x + width / 2, b.y - 6];
+      const ends = across ? [a.x + a.width + 4, a.y + height / 2, b.x - 6, b.y + height / 2] : [a.x + a.width / 2, a.y + height + 4, b.x + b.width / 2, b.y - 6];
       const { line, head } = arrow(wobbly(from + to), across, ...ends);
       const path = ink.append("path").attr("d", line);
       const tip = ink.append("path").attr("d", head);
@@ -735,7 +741,7 @@ export default function mount(target, { params, fallback }) {
         tip.attr("opacity", 0).transition().delay(rank.get(from) * 260 + 450).duration(150).attr("opacity", 1);
       }
     }
-    for (const [id, { x, y }] of at) {
+    for (const [id, { x, y, width }] of at) {
       const jitter = wobbly(id);
       const step = svg.append("g").attr("transform", `translate(${x},${y}) rotate(${jitter(3)} ${width / 2} ${height / 2})`);
       // The fill a little off the outline, as a marker leaves it.

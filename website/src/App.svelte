@@ -69,7 +69,7 @@
       name: "diagram.comp.md",
       snapshot: snapshots.diagram,
       live: "frame" as const,
-      height: "4rem",
+      height: "18rem",
     },
   ];
 
