@@ -1,6 +1,7 @@
 // The frame documents' content security policies (docs/sandbox.md, Q3). A strict frame's is fixed: no network, no
-// frames. A permissive frame's first policy leaves out the network directives, and the frame adds a second one with
-// its pack's origins (`narrowed`) before any component loads; a browser enforces both, so the second only narrows.
+// frames. A permissive frame's first policy leaves out the network directives and nested frames, and the frame adds a
+// second one with its pack's origins and `strict.html` next to it (`narrowed`) before any component loads; a browser
+// enforces both, so the second only narrows.
 
 import { createHash } from "node:crypto";
 
@@ -19,9 +20,9 @@ export function strictPolicy(importMap: string): string {
 }
 
 /**
- * `permissive.html`'s first policy: as a strict frame's, without the network directives, and with nested frames of
- * `strictUrl` only, the full URL of `strict.html`.
+ * `permissive.html`'s first policy: as a strict frame's, without the network directives and nested frames, which the
+ * frame's second policy gives.
  */
-export function permissivePolicy(importMap: string, strictUrl: string): string {
-  return [...common(importMap), `frame-src ${strictUrl}`, `child-src ${strictUrl}`].join("; ");
+export function permissivePolicy(importMap: string): string {
+  return common(importMap).join("; ");
 }

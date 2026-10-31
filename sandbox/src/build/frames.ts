@@ -8,10 +8,8 @@ import type { Level } from "../protocol/messages.ts";
 import { permissivePolicy, strictPolicy } from "./policy.ts";
 
 export interface FramesOptions {
-  /** The folder to write the frame documents and their files to, which the host serves at `base`. */
+  /** The folder to write the frame documents and their files to, which the host serves where it likes. */
   out: string;
-  /** The full URL `out` is served at, ending in `/`: a permissive frame names `strict.html` by it. */
-  base: string;
   /** More import map entries, for libraries the host offers and serves (`buildLibraries`). */
   imports?: Readonly<Record<string, string>>;
   /** The package's built frame files; by default its own `dist/frames/`. */
@@ -40,19 +38,17 @@ function frameDocument(level: Level, policy: string, importMap: string): string 
 }
 
 /**
- * Writes the frame documents for `options.base` into `options.out`, with the frame runtime and the shared libraries.
+ * Writes the frame documents into `options.out`, with the frame runtime and the shared libraries. They work wherever
+ * the host serves them: a permissive frame names the `strict.html` next to it in its second policy.
  *
- * @throws Error when `base` isn't a full URL ending in `/`.
  * @example
- * await buildFrames({ out: "public/compmd", base: "https://app.example/compmd/" });
+ * await buildFrames({ out: "public/compmd" });
  */
 export async function buildFrames(options: FramesOptions): Promise<void> {
-  if (!URL.canParse(options.base) || !options.base.endsWith("/")) throw new Error(`\`${options.base}\` isn't a full URL ending in /`);
   const from = options.from ?? fileURLToPath(new URL("../frames/", import.meta.url));
   await cp(from, options.out, { recursive: true });
   const shared = JSON.parse(await readFile(join(from, "libs/importmap.json"), "utf8")) as { imports: Record<string, string> };
   const importMap = JSON.stringify({ imports: { ...shared.imports, ...options.imports } });
-  const strictUrl = new URL("strict.html", options.base).href;
   await writeFile(join(options.out, "strict.html"), frameDocument("strict", strictPolicy(importMap), importMap));
-  await writeFile(join(options.out, "permissive.html"), frameDocument("permissive", permissivePolicy(importMap, strictUrl), importMap));
+  await writeFile(join(options.out, "permissive.html"), frameDocument("permissive", permissivePolicy(importMap), importMap));
 }

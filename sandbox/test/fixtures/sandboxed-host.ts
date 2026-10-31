@@ -3,7 +3,8 @@
 
 import { createSandbox } from "../../src/index.ts";
 
-const base = new URL("../", location.href).href;
+// Relative to the page, as a host that serves the frame documents next to it gives it.
+const base = "../";
 const page = new URLSearchParams(location.search).get("page") === "frame" ? "frame" : "host";
 const view = createSandbox({ base, page }).open(document.body, {
   components: [

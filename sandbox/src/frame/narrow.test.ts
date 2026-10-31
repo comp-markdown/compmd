@@ -21,7 +21,9 @@ describe("a permissive frame's network", () => {
     }
   });
 
-  it("narrows the first policy: every other request falls to `default-src 'none'`", () => {
-    expect(narrowed("script-src 'self'", "connect-src https://a.example")).toBe("default-src 'none'; script-src 'self'; connect-src https://a.example");
+  it("narrows the first policy: every other request falls to `default-src 'none'`, and only strict frames nest", () => {
+    expect(narrowed("script-src 'self'", "connect-src https://a.example", "https://app.example/compmd/strict.html")).toBe(
+      "default-src 'none'; script-src 'self'; connect-src https://a.example; frame-src https://app.example/compmd/strict.html; child-src https://app.example/compmd/strict.html",
+    );
   });
 });

@@ -71,7 +71,7 @@ export default async function setup(project: TestProject): Promise<() => Promise
   const base = await listen(frames);
   const [allowed, denied] = await Promise.all(probes.map(listen));
   await rm(OUT, { recursive: true, force: true });
-  await buildFrames({ out: OUT, base, from: join(ROOT, "dist/frames") });
+  await buildFrames({ out: OUT, from: join(ROOT, "dist/frames") });
   await mkdir(join(OUT, "packs"), { recursive: true });
   // A host's page in a sandboxed frame of its own, from the frames' server, beside the frame documents.
   const { build } = await import("vite");

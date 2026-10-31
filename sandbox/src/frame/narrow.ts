@@ -18,9 +18,9 @@ export function networkPolicy(origins: readonly string[]): string {
 }
 
 /**
- * The second policy of a frame whose first is `first`: nothing but what `first` allows and `network` adds, since
- * `default-src 'none'` covers every other kind of request.
+ * The second policy of a permissive frame whose first is `first`: nothing but what `first` allows, `network` adds and
+ * nested frames of `strictUrl`, its `strict.html`, since `default-src 'none'` covers every other kind of request.
  */
-export function narrowed(first: string, network: string): string {
-  return ["default-src 'none'", first, network].join("; ");
+export function narrowed(first: string, network: string, strictUrl: string): string {
+  return ["default-src 'none'", first, network, `frame-src ${strictUrl}`, `child-src ${strictUrl}`].join("; ");
 }

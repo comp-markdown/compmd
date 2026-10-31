@@ -15,7 +15,7 @@ import { frameUse } from "../use.ts";
 export type ModuleSource = (module: NonNullable<HostComponent["module"]>) => { url: string; integrity: string };
 
 export interface HostRuntimeOptions {
-  /** Where the host serves the frame documents (`buildFrames`), ending in `/`. */
+  /** Where the host serves the frame documents (`buildFrames`), ending in `/`: a full URL, or one relative to the page. */
   base: string;
   /** The host's own components, which run in its page: those the processor marks trusted. */
   trusted?: Readonly<Record<string, Mount>>;
@@ -38,6 +38,9 @@ export interface HostEvents {
 }
 
 const messageOf = (error: unknown): string => (error instanceof Error ? error.message : String(error));
+
+/** The frame document `name` where the host serves the frame documents, `base`, full or relative to the page. */
+export const frameUrl = (base: string, name: "strict.html" | "permissive.html"): string => new URL(name, new URL(base, location.href)).href;
 
 /** A level as a frame has it; a trusted component never runs in one. */
 const levelOf = (trust: Trust): Level | "trusted" => trust.level;
@@ -155,7 +158,7 @@ export class HostRuntime {
     frame.title = "compile";
     const { port1, port2 } = new MessageChannel();
     frame.addEventListener("load", () => frame.contentWindow?.postMessage({ type: HELLO, version: SANDBOX_VERSION }, "*", [port2]), { once: true });
-    frame.src = new URL("strict.html", this.#options.base).href;
+    frame.src = frameUrl(this.#options.base, "strict.html");
     document.body.append(frame);
     const compiler = connectCompiler(port1);
     this.#compiler = { compiler, frame };
@@ -169,7 +172,7 @@ export class HostRuntime {
     const api = this.#options.host;
     let failed: (message: string) => void = () => undefined;
     const frame = frameUse(target, {
-      url: new URL(`${level}.html`, this.#options.base).href,
+      url: frameUrl(this.#options.base, `${level}.html`),
       level,
       code: codeFor(this.#code, level),
       node,

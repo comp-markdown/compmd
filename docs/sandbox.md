@@ -120,11 +120,11 @@ Two static documents, which the package builds and the host serves where it like
 
 | | `strict.html` | `permissive.html` |
 |---|---|---|
-| First policy, in a `<meta>` | `default-src 'none'`; scripts from `base` and the host's pack files, `blob:` modules and the import map by its hash; styles from `base` and inline; `img-src data: blob:`; `font-src` from `base`; `frame-src 'none'`; no objects, forms or `<base>` | the same, without the network directives (`connect-src`, `img-src`, `font-src`, `media-src`, `default-src`), and `frame-src` naming `strict.html` by its full URL |
-| Second policy | none: nothing to narrow | from its parent, before any component loads: `default-src 'none'`, the first's script and style sources, and the pack's origins in `connect-src`, `img-src`, `font-src` and `media-src` |
+| First policy, in a `<meta>` | `default-src 'none'`; scripts from the frames' origin, `blob:` modules and the import map by its hash; styles from the frames' origin and inline; `img-src data: blob:`; `font-src` from the frames' origin; `frame-src 'none'`; no objects, forms, workers or `<base>` | the same, without the network directives (`connect-src`, `img-src`, `font-src`, `media-src`, `default-src`) and nested frames |
+| Second policy | none: nothing to narrow | added by the frame before any component loads: `default-src 'none'`, the first's directives, the pack's origins its parent sends in `connect-src`, `img-src`, `font-src` and `media-src`, and `frame-src` naming the `strict.html` next to it by its full URL |
 | May nest | nothing | `strict.html` |
 
-A browser enforces every policy a document has, so the second can only narrow the first. Until it arrives, only the sandbox's own script runs in a permissive frame, and that script loads no component until it has added it. `frame-src` needs `strict.html`'s full URL, so the host builds the frame documents for its origin (`buildFrames({ base })`, which `@compmd/vite` runs at build); a host that serves its own frame documents builds its own.
+A browser enforces every policy a document has, so the second can only narrow the first. Until it arrives, only the sandbox's own script runs in a permissive frame, and that script loads no component until it has added it. The frame names `strict.html` from its own URL, so the frame documents work wherever a host serves them (`buildFrames({ out })`, which `@compmd/vite` will run at build); a host that serves its own frame documents builds its own.
 
 **Options considered:** one `frame.html` narrowed for every level (rejected: strict code could make one and narrow it to a network it chooses); a page per frame written by its parent (`srcdoc`; rejected: a `srcdoc` frame inherits its parent's policy, so a permissive frame's strict child would have its network); a policy per request from the host's server (rejected: the frame's URL would say its origins, and the frame's maker chooses the URL).
 

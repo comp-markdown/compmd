@@ -6,7 +6,7 @@
 import type { HostComponent } from "@compmd/processor";
 import { createPage, type Change, type ExpandedInput, type ExpandedRoot, type Page, type Splice } from "@compmd/render";
 import { connectFrame, type FrameConnection, type SpliceOptions } from "@compmd/render/frame";
-import { HostRuntime, type HostRuntimeOptions } from "./host/runtime.ts";
+import { frameUrl, HostRuntime, type HostRuntimeOptions } from "./host/runtime.ts";
 import { codeFor } from "./mounts.ts";
 import { HELLO, SANDBOX_VERSION, type ErrorReason } from "./protocol/messages.ts";
 import { connectChild, type ChildEnd } from "./protocol/parent-end.ts";
@@ -183,7 +183,7 @@ function framePage(container: HTMLElement, runtime: HostRuntime, options: Sandbo
   });
   if (options.stylesheets?.length) child.styles([...options.stylesheets]);
   iframe.addEventListener("load", () => iframe.contentWindow?.postMessage({ type: HELLO, version: SANDBOX_VERSION }, "*", [port2]), { once: true });
-  iframe.src = new URL("strict.html", options.base).href;
+  iframe.src = frameUrl(options.base, "strict.html");
   container.append(iframe);
   return {
     render: (tree, change) => {

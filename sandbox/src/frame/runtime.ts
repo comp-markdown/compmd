@@ -43,12 +43,12 @@ function adopt(component: string, css: string | undefined): void {
   document.adoptedStyleSheets = next;
 }
 
-/** Adds the second policy to the document's head, after the first. */
+/** Adds the second policy to the document's head, after the first, with `strict.html` next to this document. */
 function narrow(network: string): void {
   const first = document.querySelector<HTMLMetaElement>('meta[http-equiv="Content-Security-Policy"]')?.content ?? "";
   const meta = document.createElement("meta");
   meta.httpEquiv = "Content-Security-Policy";
-  meta.content = narrowed(first, network);
+  meta.content = narrowed(first, network, new URL("strict.html", location.href).href);
   document.head.append(meta);
 }
 

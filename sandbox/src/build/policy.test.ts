@@ -21,8 +21,8 @@ describe("the frame documents' policies", () => {
     ]);
   });
 
-  it("leaves a permissive frame's network to its second policy, and lets it nest strict frames only", () => {
-    const policy = permissivePolicy(map, "https://app.example/compmd/strict.html").split("; ");
+  it("leaves a permissive frame's network and nested frames to its second policy", () => {
+    const policy = permissivePolicy(map).split("; ");
     expect(policy).toEqual([
       `script-src 'self' blob: 'sha256-${hash}'`,
       "style-src 'self' 'unsafe-inline'",
@@ -30,10 +30,8 @@ describe("the frame documents' policies", () => {
       "base-uri 'none'",
       "form-action 'none'",
       "worker-src 'none'",
-      "frame-src https://app.example/compmd/strict.html",
-      "child-src https://app.example/compmd/strict.html",
     ]);
-    for (const network of ["default-src", "connect-src", "img-src", "font-src", "media-src"]) {
+    for (const network of ["default-src", "connect-src", "img-src", "font-src", "media-src", "frame-src"]) {
       expect(policy.some((directive) => directive.startsWith(network))).toBe(false);
     }
   });
