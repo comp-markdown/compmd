@@ -7,6 +7,8 @@
 
 The [CompMD processor](../processor/README.md) as WebAssembly, for the browser: one call takes a document with everything it needs and gives its parse tree, its expanded tree and its diagnostics, typed. The expanded tree is what [`@compmd/render`](../render/README.md) draws.
 
+**Website:** [compmd.hakanserce.com](https://compmd.hakanserce.com/), with the spec and a playground to try CompMD in.
+
 ```sh
 npm install @compmd/processor @compmd/render
 ```

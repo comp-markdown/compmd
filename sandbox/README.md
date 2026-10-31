@@ -7,6 +7,8 @@
 
 Runs a CompMD document's components in a browser at the trust levels of [spec §15](../compmd-spec-v1.md#15-security): strict code in frames with no network, permissive code in frames that reach only their pack's origins, and the host's own trusted code in its page. A host gives it trees and its configuration; it never writes a frame or a content security policy itself. The design is [docs/sandbox.md](../docs/sandbox.md), its messages [docs/sandbox-protocol.md](../docs/sandbox-protocol.md).
 
+**Website:** [compmd.hakanserce.com](https://compmd.hakanserce.com/), with the spec and a playground to try CompMD in.
+
 ```sh
 npm install @compmd/sandbox @compmd/render @compmd/processor
 ```

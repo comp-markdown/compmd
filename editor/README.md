@@ -2,6 +2,8 @@
 
 A text area on the left, the rendered page on the right, updated as you type. It opens the documents in its menu, from a tutorial to the spec's complete example, with everything they need bundled: their files, packs, remote and host data. Once loaded it makes no requests.
 
+**Website:** it is the playground at [compmd.hakanserce.com/playground/](https://compmd.hakanserce.com/playground/), on the [CompMD website](https://compmd.hakanserce.com/) with the spec.
+
 **Status: in development,** as the processor is; not published yet.
 
 ## How it works

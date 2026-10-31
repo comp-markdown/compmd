@@ -7,6 +7,8 @@
 
 Renders a CompMD expanded tree ([spec §12.3](../compmd-spec-v1.md#123-the-expanded-tree)) as a live page: Markdown, layout, inputs, and host-language components through the host contract (§7.4), with the React, Svelte 5 and plain bindings (§7.6). A new tree updates the page in place, so components keep their instances and their state.
 
+**Website:** [compmd.hakanserce.com](https://compmd.hakanserce.com/), with the spec and a playground to try CompMD in.
+
 It renders trees; it doesn't process documents. A processor (stages 1 to 4b, spec §11) gives it the tree: [`@compmd/processor`](https://www.npmjs.com/package/@compmd/processor) in the browser.
 
 ```sh
