@@ -1,5 +1,5 @@
 // Writes the server-rendered pages into the client build, `dist/`: the landing page, each version of the spec
-// (`build/versions.ts`), the draft from the working tree and each release from its tag, and the guide's pages. Runs
+// (`build/versions.ts`), the draft from the working tree and each release from its tag, and the guides' pages. Runs
 // after `vite build` and the server build.
 import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -49,11 +49,11 @@ for (const page of pages) {
   writeFileSync(join(DIST, page.folder, "index.html"), prerendered(relocated(template, root), rendered, stylesheet(page.folder)));
 }
 
-// The guide, from the working tree: it follows `main`.
-const guideTemplate = readFileSync(join(DIST, "guide/index.html"), "utf8");
-const guide = await guidePages((file) => readFileSync(join(REPO, "guide", file), "utf8"), `${REPOSITORY}/blob/main/`);
+// The guides, from the working tree: they follow `main`.
+const guideTemplate = readFileSync(join(DIST, "guides/index.html"), "utf8");
+const guide = await guidePages((path) => readFileSync(join(REPO, "guides", path), "utf8"), `${REPOSITORY}/blob/main/`);
 for (const page of guide) {
   mkdirSync(join(DIST, page.folder), { recursive: true });
   writeFileSync(join(DIST, page.folder, "index.html"), prerendered(relocated(guideTemplate, page.root), server.renderGuidePage(page.props), stylesheet(page.folder)));
 }
-console.log(`Prerendered the landing page, ${String(pages.length)} page(s) of the spec (${pages.map((page) => page.folder).join(", ")}) and ${String(guide.length)} of the guide`);
+console.log(`Prerendered the landing page, ${String(pages.length)} page(s) of the spec (${pages.map((page) => page.folder).join(", ")}) and ${String(guide.length)} of the guides`);

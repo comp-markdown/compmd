@@ -1,24 +1,24 @@
-# The CompMD Developer Guide
+# The CompMD guides
 
-**Status: accepted (2026-10-31).** A book for developers who put CompMD in an application or write packs for it: *the CompMD Developer Guide*. Its chapters are in the repository, its pages on [the website](design.md) at `/guide/`, and the landing page teases it. The spec says what CompMD *is*; the package READMEs say what each package *has*; the guide teaches how to *build with them*, from a first page to a published pack.
+**Status: accepted (2026-10-31).** Two books, for the two kinds of reader: *the CompMD Author's Guide*, for people who write documents, and *the CompMD Developer's Guide*, for developers who put CompMD in an application or write packs for it. Their chapters are in the repository, their pages on [the website](design.md) at `/guides/`, and the landing page teases the Developer's Guide. The spec says what CompMD *is*; the package READMEs say what each package *has*; the Author's Guide teaches how to *write* in it, and the Developer's Guide how to *build with* the packages, from a first page to a published pack.
 
 ## Proposed decisions
 
-1. **The guide is a book in a folder of its own, `guide/`**, beside the spec: a contents page (`guide/README.md`) and one Markdown file per chapter, grouped in parts. It reads on GitHub as a book does, changes with the code in the same commits, and grows a chapter at a time.
-2. **`guide/` is a workspace package**, so its code is real: each example is a folder in `guide/examples/`, its code and its CompMD documents together, type-checked and run by the package's tests against the repository's packages. A chapter writes its code inline, so it reads anywhere, and a test checks that each block marked with a file's name (` ```ts snippet=quick-start/main.ts `) is that file's text: the guide can't drift from code that works.
-3. **On the site, the guide is pages of its own, `/guide/` and `/guide/<chapter>/`**, made at build time with the spec page's renderer (the website's decision 6): the processor's `plainHtml`, code highlighted by Shiki with CompMD's grammar, headings linked. Each page has the book's chapters beside the text, its own sections under the current chapter, and links to the chapters before and after it. `/guide/` is the contents page.
-4. **The landing page teases it.** "Use it in your app" becomes three tabs of short code from the guide's snippets, the install line, a live `stars`, and a button to the guide:
+1. **The guides are books in a folder of their own, `guides/`**, beside the spec: a shelf page (`guides/README.md`) that introduces both, and a folder per book, `guides/authors/` and `guides/developers/`, each with a contents page (`README.md`) and one Markdown file per chapter, grouped in parts. They read on GitHub as books do, change with the code in the same commits, and grow a chapter at a time. A book links to the other where their readers meet: a component in CompMD is the Author's Guide's, the same component in code the Developer's.
+2. **`guides/` is a workspace package**, so its code is real: each example is a folder in its book's `examples/`, its code and its CompMD documents together, type-checked and run by the package's tests against the repository's packages. A chapter writes its code inline, so it reads anywhere, and a test checks that each block marked with a file's name (` ```ts snippet=quick-start/main.ts `) is that file's text: the guides can't drift from code that works.
+3. **On the site, the guides are pages of their own: `/guides/`, `/guides/<book>/` and `/guides/<book>/<chapter>/`**, made at build time with the spec page's renderer (the website's decision 6): the processor's `plainHtml`, code highlighted by Shiki with CompMD's grammar, headings linked. Each page has both books beside the text, its own open to its chapters, its own sections under the current chapter, and links to the chapters before and after it. `/guides/` is the shelf, `/guides/<book>/` a book's contents.
+4. **The landing page teases the Developer's Guide.** "Use it in your app" becomes three tabs of short code from the guide's snippets, the install line, a live `stars`, and a button to the guide:
    - **In a Vite app**: `vite.config.ts` with `compmd()`, and a document processed and rendered with `virtual:compmd`;
    - **Your own components**: the app's `stars` as a pack folder, its signature, and the line of `compmd.config.json` that trusts it;
    - **In an editor**: `OpenDocument` and splices, as today.
-   The header and "Where next" link to the guide.
+   The header and "Where next" link to the shelf.
 5. **The website uses `@compmd/vite` itself**, with a `compmd.config.json` that lists its own pack folder (`content/app/`, `stars` in Svelte, trusted, ambient). The live `stars` is that pack, mounted in the page in host mode; the JSX example's frame comes from the site's own `compmd/` instead of the playground's. The site does what the guide teaches.
-6. **An example in the guide opens where it can be played with.** A chapter's CompMD example is a document in its example's folder, and a **Try it** link under it opens it in the playground (`/playground/?doc=guide/<name>`), which bundles the guide's examples beside its menu. When the playground's tools become the *Developer Tools* (their own design: the text, the page and the views as a part any page can embed, with tabs for the sandbox's frames, a console and the messages), the same links open there.
-7. **This change writes the book's frame and its first part**, the site's pages for it, and the landing teaser. Each later part is a task of its own, so each is reviewed as it is written; the contents page lists every chapter, and those not written yet say so.
+6. **An example in a guide opens where it can be played with.** A chapter's CompMD example is a document in its example's folder, and a **Try it** link under it opens it in the playground (`/playground/?doc=guides/<book>/<name>`), which bundles the guides' examples beside its menu. When the playground's tools become the *Developer Tools* (their own design: the text, the page and the views as a part any page can embed, with tabs for the sandbox's frames, a console and the messages), the same links open there.
+7. **This change writes the shelf, both books' contents, the Developer's Guide's first part**, the site's pages for them, and the landing teaser. Each later part of either book is a change of its own, so each is reviewed as it is written; a contents page lists every chapter, and those not written yet say so.
 
-## The outline
+## The outlines
 
-Each chapter leads with what the reader builds, ends with what to read next, and links to the spec sections and READMEs that go deeper.
+Each chapter leads with what the reader builds, ends with what to read next, and links to the spec sections and READMEs that go deeper. The Author's Guide's outline is its contents page, [`guides/authors/README.md`](../../guides/authors/README.md): writing, data and inputs, layout, components of your own, and packs, for writers, with no code. The Developer's Guide's:
 
 **Part I. Getting started**
 1. *Introduction*: who the guide is for, what CompMD gives an application (documents people write as text, rendered as pages, safe to open from anyone), and the packages, with how a document flows through them. One figure.
@@ -52,9 +52,9 @@ Each chapter leads with what the reader builds, ends with what to read next, and
 
 ## Questions, with proposed answers
 
-**G1. The folder's name.** Proposed: `guide/`, after the book's name, at the repository's root beside `compmd-spec-v1.md`, and linked from the README's table. `book/` reads as any book; `docs/` holds the design documents, which are for the people who work on CompMD, not with it.
+**G1. The folder's name.** Proposed: `guides/`, at the repository's root beside `compmd-spec-v1.md`, and linked from the README's table. `book/` reads as any book; `docs/` holds the design documents, which are for the people who work on CompMD, not with it.
 
-**G2. Pages.** Proposed: a page per chapter on the site and a file per chapter in the folder, numbered (`guide/02-quick-start.md`) so they sort in order, with `guide/README.md` as the contents. A chapter's address on the site drops the number (`/guide/quick-start/`), so chapters can be inserted without breaking links.
+**G2. Pages.** Proposed: a page per chapter on the site and a file per chapter in its book's folder, numbered (`guides/developers/02-quick-start.md`) so they sort in order, with the book's `README.md` as its contents. A chapter's address on the site drops the number (`/guides/developers/quick-start/`), so chapters can be inserted without breaking links.
 
 **G3. Versions.** Proposed: the guide follows `main`, as the landing page and the playground do, and names the package versions it is written for at the top of each chapter's page. A guide per release waits for version 1 of the packages, and would then be made as the spec's released versions are.
 
@@ -64,7 +64,7 @@ Each chapter leads with what the reader builds, ends with what to read next, and
 
 ## Not in this change
 
-- Parts II to V and the appendices (decision 7).
+- The Author's Guide's chapters, and the Developer's Guide's Parts II to V and appendices (decision 7).
 - The Developer Tools (decision 6): their own design, then their own tasks.
 - A search box for the guide (the spec's search is its own task, and would serve both).
 - Translations.

@@ -1,8 +1,8 @@
-<!-- The tabs of "Use it in your app", each a few files of code that runs: the guide's quick start, the site's own pack
-     (what renders the live `stars` below), and the editor's snippet, which a test runs. -->
+<!-- The tabs of "Use it in your app", each a few files of code that runs: the Developer's Guide's quick start, the
+     site's own pack (what renders the live `stars` below), and the editor's snippet, which a test runs. -->
 <script lang="ts">
-  import mainTs from "../../guide/examples/quick-start/main.ts?raw";
-  import viteConfig from "../../guide/examples/quick-start/vite.config.ts?raw";
+  import mainTs from "../../guides/developers/examples/quick-start/main.ts?raw";
+  import viteConfig from "../../guides/developers/examples/quick-start/vite.config.ts?raw";
   import appDocument from "../app/index.comp.md?raw";
   import stars from "../app/Stars.svelte?raw";
   import config from "../compmd.config.json?raw";

@@ -18,7 +18,7 @@ export function renderSpecPage(props: ComponentProps<typeof Spec>): Rendered {
   return { head, body };
 }
 
-/** A page of the guide, static: nothing hydrates it. */
+/** A page of the guides, static: nothing hydrates it. */
 export function renderGuidePage(props: ComponentProps<typeof Guide>): Rendered {
   const { head, body } = render(Guide, { props });
   return { head, body };

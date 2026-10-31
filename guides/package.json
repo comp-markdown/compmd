@@ -1,8 +1,8 @@
 {
-  "name": "@compmd/guide",
+  "name": "@compmd/guides",
   "version": "0.0.0",
   "private": true,
-  "description": "The CompMD Developer Guide: its chapters, and the examples whose code they show, which its tests type-check and run.",
+  "description": "The CompMD guides, the Author's and the Developer's: their chapters, and the examples they show, which their tests type-check, process and run.",
   "type": "module",
   "scripts": {
     "lint": "tsc --noEmit",

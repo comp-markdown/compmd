@@ -1,6 +1,6 @@
-// The CompMD Developer Guide as pages of the site (website/docs/guide.md): its book, its parts and chapters, read from
-// its contents page (`guide/README.md`), and where its links go: a chapter to its page, `/guide/<slug>/`, anything
-// else to its file on GitHub.
+// The CompMD guides as pages of the site (website/docs/guide.md): each book's parts and chapters, read from its
+// contents page (`guides/<book>/README.md`), and where their links go: a chapter to its page,
+// `/guides/<book>/<slug>/`, anything else to its file on GitHub.
 
 /** A chapter of the guide; `file` and `slug` are absent for one not written yet. */
 export interface Chapter {
@@ -48,15 +48,27 @@ export function bookOf(contents: string): Part[] {
 export const writtenOf = (book: readonly Part[]): Required<Chapter>[] =>
   book.flatMap((part) => part.chapters).filter((chapter): chapter is Required<Chapter> => chapter.file !== undefined);
 
+/** A guide's page on the site for a file of its folder: its contents (`README.md`) or a chapter; `undefined` otherwise. */
+function pageOf(file: string): string | undefined {
+  if (file === "README.md") return "";
+  return /^\d+-[^/]+\.md$/.test(file) ? `${slugOf(file)}/` : undefined;
+}
+
 /**
- * Where a relative link of the guide goes on the site, from a page whose path to the guide's own page is `up` (`""`
- * for `/guide/`, `"../"` for a chapter): the contents to `/guide/`, a chapter to its page; anything else is
+ * Where a relative link of a guide goes on the site, from a page whose path to its book's page is `up` (`""` for the
+ * book's contents, `"../"` for a chapter; for the shelf, `undefined`): its book's contents and chapters to their pages,
+ * another book's (`../authors/…`) to theirs, and from the shelf, each book's (`authors/…`). Anything else is
  * `undefined`, for its file on GitHub.
  */
-export function guideLink(href: string, up: string): string | undefined {
-  const [path = "", hash] = href.split("#");
+export function guideLink(href: string, up: string | undefined): string | undefined {
+  const [path = "", hash] = href.replace(/^\.\//, "").split("#");
   const anchor = hash === undefined ? "" : `#${hash}`;
-  if (path === "README.md" || path === "./README.md") return `${up || "./"}${anchor}`;
-  if (/^(\.\/)?\d+-[^/]+\.md$/.test(path)) return `${up}${slugOf(path.replace(/^\.\//, ""))}/${anchor}`;
-  return undefined;
+  const at = (page: string | undefined, prefix: string) => (page === undefined ? undefined : `${prefix}${page}${anchor}` || `./${anchor}`);
+  if (up === undefined) {
+    const [book, file = ""] = path.split("/");
+    return book !== undefined && /^[a-z-]+$/.test(book) ? at(pageOf(file), `${book}/`) : undefined;
+  }
+  const other = /^\.\.\/([a-z-]+)\/([^/]+)$/.exec(path);
+  if (other) return at(pageOf(other[2] ?? ""), `${up}../${other[1] ?? ""}/`);
+  return at(pageOf(path), up);
 }

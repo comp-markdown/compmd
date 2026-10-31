@@ -39,24 +39,36 @@ describe("bookOf", () => {
     expect(writtenOf(bookOf(CONTENTS)).map((chapter) => chapter.slug)).toEqual(["introduction", "quick-start"]);
   });
 
-  it("reads the guide's own contents", () => {
-    const book = bookOf(readFileSync(join(import.meta.dirname, "../../guide/README.md"), "utf8"));
-    expect(book.length).toBeGreaterThan(1);
-    expect(writtenOf(book)[0]?.slug).toBe("introduction");
+  it("reads the guides' own contents", () => {
+    const read = (book: string) => bookOf(readFileSync(join(import.meta.dirname, `../../guides/${book}/README.md`), "utf8"));
+    expect(writtenOf(read("developers"))[0]?.slug).toBe("introduction");
+    expect(read("authors").length).toBeGreaterThan(1);
   });
 });
 
 describe("guideLink", () => {
-  it("takes a chapter to its page, and the contents to the guide's", () => {
+  it("takes a chapter to its page, and the contents to its book's", () => {
     expect(guideLink("02-quick-start.md", "../")).toBe("../quick-start/");
     expect(guideLink("./03-how-it-fits-together.md#why", "")).toBe("how-it-fits-together/#why");
     expect(guideLink("README.md#contents", "../")).toBe("../#contents");
     expect(guideLink("README.md", "")).toBe("./");
   });
 
+  it("takes a link to another book to its pages", () => {
+    expect(guideLink("../authors/README.md", "")).toBe("../authors/");
+    expect(guideLink("../authors/README.md", "../")).toBe("../../authors/");
+    expect(guideLink("../developers/02-quick-start.md", "../")).toBe("../../developers/quick-start/");
+  });
+
+  it("takes the shelf's links to each book's pages", () => {
+    expect(guideLink("authors/README.md", undefined)).toBe("authors/");
+    expect(guideLink("developers/01-introduction.md", undefined)).toBe("developers/introduction/");
+  });
+
   it("leaves anything else to GitHub", () => {
-    expect(guideLink("../wasm/README.md", "../")).toBeUndefined();
+    expect(guideLink("../../wasm/README.md", "../")).toBeUndefined();
     expect(guideLink("examples", "")).toBeUndefined();
+    expect(guideLink("../compmd-spec-v1.md", undefined)).toBeUndefined();
   });
 });
 

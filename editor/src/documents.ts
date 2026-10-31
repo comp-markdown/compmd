@@ -35,8 +35,8 @@ const bundled = {
   notes: import.meta.glob("../../wasm/bench/fixtures/notes/notes.comp.md", { query: "?raw", import: "default", eager: true }),
   // The charts are a pack of the configuration, which `virtual:compmd` brings.
   examples: import.meta.glob(["../examples/**/*", "!../examples/charts/**"], { query: "?raw", import: "default", eager: true }),
-  // The Developer Guide's documents, which its **Try it** links open (`?doc=guide/<example>`).
-  guide: import.meta.glob("../../guide/examples/*/*.comp.md", { query: "?raw", import: "default", eager: true }),
+  // The guides' documents, which their **Try it** links open (`?doc=guides/<book>/<example>`).
+  guides: import.meta.glob("../../guides/*/examples/*/*.comp.md", { query: "?raw", import: "default", eager: true }),
 } as Record<string, Bundle>;
 
 /** The files of `bundle` under `dir`, by their path from it. */
@@ -139,12 +139,15 @@ export const EXAMPLES: Example[] = [
   example("notes", "A long document: field notes (52 KB, 20 charts)", { path: "notes.comp.md", files: filesIn(bundled.notes, NOTES), now: "2026-10-23T09:00:00Z" }, [CHARTS_PACK]),
 ];
 
-/** The Developer Guide's examples' documents, each by its example's folder: `guide/quick-start`. */
-const GUIDE = "../../guide/examples/";
-const guideExamples: Example[] = Object.entries(bundled.guide ?? {}).map(([path, text]) => {
-  const [folder = "", file = ""] = path.slice(GUIDE.length).split("/");
+/** The guides, by their folders in `guides/`. */
+const BOOKS: Record<string, string> = { authors: "Author's Guide", developers: "Developer's Guide" };
+
+/** The guides' examples' documents, each by its book's and its example's folders: `guides/developers/quick-start`. */
+const GUIDES = "../../guides/";
+const guideExamples: Example[] = Object.entries(bundled.guides ?? {}).map(([path, text]) => {
+  const [book = "", , folder = "", file = ""] = path.slice(GUIDES.length).split("/");
   const title = folder.replaceAll("-", " ");
-  return example(`guide/${folder}`, `Developer Guide: ${title}`, { path: file, files: { [file]: text }, now: NOW });
+  return example(`guides/${book}/${folder}`, `${BOOKS[book] ?? book}: ${title}`, { path: file, files: { [file]: text }, now: NOW });
 });
 EXAMPLES.push(...guideExamples);
 

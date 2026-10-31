@@ -4,7 +4,7 @@ packages:
   - vite
   - vite/example
   - create-pack
-  - guide
+  - guides
   - wasm
   - editor
   - editor/packs/minimermaid

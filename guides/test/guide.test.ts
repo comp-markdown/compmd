@@ -1,6 +1,6 @@
-// The guide's chapters against what they claim: each block of code marked `snippet=<file>` is that example file's text,
-// each CompMD document in a chapter processes without diagnostics, the contents lists every chapter, and the examples
-// build and run in Chrome and WebKit as the chapters say.
+// The guides' chapters against what they claim, book by book: each block of code marked `snippet=<file>` is that
+// example file's text, each example file is shown, each CompMD document in a chapter processes without diagnostics,
+// the contents lists every chapter, and the examples build and run in Chrome and WebKit as the chapters say.
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { join } from "node:path";
@@ -10,9 +10,8 @@ import { build, preview, type PreviewServer } from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { compmd } from "@compmd/vite";
 
-const GUIDE = join(import.meta.dirname, "..");
-const EXAMPLES = join(GUIDE, "examples");
-const CHAPTERS = readdirSync(GUIDE).filter((name) => /^\d\d-.+\.md$/.test(name)).sort();
+const GUIDES = join(import.meta.dirname, "..");
+const BOOKS = ["authors", "developers"];
 
 /** The fenced blocks of `markdown`: their info string and their text. */
 function blocksOf(markdown: string): { info: string; text: string }[] {
@@ -33,19 +32,23 @@ beforeAll(() => {
   initSync({ module: readFileSync(createRequire(import.meta.url).resolve("@compmd/processor/compmd_wasm_bg.wasm")) });
 });
 
-describe("the chapters", () => {
-  it("are numbered from one, with no gap", () => {
-    expect(CHAPTERS.map((name) => Number(name.slice(0, 2)))).toEqual(CHAPTERS.map((_, i) => i + 1));
+describe.each(BOOKS)("the %s' guide", (book) => {
+  const folder = join(GUIDES, book);
+  const examples = join(folder, "examples");
+  const chapters = readdirSync(folder).filter((name) => /^\d\d-.+\.md$/.test(name)).sort();
+
+  it("numbers its chapters from one, with no gap", () => {
+    expect(chapters.map((name) => Number(name.slice(0, 2)))).toEqual(chapters.map((_, i) => i + 1));
   });
 
-  for (const chapter of CHAPTERS) {
-    const markdown = readFileSync(join(GUIDE, chapter), "utf8");
+  for (const chapter of chapters) {
+    const markdown = readFileSync(join(folder, chapter), "utf8");
 
     it(`${chapter}: its code is its examples' files`, () => {
       for (const { info, text } of blocksOf(markdown)) {
         const file = /\bsnippet=(\S+)/.exec(info)?.[1];
         if (file === undefined) continue;
-        expect(text, file).toBe(readFileSync(join(EXAMPLES, file), "utf8").replace(/\n$/, ""));
+        expect(text, file).toBe(readFileSync(join(examples, file), "utf8").replace(/\n$/, ""));
       }
     });
 
@@ -57,21 +60,27 @@ describe("the chapters", () => {
     });
   }
 
-  it("show every file of their examples", () => {
-    const shown = new Set(CHAPTERS.flatMap((chapter) => blocksOf(readFileSync(join(GUIDE, chapter), "utf8")).map(({ info }) => /\bsnippet=(\S+)/.exec(info)?.[1])));
-    const files = readdirSync(EXAMPLES, { recursive: true, withFileTypes: true })
-      .filter((entry) => entry.isFile())
-      .map((entry) => join(entry.parentPath, entry.name).slice(EXAMPLES.length + 1).split("\\").join("/"));
-    expect(files.length).toBeGreaterThan(0);
+  it("shows every file of its examples", () => {
+    const shown = new Set(chapters.flatMap((chapter) => blocksOf(readFileSync(join(folder, chapter), "utf8")).map(({ info }) => /\bsnippet=(\S+)/.exec(info)?.[1])));
+    const files = existsSync(examples)
+      ? readdirSync(examples, { recursive: true, withFileTypes: true })
+          .filter((entry) => entry.isFile())
+          .map((entry) => join(entry.parentPath, entry.name).slice(examples.length + 1).split("\\").join("/"))
+      : [];
     for (const file of files) expect(shown.has(file), file).toBe(true);
   });
 
-  it("are each listed in the contents, which links only to chapters that are there", () => {
-    const contents = readFileSync(join(GUIDE, "README.md"), "utf8");
+  it("lists each chapter in its contents, which links only to chapters that are there", () => {
+    const contents = readFileSync(join(folder, "README.md"), "utf8");
     const linked = [...contents.matchAll(/\]\((\d\d-[^)]+\.md)\)/g)].map((match) => match[1]);
-    expect(linked).toEqual(CHAPTERS);
-    for (const file of linked) expect(existsSync(join(GUIDE, file ?? ""))).toBe(true);
+    expect(linked).toEqual(chapters);
+    for (const file of linked) expect(existsSync(join(folder, file ?? ""))).toBe(true);
   });
+});
+
+it("lists every book on the shelf", () => {
+  const shelf = readFileSync(join(GUIDES, "README.md"), "utf8");
+  for (const book of BOOKS) expect(shelf).toContain(`](${book}/README.md)`);
 });
 
 const BROWSERS: [string, BrowserType, LaunchOptions][] = [
@@ -79,8 +88,8 @@ const BROWSERS: [string, BrowserType, LaunchOptions][] = [
   ["WebKit", webkit, {}],
 ];
 
-describe("the quick start", () => {
-  const root = join(EXAMPLES, "quick-start");
+describe("the developers' quick start", () => {
+  const root = join(GUIDES, "developers/examples/quick-start");
   const out = join(import.meta.dirname, ".out/quick-start");
   const port = 4201;
   let server: PreviewServer;

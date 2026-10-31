@@ -75,7 +75,7 @@
 
   const PLACES = [
     { href: "spec/", title: "The spec", text: "Version 1, a draft: the syntax, the components, expressions, data and security." },
-    { href: "guide/", title: "The developer guide", text: "Build with CompMD: documents in your app, components of your own and from packs, and packs of your own." },
+    { href: "guides/", title: "The guides", text: "The Author's Guide, for writing documents, and the Developer's Guide, for building CompMD into your app." },
     { href: "playground/", title: "The playground", text: "Write CompMD and watch the page, with a tour, examples and the diagnostics." },
     { href: `${REPOSITORY}/tree/main/conformance`, title: "The conformance set", text: "188 cases any implementation can run, with their expected trees." },
     { href: REPOSITORY, title: "GitHub", text: "The spec, the processor in Rust, the packages and this site." },
@@ -177,7 +177,7 @@
         </div>
         <Example name="rating.comp.md" snapshot={snapshots.rating} live="host" />
       </div>
-      <p class="actions"><a class="button primary" href="guide/">Read the developer guide</a></p>
+      <p class="actions"><a class="button primary" href="guides/developers/">Read the Developer's Guide</a></p>
     </div>
   </section>
 

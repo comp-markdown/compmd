@@ -23,7 +23,16 @@ import { serveFolder } from "../build/static.ts";
 const DIST = join(import.meta.dirname, "../dist");
 const PORT = 4191;
 const ROOT = `http://localhost:${String(PORT)}/`;
-const PAGES = ["", "spec/", "guide/", "guide/introduction/", "guide/quick-start/", "guide/how-it-fits-together/"];
+const PAGES = [
+  "",
+  "spec/",
+  "guides/",
+  "guides/authors/",
+  "guides/developers/",
+  "guides/developers/introduction/",
+  "guides/developers/quick-start/",
+  "guides/developers/how-it-fits-together/",
+];
 const VIEWS = [
   { name: "desktop", width: 1280, height: 860 },
   { name: "phone", width: 390, height: 844 },

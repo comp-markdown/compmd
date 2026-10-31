@@ -48,7 +48,7 @@ md:
 ::: /each
 ```
 
-[Try it](https://compmd.hakanserce.com/playground/?doc=guide/quick-start) in the playground.
+[Try it](https://compmd.hakanserce.com/playground/?doc=guides/developers/quick-start) in the playground.
 
 ## The page
 

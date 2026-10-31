@@ -102,8 +102,9 @@ Responsive to a phone, where the hero stacks the document over the page and the 
 /spec/             the spec: the draft, then the latest release   compmd-spec-v1.md
 /spec/draft/       the draft, once a version is released          compmd-spec-v1.md on main
 /spec/1.0/         a released version, frozen                     compmd-spec-v1.md at its tag
-/guide/            the CompMD Developer Guide's contents       guide/README.md
-/guide/<chapter>/  a chapter of the guide                     guide/NN-<chapter>.md
+/guides/           the guides' shelf                          guides/README.md
+/guides/<book>/    a guide's contents                         guides/<book>/README.md
+/guides/<book>/<chapter>/  a chapter of a guide               guides/<book>/NN-<chapter>.md
 /compmd/           the site's sandbox and packs' modules      @compmd/vite, compmd.config.json
 /logo/             the logo files                       logo/
 ```

@@ -23,7 +23,7 @@ md:
 :: number-input[Goal: 20 books] {bind=goal}
 ```
 
-This guide is for developers who put CompMD in an application: a notes app, a documentation site, a dashboard whose pages people write, an editor with a live preview. It shows how to render documents, give them components of your own and from packs, and write packs others can use.
+This guide is for developers who put CompMD in an application: a notes app, a documentation site, a dashboard whose pages people write, an editor with a live preview. It shows how to render documents, give them components of your own and from packs, and write packs others can use. How to write the documents themselves is [the Author's Guide](../authors/README.md).
 
 ## What CompMD gives your application
 
@@ -36,11 +36,11 @@ This guide is for developers who put CompMD in an application: a notes app, a do
 
 | Package | What it does |
 |---|---|
-| [`@compmd/processor`](../wasm/README.md) | Reads a document, with everything it needs, and gives its trees, its diagnostics and its components. The processor in Rust, as WebAssembly. |
-| [`@compmd/render`](../render/README.md) | Renders the expanded tree as a live page, and updates it in place as the document changes. |
-| [`@compmd/sandbox`](../sandbox/README.md) | Runs components at the trust their pack is given: in frames with no network, or your own in your page. |
-| [`@compmd/vite`](../vite/README.md) | Reads `compmd.config.json`, gives the processor your packs, and serves the sandbox and the packs' files from your app. |
-| [`@compmd/create-pack`](../create-pack/README.md) | Writes a new pack: a component as one built module, its signature, and a test page. |
+| [`@compmd/processor`](../../wasm/README.md) | Reads a document, with everything it needs, and gives its trees, its diagnostics and its components. The processor in Rust, as WebAssembly. |
+| [`@compmd/render`](../../render/README.md) | Renders the expanded tree as a live page, and updates it in place as the document changes. |
+| [`@compmd/sandbox`](../../sandbox/README.md) | Runs components at the trust their pack is given: in frames with no network, or your own in your page. |
+| [`@compmd/vite`](../../vite/README.md) | Reads `compmd.config.json`, gives the processor your packs, and serves the sandbox and the packs' files from your app. |
+| [`@compmd/create-pack`](../../create-pack/README.md) | Writes a new pack: a component as one built module, its signature, and a test page. |
 
 A document goes through them like this:
 
