@@ -1,4 +1,4 @@
-# Imports that haven't arrived yet
+# Handling pack loading states
 
 **Status: placeholder (2026-10-31).** Not designed yet; this page says what the design is to settle.
 
