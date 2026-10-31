@@ -1,6 +1,7 @@
 // The libraries every frame shares through its import map: compiled components and built modules import them as their
 // authors write them (`react`, `svelte`), and the map gives them the one copy the frames have. By default the
-// runtimes of the spec's bindings; a host adds the libraries it offers (docs/sandbox.md, Q4).
+// runtimes of the spec's bindings; a host adds the libraries it offers (docs/running-components-in-the-sandbox.md,
+// Q4).
 //
 // One build per npm package. Its import names are entry points, split into shared chunks, so modules that share state
 // (`svelte` and `svelte/internal/client`) share one copy. The other packages stay external, so `react-dom` uses the

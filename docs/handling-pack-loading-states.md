@@ -2,7 +2,7 @@
 
 **Status: placeholder (2026-10-31).** Not designed yet; this page says what the design is to settle.
 
-Everything a document needs loads in stage 4a, before anything is evaluated (spec §11), so an import is either there or F026, and data is either loaded or its `fallback`. A processor that fetches while a reader reads, such as one that gets packs from a registry at run time ([packs from a registry](registry.md)), has a third state: the import is on its way. Today it can only render as if it had failed, and render again when it arrives (§8.5).
+Everything a document needs loads in stage 4a, before anything is evaluated (spec §11), so an import is either there or F026, and data is either loaded or its `fallback`. A processor that fetches while a reader reads, such as one that gets packs from a registry at run time ([packs from a registry](packs-from-a-registry.md)), has a third state: the import is on its way. Today it can only render as if it had failed, and render again when it arrives (§8.5).
 
 ## To settle
 

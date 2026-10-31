@@ -48,7 +48,7 @@ export function moduleCode(app: App, folder: string): string {
 
 /**
  * The headers of a file under the folder: the frames have an opaque origin, so their files load cross-origin; their
- * documents are sandboxed even when opened alone (docs/sandbox.md, Q3).
+ * documents are sandboxed even when opened alone (docs/running-components-in-the-sandbox.md, Q3).
  */
 function headersFor(path: string, response: ServerResponse): void {
   response.setHeader("Access-Control-Allow-Origin", "*");

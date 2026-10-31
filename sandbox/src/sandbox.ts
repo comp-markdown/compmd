@@ -1,7 +1,7 @@
-// The sandbox's default for a whole document (docs/sandbox.md, Q1, Q7): the host chooses where the page renders. In
-// frame mode the page is one strict frame per document; in host mode the page renders in the host's page, trusted
-// components inline, every other use in a frame of its level. Either way the host gives trees and gets `set`, links
-// and errors, and never writes a frame or a policy itself.
+// The sandbox's default for a whole document (docs/running-components-in-the-sandbox.md, Q1, Q7): the host chooses
+// where the page renders. In frame mode the page is one strict frame per document; in host mode the page renders in
+// the host's page, trusted components inline, every other use in a frame of its level. Either way the host gives
+// trees and gets `set`, links and errors, and never writes a frame or a policy itself.
 
 import type { HostComponent } from "@compmd/processor";
 import { createPage, type Change, type ExpandedInput, type ExpandedRoot, type Page, type Splice } from "@compmd/render";

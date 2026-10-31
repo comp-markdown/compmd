@@ -2,7 +2,7 @@
 
 **Status: accepted (2026-10-30).** S3 (libraries from the registry) is still open.
 
-How the sandbox builds the three levels, where the page renders, a frame per use and how a built module's file is checked, is its own design: [the sandbox](sandbox.md). How a host lets documents use packs straight from a registry (H2 and P2, below) is another: [packs from a registry](registry.md).
+How the sandbox builds the three levels, where the page renders, a frame per use and how a built module's file is checked, is its own design: [running components in the sandbox](running-components-in-the-sandbox.md). How a host lets documents use packs straight from a registry (H2 and P2, below) is another: [packs from a registry](packs-from-a-registry.md).
 
 A document names components; their code comes from somewhere. This design answers two questions that turn out to be one:
 

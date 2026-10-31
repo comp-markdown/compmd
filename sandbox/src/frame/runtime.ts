@@ -1,6 +1,7 @@
-// The frame runtime (docs/sandbox.md, Q7): what runs in `strict.html` and `permissive.html` before any component. It
-// takes its port from its parent only, adds a permissive frame's second policy before it loads code, and renders its
-// part: the page (frame mode, through `@compmd/render`'s frame protocol on the same port) or one use with its slots.
+// The frame runtime (docs/running-components-in-the-sandbox.md, Q7): what runs in `strict.html` and
+// `permissive.html` before any component. It takes its port from its parent only, adds a permissive frame's second
+// policy before it loads code, and renders its part: the page (frame mode, through `@compmd/render`'s frame protocol
+// on the same port) or one use with its slots.
 // A component of a lower level gets a nested strict frame; one of a higher level shows its fallback.
 
 import { createRegion, type Region } from "@compmd/render";
@@ -19,7 +20,10 @@ import { narrowed, networkPolicy } from "./narrow.ts";
 /** The level this document is for, from its root: a strict document stays strict whatever its parent says. */
 const own: Level = document.documentElement.dataset.compmdFrame === "permissive" ? "permissive" : "strict";
 
-/** WebRTC isn't covered by a content security policy (docs/sandbox.md, threat model): its constructors go first. */
+/**
+ * WebRTC isn't covered by a content security policy (docs/running-components-in-the-sandbox.md, threat model): its
+ * constructors go first.
+ */
 for (const name of ["RTCPeerConnection", "webkitRTCPeerConnection", "RTCDataChannel", "RTCIceCandidate", "RTCSessionDescription", "RTCRtpSender", "RTCRtpReceiver", "RTCRtpTransceiver"]) {
   Object.defineProperty(globalThis, name, { value: undefined, writable: false, configurable: false });
 }

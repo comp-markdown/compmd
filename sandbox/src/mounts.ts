@@ -1,6 +1,6 @@
 // The renderer's components where a part renders: a component of this level runs here, one of a lower level gets a
 // frame of its own where it is used, and one of a higher level shows its fallback, since the frames only go down in
-// trust (docs/sandbox.md, decisions 1 and 4, Q2).
+// trust (docs/running-components-in-the-sandbox.md, decisions 1 and 4, Q2).
 
 import { rendersSlots, type ExpandedComponent, type ExpandedInput, type Mount, type NodesMounted } from "@compmd/render";
 import type { ComponentCode, ErrorReason, Level } from "./protocol/messages.ts";

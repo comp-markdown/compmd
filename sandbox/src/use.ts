@@ -1,6 +1,6 @@
 // One use in a frame of its own: the frame document of its level, the protocol's parent end on the port the parent
 // gives it, and the frame's size set from what it reports. The host's page frames strict and permissive uses this way,
-// and a permissive frame its strict ones (docs/sandbox.md, decision 1).
+// and a permissive frame its strict ones (docs/running-components-in-the-sandbox.md, decision 1).
 
 import type { ExpandedComponent, ExpandedInput } from "@compmd/render";
 import { networkPolicy } from "./frame/narrow.ts";

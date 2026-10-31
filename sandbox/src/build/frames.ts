@@ -1,5 +1,6 @@
-// The frame documents a host serves (docs/sandbox.md, Q3): `strict.html` and `permissive.html`, each with its policy
-// and the import map, next to the frame runtime and the shared libraries, which the package ships built.
+// The frame documents a host serves (docs/running-components-in-the-sandbox.md, Q3): `strict.html` and
+// `permissive.html`, each with its policy and the import map, next to the frame runtime and the shared libraries,
+// which the package ships built.
 
 import { cp, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";

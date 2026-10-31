@@ -1,6 +1,6 @@
 # The configuration and `@compmd/vite`
 
-**Status: accepted (2026-10-30).** Builds H3 of [components from apps and packs](components-from-apps-and-packs.md#h3-configuration-filled-at-build-time-recommended-for-web-apps): a web app adds packs with `npm install` and a line of configuration, and a Vite plugin does the rest. The sandbox it feeds is [the sandbox](sandbox.md).
+**Status: accepted (2026-10-30).** Builds H3 of [components from apps and packs](components-from-apps-and-packs.md#h3-configuration-filled-at-build-time-recommended-for-web-apps): a web app adds packs with `npm install` and a line of configuration, and a Vite plugin does the rest. The sandbox it feeds is [the sandbox](running-components-in-the-sandbox.md).
 
 ## Proposed decisions
 

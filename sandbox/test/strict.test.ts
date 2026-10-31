@@ -1,4 +1,5 @@
-// A strict frame (docs/sandbox.md, threat model T1, T2, T3, T5): its code reaches nothing outside its contract.
+// A strict frame (docs/running-components-in-the-sandbox.md, threat model T1, T2, T3, T5): its code reaches nothing
+// outside its contract.
 
 import { afterEach, describe, expect, it } from "vitest";
 import { ATTEMPT, denied, frames, hits, pause, probe, tagged, type Probe } from "./harness.ts";
@@ -51,8 +52,8 @@ describe("a strict frame", () => {
     expect(result).toEqual({ [denied]: refused, [frames]: refused });
     await pause(200);
     expect(await hits(denied, tag)).toEqual([]);
-    // What a browser can't stop (docs/sandbox.md): styles, fonts and prefetches the policy allows from the frames'
-    // own origin, the host's, carry a query string there, and nothing else does.
+    // What a browser can't stop (docs/running-components-in-the-sandbox.md): styles, fonts and prefetches the policy
+    // allows from the frames' own origin, the host's, carry a query string there, and nothing else does.
     const atHost = (await hits(frames, tag)).map((hit) => hit.slice(hit.indexOf(`?${tag}-`) + `?${tag}-`.length));
     expect(atHost.filter((kind) => !["font", "style", "prefetch"].includes(kind))).toEqual([]);
   });

@@ -1,5 +1,5 @@
-// Built modules (docs/sandbox.md, T8, decision 7): a frame loads a pack's module by its URL, and runs it only if its
-// file matches the hash the host gives.
+// Built modules (docs/running-components-in-the-sandbox.md, T8, decision 7): a frame loads a pack's module by its
+// URL, and runs it only if its file matches the hash the host gives.
 
 import { afterEach, describe, expect, it } from "vitest";
 import { frames, leaf, probe, type Probe } from "./harness.ts";

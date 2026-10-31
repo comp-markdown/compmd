@@ -1,5 +1,5 @@
-// A permissive frame (docs/sandbox.md, T1, T6, T7, decision 1): it reaches its pack's origins and nothing else, holds
-// strict frames only, and gets `host` only when its parent gives it.
+// A permissive frame (docs/running-components-in-the-sandbox.md, T1, T6, T7, decision 1): it reaches its pack's
+// origins and nothing else, holds strict frames only, and gets `host` only when its parent gives it.
 
 import type { ExpandedComponent } from "@compmd/render";
 import { afterEach, describe, expect, it } from "vitest";

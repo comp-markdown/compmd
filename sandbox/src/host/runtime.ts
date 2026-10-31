@@ -1,7 +1,7 @@
-// The host runtime (docs/sandbox.md, Q6, Q7): in the host's page, one per document. It turns the processor's
-// components into what frames run (compiled in the document's compile frame, or built modules by their URL), mounts
-// trusted components inline and frames every other use at its level, gives `host` to permissive frames of packs given
-// it, and stops a frame that stops answering.
+// The host runtime (docs/running-components-in-the-sandbox.md, Q6, Q7): in the host's page, one per document. It
+// turns the processor's components into what frames run (compiled in the document's compile frame, or built modules
+// by their URL), mounts trusted components inline and frames every other use at its level, gives `host` to permissive
+// frames of packs given it, and stops a frame that stops answering.
 
 import type { HostComponent, Trust } from "@compmd/processor";
 import { createRegion, type ExpandedComponent, type ExpandedInput, type Mount } from "@compmd/render";

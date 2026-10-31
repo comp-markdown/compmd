@@ -1,6 +1,6 @@
 # Packs from a registry
 
-**Status: proposed (2026-10-31).**
+**Status: accepted (2026-10-31).**
 
 A document imports `@kit/mermaid@1`, and the host has never heard of it. The accepted design for [components from apps and packs](components-from-apps-and-packs.md) says a document may import any npm pack, which runs in the strict sandbox (P2), and that a host may fill its packs from the registry at run time (H2). Neither is built: `@compmd/vite` gives the processor the packs an app installed at build time (H3) and its folder packs (H4), so an import of anything else is F026. This design is how a host lets its documents use packs straight from a registry, and what a CompMD pack on npm must be.
 
@@ -42,7 +42,7 @@ F3 is F2 with another party; it buys nothing F2 lacks for packs, since the tarba
 
 ## R2. How a registry pack's module reaches its frame
 
-A strict frame loads scripts only from the frames' origin, and `blob:` modules (`docs/sandbox.md`, Q3). A registry pack's built module is elsewhere.
+A strict frame loads scripts only from the frames' origin, and `blob:` modules ([the sandbox](running-components-in-the-sandbox.md), Q3). A registry pack's built module is elsewhere.
 
 | | O1. The host page sends it as text (recommended) | O2. The frame's policy admits the registry's files | O3. The host serves it |
 |---|---|---|---|
@@ -61,7 +61,7 @@ O1 changes nothing in the frames and keeps rule 2 (no network) exactly as it is;
 | Case | What happens with O1 | With URLs (M1, O3) |
 |---|---|---|
 | Mermaid (2.7 MB as one file, minified) used twice in host mode | one copy of the bytes; two frames each parse and compile it | the same, with the second compile from the code cache |
-| An editor rebuilding a widget's frame as it scrolls (sandbox.md Q6) | the module is compiled again each time the frame boots | from the code cache after the first |
+| An editor rebuilding a widget's frame as it scrolls ([the sandbox](running-components-in-the-sandbox.md), Q6) | the module is compiled again each time the frame boots | from the code cache after the first |
 | A visit after the first | the tarball from the resolver's cache, compiled again | the file from the HTTP cache, compiled code too |
 | Many uses of a small module (ten charts, 50 KB each) | ten compiles of a small file: little | about the same |
 
@@ -72,7 +72,7 @@ So O1's extra cost is compiling a large module again where a URL would have it c
 | Way | What it saves | What it needs |
 |---|---|---|
 | **A service worker serving the checked files as URLs** at the frames' origin, so a static host gets URLs without a server | it would have given the code cache and chunks for free | **not possible:** a frame with an opaque origin has no service worker, so its requests go to the network (checked 2026-10-31: the Service Worker spec's issue 1390 says no major browser hands them to one, and Chromium stopped doing it on purpose; the spike below confirms it in Chrome and WebKit) |
-| **Fewer frames that load the module** | one compile per frame that runs it | frame mode (one frame for the page), or keeping frames alive while an editor scrolls (`moveBefore`, sandbox.md Q6); host mode with ten diagrams stays ten compiles |
+| **Fewer frames that load the module** | one compile per frame that runs it | frame mode (one frame for the page), or keeping frames alive while an editor scrolls (`moveBefore`, [the sandbox](running-components-in-the-sandbox.md), Q6); host mode with ten diagrams stays ten compiles |
 | **Compile only what a document uses** | Mermaid's chunks for the diagram drawn, not all 2.7 MB | chunks (R7) |
 | **The code cache** | compiling again on later visits and in later frames | URLs from an origin the strict frame may load: the host's own (O3, a proxy) |
 | **Less than it looks** | browsers compile a function only when it first runs; a module's full cost is parsing it and compiling what it runs | measuring it |
@@ -105,7 +105,7 @@ const processed = process({ ...request, packs: { ...request.packs, ...packs } })
 
   | What | Kept by | Where | For how long | Not kept when |
   |---|---|---|---|---|
-  | A version's files (the tarball, checked and unpacked: the documents and the files they import, not the rest) | its integrity | memory, for the page's life; Cache Storage, across visits and offline | until the host's cache is cleared: a version's tarball never changes | there is no Cache Storage: a page with an opaque origin (an application's sandboxed editor, sandbox.md decision 2), a private window that refuses storage, or a host that turns it off; then memory only |
+  | A version's files (the tarball, checked and unpacked: the documents and the files they import, not the rest) | its integrity | memory, for the page's life; Cache Storage, across visits and offline | until the host's cache is cleared: a version's tarball never changes | there is no Cache Storage: a page with an opaque origin (an application's sandboxed editor, [the sandbox](running-components-in-the-sandbox.md), decision 2), a private window that refuses storage, or a host that turns it off; then memory only |
   | A pack's versions list (to resolve a range) | the registry's URL and the name | memory and Cache Storage | the registry's `max-age` (npm's is 300 seconds); offline, a stale list is used rather than none | — |
   | Nothing is fetched at all | — | — | — | an import with an exact version and an `integrity` whose files are in the cache |
 
@@ -196,9 +196,9 @@ A team's quarterly report, read on a static site with `"fetch": "direct"`, in ho
 
 About 0.8 s until every pack is there. The text, the tables and the CompMD containers render at once; the charts and diagrams show their fallback text (decision 7) until their packs arrive. An import with an exact version and `integrity` skips its versions request (npm's tarball URL follows from the name and version); a host's proxy (F1) could resolve a whole tree in one request, a later addition. On a later visit, nothing is fetched but expired versions lists (R4).
 
-**Frames.** A pack's imports don't make frames: frames follow trust (sandbox.md decision 1), so they are at most three deep (the host's page, a permissive frame, a strict frame), whatever the depth of the pack tree. Here, in host mode: seven strict frames (five charts, two diagrams) and the compile frame; in frame mode, one page frame and the compile frame.
+**Frames.** A pack's imports don't make frames: frames follow trust ([the sandbox](running-components-in-the-sandbox.md), decision 1), so they are at most three deep (the host's page, a permissive frame, a strict frame), whatever the depth of the pack tree. Here, in host mode: seven strict frames (five charts, two diagrams) and the compile frame; in frame mode, one page frame and the compile frame.
 
-**Memory and compiling**, estimated, to be measured when built (sandbox.md Q9):
+**Memory and compiling**, estimated, to be measured when built ([the sandbox](running-components-in-the-sandbox.md), Q9):
 
 | | Host mode | Frame mode |
 |---|---|---|
@@ -207,7 +207,7 @@ About 0.8 s until every pack is there. The text, the tables and the CompMD conta
 | Mermaid | compiled twice (once per diagram's frame), tens of ms each on a laptop, several times that on a phone, and tens of MB each once it draws | compiled once |
 | Charts | five small compiles | in the page's frame |
 
-So what grows with a document is frames, which the host chooses (sandbox.md Q1), not the depth of its packs; a large module costs a compile per frame that uses it, which frame mode or K3's code cache (R7) keeps down.
+So what grows with a document is frames, which the host chooses ([the sandbox](running-components-in-the-sandbox.md), Q1), not the depth of its packs; a large module costs a compile per frame that uses it, which frame mode or K3's code cache (R7) keeps down.
 
 ## R9. Libraries packs share (S3)
 

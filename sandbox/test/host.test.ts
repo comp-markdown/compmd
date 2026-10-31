@@ -1,5 +1,6 @@
-// The host runtime (docs/sandbox.md, decisions 1, 4, 5, 7, T4, T9, Q2): a document's uses in the host's page, trusted
-// inline and every other one in a frame of its level, with its code compiled in the document's compile frame.
+// The host runtime (docs/running-components-in-the-sandbox.md, decisions 1, 4, 5, 7, T4, T9, Q2): a document's uses
+// in the host's page, trusted inline and every other one in a frame of its level, with its code compiled in the
+// document's compile frame.
 
 import type { HostComponent } from "@compmd/processor";
 import type { ExpandedComponent, Mount } from "@compmd/render";
@@ -111,7 +112,7 @@ export default function Chart({ compmd }) {
   });
 
   // WebKit runs these frames in the page's own process, so a frame that spins freezes the host's page with it, and
-  // nothing in the page can stop it (docs/sandbox.md, what a browser can't stop).
+  // nothing in the page can stop it (docs/running-components-in-the-sandbox.md, what a browser can't stop).
   const webkit = !navigator.userAgent.includes("Chrome");
 
   it.skipIf(webkit)("stops a frame that stops answering, while the host's page goes on (T9)", async () => {

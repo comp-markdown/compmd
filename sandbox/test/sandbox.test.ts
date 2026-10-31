@@ -1,5 +1,5 @@
-// `createSandbox` (docs/sandbox.md, Q1, decision 2): one document in frame mode and in host mode, and a host's page
-// that is itself in a sandboxed frame.
+// `createSandbox` (docs/running-components-in-the-sandbox.md, Q1, decision 2): one document in frame mode and in host
+// mode, and a host's page that is itself in a sandboxed frame.
 
 import type { HostComponent } from "@compmd/processor";
 import type { ExpandedRoot, Mount } from "@compmd/render";

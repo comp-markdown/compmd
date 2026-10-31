@@ -1,5 +1,6 @@
-// A host's page that is itself in a sandboxed frame, as an editor that runs in a sandbox of its own (docs/sandbox.md,
-// decision 2): it opens a document in host mode and tells the test what its components did.
+// A host's page that is itself in a sandboxed frame, as an editor that runs in a sandbox of its own
+// (docs/running-components-in-the-sandbox.md, decision 2): it opens a document in host mode and tells the test what
+// its components did.
 
 import { createSandbox } from "../../src/index.ts";
 
