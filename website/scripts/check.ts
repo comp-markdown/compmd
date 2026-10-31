@@ -4,7 +4,7 @@
 // - Every page, light and dark, at a desktop's and a phone's width: no page errors, no failed requests, nothing wider
 //   than the window.
 // - The landing page: the hero goes live and follows an edit; the plain toggle switches; the input example follows its
-//   input; the JSX example renders in the playground's sandbox; a section chosen in the contents wheel scrolls into
+//   input; the JSX and code renderer examples render in the playground's sandbox; a section chosen in the contents wheel scrolls into
 //   view, and the wheel marks it.
 // - Every link within the site resolves.
 // - The spec: its contents, the section being read marked, the menu on a phone.
@@ -81,10 +81,16 @@ async function landingPage(browser: Browser): Promise<void> {
   await since.fill("2000");
   await page.waitForFunction(() => !document.querySelector("#what .feature:nth-of-type(3) .proof")?.textContent.includes("Dispossessed"));
 
-  await page.locator(".proof.framing").scrollIntoViewIfNeeded();
-  await page.waitForSelector(".proof.framed", { timeout: 15000 });
-  const meter = await page.frameLocator(".proof.framed iframe").locator("progress").getAttribute("value");
+  const framed = async (title: string) => {
+    const proof = page.locator(".feature", { has: page.getByRole("heading", { name: title }) }).locator(".proof");
+    await proof.scrollIntoViewIfNeeded();
+    await proof.and(page.locator(".framed")).waitFor({ timeout: 15000 });
+    return proof.frameLocator("iframe");
+  };
+  const meter = await (await framed("Components of your own")).locator("progress").getAttribute("value");
   check(meter === "72", `the JSX example rendered ${String(meter)} in the sandbox, not 72`);
+  const diagram = await (await framed("Code renderers")).locator("body").innerText();
+  check(diagram.includes("Draft → Review → Published"), `the code renderer example rendered "${diagram}" in the sandbox`);
 
   // The page scrolls smoothly, so the section arrives, and the wheel marks it, a moment after the click.
   await page.locator(".wheel a[href='#safe']").click();

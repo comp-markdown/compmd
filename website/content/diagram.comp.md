@@ -1,8 +1,8 @@
-```compmd component=mermaid signature
+```compmd component=minimermaid signature
 renders: mermaid
 ```
 
-```js component=mermaid
+```js component=minimermaid
 export default function mount(target, { params }) {
   const draw = ({ code }) => {
     const steps = code.replace("graph LR;", "").split("-->");

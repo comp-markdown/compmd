@@ -254,6 +254,11 @@ main > section.hero {
   border-collapse: collapse;
 }
 
+/* A code block's lines keep their breaks, so a long one scrolls inside its page, not the window. */
+.proof pre {
+  overflow-x: auto;
+}
+
 .proof :is(th, td) {
   padding: 4px 14px 4px 0;
   border-block-end: 1px solid var(--rule);

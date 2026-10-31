@@ -620,15 +620,15 @@ Some content is source in a language that tools outside CompMD already know: a d
 graph LR; Found --> Reading --> Read
 ```
 
-A plain renderer shows the code, and GitHub draws the diagram itself. Here, [`mermaid`](#:~:text=js%20component=mermaid), defined in the text, draws it, because its signature says `renders: mermaid`:
+A plain renderer shows the code, and GitHub draws the diagram itself. Here, [`minimermaid`](#:~:text=js%20component=minimermaid), defined in the text, draws it by hand, because its signature says `renders: mermaid`:
 
-```compmd component=mermaid signature
+```compmd component=minimermaid signature
 renders: mermaid
 params:
   theme: default | dark | neutral = default
 ```
 
-```js component=mermaid
+```js component=minimermaid
 import * as d3 from "d3";
 
 // Mermaid's simplest flowcharts: `graph LR` or `graph TD`, then chains of steps joined by `-->`, each `id` or `id[label]`.
@@ -653,46 +653,97 @@ function ranks(labels, edges) {
   return rank;
 }
 
+// A source of numbers in [0, 1) seeded by `text`, so a step's wobble is the same at every render.
+function wobbly(text) {
+  let h = 2166136261;
+  for (const c of text) h = Math.imul(h ^ c.codePointAt(0), 16777619);
+  return (amount) => {
+    h = Math.imul(h ^ (h >>> 15), 2246822507);
+    h = Math.imul(h ^ (h >>> 13), 3266489909);
+    return ((((h ^= h >>> 16) >>> 0) / 4294967296) - 0.5) * amount;
+  };
+}
+
+// A line drawn by hand: past its corners at both ends, a little off, and bowed in the middle.
+function stroke(jitter, x1, y1, x2, y2) {
+  const length = Math.hypot(x2 - x1, y2 - y1);
+  const [dx, dy] = [(x2 - x1) / length, (y2 - y1) / length];
+  const [before, after] = [4 + jitter(6), 4 + jitter(6)];
+  const bow = 2 + length / 18;
+  const start = [x1 - dx * before + jitter(4), y1 - dy * before + jitter(4)];
+  const end = [x2 + dx * after + jitter(4), y2 + dy * after + jitter(4)];
+  return `M${start} Q${(x1 + x2) / 2 + jitter(bow)},${(y1 + y2) / 2 + jitter(bow)} ${end}`;
+}
+
+// A box drawn by hand: each side twice, as a pen goes over it.
+function box(jitter, width, height) {
+  const corners = [[0, 0], [width, 0], [width, height], [0, height]];
+  return [1, 2].flatMap(() => corners.map((corner, i) => stroke(jitter, ...corner, ...corners[(i + 1) % 4]))).join(" ");
+}
+
+// An arrow from (x1, y1) to (x2, y2), leaving and arriving along the flow: a curve, and a head of two strokes.
+function arrow(jitter, across, x1, y1, x2, y2) {
+  const reach = (across ? x2 - x1 : y2 - y1) / 2;
+  const c1 = across ? [x1 + reach, y1 + jitter(14)] : [x1 + jitter(14), y1 + reach];
+  const c2 = across ? [x2 - reach, y2 + jitter(14)] : [x2 + jitter(14), y2 - reach];
+  const angle = Math.atan2(y2 - c2[1], x2 - c2[0]);
+  const barb = (turn) => `M${x2},${y2} L${x2 - 11 * Math.cos(angle + turn) + jitter(2)},${y2 - 11 * Math.sin(angle + turn) + jitter(2)}`;
+  return { line: `M${x1},${y1} C${c1} ${c2} ${x2},${y2}`, head: `${barb(0.5)} ${barb(-0.5)}` };
+}
+
 const THEMES = {
-  default: { fill: "color-mix(in srgb, var(--viz-series-1) 18%, transparent)", stroke: "var(--viz-series-1)", text: "currentColor" },
-  dark: { fill: "#2f3540", stroke: "#2f3540", text: "#fff" },
+  default: { fill: "color-mix(in srgb, var(--viz-series-1) 16%, transparent)", stroke: "var(--viz-series-1)", text: "currentColor" },
+  dark: { fill: "#2f3540", stroke: "#8d96a7", text: "#fff" },
   neutral: { fill: "none", stroke: "currentColor", text: "currentColor" },
 };
 
+const HAND = '"Bradley Hand", "Segoe Print", "Comic Sans MS", cursive';
+
 export default function mount(target, { params, fallback }) {
-  const svg = d3.select(target).append("svg").attr("role", "img").attr("aria-label", fallback.text).style("max-width", "100%");
+  const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const svg = d3.select(target).append("svg").attr("role", "img").attr("aria-label", fallback.text).style("max-width", "100%").style("overflow", "visible");
+  let drawn = false;
 
   function draw({ code, theme }) {
     svg.selectAll("*").remove();
     const { across, labels, edges } = parse(code);
     const rank = ranks(labels, edges);
     const colors = THEMES[theme];
-    const width = Math.max(0, ...[...labels.values()].map((label) => label.length * 7.5 + 28));
-    const height = 36;
+    const width = Math.max(0, ...[...labels.values()].map((label) => label.length * 8.5 + 36));
+    const height = 42;
     const filled = new Map();
     const at = new Map();
     for (const id of labels.keys()) {
       const r = rank.get(id);
       const n = filled.get(r) ?? 0;
       filled.set(r, n + 1);
-      at.set(id, across ? { x: r * (width + 48), y: n * (height + 16) } : { x: n * (width + 16), y: r * (height + 40) });
+      at.set(id, across ? { x: r * (width + 76), y: n * (height + 24) } : { x: n * (width + 24), y: r * (height + 56) });
     }
     const size = [...at.values()].reduce((max, { x, y }) => [Math.max(max[0], x + width), Math.max(max[1], y + height)], [0, 0]);
-    svg.attr("viewBox", [-1, -1, size[0] + 2, size[1] + 2]).attr("width", size[0] + 2);
+    svg.attr("viewBox", [-10, -10, size[0] + 20, size[1] + 20]).attr("width", size[0] + 20);
+    const ink = svg.append("g").attr("fill", "none").attr("stroke", "currentColor").attr("stroke-width", 1.6).attr("stroke-linecap", "round").attr("stroke-opacity", 0.7);
     for (const [from, to] of edges) {
       const a = at.get(from);
       const b = at.get(to);
-      const [x1, y1, x2, y2] = across ? [a.x + width, a.y + height / 2, b.x, b.y + height / 2] : [a.x + width / 2, a.y + height, b.x + width / 2, b.y];
-      const angle = Math.atan2(y2 - y1, x2 - x1);
-      const head = (turn) => [x2 - 9 * Math.cos(angle + turn), y2 - 9 * Math.sin(angle + turn)];
-      svg.append("path").attr("d", `M${x1},${y1}L${x2},${y2}`).attr("stroke", "currentColor").attr("stroke-opacity", 0.5);
-      svg.append("path").attr("d", `M${x2},${y2}L${head(0.45)}L${head(-0.45)}Z`).attr("fill", "currentColor").attr("fill-opacity", 0.5);
+      const ends = across ? [a.x + width + 4, a.y + height / 2, b.x - 6, b.y + height / 2] : [a.x + width / 2, a.y + height + 4, b.x + width / 2, b.y - 6];
+      const { line, head } = arrow(wobbly(from + to), across, ...ends);
+      const path = ink.append("path").attr("d", line);
+      const tip = ink.append("path").attr("d", head);
+      if (!drawn && !still) {
+        const length = path.node().getTotalLength();
+        path.attr("stroke-dasharray", length).attr("stroke-dashoffset", length).transition().delay(rank.get(from) * 260).duration(500).ease(d3.easeCubicOut).attr("stroke-dashoffset", 0);
+        tip.attr("opacity", 0).transition().delay(rank.get(from) * 260 + 450).duration(150).attr("opacity", 1);
+      }
     }
     for (const [id, { x, y }] of at) {
-      const step = svg.append("g").attr("transform", `translate(${x},${y})`);
-      step.append("rect").attr("width", width).attr("height", height).attr("rx", 6).attr("fill", colors.fill).attr("stroke", colors.stroke);
-      step.append("text").text(labels.get(id)).attr("x", width / 2).attr("y", height / 2).attr("text-anchor", "middle").attr("dominant-baseline", "central").attr("font-size", 14).attr("fill", colors.text);
+      const jitter = wobbly(id);
+      const step = svg.append("g").attr("transform", `translate(${x},${y}) rotate(${jitter(3)} ${width / 2} ${height / 2})`);
+      // The fill a little off the outline, as a marker leaves it.
+      step.append("rect").attr("x", 3 + jitter(6)).attr("y", 3 + jitter(6)).attr("width", width - 6).attr("height", height - 6).attr("rx", 10).attr("fill", colors.fill);
+      step.append("path").attr("d", box(jitter, width, height)).attr("fill", "none").attr("stroke", colors.stroke).attr("stroke-width", 1.5).attr("stroke-linecap", "round");
+      step.append("text").text(labels.get(id)).attr("x", width / 2).attr("y", height / 2).attr("text-anchor", "middle").attr("dominant-baseline", "central").attr("font-family", HAND).attr("font-size", 17).attr("fill", colors.text);
     }
+    drawn = true;
   }
 
   draw(params);
@@ -707,9 +758,9 @@ The block's text is the component's `code` param, which a renderer has without d
 
 A code block is never interpolated: `{{…}}` in it stays as written, as in any code block. Source computed from data is the job of the same component written as a leaf, with `code` as a param. This diagram is made from the `stages` key of the frontmatter:
 
-:: mermaid[The stages: Found, Reading and Read] {code=("graph TD; " + md.doc.stages.join(" --> "))}
+:: minimermaid[The stages: Found, Reading and Read] {code=("graph TD; " + md.doc.stages.join(" --> "))}
 
-This `mermaid` is a small one, written for this tutorial: it draws chains of steps, and nothing else of Mermaid. A pack can provide all of Mermaid, and a document that imports it instead keeps its blocks as they are.
+`minimermaid` is a small one, written for this tutorial: it draws chains of steps, by hand, and nothing else of Mermaid. A pack can provide all of Mermaid, and a document that imports it instead keeps its blocks as they are.
 
 > [!TIP]
 > **Try it.** Add ` --> Shelved` to the end of [`graph LR; Found --> Reading --> Read`](#:~:text=graph%20LR%3B%20Found), and the first diagram grows a step. Change `theme=neutral` to `theme=dark`. Then add `Lent` to [`stages: [Found, Reading, Read]`](#:~:text=stages:%20%5BFound) in the frontmatter, and the second follows. Delete [`alt="A book is found, then reading, then read"`](#:~:text=alt=%22A%20book%20is%20found): the diagnostic asks for a text alternative.
