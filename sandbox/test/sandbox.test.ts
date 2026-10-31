@@ -42,9 +42,9 @@ function open(page: "frame" | "host") {
   areas.push(area);
   const view = createSandbox({ base: frames, page, trusted: { stars } }).open(area, { components });
   views.push(view);
-  const events: { [T in keyof ViewEvents]: ViewEvents[T][] } = { set: [], link: [], error: [] };
+  const events: { [T in keyof ViewEvents]: ViewEvents[T][] } = { set: [], link: [], error: [], rendered: [] };
   const waiters: (() => void)[] = [];
-  for (const type of ["set", "link", "error"] as const) {
+  for (const type of ["set", "link", "error", "rendered"] as const) {
     view.on(type, (event) => {
       (events[type] as unknown[]).push(event);
       for (const waiter of waiters) waiter();
@@ -66,7 +66,7 @@ function open(page: "frame" | "host") {
 describe("createSandbox", () => {
   it("renders the page in one strict frame, where only strict components run (frame mode)", async () => {
     const { area, events, until } = open("frame");
-    await until(() => events.set.length >= 1 && events.error.length >= 2);
+    await until(() => events.set.length >= 1 && events.error.length >= 2 && events.rendered.length >= 1);
     expect(events.set).toEqual([{ input: "chart", value: JSON.stringify({ origin: "null" }) }]);
     expect(events.error.map(({ component, reason }) => [component, reason]).sort()).toEqual([
       ["map", "not-here"],
@@ -77,7 +77,7 @@ describe("createSandbox", () => {
 
   it("renders the page in the host's page, trusted inline and the rest in frames (host mode)", async () => {
     const { area, events, until } = open("host");
-    await until(() => events.set.length >= 3);
+    await until(() => events.set.length >= 3 && events.rendered.length >= 1);
     expect(Object.fromEntries(events.set.map(({ input, value }) => [input, JSON.parse(value as string) as unknown]))).toEqual({
       chart: { origin: "null" },
       map: { origin: "null" },

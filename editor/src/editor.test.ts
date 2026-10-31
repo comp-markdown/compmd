@@ -1,9 +1,10 @@
+import type { HostComponent } from "@compmd/processor";
 import type { Change } from "@compmd/render";
-import type { FrameConnection, FrameMessage, SpliceOptions } from "@compmd/render/frame";
+import type { ViewEvents, ViewSpliceOptions } from "@compmd/sandbox";
 import { describe, expect, it } from "vitest";
 import type { Example } from "./documents.ts";
 import { Editor, type Frame } from "./editor.ts";
-import type { ComponentFailed, ComponentsMessage, FromWorker, ToWorker } from "./protocol.ts";
+import type { FromWorker, ToWorker } from "./protocol.ts";
 import type { WorkerPort } from "./session.ts";
 
 class FakeWorker implements WorkerPort {
@@ -20,35 +21,24 @@ class FakeWorker implements WorkerPort {
   }
 }
 
-type Listener = (message: FrameMessage) => void;
+type Listener = (event: unknown) => void;
 
-/** A frame that records what it is sent, and lets the test send what a frame would. */
+/** A page in its sandbox that records what it is sent, and lets the test report what the page would. */
 class FakeFrame implements Frame {
-  readonly sent: (["splice", readonly unknown[], Change | undefined, SpliceOptions | undefined] | ["components", ComponentsMessage])[] = [];
+  readonly sent: (["splice", readonly unknown[], Change | undefined, ViewSpliceOptions | undefined] | ["components", readonly HostComponent[]])[] = [];
   readonly #listeners = new Map<string, Listener[]>();
-  #failed: ((failed: ComponentFailed) => void) | undefined;
-  readonly connection: FrameConnection = {
-    render: () => {
-      throw new Error("the editor sends splices");
-    },
-    splice: (splices, change, options) => this.sent.push(["splice", splices, change, options]),
-    theme: () => undefined,
-    on: (type, listener) => {
-      this.#listeners.set(type, [...(this.#listeners.get(type) ?? []), listener as Listener]);
-    },
-    close: () => undefined,
-  };
-  send(message: ComponentsMessage): void {
-    this.sent.push(["components", message]);
+  splice(splices: readonly unknown[], change?: Change, options?: ViewSpliceOptions): void {
+    this.sent.push(["splice", splices, change, options]);
   }
-  onFailed(listener: (failed: ComponentFailed) => void): void {
-    this.#failed = listener;
+  components(components: readonly HostComponent[]): Promise<void> {
+    this.sent.push(["components", components]);
+    return Promise.resolve();
   }
-  emit(message: FrameMessage): void {
-    for (const listener of this.#listeners.get(message.type) ?? []) listener(message);
+  on<T extends keyof ViewEvents>(type: T, listener: (event: ViewEvents[T]) => void): void {
+    this.#listeners.set(type, [...(this.#listeners.get(type) ?? []), listener as Listener]);
   }
-  fail(failed: ComponentFailed): void {
-    this.#failed?.(failed);
+  emit<T extends keyof ViewEvents>(type: T, event: ViewEvents[T]): void {
+    for (const listener of this.#listeners.get(type) ?? []) listener(event);
   }
 }
 
@@ -77,16 +67,18 @@ describe("Editor", () => {
     const { worker, frame, editor } = setup();
     expect(editor.open(example)).toBe("Hello");
     expect(worker.received).toEqual([{ type: "open", request: opened, caret: 0 }]);
-    worker.answer(processed(["whole"], { opened: true, components: [{ name: "c", language: "js", code: "x" }], ms: 2 }));
+    const component: HostComponent = { name: "c", language: "js", code: "x", trust: { level: "strict" } };
+    worker.answer(processed(["whole"], { opened: true, components: [component], ms: 2 }));
     expect(frame.sent).toEqual([
-      ["components", { type: "components", components: [{ name: "c", language: "js", code: "x" }] }],
-      ["splice", ["whole"], { text: "Hello", diagnostics: [] }, { replace: true }],
+      ["components", [component]],
+      ["splice", ["whole"], { text: "Hello", diagnostics: [] }, { replace: true, inputs: {} }],
     ]);
     editor.beforeInput({ start: 5, end: 5 });
     editor.input("Hello!", 6);
     expect(worker.received[1]).toEqual({ type: "edits", edits: [{ start: 5, end: 5, text: "!" }], caret: 6 });
-    worker.answer(processed(["typed"], { diagnostics: [diagnostic(), diagnostic("b.comp.md")] }));
-    expect(frame.sent[2]).toEqual(["splice", ["typed"], { text: "Hello!", diagnostics: [{ code: "F002", line: 3, column: 4 }] }, { replace: false }]);
+    const inputs = { region: { type: "string", value: "eu" } };
+    worker.answer(processed(["typed"], { diagnostics: [diagnostic(), diagnostic("b.comp.md")], inputs }));
+    expect(frame.sent[2]).toEqual(["splice", ["typed"], { text: "Hello!", diagnostics: [{ code: "F002", line: 3, column: 4 }] }, { replace: false, inputs }]);
     expect(editor.state.diagnostics).toHaveLength(2);
     expect(editor.state.processing.values).toEqual([2, 1]);
   });
@@ -140,10 +132,10 @@ describe("Editor", () => {
     const { worker, frame, editor } = setup();
     editor.open(example, 0);
     worker.answer(processed(["whole"], { opened: true }));
-    frame.emit({ type: "rendered", ms: 3 });
+    frame.emit("rendered", { ms: 3 });
     expect(editor.state.painted.count).toBe(1);
     expect(editor.state.rendering.values).toEqual([3]);
-    frame.emit({ type: "rendered", ms: 3 });
+    frame.emit("rendered", { ms: 3 });
     expect(editor.state.painted.count).toBe(1);
   });
 
@@ -154,7 +146,7 @@ describe("Editor", () => {
     editor.beforeInput({ start: 0, end: 0 });
     editor.input("Oh Hello", 3);
     worker.answer(processed(["typed"]));
-    frame.emit({ type: "set", input: "region", value: "eu" });
+    frame.emit("set", { input: "region", value: "eu" });
     expect(worker.received[2]).toEqual({
       type: "open",
       request: { ...opened, files: { "a.comp.md": "Oh Hello", "b.csv": "x" }, inputs: { region: "eu" } },
@@ -167,15 +159,16 @@ describe("Editor", () => {
     expect(worker.received[3]).toMatchObject({ type: "open", request: { inputs: { region: "eu", live: true } } });
   });
 
-  it("lists what the worker and the frame couldn't do, once each, until the components change", () => {
+  it("lists what the worker and the page couldn't do, once each, until the components change", () => {
     const { worker, frame, editor, changes } = setup();
     editor.open(example);
     worker.answer({ type: "failed", message: "bad request" });
     expect(editor.state.problems).toEqual(["bad request"]);
-    frame.fail({ type: "component-failed", component: "chart", message: "does not compile" });
-    frame.fail({ type: "component-failed", component: "chart", message: "does not compile" });
-    frame.emit({ type: "error", reason: "threw", component: "board", message: "boom" });
-    frame.emit({ type: "error", reason: "no-container", message: "no container" });
+    frame.emit("error", { component: "chart", reason: "failed", message: "does not compile" });
+    frame.emit("error", { component: "chart", reason: "failed", message: "does not compile" });
+    frame.emit("error", { component: "board", reason: "threw", message: "boom" });
+    // The page's own problem, such as breakpoints with no container, names no component.
+    frame.emit("error", { component: "", reason: "threw", message: "no container" });
     expect(editor.state.problems).toEqual(["bad request", "chart: does not compile", "board: boom"]);
     editor.beforeInput({ start: 0, end: 0 });
     editor.input("x", 1);

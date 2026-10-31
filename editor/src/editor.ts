@@ -1,13 +1,12 @@
-// The editor's loop: each input in the text area becomes an edit, the worker processes it, and the frame applies the
-// splices it gave, which the editor passes on unread. An input component's `set` in the frame, or the inputs panel,
-// opens the document again with the new value. It times each change from its first key press to the frame painted.
+// The editor's loop: each input in the text area becomes an edit, the worker processes it, and the page's sandbox
+// applies the splices it gave, which the editor passes on unread. An input component's `set` on the page, or the inputs
+// panel, opens the document again with the new value. It times each change from its first key press to the page painted.
 
 import type { Diagnostic, ExpandedInput, PositionalHint, Request } from "@compmd/processor";
 import type { Change } from "@compmd/render";
-import type { FrameConnection } from "@compmd/render/frame";
+import type { View } from "@compmd/sandbox";
 import { editOf, fixOf, type Selection } from "./edit.ts";
 import type { Example } from "./documents.ts";
-import type { ComponentFailed, ComponentsMessage, HostStyleMessage } from "./protocol.ts";
 import { Session, type Hinted, type Update, type WorkerPort } from "./session.ts";
 import { Timings } from "./timings.ts";
 
@@ -36,14 +35,8 @@ export interface Replaced {
   caret: number;
 }
 
-/** The frame's end the editor uses: the render protocol, and the port it shares for components. */
-export interface Frame {
-  connection: FrameConnection;
-  /** Sends the components to compile, on the same port as the splices, so they come first; or the host's stylesheet. */
-  send(message: ComponentsMessage | HostStyleMessage): void;
-  /** Calls `listener` with each component the frame couldn't run. */
-  onFailed(listener: (failed: ComponentFailed) => void): void;
-}
+/** What the editor uses of the document's view in its sandbox: its splices, its components and what it reports. */
+export type Frame = Pick<View, "splice" | "components" | "on">;
 
 /** A processor diagnostic as the renderer's rules for invalid text read it: the processed document's only. */
 const forRenderer = (diagnostics: Diagnostic[]): NonNullable<Change["diagnostics"]> =>
@@ -83,21 +76,19 @@ export class Editor {
         onChange();
       },
     );
-    frame.connection.on("rendered", ({ ms }) => {
+    frame.on("rendered", ({ ms }) => {
       const since = this.#rendering.shift();
       if (since === undefined) return;
       this.state.painted.add(performance.now() - since);
       this.state.rendering.add(ms);
       onChange();
     });
-    frame.connection.on("set", ({ input, value }) => {
+    frame.on("set", ({ input, value }) => {
       this.setInput(input, value);
     });
-    frame.connection.on("error", ({ component, message }) => {
-      if (component !== undefined) this.#problem(`${component}: ${message}`);
-    });
-    frame.onFailed(({ component, message }) => {
-      this.#problem(`${component}: ${message}`);
+    // A component that couldn't compile, load or run, or isn't allowed where it is used; a page's own problem has none.
+    frame.on("error", ({ component, message }) => {
+      if (component) this.#problem(`${component}: ${message}`);
     });
   }
 
@@ -175,10 +166,10 @@ export class Editor {
   }
 
   #updated(update: Update): void {
-    if (update.components) this.#frame.send({ type: "components", components: update.components });
+    if (update.components) void this.#frame.components(update.components);
     const change: Change = { text: update.text, diagnostics: forRenderer(update.diagnostics) };
     this.#rendering.push(update.since);
-    this.#frame.connection.splice(update.splices, change, { replace: update.opened });
+    this.#frame.splice(update.splices, change, { replace: update.opened, inputs: update.inputs });
     this.state.diagnostics = update.diagnostics;
     this.state.inputs = update.inputs;
     this.#processed = update.text;

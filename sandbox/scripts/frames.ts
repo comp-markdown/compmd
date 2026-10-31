@@ -16,6 +16,8 @@ await rm(OUT, { recursive: true, force: true });
 await build({
   configFile: false,
   root: ROOT,
+  // Its chunks load next to it, wherever a host serves the frame documents.
+  base: "./",
   logLevel: "warn",
   // Compiles `@compmd/render`'s Svelte binding, whose runes are Svelte's.
   plugins: [svelte()],

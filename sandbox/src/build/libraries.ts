@@ -117,6 +117,7 @@ export async function buildLibraries(libraries: readonly Library[], options: Lib
     await build({
       configFile: false,
       root: options.root,
+      base: "./",
       logLevel: "warn",
       plugins: [entries(library, all, require)],
       define: { "process.env.NODE_ENV": '"production"' },

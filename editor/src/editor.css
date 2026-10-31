@@ -677,6 +677,11 @@ textarea::selection {
   overflow: hidden;
 }
 
+/* Where the sandbox puts the page's frame, which fills it. */
+.page-frame {
+  height: 100%;
+}
+
 /* The trees: JSON that folds. */
 
 .tree-tools {

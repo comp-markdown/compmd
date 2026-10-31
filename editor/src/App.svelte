@@ -1,23 +1,23 @@
 <!-- The editor: the document's text on the left, with the hint at the caret and the diagnostics under it; on the right, the host's stylesheet
      the author picks and the document's inputs over tabs with the rendered page in a sandboxed frame, what a plain
      Markdown renderer shows, what the frontmatter gives the render, the components the document can name, and its
-     trees. Each document opens with a worker and a frame of its own. -->
+     trees. Each document opens with a worker and a page of its own, in `@compmd/sandbox`'s strict frame. -->
 <script lang="ts">
   import type { Range } from "@compmd/processor";
-  import { connectFrame } from "@compmd/render/frame";
-  import { tick } from "svelte";
+  import { createSandbox, type View as Page } from "@compmd/sandbox";
+  import { tick, untrack } from "svelte";
   import ComponentsView from "./ComponentsView.svelte";
   import DataView from "./DataView.svelte";
   import { EXAMPLES, exampleIndex, type SupportingFile } from "./documents.ts";
   import { offsetOf } from "./edit.ts";
-  import { Editor, type EditorState, type Frame, type Replaced } from "./editor.ts";
+  import { Editor, type EditorState, type Replaced } from "./editor.ts";
   import { lineOf } from "./hint.ts";
   import Inputs from "./Inputs.svelte";
   import JsonTree from "./JsonTree.svelte";
   import Split from "./Split.svelte";
   import { caretTop } from "./caret.ts";
   import { directiveFor, findPassage, fragmentOf, parseFragment, type Passage } from "./fragment.ts";
-  import { FRAME_HELLO, HOST_STYLES, type ComponentFailed, type HostStyle, type OpenLink, type SourceLink } from "./protocol.ts";
+  import { HOST_STYLES, type HostStyle } from "./protocol.ts";
   import { keep, recall } from "./stored.ts";
   import { plainPage, ViewsClient, type View, type ViewKind } from "./views.ts";
   import markDark from "../../logo/mark-dark.svg";
@@ -67,11 +67,16 @@
   /** The host's stylesheet the page shows in, remembered between visits. */
   const STYLE_KEY = "compmd-editor-host-style";
   let hostStyle: HostStyle = $state(HOST_STYLES.find(({ id }) => id === recall(STYLE_KEY))?.id ?? "reference");
-  let frame: Frame | undefined;
+  let page: Page | undefined;
+  /** The host's stylesheet as the page's frames load it: one file, each stylesheet under its own link. */
+  const stylesheetOf = (style: HostStyle) => [new URL(`./frame.css?host=${style}`, location.href).href];
   $effect(() => {
     keep(STYLE_KEY, hostStyle);
-    frame?.send({ type: "host-style", style: hostStyle });
+    page?.styles(stylesheetOf(hostStyle));
   });
+
+  /** The playground's sandbox: the frame documents in `public/sandbox/`, each page in a strict frame of its own. */
+  const sandbox = createSandbox({ base: "./sandbox/" });
 
   /** What the page is for: open on the first visit, until it is closed. */
   const ABOUT_KEY = "compmd-editor-about";
@@ -155,31 +160,19 @@
     }
   }
 
-  /** Opens the chosen document once its frame has loaded. */
-  function start(iframe: HTMLIFrameElement): void {
+  /** Opens the chosen document in a page of its own, in `container`; the returned function closes it. */
+  function start(container: HTMLElement): () => void {
     worker?.terminate();
     worker = new Worker(new URL("./worker.ts", import.meta.url), { type: "module" });
-    const { port1, port2 } = new MessageChannel();
-    iframe.contentWindow?.postMessage(FRAME_HELLO, "*", [port2]);
-    const connected: Frame = {
-      connection: connectFrame(port1),
-      send: (message) => {
-        port1.postMessage(message);
-      },
-      onFailed: (listener) => {
-        port1.addEventListener("message", ({ data }: MessageEvent<{ type?: string }>) => {
-          if (data.type === "component-failed") listener(data as ComponentFailed);
-        });
-      },
-    };
-    port1.addEventListener("message", ({ data }: MessageEvent<{ type?: string }>) => {
-      if (data.type === "source-link") void showPassage((data as SourceLink).fragment);
-      // Only to another site, as the frame sends it: never a script or a page of the playground's own.
-      if (data.type === "open-link" && /^(https?|mailto):/i.test((data as OpenLink).url)) open((data as OpenLink).url, "_blank", "noopener,noreferrer");
+    const view = sandbox.open(container, { components: [] });
+    view.styles(stylesheetOf(hostStyle));
+    view.on("link", ({ url }) => {
+      if (url.includes(":~:text=")) void showPassage(url);
+      // Only to another site, a reader's click the sandbox passes on: never a script or a page of the playground's own.
+      else if (/^(https?|mailto):/i.test(url)) open(url, "_blank", "noopener,noreferrer");
     });
-    frame = connected;
-    connected.send({ type: "host-style", style: hostStyle });
-    const opened = new Editor(worker, connected, () => {
+    page = view;
+    const opened = new Editor(worker, view, () => {
       shown = { ...opened.state };
     });
     editor = opened;
@@ -189,6 +182,9 @@
     shared = undefined;
     // For the bench, which reads the timings.
     (window as { compmdEditor?: Editor }).compmdEditor = opened;
+    return () => {
+      view.destroy();
+    };
   }
 
   const ms = (value: number | undefined) => (value === undefined ? "–" : `${value.toFixed(1)} ms`);
@@ -395,9 +391,7 @@
     <!-- The page stays mounted under the other tabs, so its components keep their state. -->
     <div class="view page-view" id="view-page" role="tabpanel" aria-labelledby="tab-page" hidden={tab !== "page"}>
       {#key chosen}
-        <iframe title="The rendered page" sandbox="allow-scripts" src="./frame.html" onload={({ currentTarget }) => {
-            if (currentTarget instanceof HTMLIFrameElement) start(currentTarget);
-          }}></iframe>
+        <div class="page-frame" {@attach (container) => untrack(() => start(container))}></div>
       {/key}
     </div>
     {#if tab !== "page"}

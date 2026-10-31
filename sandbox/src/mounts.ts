@@ -15,6 +15,8 @@ export interface Framed extends NodesMounted {
   code(components: readonly ComponentCode[]): void;
   /** The page's theme tokens (spec §9.4), which a frame's document doesn't inherit. */
   theme(tokens: Readonly<Record<string, string>>): void;
+  /** The host's stylesheets, in place of those the frame had. */
+  styles(urls: readonly string[]): void;
   /** Calls `listener` if the frame stops answering, or is of another protocol version. */
   failed(listener: (message: string) => void): void;
 }
@@ -77,6 +79,11 @@ export class Mounts {
   theme(tokens: Readonly<Record<string, string>>): void {
     this.#tokens = tokens;
     for (const frame of this.#frames) frame.theme(tokens);
+  }
+
+  /** Gives every frame on the page the host's stylesheets; those made later get them from `frame`. */
+  styles(urls: readonly string[]): void {
+    for (const frame of this.#frames) frame.styles(urls);
   }
 
   #mountOf(component: ComponentCode): Mount | undefined {

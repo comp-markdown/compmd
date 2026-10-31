@@ -60,10 +60,12 @@ export class HostRuntime {
   #code: ComponentCode[] = [];
   #trust = new Map<string, Trust>();
   #compiler: { compiler: Compiler; frame: HTMLIFrameElement } | undefined;
+  #styles: readonly string[];
 
   constructor(options: HostRuntimeOptions, events: HostEvents) {
     this.#options = options;
     this.#events = events;
+    this.#styles = options.stylesheets ?? [];
     this.#mounts = new Mounts({
       here: "host",
       inline: options.trusted ?? {},
@@ -117,6 +119,12 @@ export class HostRuntime {
         region.destroy();
       },
     };
+  }
+
+  /** The host's stylesheets for the document's frames, in place of `stylesheets`. */
+  styles(urls: readonly string[]): void {
+    this.#styles = urls;
+    this.#mounts.styles(urls);
   }
 
   /** Gives the document's frames the page's theme tokens (spec §9.4), which their documents don't inherit. */
@@ -187,7 +195,7 @@ export class HostRuntime {
             },
           }
         : {}),
-      ...(this.#options.stylesheets ? { styles: this.#options.stylesheets } : {}),
+      styles: this.#styles,
       ping: { every: 1000, timeout: this.#options.timeout ?? 5000 },
       on: {
         set: ({ input, value }) => {
@@ -216,6 +224,9 @@ export class HostRuntime {
       },
       theme: (tokens: Readonly<Record<string, string>>) => {
         frame.theme(tokens);
+      },
+      styles: (urls: readonly string[]) => {
+        frame.styles(urls);
       },
       failed: (listener: (message: string) => void) => {
         failed = listener;

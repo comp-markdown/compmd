@@ -1,2 +1,2 @@
-# The shared libraries and their import map, made by `pnpm libs`.
-public/libs/
+# The sandbox's frame documents and their libraries, made by `pnpm frames`.
+public/sandbox/

@@ -53,7 +53,7 @@ describe("a strict frame", () => {
     expect(await hits(denied, tag)).toEqual([]);
     // What a browser can't stop (docs/sandbox.md): styles, fonts and prefetches the policy allows from the frames'
     // own origin, the host's, carry a query string there, and nothing else does.
-    const atHost = (await hits(frames, tag)).map((hit) => hit.slice(`/attempt?${tag}-`.length));
+    const atHost = (await hits(frames, tag)).map((hit) => hit.slice(hit.indexOf(`?${tag}-`) + `?${tag}-`.length));
     expect(atHost.filter((kind) => !["font", "style", "prefetch"].includes(kind))).toEqual([]);
   });
 
@@ -85,7 +85,7 @@ describe("a strict frame", () => {
       await new Promise((resolve) => setTimeout(resolve, 300));
       return { opened, here: location.pathname };
     }`);
-    expect(result).toEqual({ opened: "refused", here: "/strict.html" });
+    expect(result).toEqual({ opened: "refused", here: "/sandbox/strict.html" });
     await pause(200);
     expect(await hits(denied, tag)).toEqual([]);
   });

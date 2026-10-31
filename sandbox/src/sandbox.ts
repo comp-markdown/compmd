@@ -21,6 +21,8 @@ export interface ViewEvents {
   /** A reader clicked a link in the page; the host shows its URL before it opens (spec §15 rule 4). */
   link: { url: string };
   error: { component: string; reason: ErrorReason; message: string };
+  /** A render or splice is painted, `ms` after it started. */
+  rendered: { ms: number };
 }
 
 /** How a host sends splices. */
@@ -41,6 +43,8 @@ export interface View {
   /** The document's components are now `components`: resolves once each is compiled, or has failed. */
   components(components: readonly HostComponent[]): Promise<void>;
   theme(tokens: Record<string, string>): void;
+  /** The host's stylesheets for the page and its frames, in place of `stylesheets`; served from the frames' origin. */
+  styles(urls: readonly string[]): void;
   on<T extends keyof ViewEvents>(type: T, listener: (event: ViewEvents[T]) => void): void;
   destroy(): void;
 }
@@ -51,6 +55,10 @@ export interface Sandbox {
 }
 
 type Listeners = { [T in keyof ViewEvents]: ((event: ViewEvents[T]) => void)[] };
+
+/** The components' names and levels, which decide each use's mount; their code doesn't. */
+const shapeOf = (components: readonly HostComponent[]): string =>
+  components.map(({ name, trust, module }) => `${name}:${trust.level}:${module ? "module" : "source"}`).join("\n");
 
 /**
  * A sandbox for a host's documents.
@@ -64,7 +72,7 @@ type Listeners = { [T in keyof ViewEvents]: ((event: ViewEvents[T]) => void)[] }
 export function createSandbox(options: SandboxOptions): Sandbox {
   return {
     open(container, { components }) {
-      const listeners: Listeners = { set: [], link: [], error: [] };
+      const listeners: Listeners = { set: [], link: [], error: [], rendered: [] };
       const emit = <T extends keyof ViewEvents>(type: T, event: ViewEvents[T]) => {
         for (const listener of listeners[type]) listener(event);
       };
@@ -80,9 +88,14 @@ export function createSandbox(options: SandboxOptions): Sandbox {
         },
       });
       const page = options.page === "host" ? hostPage(container, runtime, emit) : framePage(container, runtime, options, emit);
-      const ready = runtime.set(components).then(() => {
+      /**
+       * The page's components, compiled. Trees and splices wait for components of names or levels the page hasn't
+       * had, so their uses mount with code; new code for the same ones swaps in where they are mounted.
+       */
+      let ready = runtime.set(components).then(() => {
         page.code();
       });
+      let shape = shapeOf(components);
       return {
         render: (tree, change) => {
           void ready.then(() => {
@@ -94,13 +107,23 @@ export function createSandbox(options: SandboxOptions): Sandbox {
             page.splice(splices, change, spliceOptions);
           });
         },
-        components: async (next) => {
-          await runtime.set(next);
-          page.code();
+        components: (next) => {
+          const loading = ready.then(async () => {
+            await runtime.set(next);
+            page.code();
+          });
+          const nextShape = shapeOf(next);
+          if (nextShape !== shape) ready = loading;
+          shape = nextShape;
+          return loading;
         },
         theme: (tokens) => {
           runtime.theme(tokens);
           page.theme(tokens);
+        },
+        styles: (urls) => {
+          runtime.styles(urls);
+          page.styles(urls);
         },
         on: (type, listener) => {
           listeners[type].push(listener);
@@ -121,6 +144,7 @@ interface PageEnd {
   /** The runtime's code changed. */
   code(): void;
   theme(tokens: Record<string, string>): void;
+  styles(urls: readonly string[]): void;
   destroy(): void;
 }
 
@@ -137,18 +161,32 @@ function hostPage(container: HTMLElement, runtime: HostRuntime, emit: Emit): Pag
       if ("component" in error) emit("error", { component: error.component, reason: error.reason, message: error.error instanceof Error ? error.error.message : "" });
     },
   });
+  /** Reports a render once it is painted: after the next frame, and once the browser has drawn it. */
+  const painted = (started: number) => {
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        emit("rendered", { ms: performance.now() - started });
+      }, 0);
+    });
+  };
   // A link in the page is the host's own to open, as any of its links; links in frames come as `link`.
   return {
     render: (tree, change) => {
+      const started = performance.now();
       page.render(tree, change);
+      painted(started);
     },
     splice: (splices, change) => {
+      const started = performance.now();
       page.splice(splices.map((splice) => (typeof splice === "string" ? (JSON.parse(splice) as Splice) : splice)), change);
+      painted(started);
     },
     code: () => undefined,
     theme: (tokens) => {
       page.theme(tokens);
     },
+    // The host's page has its own stylesheets; the runtime gives these to its frames.
+    styles: () => undefined,
     destroy: () => {
       page.destroy();
     },
@@ -178,6 +216,9 @@ function framePage(container: HTMLElement, runtime: HostRuntime, options: Sandbo
   child.on("error", ({ reason, component, message }) => {
     emit("error", { component: component ?? "", reason, message });
   });
+  child.on("rendered", (event) => {
+    emit("rendered", event);
+  });
   child.on("failed", (failure) => {
     emit("error", { component: "", reason: "threw", message: failure.reason === "hung" ? "the page's frame stopped answering" : `the page's frame is of protocol version ${String(failure.version)}` });
   });
@@ -200,6 +241,9 @@ function framePage(container: HTMLElement, runtime: HostRuntime, options: Sandbo
     },
     theme: (tokens) => {
       frame.theme(tokens);
+    },
+    styles: (urls) => {
+      child.styles([...urls]);
     },
     destroy: () => {
       frame.close();

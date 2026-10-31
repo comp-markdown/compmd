@@ -6,9 +6,9 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "libs": "node scripts/libs.ts",
-    "dev": "pnpm libs && vite",
-    "build": "pnpm libs && vite build",
+    "frames": "node scripts/frames.ts",
+    "dev": "pnpm frames && vite",
+    "build": "pnpm frames && vite build",
     "preview": "vite preview",
     "lint": "eslint . && tsc --noEmit && svelte-check --tsconfig ./tsconfig.json --fail-on-warnings --output machine",
     "test": "vitest run",
@@ -17,12 +17,9 @@
   "dependencies": {
     "@compmd/processor": "workspace:*",
     "@compmd/render": "workspace:*",
+    "@compmd/sandbox": "workspace:*",
     "d3": "7.9.0",
-    "react": "19.3.0",
-    "react-dom": "19.3.0",
-    "sucrase": "3.35.1",
-    "svelte": "5.57.2",
-    "temml": "0.14.0"
+    "svelte": "5.57.2"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

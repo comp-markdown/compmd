@@ -64,13 +64,22 @@ function styles(urls: readonly string[]): void {
   }
 }
 
-/** A link a reader clicked goes to the parent, which decides what opens; a component may not navigate (spec §15). */
+/**
+ * A link a reader clicked goes to the parent, which decides what opens; a component may not navigate (spec §15). A
+ * link to a place in the page (a footnote) goes there; one to a passage of the text (`#:~:text=`) is the parent's, and
+ * a press on it leaves the focus where it is, as an editor's selection needs.
+ */
 function forwardLinks(parent: FrameEnd): void {
+  const linkOf = (target: EventTarget | null) => (target instanceof Element ? target.closest("a[href]") : null);
+  const inPage = (href: string) => href.startsWith("#") && !href.includes(":~:text=");
+  document.addEventListener("mousedown", (event) => {
+    if (linkOf(event.target)?.getAttribute("href")?.includes(":~:text=")) event.preventDefault();
+  });
   document.addEventListener("click", (event) => {
-    const link = event.target instanceof Element ? event.target.closest("a[href]") : null;
-    if (!link) return;
+    const href = linkOf(event.target)?.getAttribute("href");
+    if (href === undefined || href === null || inPage(href)) return;
     event.preventDefault();
-    if (event.isTrusted) parent.link(link.getAttribute("href") ?? "");
+    if (event.isTrusted) parent.link(href);
   });
 }
 
@@ -85,6 +94,8 @@ function reportSize(parent: FrameEnd): void {
 function start(port: MessagePort): void {
   let level: Level = "strict";
   let components: readonly ComponentCode[] = [];
+  /** The host's stylesheets, which this frame's nested frames get too. */
+  let stylesheets: readonly string[] = [];
   // Every callback below runs on a message, after `parent` is set at the end.
   const report = (name: string, reason: ErrorReason, message: string) => {
     parent.error(reason, message, name);
@@ -108,6 +119,7 @@ function start(port: MessagePort): void {
         code: codeFor(components, "strict"),
         node,
         inputs,
+        styles: stylesheets,
         ping: { every: 1000, timeout: 5000 },
         on: {
           set: ({ input, value }) => {
@@ -136,6 +148,9 @@ function start(port: MessagePort): void {
         },
         theme: (tokens) => {
           frame.theme(tokens);
+        },
+        styles: (urls) => {
+          frame.styles(urls);
         },
         failed: (listener) => {
           failed = listener;
@@ -179,7 +194,11 @@ function start(port: MessagePort): void {
       region ??= regionFor(target);
       region.render([node], { inputs });
     },
-    styles,
+    styles: (urls) => {
+      stylesheets = urls;
+      styles(urls);
+      mounts.styles(urls);
+    },
     host: (hostPort) => {
       host = hostClient(hostPort);
     },

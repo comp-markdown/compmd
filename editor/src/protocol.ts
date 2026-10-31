@@ -1,4 +1,4 @@
-// The messages between the editor, its worker and its frame.
+// The messages between the editor and its worker, and the host stylesheets the editor offers its page.
 
 import type { Diagnostic, ExpandedInput, HostComponent, PositionalHint, Request } from "@compmd/processor";
 import type { Edit } from "./edit.ts";
@@ -30,13 +30,7 @@ export type FromWorker =
   | { type: "hint"; hint?: PositionalHint }
   | { type: "failed"; message: string };
 
-/** From the editor to the frame, on the port `@compmd/render/frame` uses too: the components to compile. */
-export interface ComponentsMessage {
-  type: "components";
-  components: readonly HostComponent[];
-}
-
-/** The stylesheets a host might give the page, which the editor lets the author try. */
+/** The stylesheets a host might give the page, which the editor lets the author try: `frame.css?host=<id>`. */
 export const HOST_STYLES = [
   { id: "reference", label: "Reference" },
   { id: "github", label: "GitHub-like" },
@@ -49,43 +43,3 @@ export const HOST_STYLES = [
 ] as const;
 
 export type HostStyle = (typeof HOST_STYLES)[number]["id"];
-
-/** From the editor to the frame, on the same port: the host's stylesheet to show the page with. */
-export interface HostStyleMessage {
-  type: "host-style";
-  style: HostStyle;
-}
-
-/**
- * From the frame to its host, on the same port: the components last sent are loaded, or show their fallbacks, and the
- * page shows them. A host that shows the frame only once it has its components waits for this.
- */
-export interface ComponentsLoaded {
-  type: "components-loaded";
-}
-
-/** From the frame to the editor, on the same port: a component that couldn't be compiled or loaded. */
-export interface ComponentFailed {
-  type: "component-failed";
-  component: string;
-  message: string;
-}
-
-/** From the frame to the editor, on the same port: the reader clicked a link to a passage of the text (`#:~:text=…`). */
-export interface SourceLink {
-  type: "source-link";
-  /** The link, its text fragment with it. */
-  fragment: string;
-}
-
-/**
- * From the frame to the editor, on the same port: the reader clicked a link to another page, which the editor opens in
- * a new tab, since the sandboxed frame may not leave the playground and most sites refuse to be shown in a frame.
- */
-export interface OpenLink {
-  type: "open-link";
-  url: string;
-}
-
-/** What the editor sends the frame first, with the port. */
-export const FRAME_HELLO = "compmd-editor";

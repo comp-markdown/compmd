@@ -30,6 +30,8 @@ export interface UseFrame {
   code(code: readonly ComponentCode[]): void;
   /** Sends the page's theme tokens, as `@compmd/render`'s `theme` message. */
   theme(tokens: Readonly<Record<string, string>>): void;
+  /** The host's stylesheets, in place of those the frame had. */
+  styles(urls: readonly string[]): void;
   destroy(): void;
 }
 
@@ -53,6 +55,7 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
   let inputs = options.inputs;
   let bound = boundInputs([node]);
   let code = options.code;
+  let styles = options.styles ?? [];
   let tokens: Readonly<Record<string, string>> | undefined;
   let child: ChildEnd | undefined;
   const connect = () => {
@@ -71,7 +74,7 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
       if (node.type === "componentInline") iframe.style.width = `${String(width)}px`;
     });
     for (const [type, listener] of Object.entries(options.on)) end.on(type as keyof ChildEvents, listener as (event: unknown) => void);
-    if (options.styles?.length) end.styles([...options.styles]);
+    if (styles.length > 0) end.styles([...styles]);
     end.code([...code]);
     if (tokens) end.send({ type: "theme", tokens: { ...tokens } });
     end.part({ node, inputs: { ...inputs } });
@@ -95,6 +98,10 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
     theme: (next) => {
       tokens = next;
       child?.send({ type: "theme", tokens: { ...next } });
+    },
+    styles: (next) => {
+      styles = next;
+      child?.styles([...next]);
     },
     destroy: () => {
       iframe.removeEventListener("load", connect);
