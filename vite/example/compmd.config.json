@@ -1,0 +1,8 @@
+{
+  "$schema": "../compmd.config.schema.json",
+  "packs": {
+    "./components": { "trust": "trusted", "ambient": true },
+    "@example/charts": {}
+  },
+  "deny": [{ "pack": "@example/old", "reason": "it draws with a library this app no longer serves" }]
+}

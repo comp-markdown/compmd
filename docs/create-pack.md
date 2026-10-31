@@ -1,6 +1,6 @@
 # `@compmd/create-pack`, the pack template
 
-**Status: proposed.** Builds S2 of [components from apps and packs](components-from-apps-and-packs.md#s2-built-modules-loaded-by-url-recommended-for-large-components), its *step by step*: `npm create @compmd/pack mermaid` writes a pack whose component is one built ES module, with its libraries bundled in, that a host loads by URL. Its test page uses [`@compmd/vite`](vite.md), whose design is in review alongside.
+**Status: accepted (2026-10-30).** Builds S2 of [components from apps and packs](components-from-apps-and-packs.md#s2-built-modules-loaded-by-url-recommended-for-large-components), its *step by step*: `npm create @compmd/pack mermaid` writes a pack whose component is one built ES module, with its libraries bundled in, that a host loads by URL. Its test page uses [`@compmd/vite`](vite.md), whose design is accepted.
 
 ## Proposed decisions
 

@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://compmd.hakanserce.com/schemas/compmd.config.schema.json",
+  "title": "CompMD configuration",
+  "description": "The packs a host gives its documents, with their trust, and which packs a document may import: compmd.config.json, or the compmd key of package.json.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "packs": {
+      "description": "The packs that get more than a strict sandbox, or are ambient, by pack name (@scope/pack) or folder path (./components). Every other installed pack is available, strict.",
+      "type": "object",
+      "propertyNames": { "pattern": "^(\\.\\.?/.*|@[a-z0-9][a-z0-9._~-]*/[a-z0-9][a-z0-9._~-]*)$" },
+      "additionalProperties": { "$ref": "#/$defs/pack" }
+    },
+    "imports": {
+      "description": "any (the default): a document may import any installed pack; listed: only the packs listed here.",
+      "enum": ["any", "listed"]
+    },
+    "deny": {
+      "description": "Packs denied, as the host's own policy: all versions, or those in version, with the reason readers see.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["pack", "reason"],
+        "properties": {
+          "pack": { "type": "string", "pattern": "^@[a-z0-9][a-z0-9._~-]*/[a-z0-9][a-z0-9._~-]*$" },
+          "version": { "type": "string", "description": "A semver range, such as <2." },
+          "reason": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "maxPackSize": {
+      "description": "A pack whose files are larger is left out: bytes, or a size such as \"5 MB\".",
+      "oneOf": [
+        { "type": "number", "exclusiveMinimum": 0 },
+        { "type": "string", "pattern": "^\\d+(\\.\\d+)?\\s*([Bb]|[KkMmGg][Bb])$" }
+      ]
+    },
+    "libraries": {
+      "description": "npm packages, installed in the app, that the frames offer components through their import map, besides React and Svelte.",
+      "type": "array",
+      "items": {
+        "oneOf": [
+          { "type": "string", "description": "An npm package name, such as d3." },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "imports"],
+            "properties": {
+              "name": { "type": "string" },
+              "imports": { "type": "array", "items": { "type": "string" }, "minItems": 1 }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "pack": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "trust": {
+          "description": "strict (the default), permissive (network to its origins, and host if given), or trusted (a folder in the app only).",
+          "enum": ["strict", "permissive", "trusted"]
+        },
+        "network": {
+          "description": "The origins a permissive pack may reach, each https://host[:port].",
+          "type": "array",
+          "items": { "type": "string", "pattern": "^https?://[^/*]+$" }
+        },
+        "host": { "description": "Whether a permissive pack's components get host.", "type": "boolean" },
+        "ambient": { "description": "Whether every document gets the pack's names without importing it.", "type": "boolean" },
+        "version": { "description": "A semver range the installed version must satisfy.", "type": "string" }
+      }
+    }
+  }
+}

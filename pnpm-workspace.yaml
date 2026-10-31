@@ -1,6 +1,8 @@
 packages:
   - render
   - sandbox
+  - vite
+  - vite/example
   - wasm
   - editor
   - website

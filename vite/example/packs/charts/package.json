@@ -1,0 +1,7 @@
+{
+  "name": "@example/charts",
+  "version": "1.0.0",
+  "description": "A pack whose component is a built module, loaded by URL in a strict frame.",
+  "type": "module",
+  "compmd": "./charts.comp.md"
+}

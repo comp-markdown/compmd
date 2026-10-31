@@ -22,10 +22,12 @@ CompMD (Component Markdown) is a Markdown flavor that adds components, container
 | [markdown-rs/](https://github.com/comp-markdown/markdown-rs/tree/compmd) | The processor's parser: a fork of markdown-rs with CompMD's syntax, a git submodule (clone with `--recurse-submodules`) |
 | [wasm/](wasm/README.md) | `@compmd/processor`: the processor as WebAssembly for the browser, one typed call from text to trees |
 | [render/](render/README.md) | `@compmd/render`: an expanded tree as a live page, with the host contract's bindings; the reference rendering of the built-ins |
+| [sandbox/](sandbox/README.md) | `@compmd/sandbox`: runs components at the spec's trust levels, in strict and permissive frames or trusted in the page, so no host writes a sandbox policy itself |
+| [vite/](vite/README.md) | `@compmd/vite`: a Vite plugin that reads `compmd.config.json`, gives the processor the app's packs, serves the sandbox and the packs' modules, and builds the app's own components with it |
 | [editor/](editor/README.md) | The CompMD editor: a text area and the rendered page beside it, updated as you type; a static site that works offline once loaded |
 | [logo/](logo/README.md) | The CompMD logo: the mark and the name, light, dark and in one color, and the favicon |
 | [website/](website/README.md) | [The CompMD website](https://compmd.hakanserce.com/): the landing page, with the playground and the spec, published on GitHub Pages |
-| [docs/](docs/releases.md) | How the repository is run: [releases and versions](docs/releases.md), [CI on GitHub](docs/ci.md); designs: [components from apps and packs](docs/components-from-apps-and-packs.md), [code renderers](docs/code-renderers.md) |
+| [docs/](docs/releases.md) | How the repository is run: [releases and versions](docs/releases.md), [CI on GitHub](docs/ci.md); designs: [components from apps and packs](docs/components-from-apps-and-packs.md), [code renderers](docs/code-renderers.md), [the sandbox](docs/sandbox.md), [the configuration and `@compmd/vite`](docs/vite.md), [`@compmd/create-pack`](docs/create-pack.md) |
 | [RELEASING.md](RELEASING.md) | How to release the packages, the crates and the spec, step by step |
 | [existing-specs-comparison.md](existing-specs-comparison.md) | The spec compared with MDX, Markdoc, Nuxt MDC and Comark, MyST, Quarto, Livebook's Live Markdown and Active Markdown |
 

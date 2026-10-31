@@ -1,0 +1,26 @@
+{
+  "name": "@compmd/vite-example",
+  "version": "0.0.0",
+  "private": true,
+  "description": "An app that uses @compmd/vite: its own stars as a trusted pack folder, a strict pack with a built module, and a pack it denies.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@compmd/processor": "workspace:*",
+    "@compmd/sandbox": "workspace:*",
+    "@compmd/vite": "workspace:*",
+    "@example/charts": "link:./packs/charts",
+    "@example/old": "link:./packs/old",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0",
+    "typescript": "6.0.3",
+    "vite": "8.3.4"
+  }
+}
