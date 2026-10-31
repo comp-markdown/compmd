@@ -6,13 +6,13 @@ The playground's *Learn CompMD* tour is the five-minute introduction, hands on; 
 
 ## Contents
 
-**Part I. Writing** *(to come)*
+**Part I. Writing**
 
-1. A first document
-2. The Markdown you know
-3. Containers and params
-4. Values and expressions
-5. Showing and repeating
+1. [A first document](01-a-first-document.md)
+2. [The Markdown you know](02-the-markdown-you-know.md)
+3. [Containers and params](03-containers-and-params.md)
+4. [Values and expressions](04-values-and-expressions.md)
+5. [Showing and repeating](05-showing-and-repeating.md)
 
 **Part II. Data and inputs** *(to come)*
 
