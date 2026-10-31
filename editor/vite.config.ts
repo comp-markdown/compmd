@@ -20,6 +20,8 @@ export default defineConfig({
   define: { __COMMIT__: JSON.stringify(commit()) },
   build: { target: "es2024" },
   worker: { format: "es" },
+  // The editor's own page only: the frame documents in `public/sandbox/` import the runtimes through their import map.
+  optimizeDeps: { entries: ["index.html"] },
   server: { cors, fs: { allow: [".."] } },
   preview: { cors },
 });
