@@ -13,6 +13,8 @@ const RANK: Record<ComponentCode["level"] | Here, number> = { strict: 0, permiss
 /** A use in its frame, as the renderer updates it, with the document's code when it changes. */
 export interface Framed extends NodesMounted {
   code(components: readonly ComponentCode[]): void;
+  /** The page's theme tokens (spec §9.4), which a frame's document doesn't inherit. */
+  theme(tokens: Readonly<Record<string, string>>): void;
   /** Calls `listener` if the frame stops answering, or is of another protocol version. */
   failed(listener: (message: string) => void): void;
 }
@@ -54,8 +56,9 @@ function notHereMessage(name: string, level: ComponentCode["level"], here: Here)
 export class Mounts {
   readonly mounts: Record<string, Mount> = {};
   readonly #options: MountsOptions;
-  /** The frames on the page, which get the document's code again when it changes. */
+  /** The frames on the page, which get the document's code and theme again when they change. */
   readonly #frames = new Set<Framed>();
+  #tokens: Readonly<Record<string, string>> = {};
 
   constructor(options: MountsOptions) {
     this.#options = options;
@@ -68,6 +71,12 @@ export class Mounts {
       if (mount) this.mounts[component.name] = mount;
     }
     for (const frame of this.#frames) frame.code(components);
+  }
+
+  /** Gives every frame, and those made later, the page's theme tokens. */
+  theme(tokens: Readonly<Record<string, string>>): void {
+    this.#tokens = tokens;
+    for (const frame of this.#frames) frame.theme(tokens);
   }
 
   #mountOf(component: ComponentCode): Mount | undefined {
@@ -90,6 +99,7 @@ export class Mounts {
     return rendersSlots((target, { node, inputs, fallback }) => {
       const frame = this.#options.frame(target, node, inputs, component);
       this.#frames.add(frame);
+      if (Object.keys(this.#tokens).length > 0) frame.theme(this.#tokens);
       frame.failed((message) => {
         this.#frames.delete(frame);
         frame.destroy?.();

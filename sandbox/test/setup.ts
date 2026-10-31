@@ -73,6 +73,21 @@ export default async function setup(project: TestProject): Promise<() => Promise
   await rm(OUT, { recursive: true, force: true });
   await buildFrames({ out: OUT, base, from: join(ROOT, "dist/frames") });
   await mkdir(join(OUT, "packs"), { recursive: true });
+  // A host's page in a sandboxed frame of its own, from the frames' server, beside the frame documents.
+  const { build } = await import("vite");
+  await build({
+    configFile: false,
+    root: ROOT,
+    logLevel: "warn",
+    resolve: { conditions: ["browser"] },
+    build: {
+      outDir: join(OUT, "host"),
+      emptyOutDir: true,
+      copyPublicDir: false,
+      rolldownOptions: { input: { host: join(ROOT, "test/fixtures/sandboxed-host.ts") }, output: { format: "es", entryFileNames: "[name].js", chunkFileNames: "[name]-[hash].js" } },
+    },
+  });
+  await writeFile(join(OUT, "host/host.html"), '<!doctype html>\n<html lang="en"><head><meta charset="utf-8" /><script type="module" src="./host.js"></script></head><body></body></html>\n');
   // A pack's built module, which sets the input `result` when it mounts.
   await writeFile(join(OUT, "packs/built.js"), 'export default function mount(target, { set }) { target.textContent = "built"; set("result", JSON.stringify("built module")); }\n');
   project.provide("frames", base);

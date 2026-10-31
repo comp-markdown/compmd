@@ -134,6 +134,9 @@ function start(port: MessagePort): void {
         code: (next) => {
           frame.code(codeFor(next, "strict"));
         },
+        theme: (tokens) => {
+          frame.theme(tokens);
+        },
         failed: (listener) => {
           failed = listener;
         },
@@ -181,6 +184,13 @@ function start(port: MessagePort): void {
       host = hostClient(hostPort);
     },
     compile,
+  });
+  // A use frame's theme (a page frame's is `serveFrame`'s): the tokens on its part, and on its own nested frames.
+  port.addEventListener("message", ({ data }: MessageEvent<{ type?: unknown; tokens?: Record<string, string> }>) => {
+    if (data.type !== "theme" || !data.tokens) return;
+    const target = document.getElementById("part");
+    for (const [name, value] of Object.entries(data.tokens)) if (name.startsWith("--compmd-")) target?.style.setProperty(name, value);
+    mounts.theme(data.tokens);
   });
   forwardLinks(parent);
   reportSize(parent);

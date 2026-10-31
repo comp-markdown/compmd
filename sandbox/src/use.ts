@@ -28,6 +28,8 @@ export interface UseFrame {
   readonly iframe: HTMLIFrameElement;
   update(node: ExpandedComponent, inputs: Readonly<Record<string, ExpandedInput>>): void;
   code(code: readonly ComponentCode[]): void;
+  /** Sends the page's theme tokens, as `@compmd/render`'s `theme` message. */
+  theme(tokens: Readonly<Record<string, string>>): void;
   destroy(): void;
 }
 
@@ -51,6 +53,7 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
   let inputs = options.inputs;
   let bound = boundInputs([node]);
   let code = options.code;
+  let tokens: Readonly<Record<string, string>> | undefined;
   let child: ChildEnd | undefined;
   const connect = () => {
     child?.close();
@@ -70,6 +73,7 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
     for (const [type, listener] of Object.entries(options.on)) end.on(type as keyof ChildEvents, listener as (event: unknown) => void);
     if (options.styles?.length) end.styles([...options.styles]);
     end.code([...code]);
+    if (tokens) end.send({ type: "theme", tokens: { ...tokens } });
     end.part({ node, inputs: { ...inputs } });
     child = end;
   };
@@ -87,6 +91,10 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
     code: (next) => {
       code = next;
       child?.code([...next]);
+    },
+    theme: (next) => {
+      tokens = next;
+      child?.send({ type: "theme", tokens: { ...next } });
     },
     destroy: () => {
       iframe.removeEventListener("load", connect);

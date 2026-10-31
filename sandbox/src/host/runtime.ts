@@ -116,6 +116,11 @@ export class HostRuntime {
     };
   }
 
+  /** Gives the document's frames the page's theme tokens (spec §9.4), which their documents don't inherit. */
+  theme(tokens: Readonly<Record<string, string>>): void {
+    this.#mounts.theme(tokens);
+  }
+
   destroy(): void {
     this.#compiler?.compiler.close();
     this.#compiler?.frame.remove();
@@ -205,6 +210,9 @@ export class HostRuntime {
       },
       code: (next: readonly ComponentCode[]) => {
         frame.code(codeFor(next, level));
+      },
+      theme: (tokens: Readonly<Record<string, string>>) => {
+        frame.theme(tokens);
       },
       failed: (listener: (message: string) => void) => {
         failed = listener;
