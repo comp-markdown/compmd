@@ -3,6 +3,7 @@ packages:
   - sandbox
   - vite
   - vite/example
+  - create-pack
   - wasm
   - editor
   - website

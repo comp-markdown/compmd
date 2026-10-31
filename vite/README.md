@@ -50,7 +50,7 @@ view.render(document.expanded);
 
 ## The configuration
 
-`compmd.config.json` next to the app's `package.json`, or the `compmd` key of `package.json` (not both). Every installed pack is available without it, in the strict sandbox: the configuration lists only the packs that get more, or that every document gets without importing them.
+`compmd.config.json` next to the app's `package.json`, or the `compmd` key of `package.json` as an object (not both; a string there names a pack's document, spec §6.4, and is no configuration). Every installed pack is available without it, in the strict sandbox: the configuration lists only the packs that get more, or that every document gets without importing them.
 
 ```json
 {

@@ -1,5 +1,5 @@
 # A release of the implementation (docs/releases.md): a tag v<version> builds and checks the repository, then publishes
-# @compmd/render, @compmd/processor, @compmd/sandbox and @compmd/vite to npm with trusted publishing: GitHub proves to npm which
+# @compmd/render, @compmd/processor, @compmd/sandbox, @compmd/vite and @compmd/create-pack to npm with trusted publishing: GitHub proves to npm which
 # repository and workflow publishes, so no npm token is stored, and each version carries its provenance.
 name: Release
 
@@ -28,12 +28,12 @@ jobs:
           submodules: recursive
       - uses: ./.github/actions/setup
       - run: pnpm install --frozen-lockfile
-      # The sandbox's and the Vite plugin's browser tests run in the runner's Chrome and in Playwright's WebKit.
+      # The sandbox's, the Vite plugin's and create-pack's browser tests run in the runner's Chrome and in Playwright's WebKit.
       - run: pnpm --dir sandbox exec playwright install --with-deps webkit
       - name: The tag is every package's version
         run: |
           version="${GITHUB_REF_NAME#v}"
-          for package in render wasm sandbox vite; do
+          for package in render wasm sandbox vite create-pack; do
             written="$(node -p "require('./$package/package.json').version")"
             if [ "$written" != "$version" ]; then
               echo "::error::$package/package.json is $written, the tag $GITHUB_REF_NAME"
@@ -49,6 +49,7 @@ jobs:
           pnpm --dir wasm pack --pack-destination "$RUNNER_TEMP/packages"
           pnpm --dir sandbox pack --pack-destination "$RUNNER_TEMP/packages"
           pnpm --dir vite pack --pack-destination "$RUNNER_TEMP/packages"
+          pnpm --dir create-pack pack --pack-destination "$RUNNER_TEMP/packages"
       # Trusted publishing needs npm 11.5.1 or newer.
       - run: npm install --global npm@11.6.2
       # Outside the repository, whose devEngines name pnpm; each package after those it depends on.
@@ -59,3 +60,4 @@ jobs:
           npm publish ./compmd-processor-*.tgz --access public
           npm publish ./compmd-sandbox-*.tgz --access public
           npm publish ./compmd-vite-*.tgz --access public
+          npm publish ./compmd-create-pack-*.tgz --access public

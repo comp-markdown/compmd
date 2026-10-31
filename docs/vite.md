@@ -14,7 +14,7 @@
 
 ## Terms
 
-- **Configuration:** `compmd.config.json`, or the `compmd` key of `package.json`. The plugin reads one; both is an error.
+- **Configuration:** `compmd.config.json`, or the `compmd` key of `package.json` when it is an object. The plugin reads one; both is an error. A string there is a pack's document (spec §6.4), as in a pack's own folder, and no configuration.
 - **Installed pack:** a dependency in the app's `node_modules` that is a CompMD pack (spec §6.4).
 - **App pack:** a folder in the app's repository that is a pack: a `package.json` with a name, and a document that exports the app's own components.
 - **Policy:** what the processor takes (`Request.policy`): packs with their trust, `imports`, `deny`, `refused`.

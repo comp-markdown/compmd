@@ -74,11 +74,13 @@ export async function configOf(root: string): Promise<ReadConfig> {
     }
   };
   const manifest = existsSync(manifestFile) ? ((await parse(manifestFile)) as { compmd?: unknown }) : {};
+  // A pack's `package.json` names its document in `compmd` (spec §6.4): a string there isn't a configuration.
+  const configured = typeof manifest.compmd === "string" ? undefined : manifest.compmd;
   if (existsSync(file)) {
-    if (manifest.compmd !== undefined) throw new AppError("the configuration is in both compmd.config.json and package.json's `compmd` key: keep one");
+    if (configured !== undefined) throw new AppError("the configuration is in both compmd.config.json and package.json's `compmd` key: keep one");
     return readConfig(await parse(file), "compmd.config.json");
   }
-  return readConfig(manifest.compmd ?? {}, "package.json (`compmd`)");
+  return readConfig(configured ?? {}, "package.json (`compmd`)");
 }
 
 /** A pack document's frontmatter `md` key, or an empty one. */

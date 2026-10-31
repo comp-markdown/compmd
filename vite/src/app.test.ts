@@ -119,6 +119,14 @@ describe("configOf", () => {
     expect((await configOf(root)).imports).toBe("listed");
   });
 
+  it("takes a pack's `compmd`, its document's path, for no configuration", async () => {
+    await rm(join(root, "compmd.config.json"));
+    await write({ "package.json": { name: "@kit/badge", compmd: "./index.comp.md" } });
+    expect((await configOf(root)).packs.size).toBe(0);
+    await write({ "compmd.config.json": { imports: "listed" } });
+    expect((await configOf(root)).imports).toBe("listed");
+  });
+
   it("refuses both, JSON that isn't, and a wrong configuration", async () => {
     await write({ "package.json": { name: "app", compmd: {} } });
     await expect(configOf(root)).rejects.toThrow("the configuration is in both compmd.config.json and package.json's `compmd` key: keep one");
