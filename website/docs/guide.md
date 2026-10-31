@@ -13,7 +13,8 @@
    - **In an editor**: `OpenDocument` and splices, as today.
    The header and "Where next" link to the guide.
 5. **The website uses `@compmd/vite` itself**, with a `compmd.config.json` that lists its own pack folder (`content/app/`, `stars` in Svelte, trusted, ambient). The live `stars` is that pack, mounted in the page in host mode; the JSX example's frame comes from the site's own `compmd/` instead of the playground's. The site does what the guide teaches.
-6. **This change writes the book's frame and its first part**, the site's pages for it, and the landing teaser. Each later part is a task of its own, so each is reviewed as it is written; the contents page lists every chapter, and those not written yet say so.
+6. **An example in the guide opens where it can be played with.** A chapter's CompMD example is a document in `guide/examples/`, and a **Try it** link under it opens it in the playground (`/playground/?doc=guide/<name>`), which bundles the guide's examples beside its menu. When the playground's tools become the *Developer Tools* (their own design: the text, the page and the views as a part any page can embed, with tabs for the sandbox's frames, a console and the messages), the same links open there.
+7. **This change writes the book's frame and its first part**, the site's pages for it, and the landing teaser. Each later part is a task of its own, so each is reviewed as it is written; the contents page lists every chapter, and those not written yet say so.
 
 ## The outline
 
@@ -59,11 +60,12 @@ Each chapter leads with what the reader builds, ends with what to read next, and
 
 **G4. The live `stars` in Svelte or React.** Proposed: Svelte, the site's own framework, so it adds no runtime to the landing page; the guide's own example is React, the more common case, so both bindings are shown.
 
-**G5. What this change writes.** Proposed: Part I (three chapters), the contents page with every chapter listed, the site's guide pages with the book's navigation, the snippet tests, and the landing teaser (decision 6). Parts II to V and the appendices follow as tasks of their own, in that order.
+**G5. What this change writes.** Proposed: Part I (three chapters), the contents page with every chapter listed, the site's guide pages with the book's navigation, the snippet tests, the Try it links, and the landing teaser (decision 7). Parts II to V and the appendices follow as tasks of their own, in that order.
 
 ## Not in this change
 
-- Parts II to V and the appendices (decision 6).
+- Parts II to V and the appendices (decision 7).
+- The Developer Tools (decision 6): their own design, then their own tasks.
 - A search box for the guide (the spec's search is its own task, and would serve both).
 - Translations.
 - API reference generated from the packages' types: the READMEs and TSDoc carry it; the guide links to them.
