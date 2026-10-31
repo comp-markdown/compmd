@@ -24,6 +24,11 @@ export type Runnable = { name: string; level: Level | "trusted" } & (
   | { module: { url: string; integrity: string } }
 );
 
+/** The binding a component compiled from `language` mounts through (spec §7.6). */
+export function bindingOf(language: CompileRequest["language"]): "react" | "svelte" | "plain" {
+  return language === "jsx" || language === "tsx" ? "react" : language === "svelte" ? "svelte" : "plain";
+}
+
 /** Whether `component` comes with code to run. */
 export const hasCode = (component: ComponentCode): component is Runnable => "code" in component || "module" in component;
 

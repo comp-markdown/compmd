@@ -49,6 +49,7 @@
     "@compmd/render": "workspace:*"
   },
   "peerDependencies": {
+    "@compmd/processor": "workspace:^",
     "vite": ">=8"
   },
   "peerDependenciesMeta": {

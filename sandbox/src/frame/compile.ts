@@ -31,8 +31,3 @@ export async function compile(request: CompileRequest): Promise<Compiled> {
   const transforms: ("jsx" | "typescript")[] = language === "jsx" ? ["jsx"] : language === "tsx" ? ["jsx", "typescript"] : ["typescript"];
   return { code: transform(code, { transforms, jsxRuntime: "automatic", production: true, filePath: `${name}.${language}` }).code };
 }
-
-/** The binding a compiled component mounts through (spec §7.6). */
-export function bindingOf(language: CompileRequest["language"]): "react" | "svelte" | "plain" {
-  return language === "jsx" || language === "tsx" ? "react" : language === "svelte" ? "svelte" : "plain";
-}

@@ -68,6 +68,7 @@ And two hosts: a **site** that renders others' documents in a top-level page, an
 
 - **WebRTC.** A content security policy doesn't cover `RTCPeerConnection` in current browsers, and a STUN request can carry data to any server. The frame removes the WebRTC constructors before any component runs; strict code may still get fresh ones from a nested `srcdoc` frame, if a browser doesn't apply `frame-src 'none'` to it. The browser tests record what each browser does; a host that must close it serves the sandbox's files from a separate site and turns WebRTC off there with a `Permissions-Policy`, where a browser supports one.
 - **Requests to the host's own files.** A frame loads scripts, styles and fonts from the origin where the host serves the sandbox and its packs, and a browser lets a prefetch go there too, so such a request can carry data in its query string to the host's own server, without credentials. The browser tests record exactly these and nothing else. Strict code can't reach anyone but the host this way. A host that minds serves those files from a separate origin with no logs.
+- **A frame that spins** (T9). Chrome runs sandboxed frames of one site in a process apart from the page: the host's page goes on, and stops and removes the frame, but other frames of that site wait until its code lets go. WebKit runs them in the page's own process, so a frame that spins freezes the host's page with it, and nothing in the page can stop it. The browser tests check the first in Chrome and skip WebKit; a host that renders others' documents in WebKit can only keep each document's code to its own site, where the browser gives sites processes of their own.
 - **Messages between frames.** Any frame can post a message to any window it can name, and frames can name each other through `top.frames`. A strict frame can only hand data to another frame, never send it out, and a frame acts only on its parent's messages; a permissive pack whose code listens for other windows' messages and sends them on is one the host trusted with its network.
 
 ## Q1. Where the page renders
@@ -236,7 +237,7 @@ Vitest's browser mode, with the installed Chrome and WebKit through Playwright (
 | a permissive component can't make a `permissive.html` frame | T6 |
 | a frame given a second policy, code or `host` by a window that isn't its parent ignores it | T7, decision 2 |
 | a module whose file doesn't match its hash doesn't run, and its use shows its fallback | T8 |
-| a component that loops forever is stopped within the timeout, and the host's page stays responsive | T9 |
+| a component that loops forever is stopped within the timeout, and the host's page stays responsive (Chrome; WebKit can't, above) | T9 |
 | a permissive use inside a strict container shows its fallback, with the warning | Q2 |
 | `RTCPeerConnection` in a strict frame, and in a `srcdoc` frame it makes: recorded, not asserted | WebRTC |
 

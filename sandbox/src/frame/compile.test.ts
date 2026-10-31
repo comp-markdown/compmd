@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { CompileRequest } from "../protocol/messages.ts";
-import { bindingOf, compile } from "./compile.ts";
+import { bindingOf, type CompileRequest } from "../protocol/messages.ts";
+import { compile } from "./compile.ts";
 
 const component = (language: CompileRequest["language"], code: string, runtime?: string): CompileRequest => ({
   name: "card",

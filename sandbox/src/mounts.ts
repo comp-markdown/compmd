@@ -10,12 +10,19 @@ export type Here = Level | "host";
 
 const RANK: Record<ComponentCode["level"] | Here, number> = { strict: 0, permissive: 1, trusted: 2, host: 2 };
 
+/** A use in its frame, as the renderer updates it, with the document's code when it changes. */
+export interface Framed extends NodesMounted {
+  code(components: readonly ComponentCode[]): void;
+  /** Calls `listener` if the frame stops answering, or is of another protocol version. */
+  failed(listener: (message: string) => void): void;
+}
+
 export interface MountsOptions {
   here: Here;
   /** The mounts of components of this level: their loaded code, or the host's trusted components. */
   inline: Readonly<Record<string, Mount>>;
   /** Frames a use of a lower level in `target`. */
-  frame(target: Element, node: ExpandedComponent, inputs: Readonly<Record<string, ExpandedInput>>, component: ComponentCode): NodesMounted & { failed(listener: (message: string) => void): void };
+  frame(target: Element, node: ExpandedComponent, inputs: Readonly<Record<string, ExpandedInput>>, component: ComponentCode): Framed;
   /** A component shows its fallback: it can't run here (`not-here`), or its frame stopped answering (`threw`). */
   report(component: string, reason: ErrorReason, message: string): void;
 }
@@ -47,6 +54,8 @@ function notHereMessage(name: string, level: ComponentCode["level"], here: Here)
 export class Mounts {
   readonly mounts: Record<string, Mount> = {};
   readonly #options: MountsOptions;
+  /** The frames on the page, which get the document's code again when it changes. */
+  readonly #frames = new Set<Framed>();
 
   constructor(options: MountsOptions) {
     this.#options = options;
@@ -58,6 +67,7 @@ export class Mounts {
       const mount = this.#mountOf(component);
       if (mount) this.mounts[component.name] = mount;
     }
+    for (const frame of this.#frames) frame.code(components);
   }
 
   #mountOf(component: ComponentCode): Mount | undefined {
@@ -79,12 +89,20 @@ export class Mounts {
   #framed(component: ComponentCode): Mount {
     return rendersSlots((target, { node, inputs, fallback }) => {
       const frame = this.#options.frame(target, node, inputs, component);
+      this.#frames.add(frame);
       frame.failed((message) => {
+        this.#frames.delete(frame);
         frame.destroy?.();
         target.replaceChildren(fallback.element);
         this.#options.report(component.name, "threw", message);
       });
-      return frame;
+      return {
+        update: (next, nextInputs) => frame.update?.(next, nextInputs),
+        destroy: () => {
+          this.#frames.delete(frame);
+          frame.destroy?.();
+        },
+      };
     });
   }
 }

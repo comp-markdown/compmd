@@ -131,6 +131,9 @@ function start(port: MessagePort): void {
         destroy: () => {
           frame.destroy();
         },
+        code: (next) => {
+          frame.code(codeFor(next, "strict"));
+        },
         failed: (listener) => {
           failed = listener;
         },
