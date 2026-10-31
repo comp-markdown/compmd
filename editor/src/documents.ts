@@ -1,7 +1,9 @@
 // The documents the editor opens, each showing one side of CompMD, bundled with everything they need: their files,
-// packs, remote and host data. The editor fetches nothing.
+// packs, remote and host data. The editor fetches nothing: the packs come from its configuration, `compmd.config.json`,
+// which `@compmd/vite` reads at the site's build.
 
 import type { Fetched, PackRelease, Request } from "@compmd/processor";
+import { request as configured } from "virtual:compmd";
 
 export interface Example {
   /** What `?doc=` names it by. */
@@ -25,14 +27,14 @@ const COMPLETE = "../../conformance/examples/complete-example-expanded/";
 const CHANGELOG = "../../wasm/bench/fixtures/changelog/";
 const NOTES = "../../wasm/bench/fixtures/notes/";
 const EXAMPLES_DIR = "../examples/";
-const CHARTS = `${EXAMPLES_DIR}charts/`;
 
 const bundled = {
   complete: import.meta.glob("../../conformance/examples/complete-example-expanded/**/*", { query: "?raw", import: "default", eager: true }),
   changelog: import.meta.glob("../../wasm/bench/fixtures/changelog/*", { query: "?raw", import: "default", eager: true }),
   // The notes alone: their pack holds signatures only, and the examples' charts implement them.
   notes: import.meta.glob("../../wasm/bench/fixtures/notes/notes.comp.md", { query: "?raw", import: "default", eager: true }),
-  examples: import.meta.glob("../examples/**/*", { query: "?raw", import: "default", eager: true }),
+  // The charts are a pack of the configuration, which `virtual:compmd` brings.
+  examples: import.meta.glob(["../examples/**/*", "!../examples/charts/**"], { query: "?raw", import: "default", eager: true }),
 } as Record<string, Bundle>;
 
 /** The files of `bundle` under `dir`, by their path from it. */
@@ -81,49 +83,58 @@ function completeExample(): Request {
   };
 }
 
-/** The examples' charts, an ambient pack with their code, under the name the field notes give theirs. */
+/** The examples' charts, an ambient pack of the configuration, under the name the field notes give theirs. */
 const CHARTS_PACK = "@preview/charts";
 
-/** The document `path` of `files`, with the examples' charts. */
-function withCharts(files: Record<string, string>, path: string, now: string): Request {
-  return {
-    path,
-    files,
-    packs: { [CHARTS_PACK]: [{ version: "1.0.0", files: filesIn(bundled.examples, CHARTS) }] },
-    ambient: [CHARTS_PACK],
-    now,
-  };
-}
+/** The pack of hand-drawn diagrams, made with `@compmd/create-pack`: one built module, which the sandbox loads by URL. */
+const DIAGRAMS_PACK = "@preview/minimermaid";
 
 /** What `request`'s document reads besides itself: its folder's other files, its packs' files, its remote and host data. */
 export function supportingFiles(request: Request): SupportingFile[] {
   const files = Object.entries(request.files ?? {})
     .filter(([path]) => path !== request.path)
     .map(([name, text]) => ({ name, text }));
+  // A built module's text isn't given to the processor, which loads it by its place: an empty file says nothing.
   const packs = Object.entries(request.packs ?? {}).flatMap(([pack, releases]) =>
-    releases.flatMap(({ version, files: packFiles }) => Object.entries(packFiles).map(([path, text]) => ({ name: `${pack}@${version}/${path}`, text }))),
+    releases.flatMap(({ version, files: packFiles }) =>
+      Object.entries(packFiles)
+        .filter(([, text]) => text !== "")
+        .map(([path, text]) => ({ name: `${pack}@${version}/${path}`, text })),
+    ),
   );
   const remote = Object.entries(request.remote ?? {}).map(([url, { text }]) => ({ name: url, text }));
   const host = Object.entries(request.host ?? {}).map(([source, value]) => ({ name: `host:${source}`, text: JSON.stringify(value, null, 2) }));
   return [...files, ...packs, ...remote, ...host];
 }
 
-/** An example of `request`, with its supporting files. */
-const example = (id: string, name: string, request: Request): Example => ({ id, name, request, files: supportingFiles(request) });
+/**
+ * An example of `request`, with the playground's packs, policy and ambient packs from its configuration; its own packs,
+ * such as the complete example's, over them. Its supporting files show its own packs and the configured ones it names.
+ */
+function example(id: string, name: string, request: Request, shows: readonly string[] = []): Example {
+  const shown = Object.fromEntries(Object.entries(configured.packs).filter(([pack]) => shows.includes(pack)));
+  return {
+    id,
+    name,
+    request: { ...configured, ...request, packs: { ...configured.packs, ...request.packs } },
+    files: supportingFiles({ ...request, packs: { ...shown, ...request.packs } }),
+  };
+}
 
 const NOW = "2026-10-29T09:00:00Z";
 
 /** The menu, from the syntax to the diagnostics, each document showing one side of CompMD. */
 export const EXAMPLES: Example[] = [
-  example("tour", "Learn CompMD: a tutorial in fourteen lessons", { path: "tour.comp.md", files: own("tour"), now: NOW }),
+  example("tour", "Learn CompMD: a tutorial in fifteen lessons", { path: "tour.comp.md", files: own("tour"), now: NOW }),
   example("definitions", "Definitions and slots", { path: "definitions.comp.md", files: own("definitions"), now: NOW }),
   example("changelog", "Expressions: a changelog (12 releases, 128 changes)", { path: "changelog.comp.md", files: filesIn(bundled.changelog, CHANGELOG), now: "2026-10-22T09:00:00Z" }),
-  example("dashboard", "Data: a sales dashboard", withCharts(own("dashboard"), "dashboard.comp.md", NOW)),
+  example("dashboard", "Data: a sales dashboard", { path: "dashboard.comp.md", files: own("dashboard"), now: NOW }, [CHARTS_PACK]),
   example("inputs", "Inputs: plan a stay", { path: "planner.comp.md", files: own("inputs"), now: NOW }),
   example("kyoto", "Layout: Kyoto in four days", { path: "kyoto.comp.md", files: own("kyoto"), now: NOW }),
   example("complete", "Components in JSX and from packs: the spec's complete example", completeExample()),
+  example("diagrams", "Packs: diagrams from a built module", { path: "diagrams.comp.md", files: own("diagrams"), now: NOW }, [DIAGRAMS_PACK]),
   example("diagnostics", "Diagnostics and their fixes", { path: "diagnostics.comp.md", files: own("diagnostics"), now: NOW }),
-  example("notes", "A long document: field notes (52 KB, 20 charts)", withCharts(filesIn(bundled.notes, NOTES), "notes.comp.md", "2026-10-23T09:00:00Z")),
+  example("notes", "A long document: field notes (52 KB, 20 charts)", { path: "notes.comp.md", files: filesIn(bundled.notes, NOTES), now: "2026-10-23T09:00:00Z" }, [CHARTS_PACK]),
 ];
 
 /** The example `?doc=` names, or the first. */

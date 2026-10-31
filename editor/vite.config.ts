@@ -1,3 +1,4 @@
+import { compmd } from "@compmd/vite";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { execFileSync } from "node:child_process";
 import { defineConfig } from "vite";
@@ -11,16 +12,18 @@ function commit(): string {
   }
 }
 
-// The page's frames have an opaque origin, so the frame documents' files load cross-origin (`public/sandbox/`).
+// The page's frames have an opaque origin, so the files they load from the site, `frame.css` among them, load
+// cross-origin; `@compmd/vite` gives its own files, under `compmd/`, the same header.
 const cors = { origin: "*" };
 
+// `compmd()` reads `compmd.config.json`: the playground's packs, the sandbox's frame documents with d3, and the built
+// modules, served under `compmd/`; `virtual:compmd` gives them to the documents and the page.
 export default defineConfig({
   base: "./",
-  plugins: [svelte()],
+  plugins: [svelte(), compmd()],
   define: { __COMMIT__: JSON.stringify(commit()) },
   build: { target: "es2024" },
   worker: { format: "es" },
-  // The editor's own page only: the frame documents in `public/sandbox/` import the runtimes through their import map.
   optimizeDeps: { entries: ["index.html"] },
   server: { cors, fs: { allow: [".."] } },
   preview: { cors },

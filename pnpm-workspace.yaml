@@ -6,4 +6,5 @@ packages:
   - create-pack
   - wasm
   - editor
+  - editor/packs/minimermaid
   - website

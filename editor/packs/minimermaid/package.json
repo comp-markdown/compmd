@@ -1,0 +1,27 @@
+{
+  "name": "@preview/minimermaid",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The playground's pack of Mermaid's simplest flowcharts, drawn by hand: one built module, made with @compmd/create-pack.",
+  "keywords": ["compmd", "compmd-pack"],
+  "license": "MIT",
+  "type": "module",
+  "compmd": "./index.comp.md",
+  "files": ["dist", "index.comp.md", "README.md"],
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build && vite",
+    "test": "vitest run",
+    "lint": "tsc --noEmit",
+    "prepublishOnly": "npm run build && npm test && node scripts/check.js"
+  },
+  "devDependencies": {
+    "@compmd/processor": "workspace:*",
+    "@compmd/sandbox": "workspace:*",
+    "@compmd/vite": "workspace:*",
+    "happy-dom": "21.0.3",
+    "typescript": "6.0.3",
+    "vite": "8.3.4",
+    "vitest": "5.0.5"
+  }
+}

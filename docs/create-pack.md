@@ -52,7 +52,7 @@ params:
 
 Without `--renders`, the signature has `params: { value: string }` and the demo a leaf, `:: mermaid[A fallback] {value="Hello"}`.
 
-**Scripts:** `build` (library mode), `dev` (the test page), `test` (Vitest), `prepublishOnly` (build and test), so `npm publish` never publishes a stale `dist/`.
+**Scripts:** `build` (library mode), `dev` (the test page), `test` (Vitest), `lint` (the type check), `prepublishOnly` (build and test), so `npm publish` never publishes a stale `dist/`.
 
 **Versions:** `export.version` must match `package.json` (F022). The template's README says to change both, and `prepublishOnly` checks they match, failing with which to change.
 

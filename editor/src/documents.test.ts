@@ -22,7 +22,7 @@ const diagnosticsOf = (example: Example, text = textOf(example)) =>
 
 describe("EXAMPLES", () => {
   it("go from the syntax to the diagnostics, each with an id of its own", () => {
-    expect(EXAMPLES.map((example) => example.id)).toEqual(["tour", "definitions", "changelog", "dashboard", "inputs", "kyoto", "complete", "diagnostics", "notes"]);
+    expect(EXAMPLES.map((example) => example.id)).toEqual(["tour", "definitions", "changelog", "dashboard", "inputs", "kyoto", "complete", "diagrams", "diagnostics", "notes"]);
     expect(exampleIndex("kyoto")).toBe(5);
     expect(exampleIndex("nothing")).toBe(0);
     expect(exampleIndex(null)).toBe(0);
@@ -76,11 +76,22 @@ describe("EXAMPLES", () => {
     }
   });
 
-  it("gives the dashboard and the field notes the charts with their code", () => {
-    const charts = EXAMPLES.filter((example) => example.request.packs?.["@preview/charts"]);
-    expect(charts.map((example) => example.id)).toEqual(["dashboard", "notes"]);
-    const files = Object.keys(charts[0]?.request.packs?.["@preview/charts"]?.[0]?.files ?? {});
+  it("gives every document the playground's packs from its configuration, the charts ambient", () => {
+    for (const example of EXAMPLES) {
+      expect(example.request.ambient, example.id).toEqual(["@preview/charts"]);
+      expect(Object.keys(example.request.packs ?? {}), example.id).toEqual(expect.arrayContaining(["@preview/charts", "@preview/minimermaid"]));
+      expect(example.request.policy?.packs, example.id).toEqual({ "@preview/charts": { level: "strict" }, "@preview/minimermaid": { level: "strict" } });
+    }
+    const files = Object.keys(byId("dashboard").request.packs?.["@preview/charts"]?.[0]?.files ?? {});
     expect(files.sort()).toEqual(["area-chart.jsx", "bar-chart.jsx", "data-table.svelte", "index.comp.md", "package.json", "pie-chart.svelte", "timeline.jsx"]);
+    // The complete example's own packs come with it, beside the configured ones.
+    expect(Object.keys(byId("complete").request.packs ?? {})).toEqual(expect.arrayContaining(["@acme/charts", "@preview/charts"]));
+  });
+
+  it("gives the diagrams the built module by its place, not its text", () => {
+    const [release] = byId("diagrams").request.packs?.["@preview/minimermaid"] ?? [];
+    expect(release?.files["dist/minimermaid.js"]).toBe("");
+    expect(release?.files["index.comp.md"]).toContain("renders: mermaid");
   });
 
   it("list the files each document reads: its folder's, its packs', its remote and host data", () => {
@@ -88,6 +99,8 @@ describe("EXAMPLES", () => {
     expect(names("tour")).toEqual(["books.csv"]);
     expect(names("diagnostics")).toEqual([]);
     expect(names("dashboard")).toEqual(expect.arrayContaining(["sales.csv", "milestones.yaml", "@preview/charts@1.0.0/bar-chart.jsx"]));
+    // Only the configured packs a document shows; a built module, given as no text, isn't listed.
+    expect(names("diagrams")).toEqual(["@preview/minimermaid@0.1.0/package.json", "@preview/minimermaid@0.1.0/index.comp.md"]);
     const complete = names("complete");
     expect(complete).toEqual(
       expect.arrayContaining(["board.jsx", "team.yaml", "@acme/charts@1.4.2/chart.jsx", "https://status.rayplay.dev/today.json?region=all", "host:tasks?project=rayplay"]),

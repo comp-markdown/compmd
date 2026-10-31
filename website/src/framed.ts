@@ -1,6 +1,7 @@
 // A document of the page rendered in a sandbox, as the playground renders its pages: `@compmd/sandbox`'s strict frame,
-// which runs its JSX, Svelte and JavaScript components, from the playground's frame documents beside this page. The page
-// processes the document and gives the sandbox its tree and its components.
+// which runs its JSX, Svelte and JavaScript components, from the playground's frame documents beside this page, which
+// `@compmd/vite` writes into its `compmd/`. The page processes the document and gives the sandbox its tree and its
+// components.
 import { init, OpenDocument } from "@compmd/processor";
 import { createSandbox } from "@compmd/sandbox";
 
@@ -17,7 +18,7 @@ export async function renderInFrame(container: HTMLElement, path: string, text: 
   let inputs: Record<string, unknown> = {};
   const open = () => new OpenDocument({ path, files: { ...files, [path]: text }, now: new Date().toISOString(), inputs });
   let document = open();
-  const view = createSandbox({ base: `${PLAYGROUND}sandbox/`, stylesheets: [`${PLAYGROUND}frame.css?host=reference`] }).open(container, {
+  const view = createSandbox({ base: `${PLAYGROUND}compmd/`, stylesheets: [`${PLAYGROUND}frame.css?host=reference`] }).open(container, {
     components: document.components,
   });
   let rendered = false;

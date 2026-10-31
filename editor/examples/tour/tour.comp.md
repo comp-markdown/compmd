@@ -766,7 +766,7 @@ A code block is never interpolated: `{{…}}` in it stays as written, as in any 
 
 :: minimermaid[The stages: Found, Reading and Read] {code=("graph TD; " + md.doc.stages.join(" --> "))}
 
-`minimermaid` is a small one, written for this tutorial: it draws chains of steps, by hand, and nothing else of Mermaid. A pack can provide all of Mermaid, and a document that imports it instead keeps its blocks as they are.
+`minimermaid` is a small one, written for this tutorial: it draws chains of steps, by hand, and nothing else of Mermaid. A pack can provide all of Mermaid, and a document that imports it instead keeps its blocks as they are. **Packs: diagrams from a built module**, in the menu, draws the same diagrams with a pack.
 
 > [!TIP]
 > **Try it.** Add ` --> Shelved` to the end of [`graph LR; Found --> Reading --> Read`](#:~:text=graph%20LR%3B%20Found), and the first diagram grows a step. Change `theme=neutral` to `theme=dark`. Then add `Lent` to [`stages: [Found, Reading, Read]`](#:~:text=stages:%20%5BFound) in the frontmatter, and the second follows. Delete [`alt="A book is found, then reading, then read"`](#:~:text=alt=%22A%20book%20is%20found): the diagnostic asks for a text alternative.
@@ -779,6 +779,7 @@ The other documents in the menu go further, each on one side of CompMD:
 - **Data: a sales dashboard**, with charts in React and Svelte.
 - **Inputs: plan a stay**, with every kind of input.
 - **Layout: Kyoto in four days**, with grid areas and blocks placed by position.
+- **Packs: diagrams from a built module**, a pack's component as one built module, loaded by URL.
 - **Diagnostics and their fixes**, five mistakes and how the editor mends them.
 
 The [specification](https://github.com/comp-markdown/compmd/blob/main/compmd-spec-v1.md) says everything precisely.

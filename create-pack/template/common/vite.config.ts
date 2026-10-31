@@ -29,4 +29,5 @@ function rebuild(): Plugin {
   };
 }
 
-export default defineConfig(({ command }) => (command === "build" ? { build: library } : { root: join(root, "demo"), plugins: [compmd(), rebuild()] }));
+// Vitest runs the component's tests alone: the test page and its sandbox need the built module, which tests don't.
+export default defineConfig(({ command, mode }) => (mode === "test" ? {} : command === "build" ? { build: library } : { root: join(root, "demo"), plugins: [compmd(), rebuild()] }));

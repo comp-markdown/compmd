@@ -11,6 +11,7 @@
     "build": "vite build",
     "dev": "vite build && vite",
     "test": "vitest run",
+    "lint": "tsc --noEmit",
     "prepublishOnly": "npm run build && npm test && node scripts/check.js"
   },
   "devDependencies": {

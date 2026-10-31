@@ -6,6 +6,7 @@
   import type { Range } from "@compmd/processor";
   import { createSandbox, type View as Page } from "@compmd/sandbox";
   import { tick, untrack } from "svelte";
+  import { sandbox as sandboxOptions } from "virtual:compmd";
   import ComponentsView from "./ComponentsView.svelte";
   import DataView from "./DataView.svelte";
   import { EXAMPLES, exampleIndex, type SupportingFile } from "./documents.ts";
@@ -75,8 +76,8 @@
     page?.styles(stylesheetOf(hostStyle));
   });
 
-  /** The playground's sandbox: the frame documents in `public/sandbox/`, each page in a strict frame of its own. */
-  const sandbox = createSandbox({ base: "./sandbox/" });
+  /** The playground's sandbox, as `@compmd/vite` serves it: each page in a strict frame of its own, built modules by URL. */
+  const sandbox = createSandbox(sandboxOptions);
 
   /** What the page is for: open on the first visit, until it is closed. */
   const ABOUT_KEY = "compmd-editor-about";

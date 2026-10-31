@@ -1,0 +1,8 @@
+{
+  "$schema": "../vite/compmd.config.schema.json",
+  "packs": {
+    "./examples/charts": { "ambient": true },
+    "./packs/minimermaid": {}
+  },
+  "libraries": ["d3"]
+}

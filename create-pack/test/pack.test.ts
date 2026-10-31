@@ -29,6 +29,9 @@ describe.each(PACKS)("a pack of $variant", ({ folder: name, port, shows, ...opti
   beforeAll(async () => {
     await rm(folder, { recursive: true, force: true });
     await createPack({ folder, ...options });
+    // Its own type check and tests pass as written, before anything is built.
+    execFileSync(join(import.meta.dirname, "../node_modules/.bin/tsc"), ["--noEmit"], { cwd: folder, stdio: "pipe" });
+    execFileSync(join(import.meta.dirname, "../node_modules/.bin/vitest"), ["run"], { cwd: folder, stdio: "pipe" });
     // The pack's config sets its own roots: the pack for the build, `demo/` for the test page.
     await build({ configFile: join(folder, "vite.config.ts"), logLevel: "warn" });
     server = await createServer({ configFile: join(folder, "vite.config.ts"), logLevel: "warn", server: { port, strictPort: true } });
