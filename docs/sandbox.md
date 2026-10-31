@@ -172,15 +172,17 @@ A frame's box is the use's outer box (spec §9.2), laid out by the parent as tod
 An application whose editor renders a document's blocks in the editor's widgets (CodeMirror's), in DOM the editor owns, renders block by block with `@compmd/render`'s regions, not a page. It uses the host runtime directly:
 
 ```ts
-import { mountUse } from "@compmd/sandbox";
+import { HostRuntime } from "@compmd/sandbox";
 
+const runtime = new HostRuntime({ base, trusted }, { set, link, error });   // one per document
+await runtime.set(processed.hostComponents);
 // in a widget's toDOM, for each use the region renders
-const handle = mountUse(target, node, { component, inputs, onSet, onError });
+const handle = runtime.mountUse(target, node, inputs);
 handle.update(node, inputs);
 handle.destroy();
 ```
 
-`mountUse` mounts a trusted use inline and makes a frame of its level for any other, as host mode does; a region's `components` map can be built from it.
+`mountUse` mounts a trusted use inline and makes a frame of its level for any other, as host mode does; `runtime.mounts` is the same as a region's `components` map.
 
 - **Widgets come and go.** An editor unmounts widgets outside its viewport and builds them again, and a frame whose element is removed or moved loads again, so its component's state is lost and the frame boots again. The component's state belongs in its params or the host's store (spec §7.4), and the cost of booting again is the host's to keep down: keep the widget's DOM while it is near the viewport, or move frames with `moveBefore` where a browser has it, which keeps them alive.
 - **The host's page may be sandboxed itself.** An editor that runs in a sandbox of its own is the host's page here: its frames believe it as their parent (decision 2), its trusted components are the application's code in that sandbox, and its `host` is what the application gives that sandbox.
