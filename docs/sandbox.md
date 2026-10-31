@@ -42,6 +42,71 @@ graph LR; Draft --> Review
 
 And two hosts: a **site** that renders others' documents in a top-level page, and an **application** whose editor runs in a sandboxed frame of its own and renders a document's blocks in the editor's widgets (CodeMirror's), with its own components trusted there.
 
+**Where the example's code runs, by host.** Boxes are windows; an arrow points from the window that made a frame to the frame, which believes only it.
+
+A site, in frame mode: the page and its strict components in one frame; the permissive and trusted ones show their fallbacks.
+
+```mermaid
+flowchart TB
+    subgraph tab["The browser's tab"]
+        H["The site's page: the host's page<br/>(its own origin)"]
+        P["Page frame, strict.html<br/>the whole page: bar-chart, sparkline, mermaid<br/>stars, rating-summary, map: fallbacks"]
+        C["Compile frame, strict.html<br/>no components"]
+        H --> P
+        H --> C
+    end
+```
+
+A web app, in host mode: the page in the app's page, its own components inline, a frame per other use.
+
+```mermaid
+flowchart TB
+    subgraph tab["The browser's tab"]
+        H["The app's page: the host's page (its own origin)<br/>the page rendered here; stars inline"]
+        B["bar-chart's frame, strict.html<br/>sparkline in its slot, inside"]
+        Mm["mermaid's frame, strict.html<br/>a built module, its hash checked"]
+        M["map's frame, permissive.html<br/>tiles.example.com"]
+        L["legend's frame, strict.html<br/>in map's slot"]
+        R["rating-summary's frame, permissive.html<br/>given host"]
+        C["Compile frame, strict.html"]
+        H --> B
+        H --> Mm
+        H --> M
+        M --> L
+        H --> R
+        H --> C
+    end
+```
+
+An application whose editor renders the document block by block in CodeMirror's widgets, inside a sandbox of the application's own: the editor's frame is the host's page, with an opaque origin, and each widget is a region the editor rebuilds as it scrolls.
+
+```mermaid
+flowchart TB
+    subgraph tab["The application's window"]
+        S["The application's shell<br/>(not the sandbox's host)"]
+        subgraph E["The editor's frame: the host's page (an opaque origin)"]
+            CM["CodeMirror: the text"]
+            W1["Widget: a region<br/>stars inline"]
+            W2["Widget: a region"]
+            W3["Widget: a region"]
+            CM --- W1
+            CM --- W2
+            CM --- W3
+        end
+        B["bar-chart's frame, strict.html<br/>loads again when its widget is rebuilt"]
+        M["map's frame, permissive.html"]
+        L["legend's frame, strict.html"]
+        C["Compile frame, strict.html"]
+        S --> E
+        W2 --> B
+        W3 --> M
+        M --> L
+        E --> C
+    end
+```
+
+What changes between them: who the host's page is (a top-level page, or a frame the application sandboxes itself), where the page renders (in a frame, in the host's page, or block by block in widgets), and so which components can run (only strict ones in frame mode; trusted ones only where the host's page renders). The frames below the host's page, their documents and their protocol are the same in all three.
+
 ## Threat model
 
 | Code | Where it comes from | It must not reach |

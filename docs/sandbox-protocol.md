@@ -80,6 +80,89 @@ A parent passes its children's `set`, `link` and `error` up, each with what it k
 | to post `set` for an input its use isn't bound to | its parent checks `set` against the use's node, and drops it |
 | to get `host` | only H gives `host`, and only to a `permissive.html` frame of a pack given `host` |
 
+## The sequences, drawn
+
+**Opening a document in frame mode.** The page and its strict components share one frame; the compile frame runs no components.
+
+```mermaid
+sequenceDiagram
+    participant H as H, the host's page
+    participant C as C, the compile frame
+    participant P as P, the page frame
+    H->>C: hello (window message, with the port)
+    C-->>H: ready {sandbox}
+    H->>C: level {strict}
+    H->>C: compile {chart, jsx, …}
+    C-->>H: compiled {chart, code}
+    H->>P: hello (window message, with the port)
+    P-->>H: ready {sandbox}
+    H->>P: level {strict}
+    H->>P: code {chart: strict, map: permissive, stars: trusted}
+    P-->>H: loaded
+    H->>P: render {tree}
+    Note over P: mounts chart; map and stars show their fallbacks
+    P-->>H: error {map, not-here}, error {stars, not-here}
+    P-->>H: rendered {ms}
+    P-->>H: set {region, eu}
+    Note over H: checks that a use binds region, then processes again
+```
+
+**Host mode, with a strict component in a permissive one's slot.** Each frame believes its parent only; the permissive frame makes the strict one and passes on what H gave it.
+
+```mermaid
+sequenceDiagram
+    participant H as H, the host's page
+    participant M as map's frame (permissive)
+    participant L as legend's frame (strict)
+    Note over H: renders the page; stars mounts inline
+    H->>M: hello (with the port)
+    M-->>H: ready {sandbox}
+    H->>M: level {permissive, connect-src tiles.example.com …}
+    Note over M: adds its second policy before any code
+    H->>M: host (a port, if the pack is given host)
+    H->>M: code {map: permissive, legend: strict}
+    H->>M: part {map's node, legend in its slot}
+    M->>L: hello (with the port)
+    L-->>M: ready {sandbox}
+    M->>L: level {strict}
+    M->>L: code {legend}, part {legend's node}
+    L-->>M: set {layer, roads}
+    Note over M: checks that its part binds layer
+    M-->>H: set {layer, roads}
+```
+
+**Strict code poses as a parent.** A frame takes its hello from the window that made it, and nothing else.
+
+```mermaid
+sequenceDiagram
+    participant H as H, the host's page
+    participant S as a strict frame
+    participant B as a frame H made, not yet given its port
+    S->>B: hello, through top.frames (window message, with a port of its own)
+    Note over B: event.source isn't its parent: ignored
+    S->>B: level {permissive, connect-src *}, code {…}
+    Note over B: not on a port it took: ignored
+    H->>B: hello (with the port)
+    Note over B: from its parent: this is its port
+```
+
+**A frame that hangs.**
+
+```mermaid
+sequenceDiagram
+    participant H as the frame's parent
+    participant U as a use's frame
+    loop every second
+        H->>U: ping {n}
+        U-->>H: pong {n}
+    end
+    Note over U: a component loops forever
+    H->>U: ping {n+1}
+    H->>U: ping {n+2}
+    Note over H: no answer within the timeout
+    H->>H: removes the frame; the use shows its fallback (W118)
+```
+
 ## Checks, by end
 
 - **A frame:** its port comes in a window message from its parent; it adds the `level` policy before it loads any code; it runs code and renders parts only from its port; it answers `ping`.

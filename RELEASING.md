@@ -16,8 +16,13 @@ The website follows `main` and needs no release: every push that touches what it
 
 One version for the npm packages and the crate `compmd`, semantic, `0.x` until the spec's version 1. `compmd-markdown`, the fork of markdown-rs, has a version of its own, raised only when its code changes.
 
+### 0. Prerequisites
+
+A release publishes only packages that npm and this repository's workflow already know. Before a package's first release, or after its trusted publisher changed, go through [prerequisites, once per package](#prerequisites-once-per-package): the package created on npm by a first version published by hand, trusted publishing set up for `release.yml`, the workflow publishing it, and each checked. `@compmd/sandbox` still needs them.
+
 ### 1. Prepare
 
+- The [prerequisites](#prerequisites-once-per-package) hold for every package the release publishes.
 - `cargo make ci` is green on `main`.
 - Each package's README says what changed, until the implementation has a changelog of its own.
 - The version, in one commit: `render/package.json`, `wasm/package.json`, `sandbox/package.json` and `processor/Cargo.toml`.
@@ -78,30 +83,44 @@ docs.rs builds the documentation a few minutes later.
 
 3. The Pages workflow deploys the site with the version at `/spec/1.0/`, frozen. `/spec/` shows the latest release, and `/spec/draft/` the draft.
 
-## A package's first version, by hand
+## Prerequisites, once per package
 
-Trusted publishing works only for a package that already exists on npm. So a new package's first version is published by hand, as `0.1.0` was, and as `@compmd/sandbox`'s first version is to be:
+Trusted publishing works only for a package that already exists on npm, so a new package is created by publishing its first version by hand, as `@compmd/render` and `@compmd/processor` were at `0.1.0`, and as `@compmd/sandbox` is to be at the version the others have. Then npm and the workflow are set up to publish it from then on. Each step is the author's, with their npm account; none is in the workflow.
 
-1. Build and pack it, from the repository:
+**npm, once for the scope:**
+- The `@compmd` organization exists on npm, and the publishing account is a member that may publish to it.
+- The account has two-factor authentication on, for authorization and writes (below, "What publishing 0.1.0 taught").
 
-   ```sh
-   pnpm --dir render build
-   pnpm --dir render pack --pack-destination ../packages
-   ```
+**The package's first version, by hand:**
 
-2. Check the tarball before publishing: `tar tzf` for its files, and `tar xzf <file> -O package/LICENSE` for its licence, which must be MIT.
-3. Publish from outside the repository, after `npm login`. Dependencies go first: the renderer before the processor.
+1. Build and pack it, from the repository, with the version the other packages have:
 
    ```sh
-   (cd ~ && npm publish <path>/compmd-render-0.1.0.tgz --access public)
+   pnpm --dir sandbox build
+   pnpm --dir sandbox pack --pack-destination ../packages
    ```
 
-4. Set up trusted publishing on npmjs.com:
-   - the package's **Settings** → **Trusted publisher** → **GitHub Actions**;
-   - the organization `comp-markdown`, the repository `compmd`, the workflow `release.yml`, no environment;
-   - allowed actions: publish only.
+2. Check the tarball before publishing: `tar tzf` for its files (`dist/`, and for the sandbox `protocol.schema.json`), and `tar xzf <file> -O package/LICENSE` for its licence, which must be MIT; its `package.json` names the other packages' versions, not `workspace:*`.
+3. Try it without publishing, from outside the repository: `(cd ~ && npm publish <path>/compmd-sandbox-<version>.tgz --access public --dry-run)`.
+4. Publish from outside the repository, after `npm login`. Dependencies go first: the renderer, then the processor, then the sandbox.
 
-   npm validates it at the workflow's first publish.
+   ```sh
+   (cd ~ && npm publish <path>/compmd-sandbox-<version>.tgz --access public)
+   ```
+
+5. Wait for npm's staging to end (below): the version is `latest` in `curl -s https://registry.npmjs.org/-/package/@compmd%2fsandbox/dist-tags`.
+
+**Trusted publishing, on npmjs.com:**
+- the package's **Settings** → **Trusted publisher** → **GitHub Actions**;
+- the organization `comp-markdown`, the repository `compmd`, the workflow `release.yml`, no environment;
+- allowed actions: publish only.
+
+**The workflow, in this repository:**
+- `release.yml` checks the package's version against the tag, packs it, and publishes it after the packages it depends on;
+- it installs what the package's tests need (the sandbox's: Playwright's WebKit), as `ci.yml` does;
+- `RELEASING.md` lists it, in the table above and in the checks after a release.
+
+**Validated:** npm checks the trusted publisher only at the workflow's first publish of the package. Once that release's workflow is green, the version is `latest` in the registry (`curl`, as above), and the package's page on npmjs.com shows its provenance, from `comp-markdown/compmd` and `release.yml`. If its publish fails with the packages before it already published, rerunning the workflow would publish those again, which npm refuses: fix the trusted publisher, and publish that one tarball by hand, as above.
 
 ## What publishing 0.1.0 taught
 
