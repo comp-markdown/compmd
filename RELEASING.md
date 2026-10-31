@@ -6,7 +6,7 @@ Three things are released, each on its own:
 
 | What | Where | How |
 |---|---|---|
-| The implementation: `@compmd/render`, `@compmd/processor` | npm | a tag `v<version>`; `.github/workflows/release.yml` publishes |
+| The implementation: `@compmd/render`, `@compmd/processor`, `@compmd/sandbox` | npm | a tag `v<version>`; `.github/workflows/release.yml` publishes |
 | The implementation: the crates `compmd-markdown`, `compmd` | crates.io | by hand, after the tag |
 | The spec | the website, `/spec/<version>/` | a tag `spec-v<version>`; the Pages workflow deploys |
 
@@ -14,13 +14,13 @@ The website follows `main` and needs no release: every push that touches what it
 
 ## The implementation
 
-One version for both npm packages and the crate `compmd`, semantic, `0.x` until the spec's version 1. `compmd-markdown`, the fork of markdown-rs, has a version of its own, raised only when its code changes.
+One version for the npm packages and the crate `compmd`, semantic, `0.x` until the spec's version 1. `compmd-markdown`, the fork of markdown-rs, has a version of its own, raised only when its code changes.
 
 ### 1. Prepare
 
 - `cargo make ci` is green on `main`.
 - Each package's README says what changed, until the implementation has a changelog of its own.
-- The version, in one commit: `render/package.json`, `wasm/package.json` and `processor/Cargo.toml`.
+- The version, in one commit: `render/package.json`, `wasm/package.json`, `sandbox/package.json` and `processor/Cargo.toml`.
 - If the fork changed since its last release: its version in `markdown-rs/Cargo.toml` (on its `compmd` branch), and the same version in the `compmd-markdown` dependency of `processor/Cargo.toml` and `markdown-rs/mdast_util_to_markdown/Cargo.toml`.
 - Push: the fork first, then this repository.
 
@@ -32,19 +32,20 @@ git push origin v0.1.1
 ```
 
 The release workflow:
-1. checks the tag is the version in both `package.json` files;
-2. runs `cargo make ci`;
-3. packs both packages with pnpm, which writes the renderer's version in place of the processor's `workspace:*`;
-4. publishes them with npm's trusted publishing, the renderer first. No token is stored; each version carries its provenance.
+1. checks the tag is the version in every package's `package.json`;
+2. installs Playwright's WebKit, for the sandbox's browser tests, and runs `cargo make ci`;
+3. packs the packages with pnpm, which writes the versions in place of their `workspace:*` dependencies on each other;
+4. publishes them with npm's trusted publishing: the renderer, then the processor, then the sandbox, which depends on both. No token is stored; each version carries its provenance.
 
 Check, once it is green:
 
 ```sh
 curl -s https://registry.npmjs.org/-/package/@compmd%2frender/dist-tags
 curl -s https://registry.npmjs.org/-/package/@compmd%2fprocessor/dist-tags
+curl -s https://registry.npmjs.org/-/package/@compmd%2fsandbox/dist-tags
 ```
 
-Both give the new version as `latest`.
+Each gives the new version as `latest`.
 
 ### 3. Publish the crates, by hand
 
@@ -79,7 +80,7 @@ docs.rs builds the documentation a few minutes later.
 
 ## A package's first version, by hand
 
-Trusted publishing works only for a package that already exists on npm. So a new package's first version is published by hand, as `0.1.0` was:
+Trusted publishing works only for a package that already exists on npm. So a new package's first version is published by hand, as `0.1.0` was, and as `@compmd/sandbox`'s first version is to be:
 
 1. Build and pack it, from the repository:
 

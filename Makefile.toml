@@ -44,7 +44,7 @@ command = "cargo"
 args = ["llvm-cov", "--workspace", "--ignore-filename-regex", "markdown-rs/|wasm/src/lib\\.rs", "--fail-under-lines", "99"]
 
 [tasks.packages]
-description = "Build and test the TypeScript packages: the renderer, the processor as WebAssembly, and the editor; the renderer's tests check it against the processor's `conformance/params.json`"
+description = "Build and test the TypeScript packages: the renderer, the processor as WebAssembly, the sandbox (its browser tests in Chrome and WebKit), and the editor; the renderer's tests check it against the processor's `conformance/params.json`"
 clear = true
 script = ["pnpm -r --if-present build", "pnpm -r --if-present test"]
 
