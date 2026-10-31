@@ -80,7 +80,10 @@ export interface Source {
 export interface RenderOptions {
   /** Whether the requirement words (MUST, SHOULD, …) are marked: the spec's are rules. */
   rules?: boolean;
-  /** Where a relative link goes on the site, or `undefined` for its file on GitHub. */
+  /**
+   * Where a link goes on the site, or `undefined` to keep it: an address as written, a relative link to its file on
+   * GitHub. Links within the page (`#…`) never reach it.
+   */
   link?: (href: string) => string | undefined;
 }
 
@@ -129,7 +132,9 @@ export async function renderMarkdown(markdown: string, source: Source, options: 
 
   for (const link of root.querySelectorAll("a[href]")) {
     const href = link.getAttribute("href") ?? "";
-    if (!/^([a-z][a-z+.-]*:|#|\/)/i.test(href)) link.setAttribute("href", options.link?.(href) ?? new URL(href, source.blob).href);
+    if (href.startsWith("#")) continue;
+    const kept = /^([a-z][a-z+.-]*:|\/)/i.test(href) ? href : new URL(href, `${source.blob}${source.path}`).href;
+    link.setAttribute("href", options.link?.(href) ?? kept);
   }
 
   if (options.rules ?? true) markRules(root);

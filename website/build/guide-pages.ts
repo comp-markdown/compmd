@@ -5,6 +5,7 @@ import type { ComponentProps } from "svelte";
 import type Guide from "../src/Guide.svelte";
 import { bookOf, guideLink, writtenOf } from "./guide.ts";
 import { renderMarkdown } from "./spec.ts";
+import { SITE } from "../src/site.ts";
 
 /** The books, in the order the site lists them: their folders in `guides/`. */
 export const BOOKS = ["authors", "developers"] as const;
@@ -29,10 +30,14 @@ export async function guidePages(read: (path: string) => string, blob: string): 
     return { name, title: titleOf(contents), parts: bookOf(contents) };
   });
   const shelf = books.map(({ name, title }) => ({ name, title }));
-  /** The file `path` of `guides/` as a page `root` from the site's root, its links resolved from `up` (see `guideLink`). */
+  /**
+   * The file `path` of `guides/` as a page `root` from the site's root, its links resolved from `up` (see `guideLink`).
+   * A link to the site, which a chapter needs on GitHub, stays on the site it is read on: a local build's, or a preview.
+   */
   const page = async (path: string, up: string | undefined, root: string) => {
     const markdown = read(path);
-    const { html, toc } = await renderMarkdown(markdown, { blob: `${blob}guides/`, path }, { rules: false, link: (href) => guideLink(href, up) });
+    const link = (href: string) => (href.startsWith(SITE) ? `${root}${href.slice(SITE.length)}` : guideLink(href, up));
+    const { html, toc } = await renderMarkdown(markdown, { blob: `${blob}guides/`, path }, { rules: false, link });
     return { html, toc, root, books: shelf, source: `${blob}guides/${path}`, title: titleOf(markdown) };
   };
   const pages: GuidePage[] = [{ folder: "guides/", root: "../", props: { ...(await page("README.md", undefined, "../")), parts: [] } }];
