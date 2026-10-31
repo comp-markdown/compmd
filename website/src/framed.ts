@@ -1,50 +1,47 @@
-// A document of the page rendered in the playground's frame, the sandbox that runs its JSX, Svelte and JavaScript
-// components: a sandboxed iframe with an opaque origin, loaded from the playground beside this page. The page
-// processes the document and sends the frame its tree and its components' code, as the playground does.
+// A document of the page rendered in a sandbox, as the playground renders its pages: `@compmd/sandbox`'s strict frame,
+// which runs its JSX, Svelte and JavaScript components, from the playground's frame documents beside this page. The page
+// processes the document and gives the sandbox its tree and its components.
 import { init, OpenDocument } from "@compmd/processor";
-import { connectFrame } from "@compmd/render/frame";
-import { FRAME_HELLO, type ComponentsLoaded, type ComponentsMessage, type HostStyleMessage } from "../../editor/src/protocol.ts";
+import { createSandbox } from "@compmd/sandbox";
+
+/** The playground's frame documents and host stylesheets, from this page. */
+const PLAYGROUND = new URL("playground/", location.href).href;
 
 /**
- * Renders the document `path`, whose text is `text`, in `iframe` once it has loaded the playground's frame; `files`
- * are the other files it reads. `onShown` is called once the frame shows the page with its components, which load
- * after the page renders: until then the frame would show their places empty. Gives what closes it.
+ * Renders the document `path`, whose text is `text`, in a frame the sandbox puts in `container`; `files` are the other
+ * files it reads. `onShown` is called once the page shows with its components, which load after it renders: until then
+ * its places would show empty. Gives what closes it.
  */
-export async function renderInFrame(iframe: HTMLIFrameElement, path: string, text: string, files: Record<string, string>, onShown: () => void): Promise<() => void> {
+export async function renderInFrame(container: HTMLElement, path: string, text: string, files: Record<string, string>, onShown: () => void): Promise<() => void> {
   await init();
   let inputs: Record<string, unknown> = {};
   const open = () => new OpenDocument({ path, files: { ...files, [path]: text }, now: new Date().toISOString(), inputs });
   let document = open();
-  const { port1, port2 } = new MessageChannel();
+  const view = createSandbox({ base: `${PLAYGROUND}sandbox/`, stylesheets: [`${PLAYGROUND}frame.css?host=reference`] }).open(container, {
+    components: document.components,
+  });
   let rendered = false;
   let loaded = false;
   const showIfReady = () => {
     if (rendered && loaded) onShown();
   };
-  port1.addEventListener("message", ({ data }: MessageEvent<Partial<ComponentsLoaded> | { type?: string }>) => {
-    if (data.type !== "components-loaded") return;
+  view.on("loaded", () => {
     loaded = true;
     showIfReady();
   });
-  iframe.contentWindow?.postMessage(FRAME_HELLO, "*", [port2]);
-  // Before the tree, as the frame compiles the components before it renders.
-  port1.postMessage({ type: "components", components: document.components } satisfies ComponentsMessage);
-  port1.postMessage({ type: "host-style", style: "reference" } satisfies HostStyleMessage);
-  const frame = connectFrame(port1);
-  frame.on("rendered", () => {
+  view.on("rendered", () => {
     rendered = true;
     showIfReady();
   });
-  frame.on("set", ({ input, value }) => {
+  view.on("set", ({ input, value }) => {
     inputs = { ...inputs, [input]: value };
     document.free();
     document = open();
-    frame.render(document.expanded);
+    view.render(document.expanded);
   });
-  frame.render(document.expanded);
+  view.render(document.expanded);
   return () => {
-    frame.close();
-    port1.close();
+    view.destroy();
     document.free();
   };
 }

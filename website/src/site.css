@@ -284,14 +284,13 @@ main > section.hero {
   inline-size: 6em;
 }
 
-/* A page in the playground's sandboxed frame, whose surface is the sheet's and which pads the page itself. */
-.proof.framing iframe {
+/* A page in a sandbox's frame, which fills its place, whose surface is the sheet's and which pads the page itself. */
+.proof.framing .sandboxed {
   display: block;
   inline-size: 100%;
-  border: 0;
 }
 
-.proof.framing:not(.framed) iframe {
+.proof.framing:not(.framed) .sandboxed {
   position: absolute;
   inset: 0;
   opacity: 0;

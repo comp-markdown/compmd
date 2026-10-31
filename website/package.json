@@ -16,6 +16,7 @@
   "dependencies": {
     "@compmd/processor": "workspace:*",
     "@compmd/render": "workspace:*",
+    "@compmd/sandbox": "workspace:*",
     "svelte": "5.57.2"
   },
   "devDependencies": {

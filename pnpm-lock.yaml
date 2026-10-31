@@ -376,6 +376,9 @@ importers:
       '@compmd/render':
         specifier: workspace:*
         version: link:../render
+      '@compmd/sandbox':
+        specifier: workspace:*
+        version: link:../sandbox
       svelte:
         specifier: 5.57.2
         version: 5.57.2(@typescript-eslint/types@8.72.0)

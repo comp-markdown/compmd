@@ -23,6 +23,8 @@ export interface ViewEvents {
   error: { component: string; reason: ErrorReason; message: string };
   /** A render or splice is painted, `ms` after it started. */
   rendered: { ms: number };
+  /** The components last given are loaded in the page, or show their fallbacks: a host may show the page from now. */
+  loaded: Record<string, never>;
 }
 
 /** How a host sends splices. */
@@ -72,7 +74,7 @@ const shapeOf = (components: readonly HostComponent[]): string =>
 export function createSandbox(options: SandboxOptions): Sandbox {
   return {
     open(container, { components }) {
-      const listeners: Listeners = { set: [], link: [], error: [], rendered: [] };
+      const listeners: Listeners = { set: [], link: [], error: [], rendered: [], loaded: [] };
       const emit = <T extends keyof ViewEvents>(type: T, event: ViewEvents[T]) => {
         for (const listener of listeners[type]) listener(event);
       };
@@ -181,7 +183,10 @@ function hostPage(container: HTMLElement, runtime: HostRuntime, emit: Emit): Pag
       page.splice(splices.map((splice) => (typeof splice === "string" ? (JSON.parse(splice) as Splice) : splice)), change);
       painted(started);
     },
-    code: () => undefined,
+    // The trusted components are the host's, loaded already; each frame loads its own as it mounts.
+    code: () => {
+      emit("loaded", {});
+    },
     theme: (tokens) => {
       page.theme(tokens);
     },
@@ -218,6 +223,9 @@ function framePage(container: HTMLElement, runtime: HostRuntime, options: Sandbo
   });
   child.on("rendered", (event) => {
     emit("rendered", event);
+  });
+  child.on("loaded", (event) => {
+    emit("loaded", event);
   });
   child.on("failed", (failure) => {
     emit("error", { component: "", reason: "threw", message: failure.reason === "hung" ? "the page's frame stopped answering" : `the page's frame is of protocol version ${String(failure.version)}` });
