@@ -1,0 +1,100 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "A leaf that writes only what's required gets every default; one that writes a param keeps it; a rendered code block\ngets the defaults too."
+        }
+      ]
+    },
+    {
+      "type": "componentLeaf",
+      "name": "meter",
+      "params": [
+        {
+          "key": "code",
+          "breakpoint": null,
+          "value": "3"
+        },
+        {
+          "key": "tone",
+          "breakpoint": null,
+          "value": "calm"
+        },
+        {
+          "key": "steps",
+          "breakpoint": null,
+          "value": 5
+        }
+      ],
+      "fallback": [
+        {
+          "type": "text",
+          "value": "A calm meter"
+        }
+      ]
+    },
+    {
+      "type": "componentLeaf",
+      "name": "meter",
+      "params": [
+        {
+          "key": "code",
+          "breakpoint": null,
+          "value": "3"
+        },
+        {
+          "key": "tone",
+          "breakpoint": null,
+          "value": "loud"
+        },
+        {
+          "key": "label",
+          "breakpoint": null,
+          "value": "Loud"
+        },
+        {
+          "key": "steps",
+          "breakpoint": null,
+          "value": 5
+        }
+      ],
+      "fallback": [
+        {
+          "type": "text",
+          "value": "A loud meter"
+        }
+      ]
+    },
+    {
+      "type": "code",
+      "lang": "meter",
+      "meta": "{alt=\"Three\"}",
+      "value": "3",
+      "component": {
+        "name": "meter",
+        "params": [
+          {
+            "key": "code",
+            "breakpoint": null,
+            "value": "3"
+          },
+          {
+            "key": "tone",
+            "breakpoint": null,
+            "value": "calm"
+          },
+          {
+            "key": "steps",
+            "breakpoint": null,
+            "value": 5
+          }
+        ]
+      },
+      "alt": "Three"
+    }
+  ]
+}

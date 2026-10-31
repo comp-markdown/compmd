@@ -558,7 +558,7 @@ A processor that renders HTML runs a host-language component through one contrac
 
 ```ts
 mount(target: Element, context: {
-  params: Record<string, unknown>,        // validated against the signature, typed
+  params: Record<string, unknown>,        // validated against the signature, typed, with the defaults of those not given
   slots: Record<string, SlotItem[] | SlotInstance[]>, // each slot's content, by slot name ("default" too)
   set(param: string, value: unknown): void, // changes the input bound to an `input` param
   fallback: { text: string; element: Element }, // the invocation's fallback, as plain text and rendered

@@ -5,6 +5,7 @@ released: "2026-10-29"
 price: 12
 tags: [markdown, components, data]
 reading: {title: Piranesi, page: 120, pages: 272}
+stages: [Found, Reading, Read]
 ideas:
   - {from: document, to: frontmatter}
   - {from: document, to: Markdown}
@@ -611,7 +612,109 @@ Components also nest, whatever they're written in. Here the `note` defined in le
 > [!TIP]
 > **Try it.** Click *Solaris*, then click it again. Set the year above to 1975, and watch books move from one shelf to the other; turn on *unread only*, and the read books leave the first shelf. Then add `kind=warning` to [the note](#:~:text=:::%20note%20%7Btitle=%22Ursula).
 
-## 14. Where next
+## 14. Code renderers
+
+Some content is source in a language that tools outside CompMD already know: a diagram in [Mermaid](https://mermaid.js.org), a chart in Vega-Lite, a map in GeoJSON. A component can *render* such a language: it draws every code block of that language, and the document writes the block as it would anywhere else:
+
+```mermaid {theme=neutral alt="A book is found, then reading, then read"}
+graph LR; Found --> Reading --> Read
+```
+
+A plain renderer shows the code, and GitHub draws the diagram itself. Here, [`mermaid`](#:~:text=js%20component=mermaid), defined in the text, draws it, because its signature says `renders: mermaid`:
+
+```compmd component=mermaid signature
+renders: mermaid
+params:
+  theme: default | dark | neutral = default
+```
+
+```js component=mermaid
+import * as d3 from "d3";
+
+// Mermaid's simplest flowcharts: `graph LR` or `graph TD`, then chains of steps joined by `-->`, each `id` or `id[label]`.
+function parse(code) {
+  const [head = "", ...statements] = code.split(/[;\n]/).map((line) => line.trim()).filter(Boolean);
+  const labels = new Map();
+  const edges = [];
+  for (const statement of statements) {
+    const steps = statement.split("-->").map((step) => /^([\w-]+)(?:\[(.*)\])?$/.exec(step.trim())).filter(Boolean);
+    for (const [, id, label] of steps) if (label || !labels.has(id)) labels.set(id, label ?? id);
+    for (let i = 1; i < steps.length; i++) edges.push([steps[i - 1][1], steps[i][1]]);
+  }
+  return { across: /^(graph|flowchart)\s+LR/.test(head), labels, edges };
+}
+
+// Each step's distance from the start: the longest chain of steps before it.
+function ranks(labels, edges) {
+  const rank = new Map([...labels.keys()].map((id) => [id, 0]));
+  for (let pass = 0; pass < labels.size; pass++) {
+    for (const [from, to] of edges) rank.set(to, Math.max(rank.get(to), rank.get(from) + 1));
+  }
+  return rank;
+}
+
+const THEMES = {
+  default: { fill: "color-mix(in srgb, var(--viz-series-1) 18%, transparent)", stroke: "var(--viz-series-1)", text: "currentColor" },
+  dark: { fill: "#2f3540", stroke: "#2f3540", text: "#fff" },
+  neutral: { fill: "none", stroke: "currentColor", text: "currentColor" },
+};
+
+export default function mount(target, { params, fallback }) {
+  const svg = d3.select(target).append("svg").attr("role", "img").attr("aria-label", fallback.text).style("max-width", "100%");
+
+  function draw({ code, theme }) {
+    svg.selectAll("*").remove();
+    const { across, labels, edges } = parse(code);
+    const rank = ranks(labels, edges);
+    const colors = THEMES[theme];
+    const width = Math.max(0, ...[...labels.values()].map((label) => label.length * 7.5 + 28));
+    const height = 36;
+    const filled = new Map();
+    const at = new Map();
+    for (const id of labels.keys()) {
+      const r = rank.get(id);
+      const n = filled.get(r) ?? 0;
+      filled.set(r, n + 1);
+      at.set(id, across ? { x: r * (width + 48), y: n * (height + 16) } : { x: n * (width + 16), y: r * (height + 40) });
+    }
+    const size = [...at.values()].reduce((max, { x, y }) => [Math.max(max[0], x + width), Math.max(max[1], y + height)], [0, 0]);
+    svg.attr("viewBox", [-1, -1, size[0] + 2, size[1] + 2]).attr("width", size[0] + 2);
+    for (const [from, to] of edges) {
+      const a = at.get(from);
+      const b = at.get(to);
+      const [x1, y1, x2, y2] = across ? [a.x + width, a.y + height / 2, b.x, b.y + height / 2] : [a.x + width / 2, a.y + height, b.x + width / 2, b.y];
+      const angle = Math.atan2(y2 - y1, x2 - x1);
+      const head = (turn) => [x2 - 9 * Math.cos(angle + turn), y2 - 9 * Math.sin(angle + turn)];
+      svg.append("path").attr("d", `M${x1},${y1}L${x2},${y2}`).attr("stroke", "currentColor").attr("stroke-opacity", 0.5);
+      svg.append("path").attr("d", `M${x2},${y2}L${head(0.45)}L${head(-0.45)}Z`).attr("fill", "currentColor").attr("fill-opacity", 0.5);
+    }
+    for (const [id, { x, y }] of at) {
+      const step = svg.append("g").attr("transform", `translate(${x},${y})`);
+      step.append("rect").attr("width", width).attr("height", height).attr("rx", 6).attr("fill", colors.fill).attr("stroke", colors.stroke);
+      step.append("text").text(labels.get(id)).attr("x", width / 2).attr("y", height / 2).attr("text-anchor", "middle").attr("dominant-baseline", "central").attr("font-size", 14).attr("fill", colors.text);
+    }
+  }
+
+  draw(params);
+  return {
+    update: draw,
+    destroy: () => svg.remove(),
+  };
+}
+```
+
+The block's text is the component's `code` param, which a renderer has without declaring it. Its other params go in braces after the language, as `{theme=neutral}` above, and `alt` is its text alternative, what a leaf writes in brackets; without one, a diagnostic says the drawing has none.
+
+A code block is never interpolated: `{{…}}` in it stays as written, as in any code block. Source computed from data is the job of the same component written as a leaf, with `code` as a param. This diagram is made from the `stages` key of the frontmatter:
+
+:: mermaid[The stages: Found, Reading and Read] {code=("graph TD; " + md.doc.stages.join(" --> "))}
+
+This `mermaid` is a small one, written for this tutorial: it draws chains of steps, and nothing else of Mermaid. A pack can provide all of Mermaid, and a document that imports it instead keeps its blocks as they are.
+
+> [!TIP]
+> **Try it.** Add ` --> Shelved` to the end of [`graph LR; Found --> Reading --> Read`](#:~:text=graph%20LR%3B%20Found), and the first diagram grows a step. Change `theme=neutral` to `theme=dark`. Then add `Lent` to [`stages: [Found, Reading, Read]`](#:~:text=stages:%20%5BFound) in the frontmatter, and the second follows. Delete [`alt="A book is found, then reading, then read"`](#:~:text=alt=%22A%20book%20is%20found): the diagnostic asks for a text alternative.
+
+## 15. Where next
 
 The other documents in the menu go further, each on one side of CompMD:
 

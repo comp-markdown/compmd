@@ -219,7 +219,11 @@ impl<'r> Expander<'r> {
         let fence_env = Env::document(self, component.document);
         let fence = self.fence(component, &fence_env);
         let signature = component.signature.as_ref();
-        let caller = self.evaluated(given, signature, env);
+        let mut caller = self.evaluated(given, signature, env);
+        if component.body.is_host() {
+            let defaults = self.defaults(signature, &caller, &fence_env);
+            caller.extend(defaults);
+        }
         let params = boxed(fence, caller);
         let name = invocation.name.to_string();
         let content = match invocation.kind {
@@ -534,6 +538,40 @@ impl<'r> Expander<'r> {
             shift,
             origin: origins::of(invocation.node, env),
         })
+    }
+
+    /// The defaults of the declared params a host-language component's caller doesn't give, after them, in the
+    /// definition's own document `env` (spec §7.4).
+    fn defaults(
+        &mut self,
+        signature: Option<&Signature>,
+        given: &[super::params::Out],
+        env: &Env<'r>,
+    ) -> Vec<super::params::Out> {
+        let mut out = Vec::new();
+        for declaration in signature
+            .map(|signature| signature.params.as_slice())
+            .unwrap_or_default()
+        {
+            let Some(default) = &declaration.default else {
+                continue;
+            };
+            if given.iter().any(|param| param.key == declaration.name) {
+                continue;
+            }
+            let value = self
+                .default(default, &declaration.declared, env)
+                .filter(|value| !matches!(value, Value::Null));
+            if let Some(value) = value {
+                out.push(super::params::Out {
+                    key: declaration.name.clone(),
+                    breakpoint: None,
+                    value,
+                    input: None,
+                });
+            }
+        }
+        out
     }
 
     /// A declared param's default, in the definition's own document.
