@@ -4,6 +4,12 @@ How to build with [CompMD](https://compmd.hakanserce.com/): documents people wri
 
 It is written for the `@compmd` packages at version 0.1.1, and follows them as they change. On the website it is at [compmd.hakanserce.com/guides/developers/](https://compmd.hakanserce.com/guides/developers/).
 
+## Who it is for
+
+Developers who put CompMD in an application, or write packs for it. You know JavaScript or TypeScript and a bundler such as Vite. You want to know about the packages, the sandbox and its trust levels, components in React, Svelte or JavaScript, and publishing. You don't need to know CompMD's syntax first: each chapter explains what it uses, and links to the Author's Guide for the rest.
+
+If you write documents rather than code, [the Author's Guide](../authors/README.md) is the book for you. The two meet at components: a component written in CompMD is in the Author's Guide, and one written in code is in this guide.
+
 ## Contents
 
 **Part I. Getting started**
@@ -44,3 +50,11 @@ It is written for the `@compmd` packages at version 0.1.1, and follows them as t
 ## The examples
 
 Each chapter's code is a file in [`examples/`](examples), which the guides' tests type-check, build and run in Chrome and WebKit, and compare with the chapter's text, so the code you read is code that works.
+
+## Reading it on your machine
+
+The chapters read as they are on GitHub. To see them as the website shows them, run these from the repository's root, after `pnpm install`. Each guide page's **Try it** links then open a playground on your machine.
+
+- **Live, as you edit:** `pnpm --dir editor build` once, for the playground, then `pnpm --dir website dev`. Open [localhost:5173/guides/developers/](http://localhost:5173/guides/developers/); a page reloads when its chapter changes.
+- **As it will be published:** `pnpm --dir editor build`, `pnpm --dir website build`, then `pnpm --dir website preview`, and open the address it prints.
+- **The tests:** `pnpm --dir guides test` checks every chapter against its examples and runs the quick start in Chrome and WebKit.
