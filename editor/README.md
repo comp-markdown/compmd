@@ -49,6 +49,7 @@ Each document in the menu shows one side of CompMD. The files it reads (its fold
 | `diagrams` | Packs: diagrams from a built module, the pack `@preview/minimermaid`'s code renderer, as blocks and as a leaf made from data | `examples/diagrams/`, with the pack of `packs/minimermaid/` |
 | `diagnostics` | Diagnostics and their fixes: an unknown component, param and slot, and values a param doesn't take | `examples/diagnostics/` |
 | `notes` | A long document: field notes, a 52 KB body with 20 charts | `../wasm/bench/fixtures/notes/`, with the charts of `examples/charts/` |
+| `guide/<example>` | Each document of the Developer Guide's examples, which its **Try it** links open: `guide/quick-start` | `../guide/examples/` |
 
 ### Packs
 

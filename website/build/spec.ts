@@ -1,7 +1,8 @@
-// The spec as a page of the site, made at build time: its Markdown as HTML (the processor's plain GFM rendering),
-// with the code highlighted by Shiki, ids on the headings as GitHub gives them so links keep working, each heading
-// linked to itself and to its source, the requirement words (MUST, SHOULD, …) marked, relative links pointed at the
-// repository, and a table of contents of its sections and subsections.
+// The site's long documents as pages, made at build time: the spec, and the chapters of the guide. Their Markdown as
+// HTML (the processor's plain GFM rendering), with the code highlighted by Shiki, ids on the headings as GitHub gives
+// them so links keep working, each heading linked to itself and to its source, the spec's requirement words (MUST,
+// SHOULD, …) marked, relative links pointed at the repository or at the site, and a table of contents of the sections
+// and subsections.
 import { readFileSync } from "node:fs";
 import { initSync, plainHtml } from "@compmd/processor";
 import { Window } from "happy-dom";
@@ -75,13 +76,21 @@ export interface Source {
   path: string;
 }
 
+/** How a document is rendered beyond what every long page gets. */
+export interface RenderOptions {
+  /** Whether the requirement words (MUST, SHOULD, …) are marked: the spec's are rules. */
+  rules?: boolean;
+  /** Where a relative link goes on the site, or `undefined` for its file on GitHub. */
+  link?: (href: string) => string | undefined;
+}
+
 /**
- * Renders the spec `markdown`, from `source`, as a page.
+ * Renders the long document `markdown`, from `source`, as a page: the spec, a chapter of the guide.
  *
  * @throws Error when its headings and the lines they come from don't match, which would link sections to the wrong
  * place.
  */
-export async function renderSpec(markdown: string, source: Source): Promise<RenderedSpec> {
+export async function renderMarkdown(markdown: string, source: Source, options: RenderOptions = {}): Promise<RenderedSpec> {
   const highlighted = await load();
   const window = new Window();
   const document = window.document;
@@ -96,7 +105,7 @@ export async function renderSpec(markdown: string, source: Source): Promise<Rend
 
   const lines = headingLines(markdown);
   const headings = [...root.querySelectorAll("h1, h2, h3, h4, h5, h6")];
-  if (headings.length !== lines.length) throw new Error(`the spec has ${String(lines.length)} headings in its text and ${String(headings.length)} rendered`);
+  if (headings.length !== lines.length) throw new Error(`${source.path} has ${String(lines.length)} headings in its text and ${String(headings.length)} rendered`);
   const slug = slugger();
   const toc: Heading[] = [];
   for (const [index, heading] of headings.entries()) {
@@ -120,9 +129,18 @@ export async function renderSpec(markdown: string, source: Source): Promise<Rend
 
   for (const link of root.querySelectorAll("a[href]")) {
     const href = link.getAttribute("href") ?? "";
-    if (!/^([a-z][a-z+.-]*:|#|\/)/i.test(href)) link.setAttribute("href", source.blob + href.replace(/^\.\//, ""));
+    if (!/^([a-z][a-z+.-]*:|#|\/)/i.test(href)) link.setAttribute("href", options.link?.(href) ?? new URL(href, source.blob).href);
   }
 
+  if (options.rules ?? true) markRules(root);
+  const html = root.innerHTML;
+  window.close();
+  return { html, toc };
+}
+
+/** Marks the requirement words in `root`'s text, outside code and links. */
+function markRules(root: ReturnType<Window["document"]["createElement"]>): void {
+  const document = root.ownerDocument;
   const walker = document.createTreeWalker(root, 4 /* text */);
   const texts: Text[] = [];
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {
@@ -135,8 +153,4 @@ export async function renderSpec(markdown: string, source: Source): Promise<Rend
     span.innerHTML = value.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c] ?? c).replace(RULE, '<em class="rule">$1</em>');
     (text as unknown as { replaceWith(...nodes: unknown[]): void }).replaceWith(...span.childNodes);
   }
-
-  const html = root.innerHTML;
-  window.close();
-  return { html, toc };
 }

@@ -1,11 +1,11 @@
 # The CompMD Developer Guide
 
-**Status: proposed.** A book for developers who put CompMD in an application or write packs for it: *the CompMD Developer Guide*. Its chapters are in the repository, its pages on [the website](design.md) at `/guide/`, and the landing page teases it. The spec says what CompMD *is*; the package READMEs say what each package *has*; the guide teaches how to *build with them*, from a first page to a published pack.
+**Status: accepted (2026-10-31).** A book for developers who put CompMD in an application or write packs for it: *the CompMD Developer Guide*. Its chapters are in the repository, its pages on [the website](design.md) at `/guide/`, and the landing page teases it. The spec says what CompMD *is*; the package READMEs say what each package *has*; the guide teaches how to *build with them*, from a first page to a published pack.
 
 ## Proposed decisions
 
 1. **The guide is a book in a folder of its own, `guide/`**, beside the spec: a contents page (`guide/README.md`) and one Markdown file per chapter, grouped in parts. It reads on GitHub as a book does, changes with the code in the same commits, and grows a chapter at a time.
-2. **`guide/` is a workspace package**, so its code is real: each code sample is a file in `guide/snippets/`, type-checked and run by the package's tests against the repository's packages. A chapter writes its code inline, so it reads anywhere, and a test checks that each block marked with a snippet's name (` ```ts snippet=quick-start/main `) is that file's text: the guide can't drift from code that works.
+2. **`guide/` is a workspace package**, so its code is real: each example is a folder in `guide/examples/`, its code and its CompMD documents together, type-checked and run by the package's tests against the repository's packages. A chapter writes its code inline, so it reads anywhere, and a test checks that each block marked with a file's name (` ```ts snippet=quick-start/main.ts `) is that file's text: the guide can't drift from code that works.
 3. **On the site, the guide is pages of its own, `/guide/` and `/guide/<chapter>/`**, made at build time with the spec page's renderer (the website's decision 6): the processor's `plainHtml`, code highlighted by Shiki with CompMD's grammar, headings linked. Each page has the book's chapters beside the text, its own sections under the current chapter, and links to the chapters before and after it. `/guide/` is the contents page.
 4. **The landing page teases it.** "Use it in your app" becomes three tabs of short code from the guide's snippets, the install line, a live `stars`, and a button to the guide:
    - **In a Vite app**: `vite.config.ts` with `compmd()`, and a document processed and rendered with `virtual:compmd`;
@@ -13,7 +13,7 @@
    - **In an editor**: `OpenDocument` and splices, as today.
    The header and "Where next" link to the guide.
 5. **The website uses `@compmd/vite` itself**, with a `compmd.config.json` that lists its own pack folder (`content/app/`, `stars` in Svelte, trusted, ambient). The live `stars` is that pack, mounted in the page in host mode; the JSX example's frame comes from the site's own `compmd/` instead of the playground's. The site does what the guide teaches.
-6. **An example in the guide opens where it can be played with.** A chapter's CompMD example is a document in `guide/examples/`, and a **Try it** link under it opens it in the playground (`/playground/?doc=guide/<name>`), which bundles the guide's examples beside its menu. When the playground's tools become the *Developer Tools* (their own design: the text, the page and the views as a part any page can embed, with tabs for the sandbox's frames, a console and the messages), the same links open there.
+6. **An example in the guide opens where it can be played with.** A chapter's CompMD example is a document in its example's folder, and a **Try it** link under it opens it in the playground (`/playground/?doc=guide/<name>`), which bundles the guide's examples beside its menu. When the playground's tools become the *Developer Tools* (their own design: the text, the page and the views as a part any page can embed, with tabs for the sandbox's frames, a console and the messages), the same links open there.
 7. **This change writes the book's frame and its first part**, the site's pages for it, and the landing teaser. Each later part is a task of its own, so each is reviewed as it is written; the contents page lists every chapter, and those not written yet say so.
 
 ## The outline

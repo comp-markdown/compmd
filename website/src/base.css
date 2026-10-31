@@ -94,7 +94,7 @@ dt {
   text-wrap: balance;
 }
 
-/* The header: the logo and the three places, thin and always there. */
+/* The header: the logo and the places, thin and always there. */
 
 header.site {
   position: sticky;
@@ -145,6 +145,18 @@ header.site nav a {
 header.site nav a:hover,
 header.site nav a[aria-current="page"] {
   color: var(--accent);
+}
+
+/* On a phone, three places fit: GitHub is a card of "Where next" and a link on every page of the spec and the guide. */
+@media (width < 30rem) {
+  header.site nav {
+    gap: 12px;
+    font-size: 0.94rem;
+  }
+
+  header.site nav .github {
+    display: none;
+  }
 }
 
 footer.site {

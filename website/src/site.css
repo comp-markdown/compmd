@@ -307,6 +307,12 @@ main > section.hero {
   overflow: hidden;
 }
 
+/* Through the sandbox in this page: the page is the site's, laid out as the snapshot was. */
+.proof.framed.hosted {
+  padding: clamp(18px, 3vw, 32px);
+  overflow: visible;
+}
+
 /* The page assembling: once, on load, block by block, for a reader who doesn't ask for less motion. */
 @media (prefers-reduced-motion: no-preference) {
   .hero .proof:not(.ready) .compmd-page > * {
@@ -476,6 +482,17 @@ main > section.hero {
 .snippet p {
   margin: 0 0 10px;
   color: var(--ink-secondary);
+}
+
+/* A snippet's files, each under its name. */
+.snippet figure {
+  margin: 0 0 14px;
+}
+
+.snippet figcaption {
+  margin-block-end: 4px;
+  color: var(--ink-secondary);
+  font: 500 13px/1.4 var(--mono);
 }
 
 /* Under the hood: one point per row, its name beside what it says. */

@@ -1,4 +1,5 @@
-// The snippets the page shows, run as they are written: each renders into the document's body.
+// The editor's snippet the page shows, run as it is written: it renders into the document's body. The other tabs show
+// the guide's quick start, which the guide's tests build and run, and the site's own pack, which the page runs live.
 import { readFileSync } from "node:fs";
 import { initSync } from "@compmd/processor";
 import { beforeAll, beforeEach, expect, it } from "vitest";
@@ -10,12 +11,6 @@ beforeAll(() => {
 
 beforeEach(() => {
   document.body.replaceChildren();
-});
-
-it("renders a document in a page", async () => {
-  await import("./page.ts");
-  expect(document.querySelector("h1")?.textContent).toBe("Hello");
-  expect(document.querySelector(".compmd-box")?.textContent).toBe("A box, written in CompMD.");
 });
 
 it("keeps a document open, and renders an edit", async () => {

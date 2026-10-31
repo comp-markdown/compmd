@@ -1,0 +1,6 @@
+{
+  "name": "@site/app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "The website's own components, built with it and trusted: a pack folder, as an application's are."
+}

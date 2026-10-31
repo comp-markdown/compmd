@@ -4,7 +4,8 @@
 // - Every page, light and dark, at a desktop's and a phone's width: no page errors, no failed requests, nothing wider
 //   than the window.
 // - The landing page: the hero goes live and follows an edit; the plain toggle switches; the input example follows its
-//   input; the JSX and code renderer examples render in the playground's sandbox; a section chosen in the contents wheel scrolls into
+//   input; the JSX and code renderer examples render in the site's sandbox; the site's own stars mount in the page
+//   and set their input; a section chosen in the contents wheel scrolls into
 //   view, and the wheel marks it.
 // - Every link within the site resolves.
 // - The spec: its contents, the section being read marked, the menu on a phone.
@@ -22,7 +23,7 @@ import { serveFolder } from "../build/static.ts";
 const DIST = join(import.meta.dirname, "../dist");
 const PORT = 4191;
 const ROOT = `http://localhost:${String(PORT)}/`;
-const PAGES = ["", "spec/"];
+const PAGES = ["", "spec/", "guide/", "guide/introduction/", "guide/quick-start/", "guide/how-it-fits-together/"];
 const VIEWS = [
   { name: "desktop", width: 1280, height: 860 },
   { name: "phone", width: 390, height: 844 },
@@ -91,6 +92,13 @@ async function landingPage(browser: Browser): Promise<void> {
   check(meter === "72", `the JSX example rendered ${String(meter)} in the sandbox, not 72`);
   const steps = await (await framed("Code renderers")).locator('svg[aria-label="Draft, then review, then published"] text').allTextContents();
   check(steps.join(" ") === "Draft Review Published", `the code renderer example drew "${steps.join(", ")}" in the sandbox`);
+
+  // The site's own stars, trusted, in this page: a click sets the document's input.
+  const rating = page.locator(".feature", { has: page.getByRole("heading", { name: "Your own components, live" }) }).locator(".proof");
+  await rating.scrollIntoViewIfNeeded();
+  await rating.and(page.locator(".framed")).waitFor({ timeout: 15000 });
+  await rating.getByRole("radio", { name: "5 of 5" }).click();
+  await page.waitForFunction(() => [...document.querySelectorAll(".proof.hosted")].some((proof) => proof.textContent.includes("5 of 5.")));
 
   // The page scrolls smoothly, so the section arrives, and the wheel marks it, a moment after the click.
   await page.locator(".wheel a[href='#safe']").click();

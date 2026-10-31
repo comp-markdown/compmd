@@ -1,0 +1,21 @@
+{
+  "name": "@compmd/guide",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The CompMD Developer Guide: its chapters, and the examples whose code they show, which its tests type-check and run.",
+  "type": "module",
+  "scripts": {
+    "lint": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@compmd/processor": "workspace:*",
+    "@compmd/sandbox": "workspace:*",
+    "@compmd/vite": "workspace:*",
+    "@types/node": "26.6.5",
+    "playwright": "1.64.1",
+    "typescript": "6.0.3",
+    "vite": "8.3.4",
+    "vitest": "5.0.5"
+  }
+}

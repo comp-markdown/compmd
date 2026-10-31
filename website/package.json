@@ -17,10 +17,12 @@
     "@compmd/processor": "workspace:*",
     "@compmd/render": "workspace:*",
     "@compmd/sandbox": "workspace:*",
+    "d3": "7.9.0",
     "svelte": "5.57.2"
   },
   "devDependencies": {
     "@compmd/editor": "workspace:*",
+    "@compmd/vite": "workspace:*",
     "@eslint/js": "10.0.1",
     "@sveltejs/vite-plugin-svelte": "7.3.1",
     "@types/node": "26.6.5",

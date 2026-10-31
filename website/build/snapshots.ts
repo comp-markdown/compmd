@@ -2,7 +2,7 @@
 // text, the page it renders and that page's stylesheet, and what a plain Markdown renderer shows of it.
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { initSync, plainHtml, process, type Diagnostic } from "@compmd/processor";
+import { initSync, plainHtml, process, type Diagnostic, type Request } from "@compmd/processor";
 import { createPage } from "@compmd/render";
 import { Window } from "happy-dom";
 
@@ -32,16 +32,20 @@ function load(): void {
 
 const where = ({ code, message, range }: Diagnostic) => `${code} at ${String(range.start.line)}:${String(range.start.column)}: ${message}`;
 
+/** What the site gives its documents besides their files: its packs, as `@compmd/vite` reads them. */
+export type Given = Pick<Request, "packs" | "ambient" | "policy">;
+
 /**
- * Renders the document `path` of `files` as it renders at `now`. Each page's block classes start `compmd-b0`, so
- * they are renamed `compmd-<prefix>-b0`, and pages of several documents can share one HTML page.
+ * Renders the document `path` of `files` as it renders at `now`, with what the site gives it. Each page's block
+ * classes start `compmd-b0`, so they are renamed `compmd-<prefix>-b0`, and pages of several documents can share one
+ * HTML page.
  *
  * @throws Error when the document has a diagnostic: an example shows CompMD as it is meant to be written.
  */
-export function snapshot(path: string, files: Record<string, string>, now: string, prefix: string): Snapshot {
+export function snapshot(path: string, files: Record<string, string>, now: string, prefix: string, given: Given = {}): Snapshot {
   load();
   const text = files[path] ?? "";
-  const { expanded, diagnostics } = process({ path, files, now });
+  const { expanded, diagnostics } = process({ ...given, path, files, now });
   if (diagnostics.length > 0) throw new Error(`${path}: ${diagnostics.map(where).join("; ")}`);
   const window = new Window();
   // happy-dom's elements are the DOM's, as the renderer takes them.
@@ -59,14 +63,17 @@ export function snapshot(path: string, files: Record<string, string>, now: strin
   return snapshot;
 }
 
-/** Every document in `folder`, by its name without `.comp.md`, rendered at `now`; each reads the folder's other files. */
-export function snapshots(folder: string, now: string): Record<string, Snapshot> {
+/**
+ * Every document in `folder`, by its name without `.comp.md`, rendered at `now` with what the site gives it; each reads
+ * the folder's other files.
+ */
+export function snapshots(folder: string, now: string, given: Given = {}): Record<string, Snapshot> {
   const files = Object.fromEntries(readdirSync(folder).map((name) => [name, readFileSync(join(folder, name), "utf8")]));
   const documents = Object.keys(files).filter((name) => name.endsWith(EXTENSION)).sort();
   return Object.fromEntries(
     documents.map((path) => {
       const name = path.slice(0, -EXTENSION.length);
-      return [name, snapshot(path, files, now, name)];
+      return [name, snapshot(path, files, now, name, given)];
     }),
   );
 }

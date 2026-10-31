@@ -100,6 +100,65 @@
   color: var(--accent);
 }
 
+/* The guide's book: its parts, their chapters, the one being read open to its sections; chapters to come, unlinked. */
+.book .part {
+  margin-block: 18px 4px;
+  padding-inline-start: 12px;
+  color: var(--ink);
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+}
+
+.book .chapter > a[aria-current="page"],
+.book .level-2 > a[aria-current="page"] {
+  border-inline-start-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.book .chapter.later span {
+  display: block;
+  padding: 3px 10px;
+  color: var(--ink-secondary);
+  opacity: 0.55;
+}
+
+.toc ol ol {
+  max-block-size: none;
+  padding: 0;
+  overflow: visible;
+}
+
+/* The chapters before and after the one being read. */
+.turn {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-block-start: 48px;
+  padding-block-start: 20px;
+  border-block-start: 1px solid var(--rule);
+}
+
+.turn a {
+  display: grid;
+  gap: 2px;
+  max-inline-size: 48%;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.turn a span {
+  color: var(--ink-secondary);
+  font-size: 0.82rem;
+  font-weight: 400;
+}
+
+.turn .next {
+  margin-inline-start: auto;
+  text-align: end;
+}
+
 .toc-toggle {
   inline-size: 100%;
   padding: 10px 14px;

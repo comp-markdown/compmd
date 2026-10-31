@@ -170,7 +170,8 @@ export function compmd(options: CompmdOptions = {}): Plugin {
       });
     },
     async generateBundle() {
-      if (!app) return;
+      // A server build, such as a prerender's, has no page for frames.
+      if (!app || this.environment.config.consumer === "server") return;
       for (const path of await filesUnder(frames)) this.emitFile({ type: "asset", fileName: `${folder}${path}`, source: await readFile(join(frames, path)) });
       for (const [path, file] of app.served) this.emitFile({ type: "asset", fileName: `${folder}${path}`, source: await readFile(file) });
     },

@@ -1,0 +1,7 @@
+{
+  "$schema": "../vite/compmd.config.schema.json",
+  "packs": {
+    "./app": { "trust": "trusted", "ambient": true }
+  },
+  "libraries": ["d3"]
+}

@@ -22,7 +22,8 @@ const diagnosticsOf = (example: Example, text = textOf(example)) =>
 
 describe("EXAMPLES", () => {
   it("go from the syntax to the diagnostics, each with an id of its own", () => {
-    expect(EXAMPLES.map((example) => example.id)).toEqual(["tour", "definitions", "changelog", "dashboard", "inputs", "kyoto", "complete", "diagrams", "diagnostics", "notes"]);
+    expect(EXAMPLES.map((example) => example.id)).toEqual(["tour", "definitions", "changelog", "dashboard", "inputs", "kyoto", "complete", "diagrams", "diagnostics", "notes", "guide/quick-start"]);
+    expect(exampleIndex("guide/quick-start")).toBe(10);
     expect(exampleIndex("kyoto")).toBe(5);
     expect(exampleIndex("nothing")).toBe(0);
     expect(exampleIndex(null)).toBe(0);

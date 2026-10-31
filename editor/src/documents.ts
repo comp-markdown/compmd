@@ -35,6 +35,8 @@ const bundled = {
   notes: import.meta.glob("../../wasm/bench/fixtures/notes/notes.comp.md", { query: "?raw", import: "default", eager: true }),
   // The charts are a pack of the configuration, which `virtual:compmd` brings.
   examples: import.meta.glob(["../examples/**/*", "!../examples/charts/**"], { query: "?raw", import: "default", eager: true }),
+  // The Developer Guide's documents, which its **Try it** links open (`?doc=guide/<example>`).
+  guide: import.meta.glob("../../guide/examples/*/*.comp.md", { query: "?raw", import: "default", eager: true }),
 } as Record<string, Bundle>;
 
 /** The files of `bundle` under `dir`, by their path from it. */
@@ -136,6 +138,15 @@ export const EXAMPLES: Example[] = [
   example("diagnostics", "Diagnostics and their fixes", { path: "diagnostics.comp.md", files: own("diagnostics"), now: NOW }),
   example("notes", "A long document: field notes (52 KB, 20 charts)", { path: "notes.comp.md", files: filesIn(bundled.notes, NOTES), now: "2026-10-23T09:00:00Z" }, [CHARTS_PACK]),
 ];
+
+/** The Developer Guide's examples' documents, each by its example's folder: `guide/quick-start`. */
+const GUIDE = "../../guide/examples/";
+const guideExamples: Example[] = Object.entries(bundled.guide ?? {}).map(([path, text]) => {
+  const [folder = "", file = ""] = path.slice(GUIDE.length).split("/");
+  const title = folder.replaceAll("-", " ");
+  return example(`guide/${folder}`, `Developer Guide: ${title}`, { path: file, files: { [file]: text }, now: NOW });
+});
+EXAMPLES.push(...guideExamples);
 
 /** The example `?doc=` names, or the first. */
 export function exampleIndex(id: string | null): number {

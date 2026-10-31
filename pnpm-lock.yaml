@@ -294,6 +294,33 @@ importers:
         specifier: 5.0.5
         version: 5.0.5(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
 
+  guide:
+    devDependencies:
+      '@compmd/processor':
+        specifier: workspace:*
+        version: link:../wasm
+      '@compmd/sandbox':
+        specifier: workspace:*
+        version: link:../sandbox
+      '@compmd/vite':
+        specifier: workspace:*
+        version: link:../vite
+      '@types/node':
+        specifier: 26.6.5
+        version: 26.6.5
+      playwright:
+        specifier: 1.64.1
+        version: 1.64.1
+      typescript:
+        specifier: 6.0.3
+        version: 6.0.3
+      vite:
+        specifier: 8.3.4
+        version: 8.3.4(@types/node@26.6.5)(yaml@2.9.1)
+      vitest:
+        specifier: 5.0.5
+        version: 5.0.5(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
+
   render:
     devDependencies:
       '@eslint/js':
@@ -543,6 +570,9 @@ importers:
       '@compmd/sandbox':
         specifier: workspace:*
         version: link:../sandbox
+      d3:
+        specifier: 7.9.0
+        version: 7.9.0
       svelte:
         specifier: 5.57.2
         version: 5.57.2(@typescript-eslint/types@8.72.0)
@@ -550,6 +580,9 @@ importers:
       '@compmd/editor':
         specifier: workspace:*
         version: link:../editor
+      '@compmd/vite':
+        specifier: workspace:*
+        version: link:../vite
       '@eslint/js':
         specifier: 10.0.1
         version: 10.0.1(eslint@10.13.0)

@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { join } from "node:path";
+import { loadApp } from "@compmd/vite";
 import { describe, expect, it } from "vitest";
 import { snapshot, snapshots } from "./snapshots.ts";
 
@@ -34,9 +35,12 @@ describe("snapshot", () => {
 });
 
 describe("snapshots", () => {
-  it("renders every document of the site's content, each by its name", () => {
-    const all = snapshots(join(import.meta.dirname, "../content"), NOW);
-    expect(Object.keys(all)).toContain("hero");
+  it("renders every document of the site's content, each by its name, with the site's packs", async () => {
+    const { request } = await loadApp(join(import.meta.dirname, ".."));
+    const all = snapshots(join(import.meta.dirname, "../content"), NOW, request);
+    expect(Object.keys(all)).toEqual(expect.arrayContaining(["hero", "rating"]));
     for (const [name, shown] of Object.entries(all)) expect(shown.css, name).not.toMatch(/compmd-b\d/);
+    // The site's own stars, which only its page runs, show their fallback.
+    expect(all.rating?.html).toContain("4 of 5");
   });
 });

@@ -75,10 +75,11 @@
 
   const PLACES = [
     { href: "spec/", title: "The spec", text: "Version 1, a draft: the syntax, the components, expressions, data and security." },
+    { href: "guide/", title: "The developer guide", text: "Build with CompMD: documents in your app, components of your own and from packs, and packs of your own." },
     { href: "playground/", title: "The playground", text: "Write CompMD and watch the page, with a tour, examples and the diagnostics." },
     { href: `${REPOSITORY}/tree/main/conformance`, title: "The conformance set", text: "188 cases any implementation can run, with their expected trees." },
     { href: REPOSITORY, title: "GitHub", text: "The spec, the processor in Rust, the packages and this site." },
-    { href: "https://www.npmjs.com/org/compmd", title: "The packages", text: "@compmd/processor and @compmd/render on npm, and the compmd crate." },
+    { href: "https://www.npmjs.com/org/compmd", title: "The packages", text: "The processor, the renderer, the sandbox, the Vite plugin and the pack template on npm, and the compmd crate." },
   ];
 </script>
 
@@ -165,10 +166,18 @@
   <section id="use">
     <div class="wrap">
       <h2>Use it in your app</h2>
-      <p class="lede">Two packages: the processor, which turns text into a tree, and the renderer, which turns the tree into a page.</p>
-      <pre class="install"><code>npm install @compmd/processor @compmd/render</code></pre>
-      <p class="note">On npm: <a href="https://www.npmjs.com/package/@compmd/processor">@compmd/processor</a> and <a href="https://www.npmjs.com/package/@compmd/render">@compmd/render</a>, versions <code>0.x</code> while the spec is a draft. In Rust, the processor is the crate <a href="https://crates.io/crates/compmd">compmd</a>.</p>
+      <p class="lede">A Vite plugin and a line of configuration. Your documents get components of your own and from packs, each run at the trust you give it.</p>
+      <pre class="install"><code>npm install @compmd/vite @compmd/processor @compmd/sandbox</code></pre>
+      <p class="note">Versions <code>0.x</code> while the spec is a draft. On npm: <a href="https://www.npmjs.com/package/@compmd/processor">@compmd/processor</a> and <a href="https://www.npmjs.com/package/@compmd/render">@compmd/render</a>, with <code>@compmd/sandbox</code> and <code>@compmd/vite</code> to follow. In Rust, the processor is the crate <a href="https://crates.io/crates/compmd">compmd</a>.</p>
       <Snippets />
+      <div class="feature">
+        <div class="about">
+          <h3>Your own components, live</h3>
+          <p>This site's <code>stars</code>, a Svelte component from its own pack folder, trusted, so it mounts in this page. The document binds it to an input. Click a star.</p>
+        </div>
+        <Example name="rating.comp.md" snapshot={snapshots.rating} live="host" />
+      </div>
+      <p class="actions"><a class="button primary" href="guide/">Read the developer guide</a></p>
     </div>
   </section>
 

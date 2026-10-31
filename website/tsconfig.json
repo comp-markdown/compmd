@@ -11,9 +11,9 @@
     "erasableSyntaxOnly": true,
     "allowImportingTsExtensions": true,
     "rewriteRelativeImportExtensions": true,
-    "types": ["node", "svelte", "vite/client"],
+    "types": ["node", "svelte", "vite/client", "@compmd/vite/client"],
     "noEmit": true,
     "skipLibCheck": true
   },
-  "include": ["src", "build", "scripts", "snippets", "*.ts", "*.js"]
+  "include": ["src", "build", "scripts", "snippets", "app", "*.ts", "*.js"]
 }

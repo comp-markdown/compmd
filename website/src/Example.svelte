@@ -1,5 +1,6 @@
 <!-- A document beside the page it renders: its snapshot, made live once it scrolls into view. A live example with
-     inputs renders in this page; one with components in code renders in a sandbox, as the playground does. -->
+     inputs renders in this page; one with components in code renders in a sandbox, as the playground does; one with the
+     site's own components renders through the sandbox in this page, as an app with components of its own does. -->
 <script lang="ts">
   import { onMount } from "svelte";
   import type { Snapshot } from "../build/snapshots.ts";
@@ -9,8 +10,11 @@
     /** The document's file name, shown on its sheet. */
     name: string;
     snapshot: Snapshot;
-    /** How it goes live: in this page, so the reader can change its inputs, or in the sandboxed frame. */
-    live?: "page" | "frame" | undefined;
+    /**
+     * How it goes live: in this page, so the reader can change its inputs; in the sandboxed frame; or through the
+     * sandbox in this page, the site's own components inline.
+     */
+    live?: "page" | "frame" | "host" | undefined;
     /** The frame's height, for `live="frame"`, since a frame doesn't take its content's. */
     height?: string | undefined;
   }
@@ -31,9 +35,9 @@
       const { liven } = await import("./live.ts");
       close = (await liven(page, name, snapshot.text, files)).destroy;
       ready = true;
-    } else if (live === "frame" && sandboxed) {
+    } else if ((live === "frame" || live === "host") && sandboxed) {
       const { renderInFrame } = await import("./framed.ts");
-      close = await renderInFrame(sandboxed, name, snapshot.text, files, () => (framed = true));
+      close = await renderInFrame(sandboxed, name, snapshot.text, files, () => (framed = true), live);
     }
   }
 
@@ -58,11 +62,11 @@
     <figcaption>{name}</figcaption>
     <pre>{snapshot.text}</pre>
   </figure>
-  <div class={["proof", live === "page" && "live", ready && "ready", live === "frame" && "framing", framed && "framed"]}>
+  <div class={["proof", (live === "page" || live === "host") && "live", ready && "ready", (live === "frame" || live === "host") && "framing", framed && "framed", live === "host" && "hosted"]}>
     <div class="compmd-page" bind:this={page} hidden={framed}>{@html snapshot.html}</div>
-    {#if live === "frame"}
+    {#if live === "frame" || live === "host"}
       <!-- Not `hidden` until it renders, which would keep its frame from loading: it waits invisible over the snapshot. -->
-      <div class="sandboxed" bind:this={sandboxed} style:height></div>
+      <div class="sandboxed" bind:this={sandboxed} style:height={live === "frame" ? height : undefined}></div>
     {/if}
   </div>
 </div>
