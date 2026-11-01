@@ -264,7 +264,7 @@ So the two are the same kind of thing, an npm package fetched and checked the sa
 **The processor:** `sources` lists the packs a request doesn't hold, from the document and from the packs it holds, with ranges and pinned integrity.
 
 **The packages:**
-- `@compmd/registry`, new: `Registry`, `NpmRegistry`, `resolvePacks`, the tarball reader (gzip, tar, integrity), the cache, and a proxy handler for Node and workers; tests against a local registry, and in Chrome and WebKit.
+- `@compmd/registry`, new: `Registry`, `NpmRegistry`, `resolvePacks`, the tarball reader (gzip, tar, integrity), the cache, and a proxy handler for Node and workers; tests against a local registry, and in Chrome and WebKit. How it does each is its own design: [resolving registry packs](resolving-registry-packs.md).
 - `@compmd/sandbox`: `modules(place)` may give `{ code }` (R2); library packs loaded as `blob:` modules, and a pack's imports of them written as their URLs (R9).
 - `@compmd/registry`, for R9: library packs resolved with packs, one version per document, `single`.
 - `@compmd/vite`: `registries`, `fetch` and the size cap in the configuration and its schema; `registry` in `virtual:compmd`; the dev server as a proxy.

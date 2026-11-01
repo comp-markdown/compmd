@@ -1,6 +1,6 @@
-# `@compmd/registry`, packs from a registry
+# Resolving registry packs
 
-**Status: proposed (2026-11-01).** Builds decisions 1 to 3 and 5 of [packs from a registry](packs-from-a-registry.md) (R1 to R5), as the companion [*CompMD packs on a registry*](../compmd-registry-v1.md) states them (sections 3 and 4): a host gives `resolvePacks` its request and its registries, and gets back the packs the document needs, fetched and checked. Library packs (R9) are [their own task](packs-from-a-registry.md#r9-libraries-packs-share-s3), and so is the sandbox's side, built modules given as code (R2).
+**Status: proposed (2026-11-01).** How `@compmd/registry` resolves, fetches and checks packs. It builds decisions 1 to 3 and 5 of [packs from a registry](packs-from-a-registry.md) (R1 to R5), as the companion [*CompMD packs on a registry*](../compmd-registry-v1.md) states them (sections 3 and 4), which decided *what* a host does; this design decides *how*: a host gives `resolvePacks` its request and its registries, and gets back the packs the document needs, fetched and checked. Library packs (R9) are [their own task](packs-from-a-registry.md#r9-libraries-packs-share-s3), and so is the sandbox's side, built modules given as code (R2).
 
 ## Proposed decisions
 
