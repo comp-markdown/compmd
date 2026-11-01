@@ -14,7 +14,8 @@ CompMD (Component Markdown) is a Markdown flavor that adds components, container
 | File | What it holds |
 |---|---|
 | [compmd-spec-v1.md](compmd-spec-v1.md) | The specification, version 1 (draft) |
-| [CHANGELOG.md](CHANGELOG.md) | Every change to the spec, newest first |
+| [compmd-registry-v1.md](compmd-registry-v1.md) | *CompMD packs on a registry*, the spec's companion for pack authors and hosts: what a pack on npm must be, how a host reads one, library packs |
+| [CHANGELOG.md](CHANGELOG.md) | Every change to the spec and its companion, newest first |
 | [guides/](guides/README.md) | The CompMD guides: the Author's Guide, for writing documents, and the Developer's Guide, for building with CompMD, from a first page to a published pack; their examples are tested |
 | [llms.txt](llms.txt) | The AI authoring guide: what an AI agent reads before writing CompMD (measured below) |
 | [conformance/](conformance/README.md) | Test cases any implementation can run (spec §13.2) |

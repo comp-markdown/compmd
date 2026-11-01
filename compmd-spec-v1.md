@@ -7,7 +7,7 @@
 
 CompMD (Component Markdown) is a Markdown flavor that adds components, containers, slots and CSS-like layout to CommonMark + GFM, while staying readable in any plain Markdown renderer.
 
-**Version 1, draft. Last changed 2026-10-30.** Every change is listed in the [changelog](CHANGELOG.md).
+**Version 1, draft. Last changed 2026-11-01.** Every change is listed in the [changelog](CHANGELOG.md).
 
 **Author:** Hakan Serce.
 
@@ -408,16 +408,16 @@ Rules:
 
 ### 6.4 Packages and the registry
 
-- **`@scope/pack` is the npm package of that name**, fetched from the [npm registry](https://www.npmjs.com) or an npm-compatible registry the processor is configured with (a private registry, a mirror). A processor MAY resolve from a local cache or installed packages, so documents work offline. It MAY offer other registries with the same naming.
+- **`@scope/pack` is the npm package of that name**, fetched from the [npm registry](https://www.npmjs.com) or an npm-compatible registry the processor is configured with (a private registry, a mirror). A processor MAY resolve from a local cache or installed packages, so documents work offline. It MAY offer other registries with the same naming. What a pack on a registry must be, how a processor reads one, and the library packs packs share are in the companion [*CompMD packs on a registry*](compmd-registry-v1.md).
 - **The pack's document** is named by the `compmd` field of its `package.json` (`"compmd": "./kit.comp.md"`), by default `index.comp.md`. `@scope/pack/file` (in a data `from`, section 8.6) is that file in the package.
 - **`package.json` is the registry manifest** that `export.pack` and `export.version` must match (F022). Its `integrity` is the hash an import's `integrity` key holds.
 - **`@compmd/*` is reserved** by this spec and never fetched from a registry: processors build `@compmd/core` in, whoever holds that scope on a registry.
 - Names are always scoped; an unscoped `from` that isn't a relative path is F026.
 - An import whose source can't be loaded (a missing file, no release matching the version) is F026. Its names are dropped, and their uses render fallbacks without F002.
 - **Which packs a document may import** is the processor's configuration. By default, any pack in the registry: its code runs in the strict sandbox (section 15), so a pack nobody reviewed can't reach the reader's data, and only documents that import it are affected. A processor MAY instead allow only the packs its configuration lists, and MAY deny packs by name or version. A pack it doesn't allow is F026, with the reason in the message. A deny list is the host's own policy (content it won't show, packs it won't serve, licences, misuse); it isn't what keeps readers safe, which the sandbox does for every pack, known or not.
-- **The processor gets packs, never the reader's browser.** A processor that renders for a reader fetches packs itself or through its own cache, so the registry doesn't learn who reads which document (section 15, "Privacy"). It MAY cap a pack's size; a larger pack is F026.
-- **Built modules.** A component file in a pack MAY be a built ES module (`.js`, the plain binding of section 7.6) with every library it imports bundled in, but its binding's runtime and the libraries its pack names in `peerDependencies`, which the processor provides (section 7.6). A built module SHOULD be one file. A processor MAY load such a file where it runs the component, by its place in the pack (the pack, its version and the file's path), instead of passing its text: the file MUST be the one the pack published, from files checked against the pack's integrity when the processor got them (F035). Loaded once, it can be cached by its place, since a published version never changes.
-- **What a pack needs from the processor** is the `peerDependencies` of its `package.json`: its binding's runtime with the lowest version it works with (`"svelte": "^5.40"`), and the libraries it expects the processor to provide (`"d3": "^7"`). A processor checks them when it resolves the pack, against the runtimes and libraries it has (section 7.6): one it doesn't have, or has at a version outside the range, is W121 on the import, naming it, the range and the version it has. The import is kept: the pack's components that don't need it still render, and those that do render their fallbacks with W121.
+- **The processor gets packs.** A processor that renders for a reader fetches packs itself or through its own cache, so the registry doesn't learn who reads which document (section 15, "Privacy"). Its configuration MAY instead let the reader's browser fetch them, from the registries the configuration names; it SHOULD then tell its readers, since the registry learns which packs they load ([*CompMD packs on a registry*](compmd-registry-v1.md), section 4). A document can never choose this. A processor MAY cap a pack's size; a larger pack is F026.
+- **Built modules.** A component file in a pack MAY be a built ES module (`.js`, the plain binding of section 7.6) with every library it imports bundled in, but its binding's runtime and the libraries its pack names in `peerDependencies`, which the processor provides (section 7.6). A built module SHOULD be one file, with no relative imports: a processor that passes a built module's text to where it runs can't load one that imports files of its own, and renders its components' fallbacks with W121. A processor MAY load such a file where it runs the component, by its place in the pack (the pack, its version and the file's path), instead of passing its text: the file MUST be the one the pack published, from files checked against the pack's integrity when the processor got them (F035). Loaded once, it can be cached by its place, since a published version never changes.
+- **What a pack needs from the processor** is the `peerDependencies` of its `package.json`: its binding's runtime with the lowest version it works with (`"svelte": "^5.40"`), and the libraries it expects the processor to provide (`"d3": "^7"`), which the processor offers or gets from a registry as library packs ([*CompMD packs on a registry*](compmd-registry-v1.md), section 5). A processor checks them when it resolves the pack, against the runtimes and libraries it has (section 7.6): one it doesn't have, or has at a version outside the range, is W121 on the import, naming it, the range and the version it has. The import is kept: the pack's components that don't need it still render, and those that do render their fallbacks with W121.
 
 ## 7. Defining components
 
@@ -1607,6 +1607,7 @@ A permissive sandbox keeps rules 3 to 5 and adds to rules 1 and 2 only what the 
 - The reader decides which origins a document may reach, the first time each is needed (section 8.6); the document's author cannot.
 - Processors MUST NOT send cookies or other credentials with document fetches, except those the host configured for that origin, and SHOULD send no `Referer`.
 - Processors SHOULD share cached copies between readers when the URL is the same, so a cache hit tells the origin nothing.
+- Packs are fetched by the processor, not the reader's browser (section 6.4), unless the processor's configuration lets the browser fetch them from the registries it names. A registry the browser fetches from learns the reader's address, the time, and the names and versions of the packs the document imports; never the document, what it shows or its inputs. Such fetches send no credentials, and the processor SHOULD tell its readers.
 
 ## 16. Example
 
