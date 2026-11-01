@@ -32,17 +32,19 @@ The frames load the sandbox's own documents, which the host serves, from its ori
 
 ```ts
 // at build time, in Node
-import { buildFrames, buildLibraries, libraryDefinition, readLibraries, RUNTIMES } from "@compmd/sandbox/build";
+import { buildFrames, buildLibraries, readLibraries, RUNTIMES } from "@compmd/sandbox/build";
 
 const imports = await buildLibraries([{ name: "d3", imports: ["d3"] }], { root, out: "public/sandbox/libs", shared: RUNTIMES });
 const libraries = await readLibraries("public/sandbox/libs");
-await buildFrames({ out: "public/sandbox", imports, libraries });
-const { runtimes, libraries: offered } = await libraryDefinition("public/sandbox");
+const definition = await buildFrames({ out: "public/sandbox", imports, libraries });
+// definition: { runtimes: [{ name: "react", version: "19.3.0", imports: […] }, …], libraries: [{ name: "d3", version: "7.9.0", imports: ["d3"] }] }
+
 // The processor's request: it reports a runtime the frames don't have (W102) and a pack's unmet peerDependencies (W121).
-request.policy = { ...request.policy, runtimes, libraries: offered };
+const named = ({ name, version }) => ({ name, version });
+request.policy = { ...request.policy, runtimes: definition.runtimes.map(named), libraries: definition.libraries.map(named) };
 ```
 
-`buildFrames` writes `strict.html` and `permissive.html`, each with its policy and the import map, next to the frame runtime and the runtimes of the spec's bindings (React 19, React DOM, Svelte 5). `buildLibraries` adds libraries the host offers its documents' components; without it they have the runtimes alone. What component code may import is spec §7.6: these runtimes and libraries, and nothing else. `buildFrames` also writes the frames' **library definition**, each runtime and library with its version and import names, which `libraryDefinition` reads: the processor's `policy.runtimes` and `policy.libraries`, and what a pack's build leaves out (`RUNTIMES`' import names). The documents work wherever they are served. A host SHOULD serve them with the header `Content-Security-Policy: sandbox allow-scripts`, so they are sandboxed even when opened outside a frame.
+`buildFrames` writes `strict.html` and `permissive.html`, each with its policy and the import map, next to the frame runtime and the runtimes of the spec's bindings (React 19, React DOM, Svelte 5). `buildLibraries` adds libraries the host offers its documents' components; without it they have the runtimes alone. What component code may import is spec §7.6: these runtimes and libraries, and nothing else. `buildFrames` gives the frames' **library definition**, each runtime and library with its version and import names, whose names and versions are the processor's `policy.runtimes` and `policy.libraries`. It writes it to `library-definition.json` there too, which `libraryDefinition` reads, for a host that builds its frames ahead and makes requests later. A pack's build leaves out `RUNTIMES`' import names. The documents work wherever they are served. A host SHOULD serve them with the header `Content-Security-Policy: sandbox allow-scripts`, so they are sandboxed even when opened outside a frame.
 
 ## A document's page
 

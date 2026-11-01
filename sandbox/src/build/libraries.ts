@@ -30,8 +30,12 @@ export interface BuiltLibrary {
 
 /**
  * What the frames provide component code (spec §7.6): the runtimes and the libraries a host offers, with their
- * versions and import names. It is the processor's `policy.runtimes` and `policy.libraries`, which check a pack's
- * `peerDependencies`, and what a pack's build leaves out.
+ * versions and import names. A host puts their names and versions in the processor's `policy.runtimes` and
+ * `policy.libraries`, which report a component on a runtime the frames don't have (W102) and a pack whose
+ * `peerDependencies` they can't meet (W121).
+ *
+ * @example
+ * { runtimes: [{ name: "svelte", version: "5.57.2", imports: ["svelte", …] }, …], libraries: [{ name: "d3", version: "7.9.0", imports: ["d3"] }] }
  */
 export interface LibraryDefinition {
   runtimes: BuiltLibrary[];

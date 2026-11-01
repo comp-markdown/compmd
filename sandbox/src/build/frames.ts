@@ -46,13 +46,14 @@ function frameDocument(level: Level, policy: string, importMap: string): string 
 
 /**
  * Writes the frame documents into `options.out`, with the frame runtime and the shared libraries. They work wherever
- * the host serves them: a permissive frame names the `strict.html` next to it in its second policy. It writes the
- * frames' library definition there too (`libraryDefinition`).
+ * the host serves them: a permissive frame names the `strict.html` next to it in its second policy. It gives the
+ * frames' library definition, and writes it there too, for a host that reads it later (`libraryDefinition`).
  *
  * @example
- * await buildFrames({ out: "public/compmd" });
+ * const { runtimes, libraries } = await buildFrames({ out: "public/compmd" });
+ * // runtimes: [{ name: "react", version: "19.3.0", imports: ["react", "react/jsx-runtime"] }, …]
  */
-export async function buildFrames(options: FramesOptions): Promise<void> {
+export async function buildFrames(options: FramesOptions): Promise<LibraryDefinition> {
   const from = options.from ?? fileURLToPath(new URL("../frames/", import.meta.url));
   await cp(from, options.out, { recursive: true });
   const shared = JSON.parse(await readFile(join(from, "libs/importmap.json"), "utf8")) as { imports: Record<string, string> };
@@ -61,15 +62,14 @@ export async function buildFrames(options: FramesOptions): Promise<void> {
   await writeFile(join(options.out, "permissive.html"), frameDocument("permissive", permissivePolicy(importMap), importMap));
   const definition: LibraryDefinition = { runtimes: await readLibraries(join(from, "libs")), libraries: [...(options.libraries ?? [])] };
   await writeFile(join(options.out, DEFINITION), `${JSON.stringify(definition, null, 2)}\n`);
+  return definition;
 }
 
 /**
- * The library definition of the frames `buildFrames` wrote into `out`: what the processor's `policy` takes as its
- * `runtimes` and `libraries` (spec §7.6), and what a pack's build leaves out.
+ * The library definition of the frames `buildFrames` wrote into `out`, read back.
  *
  * @example
  * const { runtimes, libraries } = await libraryDefinition("public/compmd");
- * const request = { ...request, policy: { ...request.policy, runtimes, libraries } };
  */
 export async function libraryDefinition(out: string): Promise<LibraryDefinition> {
   return JSON.parse(await readFile(join(out, DEFINITION), "utf8")) as LibraryDefinition;

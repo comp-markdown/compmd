@@ -6,7 +6,7 @@ import { existsSync } from "node:fs";
 import type { ServerResponse } from "node:http";
 import { readdir, readFile, rm } from "node:fs/promises";
 import { extname, join, relative, sep } from "node:path";
-import { buildFrames, buildLibraries, libraryDefinition, readLibraries, RUNTIMES, type LibraryDefinition } from "@compmd/sandbox/build";
+import { buildFrames, buildLibraries, readLibraries, RUNTIMES, type LibraryDefinition } from "@compmd/sandbox/build";
 import type { Plugin, ResolvedConfig } from "vite";
 import { loadApp, type App } from "./app.ts";
 
@@ -78,8 +78,7 @@ async function buildSandbox(app: App, root: string, out: string): Promise<Librar
   const offers = app.config.libraries.length > 0;
   const imports = offers ? await buildLibraries(app.config.libraries, { root, out: join(out, "libs"), shared: RUNTIMES }) : {};
   const libraries = offers ? await readLibraries(join(out, "libs")) : [];
-  await buildFrames({ out, imports, libraries });
-  return libraryDefinition(out);
+  return buildFrames({ out, imports, libraries });
 }
 
 /**
