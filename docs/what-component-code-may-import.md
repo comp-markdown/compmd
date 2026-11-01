@@ -7,7 +7,7 @@ The tour's idea map is a `js` fence that starts with `import * as d3 from "d3"`.
 ## Proposed decisions
 
 1. **A component's code may import four kinds of module, and nothing else** (Q1): its binding's runtime; a library the processor offers; a library pack its pack names (as [packs from a registry](packs-from-a-registry.md), decision 8, defines); and, in a built module, the module's own files in its pack. Anything else resolves nowhere: the component renders its fallback with a new warning, **W121** (decision 5).
-2. **A binding's runtime is the processor's, never bundled** (Q2). §6.4 *Built modules* changes from "the libraries it uses bundled in" to "every library it imports bundled in, but its binding's runtime and the libraries it shares". The spec names each binding's runtime modules exactly: React 19 is `react`, `react/jsx-runtime`, `react-dom` and `react-dom/client`; Svelte 5 is `svelte` and the `svelte/*` modules the processor's version of it offers for the client.
+2. **A binding's runtime is the processor's, never bundled, and the processor says what it has** (Q2). §6.4 *Built modules* changes from "the libraries it uses bundled in" to "every library it imports bundled in, but its binding's runtime and the libraries it shares". The spec names a runtime by its framework and major version, as today (`react@19`, `svelte@5`), and leaves which of the framework's modules and which minor version to the processor: each processor publishes its runtimes and libraries, with their versions and module names, as its library definition. A pack says what it expects (decision 6), and a processor that doesn't have it says so when it resolves the pack.
 3. **A processor MAY offer libraries, as it may offer ambient packs** (Q3). Code that imports one isn't portable. W113, today for ambient names and `host:` data, also covers an offered library being imported (optional, for portable documents).
 4. **Source is compiled as the spec's bindings say, and its imports follow decision 1** (Q4). JSX compiles with React's automatic runtime (`react/jsx-runtime`), Svelte for the client; types are stripped. A component's source imports only bare names: a relative import in source has no file to resolve against, so it is W121.
 5. **Code that can't load renders its fallback with W121** (Q5): an import that resolves nowhere, a compile error, a built module whose file doesn't match its hash. W118 stays for code that throws while it mounts or updates. A sandbox reports both by their codes, not as a bare "failed".
@@ -37,17 +37,18 @@ A document's own fences could say what they need too, for example a `libraries` 
 
 ## Q2. A binding's runtime
 
-A built module can't bundle its runtime: two copies of React in one frame break hooks, and a Svelte component compiled against one copy of `svelte/internal/client` can't share state with components compiled against another. So the runtime is the processor's, and the spec has to name it exactly, or a pack can't know what to leave out.
+A built module can't bundle its runtime: two copies of React in one frame break hooks, and a Svelte component compiled against one copy of `svelte/internal/client` can't share state with components compiled against another. So the runtime is the processor's, and a pack has to know what to leave out of its build.
 
-| | R1. A fixed list in the spec (recommended) | R2. "The framework's modules" |
+| | R1. The spec lists each runtime's modules | R2. Each processor's library definition (recommended) |
 |---|---|---|
-| React 19 | `react`, `react/jsx-runtime`, `react-dom`, `react-dom/client` | any `react*` subpath |
-| Svelte 5 | `svelte` and the client modules the processor's version offers (today `svelte/internal/client`, `svelte/internal/disclose-version`, `svelte/internal/flags/legacy`, `svelte/internal/flags/async`, `svelte/reactivity`, `svelte/store`, `svelte/transition`, `svelte/easing`, `svelte/motion`, `svelte/animate`, `svelte/events`, `svelte/attachments`) | any `svelte/*` |
-| A pack's build can check it | yes | no: `react-dom/server` passes and fails at render |
+| Where the list is | the spec: React 19 is `react`, `react/jsx-runtime`, `react-dom`, `react-dom/client`; Svelte 5 is `svelte` and the client modules its compiler emits (today `svelte/internal/client` and 11 more) | the processor's: `@compmd/sandbox` exports its runtimes and libraries, with versions and module names (today React 19.3, Svelte 5.57, and what the host adds) |
+| A new minor version of Svelte, with a new internal module | a spec change | a processor release |
+| A pack's build can check it | against the spec | against the processor it targets (the template checks against `@compmd/sandbox`'s) |
+| A pack that needs more than a processor has | fails at render | says so in `peerDependencies`; the processor reports it when it resolves the pack (W121), before anything renders |
 
-**Recommendation: R1**, for React as listed. Svelte's list grows with its minor versions (new compiler flags), so the spec names the public modules and says "and the internal modules the Svelte compiler of that version emits for the client"; the template checks a build against the processor's list.
+**Recommendation: R2.** The spec says what a runtime is (the framework, at the major the binding names), that a built module leaves it out, and that a pack states what it needs (Q6); a processor says which modules and versions it has. Svelte's internal modules change with its minor versions, which would otherwise be a spec change every time.
 
-**Versions.** The spec names majors. Svelte's compiled code calls `svelte/internal/client`, which may gain functions in a minor version: a component built with Svelte 5.57 may not run on a processor with 5.40. So a pack states the lowest version it was built for (Q6), and a processor SHOULD keep its runtimes at a recent minor.
+**Is that a worse experience?** Not if the mismatch shows up front. A pack built for Svelte 5.57 on a processor with 5.40: with R1 the spec can't tell the two apart, and the component fails at render with a load error; with R2 the pack's `"svelte": "^5.57"` meets the processor's 5.40 when the import resolves, and the author and reader see W121 naming the runtime and both versions. What R2 loses is a list that holds for every processor, which no pack could rely on anyway, since minor versions differ between processors. A processor SHOULD keep its runtimes at a recent minor.
 
 ## Q3. Libraries a processor offers
 
@@ -103,15 +104,15 @@ The spec already says a processor without a runtime reports W102 (§7). The Rust
 
 **The spec:**
 - §6.4 *Built modules*: what is bundled and what isn't (decision 2).
-- §7.6: each binding's runtime modules (Q2) and what compiling its source means (Q4); a new paragraph on what component code may import (Q1, Q3).
+- §7.6: that a binding's runtime is the processor's, named by framework and major, with its modules and minor version in the processor's library definition (Q2); what compiling its source means (Q4); a new paragraph on what component code may import (Q1, Q3).
 - §6.3: offered libraries alongside ambient packs; W113 widened.
 - §15 rule 2 and the informative note (decision 8).
 - §10.2: W121, its recovery and stages; W113's row.
 - `CHANGELOG.md`; conformance cases for W102 with a configured runtime list and for W121 from `peerDependencies`.
 
-**The processor:** the configured runtimes (W102); `peerDependencies` checked when a pack resolves (W121); W118 and W121 in its diagnostics, for hosts that report them from the sandbox.
+**The processor:** the configured runtimes and libraries, with their versions, from the host's library definition (W102); `peerDependencies` checked when a pack resolves (W121); W118 and W121 in its diagnostics, for hosts that report them from the sandbox.
 
-**`@compmd/sandbox`:** errors carry W118 or W121; the runtime list is exported, for the template's check.
+**`@compmd/sandbox`:** errors carry W118 or W121; its library definition (the runtimes and the libraries a host adds, with versions and module names) is exported, for the processor's checks and the template's.
 
 **`@compmd/create-pack`:** externals from the runtime list, not a pattern; the check fails a build whose imports aren't in it; `peerDependencies` written from what was left out.
 
