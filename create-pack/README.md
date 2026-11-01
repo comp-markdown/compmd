@@ -40,7 +40,7 @@ mermaid/
   README.md            what to change, how to try it, how to publish
 ```
 
-The component is plain TypeScript in the plain binding (spec §7.6). React and Svelte stay out of the bundle, since the sandbox's frames provide them, so a component written in either renders it inside `mount`.
+The component is plain TypeScript in the plain binding (spec §7.6). React and Svelte stay out of the bundle, since the sandbox's frames provide them, so a component written in either renders it inside `mount`; the build adds each one it leaves out to `peerDependencies`, at the version it was built with, so a host with an older one reports it when it resolves the pack (spec §6.4).
 
 ## Commands
 

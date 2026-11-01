@@ -34,6 +34,12 @@ describe("the example's build", () => {
     const hash = `sha384-${createHash("sha384").update(module).digest("base64")}`;
     const bundle = readFileSync(join(OUT, "assets", readFileSync(join(OUT, "index.html"), "utf8").match(/assets\/(index-[^"]+\.js)/)?.[1] ?? ""), "utf8");
     expect(bundle).toContain(hash);
+    // The frames' runtimes, in the request's policy too, so the processor checks against them (spec §7.6).
+    const definition = JSON.parse(readFileSync(join(OUT, "compmd/library-definition.json"), "utf8")) as { runtimes: { name: string; version: string }[] };
+    expect(definition.runtimes.map(({ name }) => name)).toEqual(["react", "react-dom", "svelte"]);
+    const version = (definition.runtimes[0]?.version ?? "").replaceAll(".", "\\.");
+    // Minified, the request's JSON is an object literal: `runtimes:[{name:"react",version:"19.3.0"}`, in any quotes.
+    expect(bundle).toMatch(new RegExp(`runtimes:\\[\\{name:["'\`]react["'\`],version:["'\`]${version}["'\`]\\}`));
     // The denied pack's code is nowhere: it is never served, and its uses fall back.
     expect(existsSync(join(OUT, "compmd/packs/@example/old@1.0.0"))).toBe(false);
   });

@@ -86,9 +86,10 @@ export class Editor {
     frame.on("set", ({ input, value }) => {
       this.setInput(input, value);
     });
-    // A component that couldn't compile, load or run, or isn't allowed where it is used; a page's own problem has none.
-    frame.on("error", ({ component, message }) => {
-      if (component) this.#problem(`${component}: ${message}`);
+    // A component that couldn't compile, load or run (W121, W118), or isn't allowed where it is used; a page's own
+    // problem has none.
+    frame.on("error", ({ component, code, message }) => {
+      if (component) this.#problem(`${code ? `${code} ` : ""}${component}: ${message}`);
     });
   }
 

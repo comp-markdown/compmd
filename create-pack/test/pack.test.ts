@@ -1,6 +1,7 @@
 // A pack written by `createPack`, as its author gets it (docs/create-pack.md, C4): it builds into one module with no
 // import left but the runtimes', its publish check holds, and its test page renders the component in the strict sandbox,
 // in Chrome and WebKit. The pack sits in this package's folder, so it finds the repository's packages as installed.
+import { RUNTIMES } from "@compmd/sandbox/build";
 import { execFileSync } from "node:child_process";
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { rm } from "node:fs/promises";
@@ -46,7 +47,10 @@ describe.each(PACKS)("a pack of $variant", ({ folder: name, port, shows, ...opti
     expect(readdirSync(join(folder, "dist"))).toEqual([`${options.component}.js`]);
     const module = readFileSync(join(folder, "dist", `${options.component}.js`), "utf8");
     const imports = [...module.matchAll(/\b(?:import|from)\s*["']([^"']+)["']/g)].map((match) => match[1] ?? "");
-    expect(imports.filter((specifier) => !/^(react|react-dom|svelte)(\/|$)/.test(specifier))).toEqual([]);
+    const runtimes = new Set(RUNTIMES.flatMap((runtime) => runtime.imports));
+    expect(imports.filter((specifier) => !runtimes.has(specifier))).toEqual([]);
+    // It imports no runtime, so it needs none from the host (spec §6.4).
+    expect((JSON.parse(readFileSync(join(folder, "package.json"), "utf8")) as { peerDependencies?: unknown }).peerDependencies).toBeUndefined();
     expect(module).toMatch(/export\s*\{[^}]*as default/);
   });
 

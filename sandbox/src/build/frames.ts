@@ -6,13 +6,19 @@ import { cp, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Level } from "../protocol/messages.ts";
+import { readLibraries, type BuiltLibrary, type LibraryDefinition } from "./libraries.ts";
 import { permissivePolicy, strictPolicy } from "./policy.ts";
+
+/** The file `buildFrames` writes the frames' library definition to. */
+const DEFINITION = "library-definition.json";
 
 export interface FramesOptions {
   /** The folder to write the frame documents and their files to, which the host serves where it likes. */
   out: string;
   /** More import map entries, for libraries the host offers and serves (`buildLibraries`). */
   imports?: Readonly<Record<string, string>>;
+  /** Those libraries with their versions (`readLibraries`), for the library definition. */
+  libraries?: readonly BuiltLibrary[];
   /** The package's built frame files; by default its own `dist/frames/`. */
   from?: string;
 }
@@ -40,7 +46,8 @@ function frameDocument(level: Level, policy: string, importMap: string): string 
 
 /**
  * Writes the frame documents into `options.out`, with the frame runtime and the shared libraries. They work wherever
- * the host serves them: a permissive frame names the `strict.html` next to it in its second policy.
+ * the host serves them: a permissive frame names the `strict.html` next to it in its second policy. It writes the
+ * frames' library definition there too (`libraryDefinition`).
  *
  * @example
  * await buildFrames({ out: "public/compmd" });
@@ -52,4 +59,18 @@ export async function buildFrames(options: FramesOptions): Promise<void> {
   const importMap = JSON.stringify({ imports: { ...shared.imports, ...options.imports } });
   await writeFile(join(options.out, "strict.html"), frameDocument("strict", strictPolicy(importMap), importMap));
   await writeFile(join(options.out, "permissive.html"), frameDocument("permissive", permissivePolicy(importMap), importMap));
+  const definition: LibraryDefinition = { runtimes: await readLibraries(join(from, "libs")), libraries: [...(options.libraries ?? [])] };
+  await writeFile(join(options.out, DEFINITION), `${JSON.stringify(definition, null, 2)}\n`);
+}
+
+/**
+ * The library definition of the frames `buildFrames` wrote into `out`: what the processor's `policy` takes as its
+ * `runtimes` and `libraries` (spec §7.6), and what a pack's build leaves out.
+ *
+ * @example
+ * const { runtimes, libraries } = await libraryDefinition("public/compmd");
+ * const request = { ...request, policy: { ...request.policy, runtimes, libraries } };
+ */
+export async function libraryDefinition(out: string): Promise<LibraryDefinition> {
+  return JSON.parse(await readFile(join(out, DEFINITION), "utf8")) as LibraryDefinition;
 }

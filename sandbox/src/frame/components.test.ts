@@ -8,7 +8,7 @@ import { Components, type Loaded } from "./components.ts";
 const component = (name: string, code: string): Runnable & { code: string } => ({ name, level: "strict", binding: "plain", code });
 
 function setup() {
-  const reports: [string, string][] = [];
+  const reports: [string, string, string][] = [];
   const adopted: [string, string | undefined][] = [];
   const log: string[] = [];
   const load = (loaded: Runnable): Promise<Loaded> => {
@@ -27,7 +27,7 @@ function setup() {
     };
     return Promise.resolve({ mount, ...(c.code.startsWith("styled") ? { css: "b {}" } : {}) });
   };
-  const components = new Components({ load, report: (name, message) => reports.push([name, message]), adopt: (name, css) => adopted.push([name, css]) });
+  const components = new Components({ load, report: (name, reason, message) => reports.push([name, reason, message]), adopt: (name, css) => adopted.push([name, css]) });
   return { components, reports, adopted, log };
 }
 
@@ -70,8 +70,8 @@ describe("Components", () => {
     await components.set([component("card", "one")]);
     expect(live.textContent).toBe("one 1");
     expect(reports).toEqual([
-      ["card", "does not compile"],
-      ["card", "does not compile"],
+      ["card", "failed", "does not compile"],
+      ["card", "failed", "does not compile"],
     ]);
   });
 
@@ -82,7 +82,7 @@ describe("Components", () => {
     components.mounts.card?.(target, context(1));
     await components.set([component("card", "throw")]);
     expect(target.textContent).toBe("fallback");
-    expect(reports).toEqual([["card", "throws"]]);
+    expect(reports).toEqual([["card", "threw", "throws"]]);
   });
 
   it("drops names no longer given, with their styles, and adopts each component's CSS", async () => {

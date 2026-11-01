@@ -8,7 +8,7 @@ import { createPage, type Change, type ExpandedInput, type ExpandedRoot, type Pa
 import { connectFrame, type FrameConnection, type SpliceOptions } from "@compmd/render/frame";
 import { frameUrl, HostRuntime, type HostRuntimeOptions } from "./host/runtime.ts";
 import { codeFor } from "./mounts.ts";
-import { HELLO, SANDBOX_VERSION, type ErrorReason } from "./protocol/messages.ts";
+import { diagnosticOf, HELLO, SANDBOX_VERSION, type ErrorReason, type SandboxDiagnostic } from "./protocol/messages.ts";
 import { connectChild, type ChildEnd } from "./protocol/parent-end.ts";
 
 export interface SandboxOptions extends HostRuntimeOptions {
@@ -20,7 +20,8 @@ export interface ViewEvents {
   set: { input: string; value: unknown };
   /** A reader clicked a link in the page; the host shows its URL before it opens (spec §15 rule 4). */
   link: { url: string };
-  error: { component: string; reason: ErrorReason; message: string };
+  /** A component shows its fallback, why, and the diagnostic it is when it is one (`diagnosticOf`). */
+  error: { component: string; reason: ErrorReason; code?: SandboxDiagnostic; message: string };
   /** A render or splice is painted, `ms` after it started. */
   rendered: { ms: number };
   /** The components last given are loaded in the page, or show their fallbacks: a host may show the page from now. */
@@ -56,6 +57,12 @@ export interface Sandbox {
   open(container: HTMLElement, options: { components: readonly HostComponent[] }): View;
 }
 
+/** The `error` event for `component`, with its diagnostic. */
+const errorEvent = (component: string, reason: ErrorReason, message: string): ViewEvents["error"] => {
+  const code = diagnosticOf(reason);
+  return code ? { component, reason, code, message } : { component, reason, message };
+};
+
 type Listeners = { [T in keyof ViewEvents]: ((event: ViewEvents[T]) => void)[] };
 
 /** The components' names and levels, which decide each use's mount; their code doesn't. */
@@ -86,7 +93,7 @@ export function createSandbox(options: SandboxOptions): Sandbox {
           emit("link", { url });
         },
         error: (component, reason, message) => {
-          emit("error", { component, reason, message });
+          emit("error", errorEvent(component, reason, message));
         },
       });
       const page = options.page === "host" ? hostPage(container, runtime, emit) : framePage(container, runtime, options, emit);
@@ -160,7 +167,7 @@ function hostPage(container: HTMLElement, runtime: HostRuntime, emit: Emit): Pag
       emit("set", { input, value });
     },
     onError: (error) => {
-      if ("component" in error) emit("error", { component: error.component, reason: error.reason, message: error.error instanceof Error ? error.error.message : "" });
+      if ("component" in error) emit("error", errorEvent(error.component, error.reason, error.error instanceof Error ? error.error.message : ""));
     },
   });
   /** Reports a render once it is painted: after the next frame, and once the browser has drawn it. */
@@ -219,7 +226,7 @@ function framePage(container: HTMLElement, runtime: HostRuntime, options: Sandbo
     emit("link", event);
   });
   child.on("error", ({ reason, component, message }) => {
-    emit("error", { component: component ?? "", reason, message });
+    emit("error", errorEvent(component ?? "", reason, message));
   });
   child.on("rendered", (event) => {
     emit("rendered", event);
@@ -228,7 +235,7 @@ function framePage(container: HTMLElement, runtime: HostRuntime, options: Sandbo
     emit("loaded", event);
   });
   child.on("failed", (failure) => {
-    emit("error", { component: "", reason: "threw", message: failure.reason === "hung" ? "the page's frame stopped answering" : `the page's frame is of protocol version ${String(failure.version)}` });
+    emit("error", errorEvent("", "threw", failure.reason === "hung" ? "the page's frame stopped answering" : `the page's frame is of protocol version ${String(failure.version)}`));
   });
   if (options.stylesheets?.length) child.styles([...options.stylesheets]);
   iframe.addEventListener("load", () => iframe.contentWindow?.postMessage({ type: HELLO, version: SANDBOX_VERSION }, "*", [port2]), { once: true });

@@ -32,13 +32,17 @@ The frames load the sandbox's own documents, which the host serves, from its ori
 
 ```ts
 // at build time, in Node
-import { buildFrames, buildLibraries, RUNTIMES } from "@compmd/sandbox/build";
+import { buildFrames, buildLibraries, libraryDefinition, readLibraries, RUNTIMES } from "@compmd/sandbox/build";
 
 const imports = await buildLibraries([{ name: "d3", imports: ["d3"] }], { root, out: "public/sandbox/libs", shared: RUNTIMES });
-await buildFrames({ out: "public/sandbox", imports });
+const libraries = await readLibraries("public/sandbox/libs");
+await buildFrames({ out: "public/sandbox", imports, libraries });
+const { runtimes, libraries: offered } = await libraryDefinition("public/sandbox");
+// The processor's request: it reports a runtime the frames don't have (W102) and a pack's unmet peerDependencies (W121).
+request.policy = { ...request.policy, runtimes, libraries: offered };
 ```
 
-`buildFrames` writes `strict.html` and `permissive.html`, each with its policy and the import map, next to the frame runtime and the runtimes of the spec's bindings (React 19, React DOM, Svelte 5). `buildLibraries` adds libraries the host offers its documents' components; without it they have the runtimes alone. The documents work wherever they are served. A host SHOULD serve them with the header `Content-Security-Policy: sandbox allow-scripts`, so they are sandboxed even when opened outside a frame.
+`buildFrames` writes `strict.html` and `permissive.html`, each with its policy and the import map, next to the frame runtime and the runtimes of the spec's bindings (React 19, React DOM, Svelte 5). `buildLibraries` adds libraries the host offers its documents' components; without it they have the runtimes alone. What component code may import is spec §7.6: these runtimes and libraries, and nothing else. `buildFrames` also writes the frames' **library definition**, each runtime and library with its version and import names, which `libraryDefinition` reads: the processor's `policy.runtimes` and `policy.libraries`, and what a pack's build leaves out (`RUNTIMES`' import names). The documents work wherever they are served. A host SHOULD serve them with the header `Content-Security-Policy: sandbox allow-scripts`, so they are sandboxed even when opened outside a frame.
 
 ## A document's page
 
@@ -58,7 +62,7 @@ const view = sandbox.open(container, { components: processed.hostComponents });
 view.render(processed.expanded);              // or view.splice(splices, change, { replace, inputs })
 view.on("set", ({ input, value }) => rerender({ [input]: value }));
 view.on("link", ({ url }) => confirmAndOpen(url));   // a reader's click; show the URL before opening it (spec §15)
-view.on("error", ({ component, reason, message }) => report(component, reason, message));
+view.on("error", ({ component, reason, code, message }) => report(component, code ?? reason, message));   // code: W118, W121
 view.components(next.hostComponents);         // when the document's components change
 view.styles(["/sandbox/docs.css"]);           // the host's stylesheets, served from the frames' origin
 view.theme(tokens);

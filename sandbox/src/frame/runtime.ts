@@ -107,9 +107,7 @@ function start(port: MessagePort): void {
   const loaded = new Components({
     load,
     adopt,
-    report: (name, message) => {
-      report(name, "failed", message);
-    },
+    report,
   });
   const strictUrl = new URL("strict.html", location.href).href;
   const mounts = new Mounts({

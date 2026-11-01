@@ -21,6 +21,31 @@ export interface Library {
   commonjs?: boolean;
 }
 
+/** A library as the frames have it, built: its package, version and import names. */
+export interface BuiltLibrary {
+  name: string;
+  version: string;
+  imports: string[];
+}
+
+/**
+ * What the frames provide component code (spec §7.6): the runtimes and the libraries a host offers, with their
+ * versions and import names. It is the processor's `policy.runtimes` and `policy.libraries`, which check a pack's
+ * `peerDependencies`, and what a pack's build leaves out.
+ */
+export interface LibraryDefinition {
+  runtimes: BuiltLibrary[];
+  libraries: BuiltLibrary[];
+}
+
+/** The file `buildLibraries` writes its libraries to, next to `importmap.json`. */
+const LIBRARIES = "libraries.json";
+
+/** The libraries `buildLibraries` built into `dir`. */
+export async function readLibraries(dir: string): Promise<BuiltLibrary[]> {
+  return JSON.parse(await readFile(join(dir, LIBRARIES), "utf8")) as BuiltLibrary[];
+}
+
 /** The runtimes of the spec's bindings (§7.6): React 19 and React DOM, Svelte 5. */
 export const RUNTIMES: Library[] = [
   { name: "react", imports: ["react", "react/jsx-runtime"], commonjs: true },
@@ -99,7 +124,8 @@ export interface LibrariesOptions {
 }
 
 /**
- * Builds `libraries` into `options.out`, and gives the import map's entries for them.
+ * Builds `libraries` into `options.out`, and gives the import map's entries for them. It writes them, with their
+ * versions, to `libraries.json` there too (`readLibraries`).
  *
  * @example
  * const imports = await buildLibraries([{ name: "d3", imports: ["d3"] }], { root: import.meta.dirname, out: "public/libs" });
@@ -110,6 +136,7 @@ export async function buildLibraries(libraries: readonly Library[], options: Lib
   const all = [...(options.shared ?? []), ...libraries];
   const prefix = options.prefix ?? "./libs/";
   const imports: Record<string, string> = {};
+  const built: BuiltLibrary[] = [];
   await mkdir(options.out, { recursive: true });
   for (const library of libraries) {
     // From the root's own `node_modules`, since a package's `exports` may not give its `package.json` (d3's doesn't).
@@ -135,7 +162,9 @@ export async function buildLibraries(libraries: readonly Library[], options: Lib
       },
     });
     for (const specifier of library.imports) imports[specifier] = `${prefix}${dir}/${entryName(library, specifier)}.js`;
+    built.push({ name: library.name, version, imports: [...library.imports] });
   }
   await writeFile(join(options.out, "importmap.json"), `${JSON.stringify({ imports }, null, 2)}\n`);
+  await writeFile(join(options.out, LIBRARIES), `${JSON.stringify(built, null, 2)}\n`);
   return imports;
 }

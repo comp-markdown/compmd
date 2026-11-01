@@ -1,19 +1,49 @@
 // `vite build` writes the component as one ES module, `dist/__component__.js`, with every library it imports bundled
-// in, but the runtimes the sandbox's frames provide. `vite` opens the test page, `demo/`, which uses the pack as a host
-// does, in the strict sandbox, and builds the component again when its source changes.
+// in, but the runtimes the sandbox's frames provide (spec §7.6), which it adds to `peerDependencies`. `vite` opens the
+// test page, `demo/`, which uses the pack as a host does, in the strict sandbox, and builds the component again when
+// its source changes.
 import { compmd } from "@compmd/vite";
+import { RUNTIMES } from "@compmd/sandbox/build";
+import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { build, defineConfig, type BuildEnvironmentOptions, type Plugin } from "vite";
 
 const root = import.meta.dirname;
+
+/** The runtimes' import names: the frames' import map gives these, one copy for every component. */
+const RUNTIME_IMPORTS = new Set(RUNTIMES.flatMap((runtime) => runtime.imports));
+
+/**
+ * Adds the runtimes the built module imports to `peerDependencies`, at the version it was built with, so a host that
+ * has an older one says so when it resolves the pack (W121) instead of failing at render.
+ */
+function peers(): Plugin {
+  return {
+    name: "peers",
+    generateBundle(_options, bundle) {
+      const imported = Object.values(bundle).flatMap((chunk) => (chunk.type === "chunk" ? chunk.imports : []));
+      const runtimes = RUNTIMES.filter((runtime) => imported.some((name) => runtime.imports.includes(name)));
+      const manifest = JSON.parse(readFileSync(join(root, "package.json"), "utf8")) as { peerDependencies?: Record<string, string> };
+      const missing = runtimes.filter((runtime) => !manifest.peerDependencies?.[runtime.name]);
+      if (missing.length === 0) return;
+      const peerDependencies = { ...manifest.peerDependencies };
+      for (const runtime of missing) {
+        const { version } = JSON.parse(readFileSync(join(root, "node_modules", runtime.name, "package.json"), "utf8")) as { version: string };
+        peerDependencies[runtime.name] = `^${version}`;
+      }
+      writeFileSync(join(root, "package.json"), `${JSON.stringify({ ...manifest, peerDependencies }, null, 2)}\n`);
+      this.warn(`added ${missing.map((runtime) => runtime.name).join(", ")} to package.json's peerDependencies`);
+    },
+  };
+}
 
 const library: BuildEnvironmentOptions = {
   lib: { entry: join(root, "src/__component__.ts"), formats: ["es"], fileName: () => "__component__.js" },
   outDir: join(root, "dist"),
   target: "es2024",
   minify: true,
-  // The frames' import map gives these, one copy for every component: two copies of React break its hooks.
-  rolldownOptions: { external: /^(react|react-dom|svelte)(\/|$)/ },
+  // Two copies of React break its hooks, so a built module never bundles a runtime.
+  rolldownOptions: { external: (id) => RUNTIME_IMPORTS.has(id), plugins: [peers()] },
 };
 
 /** Builds the component again when a file in `src/` changes; the test page then loads it again. */

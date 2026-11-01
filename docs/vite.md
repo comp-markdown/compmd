@@ -48,12 +48,13 @@
 | `imports` | `any` (the default) or `listed` | `policy.imports` |
 | `deny` | packs denied, all versions or a range, with the reason readers see | `policy.deny` |
 | `maxPackSize` | a pack whose files are larger is left out, with this reason | `policy.refused` |
-| `libraries` | npm package names, installed in the app, that the frames offer components through their import map, besides React and Svelte | `buildLibraries` |
+| `libraries` | npm package names, installed in the app, that the frames offer components through their import map, besides React and Svelte | `buildLibraries`; with their versions, `policy.libraries` |
 
 - A folder pack's name is its `package.json`'s `name`, which its document's `export.pack` matches (F022): the policy and `ambient` use that name, so documents can import `@acme/app` by name too (decision 7 of the design: a configured name is the host's).
 - `ambient` is per pack, not a list of names, so a folder pack needs no second spelling.
 - `network` takes origins only: a path, a wildcard or `http:` other than `localhost` stops the build.
 - `libraries` names npm packages, as `npm install` does: `"d3"` is the package `d3`, which the app installs (`npm install d3`). The plugin builds each one once into `compmd/libs/`, and the frames' import map resolves a component's `import * as d3 from "d3"` to that copy, as the playground offers d3 today. A package whose components import more than its name gives its import names: `{ "name": "d3", "imports": ["d3", "d3-scale"] }`. A library that isn't installed stops the build.
+- The request's `policy.runtimes` and `policy.libraries` are the frames' library definition (`@compmd/sandbox`'s `libraryDefinition`): the runtimes the frames have and the libraries the configuration offers, each with its version. So the processor reports a component on a runtime the frames don't have (W102) and a pack whose `peerDependencies` they can't meet (W121, spec §6.4), and a document's import of an offered library isn't portable (spec §6.3).
 
 ## What the plugin does
 

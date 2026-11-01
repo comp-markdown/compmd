@@ -1,7 +1,8 @@
 // @compmd/sandbox: CompMD components in a browser at the spec's trust levels
-// (docs/running-components-in-the-sandbox.md), in four layers: the protocol (`@compmd/sandbox/protocol`), the frame runtime (in the frame documents), the host
-// runtime, and defaults.
+// (docs/running-components-in-the-sandbox.md), in four layers: the protocol (`@compmd/sandbox/protocol`), the frame
+// runtime (in the frame documents), the host runtime, and defaults.
 export { createSandbox, type Sandbox, type SandboxOptions, type View, type ViewEvents, type ViewSpliceOptions } from "./sandbox.ts";
+export { diagnosticOf, type SandboxDiagnostic } from "./protocol/messages.ts";
 export { HostRuntime, type HostEvents, type HostRuntimeOptions, type ModuleSource } from "./host/runtime.ts";
 export { frameUse, type UseFrame, type UseFrameOptions } from "./use.ts";
 export { hostClient, serveHost, type HostApi, type HostClient } from "./host-api.ts";

@@ -59,6 +59,19 @@ export type ToFrame =
 /** Why a component shows its fallback: `@compmd/render`'s reasons, code that didn't load, a level the frame can't hold. */
 export type ErrorReason = "missing" | "threw" | "failed" | "not-here";
 
+/** The diagnostics a sandbox reports itself, at rendering (spec §10.2). */
+export type SandboxDiagnostic = "W118" | "W121";
+
+/**
+ * The diagnostic a component's fallback is, by why it shows: code that threw or stopped answering is W118, code that
+ * didn't compile or load (an import it may not make, a module that doesn't match its file) W121. A component the
+ * request didn't give, or one of a level its frame can't hold, is none: the processor reports the first, and the
+ * second is the sandbox's design.
+ */
+export function diagnosticOf(reason: ErrorReason): SandboxDiagnostic | undefined {
+  return reason === "threw" ? "W118" : reason === "failed" ? "W121" : undefined;
+}
+
 /** Messages from a frame to its parent. `set` has `@compmd/render`'s shape, so a page frame's comes as it is. */
 export type FromFrame =
   | { type: "ready"; sandbox: number }

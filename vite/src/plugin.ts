@@ -6,7 +6,7 @@ import { existsSync } from "node:fs";
 import type { ServerResponse } from "node:http";
 import { readdir, readFile, rm } from "node:fs/promises";
 import { extname, join, relative, sep } from "node:path";
-import { buildFrames, buildLibraries, RUNTIMES } from "@compmd/sandbox/build";
+import { buildFrames, buildLibraries, libraryDefinition, readLibraries, RUNTIMES, type LibraryDefinition } from "@compmd/sandbox/build";
 import type { Plugin, ResolvedConfig } from "vite";
 import { loadApp, type App } from "./app.ts";
 
@@ -21,16 +21,26 @@ const RESOLVED = `\0${VIRTUAL}`;
 const TYPES: Record<string, string> = { ".html": "text/html", ".js": "text/javascript", ".json": "application/json", ".css": "text/css", ".map": "application/json" };
 
 /**
- * The code of `virtual:compmd`: the processor's request, and the sandbox's options with the trusted components the
- * app's own build compiles.
+ * The app's request with the frames' runtimes and libraries in its policy (spec §7.6), so the processor reports a
+ * runtime they don't have (W102) and a pack's `peerDependencies` they can't meet (W121).
  */
-export function moduleCode(app: App, folder: string): string {
+export function requestWith(app: App, definition: LibraryDefinition | undefined): App["request"] {
+  if (!definition) return app.request;
+  const named = ({ name, version }: { name: string; version: string }) => ({ name, version });
+  return { ...app.request, policy: { ...app.request.policy, runtimes: definition.runtimes.map(named), libraries: definition.libraries.map(named) } };
+}
+
+/**
+ * The code of `virtual:compmd`: the processor's request, and the sandbox's options with the trusted components the
+ * app's own build compiles; with the frames' `definition`, the request's policy says what they provide.
+ */
+export function moduleCode(app: App, folder: string, definition?: LibraryDefinition): string {
   const bindings = new Set(app.trusted.map(({ binding }) => binding));
   const lines = [...bindings].filter((binding) => binding !== "plain").map((binding) => `import { ${binding} } from "@compmd/vite/${binding}";`);
   app.trusted.forEach(({ file }, i) => lines.push(`import c${String(i)} from ${JSON.stringify(file)};`));
   const trusted = app.trusted.map(({ name, binding }, i) => `${JSON.stringify(name)}: ${binding === "plain" ? `c${String(i)}` : `${binding}(c${String(i)})`}`);
   lines.push(
-    `export const request = ${JSON.stringify(app.request)};`,
+    `export const request = ${JSON.stringify(requestWith(app, definition))};`,
     `const MODULES = ${JSON.stringify(app.modules)};`,
     `const base = import.meta.env.BASE_URL + ${JSON.stringify(folder)};`,
     "export const sandbox = {",
@@ -61,12 +71,15 @@ async function filesUnder(dir: string): Promise<string[]> {
   return entries.filter((entry) => entry.isFile()).map((entry) => relative(dir, join(entry.parentPath, entry.name)).split(sep).join("/"));
 }
 
-/** Builds the frame documents into `out`, with the libraries the configuration offers. */
-async function buildSandbox(app: App, root: string, out: string): Promise<void> {
+/** Builds the frame documents into `out`, with the libraries the configuration offers; gives their library definition. */
+async function buildSandbox(app: App, root: string, out: string): Promise<LibraryDefinition> {
   await rm(out, { recursive: true, force: true });
   // The libraries first: the frame documents' files go over them, with the runtimes' import map.
-  const imports = app.config.libraries.length > 0 ? await buildLibraries(app.config.libraries, { root, out: join(out, "libs"), shared: RUNTIMES }) : {};
-  await buildFrames({ out, imports });
+  const offers = app.config.libraries.length > 0;
+  const imports = offers ? await buildLibraries(app.config.libraries, { root, out: join(out, "libs"), shared: RUNTIMES }) : {};
+  const libraries = offers ? await readLibraries(join(out, "libs")) : [];
+  await buildFrames({ out, imports, libraries });
+  return libraryDefinition(out);
 }
 
 /**
@@ -82,13 +95,14 @@ export function compmd(options: CompmdOptions = {}): Plugin {
   let config: ResolvedConfig;
   let app: App | undefined;
   let frames = "";
-  let built: Promise<void> | undefined;
+  let built: Promise<LibraryDefinition> | undefined;
+  let definition: LibraryDefinition | undefined;
 
   /** Reads the app again, and its sandbox once its libraries are known. */
   const load = async (): Promise<App> => {
     app = await loadApp(config.root);
     built ??= buildSandbox(app, config.root, frames);
-    await built;
+    definition = await built;
     return app;
   };
 
@@ -118,7 +132,7 @@ export function compmd(options: CompmdOptions = {}): Plugin {
     },
     async load(id) {
       if (id !== RESOLVED) return undefined;
-      return moduleCode(app ?? (await load()), folder);
+      return moduleCode(app ?? (await load()), folder, definition);
     },
     configureServer(server) {
       const prefix = `${config.base.replace(/\/*$/, "/")}${folder}`.replace(/^\.\//, "/");

@@ -13,8 +13,8 @@ export interface Loaded {
 
 export interface ComponentsOptions {
   load: (component: Runnable) => Promise<Loaded>;
-  /** A component couldn't be loaded or mounted again. */
-  report: (component: string, message: string) => void;
+  /** A component's code couldn't be loaded (`failed`), or threw when mounted again (`threw`). */
+  report: (component: string, reason: "failed" | "threw", message: string) => void;
   /** A component's CSS, or none, in place of what it had. */
   adopt: (component: string, css: string | undefined) => void;
 }
@@ -80,7 +80,7 @@ export class Components {
       if (entry.key !== key) return;
       delete entry.mount;
       entry.failed = messageOf(error);
-      this.#options.report(component.name, entry.failed);
+      this.#options.report(component.name, "failed", entry.failed);
     }
     for (const instance of entry.instances) this.#remount(component.name, entry, instance);
   }
@@ -113,7 +113,7 @@ export class Components {
       instance.mounted = entry.mount(instance.target, instance.context) ?? undefined;
     } catch (error) {
       instance.target.replaceChildren(instance.context.fallback.element);
-      if (entry.mount) this.#options.report(name, messageOf(error));
+      if (entry.mount) this.#options.report(name, "threw", messageOf(error));
     }
   }
 }
