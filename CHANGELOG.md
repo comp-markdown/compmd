@@ -4,6 +4,15 @@ Changes to the [CompMD specification](compmd-spec-v1.md), newest first. Every ch
 
 ## Version 1 (draft)
 
+### 2026-11-01
+
+- **What component code may import (§6.3, §6.4, §7.6, §10.2, §11, §15).** A host-language component's code imports only its binding's runtime, libraries the processor offers, libraries its pack names in `peerDependencies`, and, in a built module, its own files. The runtime is the processor's, one copy for every component, and is never bundled: the spec names it by framework and major version, and the processor says which minor version and modules it has. A built module bundles everything else, and should be one file. Before, the spec said a built module bundles "the libraries it uses" and said nothing about imports inside component code. Not breaking for documents; a built module that bundled its runtime still loads, with a copy of its own.
+- **Libraries a processor offers (§6.3, §10.2).** A processor may offer libraries component code imports by their npm name, like ambient packs: not portable, and W113, which now also covers them.
+- **Compiling source (§7.6).** JSX and TSX compile with React's automatic runtime, Svelte with Svelte 5's compiler for the client, TypeScript with its types removed; a relative import in source has nothing to resolve against.
+- **A pack's `peerDependencies` (§6.4).** A pack names the runtime version and the libraries it needs there; a processor checks them when it resolves the pack, and reports one it doesn't have up front.
+- **W121 (§10.2, §11).** New: component code that can't load (an import it may not make, a compile error, a built module that doesn't match its file, or a pack's `peerDependencies` the processor can't meet); its fallback renders. Before, the spec had no diagnostic for these.
+- **§15 rule 2.** A strict component's code comes from its pack, its binding's runtime and the libraries the processor provides it, as it always did in practice; the informative note's policy says so too.
+
 ### 2026-10-30
 
 - **Defaults for host-language components (§7.4).** A host-language component's `params` hold the defaults of the declared params its caller doesn't give, as a `compmd` definition's body sees them, and so does the expanded tree. Before, the spec didn't say, and this implementation gave only the params written. Not breaking for documents; a component that supplied its own defaults still works. New case `expand/host-defaults`.

@@ -404,6 +404,8 @@ Rules:
 - **An ambient pack's name is the processor's.** A document that imports an ambient pack by name gets the processor's pack, never a registry package of the same name, as for `@compmd/*` (section 6.4). So a package published under a host's pack name can't stand in for the host's components.
 - An ambient pack MAY declare components the host implements, by their signatures alone (section 7.1).
 
+**Libraries a processor offers.** A processor MAY also offer libraries that component code imports by their npm name (`import * as d3 from "d3"`, section 7.6). Like names from ambient packs, they aren't portable: on a processor that doesn't offer the library, the component renders its fallback with W121. A processor MAY report W113 for each component whose code imports one.
+
 ### 6.4 Packages and the registry
 
 - **`@scope/pack` is the npm package of that name**, fetched from the [npm registry](https://www.npmjs.com) or an npm-compatible registry the processor is configured with (a private registry, a mirror). A processor MAY resolve from a local cache or installed packages, so documents work offline. It MAY offer other registries with the same naming.
@@ -414,7 +416,8 @@ Rules:
 - An import whose source can't be loaded (a missing file, no release matching the version) is F026. Its names are dropped, and their uses render fallbacks without F002.
 - **Which packs a document may import** is the processor's configuration. By default, any pack in the registry: its code runs in the strict sandbox (section 15), so a pack nobody reviewed can't reach the reader's data, and only documents that import it are affected. A processor MAY instead allow only the packs its configuration lists, and MAY deny packs by name or version. A pack it doesn't allow is F026, with the reason in the message. A deny list is the host's own policy (content it won't show, packs it won't serve, licences, misuse); it isn't what keeps readers safe, which the sandbox does for every pack, known or not.
 - **The processor gets packs, never the reader's browser.** A processor that renders for a reader fetches packs itself or through its own cache, so the registry doesn't learn who reads which document (section 15, "Privacy"). It MAY cap a pack's size; a larger pack is F026.
-- **Built modules.** A component file in a pack MAY be a built ES module (`.js`, the plain binding of section 7.6) with the libraries it uses bundled in. A processor MAY load such a file where it runs the component, by its place in the pack (the pack, its version and the file's path), instead of passing its text: the file MUST be the one the pack published, from files checked against the pack's integrity when the processor got them (F035). Loaded once, it can be cached by its place, since a published version never changes.
+- **Built modules.** A component file in a pack MAY be a built ES module (`.js`, the plain binding of section 7.6) with every library it imports bundled in, but its binding's runtime and the libraries its pack names in `peerDependencies`, which the processor provides (section 7.6). A built module SHOULD be one file. A processor MAY load such a file where it runs the component, by its place in the pack (the pack, its version and the file's path), instead of passing its text: the file MUST be the one the pack published, from files checked against the pack's integrity when the processor got them (F035). Loaded once, it can be cached by its place, since a published version never changes.
+- **What a pack needs from the processor** is the `peerDependencies` of its `package.json`: its binding's runtime with the lowest version it works with (`"svelte": "^5.40"`), and the libraries it expects the processor to provide (`"d3": "^7"`). A processor checks them when it resolves the pack, against the runtimes and libraries it has (section 7.6): one it doesn't have, or has at a version outside the range, is W121 on the import, naming it, the range and the version it has. The import is kept: the pack's components that don't need it still render, and those that do render their fallbacks with W121.
 
 ## 7. Defining components
 
@@ -635,6 +638,25 @@ export default function mount(target, { params, fallback }) {
   return { update: (next) => chart.update(next.rows), destroy: () => chart.remove() };
 }
 ```
+
+**Runtimes.** A binding's runtime is the framework at the major version its `runtime` names: React 19 with React DOM, Preact 10, Svelte 5. The processor provides it, one copy for all the components it runs together (two copies of React break its hooks), so a component's code imports it by the framework's own module names (`react`, `react/jsx-runtime`, `react-dom/client`, `svelte`, …) and never bundles it. Which minor version a processor has, and which of the framework's modules, is the processor's to say, in the runtimes and libraries it states it has (its configuration); a processor SHOULD keep its runtimes at a recent minor version. A processor without a runtime renders its components' fallbacks with W102 (section 7).
+
+**What component code may import.** A host-language component's code, in a fence, in a file or built, imports only:
+
+- its binding's runtime;
+- a library the processor offers (section 6.3), by its npm name;
+- a library its pack names in `peerDependencies`, which the processor provides (section 6.4);
+- in a built module, its own files in its pack, by relative path.
+
+Anything else resolves nowhere. Such an import, a compile error, and a built module whose file doesn't match its hash are W121: the component renders its fallback.
+
+**Compiling source.** A processor that runs a component from its source compiles it as its binding says:
+
+- **React:** JSX and TSX with React's automatic runtime, imported from `react/jsx-runtime`; TypeScript's types removed.
+- **Svelte:** with Svelte 5's compiler, for the client.
+- **Plain:** `js` runs as written; `ts` has its types removed.
+
+Imports in source are bare names, as above. A relative import in source (`./helpers.js`) is W121, since source has no place in a pack to resolve from. Where and how a processor compiles (in a sandbox, on a server, ahead of time) is its own choice.
 
 ### 7.7 Code renderers
 
@@ -1311,7 +1333,7 @@ Every diagnostic MUST name its code, the line and column where it was detected, 
 | W110 | Document declares a later minor version than the processor implements                                                                  | `md.version`                                                        |
 | W111 | Unknown key under `md`; ignored                                                                                                       | the key, naming the nearest known key                                |
 | W112 | Local definition or explicit import shadows a `@compmd/core` component                                                                       | the definition or `names` entry                                      |
-| W113 | Name from an ambient pack, or a `host:` data source, used (optional; for portable documents)                                           | the use, or the data entry                                           |
+| W113 | Name from an ambient pack, a `host:` data source, or a library the processor offers, used (optional; for portable documents)          | the use, the data entry, or the component's definition                |
 | W114 | Box whose blocks use breakpoints, without a `width` where its width would come from its content (section 9.3)                           | the box                                                              |
 | W115 | Host metadata given for a document that has its own frontmatter; the host's metadata is ignored                                        | line 1                                                               |
 | W116 | Line starting with `::` inside an HTML block, which makes it HTML, not CompMD                                                            | the line                                                             |
@@ -1319,6 +1341,7 @@ Every diagnostic MUST name its code, the line and column where it was detected, 
 | W118 | Host-language component threw while mounting or updating; fallback rendered                                                              | the invocation                                                       |
 | W119 | A box that places blocks by position has no `height`, `aspect-ratio` or `fill` at some width (section 9.2)                    | the box's opener; at the top level, the placed block                 |
 | W120 | A param for a box given to a `display=contents` component, which has none, on its fence or by an invocation; ignored (section 9.2) | the param                                                            |
+| W121 | Host-language component's code can't load: an import of something it may not import (section 7.6), a compile error, a built module that doesn't match its file, or a runtime or library its pack's `peerDependencies` name that the processor doesn't have in that range (section 6.4); fallback rendered | the invocation, or the import's `from` for `peerDependencies` |
 
 ### 10.3 Recovery rules (lenient mode)
 
@@ -1397,11 +1420,11 @@ A processor works in stages. Each stage needs only what its row lists, and repor
 | Stage           | Needs                                                  | Produces                                       | Diagnostics                                                    |
 | --------------- | ------------------------------------------------------ | ---------------------------------------------- | -------------------------------------------------------------- |
 | 1. Parse        | the document's text                                    | the document tree (section 12)                 | F001, F003–F005, F007, F011, F012, F015–F017, F032, F033, F036, W101, W106–W108, W110, W111, W115, W116 |
-| 2. Resolve      | the tree, imported documents and packs                 | each name bound to a definition and signature  | F002, F009 (a code renderer's `code`), F013, F019–F023, F026 (imports), F029, F035, W104, W105, W112, W113, W117      |
+| 2. Resolve      | the tree, imported documents and packs                 | each name bound to a definition and signature  | F002, F009 (a code renderer's `code`), F013, F019–F023, F026 (imports), F029, F035, W104, W105, W112, W113, W117, W121 (`peerDependencies`) |
 | 3. Validate     | the resolved tree and signatures                       | a checked tree, params typed                   | F006, F008–F010, F011 and F017 (a rendered code block's info string), F014, F018, F023 (a code block's language), F024 (types), F028, F030, F031, W101 (a rendered code block), W102, W103, W120 |
 | 4a. Load        | the checked tree and the input values                  | the loaded data                                | F026, F027, W113 (`host:`)                                     |
 | 4b. Evaluate    | the checked tree, the loaded data, the render context  | the expanded tree (section 12.3)               | F024 (evaluation), F025, F034, W109, W114, W119                |
-| 5. Render       | the expanded tree                                      | output (HTML, PDF, …)                          | W118                                                           |
+| 5. Render       | the expanded tree                                      | output (HTML, PDF, …)                          | W113 (offered libraries), W118, W121                           |
 
 - **Parsing needs no imports, signatures or data,** so editors, linters and formatters can parse any document. It reads the frontmatter as YAML, but interprets only `md.version` and `md.syntax` (and splits `from` strings into parts, section 12.2). Params stay as written and untyped: `count=3` is `"3"` until validation.
 - **Resolving MAY load packs** (from a registry, a cache or the file system).
@@ -1560,7 +1583,7 @@ Code from a host-language component runs at one of three **trust levels**. The p
 **The sandbox.** The spec states what a sandbox guarantees, not how it is built. Code in a strict sandbox:
 
 1. **Sees only what the host contract gives it** (section 7.4): its params, its slots, its target element and `set` for its bound inputs. Not the rest of the document, its data, or the page around it.
-2. **Has no network**: no requests, images, fonts, style sheets or sockets from anywhere. Its code and assets come from its pack. Data reaches a component only as params, from data imports (section 8.6), which are declared in the frontmatter and cannot carry `md.data` or inputs the component can change (F031).
+2. **Has no network**: no requests, images, fonts, style sheets or sockets from anywhere. Its code and assets come from its pack, its binding's runtime and the libraries the processor provides it (section 7.6). Data reaches a component only as params, from data imports (section 8.6), which are declared in the frontmatter and cannot carry `md.data` or inputs the component can change (F031).
 3. **Can't reach the reader's or the host's session**: no cookies, storage, credentials, host APIs, file system, environment variables or processes.
 4. **Can't navigate or open windows.** A link in a component doesn't open on its own; a processor MAY offer to open it after showing the reader the full URL. Links written in Markdown are unaffected.
 5. **Can be stopped**: a processor SHOULD stop a component that runs too long and render its fallback (W118).
@@ -1577,7 +1600,7 @@ A permissive sandbox keeps rules 3 to 5 and adds to rules 1 and 2 only what the 
 - **Reading for others:** a processor that renders for people other than those whose access its components use (a site built with its operator's credentials and published) MUST give `host`, and render trusted components, only in documents it trusts, such as the site's own pages and not a contributor's change. Rendering for the reader with the reader's own access needs no such rule: the reader sees only what they may see.
 - A component in a strict sandbox gets only the contract and no network (rule 2), so private data passed to it as params has no way out.
 - Without rule 2, a component that is passed private data and allowed to reach its own origin "for the weather" can send the data with the weather request; a reader can't tell the two apart. With it, private data has no way out of the sandbox.
-- *Informative:* in a browser, a cross-origin iframe with `sandbox="allow-scripts"` and a content security policy that allows only the pack's own files; on a server, an isolated JavaScript runtime with no I/O.
+- *Informative:* in a browser, a cross-origin iframe with `sandbox="allow-scripts"` and a content security policy that allows only the processor's runtimes and libraries and the pack's own files; on a server, an isolated JavaScript runtime with no I/O.
 
 **Privacy.** A fetch made while a reader views a document tells the origin the reader's address, the time, and any input values in the URL, as an image in any Markdown does. A document rendered once at build time reveals no reader. For fetches at view time:
 

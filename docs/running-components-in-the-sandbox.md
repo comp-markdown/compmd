@@ -268,7 +268,7 @@ modules: (module) => ({ url: `/packs/${module.pack}@${module.version}/${module.p
 
 A module's own imports (its chunks) load from the same pack files, checked only by the host when it got the pack: a pack's module SHOULD be one file. Bare imports (`react`) resolve through the import map, as compiled source's do.
 
-**The import map** holds the libraries every frame shares: by default the runtimes of the spec's bindings (React 19 and React DOM, Svelte 5). `buildFrames` takes the other libraries a host offers (the playground adds d3 for its charts). Libraries from the registry for packs are S3, still open.
+**The import map** holds the libraries every frame shares: by default the runtimes of the spec's bindings (React 19 and React DOM, Svelte 5). `buildFrames` takes the other libraries a host offers (the playground adds d3 for its charts). What component code may import, and so what the map has to hold, is spec §7.6, from [what component code may import](what-component-code-may-import.md): the runtimes, the libraries a host offers, and the libraries a pack names in `peerDependencies`; the map's runtimes and libraries, with their versions, are the sandbox's library definition, which a processor and a pack's build check against. Libraries from the registry for packs are library packs ([packs from a registry](packs-from-a-registry.md), R9).
 
 ## Q5. A part in a frame
 

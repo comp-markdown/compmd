@@ -1,6 +1,6 @@
 # What component code may import
 
-**Status: proposed (2026-11-01).**
+**Status: accepted (2026-11-01).**
 
 The tour's idea map is a `js` fence that starts with `import * as d3 from "d3"`. In the playground it draws; on a host that doesn't offer d3 it shows its fallback, and the reader and the author are told only that it "failed". The spec says nothing about this import: it has no import map, no bare imports, no compiling and no libraries a host offers, yet every component the sandbox runs depends on all four. This design says what the spec leaves open, so the spec can say what CompMD does, and changes the code where the spec is right.
 

@@ -211,7 +211,7 @@ A pack's document imports component files (`./bar-chart.jsx`) or holds fences; t
 - **Security:** sandboxed. Source is reviewable: the code that runs is the code in the package. Versions and `integrity` pin it (spec §6.1); npm provenance says where a version was built.
 - **Speed and size:** each component's text travels through the processor's output on open; the frame loads a compiler the first time a document needs one (sucrase 43 KB gzipped for JSX and TSX, Svelte's compiler 221 KB), and compiles each component per open. Imports are limited to the import map. Fine for charts in plain SVG; impossible for Mermaid, whose library isn't in the map and is too large to pass as text.
 - **Experience:** a component file and a signature, tried live in the playground; `npm publish`; `import: [{from: "@acme/charts@1", names: "*"}]`.
-- **Spec:** says nothing about compiling in the browser or the import map, which every host that runs S1 needs to agree on. To settle once Q3 is decided.
+- **Spec:** said nothing about compiling in the browser or the import map, which every host that runs S1 needs to agree on. Settled by [what component code may import](what-component-code-may-import.md): §7.6 says what compiling each language means and what component code may import.
 
 ### S2. Built modules, loaded by URL (recommended for large components)
 
@@ -298,7 +298,7 @@ None of this exists today.
 - §15: the three trust levels (strict, permissive, trusted), set per pack by the host's configuration; trusted only for packs built with the app; host code's inputs are untrusted; one strict sandbox per document for packs the host didn't list; packs fetched by the host, with a size limit. §7.4's "packs its configuration trusts" becomes "permissive packs".
 - §6.4 and §15: a pack's built module is loaded from the pack's files and checked against its integrity (S2).
 - Code renderers (W2): the sections listed in [code renderers](code-renderers.md#what-it-means-for-the-spec).
-- After Q3 is decided: what a host that compiles source (S1) provides (the import map, the compilers).
+- After Q3 is decided: what a host that compiles source (S1) provides (the import map, the compilers). Done in [what component code may import](what-component-code-may-import.md).
 
 **The processor:** `HostComponent` gives a built module's place (pack, version, path, integrity) instead of its text (S2); code blocks rendered by a component (W2); the configuration's packs and trust in the request.
 
