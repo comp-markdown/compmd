@@ -143,14 +143,22 @@ pub(crate) enum Body {
 }
 
 impl Body {
-    /// For a host-language component, whether one of this processor's bindings runs it (W102 otherwise).
-    pub(crate) fn supported(&self) -> bool {
+    /// For a host-language component, whether one of this processor's bindings runs it, on a runtime the host's
+    /// `policy` runs (W102 otherwise).
+    pub(crate) fn supported(&self, policy: &Policy) -> bool {
+        let runs = |language: Language, runtime: Option<&str>| {
+            language.runs(runtime)
+                && language
+                    .runtime(runtime)
+                    .is_none_or(|runtime| policy.runs(runtime))
+        };
         match self {
             Self::Host {
                 language, runtime, ..
             } => Language::from_name(language)
-                .is_some_and(|binding| binding.runs(runtime.as_deref())),
-            _ => true,
+                .is_some_and(|language| runs(language, runtime.as_deref())),
+            Self::File { language, .. } => runs(*language, None),
+            Self::Compmd(_) | Self::Processor => true,
         }
     }
 
@@ -212,19 +220,28 @@ pub struct Module {
 }
 
 impl Component {
-    /// It as a host-language component named `name`, when one of the processor's bindings runs it and its code is
-    /// there: a fence's, its file's from `store`, or a built module's place; trusted as `trust`.
-    fn host_code(&self, name: &str, store: Store<'_>, trust: Trust) -> Option<HostComponent> {
+    /// It as a host-language component named `name`, when one of the processor's bindings runs it on a runtime the
+    /// host's `policy` runs, and its code is there: a fence's, its file's from `store`, or a built module's place;
+    /// trusted as `trust`.
+    fn host_code(
+        &self,
+        name: &str,
+        store: Store<'_>,
+        policy: &Policy,
+        trust: Trust,
+    ) -> Option<HostComponent> {
+        self.body.supported(policy).then_some(())?;
         let (language, runtime, code, module) = match &self.body {
             Body::Host {
                 language,
                 runtime,
                 source,
-            } => {
-                let language = Language::from_name(language)?;
-                language.runs(runtime.as_deref()).then_some(())?;
-                (language, runtime.clone(), source.clone(), None)
-            }
+            } => (
+                Language::from_name(language)?,
+                runtime.clone(),
+                source.clone(),
+                None,
+            ),
             Body::File {
                 origin:
                     Origin::Pack {
@@ -365,7 +382,7 @@ impl Resolved {
                     Origin::Pack { name, .. } => self.policy.trust(name),
                     Origin::File(_) => Trust::Strict,
                 };
-                if let Some(host) = component.host_code(name, store, trust) {
+                if let Some(host) = component.host_code(name, store, &self.policy, trust) {
                     found.insert(name, host);
                 }
             }
@@ -619,7 +636,11 @@ mod tests {
         assert!(
             matches!(&plot.body, Body::File { origin: Origin::File(path), .. } if path == "charts/Chart.jsx")
         );
-        assert!(plot.signature.is_some() && plot.body.supported() && plot.body.is_host());
+        assert!(
+            plot.signature.is_some()
+                && plot.body.supported(&Policy::default())
+                && plot.body.is_host()
+        );
     }
 
     #[test]

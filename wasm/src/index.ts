@@ -334,6 +334,20 @@ export interface Policy {
   deny?: { pack: string; version?: string; reason: string }[];
   /** Packs the host left out, such as those larger than it serves, each with why (F026). */
   refused?: Record<string, string>;
+  /**
+   * The runtimes the host runs (spec §7.6), by npm name and version, such as `{ name: "svelte", version: "5.57.2" }`:
+   * a component on another is W102, and a pack's `peerDependencies` on them are checked (W121). Absent: every runtime
+   * of the spec's bindings, unchecked.
+   */
+  runtimes?: Library[];
+  /** The libraries the host offers component code (spec §6.3), checked against a pack's `peerDependencies` (W121). */
+  libraries?: Library[];
+}
+
+/** A runtime or library the host provides component code: its npm name and the version it has. */
+export interface Library {
+  name: string;
+  version: string;
 }
 
 /** Data the host fetched for {@link OpenDocument.reload}, as a request gives it. */

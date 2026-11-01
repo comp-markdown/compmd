@@ -1,5 +1,6 @@
 //! The host's configuration of packs (spec §6.4, §15): which packs a document may import, how far each one's code is
-//! trusted, and the packs the host denies or left out.
+//! trusted, the packs the host denies or left out, and the runtimes and libraries it provides component code (spec
+//! §7.6).
 //!
 //! ```
 //! use compmd::policy::{Imports, Policy, Trust};
@@ -8,7 +9,9 @@
 //!     "packs": { "@acme/maps": { "level": "permissive", "network": ["https://tiles.example.com"] } },
 //!     "imports": "listed",
 //!     "deny": [{ "pack": "@bad/pack", "version": "<2", "reason": "a flaw found in 1.x" }],
-//!     "refused": { "@huge/pack": "larger than this host serves" }
+//!     "refused": { "@huge/pack": "larger than this host serves" },
+//!     "runtimes": [{ "name": "react", "version": "19.3.0" }, { "name": "svelte", "version": "5.57.2" }],
+//!     "libraries": [{ "name": "d3", "version": "7.9.0" }]
 //! }"#).unwrap();
 //! assert_eq!(policy.imports, Imports::Listed);
 //! assert_eq!(policy.trust("@acme/charts"), Trust::Strict);
@@ -17,6 +20,10 @@
 use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+
+/// The npm names of the spec's runtimes (spec §7.6): a pack's `peerDependencies` on one of them are checked against
+/// the host's runtimes, any other against its libraries.
+const RUNTIME_PACKAGES: [&str; 4] = ["react", "react-dom", "preact", "svelte"];
 
 /// How far a pack's code is trusted (spec §15).
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -61,6 +68,15 @@ pub struct Deny {
     pub reason: String,
 }
 
+/// A runtime or library the host provides component code (spec §7.6): its npm name and the version it has.
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
+pub struct Library {
+    /// The npm name, `svelte` or `d3`.
+    pub name: String,
+    /// The version the host has, `5.57.2`.
+    pub version: Version,
+}
+
 /// The host's configuration of packs. The default allows any pack, in the strict sandbox.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Deserialize)]
 pub struct Policy {
@@ -76,6 +92,14 @@ pub struct Policy {
     /// The packs the host left out, each with why, such as being larger than it serves.
     #[serde(default)]
     pub refused: BTreeMap<String, String>,
+    /// The runtimes the host runs, by the framework's npm name (`react`, `react-dom`, `svelte`) and version. When
+    /// absent, every runtime of the spec's bindings is assumed, at any version.
+    #[serde(default)]
+    pub runtimes: Option<Vec<Library>>,
+    /// The libraries the host offers component code (spec §6.3). When absent, a pack's `peerDependencies` on
+    /// libraries aren't checked.
+    #[serde(default)]
+    pub libraries: Option<Vec<Library>>,
 }
 
 impl Policy {
@@ -97,6 +121,40 @@ impl Policy {
                 "this host allows only the packs its configuration lists, and `{pack}` isn't one"
             )
         })
+    }
+
+    /// Whether the host runs `runtime`, a binding's runtime such as `svelte@5`: one of its runtimes has that name
+    /// and major version.
+    pub(crate) fn runs(&self, runtime: &str) -> bool {
+        let Some(runtimes) = &self.runtimes else {
+            return true;
+        };
+        runtime.rsplit_once('@').is_some_and(|(name, major)| {
+            runtimes
+                .iter()
+                .any(|known| known.name == name && known.version.major.to_string() == major)
+        })
+    }
+
+    /// What is missing when a pack needs `name` in `range` (its `peerDependencies`, spec §6.4), if anything: a
+    /// runtime the host doesn't run, a library it doesn't offer, or one it has at a version outside the range.
+    /// Nothing when the host didn't say what it has.
+    pub(crate) fn unmet(&self, name: &str, range: &VersionReq) -> Option<String> {
+        let runtime = RUNTIME_PACKAGES.contains(&name);
+        let provided = if runtime {
+            self.runtimes.as_ref()
+        } else {
+            self.libraries.as_ref()
+        }?;
+        match provided.iter().find(|known| known.name == name) {
+            None if runtime => Some(format!("`{name}`, a runtime this host doesn't run")),
+            None => Some(format!("`{name}`, a library this host doesn't offer")),
+            Some(known) if !range.matches(&known.version) => Some(format!(
+                "`{name}` `{range}`, and this host has {}",
+                known.version
+            )),
+            Some(_) => None,
+        }
     }
 
     /// Why `pack` at `version` is denied, if it is.
@@ -170,6 +228,49 @@ mod tests {
             "ambient"
         );
         assert!(listed.refusal("@acme/kit", &[]).is_some());
+    }
+
+    #[test]
+    fn the_host_runs_the_runtimes_it_lists_and_every_one_when_it_lists_none() {
+        assert!(Policy::default().runs("preact@10"));
+        let policy = policy(json!({ "runtimes": [
+            { "name": "react", "version": "19.3.0" },
+            { "name": "svelte", "version": "5.57.2" }
+        ] }));
+        assert!(policy.runs("react@19"));
+        assert!(policy.runs("svelte@5"));
+        assert!(!policy.runs("svelte@4"));
+        assert!(!policy.runs("preact@10"));
+        assert!(!policy.runs("react"));
+    }
+
+    #[test]
+    fn a_packs_needs_are_met_by_the_hosts_runtimes_and_libraries() {
+        let range = |text: &str| VersionReq::parse(text).expect("a range");
+        let policy = policy(json!({
+            "runtimes": [{ "name": "svelte", "version": "5.40.0" }],
+            "libraries": [{ "name": "d3", "version": "7.9.0" }]
+        }));
+        assert_eq!(policy.unmet("svelte", &range("^5.20")), None);
+        assert_eq!(
+            policy.unmet("svelte", &range("^5.57")).as_deref(),
+            Some("`svelte` `^5.57`, and this host has 5.40.0")
+        );
+        assert_eq!(
+            policy.unmet("react", &range("^19")).as_deref(),
+            Some("`react`, a runtime this host doesn't run")
+        );
+        assert_eq!(policy.unmet("d3", &range("^7")), None);
+        assert_eq!(
+            policy.unmet("three", &range("^0.170")).as_deref(),
+            Some("`three`, a library this host doesn't offer")
+        );
+        assert_eq!(
+            Policy::default().unmet("d3", &range("^7")),
+            None,
+            "not said"
+        );
+        assert_eq!(Policy::default().unmet("react", &range("^19")), None);
     }
 
     #[test]

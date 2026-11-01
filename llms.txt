@@ -494,7 +494,7 @@ F codes are errors, W codes warnings. Each line: what it means → how to fix it
 - W110 newer minor version than the processor → fine; features it lacks report their own errors.
 - W111 unknown key under `md` → fix its spelling; author keys go outside `md`.
 - W112 local name shadows a `@compmd/core` component → rename unless intended.
-- W113 name from an ambient pack or `host:` data used → fine in that processor; not portable.
+- W113 name from an ambient pack, `host:` data, or a library the processor offers (`import * as d3 from "d3"`) used → fine in that processor; not portable.
 - W114 box whose blocks use breakpoints, sized by its content (in a `row`, not stretched in a `stack`, with `justify-self` in a `grid`, or positioned), and no `width` → give it a `width`.
 - W115 host metadata ignored because the text has frontmatter → keep metadata in one place.
 - W116 `::` line inside an HTML block → put a blank line after the HTML tag, or drop the HTML.
@@ -502,6 +502,7 @@ F codes are errors, W codes warnings. Each line: what it means → how to fix it
 - W118 host component threw → fix the component; the fallback was shown.
 - W119 box placing blocks by position has no height → give it `height`, `aspect-ratio` or `fill`.
 - W120 box param given to a `display=contents` component → remove it; that component has no box.
+- W121 component code can't load (an import that isn't its runtime, a library the processor offers or one its pack names in `peerDependencies`; a relative import in source; a compile error; or a pack needing a runtime or library the processor lacks) → import only those, or bundle the library into a pack's built module.
 
 ## Links
 

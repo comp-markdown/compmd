@@ -35,6 +35,13 @@ impl Language {
         runtime.is_none_or(|runtime| self.runtimes().contains(&runtime))
     }
 
+    /// The runtime a component in it runs on: `runtime` as written, or the binding's default; none for plain
+    /// JavaScript.
+    #[must_use]
+    pub fn runtime(self, runtime: Option<&str>) -> Option<&str> {
+        runtime.or_else(|| self.runtimes().first().copied())
+    }
+
     /// Whether a component in it should name its runtime when exported, since the default may move (W117).
     #[must_use]
     pub fn has_runtimes(self) -> bool {
@@ -54,6 +61,9 @@ mod tests {
         assert!(!Language::Js.runs(Some("react@19")));
         assert!(Language::Svelte.has_runtimes());
         assert!(!Language::Ts.has_runtimes());
+        assert_eq!(Language::Jsx.runtime(None), Some("react@19"));
+        assert_eq!(Language::Tsx.runtime(Some("preact@10")), Some("preact@10"));
+        assert_eq!(Language::Js.runtime(None), None);
         assert_eq!(Language::from_name("vue"), None);
     }
 }

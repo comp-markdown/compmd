@@ -1,0 +1,11 @@
+{
+  "registry": {
+    "@acme/charts": [
+      {"version": "2.1.0", "path": "registry/charts-2.1.0", "integrity": "sha512-AAA"}
+    ]
+  },
+  "policy": {
+    "runtimes": [{"name": "svelte", "version": "5.40.0"}],
+    "libraries": [{"name": "d3", "version": "7.9.0"}]
+  }
+}

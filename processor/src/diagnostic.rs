@@ -115,10 +115,16 @@ named! {
         W116 = "W116",
         /// An exported host-language component without `runtime`.
         W117 = "W117",
+        /// A host-language component threw while mounting or updating: a renderer reports it (stage 5).
+        W118 = "W118",
         /// A box that places blocks by position has no `height`, `aspect-ratio` or `fill` at some width.
         W119 = "W119",
         /// A param for a box given to a `display=contents` component.
         W120 = "W120",
+        /// A host-language component's code can't load: a pack's `peerDependencies` the host can't meet, which the
+        /// processor reports; an import it may not make, a compile error or a module that doesn't match its file,
+        /// which a renderer reports (stage 5).
+        W121 = "W121",
     }
 }
 

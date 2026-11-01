@@ -1,0 +1,9 @@
+{
+  "policy": {
+    "runtimes": [
+      {"name": "react", "version": "19.3.0"},
+      {"name": "react-dom", "version": "19.3.0"},
+      {"name": "svelte", "version": "5.57.2"}
+    ]
+  }
+}

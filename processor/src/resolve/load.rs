@@ -1,6 +1,6 @@
 //! Loads a document and everything it imports, and binds the names of each (spec §6): F013, F020–F022, F026 for
-//! imports, F029, F035, W105, W112, W117, F002 for a signature fence with nothing to attach to, and F037 for a
-//! declaration whose type isn't a type name.
+//! imports, F029, F035, W105, W112, W117, F002 for a signature fence with nothing to attach to, F037 for a
+//! declaration whose type isn't a type name, and W121 for a pack that needs what the host doesn't have.
 
 use super::names::{Binding, Builder, Level, Names, Renderer};
 use super::origin::CORE;
@@ -20,7 +20,7 @@ use crate::tree::{
     Declaration, DeclaredType, Definition, DefinitionBody, Node, Position, Signature,
     SignatureFence, TypeName,
 };
-use semver::Version;
+use semver::{Version, VersionReq};
 use serde_json::Value;
 use std::collections::{BTreeMap, HashMap, HashSet};
 
@@ -368,7 +368,44 @@ impl<'h, 'p> Loader<'h, 'p> {
                 ));
             }
         }
-        self.package(&spec.name, release.version, from.at, false)
+        let version = release.version.clone();
+        let document = self.package(&spec.name, release.version, from.at, false)?;
+        self.check_needs(id, &spec.name, &version, from.at);
+        Ok(document)
+    }
+
+    /// W121: what the pack `name` at `version` needs from the host, its `peerDependencies` (spec §6.4), that the
+    /// host's policy can't meet, reported on the import at `at`. A range this crate can't read isn't checked.
+    fn check_needs(&mut self, id: DocumentId, name: &str, version: &Version, at: Location) {
+        let needs = self
+            .manifest(name, version)
+            .and_then(|manifest| manifest.get("peerDependencies")?.as_object().cloned())
+            .unwrap_or_default();
+        let unmet: Vec<String> = needs
+            .iter()
+            .filter_map(|(need, range)| {
+                let range = VersionReq::parse(range.as_str()?).ok()?;
+                self.policy.unmet(need, &range)
+            })
+            .collect();
+        for missing in unmet {
+            self.report(
+                id,
+                Code::W121,
+                at,
+                format!("`{name}@{version}` needs {missing}, so its components that use it render their fallbacks"),
+            );
+        }
+    }
+
+    /// The `package.json` of the pack `name` at `version`, when there is one and it is JSON.
+    fn manifest(&self, name: &str, version: &Version) -> Option<Value> {
+        let text = self.store.read(&Origin::Pack {
+            name: name.to_string(),
+            version: version.clone(),
+            path: "package.json".to_string(),
+        })?;
+        serde_json::from_str(&text).ok()
     }
 
     /// The newest release of the ambient pack `name`.
@@ -397,15 +434,7 @@ impl<'h, 'p> Loader<'h, 'p> {
                 format!("`{name}@{version}` can't be loaded"),
             )
         };
-        let manifest: Value = self
-            .store
-            .read(&Origin::Pack {
-                name: name.to_string(),
-                version: version.clone(),
-                path: "package.json".to_string(),
-            })
-            .and_then(|text| serde_json::from_str(&text).ok())
-            .ok_or_else(unloadable)?;
+        let manifest = self.manifest(name, &version).ok_or_else(unloadable)?;
         let path = manifest
             .get("compmd")
             .and_then(Value::as_str)

@@ -156,7 +156,7 @@ impl<'r> Checker<'r, '_> {
             return Invoked::default();
         };
         let component = resolved.component(*id);
-        if !component.body.supported() {
+        if !component.body.supported(&resolved.policy) {
             self.report(
                 Code::W102,
                 start.into(),
