@@ -112,7 +112,8 @@ pub(crate) fn components(json: &str, time: Rc<dyn Time>) -> Result<String, Error
     Ok(serde_json::to_string(&processor.components())?)
 }
 
-/// The remote and `host:` sources a render of the request in `json` needs: `{remote, host}`.
+/// The remote and `host:` sources a render of the request in `json` needs, and the packs it has no release of:
+/// `{remote, host, packs}`.
 pub(crate) fn sources(json: &str, time: Rc<dyn Time>) -> Result<String, Error> {
     let prepared = prepare(json, time)?;
     let needed = prepared.validated.sources(&prepared.context);
@@ -298,7 +299,7 @@ mod tests {
 
     #[test]
     fn sources_list_what_the_host_fetches() {
-        let text = "---\nmd:\n  version: 1\n  data:\n    - from: https://status.example.org/{{md.input.region}}.json\n      as: status\n    - from: host:tasks?open=true\n      as: tasks\n  inputs:\n    region: eu | us = eu\n---\nText.\n";
+        let text = "---\nmd:\n  version: 1\n  import:\n    - from: \"@kit/mermaid@1.2.0\"\n      integrity: sha512-m\n      names: [diagram]\n  data:\n    - from: https://status.example.org/{{md.input.region}}.json\n      as: status\n    - from: host:tasks?open=true\n      as: tasks\n  inputs:\n    region: eu | us = eu\n---\nText.\n";
         let request = json!({
             "path": "a.comp.md",
             "files": { "a.comp.md": text },
@@ -311,7 +312,11 @@ mod tests {
                 .expect("JSON");
         assert_eq!(
             needed,
-            json!({ "remote": ["https://status.example.org/us.json"], "host": ["tasks?open=true"] })
+            json!({
+                "remote": ["https://status.example.org/us.json"],
+                "host": ["tasks?open=true"],
+                "packs": [{ "pack": "@kit/mermaid", "range": "1.2.0", "integrity": "sha512-m" }]
+            })
         );
     }
 }

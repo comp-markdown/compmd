@@ -441,6 +441,7 @@ fn each_source_is_needed_once_at_its_first_place() {
                 "https://api.example.com/a.json".into(),
             ],
             host: vec!["tasks".into()],
+            packs: Vec::new(),
         }
     );
 }
@@ -498,6 +499,7 @@ fn data_comes_from_packs_urls_and_hosts() {
                 "https://api.example.com/gone".into(),
             ],
             host: vec!["tasks".into(), "none".into()],
+            packs: Vec::new(),
         }
     );
     assert_eq!(text(&rendered.tree), "* 5 cached host s");

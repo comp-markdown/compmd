@@ -10,6 +10,7 @@ use super::{
     Resolved, Store, uses,
 };
 use crate::diagnostic::{Code, Diagnostic, Fix, Location, Stage};
+use crate::host::NeededPack;
 use crate::lines::LineStarts;
 use crate::nearest::nearest;
 use crate::parse::{CODE, ParseOptions, Parsed, parse};
@@ -60,6 +61,8 @@ pub(super) struct Loader<'h, 'p> {
     ambient_names: Vec<String>,
     /// The host's policy, which may refuse a pack.
     policy: &'h Policy,
+    /// The pack imports the host has no release for, in the order they are loaded.
+    missing: Vec<NeededPack>,
 }
 
 impl<'h, 'p> Loader<'h, 'p> {
@@ -82,6 +85,7 @@ impl<'h, 'p> Loader<'h, 'p> {
             ambient: Vec::new(),
             ambient_names: Vec::new(),
             policy,
+            missing: Vec::new(),
         }
     }
 
@@ -103,6 +107,7 @@ impl<'h, 'p> Loader<'h, 'p> {
             main,
             cycles: HashSet::new(),
             policy: self.policy.clone(),
+            missing: self.missing,
             diagnostics: Found {
                 before: self.diagnostics,
                 ..Found::default()
@@ -329,19 +334,20 @@ impl<'h, 'p> Loader<'h, 'p> {
                 format!("{why}; the import is dropped"),
             ));
         }
-        let release = self
+        let Some(release) = self
             .store
             .releases(&spec.name)
             .into_iter()
             .filter(|release| spec.range.matches(&release.version))
             .max_by(|a, b| a.version.cmp(&b.version))
-            .ok_or_else(|| {
-                Refusal::new(
-                    Code::F026,
-                    from.at,
-                    format!("no release of `{}` matches `{}`", spec.name, from.value),
-                )
-            })?;
+        else {
+            self.missing(spec, import);
+            return Err(Refusal::new(
+                Code::F026,
+                from.at,
+                format!("no release of `{}` matches `{}`", spec.name, from.value),
+            ));
+        };
         if let Some(why) = self.policy.denial(&spec.name, &release.version) {
             return Err(Refusal::new(
                 Code::F026,
@@ -372,6 +378,22 @@ impl<'h, 'p> Loader<'h, 'p> {
         let document = self.package(&spec.name, release.version, from.at, false)?;
         self.check_needs(id, &spec.name, &version, from.at);
         Ok(document)
+    }
+
+    /// Records the pack `spec` names as one the host has no release for, once.
+    fn missing(&mut self, spec: &PackSpec, import: &Import) {
+        let needed = NeededPack {
+            pack: spec.name.clone(),
+            range: spec.written.clone(),
+            integrity: import
+                .integrity
+                .as_ref()
+                .filter(|_| spec.exact)
+                .map(|integrity| integrity.value.clone()),
+        };
+        if !self.missing.contains(&needed) {
+            self.missing.push(needed);
+        }
     }
 
     /// W121: what the pack `name` at `version` needs from the host, its `peerDependencies` (spec §6.4), that the

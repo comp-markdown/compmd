@@ -31,9 +31,11 @@ const request = {
   tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
   origins: true,
 };
-const { remote, host } = sources(request); // the URLs and host: sources to fetch first, if any
+const { remote, host, packs } = sources(request); // the URLs, host: sources and packs to get first, if any
 const { parse, expanded, diagnostics } = process(request);
 ```
+
+`sources` lists the packs the document, and the packs the request holds, import that `packs` has no matching release of, each once with its range as written and its pinned `integrity` (`{pack: "@kit/mermaid", range: "1"}`), for a host that gets packs from a registry: it fetches them, adds them to `packs`, and asks again, until none is missing. Packs the `policy` refuses aren't listed. The processor itself fetches nothing.
 
 A request holds the files of the document's root folder by path, the registry's packs with their files, the ambient packs, the host's `policy` for packs (those it lists with their trust, whether a document may import others, those it denies or left out; spec §6.4, §15), the origins remote data may come from, remote data fetched beforehand by URL (`{text, contentType}`), host data by source, the render time (RFC 3339), the time zone, the inputs' values, and whether expanded nodes carry origins. `process` throws when the request isn't valid or its document isn't one of its files; everything wrong with the document itself is a diagnostic.
 

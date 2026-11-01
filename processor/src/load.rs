@@ -45,7 +45,8 @@ impl Loaded {
     }
 }
 
-/// The remote and `host:` sources a render with `context` needs, each once, in the order they are first written.
+/// The remote and `host:` sources a render with `context` needs, each once, in the order they are first written, and
+/// the packs resolving found no release for.
 pub(crate) fn sources(
     resolved: &Resolved,
     validated: &Validated,
@@ -53,7 +54,10 @@ pub(crate) fn sources(
 ) -> Needed {
     let (inputs, _) = inputs::of(resolved, context);
     let input = inputs.value();
-    let mut needed = Needed::default();
+    let mut needed = Needed {
+        packs: resolved.missing.clone(),
+        ..Needed::default()
+    };
     for (id, _, import) in imports(resolved, validated) {
         let (list, source) = match from::target(resolved, id, import, &input) {
             Ok(Target::Remote(url)) => (&mut needed.remote, url),

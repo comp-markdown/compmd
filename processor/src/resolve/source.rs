@@ -28,6 +28,8 @@ pub(crate) struct PackSpec {
     pub(crate) range: VersionReq,
     /// Whether it names one exact version, as `integrity` requires.
     pub(crate) exact: bool,
+    /// The version or range as written after the name; `*` when none is.
+    pub(crate) written: String,
 }
 
 /// Why a `from` names nothing that can be loaded (F026).
@@ -79,6 +81,7 @@ impl<'a> Source<'a> {
             name: format!("@{name}"),
             range,
             exact,
+            written: version.unwrap_or("*").to_string(),
         }))
     }
 }
@@ -148,7 +151,10 @@ mod tests {
     #[test]
     fn packs_take_a_version_or_a_range() {
         let any = pack("@acme/kit").expect("a pack");
-        assert_eq!((any.name.as_str(), any.exact), ("@acme/kit", false));
+        assert_eq!(
+            (any.name.as_str(), any.exact, any.written.as_str()),
+            ("@acme/kit", false, "*")
+        );
         assert!(any.range.matches(&Version::new(3, 0, 0)));
         let exact = pack("@acme/kit@1.4.2").expect("a pack");
         assert!(exact.exact);
@@ -157,6 +163,7 @@ mod tests {
         assert!(major.range.matches(&Version::new(1, 9, 0)) && !major.exact);
         let caret = pack("@acme/kit@^1.4.2").expect("a pack");
         assert!(!caret.range.matches(&Version::new(1, 4, 1)));
+        assert_eq!(caret.written, "^1.4.2");
         assert_eq!(pack("./ui.comp.md"), None);
     }
 

@@ -367,7 +367,11 @@ mod tests {
             serde_json::from_str(&document.sources().expect("sources")).expect("JSON");
         assert_eq!(
             needed,
-            json!({ "remote": ["https://a.org/x.json"], "host": [] })
+            json!({
+                "remote": ["https://a.org/x.json"],
+                "host": [],
+                "packs": []
+            })
         );
         assert_eq!(changes(&document)["diagnostics"][0]["code"], "F026");
         let fetched = json!({ "remote": { "https://a.org/x.json": { "text": "{\"n\": \"fetched\"}", "contentType": "application/json" } } });

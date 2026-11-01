@@ -18,7 +18,7 @@ use origin::RESERVED_SCOPE;
 pub(crate) use uses::{code_blocks, invocations};
 
 use crate::diagnostic::Diagnostic;
-use crate::host::{Files, Packs, Release};
+use crate::host::{Files, NeededPack, Packs, Release};
 use crate::lines::{LineStarts, Lines};
 use crate::parse::{Parsed, Spliced};
 use crate::policy::{Policy, Trust};
@@ -316,6 +316,8 @@ pub(crate) struct Resolved {
     pub(crate) cycles: HashSet<(DocumentId, Point)>,
     /// The host's policy, which gives each component's trust.
     pub(crate) policy: Policy,
+    /// The pack imports the host has no release for, each once, in the order they were loaded.
+    pub(crate) missing: Vec<NeededPack>,
     /// The diagnostics of stage 2, and of stage 1 for the documents it imports.
     diagnostics: Found,
 }

@@ -362,7 +362,25 @@ impl Processor<Resolved> {
 
 impl Processor<Validated> {
     /// The remote and `host:` sources a render with `context` needs, each once, in the order they are first written,
-    /// for the host to fetch before it loads.
+    /// for the host to fetch before it loads; and the packs the document and the packs it loaded import that the host
+    /// gave no matching release of, each with its range and pinned `integrity`, for a host that gets packs from a
+    /// registry to fetch and resolve again with (spec §6.4). The processor fetches nothing.
+    ///
+    /// ```
+    /// use compmd::context::RenderContext;
+    /// use compmd::host::NeededPack;
+    /// use compmd::{Ambient, ParseOptions, Processor};
+    /// use std::rc::Rc;
+    ///
+    /// let text = "---\nmd:\n  import:\n    - from: \"@kit/mermaid@1\"\n      names: [diagram]\n---\n";
+    /// let context = RenderContext { now: 0, tz: "UTC".into(), time: Rc::new(()), inputs: Default::default() };
+    /// let validated = Processor::new("a.comp.md", text)
+    ///     .parse(&ParseOptions::default())
+    ///     .resolve((), (), &Ambient::default())
+    ///     .validate(&[]);
+    /// let needed = validated.sources(&context);
+    /// assert_eq!(needed.packs, [NeededPack { pack: "@kit/mermaid".into(), range: "1".into(), integrity: None }]);
+    /// ```
     #[must_use]
     pub fn sources(&self, context: &RenderContext) -> Needed {
         load::sources(&self.state.resolved, &self.state.checks, context)
@@ -646,9 +664,10 @@ impl Processor<Expanded> {
         validated.resolved.host_components(validated.store.store())
     }
 
-    /// The remote and `host:` sources a render needs with the context the processor keeps, as
-    /// [`sources`](Processor#method.sources) gives them before loading. After an edit to the frontmatter, a host that
-    /// fetches ahead fetches what it hasn't yet and calls [`reload`](Processor#method.reload-1).
+    /// The remote and `host:` sources a render needs with the context the processor keeps, and the packs it has no
+    /// release of, as [`sources`](Processor#method.sources) gives them before loading. After an edit to the
+    /// frontmatter, a host that fetches ahead fetches what it hasn't yet and calls
+    /// [`reload`](Processor#method.reload-1); a pack it gets needs the document processed again with it.
     #[must_use]
     pub fn sources(&self) -> Needed {
         let validated = &self.state.validated;
@@ -799,6 +818,7 @@ fn back(validated: Validated, diagnostics: &mut Vec<Diagnostic>) -> Validated {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::host::NeededPack;
     use serde_json::{Map, json};
     use std::collections::HashMap;
 
@@ -861,6 +881,69 @@ mod tests {
         assert_eq!((splice.from, splice.to, splice.nodes.len()), (0, 1, 1));
         assert_eq!(expanded.diagnostics().len(), 2);
         assert_eq!(expanded.tree().children.len(), 2);
+    }
+
+    #[test]
+    fn sources_list_the_packs_imported_that_the_host_has_no_release_of() {
+        let import = |from: &str, extra: &str| {
+            format!("    - from: \"{from}\"\n{extra}      names: \"*\"\n")
+        };
+        let text = [
+            "---\nmd:\n  import:\n".to_string(),
+            import("@acme/kit@1", ""),
+            import("@acme/kit@1", ""),
+            import("@acme/charts@^2", ""),
+            import("@acme/base", ""),
+            import("@acme/loose@^1", "      integrity: sha512-l\n"),
+            import("@bad/pack", ""),
+            "---\n".to_string(),
+        ]
+        .concat();
+        let base = format!(
+            "---\nmd:\n  import:\n{}---\n",
+            import("@acme/theme@1.2.3", "      integrity: sha512-t\n")
+        );
+        let packs: HashMap<String, Vec<crate::host::LoadedRelease>> =
+            serde_json::from_value(json!({
+                "@acme/charts": [{ "version": "1.0.0", "files": {} }],
+                "@acme/base": [{ "version": "1.0.0", "files": {
+                    "package.json": "{\"name\": \"@acme/base\", \"version\": \"1.0.0\"}",
+                    "index.comp.md": base,
+                } }],
+            }))
+            .expect("packs");
+        let policy: Policy =
+            serde_json::from_value(json!({ "refused": { "@bad/pack": "too large" } }))
+                .expect("a policy");
+        let validated = Processor::new("a.comp.md", text)
+            .parse(&ParseOptions::default())
+            .resolve_with((), packs, &Ambient::default(), &policy)
+            .validate(&[]);
+        let needed = |pack: &str, range: &str, integrity: Option<&str>| NeededPack {
+            pack: pack.into(),
+            range: range.into(),
+            integrity: integrity.map(Into::into),
+        };
+        let expected = [
+            needed("@acme/kit", "1", None),
+            needed("@acme/charts", "^2", None),
+            needed("@acme/theme", "1.2.3", Some("sha512-t")),
+            needed("@acme/loose", "^1", None),
+        ];
+        assert_eq!(validated.sources(&context(json!({}))).packs, expected);
+        let expanded = validated
+            .load(context(json!({})), (), ())
+            .expand(&expand::Options::default());
+        assert_eq!(expanded.sources().packs, expected);
+        let json = serde_json::to_value(expanded.sources()).expect("JSON");
+        assert_eq!(
+            json["packs"][0],
+            json!({ "pack": "@acme/kit", "range": "1" })
+        );
+        assert_eq!(
+            json["packs"][2],
+            json!({ "pack": "@acme/theme", "range": "1.2.3", "integrity": "sha512-t" })
+        );
     }
 
     #[test]

@@ -90,14 +90,30 @@ pub struct LoadedRelease {
     pub files: HashMap<String, String>,
 }
 
-/// The remote and `host:` sources a render needs, for a host to fetch before it loads: each once, in the order they
-/// are first written.
+/// What a render needs that the host hasn't given, for it to get before it processes or loads: each once, in the
+/// order they are first written.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize)]
 pub struct Needed {
     /// The `https:` URLs [`Fetch`] will be asked for, their values filled in.
     pub remote: Vec<String>,
     /// The sources [`Data`] will be asked for, without `host:`.
     pub host: Vec<String>,
+    /// The packs imported, by the document or by a pack it loaded, that no release in [`Packs`] matches, for a host
+    /// that gets packs from a registry (spec §6.4) to fetch before it resolves again. Packs the host's policy refuses
+    /// aren't listed, nor are imports that name no pack.
+    pub packs: Vec<NeededPack>,
+}
+
+/// A pack import [`Packs`] has no release for.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct NeededPack {
+    /// The pack, `@acme/kit`.
+    pub pack: String,
+    /// The version or range after the name, as written (`1`, `^1.4.2`, `1.4.2`); `*` when none is.
+    pub range: String,
+    /// The import's `integrity`, when it pins one with an exact version: the release's tarball must have this hash.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub integrity: Option<String>,
 }
 
 /// What a remote source gave.

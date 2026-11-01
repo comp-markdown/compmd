@@ -95,11 +95,26 @@ export interface Processed {
   diagnostics: Diagnostic[];
 }
 
-/** The remote and `host:` sources a render needs, in the order they are written. */
+/** What a render needs that the request doesn't hold, each once, in the order it is written. */
 export interface Needed {
   remote: string[];
   /** `host:` sources, without `host:`. */
   host: string[];
+  /**
+   * The packs the document and the packs it holds import that no release in `packs` matches (spec §6.4), for a host
+   * that gets packs from a registry to fetch and add before it processes again. Packs the policy refuses aren't listed.
+   */
+  packs: NeededPack[];
+}
+
+/** A pack import the request has no release for. */
+export interface NeededPack {
+  /** The pack, `@kit/mermaid`. */
+  pack: string;
+  /** The version or range after the name, as written (`1`, `^1.4.2`, `1.4.2`); `*` when none is. */
+  range: string;
+  /** The import's `integrity`, when it pins one with an exact version: the release's tarball must have this hash. */
+  integrity?: string;
 }
 
 /**
@@ -114,7 +129,12 @@ export function process(request: Request): Processed {
 
 /**
  * The remote and `host:` sources a render of `request`'s document needs, for the host to fetch and pass in
- * `remote` and `host` before it calls {@link process}.
+ * `remote` and `host` before it calls {@link process}; and the packs it imports that `packs` has no matching release
+ * of, for a host that gets them from a registry. The processor fetches nothing.
+ *
+ * @example
+ * const { remote, host, packs } = sources(request);
+ * // packs: [{ pack: "@kit/mermaid", range: "1" }], when the document imports `@kit/mermaid@1` and the request has none
  *
  * @throws Error as {@link process} does.
  */
@@ -421,7 +441,7 @@ export class OpenDocumentJson {
     return (JSON.parse(this.#kept.hint(offset)) as PositionalHint | null) ?? undefined;
   }
 
-  /** The remote and `host:` sources a render needs now, as {@link OpenDocument.sources}. */
+  /** What a render needs now that the request didn't hold, as {@link OpenDocument.sources}. */
   sources(): Needed {
     return JSON.parse(this.#kept.sources()) as Needed;
   }
@@ -504,8 +524,9 @@ export class OpenDocument {
   }
 
   /**
-   * The remote and `host:` sources a render needs now. After an edit to the frontmatter, a host that fetches ahead
-   * fetches what it hasn't yet and calls {@link reload}.
+   * The remote and `host:` sources a render needs now, and the packs the request has no release of. After an edit to
+   * the frontmatter, a host that fetches ahead fetches what it hasn't yet and calls {@link reload}; a pack it gets
+   * needs the document opened again with it.
    */
   sources(): Needed {
     return this.#json.sources();
