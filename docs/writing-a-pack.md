@@ -1,6 +1,6 @@
 # Writing a pack
 
-**Status: proposed.** A pack author should write only what is theirs: the component, its signature, a document to try it in, and its tests. Today `npm create @compmd/pack` copies everything else into the pack too, about 150 lines: a Vite configuration, a publish check, a test page, a TypeScript configuration. Those copies are never updated in packs made earlier. A component that draws asynchronously also repeats about 100 lines of its own: the latest params winning, the reader's colour scheme, a failure shown late. This design moves the copies into a package packs depend on (A), the component routine into helpers (B), and the two things only the host can do well, the colour scheme and a late failure, into the host contract (C).
+**Status: accepted.** A pack author should write only what is theirs: the component, its signature, a document to try it in, and its tests. Today `npm create @compmd/pack` copies everything else into the pack too, about 150 lines: a Vite configuration, a publish check, a test page, a TypeScript configuration. Those copies are never updated in packs made earlier. A component that draws asynchronously also repeats about 100 lines of its own: the latest params winning, the reader's colour scheme, a failure shown late. This design moves the copies into a package packs depend on (A), the component routine into helpers (B), and the two things only the host can do well, the colour scheme and a late failure, into the host contract (C).
 
 ## Decisions
 
@@ -80,3 +80,4 @@ Its unit test mocks Mermaid, and checks the theme for each scheme and that a par
 
 - A Vite plugin of a pack's own. `compmd-pack` adds React's or Svelte's by the component's language; a pack that needs another is rare enough to wait for a real one.
 - Recovering from a throw in `mount`: the component never mounted, so there is nothing to update.
+- Generating a component's params type from its signature: the type repeats the signature for now.
