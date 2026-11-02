@@ -35,7 +35,8 @@ When a frame loads, its parent posts `hello` to its window with one end of a new
 | `level {level, policy?}` | your level; for `permissive.html`, the second policy, with the pack's origins, which the frame adds before anything else | every frame, first |
 | `code {components}` | each component's code: compiled text with its binding (`react`, `svelte`, `plain`) and CSS, a built module's file as a `Blob` with the plain binding and its `place` (`pack@version/path`), or a module's `{url, integrity}`; text and `Blob`s with the library packs they import, in `libraries`, by name, each with its place, its file as a `Blob` and its own `libraries` ([sharing library packs](sharing-library-packs.md)); for a permissive frame, its strict children's code too, which it passes on | P, U |
 | `render`, `splices` | `@compmd/render`'s | P |
-| `part {node, inputs}` | the use to render, with its slots as expanded nodes, and the document's inputs | U |
+| `scheme {scheme}` | the colour scheme of the page around the frame, `light` or `dark`, which the frame sets on its document and passes to its own frames; again when it changes | P, U |
+| `part {node, inputs}` | the use to render, with its slots as expanded nodes, and the document's inputs; a code block a code renderer renders is its own node, with its `alt` and code, which are its fallback (spec §7.7) | U |
 | `theme {tokens}` | `@compmd/render`'s | P, U |
 | `styles {urls}` | the host's stylesheets | P, U |
 | `host {port}` | a port for `host`, as calls and events | U frames of permissive packs given `host`, from H only |

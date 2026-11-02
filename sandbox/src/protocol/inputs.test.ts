@@ -17,6 +17,11 @@ describe("boundInputs", () => {
     expect([...boundInputs([tabs])].sort()).toEqual(["region", "tab", "year"]);
   });
 
+  it("finds the inputs a code block a code renderer renders binds", () => {
+    const block = { type: "code", lang: "mermaid", meta: null, value: "graph LR", component: { name: "mermaid", params: [{ key: "theme", breakpoint: null, value: "dark", input: "look" }] } };
+    expect([...boundInputs([block])]).toEqual(["look"]);
+  });
+
   it("is empty for uses that bind no input", () => {
     expect([...boundInputs([{ type: "componentLeaf", name: "legend", params: [{ key: "title", breakpoint: null, value: "Key" }] }])]).toEqual([]);
     expect([...boundInputs([])]).toEqual([]);

@@ -13,6 +13,7 @@ What this repository releases, how each is versioned, and what a release does. T
 5. **A release tag publishes from CI**, by a workflow of its own (`.github/workflows/release.yml`): it builds, runs `cargo make ci`, and publishes both packages with npm's trusted publishing. GitHub proves to npm which repository and workflow publishes, so no npm token is stored anywhere, and each version carries its provenance: where and from what it was built. The crate is published the same way once it can be.
 6. **The first version, `0.1.0`, is published by hand**, by the author: trusted publishing is set up on packages that already exist on npm.
 7. **The website shows the latest release**: its install line and snippets are the latest published version's, and they run as tests against the code they come from, so a release can't leave them broken.
+8. **Packs this repository publishes are released on their own**: each has a version of its own and a tag `<pack>-v<version>`, which a workflow of its own publishes the same way, by trusted publishing. The first is the Mermaid pack, `@comp-markdown/mermaid` ([its design](mermaid-pack.md), decision 9).
 
 ## A release, step by step
 

@@ -1,7 +1,7 @@
 // The frame's end of the protocol: it believes its port, which its parent gave it, and keeps the order the protocol
 // asks for. The level comes first and once: before it, the frame acts on nothing, since its policy isn't narrowed yet.
 
-import { isMessage, SANDBOX_VERSION, TO_FRAME, type CompileRequest, type ComponentCode, type ErrorReason, type FromFrame, type Level, type Part, type Port, type ToFrame } from "./messages.ts";
+import { isMessage, SANDBOX_VERSION, TO_FRAME, type CompileRequest, type ComponentCode, type ErrorReason, type FromFrame, type Level, type Part, type Port, type Scheme, type ToFrame } from "./messages.ts";
 
 /** What the frame does with each message; the frame runtime implements it. */
 export interface FrameHandlers {
@@ -11,6 +11,8 @@ export interface FrameHandlers {
   code?(components: ComponentCode[]): Promise<void>;
   part?(part: Part): void;
   styles?(urls: string[]): void;
+  /** The page's colour scheme, which the frame's document takes. */
+  scheme?(scheme: Scheme): void;
   /** The port for `host`, which only a permissive frame takes. */
   host?(port: MessagePort): void;
   /** Compiles a source: what only the compile frame does. */
@@ -65,6 +67,9 @@ export function serveParent(port: Port, handlers: FrameHandlers): FrameEnd {
         break;
       case "styles":
         handlers.styles?.(data.urls);
+        break;
+      case "scheme":
+        handlers.scheme?.(data.scheme === "dark" ? "dark" : "light");
         break;
       case "host": {
         const [hostPort] = ports ?? [];

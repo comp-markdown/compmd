@@ -9,8 +9,8 @@ import { integrityOf, isChecked } from "./integrity.ts";
 import { pageHref, type Registry, type VersionInfo, type Versions } from "./registry.ts";
 import { gunzip, textFiles, untar } from "./tar.ts";
 
-/** The size cap when the host sets none: enough for Mermaid's module as one file, with room to spare. */
-export const DEFAULT_MAX_PACK_SIZE = 5_000_000;
+/** The size cap when the host sets none: Mermaid 12's module as one file is 7 MB, with its layout engines. */
+export const DEFAULT_MAX_PACK_SIZE = 10_000_000;
 
 export interface ResolveOptions {
   /** The host's registries by scope, `@kit`, with `*` for every other scope, as `.npmrc` has them. */
@@ -23,7 +23,7 @@ export interface ResolveOptions {
   fetch?: "host" | "direct";
   /** Where fetched packs are kept; a new memory cache when not given. */
   cache?: PackCache;
-  /** The largest unpacked size of a pack, in bytes; 5 MB when not given. */
+  /** The largest unpacked size of a pack, in bytes; 10 MB when not given. */
   maxPackSize?: number;
 }
 

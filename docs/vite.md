@@ -50,7 +50,7 @@
 | `packs.*.version` | a semver range the installed version must satisfy, or the build stops | — |
 | `imports` | `any` (the default) or `listed` | `policy.imports` |
 | `deny` | packs denied, all versions or a range, with the reason readers see | `policy.deny` |
-| `maxPackSize` | a pack whose files are larger is left out, with this reason; a pack from a registry, by its unpacked size, before it is downloaded (5 MB there when not given) | `policy.refused`; `registry.maxPackSize` |
+| `maxPackSize` | a pack whose files are larger is left out, with this reason; a pack from a registry, by its unpacked size, before it is downloaded (10 MB there when not given) | `policy.refused`; `registry.maxPackSize` |
 | `libraries` | npm package names, installed in the app, that the frames offer components through their import map, besides React and Svelte | `buildLibraries`; with their versions, `policy.libraries` |
 | `registries` | the npm registries packs the app doesn't install come from, by scope (`@kit`), with `*` for every other scope, each named in full (`https:`, or `http:` for localhost), with no credentials | `registry.registries` |
 | `fetch` | who reaches them: `host` (the default), through the app's proxy; `direct`, the reader's browser | `registry.fetch` |
@@ -106,7 +106,7 @@ const view = createSandbox({ ...sandbox, page: "host", modules: (place) => resol
 - **`registries` names the registries themselves**, npm's or a private one, never a URL of the app: the proxy needs them to pass requests on to, and with `direct` the reader's browser fetches from them. A document or a pack never names one (companion, section 4).
 - **`fetch: "host"`** (the default): every scope's registry in `registry` is the app's proxy, `compmd/registry/` under the app's base, so the registry learns nothing about readers (R1, F1). The dev server and `vite preview` serve it, with `registryProxy` from `@compmd/registry`; a deployed app serves it the same way, from a worker or its server (`registryProxy({ registries, base: "/compmd/registry/" })`, with the same registries). A static host with no server uses `direct` instead.
 - **`fetch: "direct"`**: `registry` holds the registries as named, and the reader's browser fetches from them (R1, F2), which the host tells its readers. There is no proxy.
-- **The size cap** is `maxPackSize`, when given; `resolvePacks`'s 5 MB otherwise (R6).
+- **The size cap** is `maxPackSize`, when given; `resolvePacks`'s 10 MB otherwise (R6).
 - **Built modules from a registry** come as code (`{ code }`, R2): `resolved.modules` gives them, and `sandbox.modules` the installed packs'.
 - The app installs `@compmd/registry`, which `virtual:compmd` imports for `registry`.
 

@@ -2,8 +2,8 @@
 // frame of its own where it is used, and one of a higher level shows its fallback, since the frames only go down in
 // trust (docs/running-components-in-the-sandbox.md, decisions 1 and 4, Q2).
 
-import { rendersSlots, type ExpandedComponent, type ExpandedInput, type Mount, type NodesMounted } from "@compmd/render";
-import type { ComponentCode, ErrorReason, Level } from "./protocol/messages.ts";
+import { rendersSlots, type ExpandedInput, type ExpandedUse, type Mount, type NodesMounted } from "@compmd/render";
+import type { ComponentCode, ErrorReason, Level, Scheme } from "./protocol/messages.ts";
 
 /** Where a part renders: in a frame of a level, or in the host's page, where trusted code runs. */
 export type Here = Level | "host";
@@ -17,6 +17,8 @@ export interface Framed extends NodesMounted {
   theme(tokens: Readonly<Record<string, string>>): void;
   /** The host's stylesheets, in place of those the frame had. */
   styles(urls: readonly string[]): void;
+  /** The page's colour scheme, which a frame's document doesn't inherit either. */
+  scheme(scheme: Scheme): void;
   /** Calls `listener` if the frame stops answering, or is of another protocol version. */
   failed(listener: (message: string) => void): void;
 }
@@ -26,7 +28,7 @@ export interface MountsOptions {
   /** The mounts of components of this level: their loaded code, or the host's trusted components. */
   inline: Readonly<Record<string, Mount>>;
   /** Frames a use of a lower level in `target`. */
-  frame(target: Element, node: ExpandedComponent, inputs: Readonly<Record<string, ExpandedInput>>, component: ComponentCode): Framed;
+  frame(target: Element, node: ExpandedUse, inputs: Readonly<Record<string, ExpandedInput>>, component: ComponentCode): Framed;
   /** A component shows its fallback: it can't run here (`not-here`), or its frame stopped answering (`threw`). */
   report(component: string, reason: ErrorReason, message: string): void;
 }
@@ -61,6 +63,7 @@ export class Mounts {
   /** The frames on the page, which get the document's code and theme again when they change. */
   readonly #frames = new Set<Framed>();
   #tokens: Readonly<Record<string, string>> = {};
+  #scheme: Scheme | undefined;
 
   constructor(options: MountsOptions) {
     this.#options = options;
@@ -79,6 +82,12 @@ export class Mounts {
   theme(tokens: Readonly<Record<string, string>>): void {
     this.#tokens = tokens;
     for (const frame of this.#frames) frame.theme(tokens);
+  }
+
+  /** Gives every frame, and those made later, the page's colour scheme. */
+  scheme(scheme: Scheme): void {
+    this.#scheme = scheme;
+    for (const frame of this.#frames) frame.scheme(scheme);
   }
 
   /** Gives every frame on the page the host's stylesheets; those made later get them from `frame`. */
@@ -107,6 +116,7 @@ export class Mounts {
       const frame = this.#options.frame(target, node, inputs, component);
       this.#frames.add(frame);
       if (Object.keys(this.#tokens).length > 0) frame.theme(this.#tokens);
+      if (this.#scheme) frame.scheme(this.#scheme);
       frame.failed((message) => {
         this.#frames.delete(frame);
         frame.destroy?.();

@@ -9,4 +9,5 @@ packages:
   - wasm
   - editor
   - editor/packs/minimermaid
+  - packs/mermaid
   - website

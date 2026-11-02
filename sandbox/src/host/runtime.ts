@@ -4,11 +4,11 @@
 // frames of packs given it, and stops a frame that stops answering.
 
 import type { HostComponent, Trust } from "@compmd/processor";
-import { createRegion, type ExpandedComponent, type ExpandedInput, type Mount } from "@compmd/render";
+import { createRegion, type ExpandedInput, type ExpandedUse, type Mount } from "@compmd/render";
 import { serveHost, type HostApi } from "../host-api.ts";
 import { codeFor, Mounts } from "../mounts.ts";
 import { connectCompiler, type Compiler } from "../protocol/compiler.ts";
-import { bindingOf, HELLO, SANDBOX_VERSION, type ComponentCode, type ErrorReason, type Level, type Libraries, type LibraryCode } from "../protocol/messages.ts";
+import { bindingOf, HELLO, SANDBOX_VERSION, type ComponentCode, type ErrorReason, type Level, type Libraries, type LibraryCode, type Scheme } from "../protocol/messages.ts";
 import { frameUse } from "../use.ts";
 
 type Place = NonNullable<HostComponent["module"]>;
@@ -108,7 +108,7 @@ export class HostRuntime {
    * Mounts one use in `target`, inline or in a frame of its level, as an editor's widget does; the handle updates and
    * removes it.
    */
-  mountUse(target: HTMLElement, node: ExpandedComponent, inputs: Readonly<Record<string, ExpandedInput>>): { update(node: ExpandedComponent, inputs: Readonly<Record<string, ExpandedInput>>): void; destroy(): void } {
+  mountUse(target: HTMLElement, node: ExpandedUse, inputs: Readonly<Record<string, ExpandedInput>>): { update(node: ExpandedUse, inputs: Readonly<Record<string, ExpandedInput>>): void; destroy(): void } {
     const region = createRegion(target, {
       components: this.mounts,
       onSet: (input, value) => {
@@ -139,6 +139,11 @@ export class HostRuntime {
   /** Gives the document's frames the page's theme tokens (spec §9.4), which their documents don't inherit. */
   theme(tokens: Readonly<Record<string, string>>): void {
     this.#mounts.theme(tokens);
+  }
+
+  /** Gives the document's frames the page's colour scheme, which their documents don't inherit either. */
+  scheme(scheme: Scheme): void {
+    this.#mounts.scheme(scheme);
   }
 
   destroy(): void {
@@ -219,7 +224,7 @@ export class HostRuntime {
     return compiler;
   }
 
-  #frame(target: Element, node: ExpandedComponent, inputs: Readonly<Record<string, ExpandedInput>>, component: ComponentCode) {
+  #frame(target: Element, node: ExpandedUse, inputs: Readonly<Record<string, ExpandedInput>>, component: ComponentCode) {
     const level = component.level === "permissive" ? "permissive" : "strict";
     const trust = this.#trust.get(component.name);
     const permissive = trust?.level === "permissive" ? trust : undefined;
@@ -259,7 +264,7 @@ export class HostRuntime {
       },
     });
     return {
-      update: (next: ExpandedComponent, nextInputs: Readonly<Record<string, ExpandedInput>>) => {
+      update: (next: ExpandedUse, nextInputs: Readonly<Record<string, ExpandedInput>>) => {
         frame.update(next, nextInputs);
       },
       destroy: () => {
@@ -273,6 +278,9 @@ export class HostRuntime {
       },
       styles: (urls: readonly string[]) => {
         frame.styles(urls);
+      },
+      scheme: (scheme: Scheme) => {
+        frame.scheme(scheme);
       },
       failed: (listener: (message: string) => void) => {
         failed = listener;

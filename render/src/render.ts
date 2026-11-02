@@ -378,12 +378,13 @@ class RenderedCodeView implements View {
   readonly key: string | undefined;
   readonly #handle: ComponentHandle;
   readonly #code: View;
-  #current: { node: ExpandedComponent; inputs: Pass["inputs"] };
+  /** The use a mount that renders it itself gets: the code block, whose `alt` and code a sandbox's frame needs too. */
+  #current: { node: ExpandedCode; inputs: Pass["inputs"] };
 
   constructor(surface: Surface, node: MarkdownNode, renderer: ExpandedComponent, pass: Pass, key: string | undefined) {
     this.shape = shapeOf(node);
     this.key = key;
-    this.#current = { node: renderer, inputs: pass.inputs };
+    this.#current = { node: node as ExpandedCode, inputs: pass.inputs };
     this.#code = new ElementView(surface, plainCode(node), pass, undefined);
     const fallback = surface.document.createElement("div");
     fallback.appendChild(this.#code.dom);
@@ -409,7 +410,7 @@ class RenderedCodeView implements View {
     this.#code.update(plainCode(node), pass);
     const renderer = rendererOf(node);
     if (!renderer) return;
-    this.#current = { node: renderer, inputs: pass.inputs };
+    this.#current = { node: node as ExpandedCode, inputs: pass.inputs };
     this.#handle.update(renderer, { slots: {}, parent: pass.parent });
   }
 

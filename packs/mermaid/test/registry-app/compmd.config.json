@@ -1,0 +1,5 @@
+{
+  "$schema": "../../node_modules/@compmd/vite/compmd.config.schema.json",
+  "registries": { "@comp-markdown": "http://127.0.0.1:4231/" },
+  "fetch": "host"
+}

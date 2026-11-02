@@ -12,6 +12,7 @@
         { "$ref": "#/$defs/code" },
         { "$ref": "#/$defs/part" },
         { "$ref": "#/$defs/styles" },
+        { "$ref": "#/$defs/scheme" },
         { "$ref": "#/$defs/host" },
         { "$ref": "#/$defs/ping" },
         { "$ref": "#/$defs/compile" }
@@ -122,14 +123,14 @@
       }
     },
     "part": {
-      "description": "The use the frame renders, an expanded component node (conformance/compmd-tree.schema.json) with its slots, and the document's inputs.",
+      "description": "The use the frame renders, an expanded component node (conformance/compmd-tree.schema.json) with its slots, or a code block a code renderer renders, with its alt and code; and the document's inputs.",
       "type": "object",
       "properties": {
         "type": { "const": "part" },
         "part": {
           "type": "object",
           "properties": {
-            "node": { "type": "object", "properties": { "type": { "enum": ["componentContainer", "componentLeaf", "componentInline"] } }, "required": ["type"] },
+            "node": { "type": "object", "properties": { "type": { "enum": ["componentContainer", "componentLeaf", "componentInline", "code"] } }, "required": ["type"] },
             "inputs": { "type": "object" }
           },
           "required": ["node", "inputs"],
@@ -144,6 +145,13 @@
       "type": "object",
       "properties": { "type": { "const": "styles" }, "urls": { "type": "array", "items": { "type": "string" } } },
       "required": ["type", "urls"],
+      "additionalProperties": false
+    },
+    "scheme": {
+      "description": "The colour scheme of the page around the frame, which the frame's document takes.",
+      "type": "object",
+      "properties": { "type": { "const": "scheme" }, "scheme": { "enum": ["light", "dark"] } },
+      "required": ["type", "scheme"],
       "additionalProperties": false
     },
     "host": {

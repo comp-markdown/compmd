@@ -1,0 +1,38 @@
+{
+  "name": "@comp-markdown/mermaid",
+  "version": "0.1.0",
+  "description": "A CompMD pack that draws Mermaid diagrams, ```mermaid blocks and diagrams computed from data, with Mermaid 12.2.0 bundled in, in the host's strict sandbox.",
+  "keywords": ["compmd", "compmd-pack", "mermaid", "diagrams"],
+  "homepage": "https://compmd.hakanserce.com/",
+  "bugs": "https://github.com/comp-markdown/compmd/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/comp-markdown/compmd.git",
+    "directory": "packs/mermaid"
+  },
+  "author": "Hakan Serce",
+  "license": "MIT",
+  "type": "module",
+  "compmd": "./index.comp.md",
+  "files": ["dist", "index.comp.md", "README.md"],
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build && vite",
+    "test": "vite build && vitest run",
+    "lint": "tsc --noEmit",
+    "prepublishOnly": "npm run build && npm test && node scripts/check.js"
+  },
+  "devDependencies": {
+    "@compmd/processor": "workspace:*",
+    "@compmd/registry": "workspace:*",
+    "@compmd/sandbox": "workspace:*",
+    "@compmd/vite": "workspace:*",
+    "@types/node": "26.6.5",
+    "happy-dom": "21.0.3",
+    "mermaid": "12.2.0",
+    "playwright": "1.64.1",
+    "typescript": "6.0.3",
+    "vite": "8.3.4",
+    "vitest": "5.0.5"
+  }
+}

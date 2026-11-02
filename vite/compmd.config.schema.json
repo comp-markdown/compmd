@@ -42,7 +42,7 @@
       "enum": ["host", "direct"]
     },
     "maxPackSize": {
-      "description": "A pack whose files are larger is left out: bytes, or a size such as \"5 MB\". For a pack from a registry, its unpacked size, before it is downloaded; 5 MB there when not given.",
+      "description": "A pack whose files are larger is left out: bytes, or a size such as \"5 MB\". For a pack from a registry, its unpacked size, before it is downloaded; 10 MB there when not given.",
       "oneOf": [
         { "type": "number", "exclusiveMinimum": 0 },
         { "type": "string", "pattern": "^\\d+(\\.\\d+)?\\s*([Bb]|[KkMmGg][Bb])$" }

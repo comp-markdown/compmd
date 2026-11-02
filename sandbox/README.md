@@ -71,6 +71,8 @@ view.theme(tokens);
 view.destroy();
 ```
 
+**Light and dark.** Every frame takes the colour scheme of the page around it: the view reads its container's `color-scheme` (and the reader's preference, where it allows both) when it opens, at each render and when the preference changes, and sends it to its frames, which set it on their documents. So frames stay transparent on a dark page, their text in its colours, and components that follow the scheme draw for it. A page that switches its scheme itself sets `color-scheme` on the container, or above it, and renders.
+
 **Where the page renders** is the host's choice, never the document's:
 
 | | `page: "frame"` (the default) | `page: "host"` |

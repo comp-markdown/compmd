@@ -1,7 +1,7 @@
 // The parent's end of the protocol, one per frame it made: it waits for the frame's `ready`, gives it its level first,
 // checks what the frame sends against the part it gave it, and stops a frame that stops answering.
 
-import { FROM_FRAME, isMessage, SANDBOX_VERSION, type ComponentCode, type ErrorReason, type FromFrame, type Level, type Part, type Port, type ToFrame } from "./messages.ts";
+import { FROM_FRAME, isMessage, SANDBOX_VERSION, type ComponentCode, type ErrorReason, type FromFrame, type Level, type Part, type Port, type Scheme, type ToFrame } from "./messages.ts";
 
 export interface ChildOptions {
   level: Level;
@@ -33,6 +33,7 @@ export interface ChildEnd {
   code(components: ComponentCode[]): void;
   part(part: Part): void;
   styles(urls: string[]): void;
+  scheme(scheme: Scheme): void;
   /** Sends a message of `@compmd/render`'s protocol, for a page frame, once the frame has its level. */
   send(message: unknown): void;
   on<T extends keyof ChildEvents>(type: T, listener: (event: ChildEvents[T]) => void): void;
@@ -157,6 +158,9 @@ export function connectChild(port: Port, options: ChildOptions): ChildEnd {
     },
     styles: (urls) => {
       post({ type: "styles", urls } satisfies ToFrame);
+    },
+    scheme: (scheme) => {
+      post({ type: "scheme", scheme } satisfies ToFrame);
     },
     send: (message) => {
       post(message);

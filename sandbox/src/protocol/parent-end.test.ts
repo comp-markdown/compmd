@@ -29,12 +29,13 @@ describe("the parent's end (connectChild)", () => {
     child.code([]);
     child.part({ node: chart, inputs: {} });
     child.styles(["/docs.css"]);
+    child.scheme("dark");
     child.send({ type: "theme", tokens: {} });
     await settle();
     expect(got).toEqual([]);
     frame.postMessage({ type: "ready", sandbox: SANDBOX_VERSION });
     await settle();
-    expect(types(got)).toEqual(["level", "code", "part", "styles", "theme"]);
+    expect(types(got)).toEqual(["level", "code", "part", "styles", "scheme", "theme"]);
     expect(got[0]).toEqual({ type: "level", level: "permissive", policy: "connect-src https://tiles.example.com" });
   });
 

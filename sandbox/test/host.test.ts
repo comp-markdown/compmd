@@ -3,7 +3,7 @@
 // document's compile frame.
 
 import type { HostComponent } from "@compmd/processor";
-import type { ExpandedComponent, Mount } from "@compmd/render";
+import type { ExpandedCode, ExpandedComponent, Mount } from "@compmd/render";
 import { afterEach, describe, expect, it } from "vitest";
 import { HostRuntime, type HostEvents } from "../src/host/runtime.ts";
 import { allowed, frames, leaf, probeCode } from "./harness.ts";
@@ -72,6 +72,22 @@ export default function Chart({ compmd }) {
     expect(await results).toEqual([{ here: "host" }, { origin: "null", react: true }, { origin: "null", reached: true }]);
     expect(area.querySelectorAll("iframe")).toHaveLength(2);
     expect(area.textContent).toContain("★★★★☆");
+  });
+
+  it("frames a code block a code renderer renders with its `alt` and code as the fallback (spec §7.7)", async () => {
+    const { runtime, area, next } = setup();
+    await runtime.set([plain("diagram", { level: "strict" }, "async (target, { params, fallback }) => ({ code: params.code, text: fallback.text, element: fallback.element.textContent })")]);
+    const block: ExpandedCode = {
+      type: "code",
+      lang: "mermaid",
+      meta: null,
+      value: "graph LR; A --> B",
+      alt: "A, then B",
+      component: { name: "diagram", params: [{ key: "code", breakpoint: null, value: "graph LR; A --> B" }, { key: "result", breakpoint: null, value: "", input: "diagram" }] },
+    };
+    const result = next("diagram");
+    runtime.mountUse(area, block, { diagram: { type: "string", value: "" } });
+    expect(await result).toEqual({ code: "graph LR; A --> B", text: "A, then B", element: "graph LR; A --> B" });
   });
 
   it("gives `host` only to permissive frames of packs given it", async () => {

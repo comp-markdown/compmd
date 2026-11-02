@@ -38,6 +38,7 @@ function setup(here: Here, inline: Record<string, Mount> = {}) {
         code: (code) => sent.push(`${node.name} code ${code.map(({ name }) => name).join()}`),
         theme: (tokens) => sent.push(`${node.name} theme ${Object.keys(tokens).join()}`),
         styles: (urls) => sent.push(`${node.name} styles ${urls.join()}`),
+        scheme: (scheme) => sent.push(`${node.name} scheme ${scheme}`),
         failed: (listener) => failures.set(node.name, listener),
       };
     },
@@ -131,6 +132,15 @@ describe("Mounts: its frames", () => {
     mounts.theme({ "--compmd-accent": "teal" });
     use(mounts, "chart");
     expect(sent).toEqual(["chart theme --compmd-accent"]);
+  });
+
+  it("gives every frame the page's colour scheme, those made later too", () => {
+    const { mounts, sent } = setup("host");
+    mounts.set([strict, permissive]);
+    use(mounts, "chart");
+    mounts.scheme("dark");
+    use(mounts, "map");
+    expect(sent).toEqual(["chart scheme dark", "map scheme dark"]);
   });
 
   it("shows a use's fallback when its frame fails (it stopped answering), and says it threw", () => {

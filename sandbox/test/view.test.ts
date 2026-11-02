@@ -99,6 +99,33 @@ describe("render and splice", () => {
   });
 });
 
+describe("the page's colour scheme", () => {
+  /** `label`, but showing and setting the colour scheme its frame's document has, on each update. */
+  const scheme: HostComponent = {
+    name: "label",
+    language: "js",
+    code: `export default function mount(target, { set }) {
+  const show = () => queueMicrotask(() => set("result", JSON.stringify(getComputedStyle(document.documentElement).colorScheme)));
+  show();
+  return { update: show };
+}`,
+    trust: { level: "strict" },
+  };
+
+  for (const mode of MODES) {
+    it(`gives the frames the scheme of the page around them, and the new one when it changes (${mode} mode)`, async () => {
+      const { area, view, until, values } = open(mode, [scheme]);
+      area.style.colorScheme = "dark";
+      view.render(page("one"));
+      await until(() => values().includes("dark"));
+      area.style.colorScheme = "light";
+      view.render(page("two"));
+      await until(() => values().includes("light"));
+      expect(values().at(-1)).toBe("light");
+    });
+  }
+});
+
 describe("which inputs a page may set (frame mode)", () => {
   it("passes on a set of an input the tree has", async () => {
     const { view, events, until } = open("frame");

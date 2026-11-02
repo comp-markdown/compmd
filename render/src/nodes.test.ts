@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { MountContext } from "./contract.ts";
 import { rendersSlots, type NodesContext } from "./nodes.ts";
 import { createPage } from "./page.ts";
-import type { ExpandedComponent, ExpandedInput, ExpandedNode } from "./tree.ts";
+import type { ExpandedCode, ExpandedComponent, ExpandedInput, ExpandedNode, ExpandedUse } from "./tree.ts";
 
 const paragraph = (text: string): ExpandedNode => ({ type: "paragraph", children: [{ type: "text", value: text }] });
 
@@ -27,7 +27,7 @@ afterEach(() => {
 describe("a component that renders its slots itself", () => {
   it("gets the use's node and the inputs, and the renderer renders none of its slots", () => {
     const mounted: NodesContext[] = [];
-    const updated: [ExpandedComponent, unknown][] = [];
+    const updated: [ExpandedUse, unknown][] = [];
     const destroyed: string[] = [];
     let chartMounts = 0;
     const page = createPage(area, {
@@ -58,29 +58,28 @@ describe("a component that renders its slots itself", () => {
     expect(destroyed).toEqual(["panel"]);
   });
 
-  it("renders a code block as its renderer's leaf, with the block's text as `code`", () => {
-    const nodes: ExpandedComponent[] = [];
+  it("gives a code block a code renderer renders as the use: its `alt` and code are its fallback (spec §7.7)", () => {
+    const nodes: ExpandedUse[] = [];
     const page = createPage(area, {
       components: {
-        mermaid: rendersSlots((_target, { node }) => {
+        mermaid: rendersSlots((_target, { node, fallback }) => {
           nodes.push(node);
+          expect(fallback.text).toBe("Two steps");
           return { update: (next) => nodes.push(next) };
         }),
       },
     });
-    const block = (value: string): ExpandedNode => ({
+    const block = (value: string): ExpandedCode => ({
       type: "code",
       lang: "mermaid",
       meta: null,
       value,
+      alt: "Two steps",
       component: { name: "mermaid", params: [{ key: "code", breakpoint: null, value }] },
     });
     page.render({ type: "root", children: [block("A --> B")] });
     page.render({ type: "root", children: [block("A --> C")] });
-    expect(nodes.map((node) => [node.type, node.name, node.params[0]?.value])).toEqual([
-      ["componentLeaf", "mermaid", "A --> B"],
-      ["componentLeaf", "mermaid", "A --> C"],
-    ]);
+    expect(nodes).toEqual([block("A --> B"), block("A --> C")]);
   });
 
   it("shows the use's fallback when it throws, and is never called as a plain mount", () => {

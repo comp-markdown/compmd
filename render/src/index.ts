@@ -10,4 +10,4 @@ export { footnotesOf, definitionsOf, plainText, type Footnotes, type LinkDefinit
 export type { CodeRenderer, MathRenderer } from "./render.ts";
 export type * from "./contract.ts";
 export type * from "./tree.ts";
-export { contentOf, isComponent, walk } from "./tree.ts";
+export { contentOf, isComponent, rendererOf, walk } from "./tree.ts";

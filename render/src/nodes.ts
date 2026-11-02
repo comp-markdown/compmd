@@ -2,17 +2,20 @@
 // them: a sandbox's frame for a use, which renders the use and its slots inside the frame, at the use's trust level.
 
 import type { Mount, MountContext } from "./contract.ts";
-import type { ExpandedComponent, ExpandedInput } from "./tree.ts";
+import type { ExpandedInput, ExpandedUse } from "./tree.ts";
 
-/** What a mount that renders its slots gets: the contract without rendered slots, the use's node and the inputs. */
+/**
+ * What a mount that renders its slots gets: the contract without rendered slots, the use's node and the inputs. A
+ * code block a code renderer renders is its use, with its `alt` and code, which are its fallback.
+ */
 export interface NodesContext extends MountContext {
-  node: ExpandedComponent;
+  node: ExpandedUse;
   inputs: Readonly<Record<string, ExpandedInput>>;
 }
 
 /** A mounted component that renders its slots: it gets the use's node again on each update. */
 export interface NodesMounted {
-  update?(node: ExpandedComponent, inputs: Readonly<Record<string, ExpandedInput>>): void;
+  update?(node: ExpandedUse, inputs: Readonly<Record<string, ExpandedInput>>): void;
   destroy?(): void;
 }
 
@@ -45,7 +48,7 @@ export function nodesMountOf(mount: Mount | undefined): NodesMount | undefined {
  * `mount` as the component layer runs it: a mount that renders its slots gets the node and inputs `current` gives,
  * when it mounts and on each update.
  */
-export function runnable(mount: Mount | undefined, current: () => { node: ExpandedComponent; inputs: Readonly<Record<string, ExpandedInput>> }): Mount | undefined {
+export function runnable(mount: Mount | undefined, current: () => { node: ExpandedUse; inputs: Readonly<Record<string, ExpandedInput>> }): Mount | undefined {
   const nodes = nodesMountOf(mount);
   if (!nodes) return mount;
   return (target, context) => {

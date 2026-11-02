@@ -8,7 +8,7 @@ import { createPage, type Change, type ExpandedInput, type ExpandedRoot, type Pa
 import { connectFrame, type FrameConnection, type SpliceOptions } from "@compmd/render/frame";
 import { frameUrl, HostRuntime, type HostRuntimeOptions } from "./host/runtime.ts";
 import { codeFor } from "./mounts.ts";
-import { diagnosticOf, HELLO, SANDBOX_VERSION, type ErrorReason, type SandboxDiagnostic } from "./protocol/messages.ts";
+import { diagnosticOf, HELLO, SANDBOX_VERSION, type ErrorReason, type SandboxDiagnostic, type Scheme } from "./protocol/messages.ts";
 import { connectChild, type ChildEnd } from "./protocol/parent-end.ts";
 
 export interface SandboxOptions extends HostRuntimeOptions {
@@ -66,6 +66,17 @@ const errorEvent = (component: string, reason: ErrorReason, message: string): Vi
 
 type Listeners = { [T in keyof ViewEvents]: ((event: ViewEvents[T]) => void)[] };
 
+/**
+ * The colour scheme `element` is shown in: its `color-scheme`, and the reader's preference when it allows both. A page
+ * that sets none is light, as browsers show it.
+ */
+export function schemeOf(element: Element): Scheme {
+  const words = getComputedStyle(element).colorScheme.split(/\s+/);
+  if (!words.includes("dark")) return "light";
+  if (!words.includes("light")) return "dark";
+  return matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
 /** The components' names and levels, which decide each use's mount; their code doesn't. */
 const shapeOf = (components: readonly HostComponent[]): string =>
   components.map(({ name, trust, module }) => `${name}:${trust.level}:${module ? "module" : "source"}`).join("\n");
@@ -98,6 +109,19 @@ export function createSandbox(options: SandboxOptions): Sandbox {
         },
       });
       const page = options.page === "host" ? hostPage(container, runtime, emit) : framePage(container, runtime, options, emit);
+      // The frames take the page's colour scheme: when the view opens, when the reader's preference changes, and at
+      // each render, for a page that switches its own.
+      let scheme: Scheme | undefined;
+      const followScheme = () => {
+        const next = schemeOf(container);
+        if (next === scheme) return;
+        scheme = next;
+        runtime.scheme(next);
+        page.scheme(next);
+      };
+      const preference = matchMedia("(prefers-color-scheme: dark)");
+      preference.addEventListener("change", followScheme);
+      followScheme();
       /**
        * The page's components, compiled. Trees and splices wait for components of names or levels the page hasn't
        * had, so their uses mount with code; new code for the same ones swaps in where they are mounted.
@@ -111,6 +135,7 @@ export function createSandbox(options: SandboxOptions): Sandbox {
       let shape = shapeOf(components);
       return {
         render: (tree, change) => {
+          followScheme();
           void ready.then(() => {
             page.render(tree, change);
           });
@@ -142,6 +167,7 @@ export function createSandbox(options: SandboxOptions): Sandbox {
           listeners[type].push(listener);
         },
         destroy: () => {
+          preference.removeEventListener("change", followScheme);
           page.destroy();
           runtime.destroy();
         },
@@ -158,6 +184,8 @@ interface PageEnd {
   code(): void;
   theme(tokens: Record<string, string>): void;
   styles(urls: readonly string[]): void;
+  /** The page's colour scheme, for the page's own frame. */
+  scheme(scheme: Scheme): void;
   destroy(): void;
 }
 
@@ -201,8 +229,9 @@ function hostPage(container: HTMLElement, runtime: HostRuntime, emit: Emit): Pag
     theme: (tokens) => {
       page.theme(tokens);
     },
-    // The host's page has its own stylesheets; the runtime gives these to its frames.
+    // The host's page has its own stylesheets and scheme; the runtime gives these to its frames.
     styles: () => undefined,
+    scheme: () => undefined,
     destroy: () => {
       page.destroy();
     },
@@ -263,6 +292,9 @@ function framePage(container: HTMLElement, runtime: HostRuntime, options: Sandbo
     },
     styles: (urls) => {
       child.styles([...urls]);
+    },
+    scheme: (scheme) => {
+      child.scheme(scheme);
     },
     destroy: () => {
       frame.close();

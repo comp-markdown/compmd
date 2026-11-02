@@ -34,6 +34,7 @@ const MESSAGES: (ToFrame | FromFrame)[] = [
   },
   { type: "part", part: { node: { type: "componentLeaf", name: "map", params: [] }, inputs: {} } },
   { type: "styles", urls: ["/docs.css"] },
+  { type: "scheme", scheme: "dark" },
   { type: "host" },
   { type: "ping", n: 1 },
   { type: "compile", name: "chart", language: "jsx", code: "export default () => null" },

@@ -126,16 +126,16 @@ describe("the host's policy, applied before any download", () => {
     expect(diagnostics(ready)).toEqual([expect.stringMatching(/^F026 `@kit\/charts@1\.1\.0` is denied here: a flaw/)]);
   });
 
-  it("doesn't download a pack over the size cap, 5 MB when the host sets none, and says so in `policy.refused` (F026)", async () => {
-    expect(DEFAULT_MAX_PACK_SIZE).toBe(5_000_000);
+  it("doesn't download a pack over the size cap, 10 MB when the host sets none, and says so in `policy.refused` (F026)", async () => {
+    expect(DEFAULT_MAX_PACK_SIZE).toBe(10_000_000);
     const { request: ready } = await resolvePacks(importing("@kit/huge@1"), options());
     expect(downloaded()).toEqual([]);
-    expect(ready.policy?.refused).toEqual({ "@kit/huge": "`@kit/huge@1.0.0` is 10.0 MB unpacked, more than this host's 5 MB" });
-    expect(diagnostics(ready)).toEqual([expect.stringMatching(/^F026 `@kit\/huge` isn't available here: `@kit\/huge@1\.0\.0` is 10\.0 MB/)]);
+    expect(ready.policy?.refused).toEqual({ "@kit/huge": "`@kit/huge@1.0.0` is 20.0 MB unpacked, more than this host's 10 MB" });
+    expect(diagnostics(ready)).toEqual([expect.stringMatching(/^F026 `@kit\/huge` isn't available here: `@kit\/huge@1\.0\.0` is 20\.0 MB/)]);
   });
 
   it("takes a larger pack under a larger cap, and refuses a small one under a smaller cap", async () => {
-    const larger = await resolvePacks(importing("@kit/huge@1"), options({ maxPackSize: 20_000_000 }));
+    const larger = await resolvePacks(importing("@kit/huge@1"), options({ maxPackSize: 30_000_000 }));
     expect(larger.request.packs?.["@kit/huge"]?.[0]?.files["package.json"]).toBeDefined();
     const smaller = await resolvePacks(importing("@kit/charts@1"), options({ maxPackSize: 1_000 }));
     expect(smaller.request.policy?.refused).toEqual({ "@kit/charts": "`@kit/charts@1.1.0` is 0.0 MB unpacked, more than this host's 0.001 MB" });
@@ -144,7 +144,7 @@ describe("the host's policy, applied before any download", () => {
   it("doesn't download a pack whose registry doesn't say how large it is", async () => {
     const { request: ready } = await resolvePacks(importing("@kit/unsized@1"), options());
     expect(downloaded()).toEqual([]);
-    expect(ready.policy?.refused).toEqual({ "@kit/unsized": "its registry doesn't say how large `@kit/unsized@1.0.0` is, and this host takes packs up to 5 MB" });
+    expect(ready.policy?.refused).toEqual({ "@kit/unsized": "its registry doesn't say how large `@kit/unsized@1.0.0` is, and this host takes packs up to 10 MB" });
   });
 
   it("doesn't download a pack its registry publishes no SHA-512 integrity for: it couldn't be checked", async () => {

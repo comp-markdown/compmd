@@ -73,6 +73,12 @@ export interface ExpandedCode extends MarkdownNode {
   alt?: string;
 }
 
+/**
+ * A use of a component, as a sandbox's frame renders it: an invocation, or a code block a code renderer renders, whose
+ * `alt` and code are its fallback (spec §7.7).
+ */
+export type ExpandedUse = ExpandedComponent | ExpandedCode;
+
 /** The leaf of the code renderer that renders `node`, a code block, as it is mounted; `undefined` when none does. */
 export function rendererOf(node: ExpandedNode): ExpandedComponent | undefined {
   if (node.type !== "code") return undefined;

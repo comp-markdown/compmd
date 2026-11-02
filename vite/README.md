@@ -82,7 +82,7 @@ view.render(document.expanded);
 | `packs.*.version` | a semver range the installed version must satisfy |
 | `imports` | `any` (the default): a document may import any installed pack; `listed`: only those listed |
 | `deny` | packs denied, all versions or a range, with the reason readers see (F026) |
-| `maxPackSize` | a pack whose files are larger is left out: bytes, or a size such as `"5 MB"`; for a pack from a registry, its unpacked size, before it is downloaded (5 MB there when not given) |
+| `maxPackSize` | a pack whose files are larger is left out: bytes, or a size such as `"5 MB"`; for a pack from a registry, its unpacked size, before it is downloaded (10 MB there when not given) |
 | `libraries` | npm packages, installed in the app, that the frames offer components through their import map, besides React and Svelte: `"d3"`, or `{ "name": "d3", "imports": ["d3", "d3-scale"] }` |
 | `registries` | the npm registries packs the app doesn't install come from, by scope (`"@kit"`), with `"*"` for every other scope, each named in full |
 | `fetch` | who reaches them: `host` (the default), through the app's proxy at `compmd/registry/`; `direct`, the reader's browser |

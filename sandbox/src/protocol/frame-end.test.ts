@@ -25,6 +25,7 @@ function recording() {
     },
     part: (part) => calls.push(["part", part]),
     styles: (urls) => calls.push(["styles", urls]),
+    scheme: (scheme) => calls.push(["scheme", scheme]),
     host: (port) => calls.push(["host", port instanceof MessagePort]),
   };
   return { calls, handlers };
@@ -70,6 +71,20 @@ describe("the frame's end (serveParent)", () => {
     await settle();
     expect(calls.map(([name]) => name)).toEqual(["level", "code", "part", "styles"]);
     expect(types(got)).toEqual(["ready", "loaded"]);
+  });
+
+  it("takes the page's colour scheme, and reads anything but dark as light", async () => {
+    const { parent, frame } = frameChannel();
+    const { calls, handlers } = recording();
+    serveParent(frame, handlers);
+    parent.postMessage({ type: "level", level: "strict" });
+    parent.postMessage({ type: "scheme", scheme: "dark" });
+    parent.postMessage({ type: "scheme", scheme: "sepia" });
+    await settle();
+    expect(calls.slice(1)).toEqual([
+      ["scheme", "dark"],
+      ["scheme", "light"],
+    ]);
   });
 
   it("answers each ping with its number", async () => {

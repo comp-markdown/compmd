@@ -2,12 +2,13 @@
 
 How to release, step by step. What is released and why it is done this way is decided in [docs/releases.md](docs/releases.md).
 
-Three things are released, each on its own:
+Four things are released, each on its own:
 
 | What | Where | How |
 |---|---|---|
 | The implementation: `@compmd/render`, `@compmd/processor`, `@compmd/sandbox`, `@compmd/registry`, `@compmd/vite`, `@compmd/create-pack` | npm | a tag `v<version>`; `.github/workflows/release.yml` publishes |
 | The implementation: the crates `compmd-markdown`, `compmd` | crates.io | by hand, after the tag |
+| The Mermaid pack, `@comp-markdown/mermaid` | npm | a tag `mermaid-v<version>`; `.github/workflows/release-mermaid.yml` publishes |
 | The spec | the website, `/spec/<version>/` | a tag `spec-v<version>`; the Pages workflow deploys |
 
 The website follows `main` and needs no release: every push that touches what it is built from deploys it.
@@ -73,6 +74,22 @@ A published crate version can't be deleted, only yanked, so dry-run first. Publi
    ```
 
 docs.rs builds the documentation a few minutes later.
+
+## The Mermaid pack
+
+`@comp-markdown/mermaid` (`packs/mermaid/`) has a version of its own, for its component's params and forms ([its design](docs/mermaid-pack.md), decision 2).
+
+1. **Once, before its first release:** the `@comp-markdown` organization exists on npm, and the publishing account may publish to it. The first version is published by hand, from outside the repository, as for any new package (below, [prerequisites](#prerequisites-once-per-package)): `pnpm --dir packs/mermaid build`, `pnpm --dir packs/mermaid pack --pack-destination ../packages`, the tarball checked (`dist/mermaid.js`, `dist/LICENSES.md`, `index.comp.md`, the README and its MIT `LICENSE`), then `npm publish` it. Then its trusted publisher is set up for the workflow `release-mermaid.yml`.
+2. **Each release:** the version in `packs/mermaid/package.json` and in `index.comp.md`'s `export.version`, the same in both, in one commit, with what changed in its README; `cargo make ci` green.
+3. Tag and push the tag:
+
+   ```sh
+   git tag mermaid-v0.2.0
+   git push origin mermaid-v0.2.0
+   ```
+
+   The workflow checks the tag is the pack's version, runs `cargo make ci`, packs the pack and publishes it with npm's trusted publishing.
+4. Check: `curl -s https://registry.npmjs.org/-/package/@comp-markdown%2fmermaid/dist-tags` gives the new version as `latest`.
 
 ## The spec
 

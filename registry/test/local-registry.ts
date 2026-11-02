@@ -50,14 +50,14 @@ export const integrityOf = (bytes: Buffer): string => `sha512-${createHash("sha5
  * - `@kit/d3@7.9.5` and `7.12.0`: the library pack, `{ "compmd": { "library": "dist/d3.js" } }`.
  *
  * And packs whose metadata is wrong in one way, each a copy of another's tarball:
- * - `@kit/huge`: 10 MB unpacked, over the default cap; `@kit/unsized`: no unpacked size;
+ * - `@kit/huge`: 20 MB unpacked, over the default cap; `@kit/unsized`: no unpacked size;
  * - `@kit/broken`: its bytes don't match the integrity published;
  * - `@kit/unchecked`: no integrity; `@kit/sha1`: a SHA-1 integrity only.
  */
 export const CATALOG: Catalog = {
   "@kit/report": { "1.0.0": { file: "kit-report-1.0.0.tgz" } },
   "@kit/charts": { "1.0.0": { file: "kit-charts-1.0.0.tgz" }, "1.1.0": { file: "kit-charts-1.1.0.tgz" } },
-  "@kit/huge": { "1.0.0": { file: "kit-charts-1.0.0.tgz", unpackedSize: 10_000_000 } },
+  "@kit/huge": { "1.0.0": { file: "kit-charts-1.0.0.tgz", unpackedSize: 20_000_000 } },
   "@kit/unsized": { "1.0.0": { file: "kit-charts-1.0.0.tgz", unpackedSize: null } },
   "@kit/broken": { "1.0.0": { file: "kit-report-1.0.0.tgz", corrupt: true } },
   "@kit/unchecked": { "1.0.0": { file: "kit-charts-1.0.0.tgz", integrity: null } },

@@ -1,0 +1,50 @@
+# A release of the Mermaid pack (docs/mermaid-pack.md, decision 9): a tag mermaid-v<version> builds and checks the
+# repository, then publishes @comp-markdown/mermaid to npm with trusted publishing, as release.yml publishes the
+# @compmd packages. The pack has a version of its own, so it is released on its own.
+name: Release the Mermaid pack
+
+on:
+  push:
+    tags: ["mermaid-v*"]
+
+permissions:
+  contents: read
+
+# One release at a time, and none cut off halfway.
+concurrency:
+  group: release-mermaid
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      # Trusted publishing and provenance.
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+      - uses: ./.github/actions/setup
+      - run: pnpm install --frozen-lockfile
+      # The browser tests run in the runner's Chrome and in Playwright's WebKit.
+      - run: pnpm --dir sandbox exec playwright install --with-deps webkit
+      - name: The tag is the pack's version
+        run: |
+          version="${GITHUB_REF_NAME#mermaid-v}"
+          written="$(node -p "require('./packs/mermaid/package.json').version")"
+          if [ "$written" != "$version" ]; then
+            echo "::error::packs/mermaid/package.json is $written, the tag $GITHUB_REF_NAME"
+            exit 1
+          fi
+      # Every check, the pack's tests and its build among them.
+      - run: cargo make ci
+      - name: Pack
+        run: pnpm --dir packs/mermaid pack --pack-destination "$RUNNER_TEMP/packages"
+      # Trusted publishing needs npm 11.5.1 or newer.
+      - run: npm install --global npm@11.6.2
+      # Outside the repository, whose devEngines name pnpm.
+      - name: Publish
+        working-directory: ${{ runner.temp }}/packages
+        run: npm publish ./comp-markdown-mermaid-*.tgz --access public

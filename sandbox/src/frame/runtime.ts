@@ -9,7 +9,7 @@ import { serveFrame } from "@compmd/render/frame";
 import { hostClient, type HostClient } from "../host-api.ts";
 import { codeFor, Mounts } from "../mounts.ts";
 import { serveParent, type FrameEnd } from "../protocol/frame-end.ts";
-import { hasCode, HELLO, SANDBOX_VERSION, type ComponentCode, type ErrorReason, type Level, type Part } from "../protocol/messages.ts";
+import { hasCode, HELLO, SANDBOX_VERSION, type ComponentCode, type ErrorReason, type Level, type Part, type Scheme } from "../protocol/messages.ts";
 import { frameUse } from "../use.ts";
 import { compile } from "./compile.ts";
 import { Components } from "./components.ts";
@@ -154,6 +154,9 @@ function start(port: MessagePort): void {
         styles: (urls) => {
           frame.styles(urls);
         },
+        scheme: (scheme) => {
+          frame.scheme(scheme);
+        },
         failed: (listener) => {
           failed = listener;
         },
@@ -200,6 +203,12 @@ function start(port: MessagePort): void {
       stylesheets = urls;
       styles(urls);
       mounts.styles(urls);
+    },
+    scheme: (scheme: Scheme) => {
+      // The page's scheme, so the frame stays transparent on it, its text in the page's colours, and its components can
+      // follow it (their `prefers-color-scheme` is the reader's, which needn't be the page's).
+      document.documentElement.style.colorScheme = scheme;
+      mounts.scheme(scheme);
     },
     host: (hostPort) => {
       host = hostClient(hostPort);

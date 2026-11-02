@@ -23,7 +23,10 @@ export interface FramesOptions {
   from?: string;
 }
 
-/** A frame document of `level`: its policy first, then the import map, then the frame runtime. */
+/**
+ * A frame document of `level`: its policy first, then the import map, then the frame runtime. Its body holds its
+ * children's margins (`flow-root`), so the size it reports is all of its content and its frame needs no scrollbar.
+ */
 function frameDocument(level: Level, policy: string, importMap: string): string {
   const escape = (text: string) => text.replaceAll("&", "&amp;").replaceAll('"', "&quot;");
   return `<!doctype html>
@@ -33,7 +36,7 @@ function frameDocument(level: Level, policy: string, importMap: string): string 
     <meta http-equiv="Content-Security-Policy" content="${escape(policy)}" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script type="importmap">${importMap}</script>
-    <style>html, body { margin: 0; } #part:empty, #page:empty { display: none; }</style>
+    <style>html, body { margin: 0; } body { display: flow-root; } #part:empty, #page:empty { display: none; }</style>
     <script type="module" src="./runtime.js"></script>
   </head>
   <body>

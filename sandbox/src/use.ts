@@ -2,10 +2,10 @@
 // gives it, and the frame's size set from what it reports. The host's page frames strict and permissive uses this way,
 // and a permissive frame its strict ones (docs/running-components-in-the-sandbox.md, decision 1).
 
-import type { ExpandedComponent, ExpandedInput } from "@compmd/render";
+import type { ExpandedInput, ExpandedUse } from "@compmd/render";
 import { networkPolicy } from "./frame/narrow.ts";
 import { boundInputs } from "./protocol/inputs.ts";
-import { HELLO, SANDBOX_VERSION, type ComponentCode, type Level } from "./protocol/messages.ts";
+import { HELLO, SANDBOX_VERSION, type ComponentCode, type Level, type Scheme } from "./protocol/messages.ts";
 import { connectChild, type ChildEnd, type ChildEvents } from "./protocol/parent-end.ts";
 
 export interface UseFrameOptions {
@@ -17,7 +17,7 @@ export interface UseFrameOptions {
   /** A port for `host`, for a permissive use of a pack given `host`. */
   host?: () => MessagePort;
   code: readonly ComponentCode[];
-  node: ExpandedComponent;
+  node: ExpandedUse;
   inputs: Readonly<Record<string, ExpandedInput>>;
   styles?: readonly string[];
   ping?: { every: number; timeout: number };
@@ -26,12 +26,14 @@ export interface UseFrameOptions {
 
 export interface UseFrame {
   readonly iframe: HTMLIFrameElement;
-  update(node: ExpandedComponent, inputs: Readonly<Record<string, ExpandedInput>>): void;
+  update(node: ExpandedUse, inputs: Readonly<Record<string, ExpandedInput>>): void;
   code(code: readonly ComponentCode[]): void;
   /** Sends the page's theme tokens, as `@compmd/render`'s `theme` message. */
   theme(tokens: Readonly<Record<string, string>>): void;
   /** The host's stylesheets, in place of those the frame had. */
   styles(urls: readonly string[]): void;
+  /** The page's colour scheme, which the frame's document takes. */
+  scheme(scheme: Scheme): void;
   destroy(): void;
 }
 
@@ -48,7 +50,7 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
   const iframe = document.createElement("iframe");
   iframe.setAttribute("sandbox", "allow-scripts");
   iframe.setAttribute("allow", "");
-  iframe.title = options.node.name;
+  iframe.title = options.node.type === "code" ? (options.node.component?.name ?? "") : options.node.name;
   iframe.className = "compmd-frame";
   iframe.style.cssText = `border: 0; width: 100%; height: 0; display: ${options.node.type === "componentInline" ? "inline-block" : "block"};`;
   let node = options.node;
@@ -57,6 +59,7 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
   let code = options.code;
   let styles = options.styles ?? [];
   let tokens: Readonly<Record<string, string>> | undefined;
+  let scheme: Scheme | undefined;
   let child: ChildEnd | undefined;
   const connect = () => {
     child?.close();
@@ -75,6 +78,7 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
     });
     for (const [type, listener] of Object.entries(options.on)) end.on(type as keyof ChildEvents, listener as (event: unknown) => void);
     if (styles.length > 0) end.styles([...styles]);
+    if (scheme) end.scheme(scheme);
     end.code([...code]);
     if (tokens) end.send({ type: "theme", tokens: { ...tokens } });
     end.part({ node, inputs: { ...inputs } });
@@ -102,6 +106,10 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
     styles: (next) => {
       styles = next;
       child?.styles([...next]);
+    },
+    scheme: (next) => {
+      scheme = next;
+      child?.scheme(next);
     },
     destroy: () => {
       iframe.removeEventListener("load", connect);

@@ -1,7 +1,7 @@
 // The sandbox's frame protocol (docs/sandbox-protocol.md): the messages between a frame and its parent, the window
 // that made it. They travel on the port `@compmd/render`'s frame protocol uses too, beside its own.
 
-import type { ExpandedComponent, ExpandedInput } from "@compmd/render";
+import type { ExpandedInput, ExpandedUse } from "@compmd/render";
 
 /** The protocol's version, in `hello` and `ready`: a frame of another version gets nothing. */
 export const SANDBOX_VERSION = 1;
@@ -11,6 +11,12 @@ export const HELLO = "compmd-sandbox";
 
 /** A frame's trust level; trusted code never runs in a frame. */
 export type Level = "strict" | "permissive";
+
+/**
+ * The colour scheme of the page around a frame, which the frame's document takes: a frame of another scheme than its
+ * page's shows as an opaque box, and its components couldn't follow the page.
+ */
+export type Scheme = "light" | "dark";
 
 /**
  * A component as a frame gets it, with its level: compiled text with its binding, a built module the host's page holds,
@@ -51,9 +57,12 @@ export function bindingOf(language: CompileRequest["language"]): "react" | "svel
 /** Whether `component` comes with code to run. */
 export const hasCode = (component: ComponentCode): component is Runnable => "code" in component || "module" in component;
 
-/** The use a frame renders: its node, its slots as expanded nodes in it, and the document's inputs. */
+/**
+ * The use a frame renders: its node, its slots as expanded nodes in it, and the document's inputs. A code block a code
+ * renderer renders is its own node, so the frame has its `alt` and code, its fallback (spec §7.7).
+ */
 export interface Part {
-  node: ExpandedComponent;
+  node: ExpandedUse;
   inputs: Record<string, ExpandedInput>;
 }
 
@@ -71,6 +80,7 @@ export type ToFrame =
   | { type: "code"; components: ComponentCode[] }
   | { type: "part"; part: Part }
   | { type: "styles"; urls: string[] }
+  | { type: "scheme"; scheme: Scheme }
   | { type: "host" }
   | { type: "ping"; n: number }
   | ({ type: "compile" } & CompileRequest);
@@ -105,7 +115,7 @@ export type FromFrame =
   | { type: "failed"; name: string; message: string };
 
 /** Every message type, each way: what the schema (`protocol.schema.json`) has too. */
-export const TO_FRAME: readonly ToFrame["type"][] = ["level", "code", "part", "styles", "host", "ping", "compile"];
+export const TO_FRAME: readonly ToFrame["type"][] = ["level", "code", "part", "styles", "scheme", "host", "ping", "compile"];
 export const FROM_FRAME: readonly FromFrame["type"][] = ["ready", "loaded", "set", "error", "link", "rendered", "size", "pong", "compiled", "failed"];
 
 /** What the protocol needs of a port: a `MessagePort` is one. It is `@compmd/render`'s, with transfers and ports. */
