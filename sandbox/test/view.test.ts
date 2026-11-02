@@ -300,6 +300,22 @@ describe("theme and styles", () => {
   });
 });
 
+describe("the compile frame", () => {
+  it("stays hidden whatever the host's page styles iframes with", async () => {
+    const style = document.head.appendChild(Object.assign(document.createElement("style"), { textContent: "iframe { display: block; height: 100%; }" }));
+    try {
+      const { view, until, values } = open("host");
+      view.render(page("one"));
+      await until(() => values().includes("one"));
+      const compiler = document.querySelector<HTMLIFrameElement>('iframe[title="compile"]');
+      expect(compiler).not.toBeNull();
+      expect(compiler && getComputedStyle(compiler).display).toBe("none");
+    } finally {
+      style.remove();
+    }
+  });
+});
+
 describe("destroy", () => {
   it("removes the page, its frames and the compile frame, and reports nothing after", async () => {
     const { area, view, events, until, values } = open("host");

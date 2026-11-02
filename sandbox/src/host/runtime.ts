@@ -214,6 +214,8 @@ export class HostRuntime {
     frame.setAttribute("sandbox", "allow-scripts");
     frame.setAttribute("allow", "");
     frame.hidden = true;
+    // Hidden whatever the host's page styles iframes with: an author rule (`iframe { display: block }`) beats `hidden`.
+    frame.style.display = "none";
     frame.title = "compile";
     const { port1, port2 } = new MessageChannel();
     frame.addEventListener("load", () => frame.contentWindow?.postMessage({ type: HELLO, version: SANDBOX_VERSION }, "*", [port2]), { once: true });
