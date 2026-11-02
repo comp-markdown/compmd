@@ -64,14 +64,15 @@ const view = sandbox.open(container, { components: processed.hostComponents });
 view.render(processed.expanded);              // or view.splice(splices, change, { replace, inputs })
 view.on("set", ({ input, value }) => rerender({ [input]: value }));
 view.on("link", ({ url }) => confirmAndOpen(url));   // a reader's click; show the URL before opening it (spec §15)
-view.on("error", ({ component, reason, code, message }) => report(component, code ?? reason, message));   // code: W118, W121
+view.on("error", ({ component, reason, code, message }) => report(component, code ?? reason, message));   // code: W118 (threw or failed), W121
 view.components(next.hostComponents);         // when the document's components change
 view.styles(["/sandbox/docs.css"]);           // the host's stylesheets, served from the frames' origin
 view.theme(tokens);
+view.scheme();                                // after the host switches its own theme, with a class
 view.destroy();
 ```
 
-**Light and dark.** Every frame takes the colour scheme of the page around it: the view reads its container's `color-scheme` (and the reader's preference, where it allows both) when it opens, at each render and when the preference changes, and sends it to its frames, which set it on their documents. So frames stay transparent on a dark page, their text in its colours, and components that follow the scheme draw for it. A page that switches its scheme itself sets `color-scheme` on the container, or above it, and renders.
+**Light and dark.** Every frame takes the colour scheme of the page around it: the view reads its container's `color-scheme` (and the reader's preference, where it allows both) when it opens, at each render, when the preference changes and when printing starts and ends, and sends it to its frames, which set it on their documents. So frames stay transparent on a dark page, their text in its colours, and every component, framed or inline, gets it as `context.scheme` (spec §7.4), with an update when it changes. A page that switches its scheme itself sets `color-scheme` on the container, or above it, and calls `view.scheme()` (or renders).
 
 **Where the page renders** is the host's choice, never the document's:
 

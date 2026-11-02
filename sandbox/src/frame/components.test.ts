@@ -34,7 +34,7 @@ function setup() {
 function context(n: number): MountContext {
   const fallback = document.createElement("span");
   fallback.textContent = "fallback";
-  return { params: { n }, slots: {}, set: () => undefined, fallback: { text: "fallback", element: fallback }, headingLevel: 1 };
+  return { params: { n }, slots: {}, set: () => undefined, fallback: { text: "fallback", element: fallback }, headingLevel: 1, scheme: "light", fail: () => undefined };
 }
 
 describe("Components", () => {
@@ -55,6 +55,25 @@ describe("Components", () => {
     expect(log).toHaveLength(3);
     handle?.destroy?.();
     expect(log.at(-1)).toBe("destroy two");
+  });
+
+  it("gives a component mounted again the renderer's scheme, as the renderer changes it", async () => {
+    const schemes: string[] = [];
+    const load = (): Promise<Loaded> =>
+      Promise.resolve({
+        mount: (_, mounted) => {
+          schemes.push(`mount ${mounted.scheme}`);
+          return { update: () => schemes.push(`update ${mounted.scheme}`) };
+        },
+      });
+    const components = new Components({ load, report: () => undefined, adopt: () => undefined });
+    await components.set([component("card", "one")]);
+    const live = context(1);
+    const handle = components.mounts.card?.(document.createElement("div"), live);
+    await components.set([component("card", "two")]);
+    live.scheme = "dark";
+    handle?.update?.({ n: 1 }, {});
+    expect(schemes).toEqual(["mount light", "mount light", "update dark"]);
   });
 
   it("shows the fallback and reports code that doesn't load, and mounts it once it does", async () => {

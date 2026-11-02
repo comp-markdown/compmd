@@ -4,6 +4,7 @@ import type { ComponentError, Mount, RenderError } from "./contract.ts";
 import type { LinkDefinition } from "./document.ts";
 import type { KeyOf } from "./keys.ts";
 import { destroyAll, needsContainer, patch, type CodeRenderer, type MathRenderer, type Surface, type View } from "./render.ts";
+import { Schemes } from "./scheme.ts";
 import { Stylesheet, type ParentLayout } from "./styles.ts";
 import type { ExpandedInput, ExpandedNode } from "./tree.ts";
 
@@ -52,15 +53,21 @@ export interface RegionContext {
 export interface Region {
   /** Renders `nodes`, or brings what is rendered up to date with them. */
   render(nodes: readonly ExpandedNode[], context?: RegionContext): void;
+  /**
+   * Reads the colour scheme of `target` again, after the host switched its own theme: components follow it. It is
+   * read at each render too, when the reader's preference changes, and when printing starts and ends.
+   */
+  scheme(): void;
   destroy(): void;
   readonly stylesheet: Stylesheet;
 }
 
 /** The parts of a surface every caller shares, from its options. */
-export function surfaceOf(document: Document, stylesheet: Stylesheet, options: SurfaceOptions): Surface {
+export function surfaceOf(document: Document, stylesheet: Stylesheet, schemes: Schemes, options: SurfaceOptions): Surface {
   return {
     document,
     stylesheet,
+    schemes,
     components: options.components ?? {},
     onSet: (input, value) => options.onSet?.(input, value),
     ...(options.onError ? { onError: (error: ComponentError) => options.onError?.(error) } : {}),
@@ -94,7 +101,8 @@ function insideContainer(element: Element): boolean {
 export function createRegion(target: HTMLElement, options: RegionOptions = {}): Region {
   const document = target.ownerDocument;
   const stylesheet = options.stylesheet ?? new Stylesheet(document);
-  const surface = surfaceOf(document, stylesheet, options);
+  const schemes = new Schemes(target);
+  const surface = surfaceOf(document, stylesheet, schemes, options);
   let views: View[] = [];
   let checked = false;
   // Checked once the target is in the document: an editor's widget is rendered before it is attached.
@@ -108,6 +116,7 @@ export function createRegion(target: HTMLElement, options: RegionOptions = {}): 
   return {
     stylesheet,
     render(nodes, context = {}) {
+      schemes.read();
       views = patch(surface, target, views, nodes, {
         inputs: context.inputs ?? {},
         heading: { level: context.headingLevel ?? 0 },
@@ -121,7 +130,11 @@ export function createRegion(target: HTMLElement, options: RegionOptions = {}): 
       if (target.isConnected) checkContainer();
       else document.defaultView?.requestAnimationFrame(checkContainer);
     },
+    scheme() {
+      schemes.read();
+    },
     destroy() {
+      schemes.destroy();
       destroyAll(views);
       views = [];
       target.replaceChildren();

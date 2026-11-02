@@ -24,6 +24,9 @@ export interface Fallback {
   element: Element;
 }
 
+/** A colour scheme a component is shown in. */
+export type Scheme = "light" | "dark";
+
 export interface MountContext {
   params: Params;
   slots: Slots;
@@ -32,6 +35,13 @@ export interface MountContext {
   fallback: Fallback;
   /** The level the component's top heading should have (spec §7.2). */
   headingLevel: number;
+  /** The colour scheme the component is shown in; when it changes, the renderer sets it and calls `update`. */
+  scheme: Scheme;
+  /**
+   * The component can't draw what it was given, found after `mount` or `update` returned: W118 with `message`, and the
+   * fallback in `target` until the next `update`. Not for a resource that may come back.
+   */
+  fail: (message: string) => void;
   /** What the host gives components it trusts; absent otherwise. */
   host?: unknown;
 }
@@ -49,7 +59,10 @@ export interface Mounted {
 // eslint-disable-next-line @typescript-eslint/no-invalid-void-type
 export type Mount = (target: Element, context: MountContext) => Mounted | undefined | void;
 
-/** Why a component shows its fallback: it isn't available here, or it threw while mounting or updating (W118). */
+/**
+ * Why a component shows its fallback: it isn't available here, or it threw while mounting or updating or called
+ * `fail`, with the message as `error` (W118).
+ */
 export interface ComponentError {
   component: string;
   reason: "missing" | "threw";

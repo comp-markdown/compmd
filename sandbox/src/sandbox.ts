@@ -4,7 +4,7 @@
 // trees and gets `set`, links and errors, and never writes a frame or a policy itself.
 
 import type { HostComponent } from "@compmd/processor";
-import { createPage, type Change, type ExpandedInput, type ExpandedRoot, type Page, type Splice } from "@compmd/render";
+import { createPage, schemeOf, type Change, type ExpandedInput, type ExpandedRoot, type Page, type Splice } from "@compmd/render";
 import { connectFrame, type FrameConnection, type SpliceOptions } from "@compmd/render/frame";
 import { frameUrl, HostRuntime, type HostRuntimeOptions } from "./host/runtime.ts";
 import { codeFor } from "./mounts.ts";
@@ -46,6 +46,12 @@ export interface View {
   /** The document's components are now `components`: resolves once each is compiled, or has failed. */
   components(components: readonly HostComponent[]): Promise<void>;
   theme(tokens: Record<string, string>): void;
+  /**
+   * The host switched its own theme (a class on its page, not a media query): the page's colour scheme is read again,
+   * and its frames and components follow it. It is read at each render too, when the reader's preference changes, and
+   * when printing starts and ends.
+   */
+  scheme(): void;
   /** The host's stylesheets for the page and its frames, in place of `stylesheets`; served from the frames' origin. */
   styles(urls: readonly string[]): void;
   /** Listens for `type`; a listener added as soon as `open` returns hears everything, opening's errors too. */
@@ -65,17 +71,6 @@ const errorEvent = (component: string, reason: ErrorReason, message: string): Vi
 };
 
 type Listeners = { [T in keyof ViewEvents]: ((event: ViewEvents[T]) => void)[] };
-
-/**
- * The colour scheme `element` is shown in: its `color-scheme`, and the reader's preference when it allows both. A page
- * that sets none is light, as browsers show it.
- */
-export function schemeOf(element: Element): Scheme {
-  const words = getComputedStyle(element).colorScheme.split(/\s+/);
-  if (!words.includes("dark")) return "light";
-  if (!words.includes("light")) return "dark";
-  return matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-}
 
 /** The components' names and levels, which decide each use's mount; their code doesn't. */
 const shapeOf = (components: readonly HostComponent[]): string =>
@@ -109,8 +104,8 @@ export function createSandbox(options: SandboxOptions): Sandbox {
         },
       });
       const page = options.page === "host" ? hostPage(container, runtime, emit) : framePage(container, runtime, options, emit);
-      // The frames take the page's colour scheme: when the view opens, when the reader's preference changes, and at
-      // each render, for a page that switches its own.
+      // The frames take the page's colour scheme: when the view opens, when the reader's preference changes, when
+      // printing starts and ends, at each render, and when the host says it switched its own.
       let scheme: Scheme | undefined;
       const followScheme = () => {
         const next = schemeOf(container);
@@ -121,6 +116,8 @@ export function createSandbox(options: SandboxOptions): Sandbox {
       };
       const preference = matchMedia("(prefers-color-scheme: dark)");
       preference.addEventListener("change", followScheme);
+      addEventListener("beforeprint", followScheme);
+      addEventListener("afterprint", followScheme);
       followScheme();
       /**
        * The page's components, compiled. Trees and splices wait for components of names or levels the page hasn't
@@ -159,6 +156,10 @@ export function createSandbox(options: SandboxOptions): Sandbox {
           runtime.theme(tokens);
           page.theme(tokens);
         },
+        scheme: () => {
+          followScheme();
+          page.reread();
+        },
         styles: (urls) => {
           runtime.styles(urls);
           page.styles(urls);
@@ -168,6 +169,8 @@ export function createSandbox(options: SandboxOptions): Sandbox {
         },
         destroy: () => {
           preference.removeEventListener("change", followScheme);
+          removeEventListener("beforeprint", followScheme);
+          removeEventListener("afterprint", followScheme);
           page.destroy();
           runtime.destroy();
         },
@@ -186,6 +189,8 @@ interface PageEnd {
   styles(urls: readonly string[]): void;
   /** The page's colour scheme, for the page's own frame. */
   scheme(scheme: Scheme): void;
+  /** The host switched its own theme: a page in the host's page reads its scheme again, for its trusted components. */
+  reread(): void;
   destroy(): void;
 }
 
@@ -232,6 +237,9 @@ function hostPage(container: HTMLElement, runtime: HostRuntime, emit: Emit): Pag
     // The host's page has its own stylesheets and scheme; the runtime gives these to its frames.
     styles: () => undefined,
     scheme: () => undefined,
+    reread: () => {
+      page.scheme();
+    },
     destroy: () => {
       page.destroy();
     },
@@ -296,6 +304,8 @@ function framePage(container: HTMLElement, runtime: HostRuntime, options: Sandbo
     scheme: (scheme) => {
       child.scheme(scheme);
     },
+    // The page's frame takes its scheme from `scheme`.
+    reread: () => undefined,
     destroy: () => {
       frame.close();
       child.close();

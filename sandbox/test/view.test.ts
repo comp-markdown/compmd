@@ -100,12 +100,12 @@ describe("render and splice", () => {
 });
 
 describe("the page's colour scheme", () => {
-  /** `label`, but showing and setting the colour scheme its frame's document has, on each update. */
+  /** `label`, but setting the scheme it is shown in and the one its frame's document has, on each update. */
   const scheme: HostComponent = {
     name: "label",
     language: "js",
-    code: `export default function mount(target, { set }) {
-  const show = () => queueMicrotask(() => set("result", JSON.stringify(getComputedStyle(document.documentElement).colorScheme)));
+    code: `export default function mount(target, context) {
+  const show = () => queueMicrotask(() => context.set("result", JSON.stringify(context.scheme + " " + getComputedStyle(document.documentElement).colorScheme)));
   show();
   return { update: show };
 }`,
@@ -113,15 +113,58 @@ describe("the page's colour scheme", () => {
   };
 
   for (const mode of MODES) {
-    it(`gives the frames the scheme of the page around them, and the new one when it changes (${mode} mode)`, async () => {
+    it(`gives the frames and their components the scheme of the page around them, and the new one when it changes (${mode} mode)`, async () => {
       const { area, view, until, values } = open(mode, [scheme]);
       area.style.colorScheme = "dark";
       view.render(page("one"));
-      await until(() => values().includes("dark"));
+      await until(() => values().includes("dark dark"));
       area.style.colorScheme = "light";
       view.render(page("two"));
-      await until(() => values().includes("light"));
-      expect(values().at(-1)).toBe("light");
+      await until(() => values().includes("light light"));
+      expect(values().at(-1)).toBe("light light");
+    });
+
+    it(`follows a theme the host switches itself, without a render, when it says so (${mode} mode)`, async () => {
+      const { area, view, until, values } = open(mode, [scheme]);
+      view.render(page("one"));
+      await until(() => values().includes("light light"));
+      area.classList.add("dark");
+      area.style.colorScheme = "dark";
+      view.scheme();
+      await until(() => values().includes("dark dark"));
+      expect(values().at(-1)).toBe("dark dark");
+    });
+  }
+});
+
+describe("a component that fails", () => {
+  /** `label`, but failing on the label `bad`, after it returned, as an asynchronous parse does. */
+  const failing: HostComponent = {
+    name: "label",
+    language: "js",
+    code: `export default function mount(target, { params, fail, set }) {
+  const show = (next) => {
+    target.textContent = next.label;
+    queueMicrotask(() => {
+      if (next.label === "bad") fail("can't read bad");
+      else set("result", JSON.stringify(target.textContent));
+    });
+  };
+  show(params);
+  return { update: show };
+}`,
+    trust: { level: "strict" },
+  };
+
+  for (const mode of MODES) {
+    it(`shows its fallback with W118 and its message, until the next update draws it (${mode} mode)`, async () => {
+      const { view, events, until, values } = open(mode, [failing]);
+      view.render(page("bad"));
+      await until(() => events.error.length > 0);
+      expect(events.error[0]).toEqual({ component: "label", reason: "threw", code: "W118", message: "can't read bad" });
+      view.render(page("good"));
+      await until(() => values().includes("good"));
+      expect(events.error).toHaveLength(1);
     });
   }
 });

@@ -22,8 +22,22 @@ export interface ComponentsOptions {
 /** One instance on the page. */
 interface Instance {
   target: Element;
+  /** The renderer's context, whose `scheme` the renderer keeps up to date. */
   context: MountContext;
+  /** The last params and slots, which a remount gets. */
+  latest: { params: Params; slots: Slots };
   mounted?: Mounted | undefined;
+}
+
+/** The context a remount gets: the last params and slots, and the renderer's scheme as it is now and later. */
+function remountContext({ context, latest }: Instance): MountContext {
+  return {
+    ...context,
+    ...latest,
+    get scheme() {
+      return context.scheme;
+    },
+  };
 }
 
 interface Entry {
@@ -104,13 +118,13 @@ export class Components {
    */
   #indirect(entry: Entry): Mount {
     return (target, context) => {
-      const instance: Instance = { target, context };
+      const instance: Instance = { target, context, latest: { params: context.params, slots: context.slots } };
       if (entry.failed === undefined) instance.mounted = entry.mount?.(target, context) ?? undefined;
       else target.replaceChildren(context.fallback.element);
       entry.instances.add(instance);
       return {
         update(params: Params, slots: Slots) {
-          instance.context = { ...instance.context, params, slots };
+          instance.latest = { params, slots };
           instance.mounted?.update?.(params, slots);
         },
         destroy() {
@@ -127,7 +141,7 @@ export class Components {
     instance.target.replaceChildren();
     try {
       if (!entry.mount) throw new Error(entry.failed);
-      instance.mounted = entry.mount(instance.target, instance.context) ?? undefined;
+      instance.mounted = entry.mount(instance.target, remountContext(instance)) ?? undefined;
     } catch (error) {
       instance.target.replaceChildren(instance.context.fallback.element);
       if (entry.mount) this.#options.report(name, "threw", messageOf(error));

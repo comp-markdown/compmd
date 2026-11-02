@@ -7,6 +7,7 @@ import { applyBox } from "./box.ts";
 import { plainText, type LinkDefinition } from "./document.ts";
 import { safeUrl, withHtml } from "./html.ts";
 import { nodesMountOf, runnable } from "./nodes.ts";
+import type { Schemes } from "./scheme.ts";
 import { fills, layoutOf, ownParams, usesBreakpoints, type ParentLayout, type Stylesheet } from "./styles.ts";
 import { contentOf, isComponent, rendererOf, textOf, type ExpandedCode, type ExpandedComponent, type ExpandedInput, type ExpandedInstance, type ExpandedNode, type MarkdownNode } from "./tree.ts";
 
@@ -19,6 +20,8 @@ export type MathRenderer = (tex: string, options: { display: boolean }, target: 
 export interface Surface {
   document: Document;
   stylesheet: Stylesheet;
+  /** The colour scheme components are shown in, which the components it gives follow. */
+  schemes: Schemes;
   components: Readonly<Record<string, Mount>>;
   onSet: (input: string, value: unknown) => void;
   onError?: ((error: ComponentError) => void) | undefined;
@@ -376,6 +379,7 @@ class CallbackView implements View {
 class RenderedCodeView implements View {
   readonly shape: string;
   readonly key: string | undefined;
+  readonly #surface: Surface;
   readonly #handle: ComponentHandle;
   readonly #code: View;
   /** The use a mount that renders it itself gets: the code block, whose `alt` and code a sandbox's frame needs too. */
@@ -388,18 +392,22 @@ class RenderedCodeView implements View {
     this.#code = new ElementView(surface, plainCode(node), pass, undefined);
     const fallback = surface.document.createElement("div");
     fallback.appendChild(this.#code.dom);
+    this.#surface = surface;
+    const mount = surface.components[renderer.name];
     // The component layer appends the box to its target; the region places it, so it starts in a fragment.
     this.#handle = mountComponent(surface.document.createDocumentFragment(), renderer, {
-      mount: runnable(surface.components[renderer.name], () => this.#current),
+      mount: runnable(mount, () => this.#current),
       slots: {},
       fallback: { text: textOf((node as ExpandedCode).alt), element: fallback },
       headingLevel: Math.min(6, pass.heading.level + 1),
+      scheme: surface.schemes.current,
       onSet: surface.onSet,
       ...(surface.onError ? { onError: surface.onError } : {}),
       host: surface.host,
       stylesheet: surface.stylesheet,
       parent: pass.parent,
     });
+    followScheme(surface, this.#handle, mount);
   }
 
   get dom(): Node {
@@ -415,9 +423,18 @@ class RenderedCodeView implements View {
   }
 
   destroy(): void {
+    this.#surface.schemes.unfollow(this.#handle);
     this.#handle.destroy();
     this.#code.destroy();
   }
+}
+
+/**
+ * Lets `handle` follow the page's colour scheme. A mount that renders its slots is a frame, whose own renderer
+ * follows the scheme the frame's document takes from the page.
+ */
+function followScheme(surface: Surface, handle: ComponentHandle, mount: Mount | undefined): void {
+  if (!nodesMountOf(mount)) surface.schemes.follow(handle);
 }
 
 /** A code block as content, as a plain renderer shows it: without its code renderer. */
@@ -606,15 +623,20 @@ class ComponentView implements View {
       slots,
       fallback,
       headingLevel,
+      scheme: surface.schemes.current,
       onSet: surface.onSet,
       ...(surface.onError ? { onError: surface.onError } : {}),
-      showFallback: (box) => {
-        this.#showFallback(box, pass);
+      showFallback: (box, lasts) => {
+        this.#showFallback(box, lasts, pass);
+      },
+      hideFallback: () => {
+        this.#hideFallback();
       },
       host: surface.host,
       stylesheet: surface.stylesheet,
       parent: pass.parent,
     });
+    followScheme(surface, this.#handle, mount);
   }
 
   get dom(): Node {
@@ -636,6 +658,7 @@ class ComponentView implements View {
   }
 
   destroy(): void {
+    this.#surface.schemes.unfollow(this.#handle);
     this.#handle.destroy();
     for (const slot of this.#slots.values()) for (const item of itemsOf(slot)) this.#destroyItem(item);
     destroyAll(this.#fallback);
@@ -653,11 +676,21 @@ class ComponentView implements View {
     return node.fallback ?? contentOf(node);
   }
 
-  #showFallback(box: HTMLElement, pass: Pass): void {
-    for (const slot of this.#slots.values()) for (const item of itemsOf(slot)) this.#destroyItem(item);
-    this.#slots.clear();
+  /** Shows the fallback in `box`; a failure that `lasts` frees the slots, and one that doesn't keeps them for later. */
+  #showFallback(box: HTMLElement, lasts: boolean, pass: Pass): void {
+    if (lasts) {
+      for (const slot of this.#slots.values()) for (const item of itemsOf(slot)) this.#destroyItem(item);
+      this.#slots.clear();
+    }
     if (this.#node.fallback) box.appendChild(this.#fallbackElement);
     else this.#fallback = patch(this.#surface, box, [], this.#failedContent(this.#node), pass);
+  }
+
+  /** The component has its box back: a container's content, rendered as its fallback, goes. */
+  #hideFallback(): void {
+    if (this.#node.fallback) return;
+    destroyAll(this.#fallback);
+    this.#fallback = [];
   }
 
   #patchSlots(node: ExpandedComponent, pass: Pass): Slots {

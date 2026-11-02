@@ -76,6 +76,10 @@ for (const [pane, nodes] of [[left, before], [right, after]]) {
 
 **Code blocks and math.** `code: { mermaid: (source, target) => … }` renders fenced code of a language, and `math: (tex, { display }, target) => …` renders math. Without them, code shows as a code block and math as its TeX source, as spec §2.3 says. A code block a document's code renderer renders (spec §7.7; the tree gives it `component` and `alt`) mounts that component from `components` in its box, as a leaf: the block's text is its `code` param, `alt` its `fallback.text`, and the code block its fallback. It takes the place of `code` for its language, since a document's import wins over the host's.
 
+**Light and dark.** A component's `context.scheme` is the colour scheme of what the page or region renders into: its `color-scheme`, and the reader's preference where it allows both (`schemeOf(element)`). It is read at each render, when the reader's preference changes, and when printing starts and ends; a host that switches its own theme with a class calls `page.scheme()` (or `region.scheme()`) after it. When the scheme changes, every component on the page gets it and an `update` with the same params. A component that draws with CSS colours needs none of this; one that takes its colours when it draws (a diagram, a canvas chart) reads `context.scheme`.
+
+**A component that fails.** `context.fail(message)` is for a component that finds, after `mount` or `update` returned, that it can't draw what it was given: it reports `threw` through `onError` with `message` (W118), and shows the fallback until its next `update`, when the box is emptied and given back. A throw in `update` does the same; a throw in `mount` shows the fallback for good.
+
 ## In a frame
 
 The page runs inside a frame its caller supplies, such as a sandboxed iframe, and a port carries trees in and `set` calls out. Both ends take a port the caller made, so a host whose sandbox already has a channel to the frame hands one over. A `MessagePort` is a port; any bridge with `postMessage` and a message listener fits behind a small adapter.

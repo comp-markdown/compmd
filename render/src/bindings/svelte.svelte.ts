@@ -39,7 +39,8 @@ export function svelte(Component: Component<Record<string, unknown>>): Mount {
       for (const [slot, content] of Object.entries(slots)) elements[slot] = slotElements(content);
       const next: Record<string, unknown> = { ...propsOf(params), children: snippetFor("default") };
       for (const name of namedSlots(slots)) next[camelCase(name)] = snippetFor(name);
-      next.compmd = { slots, set: context.set, fallback: context.fallback, headingLevel: context.headingLevel, host: context.host };
+      // `scheme` is read at each fill: the renderer sets it before the update a change of scheme brings.
+      next.compmd = { slots, set: context.set, fallback: context.fallback, headingLevel: context.headingLevel, scheme: context.scheme, fail: context.fail, host: context.host };
       for (const key of Object.keys(props)) if (!(key in next)) Reflect.deleteProperty(props, key);
       Object.assign(props, next);
     };

@@ -4,6 +4,7 @@ export { createRegion, type Region, type RegionContext, type RegionOptions, type
 export { mountComponent, type ComponentHandle, type ComponentOptions, type ComponentUpdate } from "./component.ts";
 export { rendersSlots, type NodesContext, type NodesMount, type NodesMounted } from "./nodes.ts";
 export { Stylesheet } from "./styles.ts";
+export { schemeOf } from "./scheme.ts";
 export { Keys, type EditRange, type KeyOf, type Keyed } from "./keys.ts";
 export type { Change, Diagnostic } from "./stable.ts";
 export { footnotesOf, definitionsOf, plainText, type Footnotes, type LinkDefinition } from "./document.ts";

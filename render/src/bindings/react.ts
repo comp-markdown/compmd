@@ -6,7 +6,7 @@ import type { Mount, MountContext, Params, Slots } from "../contract.ts";
 import { camelCase, namedSlots, place, propsOf, slotElements } from "./place.ts";
 
 /** The `compmd` prop: the host contract's parts that aren't params or slot nodes. */
-export type CompmdProp = Pick<MountContext, "slots" | "set" | "fallback" | "headingLevel" | "host">;
+export type CompmdProp = Pick<MountContext, "slots" | "set" | "fallback" | "headingLevel" | "scheme" | "fail" | "host">;
 
 /** A stable React key per element, so an element keeps its placeholder when items before it change. */
 const keys = new WeakMap<Element, number>();
@@ -44,7 +44,8 @@ export function react(Component: ComponentType<Record<string, unknown>>): Mount 
     const render = (params: Params, slots: Slots) => {
       const props: Record<string, unknown> = { ...propsOf(params), children: slotNode(slots.default) };
       for (const name of namedSlots(slots)) props[camelCase(name)] = slotNode(slots[name]);
-      const compmd: CompmdProp = { slots, set: context.set, fallback: context.fallback, headingLevel: context.headingLevel, host: context.host };
+      // `scheme` is read at each render: the renderer sets it before the update a change of scheme brings.
+      const compmd: CompmdProp = { slots, set: context.set, fallback: context.fallback, headingLevel: context.headingLevel, scheme: context.scheme, fail: context.fail, host: context.host };
       flushSync(() => {
         root.render(createElement(Component, { ...props, compmd }));
       });

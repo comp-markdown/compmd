@@ -4,7 +4,7 @@
 // on the same port) or one use with its slots.
 // A component of a lower level gets a nested strict frame; one of a higher level shows its fallback.
 
-import { createRegion, type Region } from "@compmd/render";
+import { createRegion, type Page, type Region } from "@compmd/render";
 import { serveFrame } from "@compmd/render/frame";
 import { hostClient, type HostClient } from "../host-api.ts";
 import { codeFor, Mounts } from "../mounts.ts";
@@ -166,7 +166,9 @@ function start(port: MessagePort): void {
   });
   /** What a permissive frame's components get as `host`, when the parent gives it, before the first part. */
   let host: HostClient | undefined;
+  /** What the frame renders: one use (`part`), or the page (frame mode). */
   let region: Region | undefined;
+  let page: Page | undefined;
   const regionFor = (target: HTMLElement): Region =>
     createRegion(target, {
       components: mounts.mounts,
@@ -184,8 +186,8 @@ function start(port: MessagePort): void {
       level = own === "permissive" && asked === "permissive" ? "permissive" : "strict";
       if (own === "permissive") narrow(network ?? networkPolicy([]));
       // A page frame (frame mode) renders the page through `@compmd/render`'s protocol, on the same port.
-      const page = document.getElementById("page");
-      if (page) serveFrame(port, { container: page, components: mounts.mounts, math });
+      const container = document.getElementById("page");
+      if (container) page = serveFrame(port, { container, components: mounts.mounts, math }).page;
     },
     code: async (next) => {
       components = next;
@@ -205,9 +207,11 @@ function start(port: MessagePort): void {
       mounts.styles(urls);
     },
     scheme: (scheme: Scheme) => {
-      // The page's scheme, so the frame stays transparent on it, its text in the page's colours, and its components can
-      // follow it (their `prefers-color-scheme` is the reader's, which needn't be the page's).
+      // The page's scheme, so the frame stays transparent on it, its text in the page's colours, and its components
+      // follow it in `context.scheme` (their `prefers-color-scheme` is the reader's, which needn't be the page's).
       document.documentElement.style.colorScheme = scheme;
+      region?.scheme();
+      page?.scheme();
       mounts.scheme(scheme);
     },
     host: (hostPort) => {

@@ -5,6 +5,7 @@
 import { Blocks } from "./blocks.ts";
 import { diff, editOf, type Edit } from "./keys.ts";
 import { surfaceOf, type SurfaceOptions } from "./region.ts";
+import { Schemes } from "./scheme.ts";
 import { breaksDocument, errorsOf, type Change } from "./stable.ts";
 import { Stylesheet } from "./styles.ts";
 import type { ExpandedRoot, Splice } from "./tree.ts";
@@ -28,6 +29,11 @@ export interface Page {
   splice(splices: readonly Splice[], change?: Change): void;
   /** Replaces the theme tokens. */
   theme(tokens: Record<string, string>): void;
+  /**
+   * Reads the page's colour scheme again, after the host switched its own theme: components follow it. It is read at
+   * each render too, when the reader's preference changes, and when printing starts and ends.
+   */
+  scheme(): void;
   destroy(): void;
   /** The document's stylesheet, for regions and components an editor renders inside the page. */
   readonly stylesheet: Stylesheet;
@@ -45,7 +51,8 @@ export interface Page {
 export function createPage(root: HTMLElement, options: PageOptions = {}): Page {
   root.classList.add("compmd-page");
   const stylesheet = new Stylesheet(root.ownerDocument);
-  const blocks = new Blocks(root, surfaceOf(root.ownerDocument, stylesheet, options));
+  const schemes = new Schemes(root);
+  const blocks = new Blocks(root, surfaceOf(root.ownerDocument, stylesheet, schemes, options));
   /** The text the blocks are of, as the last change gave it. */
   let text: string | undefined;
   let rendered = false;
@@ -68,16 +75,22 @@ export function createPage(root: HTMLElement, options: PageOptions = {}): Page {
   return {
     stylesheet,
     render(tree, change) {
+      schemes.read();
       const edit: Edit | undefined = change && text !== undefined && change.text !== text ? diff(text, change.text, change.edit) : undefined;
       blocks.apply({ from: 0, to: blocks.length, nodes: tree.children, lines: 0, offset: 0, ...(tree.inputs ? { inputs: tree.inputs } : {}) }, edit);
       show(change);
     },
     splice(splices, change) {
+      schemes.read();
       for (const splice of splices) blocks.apply(splice, splice.edit ? editOf(splice.edit) : undefined);
       show(change);
     },
     theme,
+    scheme() {
+      schemes.read();
+    },
     destroy() {
+      schemes.destroy();
       blocks.destroy();
       stylesheet.remove();
       theme({});

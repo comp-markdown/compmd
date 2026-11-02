@@ -566,6 +566,8 @@ mount(target: Element, context: {
   set(param: string, value: unknown): void, // changes the input bound to an `input` param
   fallback: { text: string; element: Element }, // the invocation's fallback, as plain text and rendered
   headingLevel: number,                   // the level the component's top heading should have (section 7.2)
+  scheme: "light" | "dark",               // the colour scheme the component is shown in (below)
+  fail(message: string): void,            // the component can't draw what it was given (below)
   host?: unknown,                         // what the processor gives components of permissive packs (below); absent otherwise
 }): { update?(params, slots): void; destroy?(): void }
 
@@ -579,7 +581,9 @@ type SlotInstance = { value: unknown; items: SlotItem[] }   // a template slot: 
 - **An item's width is the component's to give.** An item is the nearest box of the block in it, so when that block uses breakpoints, the item is the box they follow and doesn't take its width from its content (section 9.3). A component that lays its items out by their content, such as a toolbar that puts them side by side, gives such an item a width. A processor can't check this, since only the component knows its layout.
 - **Every slot is rendered up front**, including content the component hides; hiding is the component's own styling. A component may be laid out while hidden or at zero width, and SHOULD lay itself out again when it's resized.
 - **Updates, not remounts.** When params or slots change (an input or data changes, section 8.5), the processor calls `update`; the component keeps its state. `destroy` is called before `target` is removed.
-- **A component that throws** while mounting or updating renders its fallback, with W118.
+- **The colour scheme.** `scheme` is the colour scheme the processor shows the component in: `"dark"` when the box it renders into is dark (in HTML, its `color-scheme`, and the reader's preference where it allows both), `"light"` otherwise. When it changes (the reader's preference, the host's own theme switch, printing), the processor sets `scheme` and calls `update` with the same params and slots. A component that takes its colours at render, such as a diagram or a canvas chart, reads `scheme`, not the reader's preference, which may differ from the page's. A component styled with CSS needs neither.
+- **A component that fails.** A component that finds it can't draw what it was given after `mount` or `update` returned (an asynchronous parse, a module loaded late) calls `fail(message)`. The processor reports W118 with `message`, and shows the fallback in `target`; until the next `update`, `target` is the processor's. Before that `update`, the processor empties `target` again, so a failure lasts until the params, the slots or the scheme change. `fail` is for input the component can't draw, not for a resource that may come back: a map whose tiles stop loading shows its own state and retries, rather than replacing a usable map with its fallback.
+- **A component that throws** while mounting renders its fallback, with W118, and is never mounted. One that throws while updating is treated as if it called `fail`: it is still mounted, and is updated again at the next change.
 - **What a host gives permissive components.** A processor MAY give components from packs its configuration makes permissive (section 15) more than this contract, in `host`: an API to the host's data, events to the host. What `host` holds is the processor's; the trust level comes from the processor's configuration, never from a document. A document that uses such components works only in that host, as with names from ambient packs (section 6.3). Section 15 says what such components may do with it.
 - **Accessible text.** A component that renders non-text content (a chart, a map, a canvas) SHOULD use `fallback.text` as its text alternative, for example `<svg role="img" aria-label="…">`, since the leaf's fallback is the sentence plain renderers show in its place. Only the component knows the role of its content, so the processor doesn't label `target`.
 - **Changing an input.** A param declared `input<type>` (section 7.3) is bound to an input by the document (`selected=region`): the component receives the input's current value, and `set("selected", value)` changes the input, checked against its type, after which the processor renders again (section 8.5). `set` on any other param, or during `update`, is refused. Components have no other outputs in version 1.
@@ -624,10 +628,10 @@ To repeat a component once per record in order, no template slot is needed: put 
 
 A binding maps the host contract to one framework.
 
-| Binding | Language, `runtime` | Default slot | Named slots | Items, instances, `set`, `fallback`, `headingLevel`, `host` |
+| Binding | Language, `runtime` | Default slot | Named slots | Items, instances, `set`, `fallback`, `headingLevel`, `scheme`, `fail`, `host` |
 | --- | --- | --- | --- | --- |
-| React | `jsx`, `tsx`; `react@19`, `preact@10` | `children`, a node that places the slot's elements | a prop of the same name, the same kind of node | a `compmd` prop: `{slots, set, fallback, headingLevel, host}` |
-| Svelte | `svelte`; `svelte@5` | the `children` snippet | a snippet prop of the same name | a `compmd` prop: `{slots, set, fallback, headingLevel, host}` |
+| React | `jsx`, `tsx`; `react@19`, `preact@10` | `children`, a node that places the slot's elements | a prop of the same name, the same kind of node | a `compmd` prop: `{slots, set, fallback, headingLevel, scheme, fail, host}` |
+| Svelte | `svelte`; `svelte@5` | the `children` snippet | a snippet prop of the same name | a `compmd` prop: `{slots, set, fallback, headingLevel, scheme, fail, host}` |
 | Plain | `js`, `ts`; none | `slots.default` | `slots.<name>` | the context, as in section 7.4 |
 
 In the React and Svelte bindings, params are props of the same name (a param with `-` in its name becomes camelCase: `align-items` is `alignItems`), and the binding implements `mount`, `update` and `destroy` with the framework's own mounting. In the plain binding the default export *is* `mount`, with the context of section 7.4, and params keep their names:
@@ -1338,7 +1342,7 @@ Every diagnostic MUST name its code, the line and column where it was detected, 
 | W115 | Host metadata given for a document that has its own frontmatter; the host's metadata is ignored                                        | line 1                                                               |
 | W116 | Line starting with `::` inside an HTML block, which makes it HTML, not CompMD                                                            | the line                                                             |
 | W117 | Exported host-language component without `runtime`                                                                                        | the definition fence                                                 |
-| W118 | Host-language component threw while mounting or updating; fallback rendered                                                              | the invocation                                                       |
+| W118 | Host-language component threw while mounting or updating, or failed (section 7.4); fallback rendered                                   | the invocation                                                       |
 | W119 | A box that places blocks by position has no `height`, `aspect-ratio` or `fill` at some width (section 9.2)                    | the box's opener; at the top level, the placed block                 |
 | W120 | A param for a box given to a `display=contents` component, which has none, on its fence or by an invocation; ignored (section 9.2) | the param                                                            |
 | W121 | Host-language component's code can't load: an import of something it may not import (section 7.6), a compile error, a built module that doesn't match its file, or a runtime or library its pack's `peerDependencies` name that the processor doesn't have in that range (section 6.4); fallback rendered | the invocation, or the import's `from` for `peerDependencies` |
