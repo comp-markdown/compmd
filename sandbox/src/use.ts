@@ -52,7 +52,9 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
   iframe.setAttribute("allow", "");
   iframe.title = options.node.type === "code" ? (options.node.component?.name ?? "") : options.node.name;
   iframe.className = "compmd-frame";
-  iframe.style.cssText = `border: 0; width: 100%; height: 0; display: ${options.node.type === "componentInline" ? "inline-block" : "block"};`;
+  // Never 0 tall: WebKit may stop rendering a frame with no area, and its ResizeObserver with it, so a frame whose
+  // first report came before its content drew would never report again.
+  iframe.style.cssText = `border: 0; width: 100%; height: 1px; display: ${options.node.type === "componentInline" ? "inline-block" : "block"};`;
   let node = options.node;
   let inputs = options.inputs;
   let bound = boundInputs([node]);
@@ -73,7 +75,7 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
       ...(options.ping ? { ping: options.ping } : {}),
     });
     end.on("size", ({ width, height }) => {
-      iframe.style.height = `${String(height)}px`;
+      iframe.style.height = `${String(Math.max(1, height))}px`;
       if (node.type === "componentInline") iframe.style.width = `${String(width)}px`;
     });
     for (const [type, listener] of Object.entries(options.on)) end.on(type as keyof ChildEvents, listener as (event: unknown) => void);
