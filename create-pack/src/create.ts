@@ -1,6 +1,6 @@
 // Writes a pack from the template (docs/create-pack.md): the files every pack has, and those of a leaf or a code
 // renderer, with the pack's and the component's names filled in, and the versions of the packages it builds and tests
-// with, as they were when this package was released.
+// with, as they were when this package was released; or a library pack, which has its own files.
 
 import { existsSync } from "node:fs";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
@@ -17,6 +17,8 @@ export interface PackOptions {
   component: string;
   /** A language the component renders the code blocks of, which makes it a code renderer (spec §7.7). */
   renders?: string;
+  /** The npm package it wraps, which makes it a library pack (companion, section 5), with no component. */
+  library?: string;
 }
 
 /** What is wrong with what a pack is made with. */
@@ -33,6 +35,7 @@ const MANIFEST = join(HERE, "../package.json");
 const SCOPED = /^@[a-z0-9][a-z0-9._~-]*\/[a-z0-9][a-z0-9._~-]*$/;
 const COMPONENT = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 const LANGUAGE = /^[a-z][a-z0-9+-]*$/;
+const PACKAGE = /^(?:@[a-z0-9][a-z0-9._~-]*\/)?[a-z0-9][a-z0-9._~-]*$/;
 
 /** A component name from a folder's name: `My Chart` is `my-chart`. */
 export function componentOf(folder: string): string {
@@ -46,6 +49,10 @@ export function componentOf(folder: string): string {
 /** Why `options` can't make a pack, or `undefined` when they can. */
 export function problemOf(options: PackOptions): string | undefined {
   if (!SCOPED.test(options.name)) return `${options.name} isn't a scoped npm name, such as @kit/mermaid: packs are always scoped`;
+  if (options.library !== undefined) {
+    if (!PACKAGE.test(options.library)) return `${options.library} isn't an npm package's name, such as three`;
+    return options.renders === undefined ? undefined : "a library pack has no components, so it renders nothing: leave out --renders";
+  }
   if (!COMPONENT.test(options.component)) return `${options.component} isn't a component name: lowercase letters and digits, words joined by -`;
   if (options.renders !== undefined && !LANGUAGE.test(options.renders)) return `${options.renders} isn't a code block's language, such as mermaid`;
   return undefined;
@@ -79,6 +86,7 @@ async function filesUnder(dir: string): Promise<string[]> {
  * @throws CreateError when the options can't make a pack, or the folder has files in it.
  * @example
  * await createPack({ folder: "mermaid", name: "@kit/mermaid", component: "mermaid", renders: "mermaid" });
+ * await createPack({ folder: "three", name: "@kit/three", component: "three", library: "three" });
  */
 export async function createPack(options: PackOptions): Promise<string[]> {
   const problem = problemOf(options);
@@ -90,9 +98,11 @@ export async function createPack(options: PackOptions): Promise<string[]> {
       .replace(/__version:(.+?)__/g, (_, name: string) => pinned[name] ?? "latest")
       .replaceAll("__pack__", options.name)
       .replaceAll("__component__", options.component)
-      .replaceAll("__language__", options.renders ?? "");
+      .replaceAll("__language__", options.renders ?? "")
+      .replaceAll("__library__", options.library ?? "");
+  const parts = options.library !== undefined ? ["library"] : ["common", options.renders === undefined ? "leaf" : "renderer"];
   const written: string[] = [];
-  for (const part of ["common", options.renders === undefined ? "leaf" : "renderer"]) {
+  for (const part of parts) {
     for (const path of await filesUnder(join(TEMPLATE, part))) {
       // npm leaves `.gitignore` out of published packages, so the template's has no dot.
       const to = fill(path.split(sep).join("/")).replace(/(^|\/)gitignore$/, "$1.gitignore");

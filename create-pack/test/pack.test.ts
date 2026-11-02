@@ -4,8 +4,8 @@
 import { RUNTIMES } from "@compmd/sandbox/build";
 import { execFileSync } from "node:child_process";
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
-import { rm } from "node:fs/promises";
-import { join } from "node:path";
+import { mkdir, rm, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
 import { chromium, webkit, type Browser, type BrowserType, type LaunchOptions } from "playwright";
 import { build, createServer, type ViteDevServer } from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -17,6 +17,18 @@ const PACKS = [
   { variant: "a leaf", folder: "badge", name: "@kit/badge", component: "badge", port: 4198, shows: { label: "Hello, from badge", text: "Hello" } },
   { variant: "a code renderer", folder: "diagram", name: "@kit/diagram", component: "diagram", renders: "dot", port: 4199, shows: { label: "Two lines of dot", text: "first line" } },
 ];
+
+/** The bare and relative imports left in a built module, static and dynamic. */
+const importsOf = (module: string): string[] => [...module.matchAll(/\b(?:import|from)\s*\(?\s*["']([^"']+)["']/g)].map((match) => match[1] ?? "");
+
+/** Writes `files` under `folder`, by `/`-separated path. */
+async function write(folder: string, files: Record<string, string | object>): Promise<void> {
+  for (const [path, content] of Object.entries(files)) {
+    const file = join(folder, ...path.split("/"));
+    await mkdir(dirname(file), { recursive: true });
+    await writeFile(file, typeof content === "string" ? content : JSON.stringify(content));
+  }
+}
 
 const BROWSERS: [string, BrowserType, LaunchOptions][] = [
   ["Chrome", chromium, { channel: "chrome" }],
@@ -46,7 +58,7 @@ describe.each(PACKS)("a pack of $variant", ({ folder: name, port, shows, ...opti
   it("builds into one module, with no import left but the runtimes'", () => {
     expect(readdirSync(join(folder, "dist"))).toEqual([`${options.component}.js`]);
     const module = readFileSync(join(folder, "dist", `${options.component}.js`), "utf8");
-    const imports = [...module.matchAll(/\b(?:import|from)\s*["']([^"']+)["']/g)].map((match) => match[1] ?? "");
+    const imports = importsOf(module);
     const runtimes = new Set(RUNTIMES.flatMap((runtime) => runtime.imports));
     expect(imports.filter((specifier) => !runtimes.has(specifier))).toEqual([]);
     // It imports no runtime, so it needs none from the host (spec §6.4).
@@ -89,5 +101,63 @@ describe.each(PACKS)("a pack of $variant", ({ folder: name, port, shows, ...opti
       expect(errors).toEqual([]);
       await page.close();
     });
+  });
+});
+
+describe("a library pack", () => {
+  const folder = join(OUT, "tiny");
+
+  beforeAll(async () => {
+    await rm(folder, { recursive: true, force: true });
+    await createPack({ folder, name: "@kit/tiny", component: "tiny", library: "tiny-lib" });
+    // The library it wraps, as `npm install` would put it: it uses React, and loads a part of itself on demand.
+    await write(folder, {
+      "node_modules/tiny-lib/package.json": { name: "tiny-lib", version: "2.3.4", type: "module", exports: "./index.js" },
+      "node_modules/tiny-lib/index.js": 'import { useState } from "react";\nexport const answer = 42;\nexport const state = useState;\nexport const later = async () => (await import("./later.js")).value;\n',
+      "node_modules/tiny-lib/later.js": 'export const value = "later";\n',
+      "node_modules/react/package.json": { name: "react", version: "19.3.0" },
+    });
+    await build({ configFile: join(folder, "vite.config.ts"), logLevel: "silent" });
+  });
+
+  it("builds into one module, with no chunk, and no import left but the runtimes'", () => {
+    expect(readdirSync(join(folder, "dist"))).toEqual(["index.js"]);
+    const module = readFileSync(join(folder, "dist/index.js"), "utf8");
+    expect(importsOf(module)).toEqual(["react"]);
+    expect(module).toContain('"later"');
+  });
+
+  it("takes the library's version as its own, and its runtimes as peers", () => {
+    const manifest = JSON.parse(readFileSync(join(folder, "package.json"), "utf8")) as { version: string; peerDependencies?: Record<string, string>; compmd: unknown };
+    expect(manifest.version).toBe("2.3.4");
+    expect(manifest.peerDependencies).toEqual({ react: "^19.3.0" });
+    expect(manifest.compmd).toEqual({ library: "dist/index.js" });
+  });
+
+  it("checks before publishing that its version is the library's", () => {
+    expect(() => execFileSync("node", ["scripts/check.js"], { cwd: folder, stdio: "pipe" })).not.toThrow();
+    const manifest = join(folder, "package.json");
+    const written = readFileSync(manifest, "utf8");
+    writeFileSync(manifest, written.replace('"version": "2.3.4"', '"version": "2.4.0"'));
+    try {
+      expect(() => execFileSync("node", ["scripts/check.js"], { cwd: folder, stdio: "pipe" })).toThrow(/package\.json's version is 2\.4\.0, tiny-lib's is 2\.3\.4/);
+    } finally {
+      writeFileSync(manifest, written);
+    }
+  });
+});
+
+describe("a pack that shares a library pack", () => {
+  it("leaves the library it names in peerDependencies out of its module", async () => {
+    const folder = join(OUT, "gauge");
+    await rm(folder, { recursive: true, force: true });
+    await createPack({ folder, name: "@kit/gauge", component: "gauge" });
+    const manifest = JSON.parse(readFileSync(join(folder, "package.json"), "utf8")) as object;
+    writeFileSync(join(folder, "package.json"), JSON.stringify({ ...manifest, peerDependencies: { "@kit/tiny": "^2.3" } }));
+    const source = join(folder, "src/gauge.ts");
+    writeFileSync(source, `import { answer } from "@kit/tiny";\nexport const shared = answer;\n${readFileSync(source, "utf8")}`);
+    await build({ configFile: join(folder, "vite.config.ts"), logLevel: "silent" });
+    expect(readdirSync(join(folder, "dist"))).toEqual(["gauge.js"]);
+    expect(importsOf(readFileSync(join(folder, "dist/gauge.js"), "utf8"))).toEqual(["@kit/tiny"]);
   });
 });

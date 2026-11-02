@@ -39,6 +39,12 @@ describe("create-pack", () => {
     expect(existsSync(join(dir, "charts/src/bar-chart.ts"))).toBe(true);
   });
 
+  it("writes a library pack with --library, and says to build it", () => {
+    expect(run("three", "--name", "@kit/three", "--library", "three")).toEqual({ out: "Wrote @kit/three in three: 7 files, a library pack of three.\n\n  cd three\n  npm install\n  npm run build\n", code: 0 });
+    expect(existsSync(join(dir, "three/src/index.ts"))).toBe(true);
+    expect(run("d3", "--name", "@kit/d3", "--library", "d3", "--component", "chart")).toEqual({ out: "a library pack has no components: leave out --component\n", code: 1 });
+  });
+
   it("shows its usage, and stops at what can't make a pack", () => {
     expect(run("--help")).toEqual({ out: expect.stringContaining("npm create @compmd/pack <folder> [-- options]") as string, code: 0 });
     expect(run().code).toBe(1);

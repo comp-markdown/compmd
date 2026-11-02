@@ -64,6 +64,18 @@ describe("createPack", () => {
     expect(await readFile(join(folder, "src/diagram.ts"), "utf8")).toContain("code: string;");
   });
 
+  it("writes a library pack with --library: one module, the field that says so, and no component", async () => {
+    const folder = join(dir, "three");
+    const written = await createPack({ folder, name: "@kit/three", component: "three", library: "three" });
+    expect(written).toEqual([".gitignore", "README.md", "package.json", "scripts/check.js", "src/index.ts", "tsconfig.json", "vite.config.ts"]);
+    const manifest = JSON.parse(await readFile(join(folder, "package.json"), "utf8")) as Record<string, unknown> & { devDependencies: Record<string, string> };
+    expect(manifest).toMatchObject({ name: "@kit/three", compmd: { library: "dist/index.js" }, exports: { ".": "./dist/index.js" }, keywords: ["compmd", "compmd-pack"], files: ["dist", "README.md"] });
+    expect(manifest.devDependencies.three).toBe("latest");
+    expect(await readFile(join(folder, "src/index.ts"), "utf8")).toContain('export * from "three";');
+    const all = await Promise.all(written.map((path) => readFile(join(folder, path), "utf8")));
+    expect(all.join("\n")).not.toMatch(/__(pack|component|language|library|version:[^_]*)__/);
+  });
+
   it("writes into an empty folder, and refuses one with files", async () => {
     const empty = join(dir, "empty");
     await mkdir(empty);
@@ -85,6 +97,13 @@ describe("problemOf", () => {
     expect(problemOf({ folder: "x", name: "badge", component: "badge" })).toBe("badge isn't a scoped npm name, such as @kit/mermaid: packs are always scoped");
     expect(problemOf({ folder: "x", name: "@kit/badge", component: "Badge" })).toBe("Badge isn't a component name: lowercase letters and digits, words joined by -");
     expect(problemOf({ folder: "x", name: "@kit/badge", component: "badge", renders: "C#" })).toBe("C# isn't a code block's language, such as mermaid");
+  });
+
+  it("says what's wrong with a library pack's library", () => {
+    expect(problemOf({ folder: "x", name: "@kit/d3", component: "x", library: "@observablehq/plot" })).toBeUndefined();
+    expect(problemOf({ folder: "x", name: "@kit/d3", component: "x", library: "D3!" })).toBe("D3! isn't an npm package's name, such as three");
+    expect(problemOf({ folder: "x", name: "@kit/d3", component: "x", library: "d3", renders: "dot" })).toBe("a library pack has no components, so it renders nothing: leave out --renders");
+    expect(problemOf({ folder: "x", name: "d3", component: "x", library: "d3" })).toBe("d3 isn't a scoped npm name, such as @kit/mermaid: packs are always scoped");
   });
 });
 

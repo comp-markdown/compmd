@@ -1,7 +1,7 @@
 // `vite build` writes the component as one ES module, `dist/__component__.js`, with every library it imports bundled
-// in, but the runtimes the sandbox's frames provide (spec §7.6), which it adds to `peerDependencies`. `vite` opens the
-// test page, `demo/`, which uses the pack as a host does, in the strict sandbox, and builds the component again when
-// its source changes.
+// in, but the runtimes the sandbox's frames provide (spec §7.6), which it adds to `peerDependencies`, and the library
+// packs it names there, which packs share. `vite` opens the test page, `demo/`, which uses the pack as a host does, in
+// the strict sandbox, and builds the component again when its source changes.
 import { compmd } from "@compmd/vite";
 import { RUNTIMES } from "@compmd/sandbox/build";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -12,6 +12,12 @@ const root = import.meta.dirname;
 
 /** The runtimes' import names: the frames' import map gives these, one copy for every component. */
 const RUNTIME_IMPORTS = new Set(RUNTIMES.flatMap((runtime) => runtime.imports));
+
+/** The library packs the pack shares, which it names in `peerDependencies`: a host gives one copy to every pack. */
+const SHARED = Object.keys((JSON.parse(readFileSync(join(root, "package.json"), "utf8")) as { peerDependencies?: Record<string, string> }).peerDependencies ?? {});
+
+/** Whether `id` stays an import of the built module: a runtime, or a shared library or one of its paths. */
+const external = (id: string): boolean => RUNTIME_IMPORTS.has(id) || SHARED.some((name) => id === name || id.startsWith(`${name}/`));
 
 /**
  * Adds the runtimes the built module imports to `peerDependencies`, at the version it was built with, so a host that
@@ -42,8 +48,9 @@ const library: BuildEnvironmentOptions = {
   outDir: join(root, "dist"),
   target: "es2024",
   minify: true,
-  // Two copies of React break its hooks, so a built module never bundles a runtime.
-  rolldownOptions: { external: (id) => RUNTIME_IMPORTS.has(id), plugins: [peers()] },
+  // Two copies of React break its hooks, so a built module never bundles a runtime. A host may load the module as text,
+  // where a chunk has no path to load from, so a library that loads parts of itself on demand stays in the one file.
+  rolldownOptions: { external, plugins: [peers()], output: { codeSplitting: false } },
 };
 
 /** Builds the component again when a file in `src/` changes; the test page then loads it again. */

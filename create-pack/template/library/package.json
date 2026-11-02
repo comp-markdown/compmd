@@ -1,0 +1,22 @@
+{
+  "name": "__pack__",
+  "version": "0.0.0",
+  "description": "A CompMD library pack: __library__, as one module that packs share.",
+  "keywords": ["compmd", "compmd-pack"],
+  "license": "MIT",
+  "type": "module",
+  "compmd": { "library": "dist/index.js" },
+  "exports": { ".": "./dist/index.js" },
+  "files": ["dist", "README.md"],
+  "scripts": {
+    "build": "vite build",
+    "lint": "tsc --noEmit",
+    "prepublishOnly": "npm run build && node scripts/check.js"
+  },
+  "devDependencies": {
+    "__library__": "latest",
+    "@compmd/sandbox": "__version:@compmd/sandbox__",
+    "typescript": "__version:typescript__",
+    "vite": "__version:vite__"
+  }
+}

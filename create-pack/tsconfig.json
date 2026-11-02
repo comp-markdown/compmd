@@ -16,5 +16,5 @@
     "skipLibCheck": true
   },
   "include": ["src", "test", "template", "*.ts", "*.js"],
-  "exclude": ["test/.out"]
+  "exclude": ["test/.out", "template/library/src/index.ts"]
 }
