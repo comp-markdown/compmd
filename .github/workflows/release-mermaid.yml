@@ -1,6 +1,6 @@
 # A release of the Mermaid pack (docs/mermaid-pack.md, decision 9): a tag mermaid-v<version> builds and checks the
-# repository, then publishes @comp-markdown/mermaid to npm with trusted publishing, as release.yml publishes the
-# @compmd packages. The pack has a version of its own, so it is released on its own.
+# repository, then stages @comp-markdown/mermaid on npm with trusted publishing, for the author to approve, as
+# release.yml stages the @compmd packages. The pack has a version of its own, so it is released on its own.
 name: Release the Mermaid pack
 
 on:
@@ -42,9 +42,9 @@ jobs:
       - run: cargo make ci
       - name: Pack
         run: pnpm --dir packs/mermaid pack --pack-destination "$RUNNER_TEMP/packages"
-      # Trusted publishing needs npm 11.5.1 or newer.
-      - run: npm install --global npm@11.6.2
-      # Outside the repository, whose devEngines name pnpm.
-      - name: Publish
+      # Trusted publishing needs npm 11.5.1 or newer, staged publishing 11.15.0.
+      - run: npm install --global npm@11.21.1
+      # Outside the repository, whose devEngines name pnpm. Installable once the author approves it on npmjs.com.
+      - name: Stage
         working-directory: ${{ runner.temp }}/packages
-        run: npm publish ./comp-markdown-mermaid-*.tgz --access public
+        run: npm stage publish ./comp-markdown-mermaid-*.tgz --access public

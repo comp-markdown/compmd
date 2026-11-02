@@ -1,5 +1,5 @@
 # A release of the implementation (docs/releases.md): a tag v<version> builds and checks the repository, then publishes
-# @compmd/render, @compmd/processor, @compmd/sandbox, @compmd/registry, @compmd/vite, @compmd/pack and @compmd/create-pack to npm with trusted publishing: GitHub proves to npm which
+# stages @compmd/render, @compmd/processor, @compmd/sandbox, @compmd/registry, @compmd/vite, @compmd/pack and @compmd/create-pack on npm with trusted publishing, for the author to approve: GitHub proves to npm which
 # repository and workflow publishes, so no npm token is stored, and each version carries its provenance.
 name: Release
 
@@ -52,12 +52,13 @@ jobs:
           pnpm --dir vite pack --pack-destination "$RUNNER_TEMP/packages"
           pnpm --dir pack pack --pack-destination "$RUNNER_TEMP/packages"
           pnpm --dir create-pack pack --pack-destination "$RUNNER_TEMP/packages"
-      # Trusted publishing needs npm 11.5.1 or newer.
-      - run: npm install --global npm@11.6.2
-      # Outside the repository, whose devEngines name pnpm; each package after those it depends on. A version npm has
-      # already is left as it is: a package's first version is published by hand (RELEASING.md), and a release that
+      # Trusted publishing needs npm 11.5.1 or newer, staged publishing 11.15.0.
+      - run: npm install --global npm@11.21.1
+      # Outside the repository, whose devEngines name pnpm; each package after those it depends on. Each is staged: it
+      # is installable once the author approves it on npmjs.com, with two-factor authentication (RELEASING.md). A
+      # version npm has already is left as it is: a package's first version is published by hand, and a release that
       # failed halfway can run again.
-      - name: Publish
+      - name: Stage
         working-directory: ${{ runner.temp }}/packages
         run: |
           publish() {
@@ -66,7 +67,7 @@ jobs:
             if npm view "$name@$version" version > /dev/null 2>&1; then
               echo "$name@$version is on npm already"
             else
-              npm publish "$1" --access public
+              npm stage publish "$1" --access public
             fi
           }
           publish ./compmd-render-*.tgz

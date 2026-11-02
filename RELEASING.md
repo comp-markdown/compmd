@@ -30,7 +30,7 @@ A release publishes only packages that npm and this repository's workflow alread
 - If the fork changed since its last release: its version in `markdown-rs/Cargo.toml` (on its `compmd` branch), and the same version in the `compmd-markdown` dependency of `processor/Cargo.toml` and `markdown-rs/mdast_util_to_markdown/Cargo.toml`.
 - Push: the fork first, then this repository.
 
-### 2. Tag, and the workflow publishes to npm
+### 2. Tag, the workflow stages on npm, and the author approves
 
 ```sh
 git tag v0.1.1
@@ -41,9 +41,11 @@ The release workflow:
 1. checks the tag is the version in every package's `package.json`;
 2. installs Playwright's WebKit, for the sandbox's, the registry's, the Vite plugin's and create-pack's browser tests, and runs `cargo make ci`;
 3. packs the packages with pnpm, which writes the versions in place of their `workspace:*` dependencies on each other;
-4. publishes them with npm's trusted publishing: the renderer, then the processor, then the sandbox, which depends on both, then the registry, which needs the processor, then the Vite plugin, which depends on the first three, then `@compmd/pack`, which depends on all of those, then create-pack, whose packs pin it. No token is stored; each version carries its provenance. A version npm already has is left as it is, so a package whose first version was published by hand at the release's version is skipped, and a release that failed halfway can run again.
+4. stages them with npm's trusted publishing (`npm stage publish`): the renderer, then the processor, then the sandbox, which depends on both, then the registry, which needs the processor, then the Vite plugin, which depends on the first three, then `@compmd/pack`, which depends on all of those, then create-pack, whose packs pin it. No token is stored; each version carries its provenance. A version npm already has is left as it is, so a package whose first version was published by hand at the release's version is skipped, and a release that failed halfway can run again; a version it staged and nobody approved or rejected yet can't be staged again, so settle those first.
 
-Check, once it is green:
+A staged version isn't installable until the author approves it, with two-factor authentication: on npmjs.com, or `(cd ~ && npm stage list @compmd/render)` then `(cd ~ && npm stage approve <stage-id>)` for each. Approve in the order they were staged, so a package is never on npm before those it depends on. One that is wrong is rejected (`npm stage reject <stage-id>`) and its fix released as the next version.
+
+Check, once each is approved:
 
 ```sh
 curl -s https://registry.npmjs.org/-/package/@compmd%2frender/dist-tags
@@ -89,8 +91,9 @@ docs.rs builds the documentation a few minutes later.
    git push origin mermaid-v0.2.0
    ```
 
-   The workflow checks the tag is the pack's version, runs `cargo make ci`, packs the pack and publishes it with npm's trusted publishing.
-4. Check: `curl -s https://registry.npmjs.org/-/package/@comp-markdown%2fmermaid/dist-tags` gives the new version as `latest`.
+   The workflow checks the tag is the pack's version, runs `cargo make ci`, packs the pack and stages it with npm's trusted publishing.
+4. Approve it, as for the `@compmd` packages: `(cd ~ && npm stage list @comp-markdown/mermaid)`, then `npm stage approve <stage-id>`.
+5. Check: `curl -s https://registry.npmjs.org/-/package/@comp-markdown%2fmermaid/dist-tags` gives the new version as `latest`.
 
 ## The spec
 
@@ -133,15 +136,16 @@ Trusted publishing works only for a package that already exists on npm, so a new
 
 **Trusted publishing, on npmjs.com:**
 - the package's **Settings** → **Trusted publisher** → **GitHub Actions**;
-- the organization `comp-markdown`, the repository `compmd`, the workflow `release.yml`, no environment;
-- allowed actions: publish only.
+- the organization `comp-markdown`, the repository `compmd`, the workflow `release.yml` (for the Mermaid pack, `release-mermaid.yml`), no environment;
+- allowed actions: `npm stage publish` alone, which npm always allows; not `npm publish` or `npm dist-tag`, so nothing the workflow does is installable before the author approves it;
+- a trusted publisher can't be edited, only deleted and made again, and a new one must publish within 2 days or it expires. One made before 2026-05-20 allows `npm publish` alone, so it is made again, as `@compmd/render`'s and `@compmd/processor`'s were for `0.2.2`.
 
 **The workflow, in this repository:**
-- `release.yml` checks the package's version against the tag, packs it, and publishes it after the packages it depends on;
+- `release.yml` checks the package's version against the tag, packs it, and stages it after the packages it depends on;
 - it installs what the package's tests need (the sandbox's, the registry's, the Vite plugin's and create-pack's: Playwright's WebKit), as `ci.yml` does;
 - `RELEASING.md` lists it, in the table above and in the checks after a release.
 
-**Validated:** npm checks the trusted publisher only at the workflow's first publish of the package. Once that release's workflow is green, the version is `latest` in the registry (`curl`, as above), and the package's page on npmjs.com shows its provenance, from `comp-markdown/compmd` and `release.yml`. If its publish fails with the packages before it already published, fix the trusted publisher and run the workflow again: it skips the versions npm already has.
+**Validated:** npm checks the trusted publisher only at the workflow's first publish of the package. Once that release's workflow is green and the version approved, the version is `latest` in the registry (`curl`, as above), and the package's page on npmjs.com shows its provenance, from `comp-markdown/compmd` and `release.yml`. If its publish fails with the packages before it already published, fix the trusted publisher and run the workflow again: it skips the versions npm already has. A trusted publisher that doesn't allow what the workflow does fails with `403 … OIDC permission denied for this action`: so `0.2.1` failed at the sandbox, whose publisher allowed staging while the workflow still ran `npm publish`.
 
 **A first version at a release's version.** A new package depends on the others at the release's version, so its first version, by hand, is that version: publish the new packages by hand first, set up their trusted publishers, then push the tag. The workflow publishes the rest and skips the new ones. `0.2.0` went this way: `@compmd/sandbox`, `@compmd/registry`, `@compmd/vite`, `@compmd/pack` and `@compmd/create-pack` by hand, then `v0.2.0` for `@compmd/render` and `@compmd/processor`. Until the tag's workflow has published them, the new packages don't install, so the two go together.
 
