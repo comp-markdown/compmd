@@ -1,6 +1,7 @@
 // `compmd-pack dev` (docs/writing-a-pack.md, decision 3): the test page, served from memory, never written into the
 // pack. It renders the pack's `demo.comp.md` with the pack as a folder pack, in the strict sandbox, as a host renders
-// it, with the document's diagnostics under it and a light and dark switch; saving a source builds its module again.
+// it, in host mode (each use in a strict frame of its own, which takes the height of what it draws), with the
+// document's diagnostics under it and a light and dark switch; saving a source builds its module again.
 
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
@@ -29,7 +30,6 @@ export function pageHtml(title: string): string {
       :root { color-scheme: light dark; }
       body { font: 16px/1.5 system-ui, sans-serif; margin: 2rem auto; max-width: 48rem; padding: 0 1rem; background: Canvas; color: CanvasText; }
       header { display: flex; justify-content: flex-end; gap: 0.5rem; align-items: center; }
-      #page { min-height: 20rem; }
       #diagnostics { color: #d1242f; }
     </style>
   </head>
@@ -52,11 +52,18 @@ import text from "/${DEMO}?raw";
 const page = document.getElementById("page");
 const list = document.getElementById("diagnostics");
 const scheme = document.getElementById("scheme");
-const show = (line) => list.append(Object.assign(document.createElement("li"), { textContent: line }));
+// A component that fails again when it draws again (a new scheme, say) reports the same failure: it shows once.
+const shown = new Set();
+const show = (line) => {
+  if (shown.has(line)) return;
+  shown.add(line);
+  list.append(Object.assign(document.createElement("li"), { textContent: line }));
+};
 
 await init();
 const opened = new OpenDocument({ ...request, path: "${DEMO}", files: { "${DEMO}": text }, now: new Date().toISOString() });
-const view = createSandbox(sandbox).open(page, { components: opened.components });
+// Host mode: each use in a strict frame of its own, sized to what it draws, as an app shows a document.
+const view = createSandbox({ ...sandbox, page: "host" }).open(page, { components: opened.components });
 view.on("error", ({ component, code, reason, message }) => show(\`\${code ?? reason}: \${component}: \${message}\`));
 view.render(opened.expanded);
 for (const { code, message } of opened.diagnostics) show(\`\${code}: \${message}\`);

@@ -103,7 +103,8 @@ describe.each(PACKS)("a pack of $variant", ({ folder: name, port, shows, ...opti
       const errors: string[] = [];
       page.on("pageerror", (error) => errors.push(error.message));
       await page.goto(`http://localhost:${String(port)}/`);
-      const drawn = page.frameLocator("iframe").locator(`[aria-label="${shows.label}"]`);
+      // Host mode: each use in a frame of its own; the demo's first use is the one checked.
+      const drawn = page.locator("iframe").first().contentFrame().locator(`[aria-label="${shows.label}"]`);
       await expect.poll(() => drawn.count(), { timeout: 20_000 }).toBe(1);
       expect(await drawn.innerText()).toContain(shows.text);
       expect(await page.locator("#diagnostics li").allInnerTexts()).toEqual([]);
@@ -111,10 +112,29 @@ describe.each(PACKS)("a pack of $variant", ({ folder: name, port, shows, ...opti
       await page.close();
     });
 
+    it("makes each use's frame as tall as what it shows: neither cut short nor taller", async () => {
+      const page = await browser.newPage();
+      await page.goto(`http://localhost:${String(port)}/`);
+      await expect.poll(() => page.locator("iframe").first().contentFrame().locator(`[aria-label="${shows.label}"]`).count(), { timeout: 20_000 }).toBe(1);
+      const frames = page.locator("iframe");
+      for (let i = 0; i < (await frames.count()); i += 1) {
+        const frame = frames.nth(i);
+        // How many pixels the frame is off its content, once it has reported its size. The body's height, which the
+        // frame reports; the root's is never less than the frame's, so it hides a frame that is too tall.
+        const off = async () => {
+          const content = await frame.contentFrame().locator("body").evaluate((body) => body.scrollHeight);
+          const height = await frame.evaluate((element) => element.getBoundingClientRect().height);
+          return Math.abs(height - content) <= 1 ? 0 : height - content;
+        };
+        await expect.poll(off, { timeout: 10_000 }).toBe(0);
+      }
+      await page.close();
+    });
+
     it("switches the page between light and dark, and the frame follows", async () => {
       const page = await browser.newPage();
       await page.goto(`http://localhost:${String(port)}/`);
-      const frame = page.frameLocator("iframe");
+      const frame = page.locator("iframe").first().contentFrame();
       await expect.poll(() => frame.locator(`[aria-label="${shows.label}"]`).count(), { timeout: 20_000 }).toBe(1);
       const scheme = () => frame.locator(":root").evaluate((root) => getComputedStyle(root).colorScheme);
       await page.selectOption("#scheme", "dark");

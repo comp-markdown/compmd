@@ -1,5 +1,5 @@
-// The test page `compmd-pack dev` serves (`demo.comp.md`), as a host renders it: in the strict sandbox with the pack's
-// built module loaded by URL, in Chrome and WebKit, in light and dark. Every diagram of the demo draws, the one Mermaid
+// The test page `compmd-pack dev` serves (`demo.comp.md`), as a host renders it: in host mode, each diagram in a strict
+// frame of its own with the pack's built module loaded by URL, in Chrome and WebKit, in light and dark. Every diagram of the demo draws, the one Mermaid
 // can't read shows its code and is reported as W118 with what Mermaid found, the frame takes the page's colour scheme,
 // and the strict policy refuses nothing Mermaid does.
 import { join } from "node:path";
@@ -78,17 +78,23 @@ describe.each(BROWSERS)("the test page in %s", (_name, type, options) => {
 
   it("draws every diagram, as a block and as a leaf, with nothing refused", async () => {
     const { page, problems } = await open("light");
-    const frame = await frameWith(page, drawing(LABELS[1] ?? ""));
-    expect(await frame.locator(drawing(LABELS[1] ?? "")).innerHTML()).toContain("Open the page");
-    expect(await frame.locator(drawing(LABELS[2] ?? "")).innerHTML()).toContain("Published");
+    const svgOf = async (label: string) => (await frameWith(page, drawing(label))).locator(drawing(label)).innerHTML();
+    expect(await svgOf(LABELS[1] ?? "")).toContain("Open the page");
+    expect(await svgOf(LABELS[2] ?? "")).toContain("Published");
     expect(problems).toEqual([]);
     await page.close();
   }, 60_000);
 
-  it("shows the code of a diagram Mermaid can't read, and reports what Mermaid found as W118", async () => {
+  it("shows the code of a diagram Mermaid can't read, and reports what Mermaid found as W118, each frame its content's size", async () => {
     const { page } = await open("light");
     const frame = await frameWith(page, "pre >> text=A -->");
     expect(await frame.locator("pre", { hasText: "A -->" }).count()).toBe(1);
+    // Each use's frame takes the height of what it shows: none scrolls, the error's neither.
+    // A frame reports its size after it draws, and its parent sizes it then.
+    const fits = (shown: Frame) => shown.evaluate(() => document.documentElement.scrollHeight <= window.innerHeight);
+    for (const shown of [...(await Promise.all(LABELS.map((label) => frameWith(page, drawing(label))))), frame]) {
+      await expect.poll(() => fits(shown), { timeout: 10_000, message: `the frame of ${shown.url()} scrolls` }).toBe(true);
+    }
     await expect.poll(() => page.locator("#diagnostics li").allInnerTexts(), { timeout: 30_000 }).toEqual([expect.stringMatching(/^W118: mermaid: Mermaid couldn't read this diagram: /)]);
     await page.close();
   }, 60_000);
@@ -104,6 +110,10 @@ describe.each(BROWSERS)("the test page in %s", (_name, type, options) => {
     // The page's own switch: the frame and its diagrams follow it, with no render.
     await dark.page.selectOption("#scheme", "light");
     await expect.poll(() => fill(dark.page), { timeout: 30_000 }).toBe(await fill(light.page));
+    // The diagram Mermaid can't read fails again at each scheme: the page lists it once.
+    await dark.page.selectOption("#scheme", "dark");
+    await expect.poll(() => fill(dark.page), { timeout: 30_000 }).toBe(darkFill);
+    expect(await dark.page.locator("#diagnostics li").allInnerTexts()).toEqual([expect.stringMatching(/^W118: mermaid: /)]);
     await light.page.close();
     await dark.page.close();
   }, 60_000);

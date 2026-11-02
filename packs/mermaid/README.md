@@ -39,7 +39,7 @@ The pack is MIT. `dist/LICENSES.md` lists what its module bundles, each with its
 From the repository (`pnpm install` at its root first):
 
 ```sh
-pnpm --dir packs/mermaid dev     # the test page, demo.comp.md in the strict sandbox, with a light and dark switch
+pnpm --dir packs/mermaid dev     # the test page, demo.comp.md in host mode, each diagram in a strict frame, with a light and dark switch
 pnpm --dir packs/mermaid test    # the build, the component in happy-dom, the test page in Chrome and WebKit, and the pack from a local registry
 pnpm --dir packs/mermaid lint    # the type check
 ```

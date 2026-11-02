@@ -1,7 +1,7 @@
 // `host` across a frame (spec §7.4): what a permissive component of a pack given `host` can call and hear, each use a
 // test. `serveHost` is the host's page's end; `hostClient` is what the component gets.
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { hostClient, serveHost } from "./host-api.ts";
 
 const ports: MessagePort[] = [];
@@ -62,7 +62,10 @@ describe("host.on", () => {
     const heard: unknown[] = [];
     const stop = host.on("changed", (data) => heard.push(data));
     emit("changed", { stars: 5 });
-    await settle();
+    // A busy machine may take longer than `settle` to deliver it.
+    await vi.waitFor(() => {
+      expect(heard).toHaveLength(1);
+    });
     stop();
     emit("changed", { stars: 1 });
     await settle();
