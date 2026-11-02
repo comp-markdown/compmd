@@ -87,12 +87,24 @@ function forwardLinks(parent: FrameEnd): void {
   });
 }
 
-/** Reports the content's size, for the parent to size the frame. */
+/**
+ * Reports the content's size, for the parent to size the frame, each time it changes. A browser may not render a frame
+ * it doesn't show (below the fold, or too small to see), and a ResizeObserver reports only when the frame renders, so a
+ * change of its content while it isn't shown would never be reported: a MutationObserver reports those, since
+ * measuring the body lays the frame out whether it renders or not.
+ */
 function reportSize(parent: FrameEnd): void {
   const body = document.body;
-  new ResizeObserver(() => {
-    parent.size(Math.ceil(body.scrollWidth), Math.ceil(body.scrollHeight));
-  }).observe(body);
+  let reported = "";
+  const report = () => {
+    const width = Math.ceil(body.scrollWidth);
+    const height = Math.ceil(body.scrollHeight);
+    if (`${String(width)}x${String(height)}` === reported) return;
+    reported = `${String(width)}x${String(height)}`;
+    parent.size(width, height);
+  };
+  new ResizeObserver(report).observe(body);
+  new MutationObserver(report).observe(body, { subtree: true, childList: true, attributes: true, characterData: true });
 }
 
 function start(port: MessagePort): void {

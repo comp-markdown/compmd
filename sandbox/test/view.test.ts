@@ -169,6 +169,30 @@ describe("a component that fails", () => {
   }
 });
 
+describe("a use's frame size (host mode)", () => {
+  /** `label`, but drawing a 120px block 300ms after it mounts, as a component that loads or parses first does. */
+  const late: HostComponent = {
+    name: "label",
+    language: "js",
+    code: `export default function mount(target, { set }) {
+  setTimeout(() => {
+    target.append(Object.assign(document.createElement("div"), { style: "height: 120px" }));
+    set("result", JSON.stringify("drawn"));
+  }, 300);
+}`,
+    trust: { level: "strict" },
+  };
+
+  it("takes the height of what its component draws later, below the fold, where the browser doesn't render it", async () => {
+    const { area, view, until, values } = open("host", [late]);
+    area.style.marginTop = "3000px";
+    view.render(page("one"));
+    await until(() => values().includes("drawn"));
+    const frame = area.querySelector("iframe");
+    await expect.poll(() => frame?.getBoundingClientRect().height, { timeout: 5000 }).toBe(120);
+  });
+});
+
 describe("which inputs a page may set (frame mode)", () => {
   it("passes on a set of an input the tree has", async () => {
     const { view, events, until } = open("frame");
