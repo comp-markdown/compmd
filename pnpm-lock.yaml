@@ -230,6 +230,9 @@ importers:
         specifier: 5.57.2
         version: 5.57.2(@typescript-eslint/types@8.72.0)
     devDependencies:
+      '@compmd/pack':
+        specifier: workspace:*
+        version: link:../pack
       '@eslint/js':
         specifier: 10.0.1
         version: 10.0.1(eslint@10.13.0)
