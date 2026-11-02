@@ -1,6 +1,6 @@
 # The Developer Tools
 
-**Status: proposed.** The playground (`editor/`) already holds a document's developer tools: its text with the hint at the caret and the diagnostics, the rendered page, and views of what the processor makes of it (plain Markdown, the frontmatter's data, the components, the trees, the inputs). They live in one Svelte app that only the playground can use. This design makes them a part any page can embed, `@compmd/devtools`, with three new tabs on what the sandbox does: its frames, a console, and the messages between them. For those, `@compmd/sandbox` gains an observer, which is security-sensitive and has a threat model of its own.
+**Status: accepted (2026-11-02).** The playground (`editor/`) already holds a document's developer tools: its text with the hint at the caret and the diagnostics, the rendered page, and views of what the processor makes of it (plain Markdown, the frontmatter's data, the components, the trees, the inputs). They live in one Svelte app that only the playground can use. This design makes them a part any page can embed, `@compmd/devtools`, with three new tabs on what the sandbox does: its frames, a console, and the messages between them. For those, `@compmd/sandbox` gains an observer, which is security-sensitive and has a threat model of its own.
 
 ## Decisions
 
@@ -14,7 +14,7 @@
    - **frames**, as the host's page makes and removes them: an id, the parent's id, the level, the network a permissive frame was given, what it renders (the page, a use and its component, the compile frame), and why it went (destroyed, stopped when it hung, of another protocol version);
    - **messages** on each port the host's page holds, both ways, as copies, with their time;
    - **fallbacks**: each use that shows its fallback, why (W118, W121, `not-here`), and its component.
-6. **The observer sees the whole hierarchy** (Q3): what the host's page holds, it sees itself; what a frame holds, the frame reports. A permissive frame's strict frames, and the uses inside a page frame (frame mode), are made by a frame, with ports the host's page doesn't hold, so each frame's runtime observes its own part the same way: the frames it makes, the messages on its ports, the uses it mounts, with each render's and each component's time. It reports them to its parent only once its parent asks (`observe {on}` down the tree, `observed {events}` up it, in batches), and its parent passes on what its children report. What a frame reports comes from code of that frame's level, which can change it, so the tools mark it as that frame reports it, never act on it, and show it only as text (O6, O7).
+6. **The observer sees the whole hierarchy** (Q3), [walked through below](#the-observer-walked-through). It is built into the sandbox's protocol layer, which records what passes each `Port` as a runtime sets up a frame, with **one view per window**: the host's page's, and each frame's. A permissive frame's strict frames, and the uses inside a page frame (frame mode), are made in a frame, with ports the host's page doesn't hold, so each frame's view records its own part: the frames it makes, the messages on its ports, the uses it mounts, with each render's and each component's time. A frame records only once its parent asks (`observe {on}` down the tree), and sends its view's events up in batches (`observed {events}`); its parent passes on its children's unchanged. The host's view puts them together into one tree, which the tools read live. What a frame's view reports comes from the window that frame's components share, so the tools mark it as that frame's report, never act on it, and show it only as text (O6, O7, and the [accepted risk](#the-accepted-risk)).
 7. **Three new tabs** on the observer:
    - **Console**: a history of what went wrong, newest last: the diagnostics as each change left them, component fallbacks with why, refused `set`s, frames stopped, packs that couldn't be fetched. The diagnostics stay under the text as they are; the console is their history, with the rest.
    - **Sandbox**: the frame tree, down to the uses in each frame, each frame's level and network, each fallback where it happened, and how long each frame and component took to render and update; what a frame reported is marked so.
@@ -38,7 +38,44 @@ The observer adds code that reads what frames send, in the host's page, which st
 
 **Browser tests**, in Chrome and WebKit as the sandbox's are: the frame events for a page in both modes; the whole tree with a permissive frame's strict frames and a page frame's uses, marked as reported; a component's forged report, marked and acted on by nothing (O6); a report before it was asked for, dropped (O7); a message shown as text (O1); a flood bounded (O2); the same messages with and without the observer (O3); a document that can't turn it on (O4).
 
-## Questions, with proposed answers
+## The observer, walked through
+
+The [example](running-components-in-the-sandbox.md#the-examples) in host mode: `stars` trusted, `bar-chart` strict with `sparkline` in its slot, `map` permissive with a strict `legend` in its slot, and `rating-summary` permissive and given `host`. Its windows, each with its view:
+
+```
+H   the host's page       view H
+├─ C   the compile frame
+├─ U1  strict             bar-chart and sparkline   view U1
+├─ U2  permissive         map                       view U2
+│  └─ U3  strict          legend                    view U3
+└─ U4  permissive         rating-summary, host      view U4
+```
+
+1. **The developer opens the tools.** They call `view.observe(listener)` in H. View H starts recording, and H sends `observe {on}` to C, U1, U2 and U4; U2 passes it on to U3. Nothing in a frame starts it.
+2. **Each view records**, every event with its time:
+   - **view H**, at first hand: the frames it makes, C and U1 to U4, each with its level, network and use; every message on its ports, both ways (`code`, `part`, `ping` and `pong`, `set`, `error`, `rendered`, `size`); `stars` mounted inline, with its render time; U4's `host` calls;
+   - **view U1**: `bar-chart` and `sparkline` mounted, each one's render and update times, a `set` it refused;
+   - **view U2**: U3 made in `map`'s slot, strict, with no network; every message between U2 and U3 (`hello`, `level`, `code`, `part`, `ping`, `set`); `map`'s render time;
+   - **view U3**: `legend` mounted, its render time, its `error` if it throws;
+   - **view U4**: `rating-summary`'s times, and each `host` call as U4 sent it.
+3. **The views reach the tools.** Each frame sends `observed {events}` to its parent every 100 ms or so; U2 sends U3's batches on with its own. View H puts them together, and the tools update as batches arrive.
+4. **The tools show** the tree above with each use under its frame, each with its level, network, render times and fallbacks, and every port's messages on the Messages tab, a lane per frame, U2 to U3 included. What came from views U1 to U4 is marked as reported by that frame; what view H recorded isn't.
+5. **`map`'s code lies.** It shares U2's window with U2's runtime, so it can change what view U2 sends: a batch saying `legend` rendered in 2 ms with no network, when it did something else. The tools show that, marked as U2's report, and nothing acts on it: who gets `host`, which `set` passes and which frame is stopped come from the protocol's checks, never from a view.
+
+In **frame mode**, H makes C and P, and P holds every use: view H records `code`, `render`, `splices` and P's `set` and `error`; view P records each use mounted, its times, and each `not-here` fallback. Without view P, the tools would show one box.
+
+**Not seen:** what component code does outside the protocol, its own DOM, and the requests a permissive frame makes. The second could later be recorded too (CSP violation events, resource timing), as that frame's report.
+
+## The accepted risk
+
+**A frame's view can be false, and the tools can't tell.** The sandbox code that makes a frame's children and mounts its uses runs in that frame's window, beside its components, which can change it; a browser lets no other window read that frame's ports or its document. So what views U1 to U4 report is only as true as the code of their level. Two ways around it were weighed and turned down:
+
+- **The host's page brokers every port**, making each channel and passing each message on. The parent still hands its child the port, in `hello`, so a lying parent can hand it its own and send the host's page made-up traffic; it adds a hop to every message, changes the protocol even when nothing observes (O3), and still can't see uses mounted inside a window or their times.
+- **A control frame per frame**, with the runtime alone in it and the components one frame down: true isolation, at twice the frames and the latency, for tooling.
+
+It is accepted because a lie reaches no decision (O6), and costs little: a parent is never less trusted than its children ([sandbox, decision 1](running-components-in-the-sandbox.md#proposed-decisions)), so code that can falsify a view controls what it reports on anyway. The tools say so where they mark a report, and their README says it.
+
+## Questions, settled
 
 **Q1. A function, a custom element, or a Svelte component?** Settled: a function, `mountDevtools(target, options)`. A custom element (`<compmd-devtools>`) needs its options as properties anyway, since documents, sandbox options and callbacks aren't attributes; it can wrap the function later. A Svelte component would tie embedding pages to Svelte.
 
@@ -46,7 +83,7 @@ The observer adds code that reads what frames send, in the host's page, which st
 
 **Q3. Should frames report their own children?** Settled: yes, so the tools show the whole hierarchy (decision 6), each report marked as its frame's (O6 to O8). Seeing only what the host's page holds would show one frame in frame mode, where every use is inside the page's frame, and nothing under a permissive frame: not much of a use.
 
-**Q4. The tabs' order.** Proposed above (decision 8). Today's order is Page, Plain Markdown, Data, Components, Parse tree, Expanded tree.
+**Q4. The tabs' order.** Settled as decision 8. Today's order is Page, Plain Markdown, Data, Components, Parse tree, Expanded tree.
 
 ## In two increments
 
