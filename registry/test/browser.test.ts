@@ -36,6 +36,14 @@ describe("resolvePacks in a browser", () => {
     expect(asked).toHaveLength(4);
   });
 
+  it("keeps versions lists in Cache Storage: a later visit reads one back, stale once its max-age has passed", async () => {
+    let now = 0;
+    const first = defaultCache(() => now);
+    await first.keepVersions("https://npm.example/@kit/charts", [{ version: "1.0.0", tarball: "https://npm.example/t" }], 300);
+    now = 301_000;
+    expect(await defaultCache(() => now).versions("https://npm.example/@kit/charts")).toEqual({ versions: [{ version: "1.0.0", tarball: "https://npm.example/t" }], fresh: false });
+  });
+
   it("with fetch: host, refuses the registry on another origin", async () => {
     await expect(resolvePacks(request, { registries: { "*": new NpmRegistry({ url: registry }) } })).rejects.toThrow('`fetch: "direct"`');
   });

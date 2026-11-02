@@ -15,6 +15,8 @@ export interface Served {
   unpackedSize?: number | null;
   /** Whether its bytes are changed after its integrity was published. */
   corrupt?: boolean;
+  /** The integrity its metadata states, in place of its tarball's SHA-512; `null` for none. */
+  integrity?: string | null;
 }
 
 /** Packs by name, each version by its number. */
@@ -38,13 +40,28 @@ export const tarballOf = (file: string): Buffer => readFileSync(join(TARBALLS, f
 /** npm's integrity of `bytes`. */
 export const integrityOf = (bytes: Buffer): string => `sha512-${createHash("sha512").update(bytes).digest("base64")}`;
 
-/** Every pack the tests use. */
+/**
+ * Every pack the tests use. The packs (test/fixtures/packs):
+ * - `@kit/report@1.0.0`: containers in CompMD (`section`) that import `@kit/charts@1`;
+ * - `@kit/charts@1.0.0` and `1.1.0`: one built module, `dist/chart.js`, which says its version;
+ * - `@kit/bars@1.0.0` and `@kit/lines@1.0.0`: a built module each that imports the library pack `@kit/d3`, which they
+ *   name in `peerDependencies` at `^7.9` and `~7.9.0`;
+ * - `@kit/dashboard@1.0.0`: imports `@kit/lines@1`, so `@kit/lines`'s range for `@kit/d3` is asked a round later;
+ * - `@kit/d3@7.9.5` and `7.12.0`: the library pack, `{ "compmd": { "library": "dist/d3.js" } }`.
+ *
+ * And packs whose metadata is wrong in one way, each a copy of another's tarball:
+ * - `@kit/huge`: 10 MB unpacked, over the default cap; `@kit/unsized`: no unpacked size;
+ * - `@kit/broken`: its bytes don't match the integrity published;
+ * - `@kit/unchecked`: no integrity; `@kit/sha1`: a SHA-1 integrity only.
+ */
 export const CATALOG: Catalog = {
   "@kit/report": { "1.0.0": { file: "kit-report-1.0.0.tgz" } },
   "@kit/charts": { "1.0.0": { file: "kit-charts-1.0.0.tgz" }, "1.1.0": { file: "kit-charts-1.1.0.tgz" } },
   "@kit/huge": { "1.0.0": { file: "kit-charts-1.0.0.tgz", unpackedSize: 10_000_000 } },
   "@kit/unsized": { "1.0.0": { file: "kit-charts-1.0.0.tgz", unpackedSize: null } },
   "@kit/broken": { "1.0.0": { file: "kit-report-1.0.0.tgz", corrupt: true } },
+  "@kit/unchecked": { "1.0.0": { file: "kit-charts-1.0.0.tgz", integrity: null } },
+  "@kit/sha1": { "1.0.0": { file: "kit-charts-1.0.0.tgz", integrity: "sha1-2jmj7l5rSw0yVb/vlWAYkK/YBwk=" } },
   "@kit/bars": { "1.0.0": { file: "kit-bars-1.0.0.tgz" } },
   "@kit/lines": { "1.0.0": { file: "kit-lines-1.0.0.tgz" } },
   "@kit/dashboard": { "1.0.0": { file: "kit-dashboard-1.0.0.tgz" } },
@@ -80,7 +97,7 @@ export async function localRegistry(catalog: Catalog = CATALOG): Promise<LocalRe
           version,
           dist: {
             tarball: `${url}tarballs/${path.slice(1)}/${version}`,
-            integrity: integrityOf(tarballOf(served.file)),
+            ...(served.integrity === null ? {} : { integrity: served.integrity ?? integrityOf(tarballOf(served.file)) }),
             ...(served.unpackedSize === null ? {} : { unpackedSize: served.unpackedSize ?? 2000 }),
           },
         },
