@@ -7,7 +7,7 @@
 
 CompMD (Component Markdown) is a Markdown flavor that adds components, containers, slots and CSS-like layout to CommonMark + GFM, while staying readable in any plain Markdown renderer.
 
-**Version 1, draft. Last changed 2026-11-01.** Every change is listed in the [changelog](CHANGELOG.md).
+**Version 1, draft. Last changed 2026-11-02.** Every change is listed in the [changelog](CHANGELOG.md).
 
 **Author:** Hakan Serce.
 
@@ -553,7 +553,7 @@ params:
 - `headings` is `relative` (the default) or `absolute`: whether headings in a `compmd` definition's body are shifted to fit where it is used (section 7.2).
 - `renders` is a language, or a list of languages that are names of one (`[mermaid, mmd]`): the component is also a code renderer for them (section 7.7). It has a required `string` param `code`, which holds the block's text, without declaring it. A signature MAY declare `code` to document it, but only as a required `string` with no default (F009 otherwise). A code renderer has no `slots`.
 - A `name` param is a bare value that must be a CEL identifier and is never evaluated: the name a template slot binds. A `name` param given an expression or anything but an identifier is F009. There is no `expression` type: any param accepts `(…)`, and its type says what the value is, not how it's written.
-- A `compmd` definition's body MAY invoke other components, including built-ins. Direct or indirect recursion is F019.
+- A `compmd` definition's body MAY invoke other components, including built-ins. Direct or indirect recursion is F019. A code block a code renderer renders invokes it (section 7.7), so a body that leads back to its component through such a block recurses too.
 
 ### 7.4 The host contract
 
@@ -1302,7 +1302,7 @@ Every diagnostic MUST name its code, the line and column where it was detected, 
 | F016 | Malformed component line (starts with `::` but matches no form)                                                                             | the line, with the expected form                                     |
 | F017 | Param given twice, or `id` together with `#name`, or a code renderer's `code` param given on a code block's info string (section 7.7) | the second occurrence, or the param                                  |
 | F018 | Body given to a component that declares no slots                                                                                         | the opener                                                           |
-| F019 | Recursive component definition                                                                                                           | the invocation that closes the cycle                                 |
+| F019 | Recursive component definition                                                                                                           | the invocation, or the rendered code block's language, that closes the cycle |
 | F020 | Import cycle                                                                                                                          | the `from` that closes the cycle                                     |
 | F021 | Imported name not exported by its source                                                                                              | the `names` entry                                                    |
 | F022 | `export.pack` or `export.version` disagrees with the registry manifest                                                                | the `export` key                                                     |

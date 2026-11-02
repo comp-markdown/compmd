@@ -177,12 +177,13 @@ fn names_used(
     found
 }
 
-/// An invocation of a `compmd` definition in another's body: the callee, where the name is, where the invocation
-/// starts.
+/// An invocation of a `compmd` definition in another's body, or a code block it renders (spec §7.7): the callee,
+/// where its name or language is, where the invocation or block starts.
 type Edge = (ComponentId, Location, Point);
 
-/// F019: a `compmd` definition whose body leads back to it, reported at the invocation that closes the cycle. Gives
-/// those invocations, by their document and where they start: each renders its fallback, which breaks every cycle.
+/// F019: a `compmd` definition whose body leads back to it, through invocations and the code blocks code renderers
+/// render, reported at the invocation or block that closes the cycle. Gives those, by their document and where they
+/// start: each renders its fallback, which breaks every cycle.
 fn recursion(resolved: &Resolved, found: &mut Vec<Diagnostic>) -> HashSet<(DocumentId, Point)> {
     let edges: Vec<Vec<Edge>> = resolved
         .components
@@ -193,18 +194,32 @@ fn recursion(resolved: &Resolved, found: &mut Vec<Diagnostic>) -> HashSet<(Docum
             };
             let document = resolved.document(component.document);
             let lines = document.lines();
+            let compmd = |name: &str| match document.names.get(name) {
+                Some(Binding::Component(callee, _))
+                    if matches!(resolved.component(*callee).body, Body::Compmd(_)) =>
+                {
+                    Some(*callee)
+                }
+                _ => None,
+            };
             let mut used = Vec::new();
             invocations(body, &mut used);
-            used.into_iter()
-                .filter_map(|invocation| match document.names.get(invocation.name) {
-                    Some(Binding::Component(callee, _))
-                        if matches!(resolved.component(*callee).body, Body::Compmd(_)) =>
-                    {
-                        Some((*callee, lines.name_at(invocation.start), invocation.start))
-                    }
-                    _ => None,
-                })
-                .collect()
+            let invoked = used.into_iter().filter_map(|invocation| {
+                let callee = compmd(invocation.name)?;
+                Some((callee, lines.name_at(invocation.start), invocation.start))
+            });
+            let mut blocks = Vec::new();
+            code_blocks(body, &mut blocks);
+            let rendered = blocks.into_iter().filter_map(|code| {
+                code.info.as_ref()?;
+                let Renderer::Component(name, _) = document.renderers.get(code.lang.as_deref()?)?
+                else {
+                    return None;
+                };
+                let start = code.position?.start;
+                Some((compmd(name)?, lines.language_at(start), start))
+            });
+            invoked.chain(rendered).collect()
         })
         .collect();
     let mut search = Search {

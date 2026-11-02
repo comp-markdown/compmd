@@ -4,6 +4,10 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
 
 ## Version 1 (draft)
 
+### 2026-11-02
+
+- **Recursion through code blocks (§7.3, §10.2).** A code block a code renderer renders invokes it, so a `compmd` code renderer whose body leads back to it through such a block is F019, at the block's language, and the block shows its fallback. Before, the spec didn't say whether a rendered block counts as an invocation. Not breaking: such a document never rendered.
+
 ### 2026-11-01
 
 - **Packs on a registry, a companion (§6.4).** New: [*CompMD packs on a registry*](compmd-registry-v1.md), versioned with the spec, for pack authors and for hosts that fetch packs from a registry. It says what a pack on an npm registry must be (the `compmd` field, the keyword `compmd-pack`, built modules as one file, `files`, its size against the host's cap), how a host reads one (policy before any download, the tarball checked against the registry's integrity), who fetches, and what a library pack is: a library packs share through `peerDependencies`, one version per document, with W121 for a second version of one that can't have two copies. §6.4 links to it.

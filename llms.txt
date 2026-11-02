@@ -359,7 +359,7 @@ See the migration guide.
 - Inline use (`:name[...]{...}`) of a `compmd` component works when its body is one paragraph; it has no box.
 - A definition whose body holds a code fence uses a longer outer fence (```` ```` ````) or `~~~`.
 - Names: kebab-case. `if`, `each`, `value`, `box` and `md` are reserved. Param names that are CEL reserved words (`in`, `as`, `type`… see F013) can't be used in `compmd` definitions; name them `kind`, `items`, `variant`.
-- No recursion (F019).
+- No recursion (F019), also through a code block a code renderer renders.
 
 Host-language components (`jsx`, `tsx`, `svelte`, `js`, `ts`) are code that runs in a sandbox, with a `compmd` signature fence:
 
