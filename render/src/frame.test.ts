@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { Mount } from "./contract.ts";
 import { connectFrame, PROTOCOL_VERSION, serveFrame, type FrameMessage, type Port } from "./frame.ts";
 import type { ExpandedRoot } from "./tree.ts";
@@ -51,9 +51,11 @@ describe("the host and frame protocol", () => {
         { type: "componentLeaf", name: "gone", params: [], fallback: [] },
       ],
     });
-    await settle();
+    // `rendered` follows the next animation frame, which a busy machine may take longer than `settle` to give.
+    await vi.waitFor(() => {
+      expect(received.filter((message) => message.type === "rendered")).toHaveLength(2);
+    });
     expect(received[0]).toEqual({ type: "ready", version: PROTOCOL_VERSION });
-    expect(received.filter((message) => message.type === "rendered")).toHaveLength(2);
     expect(received).toContainEqual({ type: "set", input: "region", value: "eu" });
     expect(received).toContainEqual(expect.objectContaining({ type: "error", component: "gone", reason: "missing" }));
 
