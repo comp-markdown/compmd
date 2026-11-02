@@ -1,6 +1,6 @@
 {
   "name": "@comp-markdown/mermaid",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A CompMD pack that draws Mermaid diagrams, ```mermaid blocks and diagrams computed from data, with Mermaid 12.2.0 bundled in, in the host's strict sandbox.",
   "keywords": ["compmd", "compmd-pack", "mermaid", "diagrams"],
   "homepage": "https://compmd.hakanserce.com/",

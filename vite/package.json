@@ -1,6 +1,6 @@
 {
   "name": "@compmd/vite",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "A Vite plugin for CompMD: reads compmd.config.json, gives the processor the app's packs, serves the sandbox and the packs' files, and bundles the app's own trusted components.",
   "keywords": [
     "compmd",
