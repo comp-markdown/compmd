@@ -18,6 +18,7 @@ The designs behind the spec and its implementation. Each starts with its status 
 - [`@compmd/create-pack`, the pack template](create-pack.md): `npm create @compmd/pack`; builds S2 of *components from apps and packs*.
 - [Resolving registry packs](resolving-registry-packs.md): how `@compmd/registry` resolves, fetches and checks packs; builds decisions 1 to 3 and 5 of *packs from a registry*.
 - [Sharing library packs](sharing-library-packs.md): how the processor, `@compmd/registry` and `@compmd/sandbox` let packs share a library pack; builds decision 8 of *packs from a registry*.
+- [Writing a pack](writing-a-pack.md): `@compmd/pack`, which holds what every pack would otherwise copy, and the host contract's `scheme` and `fail`.
 - [The Mermaid pack](mermaid-pack.md): `@comp-markdown/mermaid`, a code renderer as a registry pack; builds the Mermaid example of *code renderers*.
 
 The processor's own designs are next to it, in [`processor/docs/`](../processor/docs/): [incremental processing](../processor/docs/incremental.md), [param values](../processor/docs/param-values.md) and [positional hints](../processor/docs/positional-hints.md).
