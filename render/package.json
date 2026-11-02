@@ -1,6 +1,6 @@
 {
   "name": "@compmd/render",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Renders a CompMD expanded tree as a live page: Markdown, layout, inputs and host-language components through the host contract.",
   "keywords": [
     "compmd",
