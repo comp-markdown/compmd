@@ -1,6 +1,6 @@
 // The host runtime (docs/running-components-in-the-sandbox.md, Q6, Q7): in the host's page, one per document. It
 // turns the processor's components into what frames run (compiled in the document's compile frame, or built modules
-// by their URL or as files the host holds), mounts trusted components inline and frames every other use at its level, gives `host` to permissive
+// by their URL or as files the host holds, with the library packs they import), mounts trusted components inline and frames every other use at its level, gives `host` to permissive
 // frames of packs given it, and stops a frame that stops answering.
 
 import type { HostComponent, Trust } from "@compmd/processor";
@@ -8,7 +8,7 @@ import { createRegion, type ExpandedComponent, type ExpandedInput, type Mount } 
 import { serveHost, type HostApi } from "../host-api.ts";
 import { codeFor, Mounts } from "../mounts.ts";
 import { connectCompiler, type Compiler } from "../protocol/compiler.ts";
-import { bindingOf, HELLO, SANDBOX_VERSION, type ComponentCode, type ErrorReason, type Level } from "../protocol/messages.ts";
+import { bindingOf, HELLO, SANDBOX_VERSION, type ComponentCode, type ErrorReason, type Level, type Libraries, type LibraryCode } from "../protocol/messages.ts";
 import { frameUse } from "../use.ts";
 
 type Place = NonNullable<HostComponent["module"]>;
@@ -16,6 +16,7 @@ type Place = NonNullable<HostComponent["module"]>;
 /**
  * A built module: where it is served, with its file's hash, which the host checked when it got the pack; or its file
  * as a `Blob` the host has checked, as a resolver of registry packs gives it, which frames load as a `blob:` module.
+ * A library pack's module is asked for the same way, and must be given as code.
  */
 export type ModuleSource = (module: Place) => { url: string; integrity: string } | { code: Blob };
 
@@ -149,21 +150,56 @@ export class HostRuntime {
   async #codeOf(component: HostComponent): Promise<ComponentCode | undefined> {
     const level = levelOf(component.trust);
     if (level === "trusted") return { name: component.name, level };
-    if (component.module) {
-      const place = placeOf(component.module);
-      const source = this.#options.modules?.(component.module);
-      if (source && "code" in source) return { name: component.name, level, binding: "plain", code: source.code, place };
-      if (source) return { name: component.name, level, module: source };
-      this.#events.error(component.name, "failed", `no URL for \`${place}\``);
+    const given = this.#given(component);
+    if (typeof given === "string") {
+      this.#events.error(component.name, "failed", given);
       return undefined;
+    }
+    const withLibraries = Object.keys(given.libraries).length > 0 ? { libraries: given.libraries } : {};
+    if ("module" in given) {
+      const { module, place } = given;
+      return "code" in module ? { name: component.name, level, binding: "plain", code: module.code, place, ...withLibraries } : { name: component.name, level, module };
     }
     try {
       const { code, css } = await this.#compilerFor().compile({ name: component.name, language: component.language, code: component.code, ...(component.runtime ? { runtime: component.runtime } : {}) });
-      return { name: component.name, level, binding: bindingOf(component.language), code, ...(css === undefined ? {} : { css }) };
+      return { name: component.name, level, binding: bindingOf(component.language), code, ...(css === undefined ? {} : { css }), ...withLibraries };
     } catch (error) {
       this.#events.error(component.name, "failed", messageOf(error));
       return undefined;
     }
+  }
+
+  /**
+   * What the host gives for `component`: the modules of the library packs it imports, and a built module's file or
+   * URL, with its place; why not, when one of them isn't given as a frame needs it.
+   */
+  #given(component: HostComponent): { libraries: Libraries } | { libraries: Libraries; module: ReturnType<ModuleSource>; place: string } | string {
+    const libraries = this.#librariesOf(component.libraries);
+    if (typeof libraries === "string") return libraries;
+    if (!component.module) return { libraries };
+    const place = placeOf(component.module);
+    const module = this.#options.modules?.(component.module);
+    if (!module) return `no URL for \`${place}\``;
+    const names = Object.keys(libraries).map((name) => `\`${name}\``);
+    if ("url" in module && names.length > 0) return `\`${place}\` loads by its URL, so its imports of library packs (${names.join(", ")}) can't be written: give it as code`;
+    return { libraries, module, place };
+  }
+
+  /**
+   * The library packs `libraries` names, as frames get them, each module's file from `modules`; why not, when one
+   * isn't given as code, which a frame needs to write the imports of it (docs/sharing-library-packs.md, decision 8).
+   */
+  #librariesOf(libraries: HostComponent["libraries"]): Libraries | string {
+    const found: Record<string, LibraryCode> = {};
+    for (const [name, module] of Object.entries(libraries ?? {})) {
+      const place = placeOf(module);
+      const source = this.#options.modules?.(module);
+      if (!source || !("code" in source)) return `the library pack \`${place}\` isn't given as code, which a frame needs to load it`;
+      const own = this.#librariesOf(module.libraries);
+      if (typeof own === "string") return own;
+      found[name] = { place, code: source.code, ...(Object.keys(own).length > 0 ? { libraries: own } : {}) };
+    }
+    return found;
   }
 
   /** The document's compile frame, a hidden strict frame that runs no components, made the first time it's needed. */

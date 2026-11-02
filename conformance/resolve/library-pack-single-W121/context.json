@@ -1,0 +1,14 @@
+{
+  "registry": {
+    "@acme/charts": [
+      {"version": "1.0.0", "path": "registry/charts-1.0.0", "integrity": "sha512-AAA"}
+    ],
+    "@acme/maps": [
+      {"version": "1.0.0", "path": "registry/maps-1.0.0", "integrity": "sha512-BBB"}
+    ],
+    "@kit/three": [
+      {"version": "0.170.2", "path": "registry/three-0.170.2", "integrity": "sha512-CCC"},
+      {"version": "0.171.0", "path": "registry/three-0.171.0", "integrity": "sha512-DDD"}
+    ]
+  }
+}

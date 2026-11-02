@@ -404,6 +404,9 @@ importers:
       '@compmd/render':
         specifier: workspace:*
         version: link:../render
+      es-module-lexer:
+        specifier: 2.3.2
+        version: 2.3.2
     devDependencies:
       '@compmd/processor':
         specifier: workspace:*

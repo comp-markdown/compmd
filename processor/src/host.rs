@@ -103,21 +103,27 @@ pub struct Needed {
     /// The sources [`Data`] will be asked for, without `host:`.
     pub host: Vec<String>,
     /// The packs imported, by the document or by a pack it loaded, that no release in [`Packs`] matches, for a host
-    /// that gets packs from a registry (spec §6.4) to fetch before it resolves again. Packs the host's policy refuses
+    /// that gets packs from a registry (spec §6.4) to fetch before it resolves again; then the library packs those
+    /// packs name in `peerDependencies` that none matches (companion, section 5). Packs the host's policy refuses
     /// aren't listed, nor are imports that name no pack.
     pub packs: Vec<NeededPack>,
 }
 
-/// A pack import [`Packs`] has no release for.
+/// A pack import, or a library a pack names, that [`Packs`] has no release for.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct NeededPack {
     /// The pack, `@acme/kit`.
     pub pack: String,
-    /// The version or range after the name, as written (`1`, `^1.4.2`, `1.4.2`); `*` when none is.
+    /// The version or range after the name, as written (`1`, `^1.4.2`, `1.4.2`); `*` when none is. For a library,
+    /// the range in `peerDependencies`.
     pub range: String,
     /// The import's `integrity`, when it pins one with an exact version: the release's tarball must have this hash.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub integrity: Option<String>,
+    /// Whether it is a library pack a pack names, of which the processor takes the newest release that matches every
+    /// range asked for it: a host that fetches one fetches that version when the registry has it.
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub library: bool,
 }
 
 /// The newest of `versions` that `range` takes, as the processor reads the version or range after a pack's name in

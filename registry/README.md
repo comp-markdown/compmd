@@ -5,7 +5,7 @@
 
 # @compmd/registry
 
-Packs for CompMD documents from an npm registry. A document imports `@kit/mermaid@1` and the host has never heard of it: `resolvePacks` asks the processor which packs are missing, resolves each range as the processor does, applies the host's policy before anything is downloaded, checks each tarball against the integrity its registry publishes, and gives back the request with the packs in it. It does what [*CompMD packs on a registry*](../compmd-registry-v1.md) (sections 3 and 4) says a host does; the design is [resolving registry packs](../docs/resolving-registry-packs.md).
+Packs for CompMD documents from an npm registry. A document imports `@kit/mermaid@1` and the host has never heard of it: `resolvePacks` asks the processor which packs are missing, resolves each range as the processor does, applies the host's policy before anything is downloaded, checks each tarball against the integrity its registry publishes, and gives back the request with the packs in it. It does what [*CompMD packs on a registry*](../compmd-registry-v1.md) (sections 3 to 5) says a host does; the design is [resolving registry packs](../docs/resolving-registry-packs.md), and for library packs [sharing library packs](../docs/sharing-library-packs.md).
 
 **Website:** [compmd.hakanserce.com](https://compmd.hakanserce.com/), with the spec and a playground to try CompMD in.
 
@@ -28,6 +28,7 @@ const { expanded, diagnostics } = process(ready);
 - **`resolvePacks(request, options)`** gives `request` with the fetched releases added to `packs`, and the packs the size cap refuses added to `policy.refused`, so the processor says why (F026). It loops on the processor's `sources(request).packs`, one round per level of the pack tree, until nothing is missing or nothing more can be got. What it couldn't fetch (a registry that didn't answer) is in `problems`, for the host's logs; what the document sees is always the processor's diagnostics.
 - **`modules(place)`** gives a built module's checked text as `{ code: Blob }`, by the place the processor gives it with a host component (`{ pack, version, path }`), for the sandbox.
 - **Versions** are picked with the processor's own `newestMatching`, so the release added is the one the processor takes.
+- **Library packs** the packs name in `peerDependencies` are listed by the processor too (`library: true`), and fetched as packs are. For each, the version fetched is the newest that every range asked for it in the resolve matches, as the processor chooses one version per document; a version two imports resolve to at once is downloaded once.
 - **The policy, before any download:** a pack the policy refuses, or isn't allowed to import, is never asked for. A denied version is added with no files, and the processor gives F026 with the host's reason. A version over the size cap (`maxPackSize`, 5 MB when the host sets none), or whose metadata doesn't say its unpacked size, isn't fetched.
 - **Every tarball is checked** against `dist.integrity` (SHA-512), and against the import's pinned `integrity`. One that doesn't match is added as `broken`, and the processor gives F035. `package.json` is the tarball's, never the metadata's. A release keeps the tarball's text files under `package/`; links, binary files and paths that would leave the package are dropped.
 

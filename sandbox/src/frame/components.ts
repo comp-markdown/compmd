@@ -3,7 +3,7 @@
 // params and slots, and the rest of the page keeps its state. Code that doesn't load shows each instance's fallback.
 
 import type { Mount, Mounted, MountContext, Params, Slots } from "@compmd/render";
-import type { Runnable } from "../protocol/messages.ts";
+import type { Libraries, Runnable } from "../protocol/messages.ts";
 
 /** A component's code, compiled and loaded: its mount, and a Svelte component's CSS. */
 export interface Loaded {
@@ -36,8 +36,17 @@ interface Entry {
 
 function keyOf(component: Runnable): string {
   if ("module" in component) return `${component.module.url}\n${component.module.integrity}`;
-  if ("place" in component) return component.place;
-  return `${component.binding}\n${component.css ?? ""}\n${component.code}`;
+  const libraries = librariesKey(component.libraries);
+  if ("place" in component) return `${component.place}\n${libraries}`;
+  return `${component.binding}\n${component.css ?? ""}\n${libraries}\n${component.code}`;
+}
+
+/** Which library module each import names, nested: what changes the code a component runs. */
+function librariesKey(libraries: Libraries | undefined): string {
+  return Object.entries(libraries ?? {})
+    .sort(([one], [other]) => one.localeCompare(other))
+    .map(([name, library]) => `${name}=${library.place}(${librariesKey(library.libraries)})`)
+    .join(",");
 }
 const messageOf = (error: unknown): string => (error instanceof Error ? error.message : String(error));
 
@@ -88,11 +97,16 @@ export class Components {
     for (const instance of entry.instances) this.#remount(component.name, entry, instance);
   }
 
-  /** The mount the renderer calls for a name: it runs the entry's code, now and whenever it changes. */
+  /**
+   * The mount the renderer calls for a name: it runs the entry's code, now and whenever it changes. While its code
+   * doesn't load, which was reported as `failed`, it shows its fallback, without throwing: the renderer would report
+   * it again, as code that threw.
+   */
   #indirect(entry: Entry): Mount {
     return (target, context) => {
-      if (entry.failed !== undefined) throw new Error(entry.failed);
-      const instance: Instance = { target, context, mounted: entry.mount?.(target, context) ?? undefined };
+      const instance: Instance = { target, context };
+      if (entry.failed === undefined) instance.mounted = entry.mount?.(target, context) ?? undefined;
+      else target.replaceChildren(context.fallback.element);
       entry.instances.add(instance);
       return {
         update(params: Params, slots: Slots) {

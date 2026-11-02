@@ -2,7 +2,7 @@
 
 A companion to the [CompMD specification](compmd-spec-v1.md), for pack authors and for hosts that fetch packs from a registry. The spec says what a pack is to a document (§6.4); this document says what a pack published to an npm registry must be, how a host reads one, and what a library pack is. It is versioned with the spec: version 1 of each goes together, and every change to it has an entry in the [changelog](CHANGELOG.md).
 
-**Last changed 2026-11-01.**
+**Last changed 2026-11-02.**
 
 ## 1. Conventions
 
@@ -48,6 +48,7 @@ A library pack holds one library that packs share, so a sandbox loads one copy i
 
 - **It says it is one** with an object in the `compmd` field: `"compmd": { "library": "dist/index.js" }`, the path of its one module file. It has no document and no components. Its name is scoped, like a pack's, and SHOULD say what it wraps, with the library's version as its own (`@kit/three@0.170.0` is three.js 0.170.0).
 - **Its module is one file**, an ES module whose only imports are the runtimes and other libraries by name, never by relative path.
-- **A pack uses it** by naming it in `peerDependencies` (`"@kit/three": "^0.170"`) and importing it by that name in its components' code. A host that offers no library of that name (spec §6.3) resolves it from its registries like a pack (section 3), under the same policy.
-- **One version per document.** For each library, the host uses the newest version that matches every range the document's packs ask for. When no version matches them all, each range gets its own, unless the library says it can't have two copies in one sandbox: `"compmd": { "library": …, "single": true }`. Then the pack asking for the second version gets W121 on its import, naming the library, both ranges and the version the document has (spec §6.4); its components that don't use the library still render.
+- **A pack uses it** by naming it in `peerDependencies` (`"@kit/three": "^0.170"`) and importing it by that name in its components' code. A host that offers no library of that name (spec §6.3) resolves it from its registries like a pack (section 3), under the same policy. A library pack uses other libraries the same way, by naming them in its own `peerDependencies`.
+- **One version per document.** For each library, the host uses the newest version that matches every range the document's packs ask for. When no version matches them all, each range gets its own, unless the library says it can't have two copies in one sandbox: `"compmd": { "library": …, "single": true }`. Then the version is the one the first pack to ask gets, in the order the document's imports resolve, and each pack whose range it doesn't match gets W121 on its import, naming the library, both ranges and the version the document has (spec §6.4); its components that don't use the library still render.
+- **A library that can't be had** is W121 on the import of the pack that names it, saying why: the host denies or refuses it, or doesn't allow it under its configuration's `imports`; no version matches; the package isn't a library pack; or libraries name each other in a cycle. The pack's components that don't use it still render.
 - **It runs at the level of the pack that imports it**, in that pack's sandbox, and adds no trust of its own (spec §15).

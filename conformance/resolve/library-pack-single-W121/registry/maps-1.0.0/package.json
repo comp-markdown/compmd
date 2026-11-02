@@ -1,0 +1,8 @@
+{
+  "name": "@acme/maps",
+  "version": "1.0.0",
+  "compmd": "index.comp.md",
+  "peerDependencies": {
+    "@kit/three": "^0.171"
+  }
+}

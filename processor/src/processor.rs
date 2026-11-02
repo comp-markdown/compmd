@@ -52,7 +52,7 @@ use crate::load;
 use crate::parse::{self, Change, ParseOptions, TextEdit};
 use crate::policy::Policy;
 use crate::resolve::{self, Ambient, Store};
-pub use crate::resolve::{HostComponent, Module};
+pub use crate::resolve::{HostComponent, LibraryModule, Module};
 use crate::tree::Move;
 use crate::{expand, tree, validate};
 use std::rc::Rc;
@@ -363,8 +363,9 @@ impl Processor<Resolved> {
 impl Processor<Validated> {
     /// The remote and `host:` sources a render with `context` needs, each once, in the order they are first written,
     /// for the host to fetch before it loads; and the packs the document and the packs it loaded import that the host
-    /// gave no matching release of, each with its range and pinned `integrity`, for a host that gets packs from a
-    /// registry to fetch and resolve again with (spec §6.4). The processor fetches nothing.
+    /// gave no matching release of, each with its range and pinned `integrity`, then the library packs they name
+    /// that it gave none of, for a host that gets packs from a registry to fetch and resolve again with (spec §6.4).
+    /// The processor fetches nothing.
     ///
     /// ```
     /// use compmd::context::RenderContext;
@@ -379,7 +380,7 @@ impl Processor<Validated> {
     ///     .resolve((), (), &Ambient::default())
     ///     .validate(&[]);
     /// let needed = validated.sources(&context);
-    /// assert_eq!(needed.packs, [NeededPack { pack: "@kit/mermaid".into(), range: "1".into(), integrity: None }]);
+    /// assert_eq!(needed.packs, [NeededPack { pack: "@kit/mermaid".into(), range: "1".into(), integrity: None, library: false }]);
     /// ```
     #[must_use]
     pub fn sources(&self, context: &RenderContext) -> Needed {
@@ -923,6 +924,7 @@ mod tests {
             pack: pack.into(),
             range: range.into(),
             integrity: integrity.map(Into::into),
+            library: false,
         };
         let expected = [
             needed("@acme/kit", "1", None),

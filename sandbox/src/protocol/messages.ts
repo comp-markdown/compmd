@@ -21,13 +21,27 @@ export type ComponentCode = Runnable | { name: string; level: Level | "trusted" 
 
 /**
  * A component with its code. A built module the host's page holds is a `Blob`, whose bytes the frames share, with its
- * place (`pack@version/path`), by which a frame knows it has it already.
+ * place (`pack@version/path`), by which a frame knows it has it already. Code given as text or a `Blob` may import
+ * library packs (docs/sharing-library-packs.md), which come with it in `libraries`, by the name it imports.
  */
 export type Runnable = { name: string; level: Level | "trusted" } & (
-  | { binding: "react" | "svelte" | "plain"; code: string; css?: string }
-  | { binding: "plain"; code: Blob; place: string }
+  | { binding: "react" | "svelte" | "plain"; code: string; css?: string; libraries?: Libraries }
+  | { binding: "plain"; code: Blob; place: string; libraries?: Libraries }
   | { module: { url: string; integrity: string } }
 );
+
+/** Library packs' modules by the name code imports them by. */
+export type Libraries = Readonly<Record<string, LibraryCode>>;
+
+/**
+ * A library pack's module: its place (`pack@version/path`), by which a frame loads it once, its file as a `Blob` the
+ * host's page has checked, and the libraries it imports in turn.
+ */
+export interface LibraryCode {
+  place: string;
+  code: Blob;
+  libraries?: Libraries;
+}
 
 /** The binding a component compiled from `language` mounts through (spec §7.6). */
 export function bindingOf(language: CompileRequest["language"]): "react" | "svelte" | "plain" {

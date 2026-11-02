@@ -105,19 +105,25 @@ export interface Needed {
   host: string[];
   /**
    * The packs the document and the packs it holds import that no release in `packs` matches (spec §6.4), for a host
-   * that gets packs from a registry to fetch and add before it processes again. Packs the policy refuses aren't listed.
+   * that gets packs from a registry to fetch and add before it processes again; then the library packs those packs
+   * name in `peerDependencies` that none matches. Packs the policy refuses aren't listed.
    */
   packs: NeededPack[];
 }
 
-/** A pack import the request has no release for. */
+/** A pack import, or a library a pack names, that the request has no release for. */
 export interface NeededPack {
   /** The pack, `@kit/mermaid`. */
   pack: string;
-  /** The version or range after the name, as written (`1`, `^1.4.2`, `1.4.2`); `*` when none is. */
+  /** The version or range after the name, as written (`1`, `^1.4.2`, `1.4.2`); `*` when none is. For a library, its `peerDependencies` range. */
   range: string;
   /** The import's `integrity`, when it pins one with an exact version: the release's tarball must have this hash. */
   integrity?: string;
+  /**
+   * A library pack a pack names: the processor takes the newest release that matches every range asked for it, so a
+   * host that fetches one fetches that version when the registry has it.
+   */
+  library?: true;
 }
 
 /**
@@ -355,6 +361,20 @@ export interface HostComponent {
   module?: { pack: string; version: string; path: string; integrity?: string };
   /** How far its code is trusted: its pack's level in the request's `policy` (spec §15). */
   trust: Trust;
+  /**
+   * For a component of a pack, the library packs its pack names in `peerDependencies`, by the name its code imports,
+   * each with the module chosen for the document; absent when there are none.
+   */
+  libraries?: Record<string, LibraryModule>;
+}
+
+/** A library pack's module chosen for a document, and the libraries it imports in turn, by name. */
+export interface LibraryModule {
+  pack: string;
+  version: string;
+  /** The module's path in the library pack, as its `compmd` field names it. */
+  path: string;
+  libraries?: Record<string, LibraryModule>;
 }
 
 /** How far a pack's code is trusted (spec §15); a permissive pack's components get `host` when `host` is true. */

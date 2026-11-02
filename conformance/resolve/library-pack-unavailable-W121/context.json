@@ -1,0 +1,16 @@
+{
+  "registry": {
+    "@acme/charts": [
+      {"version": "1.0.0", "path": "registry/charts-1.0.0", "integrity": "sha512-AAA"}
+    ],
+    "@kit/widgets": [
+      {"version": "2.0.0", "path": "registry/widgets-2.0.0", "integrity": "sha512-BBB"}
+    ],
+    "@bad/plot": [
+      {"version": "1.0.0", "path": "registry/plot-1.0.0", "integrity": "sha512-CCC"}
+    ]
+  },
+  "policy": {
+    "deny": [{"pack": "@bad/plot", "reason": "draws fake prompts"}]
+  }
+}

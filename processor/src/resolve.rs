@@ -5,6 +5,7 @@
 //! [`Packs`]. A host loads what they serve before it resolves, so resolving needs no waiting.
 
 mod language;
+mod libraries;
 mod load;
 mod names;
 mod origin;
@@ -12,6 +13,7 @@ mod source;
 mod uses;
 
 pub use language::Language;
+use libraries::Libraries;
 pub(crate) use names::{Binding, Names, Renderer};
 pub(crate) use origin::Origin;
 use origin::RESERVED_SCOPE;
@@ -205,6 +207,22 @@ pub struct HostComponent {
     pub module: Option<Module>,
     /// How far its code is trusted: its pack's level in the host's policy (spec §15).
     pub trust: Trust,
+    /// For a component of a pack, the library packs its pack names in `peerDependencies`, by the name its code
+    /// imports, with the module chosen for the document (the companion, section 5); empty for any other.
+    pub libraries: BTreeMap<String, LibraryModule>,
+}
+
+/// A library pack's module, chosen for a document, and the libraries it imports in turn, by name.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct LibraryModule {
+    /// The library pack.
+    pub pack: String,
+    /// The version chosen.
+    pub version: semver::Version,
+    /// The module's path in it, as its `compmd` field names it.
+    pub path: String,
+    /// The libraries it imports, by name.
+    pub libraries: BTreeMap<String, LibraryModule>,
 }
 
 /// Where a built module is in its pack (spec §6.4).
@@ -223,13 +241,14 @@ pub struct Module {
 impl Component {
     /// It as a host-language component named `name`, when one of the processor's bindings runs it on a runtime the
     /// host's `policy` runs, and its code is there: a fence's, its file's from `store`, or a built module's place;
-    /// trusted as `trust`.
+    /// trusted as `trust`, importing `libraries`.
     fn host_code(
         &self,
         name: &str,
         store: Store<'_>,
         policy: &Policy,
         trust: Trust,
+        libraries: BTreeMap<String, LibraryModule>,
     ) -> Option<HostComponent> {
         self.body.supported(policy).then_some(())?;
         let (language, runtime, code, module) = match &self.body {
@@ -275,6 +294,7 @@ impl Component {
             code,
             module,
             trust,
+            libraries,
         })
     }
 
@@ -317,8 +337,11 @@ pub(crate) struct Resolved {
     pub(crate) cycles: HashSet<(DocumentId, Point)>,
     /// The host's policy, which gives each component's trust.
     pub(crate) policy: Policy,
-    /// The pack imports the host has no release for, each once, in the order they were loaded.
+    /// The pack imports the host has no release for, each once, in the order they were loaded, then the library
+    /// packs the packs name that it has none of.
     pub(crate) missing: Vec<NeededPack>,
+    /// The library packs chosen for the document.
+    pub(crate) libraries: Libraries,
     /// The diagnostics of stage 2, and of stage 1 for the documents it imports.
     diagnostics: Found,
 }
@@ -381,11 +404,16 @@ impl Resolved {
                     continue;
                 }
                 let component = self.component(component);
-                let trust = match &self.document(component.document).origin {
-                    Origin::Pack { name, .. } => self.policy.trust(name),
-                    Origin::File(_) => Trust::Strict,
+                let (trust, libraries) = match &self.document(component.document).origin {
+                    Origin::Pack {
+                        name: pack,
+                        version,
+                        ..
+                    } => (self.policy.trust(pack), self.libraries.of(pack, version)),
+                    Origin::File(_) => (Trust::Strict, BTreeMap::new()),
                 };
-                if let Some(host) = component.host_code(name, store, &self.policy, trust) {
+                if let Some(host) = component.host_code(name, store, &self.policy, trust, libraries)
+                {
                     found.insert(name, host);
                 }
             }

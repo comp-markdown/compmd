@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { initSync, process, type Request } from "@compmd/processor";
+import { initSync, OpenDocument, process, type Request } from "@compmd/processor";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { integrityOf, localRegistry, tarballOf, type LocalRegistry } from "../test/local-registry.ts";
 import { memoryCache } from "./cache.ts";
@@ -140,6 +140,34 @@ describe("resolvePacks", () => {
     expect(problems).toEqual([]);
     expect(Object.keys(ready.packs ?? {})).toEqual(["@kit/report", "@kit/charts"]);
     expect(tarballHits()).toEqual(["/tarballs/@kit/report/1.0.0", "/tarballs/@kit/charts/1.1.0"]);
+  });
+
+  describe("library packs", () => {
+    /** Each host component's libraries, `name: pack@version/path`. */
+    const libraries = (request: Request) =>
+      Object.fromEntries(new OpenDocument(request).components.map(({ name, libraries }) => [name, Object.entries(libraries ?? {}).map(([as, { pack, version, path }]) => `${as}: ${pack}@${version}/${path}`)]));
+
+    it("fetches the version every range asked in a round matches, once", async () => {
+      const { request: ready, modules, problems } = await resolvePacks(request([["@kit/bars@1"], ["@kit/lines@1"]]), options());
+      expect(problems).toEqual([]);
+      expect(tarballHits()).toEqual(["/tarballs/@kit/bars/1.0.0", "/tarballs/@kit/lines/1.0.0", "/tarballs/@kit/d3/7.9.5"]);
+      expect(diagnostics(ready)).toEqual([]);
+      expect(libraries(ready)).toEqual({ bars: ["@kit/d3: @kit/d3@7.9.5/dist/d3.js"], lines: ["@kit/d3: @kit/d3@7.9.5/dist/d3.js"] });
+      expect(await modules({ pack: "@kit/d3", version: "7.9.5", path: "dist/d3.js" })?.code.text()).toContain('"7.9.5"');
+    });
+
+    it("fetches again for a range asked in a later round, the version every range matches", async () => {
+      const { request: ready } = await resolvePacks(request([["@kit/bars@1"], ["@kit/dashboard@1"]]), options());
+      expect(tarballHits()).toEqual(["/tarballs/@kit/bars/1.0.0", "/tarballs/@kit/dashboard/1.0.0", "/tarballs/@kit/lines/1.0.0", "/tarballs/@kit/d3/7.12.0", "/tarballs/@kit/d3/7.9.5"]);
+      expect(diagnostics(ready)).toEqual([]);
+      expect(libraries(ready)).toEqual({ bars: ["@kit/d3: @kit/d3@7.9.5/dist/d3.js"], lines: ["@kit/d3: @kit/d3@7.9.5/dist/d3.js"] });
+    });
+
+    it("leaves a library no version of which every range matches to the processor", async () => {
+      const policy = { deny: [{ pack: "@kit/d3", version: "7.9.5", reason: "a flaw" }] };
+      const { request: ready } = await resolvePacks({ ...request([["@kit/bars@1"], ["@kit/lines@1"]]), policy }, options());
+      expect(diagnostics(ready)).toEqual([expect.stringMatching(/^W121 `@kit\/bars@1\.0\.0` needs `@kit\/d3` `\^7\.9`, but `@kit\/d3@7\.9\.5` is denied here: a flaw/), expect.stringMatching(/^W121 `@kit\/lines@1\.0\.0` needs `@kit\/d3` `~7\.9\.0`, but/)]);
+    });
   });
 
   it("keeps the request's own packs and refusals", async () => {

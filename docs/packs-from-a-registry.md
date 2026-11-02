@@ -239,13 +239,13 @@ So most libraries mix versions safely; the ones that don't are those with global
 | Any library at run time | no: only what the host built in | yes, once someone publishes it as a library pack (the pack's author can) | yes, by its npm name |
 | Checked against | the app's lock file | the library pack's tarball, like any pack (R3) | nothing npm published: esm.sh builds the file |
 | A pack that needs one, on a host without it | fails (its components' fallbacks) | works: the resolver gets it | works |
-| New in the frames | nothing | an import parser (es-module-lexer's plain JavaScript build, about 4 KB, since the strict policy has no WebAssembly) to write a library's name as its URL; no cycles, since a library imports only other libraries | network to the CDN |
+| New in the frames | nothing | an import parser (es-module-lexer's plain JavaScript build, 28 KB minified, since the strict policy has no WebAssembly) to write a library's name as its URL; no cycles, since a library imports only other libraries | network to the CDN |
 
 **L2's rules:**
 - **One version per document:** for each library, the newest version that satisfies every range the document's packs ask for, so a frame has one copy. When no version satisfies them all, each range gets its own; a library that can't have two copies in a frame says so (`"compmd": { "library": …, "single": true }`), and then the pack asking for the second gets W121 on its import, naming the library and both ranges, as for any `peerDependencies` the processor can't meet (spec §6.4): its components that don't use the library still render.
 - **A library runs at the level of the pack that imports it,** in its frame; it adds no trust of its own, and a library pack has no document and no components.
 - **The policy applies as to packs:** `deny`, the size cap, `imports: listed`.
-- **What the frame trusts:** the host's page writes the library's URL into the pack's text after checking both, as K1 would (R7); a library's own imports are only library names, so there is no relative path to write.
+- **What the frame trusts:** the frame writes the library's URL into the pack's text, as K1 would (R7), from text the host's page checked and sent it; the host's page can't, since a `blob:` URL works only for its maker's origin (R2). A library's own imports are only library names, so there is no relative path to write. How: [sharing library packs](sharing-library-packs.md).
 
 **Why not any npm package as it is published?** It would be simpler for authors if a library were just the library's own package, `d3` itself. What stops it is what a frame can load: one checked module file, with no imports but names it knows. Published packages are rarely that. d3 7.9 (checked 2026-10-31) has its module entry at `src/index.js`, which imports 30 other packages (`d3-array`, `d3-scale`, …), each of many files, some with dependencies of their own; its one-file build, `dist/d3.min.js`, is a classic script that sets `window.d3`, not a module. Other packages ship only CommonJS, which a browser can't import at all.
 
@@ -272,7 +272,7 @@ So the two are the same kind of thing, an npm package fetched and checked the sa
 **The packages:**
 - `@compmd/registry`, new: `Registry`, `NpmRegistry`, `resolvePacks`, the tarball reader (gzip, tar, integrity), the cache, and a proxy handler for Node and workers; tests against a local registry, and in Chrome and WebKit. How it does each is its own design: [resolving registry packs](resolving-registry-packs.md).
 - `@compmd/sandbox`: `modules(place)` may give `{ code }` (R2); library packs loaded as `blob:` modules, and a pack's imports of them written as their URLs (R9).
-- `@compmd/registry`, for R9: library packs resolved with packs, one version per document, `single`.
+- The processor and `@compmd/registry`, for R9: library packs resolved with packs, one version per document, `single` ([sharing library packs](sharing-library-packs.md)).
 - `@compmd/vite`: `registries`, `fetch` and the size cap in the configuration and its schema; `registry` in `virtual:compmd`; the dev server as a proxy.
 - `@compmd/create-pack`: the keyword, one file per module with no code splitting, `files`; shared libraries as `peerDependencies`, left out of the build; a template for a library pack.
 

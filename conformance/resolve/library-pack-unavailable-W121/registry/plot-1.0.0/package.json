@@ -1,0 +1,5 @@
+{
+  "name": "@bad/plot",
+  "version": "1.0.0",
+  "compmd": { "library": "dist/plot.js" }
+}

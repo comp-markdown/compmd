@@ -46,7 +46,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@compmd/render": "workspace:*"
+    "@compmd/render": "workspace:*",
+    "es-module-lexer": "2.3.2"
   },
   "peerDependencies": {
     "@compmd/processor": "workspace:^",

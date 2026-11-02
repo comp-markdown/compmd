@@ -7,11 +7,11 @@ use crate::request::{self, Error};
 use crate::text::Text;
 use compmd::host::{Fetched, Time};
 use compmd::policy::Trust;
-use compmd::processor::{Expanded, HostComponent};
+use compmd::processor::{Expanded, HostComponent, LibraryModule};
 use compmd::{Processor, TextEdit, context::RenderContext, expanded};
 use serde::{Deserialize, Serialize};
 use serde_json::Value as Json;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::rc::Rc;
 
 /// The processor of an open document, its text, the render context its loads use, its host-language components,
@@ -38,6 +38,34 @@ struct Component<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     module: Option<Module<'a>>,
     trust: &'a Trust,
+    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
+    libraries: BTreeMap<&'a str, Library<'a>>,
+}
+
+/// A library pack's module, chosen for the document (`compmd::processor::LibraryModule`).
+#[derive(Serialize)]
+struct Library<'a> {
+    pack: &'a str,
+    version: String,
+    path: &'a str,
+    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
+    libraries: BTreeMap<&'a str, Library<'a>>,
+}
+
+/// `libraries` by name, as JSON gives them.
+fn libraries_of(libraries: &BTreeMap<String, LibraryModule>) -> BTreeMap<&str, Library<'_>> {
+    libraries
+        .iter()
+        .map(|(name, module)| {
+            let library = Library {
+                pack: &module.pack,
+                version: module.version.to_string(),
+                path: &module.path,
+                libraries: libraries_of(&module.libraries),
+            };
+            (name.as_str(), library)
+        })
+        .collect()
 }
 
 /// Where a built module is in its pack (`compmd::processor::Module`).
@@ -64,6 +92,7 @@ impl<'a> From<&'a HostComponent> for Component<'a> {
                 integrity: module.integrity.as_deref(),
             }),
             trust: &component.trust,
+            libraries: libraries_of(&component.libraries),
         }
     }
 }

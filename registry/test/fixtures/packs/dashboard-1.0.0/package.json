@@ -1,0 +1,7 @@
+{
+  "name": "@kit/dashboard",
+  "version": "1.0.0",
+  "description": "A test pack: containers in CompMD that import @kit/lines.",
+  "keywords": ["compmd-pack"],
+  "compmd": "index.comp.md"
+}

@@ -19,8 +19,15 @@ const MESSAGES: (ToFrame | FromFrame)[] = [
   {
     type: "code",
     components: [
-      { name: "chart", level: "strict", binding: "react", code: "export default () => null" },
-      { name: "diagram", level: "strict", binding: "plain", code: new Blob(["export default () => undefined"]), place: "@kit/mermaid@1.0.0/dist/diagram.js" },
+      { name: "chart", level: "strict", binding: "react", code: "export default () => null", libraries: { "@kit/d3": { place: "@kit/d3@7.9.5/dist/d3.js", code: new Blob(["export {}"]) } } },
+      {
+        name: "diagram",
+        level: "strict",
+        binding: "plain",
+        code: new Blob(["export default () => undefined"]),
+        place: "@kit/mermaid@1.0.0/dist/diagram.js",
+        libraries: { "@kit/three": { place: "@kit/three@0.170.0/dist/three.js", code: new Blob(["export {}"]), libraries: { "@kit/math": { place: "@kit/math@1.0.0/dist/math.js", code: new Blob([]) } } } },
+      },
       { name: "mermaid", level: "strict", module: { url: "/packs/m.js", integrity: "sha384-x" } },
       { name: "stars", level: "trusted" },
     ],
@@ -62,6 +69,8 @@ describe("protocol.schema.json", () => {
       { type: "other" },
       { type: "code", components: [{ ...diagram, binding: "react", place: "@kit/mermaid@1.0.0/dist/diagram.js" }] },
       { type: "code", components: [{ ...diagram, binding: "plain" }] },
+      { type: "code", components: [{ name: "chart", level: "strict", binding: "react", code: "", libraries: { "@kit/d3": { code: new Blob([]) } } }] },
+      { type: "code", components: [{ name: "mermaid", level: "strict", module: { url: "/packs/m.js", integrity: "sha384-x" }, libraries: {} }] },
     ]) {
       expect(validate(message), JSON.stringify(message)).toBe(false);
     }

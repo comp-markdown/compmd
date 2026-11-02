@@ -61,9 +61,11 @@ describe("Components", () => {
     const { components, reports } = setup();
     await components.set([component("card", "fail")]);
     const target = document.createElement("div");
-    expect(() => components.mounts.card?.(target, context(1))).toThrow("does not compile");
+    components.mounts.card?.(target, context(1));
+    expect(target.textContent, "mounted after its code failed: no second report").toBe("fallback");
     const live = document.createElement("div");
     await components.set([component("card", "one")]);
+    expect(target.textContent).toBe("one 1");
     components.mounts.card?.(live, context(1));
     await components.set([component("card", "fail")]);
     expect(live.textContent).toBe("fallback");
@@ -131,6 +133,26 @@ describe("Components", () => {
     await components.set([mermaid("@kit/mermaid@1.0.0/dist/mermaid.js")]);
     await components.set([mermaid("@kit/mermaid@1.1.0/dist/mermaid.js")]);
     expect(loads).toEqual(["@kit/mermaid@1.0.0/dist/mermaid.js", "@kit/mermaid@1.1.0/dist/mermaid.js"]);
+  });
+
+  it("loads code again when a library it imports, or that library's own, is another version", async () => {
+    let loads = 0;
+    const components = new Components({
+      load: () => {
+        loads += 1;
+        return Promise.resolve({ mount: () => undefined });
+      },
+      report: () => undefined,
+      adopt: () => undefined,
+    });
+    const library = (place: string, math = "@kit/math@1.0.0/dist/math.js") => ({ place, code: new Blob(["export {}"]), libraries: { "@kit/math": { place: math, code: new Blob(["export {}"]) } } });
+    const chart = (three: ReturnType<typeof library>): Runnable => ({ name: "chart", level: "strict", binding: "plain", code: "export default () => undefined", libraries: { "@kit/three": three } });
+    await components.set([chart(library("@kit/three@0.170.0/dist/three.js"))]);
+    await components.set([chart(library("@kit/three@0.170.0/dist/three.js"))]);
+    expect(loads).toBe(1);
+    await components.set([chart(library("@kit/three@0.171.0/dist/three.js"))]);
+    await components.set([chart(library("@kit/three@0.171.0/dist/three.js", "@kit/math@1.1.0/dist/math.js"))]);
+    expect(loads).toBe(3);
   });
 
   it("keeps the newest code when loads finish out of order", async () => {

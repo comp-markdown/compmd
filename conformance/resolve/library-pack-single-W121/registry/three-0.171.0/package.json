@@ -1,0 +1,5 @@
+{
+  "name": "@kit/three",
+  "version": "0.171.0",
+  "compmd": { "library": "dist/three.js", "single": true }
+}

@@ -1,0 +1,8 @@
+{
+  "name": "@kit/lines",
+  "version": "1.0.0",
+  "description": "A test pack: one built module that imports the library pack @kit/d3, at a narrower range.",
+  "keywords": ["compmd-pack"],
+  "compmd": "index.comp.md",
+  "peerDependencies": { "@kit/d3": "~7.9.0" }
+}

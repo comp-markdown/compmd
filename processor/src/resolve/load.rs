@@ -2,6 +2,7 @@
 //! imports, F029, F035, W105, W112, W117, F002 for a signature fence with nothing to attach to, F037 for a
 //! declaration whose type isn't a type name, and W121 for a pack that needs what the host doesn't have.
 
+use super::libraries::{self, Ask};
 use super::names::{Binding, Builder, Level, Names, Renderer};
 use super::origin::CORE;
 use super::source::{PackSpec, Source};
@@ -63,6 +64,8 @@ pub(super) struct Loader<'h, 'p> {
     policy: &'h Policy,
     /// The pack imports the host has no release for, in the order they are loaded.
     missing: Vec<NeededPack>,
+    /// The library packs the loaded packs name, in the order they are loaded.
+    asks: Vec<Ask>,
 }
 
 impl<'h, 'p> Loader<'h, 'p> {
@@ -86,6 +89,7 @@ impl<'h, 'p> Loader<'h, 'p> {
             ambient_names: Vec::new(),
             policy,
             missing: Vec::new(),
+            asks: Vec::new(),
         }
     }
 
@@ -101,6 +105,17 @@ impl<'h, 'p> Loader<'h, 'p> {
             .filter_map(|pack| self.ambient_pack(pack))
             .collect();
         let main = self.load(self.main.clone(), text, parsed, false);
+        let chosen = libraries::choose(self.store, self.policy, &self.ambient_names, &self.asks);
+        for unmet in &chosen.unmet {
+            let (id, at) = unmet.at;
+            let (name, version) = &unmet.asker;
+            self.unmet(id, (name, version), at, &unmet.missing);
+        }
+        for needed in chosen.needed {
+            if !self.missing.contains(&needed) {
+                self.missing.push(needed);
+            }
+        }
         let mut resolved = Resolved {
             documents: self.documents,
             components: self.components,
@@ -108,6 +123,7 @@ impl<'h, 'p> Loader<'h, 'p> {
             cycles: HashSet::new(),
             policy: self.policy.clone(),
             missing: self.missing,
+            libraries: chosen.libraries,
             diagnostics: Found {
                 before: self.diagnostics,
                 ..Found::default()
@@ -400,6 +416,7 @@ impl<'h, 'p> Loader<'h, 'p> {
                 .as_ref()
                 .filter(|_| spec.exact)
                 .map(|integrity| integrity.value.clone()),
+            library: false,
         };
         if !self.missing.contains(&needed) {
             self.missing.push(needed);
@@ -407,27 +424,47 @@ impl<'h, 'p> Loader<'h, 'p> {
     }
 
     /// W121: what the pack `name` at `version` needs from the host, its `peerDependencies` (spec §6.4), that the
-    /// host's policy can't meet, reported on the import at `at`. A range this crate can't read isn't checked.
+    /// host's policy can't meet, reported on the import at `at`; the library packs it names are asked for, and
+    /// chosen once the document is loaded. A range this crate can't read isn't checked.
     fn check_needs(&mut self, id: DocumentId, name: &str, version: &Version, at: Location) {
         let needs = self
             .manifest(name, version)
             .and_then(|manifest| manifest.get("peerDependencies")?.as_object().cloned())
             .unwrap_or_default();
-        let unmet: Vec<String> = needs
-            .iter()
-            .filter_map(|(need, range)| {
-                let range = VersionReq::parse(range.as_str()?).ok()?;
-                self.policy.unmet(need, &range)
-            })
-            .collect();
-        for missing in unmet {
-            self.report(
-                id,
-                Code::W121,
-                at,
-                format!("`{name}@{version}` needs {missing}, so its components that use it render their fallbacks"),
-            );
+        let mut unmet = Vec::new();
+        for (need, range) in &needs {
+            let Some(range) = range.as_str() else {
+                continue;
+            };
+            if self.policy.provides(need) {
+                let range = VersionReq::parse(range).ok();
+                unmet.extend(range.and_then(|range| self.policy.unmet(need, &range)));
+            } else if let Some(ask) =
+                Ask::new((name.to_string(), version.clone()), need, range, (id, at))
+                && !self.asks.contains(&ask)
+            {
+                self.asks.push(ask);
+            }
         }
+        for missing in unmet {
+            self.unmet(id, (name, version), at, &missing);
+        }
+    }
+
+    /// W121 on the import at `at`: the pack or library `name` at `version` needs `missing`.
+    fn unmet(
+        &mut self,
+        id: DocumentId,
+        (name, version): (&str, &Version),
+        at: Location,
+        missing: &str,
+    ) {
+        self.report(
+            id,
+            Code::W121,
+            at,
+            format!("`{name}@{version}` needs {missing}, so its components that use it render their fallbacks"),
+        );
     }
 
     /// The `package.json` of the pack `name` at `version`, when there is one and it is JSON.

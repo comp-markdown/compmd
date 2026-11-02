@@ -1,0 +1,6 @@
+{
+  "name": "@kit/d3",
+  "version": "7.9.5",
+  "description": "A test library pack: one module.",
+  "compmd": { "library": "dist/d3.js" }
+}

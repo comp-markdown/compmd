@@ -45,7 +45,7 @@
       "additionalProperties": false
     },
     "code": {
-      "description": "Each component with its level: compiled text with its binding, a built module's file as a Blob with its place, or a built module by its URL and its file's hash; one of a level above the frame's comes without code, and its uses show their fallbacks.",
+      "description": "Each component with its level: compiled text with its binding, a built module's file as a Blob with its place, or a built module by its URL and its file's hash; text and Blobs with the library packs they import. One of a level above the frame's comes without code, and its uses show their fallbacks.",
       "type": "object",
       "properties": {
         "type": { "const": "code" },
@@ -60,7 +60,8 @@
                   "level": { "$ref": "#/$defs/componentLevel" },
                   "binding": { "enum": ["react", "svelte", "plain"] },
                   "code": { "type": "string" },
-                  "css": { "type": "string" }
+                  "css": { "type": "string" },
+                  "libraries": { "$ref": "#/$defs/libraries" }
                 },
                 "required": ["name", "level", "binding", "code"],
                 "additionalProperties": false
@@ -72,7 +73,8 @@
                   "level": { "$ref": "#/$defs/componentLevel" },
                   "binding": { "const": "plain" },
                   "code": { "description": "The module's file, a Blob the host's page has checked, which JSON can't hold." },
-                  "place": { "description": "The module's place, `pack@version/path`, by which a frame knows it has it already.", "type": "string" }
+                  "place": { "description": "The module's place, `pack@version/path`, by which a frame knows it has it already.", "type": "string" },
+                  "libraries": { "$ref": "#/$defs/libraries" }
                 },
                 "required": ["name", "level", "binding", "code", "place"],
                 "additionalProperties": false
@@ -104,6 +106,20 @@
       },
       "required": ["type", "components"],
       "additionalProperties": false
+    },
+    "libraries": {
+      "description": "The library packs code given as text or a Blob imports, by the name it imports each by (docs/sharing-library-packs.md).",
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "place": { "description": "The library's module's place, `pack@version/path`, by which a frame loads it once.", "type": "string" },
+          "code": { "description": "The module's file, a Blob the host's page has checked, which JSON can't hold." },
+          "libraries": { "$ref": "#/$defs/libraries" }
+        },
+        "required": ["place", "code"],
+        "additionalProperties": false
+      }
     },
     "part": {
       "description": "The use the frame renders, an expanded component node (conformance/compmd-tree.schema.json) with its slots, and the document's inputs.",

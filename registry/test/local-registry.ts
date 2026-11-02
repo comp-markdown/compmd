@@ -45,6 +45,10 @@ export const CATALOG: Catalog = {
   "@kit/huge": { "1.0.0": { file: "kit-charts-1.0.0.tgz", unpackedSize: 10_000_000 } },
   "@kit/unsized": { "1.0.0": { file: "kit-charts-1.0.0.tgz", unpackedSize: null } },
   "@kit/broken": { "1.0.0": { file: "kit-report-1.0.0.tgz", corrupt: true } },
+  "@kit/bars": { "1.0.0": { file: "kit-bars-1.0.0.tgz" } },
+  "@kit/lines": { "1.0.0": { file: "kit-lines-1.0.0.tgz" } },
+  "@kit/dashboard": { "1.0.0": { file: "kit-dashboard-1.0.0.tgz" } },
+  "@kit/d3": { "7.9.5": { file: "kit-d3-7.9.5.tgz" }, "7.12.0": { file: "kit-d3-7.12.0.tgz" } },
 };
 
 /** A registry serving `catalog` on a free port of 127.0.0.1. */

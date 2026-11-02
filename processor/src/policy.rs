@@ -136,6 +136,19 @@ impl Policy {
         })
     }
 
+    /// Whether a pack's `peerDependencies` entry `name` is checked against the host's runtimes and libraries
+    /// ([`Policy::unmet`]) rather than got as a library pack: a runtime, a library the host offers, or a name that
+    /// isn't scoped, which no pack can have.
+    pub(crate) fn provides(&self, name: &str) -> bool {
+        RUNTIME_PACKAGES.contains(&name)
+            || !name.starts_with('@')
+            || self
+                .libraries
+                .iter()
+                .flatten()
+                .any(|library| library.name == name)
+    }
+
     /// What is missing when a pack needs `name` in `range` (its `peerDependencies`, spec §6.4), if anything: a
     /// runtime the host doesn't run, a library it doesn't offer, or one it has at a version outside the range.
     /// Nothing when the host didn't say what it has.
@@ -271,6 +284,17 @@ mod tests {
             "not said"
         );
         assert_eq!(Policy::default().unmet("react", &range("^19")), None);
+    }
+
+    #[test]
+    fn runtimes_offered_libraries_and_unscoped_names_are_provided_and_scoped_ones_are_library_packs()
+     {
+        let policy = policy(json!({ "libraries": [{ "name": "@acme/d3", "version": "7.9.0" }] }));
+        assert!(policy.provides("svelte"));
+        assert!(policy.provides("d3"), "not scoped");
+        assert!(policy.provides("@acme/d3"), "offered");
+        assert!(!policy.provides("@kit/three"));
+        assert!(!Policy::default().provides("@kit/three"));
     }
 
     #[test]

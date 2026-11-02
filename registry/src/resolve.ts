@@ -1,6 +1,7 @@
 // Resolving a request's packs from registries (docs/resolving-registry-packs.md, decisions 1 to 6 and 8; the companion
-// compmd-registry-v1.md, sections 3 and 4): ask the processor which packs are missing, resolve each range as the
-// processor does, apply the policy before downloading, check each tarball, add the releases, and ask again.
+// compmd-registry-v1.md, sections 3 to 5): ask the processor which packs are missing, resolve each range as the
+// processor does (a library pack's to the version every range asked for it matches, docs/sharing-library-packs.md,
+// decision 5), apply the policy before downloading, check each tarball, add the releases, and ask again.
 
 import { newestMatching, sources, type HostComponent, type NeededPack, type PackRelease, type Policy, type Request } from "@compmd/processor";
 import { memoryCache, type PackCache } from "./cache.ts";
@@ -75,7 +76,10 @@ export async function resolvePacks(request: Request, options: ResolveOptions): P
   for (;;) {
     const missing = sources(current).packs.filter((needed) => !asked.has(keyOf(needed)));
     if (missing.length === 0) break;
-    for (const needed of missing) asked.add(keyOf(needed));
+    for (const needed of missing) {
+      asked.add(keyOf(needed));
+      resolver.ask(needed);
+    }
     const outcomes = await Promise.all(missing.map((needed) => resolver.resolve(needed, current.policy)));
     current = withOutcomes(current, missing, outcomes, resolver.problems);
   }
@@ -114,6 +118,10 @@ class Resolver {
   readonly #origin: string | undefined;
   /** The text of every built module fetched, by its place, `pack@version/path`. */
   readonly #modules = new Map<string, string>();
+  /** Every range asked for each library pack in this resolve, of which the processor takes the version all match. */
+  readonly #libraryRanges = new Map<string, string[]>();
+  /** The files of each version being got, by integrity. */
+  readonly #fetching = new Map<string, Promise<Record<string, string> | undefined>>();
 
   constructor({ registries, fetch = "host", cache = memoryCache(), maxPackSize = DEFAULT_MAX_PACK_SIZE }: ResolveOptions) {
     this.#registries = registries;
@@ -121,6 +129,13 @@ class Resolver {
     this.#maxSize = maxPackSize;
     this.#origin = fetch === "host" ? pageOrigin() : undefined;
     for (const registry of Object.values(registries)) this.#allow(registry.url);
+  }
+
+  /** Notes a pack the processor lists, before any is resolved, so a library's ranges asked in one round are known together. */
+  ask({ pack, range, library }: NeededPack): void {
+    if (!library) return;
+    const ranges = this.#libraryRanges.get(pack) ?? [];
+    if (!ranges.includes(range)) this.#libraryRanges.set(pack, [...ranges, range]);
   }
 
   module({ pack, version, path }: ModulePlace): { code: Blob } | undefined {
@@ -140,17 +155,15 @@ class Resolver {
     }
   }
 
-  async #resolveFrom(registry: Registry, { pack, range, integrity: pinned }: NeededPack, policy: Policy | undefined): Promise<Outcome> {
+  async #resolveFrom(registry: Registry, { pack, range, integrity: pinned, library }: NeededPack, policy: Policy | undefined): Promise<Outcome> {
     // A pinned import names an exact version, and its files never change.
     if (pinned !== undefined) {
       const cached = await this.#cache.files(pinned);
       if (cached) return this.#release(pack, { version: range, tarball: "", integrity: pinned }, cached);
     }
     const versions = await this.#versions(registry, pack);
-    const version = newestMatching(
-      range,
-      versions.map(({ version }) => version),
-    );
+    const known = versions.map(({ version }) => version);
+    const version = (library && this.#everyRange(pack, known)) || newestMatching(range, known);
     const info = versions.find((known) => known.version === version);
     // None matching stays F026 (no release matches), in the processor.
     if (!info) return undefined;
@@ -160,17 +173,43 @@ class Resolver {
     if (denied(policy, pack, info.version) || (pinned !== undefined && pinned !== info.integrity)) return fileless;
     const refusal = this.#refusal(pack, info);
     if (refusal) return { refused: refusal };
-    const integrity = info.integrity as string;
+    const files = await this.#filesOf(registry, info, info.integrity as string);
+    if (!files) return { release: { ...fileless.release, broken: "its tarball doesn't match the integrity its registry publishes" } };
+    return this.#release(pack, info, files);
+  }
+
+  /**
+   * The checked files of `info`, from the cache or its tarball, fetched once in a resolve however many imports
+   * resolve to it at once; `undefined` when the tarball doesn't match `integrity`.
+   */
+  #filesOf(registry: Registry, info: VersionInfo, integrity: string): Promise<Record<string, string> | undefined> {
+    let files = this.#fetching.get(integrity);
+    if (!files) {
+      files = this.#fetchFiles(registry, info, integrity);
+      this.#fetching.set(integrity, files);
+    }
+    return files;
+  }
+
+  async #fetchFiles(registry: Registry, info: VersionInfo, integrity: string): Promise<Record<string, string> | undefined> {
     const kept = await this.#cache.files(integrity);
-    if (kept) return this.#release(pack, info, kept);
+    if (kept) return kept;
     this.#allow(info.tarball);
     const tarball = await registry.tarball(info);
-    if ((await integrityOf(tarball)) !== integrity) {
-      return { release: { ...fileless.release, broken: "its tarball doesn't match the integrity its registry publishes" } };
-    }
+    if ((await integrityOf(tarball)) !== integrity) return undefined;
     const files = textFiles(untar(await gunzip(tarball)));
     await this.#cache.keep(integrity, files);
-    return this.#release(pack, info, files);
+    return files;
+  }
+
+  /**
+   * The newest of `versions` that every range asked for the library `pack` matches, as the processor reads ranges
+   * (docs/sharing-library-packs.md, decision 5); `undefined` when none does.
+   */
+  #everyRange(pack: string, versions: string[]): string | undefined {
+    const ranges = this.#libraryRanges.get(pack) ?? [];
+    const matching = versions.filter((version) => ranges.every((range) => newestMatching(range, [version]) === version));
+    return newestMatching("*", matching);
   }
 
   /** Why the host's policy refuses `info` before it is downloaded: its size (companion, section 3, step 3), or no hash to check it by. */
