@@ -1,0 +1,7 @@
+{
+  "name": "@kit/charts",
+  "version": "1.0.0",
+  "description": "A test pack: one built module.",
+  "keywords": ["compmd-pack"],
+  "compmd": "index.comp.md"
+}

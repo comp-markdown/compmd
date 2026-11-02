@@ -6,6 +6,7 @@ import {
   components as componentsJson,
   Document as Kept,
   frontmatter as frontmatterJson,
+  newestMatching as newestMatchingOf,
   plain,
   process as processJson,
   sources as sourcesJson,
@@ -51,6 +52,8 @@ export interface PackRelease {
   version: string;
   /** The integrity hash the registry publishes for it, `sha512-…`. */
   integrity?: string | null;
+  /** Why its files can't be used, when the host found they don't match its integrity: an import of it is F035. */
+  broken?: string | null;
   files: Record<string, string>;
 }
 
@@ -140,6 +143,19 @@ export function process(request: Request): Processed {
  */
 export function sources(request: Request): Needed {
   return JSON.parse(sourcesJson(JSON.stringify(request))) as Needed;
+}
+
+/**
+ * The newest of `versions` that `range` takes, as the processor reads the version or range after a pack's name in an
+ * import (spec §6.1): `1.4.2` is exactly that version, `1` and `^1.4` are ranges, `*` is any. `undefined` when none
+ * matches. A host that fetches the packs {@link sources} lists picks a version with this, so the processor takes the
+ * release it is given. Versions that aren't semver are skipped.
+ *
+ * @example
+ * newestMatching("1", ["1.0.0", "1.3.0", "2.0.0"]); // "1.3.0"
+ */
+export function newestMatching(range: string, versions: string[]): string | undefined {
+  return newestMatchingOf(range, versions);
 }
 
 /** What a change gave. */

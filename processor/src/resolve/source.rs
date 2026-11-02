@@ -105,7 +105,7 @@ fn relative(path: &str) -> Result<Source<'_>, Unloadable> {
 
 /// A version range, and whether it is one exact version: `1.4.2` is exactly that release, unlike Cargo's
 /// requirements, where it would be `^1.4.2`.
-fn range(text: &str) -> Option<(VersionReq, bool)> {
+pub(crate) fn range(text: &str) -> Option<(VersionReq, bool)> {
     if let Ok(version) = Version::parse(text) {
         let exact = VersionReq::parse(&format!("={version}")).ok()?;
         return Some((exact, true));

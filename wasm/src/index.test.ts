@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import { changelog, completeExample, completeJson, longBody } from "../bench/requests.ts";
-import { componentsOf, frontmatterOf, initSync, OpenDocument, OpenDocumentJson, plainHtml, process, sources, type Request } from "./index.ts";
+import { componentsOf, frontmatterOf, initSync, newestMatching, OpenDocument, OpenDocumentJson, plainHtml, process, sources, type Request } from "./index.ts";
 
 /** `value` without positions, as the conformance case compares it. */
 function withoutPositions(value: unknown): unknown {
@@ -99,6 +99,15 @@ describe("sources", () => {
       { pack: "@kit/theme", range: "1.0.0", integrity: "sha512-t" },
     ]);
     expect(sources({ ...request, policy: { imports: "listed" } }).packs).toEqual([]);
+  });
+});
+
+describe("newestMatching", () => {
+  it("picks the version the processor takes for a range", () => {
+    const versions = ["1.4.2", "1.5.0", "2.0.0-beta.1", "next"];
+    expect(newestMatching("1", versions)).toBe("1.5.0");
+    expect(newestMatching("1.4.2", versions)).toBe("1.4.2");
+    expect(newestMatching("^2", versions)).toBeUndefined();
   });
 });
 

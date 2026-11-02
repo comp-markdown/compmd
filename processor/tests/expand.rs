@@ -49,6 +49,7 @@ fn render(input: &str, setup: Setup) -> Rendered {
         release: Release {
             version: Version::new(1, 0, 0),
             integrity: None,
+            broken: None,
         },
         files: setup
             .kit
@@ -611,6 +612,7 @@ fn a_packs_built_module_comes_by_its_place_and_components_have_their_packs_trust
         release: Release {
             version: Version::new(1, 2, 0),
             integrity: Some("sha512-KIT".into()),
+            broken: None,
         },
         files: HashMap::from([
             (

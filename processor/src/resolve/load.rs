@@ -374,6 +374,16 @@ impl<'h, 'p> Loader<'h, 'p> {
                 ));
             }
         }
+        if let Some(why) = &release.broken {
+            return Err(Refusal::new(
+                Code::F035,
+                from.at,
+                format!(
+                    "`{}@{}`: {why}; the import is dropped",
+                    spec.name, release.version
+                ),
+            ));
+        }
         let version = release.version.clone();
         let document = self.package(&spec.name, release.version, from.at, false)?;
         self.check_needs(id, &spec.name, &version, from.at);

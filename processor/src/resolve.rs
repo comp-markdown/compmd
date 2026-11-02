@@ -15,6 +15,7 @@ pub use language::Language;
 pub(crate) use names::{Binding, Names, Renderer};
 pub(crate) use origin::Origin;
 use origin::RESERVED_SCOPE;
+pub(crate) use source::range;
 pub(crate) use uses::{code_blocks, invocations};
 
 use crate::diagnostic::Diagnostic;
@@ -659,6 +660,27 @@ mod tests {
             .iter()
             .filter(|document| document.origin.to_string() == "@acme/kit@2.0.0/parts.comp.md");
         assert_eq!(parts.count(), 1);
+    }
+
+    #[test]
+    fn a_broken_release_is_f035_and_loads_nothing() {
+        let kit = json!({ "@acme/kit": [{ "version": "1.0.0", "broken": "its tarball doesn't match `dist.integrity`", "files": {
+            "package.json": "{\"name\": \"@acme/kit\", \"version\": \"1.0.0\"}",
+            "index.comp.md": "Kit.\n",
+        } }] });
+        let input = "---\nmd:\n  import:\n    - from: \"@acme/kit@1\"\n      names: \"*\"\n---\n";
+        let resolved = resolved(&[("input.comp.md", input)], kit, &[]);
+        let [found] = resolved.diagnostics().collect::<Vec<_>>()[..] else {
+            panic!("one diagnostic");
+        };
+        assert_eq!(found.code, crate::diagnostic::Code::F035);
+        assert!(
+            found
+                .message
+                .contains("`@acme/kit@1.0.0`: its tarball doesn't match")
+        );
+        assert_eq!(resolved.documents.len(), 2, "core and the document");
+        assert!(resolved.missing.is_empty(), "a release was given");
     }
 
     #[test]

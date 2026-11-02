@@ -14,7 +14,7 @@
 //!
 //! impl Packs for Kit {
 //!     fn releases(&self, pack: &str) -> Vec<Release> {
-//!         let kit = Release { version: Version::new(1, 0, 0), integrity: None };
+//!         let kit = Release { version: Version::new(1, 0, 0), integrity: None, broken: None };
 //!         if pack == "@acme/kit" { vec![kit] } else { Vec::new() }
 //!     }
 //!
@@ -77,6 +77,10 @@ pub struct Release {
     /// The integrity hash the registry publishes for it (`sha512-…`), which an import's `integrity` must equal.
     #[serde(default)]
     pub integrity: Option<String>,
+    /// Why its files can't be used, when the host found they don't match its integrity: an import that resolves to
+    /// it is F035 with this reason.
+    #[serde(default)]
+    pub broken: Option<String>,
 }
 
 /// A release of a pack with all its files, as an in-memory host holds it: `HashMap<String, Vec<LoadedRelease>>` is a
@@ -114,6 +118,29 @@ pub struct NeededPack {
     /// The import's `integrity`, when it pins one with an exact version: the release's tarball must have this hash.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub integrity: Option<String>,
+}
+
+/// The newest of `versions` that `range` takes, as the processor reads the version or range after a pack's name in
+/// an import's `from` (spec §6.1): `1.4.2` is exactly that version, `1` and `^1.4` ranges, `*` any. `None` when none
+/// matches, or `range` isn't one. A host that fetches the packs [`Needed`] lists picks a version with this, so the
+/// processor takes the release it was given.
+///
+/// ```
+/// use compmd::host::newest_matching;
+/// use semver::Version;
+///
+/// let versions = ["1.4.2", "1.5.0", "2.0.0"].map(|v| Version::parse(v).unwrap());
+/// assert_eq!(newest_matching("1", &versions), Some(&versions[1]));
+/// assert_eq!(newest_matching("1.4.2", &versions), Some(&versions[0]));
+/// assert_eq!(newest_matching("^3", &versions), None);
+/// ```
+#[must_use]
+pub fn newest_matching<'v>(range: &str, versions: &'v [Version]) -> Option<&'v Version> {
+    let (range, _) = crate::resolve::range(range)?;
+    versions
+        .iter()
+        .filter(|version| range.matches(version))
+        .max()
 }
 
 /// What a remote source gave.
@@ -276,6 +303,20 @@ mod tests {
             None
         );
         assert_eq!(packs.releases("@acme/maps"), Vec::new());
+    }
+
+    #[test]
+    fn the_newest_matching_version_is_the_processors_choice() {
+        let versions =
+            ["1.0.0", "1.2.0", "2.0.0-beta.1"].map(|v| Version::parse(v).expect("a version"));
+        assert_eq!(
+            newest_matching("*", &versions),
+            Some(&versions[1]),
+            "not a prerelease"
+        );
+        assert_eq!(newest_matching("~1.0", &versions), Some(&versions[0]));
+        assert_eq!(newest_matching("soon", &versions), None);
+        assert_eq!(newest_matching("1", &[]), None);
     }
 
     #[test]

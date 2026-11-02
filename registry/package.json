@@ -1,0 +1,56 @@
+{
+  "name": "@compmd/registry",
+  "version": "0.1.1",
+  "description": "Packs for CompMD documents from an npm registry: resolved as the processor asks, the host's policy applied before anything is downloaded, each tarball checked against its integrity, and cached.",
+  "keywords": [
+    "compmd",
+    "markdown",
+    "components",
+    "registry",
+    "npm"
+  ],
+  "homepage": "https://compmd.hakanserce.com/",
+  "bugs": "https://github.com/comp-markdown/compmd/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/comp-markdown/compmd.git",
+    "directory": "registry"
+  },
+  "author": "Hakan Serce",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./node": {
+      "types": "./dist/node.d.ts",
+      "default": "./dist/node.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "lint": "eslint . && tsc --noEmit",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "@compmd/processor": "workspace:^"
+  },
+  "devDependencies": {
+    "@compmd/processor": "workspace:*",
+    "@eslint/js": "10.0.1",
+    "@types/node": "26.6.5",
+    "@vitest/browser-playwright": "5.0.5",
+    "eslint": "10.13.0",
+    "playwright": "1.64.1",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.0",
+    "vite": "8.3.4",
+    "vitest": "5.0.5"
+  }
+}

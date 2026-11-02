@@ -54,6 +54,18 @@ pub fn sources(request: &str) -> Result<String, JsError> {
     Ok(request::sources(request, Rc::new(Intl))?)
 }
 
+/// The newest of `versions` that the version or range `range` takes, as the processor reads an import's; `undefined`
+/// when none does.
+#[wasm_bindgen(js_name = newestMatching)]
+#[must_use]
+#[allow(
+    clippy::needless_pass_by_value,
+    reason = "wasm-bindgen takes a JavaScript array as an owned Vec"
+)]
+pub fn newest_matching(range: &str, versions: Vec<String>) -> Option<String> {
+    request::newest_matching(range, &versions)
+}
+
 /// What the frontmatter of `request`'s document gives its render: `{doc, settings, data, inputs}`.
 ///
 /// # Errors

@@ -46,6 +46,7 @@ fn packs() -> HashMap<String, Vec<LoadedRelease>> {
             release: Release {
                 version: "1.0.0".parse().expect("a version"),
                 integrity: None,
+                broken: None,
             },
             files,
         }],

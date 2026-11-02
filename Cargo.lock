@@ -351,6 +351,7 @@ name = "compmd-wasm"
 version = "0.0.1"
 dependencies = [
  "compmd",
+ "semver",
  "serde",
  "serde_json",
  "thiserror",

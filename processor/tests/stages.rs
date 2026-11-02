@@ -25,6 +25,7 @@ impl With for Packs {
                 release: Release {
                     version: Version::parse(version).expect("a version"),
                     integrity: None,
+                    broken: None,
                 },
                 files: files
                     .iter()

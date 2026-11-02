@@ -120,6 +120,16 @@ pub(crate) fn sources(json: &str, time: Rc<dyn Time>) -> Result<String, Error> {
     Ok(serde_json::to_string(&needed)?)
 }
 
+/// The newest of `versions` that `range` takes, as the processor reads an import's version or range; versions that
+/// aren't semver are skipped.
+pub(crate) fn newest_matching(range: &str, versions: &[String]) -> Option<String> {
+    let versions: Vec<semver::Version> = versions
+        .iter()
+        .filter_map(|version| semver::Version::parse(version).ok())
+        .collect();
+    compmd::host::newest_matching(range, &versions).map(ToString::to_string)
+}
+
 /// The request in `json` through stage 3.
 pub(crate) fn prepare(json: &str, time: Rc<dyn Time>) -> Result<Prepared, Error> {
     let request: Request = serde_json::from_str(json)?;
@@ -295,6 +305,13 @@ mod tests {
         let defaults = self::request(&json!({ "path": "a", "now": "2026-10-22T09:00:00Z" }));
         assert_eq!(defaults.tz, "UTC");
         assert!(!defaults.origins);
+    }
+
+    #[test]
+    fn the_newest_matching_version_skips_what_isnt_semver() {
+        let versions = ["1.0.0", "1.3.0", "latest", "2.0.0"].map(String::from);
+        assert_eq!(newest_matching("1", &versions).as_deref(), Some("1.3.0"));
+        assert_eq!(newest_matching("^3", &versions), None);
     }
 
     #[test]

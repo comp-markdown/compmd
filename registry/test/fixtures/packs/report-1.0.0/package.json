@@ -1,0 +1,7 @@
+{
+  "name": "@kit/report",
+  "version": "1.0.0",
+  "description": "A test pack: containers in CompMD that import another pack.",
+  "keywords": ["compmd-pack"],
+  "compmd": "index.comp.md"
+}
