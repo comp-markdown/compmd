@@ -83,7 +83,7 @@ describe("the pack from a registry", () => {
     const errors: string[] = [];
     page.on("pageerror", (error) => errors.push(error.message));
     await page.goto(`http://localhost:${String(APP_PORT)}/`);
-    const drawn = page.frameLocator("iframe").locator('svg[role="img"][aria-label="Fetched, then drawn"]');
+    const drawn = page.frameLocator("iframe").locator('[role="img"][aria-label="Fetched, then drawn"] svg');
     await expect.poll(() => drawn.count(), { timeout: 30_000 }).toBe(1);
     expect(await page.locator("#diagnostics li").allInnerTexts()).toEqual([]);
     // The proxy reads the metadata again to find the tarball; the tarball is fetched once.

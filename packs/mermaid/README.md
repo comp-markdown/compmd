@@ -24,7 +24,7 @@ graph LR
 - **A block** of ` ```mermaid ` or ` ```mmd ` is drawn; its `alt` is the drawing's text alternative. A reader without the pack, and GitHub, see the code (GitHub draws it too).
 - **A leaf** takes the diagram's source as its `code` param, for a diagram made from data or inputs: a code block is never interpolated.
 - **`theme`**: `auto` (the default) follows the page: Mermaid's dark theme on a dark page, its default theme on a light one. `default`, `dark`, `neutral` and `forest` are Mermaid's themes, as given: ```` ```mermaid {theme=forest} ````.
-- **A diagram Mermaid can't read** shows its code, and a line saying what Mermaid found.
+- **A diagram Mermaid can't read** shows its code, and the host reports what Mermaid found as W118 (an editor shows it on the block); the diagram draws again once the code is fixed.
 
 ## Size
 
@@ -39,10 +39,12 @@ The pack is MIT. `dist/LICENSES.md` lists what its module bundles, each with its
 From the repository (`pnpm install` at its root first):
 
 ```sh
-pnpm --dir packs/mermaid dev     # the test page, in host mode, in the strict sandbox
-pnpm --dir packs/mermaid test    # the component in happy-dom, the test page in Chrome and WebKit, and the pack from a local registry
+pnpm --dir packs/mermaid dev     # the test page, demo.comp.md in the strict sandbox, with a light and dark switch
+pnpm --dir packs/mermaid test    # the build, the component in happy-dom, the test page in Chrome and WebKit, and the pack from a local registry
 pnpm --dir packs/mermaid lint    # the type check
 ```
+
+The build, its checks and the test page are [`@compmd/pack`](../../pack/README.md)'s, as for any pack: the pack holds its component (`src/mermaid.ts`, on `draw`), its signature, `demo.comp.md` and its tests. Its browser tests (`test/`) are this repository's checks of the sandbox and the registry with a real library; a pack's own tests are the unit tests.
 
 ## Releases
 

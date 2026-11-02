@@ -366,6 +366,9 @@ importers:
 
   packs/mermaid:
     devDependencies:
+      '@compmd/pack':
+        specifier: workspace:*
+        version: link:../../pack
       '@compmd/processor':
         specifier: workspace:*
         version: link:../../wasm

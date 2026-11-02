@@ -1,10 +1,11 @@
-// The test page (demo/), as a host renders it: in host mode, each diagram in a strict frame of its own with the pack's
+// The test page `compmd-pack dev` serves (`demo.comp.md`), as a host renders it: in the strict sandbox with the pack's
 // built module loaded by URL, in Chrome and WebKit, in light and dark. Every diagram of the demo draws, the one Mermaid
-// can't read shows its code and what Mermaid found, the frames take the page's colour scheme, and the strict policy
-// refuses nothing Mermaid does.
+// can't read shows its code and is reported as W118 with what Mermaid found, the frame takes the page's colour scheme,
+// and the strict policy refuses nothing Mermaid does.
 import { join } from "node:path";
+import { readPack, servePack } from "@compmd/pack";
 import { chromium, webkit, type Browser, type BrowserType, type Frame, type LaunchOptions, type Page } from "playwright";
-import { createServer, type ViteDevServer } from "vite";
+import type { ViteDevServer } from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 const ROOT = join(import.meta.dirname, "..");
@@ -26,15 +27,14 @@ const LABELS = [
 let server: ViteDevServer;
 
 beforeAll(async () => {
-  server = await createServer({ configFile: join(ROOT, "vite.config.ts"), logLevel: "warn", server: { port: PORT, strictPort: true } });
-  await server.listen();
-}, 60_000);
+  server = await servePack(await readPack(ROOT), { port: PORT });
+}, 120_000);
 
 afterAll(async () => {
   await server.close();
 });
 
-/** The frame whose part matches `selector`, once there is one. */
+/** The frame whose content matches `selector`, once there is one. */
 async function frameWith(page: Page, selector: string): Promise<Frame> {
   let found: Frame | undefined;
   await expect
@@ -50,7 +50,7 @@ async function frameWith(page: Page, selector: string): Promise<Frame> {
 }
 
 /** The drawing labelled `label`. */
-const drawing = (label: string) => `svg[role="img"][aria-label="${label}"]`;
+const drawing = (label: string) => `[role="img"][aria-label="${label}"] svg`;
 
 describe.each(BROWSERS)("the test page in %s", (_name, type, options) => {
   let browser: Browser;
@@ -76,31 +76,34 @@ describe.each(BROWSERS)("the test page in %s", (_name, type, options) => {
     return { page, problems };
   }
 
-  it("draws every diagram, as a block and as a leaf, with no diagnostics and nothing refused", async () => {
+  it("draws every diagram, as a block and as a leaf, with nothing refused", async () => {
     const { page, problems } = await open("light");
-    expect(await page.locator("#diagnostics li").allInnerTexts()).toEqual([]);
-    expect(await (await frameWith(page, drawing(LABELS[1] ?? ""))).locator("svg").innerHTML()).toContain("Open the page");
-    expect(await (await frameWith(page, drawing(LABELS[2] ?? ""))).locator("svg").innerHTML()).toContain("Published");
+    const frame = await frameWith(page, drawing(LABELS[1] ?? ""));
+    expect(await frame.locator(drawing(LABELS[1] ?? "")).innerHTML()).toContain("Open the page");
+    expect(await frame.locator(drawing(LABELS[2] ?? "")).innerHTML()).toContain("Published");
     expect(problems).toEqual([]);
     await page.close();
   }, 60_000);
 
-  it("shows the code of a diagram Mermaid can't read, and what Mermaid found, in a frame its size", async () => {
+  it("shows the code of a diagram Mermaid can't read, and reports what Mermaid found as W118", async () => {
     const { page } = await open("light");
-    const frame = await frameWith(page, "text=/^Mermaid couldn't read this diagram: /");
+    const frame = await frameWith(page, "pre >> text=A -->");
     expect(await frame.locator("pre", { hasText: "A -->" }).count()).toBe(1);
-    const fits = await frame.evaluate(() => document.documentElement.scrollHeight <= window.innerHeight);
-    expect(fits).toBe(true);
+    await expect.poll(() => page.locator("#diagnostics li").allInnerTexts(), { timeout: 30_000 }).toEqual([expect.stringMatching(/^W118: mermaid: Mermaid couldn't read this diagram: /)]);
     await page.close();
   }, 60_000);
 
-  it("draws with Mermaid's dark theme, in frames that take the page's dark scheme", async () => {
+  it("draws with Mermaid's dark theme, in a frame that takes the page's dark scheme, and back when switched", async () => {
     const fill = async (page: Page) => (await frameWith(page, drawing(LABELS[0] ?? ""))).locator(".node rect, .node path").first().evaluate((step) => getComputedStyle(step).fill);
     const light = await open("light");
     const dark = await open("dark");
-    expect(await fill(dark.page)).not.toBe(await fill(light.page));
+    const darkFill = await fill(dark.page);
+    expect(darkFill).not.toBe(await fill(light.page));
     const frame = await frameWith(dark.page, drawing(LABELS[0] ?? ""));
     expect(await frame.evaluate(() => getComputedStyle(document.documentElement).colorScheme)).toBe("dark");
+    // The page's own switch: the frame and its diagrams follow it, with no render.
+    await dark.page.selectOption("#scheme", "light");
+    await expect.poll(() => fill(dark.page), { timeout: 30_000 }).toBe(await fill(light.page));
     await light.page.close();
     await dark.page.close();
   }, 60_000);

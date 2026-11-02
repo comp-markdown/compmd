@@ -16,13 +16,14 @@
   "compmd": "./index.comp.md",
   "files": ["dist", "index.comp.md", "README.md"],
   "scripts": {
-    "build": "vite build",
-    "dev": "vite build && vite",
-    "test": "vite build && vitest run",
+    "build": "compmd-pack build",
+    "dev": "compmd-pack dev",
+    "test": "compmd-pack build && compmd-pack test && vitest run --dir test",
     "lint": "tsc --noEmit",
-    "prepublishOnly": "npm run build && npm test && node scripts/check.js"
+    "prepublishOnly": "compmd-pack build && compmd-pack test"
   },
   "devDependencies": {
+    "@compmd/pack": "workspace:*",
     "@compmd/processor": "workspace:*",
     "@compmd/registry": "workspace:*",
     "@compmd/sandbox": "workspace:*",

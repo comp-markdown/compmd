@@ -1,16 +1,6 @@
 {
-  "compilerOptions": {
-    "target": "es2024",
-    "lib": ["es2024", "dom", "dom.iterable"],
-    "module": "esnext",
-    "moduleResolution": "bundler",
-    "strict": true,
-    "noUncheckedIndexedAccess": true,
-    "verbatimModuleSyntax": true,
-    "allowImportingTsExtensions": true,
-    "noEmit": true,
-    "skipLibCheck": true,
-    "types": ["node", "vite/client", "@compmd/vite/client"]
-  },
-  "include": ["src", "demo", "test", "vite.config.ts"]
+  "extends": "@compmd/pack/tsconfig.json",
+  // The registry test's host app, a host's own code, imports `virtual:compmd`.
+  "compilerOptions": { "types": ["node", "vite/client", "@compmd/vite/client"] },
+  "include": ["src", "test"]
 }
