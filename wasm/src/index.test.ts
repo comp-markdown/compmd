@@ -111,6 +111,85 @@ describe("newestMatching", () => {
   });
 });
 
+describe("a request's options, each as a host gives it", () => {
+  const now = "2026-11-02T08:50:00Z";
+  /** A request for `text`, with `more`. */
+  const document = (text: string, more: Partial<Request> = {}): Request => ({ path: "a.comp.md", files: { "a.comp.md": text }, now, ...more });
+  /** A release of the pack `name` whose document exports a JavaScript component, `component`, built as `dist/<component>.js`. */
+  const pack = (name: string, component: string, manifest: object = {}) => ({
+    version: "1.0.0",
+    integrity: `sha512-${component}`,
+    files: {
+      "package.json": JSON.stringify({ name, version: "1.0.0", ...manifest }),
+      "index.comp.md": `---\nmd:\n  import:\n    - from: ./dist/${component}.js\n      names: [${component}]\n  export:\n    names: [${component}]\n---\n\n\`\`\`compmd component=${component} signature\nparams: {}\n\`\`\`\n`,
+      [`dist/${component}.js`]: "export default () => {};",
+    },
+  });
+  const importing = (...froms: string[]) => `---\nmd:\n  import:\n${froms.map((from) => `    - from: "${from}"\n      names: "*"\n`).join("")}---\n`;
+
+  it("packs and policy: each component of a pack comes with its built module and its pack's trust", () => {
+    const request = document(importing("@acme/charts@1", "@acme/maps@1"), {
+      packs: { "@acme/charts": [pack("@acme/charts", "chart")], "@acme/maps": [pack("@acme/maps", "map")] },
+      policy: { packs: { "@acme/maps": { level: "permissive", network: ["https://tiles.example.com"] } } },
+    });
+    expect(new OpenDocument(request).components).toEqual([
+      { name: "chart", language: "js", code: "", module: { pack: "@acme/charts", version: "1.0.0", path: "dist/chart.js", integrity: "sha512-chart" }, trust: { level: "strict" } },
+      { name: "map", language: "js", code: "", module: { pack: "@acme/maps", version: "1.0.0", path: "dist/map.js", integrity: "sha512-map" }, trust: { level: "permissive", network: ["https://tiles.example.com"], host: false } },
+    ]);
+  });
+
+  it("packs: a library pack a pack names comes with its components, once the request has it", () => {
+    const bars = pack("@acme/bars", "bars", { peerDependencies: { "@kit/d3": "^7" } });
+    const d3 = { version: "7.9.0", integrity: "sha512-d3", files: { "package.json": JSON.stringify({ name: "@kit/d3", version: "7.9.0", compmd: { library: "dist/d3.js" } }), "dist/d3.js": "export {};" } };
+    const without = document(importing("@acme/bars@1"), { packs: { "@acme/bars": [bars] } });
+    expect(sources(without).packs).toEqual([{ pack: "@kit/d3", range: "^7", library: true }]);
+    const withIt = { ...without, packs: { ...without.packs, "@kit/d3": [d3] } };
+    expect(new OpenDocument(withIt).components[0]?.libraries).toEqual({ "@kit/d3": { pack: "@kit/d3", version: "7.9.0", path: "dist/d3.js" } });
+  });
+
+  it("inputs: the values the reader set, and the default for one that doesn't fit", () => {
+    const text = "---\nmd:\n  inputs:\n    region: eu | us = eu\n---\n\n{{md.input.region}}\n";
+    expect(process(document(text, { inputs: { region: "us" } })).expanded.inputs?.["region"]).toMatchObject({ value: "us" });
+    expect(process(document(text, { inputs: { region: 42 } })).expanded.inputs?.["region"]).toMatchObject({ value: "eu" });
+  });
+
+  it("remote and host: data the host fetched, by URL and by source", () => {
+    const text = "---\nmd:\n  data:\n    - from: https://a.org/x.json\n      as: x\n    - from: host:tasks\n      as: tasks\n---\n\n{{md.data.x.n}} and {{md.data.tasks.count}}\n";
+    const processed = process(
+      document(text, {
+        allowedOrigins: ["https://a.org"],
+        remote: { "https://a.org/x.json": { text: '{"n": "remote"}', contentType: "application/json" } },
+        host: { tasks: { count: 3 } },
+      }),
+    );
+    expect(processed.diagnostics).toEqual([]);
+    expect(processed.expanded.children[0]).toMatchObject({ children: [{ value: "remote and 3" }] });
+  });
+
+  it("tz: the time zone md.today() is in", () => {
+    // At 20:30 UTC it is already the next day in Tokyo.
+    const text = "Today: :value[the date]{of=(string(md.today()))}\n";
+    const today = (tz: string) => JSON.stringify(process(document(text, { now: "2026-11-02T20:30:00Z", tz })).expanded);
+    expect(today("UTC")).toContain("2026-11-02");
+    expect(today("Asia/Tokyo")).toContain("2026-11-03");
+  });
+
+  it("frontmatterOf and componentsOf: what a document's frontmatter gives, and the components it can name", () => {
+    const text = "---\ntitle: Notes\nmd:\n  inputs:\n    n: number = 1\n---\n\n```compmd component=note\n---\nA note.\n```\n\n:: note[]\n\n:: nope[]\n";
+    const frontmatter = frontmatterOf(document(text));
+    expect(frontmatter.doc).toEqual({ title: "Notes" });
+    expect(Object.keys(frontmatter.inputs)).toEqual(["n"]);
+    const { groups, unknown } = componentsOf(document(text));
+    expect(groups[0]?.components.map((component) => [component.name, component.uses.length])).toEqual([["note", 1]]);
+    expect(unknown.map((name) => name.name)).toEqual(["nope"]);
+  });
+
+  it("refuses a request whose packs or policy don't have their shape", () => {
+    expect(() => process(document("Text.\n", { packs: { "@acme/kit": [{ version: "one", files: {} }] } }))).toThrow();
+    expect(() => process(document("Text.\n", { policy: { imports: "some" } as unknown as Request["policy"] }))).toThrow();
+  });
+});
+
 describe("OpenDocument", () => {
   /** An edit as an editor gives it: UTF-16 `[start, end)` of the text became `text`. */
   type Edit = [start: number, end: number, text: string];

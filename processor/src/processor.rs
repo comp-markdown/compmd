@@ -834,54 +834,90 @@ mod tests {
         }
     }
 
-    #[test]
-    fn each_state_gives_what_its_stage_made_and_reloads_keep_stages_1_to_3() {
-        let text = "---\nmd:\n  data:\n    - from: ./missing.json\n      as: m\n  inputs:\n    n: number = 1\n---\n\n{{md.input.n}} :x[y]\n";
+    /// A document with an input `n`, a data import that can't load, and a use of `x`, which nothing defines.
+    const TEXT: &str = "---\nmd:\n  data:\n    - from: ./missing.json\n      as: m\n  inputs:\n    n: number = 1\n---\n\n{{md.input.n}} :x[y]\n";
+
+    /// The codes of the diagnostics so far.
+    fn codes<S>(processor: &Processor<S>) -> Vec<String> {
+        processor
+            .diagnostics()
+            .iter()
+            .map(|diagnostic| diagnostic.code.to_string())
+            .collect()
+    }
+
+    /// The values of a loaded processor's inputs.
+    fn values(loaded: &Processor<Loaded>) -> Vec<serde_json::Value> {
+        loaded
+            .inputs()
+            .iter()
+            .map(|input| input.value.clone())
+            .collect()
+    }
+
+    /// The text of the expanded tree's first paragraph.
+    fn written(processor: &Processor<Expanded>) -> serde_json::Value {
+        serde_json::to_value(processor.expanded()).expect("a tree")["children"][0]["children"][0]
+            ["value"]
+            .clone()
+    }
+
+    fn validated() -> Processor<Validated> {
         let files: HashMap<String, String> = HashMap::new();
-        let parsed = Processor::new("a.comp.md", text).parse(&ParseOptions::default());
-        assert_eq!(parsed.tree().children.len(), 2);
-        let resolved = parsed.resolve(files, (), &Ambient::default());
+        Processor::new("a.comp.md", TEXT)
+            .parse(&ParseOptions::default())
+            .resolve(files, (), &Ambient::default())
+            .validate(&[])
+    }
+
+    #[test]
+    fn each_state_gives_what_its_stage_made_with_the_diagnostics_so_far() {
+        let parsed = Processor::new("a.comp.md", TEXT).parse(&ParseOptions::default());
         assert_eq!(
-            resolved.state.resolved.documents.len(),
+            parsed.tree().children.len(),
             2,
-            "with @compmd/core"
+            "the frontmatter and a paragraph"
         );
+        assert_eq!(codes(&parsed), Vec::<String>::new());
+        let resolved = parsed.resolve(HashMap::<String, String>::new(), (), &Ambient::default());
+        assert_eq!(codes(&resolved), ["F002"], "`x`");
         let validated = resolved.validate(&[]);
-        assert_eq!(validated.diagnostics().len(), 1, "F002 for `x`");
-        let one = context(json!({}));
-        let loaded = validated.load(one, (), ());
-        let values = |loaded: &Processor<Loaded>| -> Vec<serde_json::Value> {
-            loaded
-                .inputs()
-                .iter()
-                .map(|input| input.value.clone())
-                .collect()
-        };
-        assert_eq!(values(&loaded), [json!(1)]);
-        assert_eq!(loaded.diagnostics().len(), 2, "and F026 for the data");
-        let two = context(json!({ "n": 2 }));
-        let loaded = loaded.reload(two, (), ());
-        assert_eq!(values(&loaded), [json!(2)]);
+        assert_eq!(codes(&validated), ["F002"]);
+        let loaded = validated.load(context(json!({})), (), ());
+        assert_eq!(values(&loaded), [json!(1)], "`n`'s default");
         assert_eq!(
-            loaded.diagnostics().len(),
-            2,
-            "a reload drops stage 4's own"
+            codes(&loaded),
+            ["F002", "F026"],
+            "and the data that can't load"
         );
         let expanded = loaded.expand(&expand::Options::default());
-        let written = |processor: &Processor<Expanded>| {
-            serde_json::to_value(processor.expanded()).expect("a tree")["children"][0]["children"]
-                [0]["value"]
-                .clone()
-        };
-        assert_eq!(written(&expanded), json!("2 y"));
+        assert_eq!(written(&expanded), json!("1 y"));
         assert_eq!(expanded.sources(), Needed::default());
-        let three = context(json!({ "n": 3 }));
-        let expanded = expanded.reload(three, (), ());
-        assert_eq!(written(&expanded), json!("3 y"));
-        let splice = expanded.splice();
+    }
+
+    #[test]
+    fn a_loaded_processor_loads_again_for_another_render_context_keeping_stages_1_to_3() {
+        let loaded = validated().load(context(json!({})), (), ());
+        let reloaded = loaded.reload(context(json!({ "n": 2 })), (), ());
+        assert_eq!(values(&reloaded), [json!(2)]);
+        assert_eq!(
+            codes(&reloaded),
+            ["F002", "F026"],
+            "stage 4's own found again, not twice"
+        );
+    }
+
+    #[test]
+    fn an_expanded_processor_reloads_and_replaces_the_whole_tree() {
+        let expanded = validated()
+            .load(context(json!({ "n": 2 })), (), ())
+            .expand(&expand::Options::default());
+        assert_eq!(written(&expanded), json!("2 y"));
+        let reloaded = expanded.reload(context(json!({ "n": 3 })), (), ());
+        assert_eq!(written(&reloaded), json!("3 y"));
+        let splice = reloaded.splice();
         assert_eq!((splice.from, splice.to, splice.nodes.len()), (0, 1, 1));
-        assert_eq!(expanded.diagnostics().len(), 2);
-        assert_eq!(expanded.tree().children.len(), 2);
+        assert_eq!(codes(&reloaded), ["F002", "F026"]);
     }
 
     #[test]
