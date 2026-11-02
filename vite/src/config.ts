@@ -41,6 +41,10 @@ export interface Config {
   maxPackSize?: number | string;
   /** npm packages the frames offer through their import map, besides React and Svelte: a name, or a name and its imports. */
   libraries?: (string | Library)[];
+  /** The registries packs the app doesn't install come from, by scope (`@kit`), with `*` for every other scope. */
+  registries?: Record<string, string>;
+  /** Who fetches from them: `host` (the default), through the app's own proxy; `direct`, the reader's browser. */
+  fetch?: "host" | "direct";
 }
 
 /** A pack's trust, as the processor takes it. */
@@ -62,6 +66,9 @@ export interface ReadConfig {
   /** In bytes; absent for no limit. */
   maxPackSize?: number;
   libraries: Library[];
+  /** Each registry's URL, ending in `/`, by scope or `*`; empty for none. */
+  registries: Record<string, string>;
+  fetch: "host" | "direct";
 }
 
 /** What is wrong with a configuration: every problem found, each with where it is. */
@@ -82,7 +89,8 @@ const SCOPED = /^@[a-z0-9][a-z0-9._~-]*\/[a-z0-9][a-z0-9._~-]*$/;
 const PACKAGE = /^(?:@[a-z0-9][a-z0-9._~-]*\/)?[a-z0-9][a-z0-9._~-]*$/;
 const SIZE = /^(\d+(?:\.\d+)?)\s*(B|KB|MB|GB)$/i;
 const UNITS: Record<string, number> = { B: 1, KB: 1e3, MB: 1e6, GB: 1e9 };
-const TOP_KEYS = new Set(["$schema", "packs", "imports", "deny", "maxPackSize", "libraries"]);
+const SCOPE = /^@[a-z0-9~-][a-z0-9._~-]*$/;
+const TOP_KEYS = new Set(["$schema", "packs", "imports", "deny", "maxPackSize", "libraries", "registries", "fetch"]);
 const PACK_KEYS = new Set(["trust", "network", "host", "ambient", "version"]);
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
@@ -101,6 +109,37 @@ function originOf(origin: string): { origin: string } | { problem: string } {
   if (url.hostname.includes("*") || origin.includes("*")) return { problem: `\`${origin}\` has a wildcard: name each origin` };
   if (url.pathname !== "/" || url.search || url.hash || url.username) return { problem: `\`${origin}\` must be an origin alone, without a path` };
   return { origin: url.origin };
+}
+
+/** `url` as a registry's URL, ending in `/`, or why it can't be one. */
+function registryUrlOf(url: string): { url: string } | { problem: string } {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return { problem: `\`${url}\` isn't a URL: a registry is named in full, such as \`https://registry.npmjs.org/\`` };
+  }
+  const local = ["localhost", "127.0.0.1", "[::1]"].includes(parsed.hostname);
+  if (parsed.protocol !== "https:" && !(parsed.protocol === "http:" && local)) return { problem: `\`${url}\` must be \`https:\` (\`http:\` only for localhost)` };
+  if (parsed.username || parsed.password || parsed.search || parsed.hash) return { problem: `\`${url}\` must have no credentials, query or fragment: a registry's token belongs to the host's proxy` };
+  return { url: parsed.href.endsWith("/") ? parsed.href : `${parsed.href}/` };
+}
+
+/** The registries read, adding what's wrong with them to `problems`. */
+function readRegistries(registries: unknown, problems: string[]): Record<string, string> {
+  if (!isRecord(registries)) {
+    problems.push("registries: an object, by scope (`@kit`), with `*` for every other scope");
+    return {};
+  }
+  const read: Record<string, string> = {};
+  for (const [scope, url] of Object.entries(registries)) {
+    const at = `registries["${scope}"]`;
+    if (scope !== "*" && !SCOPE.test(scope)) problems.push(`${at}: a scope, such as \`@kit\`, or \`*\` for every other scope`);
+    const checked = typeof url === "string" ? registryUrlOf(url) : { problem: "a registry's URL" };
+    if ("problem" in checked) problems.push(`${at}: ${checked.problem}`);
+    else read[scope] = checked.url;
+  }
+  return read;
 }
 
 /** `size` in bytes, or `undefined` when it isn't a size. */
@@ -192,8 +231,19 @@ export function readConfig(value: unknown, where = "compmd.config.json"): ReadCo
   const maxPackSize = value.maxPackSize === undefined ? undefined : bytesOf(value.maxPackSize);
   if (value.maxPackSize !== undefined && maxPackSize === undefined) problems.push('maxPackSize: bytes, or a size such as `"5 MB"`');
   const libraries = value.libraries === undefined ? [] : readLibraries(value.libraries, problems);
+  const registries = value.registries === undefined ? {} : readRegistries(value.registries, problems);
+  const fetch = value.fetch ?? "host";
+  if (fetch !== "host" && fetch !== "direct") problems.push("fetch: `host` or `direct`");
   if (problems.length > 0) throw new ConfigError(where, problems);
-  return { packs, imports: imports === "listed" ? "listed" : "any", deny: denied, ...(maxPackSize === undefined ? {} : { maxPackSize }), libraries };
+  return {
+    packs,
+    imports: imports === "listed" ? "listed" : "any",
+    deny: denied,
+    ...(maxPackSize === undefined ? {} : { maxPackSize }),
+    libraries,
+    registries,
+    fetch: fetch === "direct" ? "direct" : "host",
+  };
 }
 
 /** What the processor takes from a configuration: the policy and the ambient packs (`Request.policy`, `Request.ambient`). */

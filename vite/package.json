@@ -55,6 +55,7 @@
   },
   "dependencies": {
     "@compmd/processor": "workspace:^",
+    "@compmd/registry": "workspace:^",
     "@compmd/render": "workspace:^",
     "@compmd/sandbox": "workspace:^",
     "semver": "7.8.5",

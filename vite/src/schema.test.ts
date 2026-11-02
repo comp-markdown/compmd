@@ -20,6 +20,8 @@ const EVERY_KEY = {
   deny: [{ pack: "@bad/pack", version: "<2", reason: "a flaw found in 1.x" }],
   maxPackSize: "5 MB",
   libraries: ["d3", { name: "chart.js", imports: ["chart.js/auto"] }],
+  registries: { "@kit": "https://npm.kit.example/", "*": "https://registry.npmjs.org/" },
+  fetch: "direct",
 };
 
 describe("compmd.config.schema.json", () => {
@@ -40,6 +42,11 @@ describe("compmd.config.schema.json", () => {
       { deny: [{ pack: "@a/b" }] },
       { maxPackSize: "large" },
       { libraries: [{ name: "d3" }] },
+      { registries: { kit: "https://npm.kit.example/" } },
+      { registries: { "*": "/compmd/registry/" } },
+      { registries: { "*": "https://token@npm.kit.example/" } },
+      { registries: ["https://registry.npmjs.org/"] },
+      { fetch: "proxy" },
     ]) {
       expect(() => readConfig(wrong), JSON.stringify(wrong)).toThrow();
       expect(validate(wrong), JSON.stringify(wrong)).toBe(false);

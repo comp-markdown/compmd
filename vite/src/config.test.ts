@@ -15,7 +15,32 @@ function problemsOf(value: unknown): readonly string[] {
 describe("readConfig", () => {
   it("fills in every default", () => {
     const config = readConfig({});
-    expect(config).toEqual({ packs: new Map(), imports: "any", deny: [], libraries: [] });
+    expect(config).toEqual({ packs: new Map(), imports: "any", deny: [], libraries: [], registries: {}, fetch: "host" });
+  });
+
+  it("reads the registries by scope, each URL ending in `/`, and who fetches", () => {
+    const config = readConfig({ registries: { "@kit": "https://npm.kit.example/npm", "*": "https://registry.npmjs.org/" }, fetch: "direct" });
+    expect(config.registries).toEqual({ "@kit": "https://npm.kit.example/npm/", "*": "https://registry.npmjs.org/" });
+    expect(config.fetch).toBe("direct");
+    expect(readConfig({ registries: { "*": "http://localhost:4873" } }).registries).toEqual({ "*": "http://localhost:4873/" });
+  });
+
+  it("takes registries named in full, on https, with nothing secret in their URLs", () => {
+    const registry = (url: unknown) => problemsOf({ registries: { "*": url } });
+    expect(registry("/compmd/registry/")).toEqual(['registries["*"]: `/compmd/registry/` isn\'t a URL: a registry is named in full, such as `https://registry.npmjs.org/`']);
+    expect(registry("http://npm.kit.example/")).toEqual(['registries["*"]: `http://npm.kit.example/` must be `https:` (`http:` only for localhost)']);
+    expect(registry("https://me:token@npm.kit.example/")).toEqual([
+      'registries["*"]: `https://me:token@npm.kit.example/` must have no credentials, query or fragment: a registry\'s token belongs to the host\'s proxy',
+    ]);
+    expect(registry("https://npm.kit.example/?token=x")).toEqual([
+      'registries["*"]: `https://npm.kit.example/?token=x` must have no credentials, query or fragment: a registry\'s token belongs to the host\'s proxy',
+    ]);
+    expect(registry(42)).toEqual(['registries["*"]: a registry\'s URL']);
+    expect(problemsOf({ registries: { kit: "https://npm.kit.example/" } })).toEqual(['registries["kit"]: a scope, such as `@kit`, or `*` for every other scope']);
+    expect(problemsOf({ registries: ["https://registry.npmjs.org/"], fetch: "proxy" })).toEqual([
+      "registries: an object, by scope (`@kit`), with `*` for every other scope",
+      "fetch: `host` or `direct`",
+    ]);
   });
 
   it("reads each kind of pack, with its trust", () => {
@@ -87,7 +112,7 @@ describe("readConfig", () => {
         libraries: ["D3!", { name: "d3" }],
       }),
     ).toEqual([
-      "pack: not a key of the configuration; it takes $schema, packs, imports, deny, maxPackSize, libraries",
+      "pack: not a key of the configuration; it takes $schema, packs, imports, deny, maxPackSize, libraries, registries, fetch",
       'packs["acme-maps"]: a pack is a scoped name (`@scope/pack`) or a folder path (`./components`)',
       'packs["acme-maps"].trsut: not an option; a pack takes trust, network, host, ambient, version',
       'packs["acme-maps"].ambient: true or false',

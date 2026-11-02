@@ -1,14 +1,17 @@
 // The Vite plugin (docs/vite.md): reads the configuration and the packs at build start, gives the app `virtual:compmd`,
 // builds the sandbox's frame documents and libraries, serves them and the packs' built modules under `compmd/` in dev,
-// and writes them into the build.
+// and writes them into the build. With registries the host fetches from, the dev and preview servers are its proxy.
 
 import { existsSync } from "node:fs";
-import type { ServerResponse } from "node:http";
+import type { IncomingMessage, ServerResponse } from "node:http";
 import { readdir, readFile, rm } from "node:fs/promises";
 import { extname, join, relative, sep } from "node:path";
+import { NpmRegistry, registryProxy } from "@compmd/registry";
+import { toNodeListener } from "@compmd/registry/node";
 import { buildFrames, buildLibraries, readLibraries, RUNTIMES, type LibraryDefinition } from "@compmd/sandbox/build";
-import type { Plugin, ResolvedConfig } from "vite";
-import { loadApp, type App } from "./app.ts";
+import type { Connect, Plugin, ResolvedConfig } from "vite";
+import { configOf, loadApp, type App } from "./app.ts";
+import type { ReadConfig } from "./config.ts";
 
 /** The plugin's options. */
 export interface CompmdOptions {
@@ -31,12 +34,26 @@ export function requestWith(app: App, definition: LibraryDefinition | undefined)
 }
 
 /**
- * The code of `virtual:compmd`: the processor's request, and the sandbox's options with the trusted components the
- * app's own build compiles; with the frames' `definition`, the request's policy says what they provide.
+ * The code of `virtual:compmd`'s `registry`, after `base`: what `resolvePacks` takes from the configuration. With
+ * `fetch: "host"`, every scope's registry is the app's proxy, under `base`; without registries, `undefined`.
+ */
+function registryCode({ registries, fetch, maxPackSize }: ReadConfig): string[] {
+  const scopes = Object.entries(registries);
+  if (scopes.length === 0) return ["export const registry = undefined;"];
+  const entries = scopes.map(([scope, url]) => `${JSON.stringify(scope)}: ${fetch === "host" ? "proxy" : `new NpmRegistry({ url: ${JSON.stringify(url)} })`}`);
+  const options = [`registries: { ${entries.join(", ")} }`, `fetch: ${JSON.stringify(fetch)}`, ...(maxPackSize === undefined ? [] : [`maxPackSize: ${String(maxPackSize)}`])];
+  return [...(fetch === "host" ? ['const proxy = new NpmRegistry({ url: base + "registry/" });'] : []), `export const registry = { ${options.join(", ")} };`];
+}
+
+/**
+ * The code of `virtual:compmd`: the processor's request, the sandbox's options with the trusted components the app's
+ * own build compiles, and the registries' options; with the frames' `definition`, the request's policy says what they
+ * provide.
  */
 export function moduleCode(app: App, folder: string, definition?: LibraryDefinition): string {
   const bindings = new Set(app.trusted.map(({ binding }) => binding));
   const lines = [...bindings].filter((binding) => binding !== "plain").map((binding) => `import { ${binding} } from "@compmd/vite/${binding}";`);
+  if (Object.keys(app.config.registries).length > 0) lines.push('import { NpmRegistry } from "@compmd/registry";');
   app.trusted.forEach(({ file }, i) => lines.push(`import c${String(i)} from ${JSON.stringify(file)};`));
   const trusted = app.trusted.map(({ name, binding }, i) => `${JSON.stringify(name)}: ${binding === "plain" ? `c${String(i)}` : `${binding}(c${String(i)})`}`);
   lines.push(
@@ -51,9 +68,32 @@ export function moduleCode(app: App, folder: string, definition?: LibraryDefinit
     "    return found && { url: new URL(found.path, new URL(base, location.href)).href, integrity: found.integrity };",
     "  },",
     "};",
+    ...registryCode(app.config),
     "",
   );
   return lines.join("\n");
+}
+
+/** A Node request listener, or Connect's. */
+type Listener = (request: IncomingMessage, response: ServerResponse) => void;
+
+/**
+ * The app's proxy for its registries (docs/packs-from-a-registry.md, R1, F1), served at `path`: `undefined` unless the
+ * configuration names registries and the host fetches from them.
+ */
+export function proxyOf({ registries, fetch }: ReadConfig, path: string): Listener | undefined {
+  if (fetch !== "host" || Object.keys(registries).length === 0) return undefined;
+  const upstream = Object.fromEntries(Object.entries(registries).map(([scope, url]) => [scope, new NpmRegistry({ url })]));
+  return toNodeListener(registryProxy({ registries: upstream, base: path }));
+}
+
+/** A middleware that hands what is under `path` to the proxy `proxy()` gives, when there is one. */
+function proxying(path: string, proxy: () => Listener | undefined): Connect.NextHandleFunction {
+  return (request, response, next) => {
+    const listener = proxy();
+    if (listener && new URL(request.url ?? "/", "http://localhost").pathname.startsWith(path)) listener(request, response);
+    else next();
+  };
 }
 
 /**
@@ -94,12 +134,16 @@ export function compmd(options: CompmdOptions = {}): Plugin {
   let config: ResolvedConfig;
   let app: App | undefined;
   let frames = "";
+  /** The URL path of `folder`, `/compmd/`, which the servers serve. */
+  let prefix = "";
+  let proxy: Listener | undefined;
   let built: Promise<LibraryDefinition> | undefined;
   let definition: LibraryDefinition | undefined;
 
   /** Reads the app again, and its sandbox once its libraries are known. */
   const load = async (): Promise<App> => {
     app = await loadApp(config.root);
+    proxy = proxyOf(app.config, `${prefix}registry/`);
     built ??= buildSandbox(app, config.root, frames);
     definition = await built;
     return app;
@@ -117,6 +161,7 @@ export function compmd(options: CompmdOptions = {}): Plugin {
     configResolved(resolved) {
       config = resolved;
       frames = join(resolved.cacheDir, "compmd-frames");
+      prefix = `${resolved.base.replace(/\/*$/, "/")}${folder}`.replace(/^\.\//, "/");
     },
     async buildStart() {
       try {
@@ -134,7 +179,6 @@ export function compmd(options: CompmdOptions = {}): Plugin {
       return moduleCode(app ?? (await load()), folder, definition);
     },
     configureServer(server) {
-      const prefix = `${config.base.replace(/\/*$/, "/")}${folder}`.replace(/^\.\//, "/");
       const watched = [join(config.root, "compmd.config.json"), join(config.root, "package.json")];
       server.watcher.add(watched);
       server.watcher.on("change", (file) => {
@@ -151,6 +195,7 @@ export function compmd(options: CompmdOptions = {}): Plugin {
           },
         );
       });
+      server.middlewares.use(proxying(`${prefix}registry/`, () => proxy));
       server.middlewares.use((request, response, next) => {
         const url = new URL(request.url ?? "/", "http://localhost");
         if (!url.pathname.startsWith(prefix)) {
@@ -174,8 +219,10 @@ export function compmd(options: CompmdOptions = {}): Plugin {
         }, next);
       });
     },
-    configurePreviewServer(server) {
-      const prefix = `${config.base.replace(/\/*$/, "/")}${folder}`.replace(/^\.\//, "/");
+    async configurePreviewServer(server) {
+      // A preview builds nothing: the proxy is the configuration's.
+      const previewed = proxyOf(await configOf(config.root), `${prefix}registry/`);
+      server.middlewares.use(proxying(`${prefix}registry/`, () => previewed));
       server.middlewares.use((request, response, next) => {
         const path = new URL(request.url ?? "/", "http://localhost").pathname;
         if (path.startsWith(prefix)) headersFor(path, response);

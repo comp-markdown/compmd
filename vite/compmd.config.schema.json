@@ -31,8 +31,18 @@
         }
       }
     },
+    "registries": {
+      "description": "The npm registries packs the app doesn't install come from, by scope (@kit), with * for every other scope, each named in full. Without it, a document's import of a pack the app doesn't install is F026.",
+      "type": "object",
+      "propertyNames": { "pattern": "^(\\*|@[a-z0-9~-][a-z0-9._~-]*)$" },
+      "additionalProperties": { "type": "string", "pattern": "^https?://[^?#@]+$" }
+    },
+    "fetch": {
+      "description": "Who fetches from the registries: host (the default), through the app's own proxy at compmd/registry/, so the registry learns nothing about readers; direct, the reader's browser, which the host tells its readers.",
+      "enum": ["host", "direct"]
+    },
     "maxPackSize": {
-      "description": "A pack whose files are larger is left out: bytes, or a size such as \"5 MB\".",
+      "description": "A pack whose files are larger is left out: bytes, or a size such as \"5 MB\". For a pack from a registry, its unpacked size, before it is downloaded; 5 MB there when not given.",
       "oneOf": [
         { "type": "number", "exclusiveMinimum": 0 },
         { "type": "string", "pattern": "^\\d+(\\.\\d+)?\\s*([Bb]|[KkMmGg][Bb])$" }

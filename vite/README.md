@@ -66,7 +66,9 @@ view.render(document.expanded);
   "imports": "any",
   "deny": [{ "pack": "@bad/pack", "version": "<2", "reason": "a flaw found in 1.x" }],
   "maxPackSize": "5 MB",
-  "libraries": ["d3"]
+  "libraries": ["d3"],
+  "registries": { "*": "https://registry.npmjs.org/" },
+  "fetch": "host"
 }
 ```
 
@@ -80,8 +82,10 @@ view.render(document.expanded);
 | `packs.*.version` | a semver range the installed version must satisfy |
 | `imports` | `any` (the default): a document may import any installed pack; `listed`: only those listed |
 | `deny` | packs denied, all versions or a range, with the reason readers see (F026) |
-| `maxPackSize` | a pack whose files are larger is left out: bytes, or a size such as `"5 MB"` |
+| `maxPackSize` | a pack whose files are larger is left out: bytes, or a size such as `"5 MB"`; for a pack from a registry, its unpacked size, before it is downloaded (5 MB there when not given) |
 | `libraries` | npm packages, installed in the app, that the frames offer components through their import map, besides React and Svelte: `"d3"`, or `{ "name": "d3", "imports": ["d3", "d3-scale"] }` |
+| `registries` | the npm registries packs the app doesn't install come from, by scope (`"@kit"`), with `"*"` for every other scope, each named in full |
+| `fetch` | who reaches them: `host` (the default), through the app's proxy at `compmd/registry/`; `direct`, the reader's browser |
 
 `@compmd/vite/config` reads and translates the same configuration without Vite or Node, for a host that isn't a Vite app: `readConfig(json)` checks it and lists every problem, and `policyOf(config, nameOf)` gives the processor's `policy` and `ambient`.
 
@@ -114,7 +118,8 @@ Listed as `trusted`, its components are compiled by the app's own build, with it
 Under the app's base, in `compmd/` (the `folder` option changes it):
 
 - `strict.html`, `permissive.html` and their files, the sandbox's frame documents (`buildFrames`), with the libraries the configuration offers;
-- `packs/<name>@<version>/<path>`, each installed pack's built modules (the `.js` files its documents import), which the frames load checked against the hash `sandbox.modules` gives.
+- `packs/<name>@<version>/<path>`, each installed pack's built modules (the `.js` files its documents import), which the frames load checked against the hash `sandbox.modules` gives;
+- `registry/`, with registries and `fetch: "host"`, the proxy (below), on the dev server and `vite preview` only.
 
 The dev server serves them; the build writes them into the output. The frames have an opaque origin, so a host must serve this folder with `Access-Control-Allow-Origin: *`, and the frame documents with `Content-Security-Policy: sandbox allow-scripts`, as the dev server and `vite preview` do.
 
@@ -126,7 +131,26 @@ At build start, and when the configuration, `package.json` or a pack's files cha
 - that each listed pack is installed, at the version the configuration asks, and each library;
 - each listed pack's documents, through the processor: an error stops the build, a warning is Vite's.
 
-Packs come from `node_modules`, never from the registry at run time: a document that imports a pack the app doesn't install gets F026. Each pack's `integrity` comes from the app's lock file (`pnpm-lock.yaml` or `package-lock.json`), for documents that pin one.
+Installed packs come from `node_modules`. Each one's `integrity` comes from the app's lock file (`pnpm-lock.yaml` or `package-lock.json`), for documents that pin one. Without `registries`, a document that imports a pack the app doesn't install gets F026.
+
+## Packs from a registry
+
+With `registries`, a document may import a pack the app doesn't install. The app installs `@compmd/registry` too, and resolves the document's packs before processing it ([docs/vite.md](../docs/vite.md#packs-from-a-registry)):
+
+```ts
+import { defaultCache, resolvePacks } from "@compmd/registry";
+import { registry, request, sandbox } from "virtual:compmd";
+
+const asked = { ...request, path: "notes.comp.md", files, now: new Date().toISOString() };
+const resolved = registry && (await resolvePacks(asked, { ...registry, cache: defaultCache() }));
+const document = new OpenDocument(resolved?.request ?? asked);
+const view = createSandbox({ ...sandbox, page: "host", modules: (place) => resolved?.modules(place) ?? sandbox.modules(place) }).open(container, { components: document.components });
+```
+
+`registry` holds what `resolvePacks` takes from the configuration: the registries, who fetches, and the size cap.
+
+- **`fetch: "host"`** (the default): the page reaches the registries only through the app's proxy, `compmd/registry/`, so they learn nothing about readers. The dev server and `vite preview` serve it. A deployed app serves it from its server or a worker, with `@compmd/registry`'s `registryProxy({ registries, base: "/compmd/registry/" })` and the same registries.
+- **`fetch: "direct"`**: the reader's browser fetches from the registries named, which then learn the reader's address and the packs' names. Tell your readers. It is for hosts with no server.
 
 ## The example
 

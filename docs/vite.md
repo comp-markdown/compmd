@@ -11,6 +11,7 @@
 5. **One virtual module gives the app everything.** `import { request, sandbox } from "virtual:compmd"`: `request` holds `packs`, `ambient` and `policy` for the processor; `sandbox` holds `base`, `trusted` and `modules` for `createSandbox`. The app spreads them in; it writes no policy, path or import map.
 6. **Everything is served under one folder of the app, `compmd/`**: the frame documents and their libraries (`buildFrames`), and each pack's files at `compmd/packs/<name>@<version>/<path>`. The dev server serves them with `Access-Control-Allow-Origin: *`, since the frames have an opaque origin; the build writes them into the output.
 7. **What's wrong in the configuration or a pack stops the build or warns, at build time.** The plugin processes each listed pack's document once: errors (F) stop the build, warnings (W104, W117) are Vite warnings.
+8. **Packs the app doesn't install come from the registries the configuration names** ([packs from a registry](packs-from-a-registry.md), R5), when it names any. `registries` names the registries themselves; `fetch` says who reaches them: the app's own proxy, under `compmd/registry/` (`host`, the default), or the reader's browser (`direct`). `virtual:compmd` gives `registry`, the options `resolvePacks` takes, and the dev and preview servers are the proxy.
 
 ## Terms
 
@@ -33,7 +34,9 @@
   "imports": "any",
   "deny": [{ "pack": "@bad/pack", "version": "<2", "reason": "a flaw found in 1.x" }],
   "maxPackSize": "5 MB",
-  "libraries": ["d3"]
+  "libraries": ["d3"],
+  "registries": { "@kit": "https://npm.kit.example/", "*": "https://registry.npmjs.org/" },
+  "fetch": "host"
 }
 ```
 
@@ -47,8 +50,10 @@
 | `packs.*.version` | a semver range the installed version must satisfy, or the build stops | — |
 | `imports` | `any` (the default) or `listed` | `policy.imports` |
 | `deny` | packs denied, all versions or a range, with the reason readers see | `policy.deny` |
-| `maxPackSize` | a pack whose files are larger is left out, with this reason | `policy.refused` |
+| `maxPackSize` | a pack whose files are larger is left out, with this reason; a pack from a registry, by its unpacked size, before it is downloaded (5 MB there when not given) | `policy.refused`; `registry.maxPackSize` |
 | `libraries` | npm package names, installed in the app, that the frames offer components through their import map, besides React and Svelte | `buildLibraries`; with their versions, `policy.libraries` |
+| `registries` | the npm registries packs the app doesn't install come from, by scope (`@kit`), with `*` for every other scope, each named in full (`https:`, or `http:` for localhost), with no credentials | `registry.registries` |
+| `fetch` | who reaches them: `host` (the default), through the app's proxy; `direct`, the reader's browser | `registry.fetch` |
 
 - A folder pack's name is its `package.json`'s `name`, which its document's `export.pack` matches (F022): the policy and `ambient` use that name, so documents can import `@acme/app` by name too (decision 7 of the design: a configured name is the host's).
 - `ambient` is per pack, not a list of names, so a folder pack needs no second spelling.
@@ -82,12 +87,34 @@ view.render(document.expanded);
 - `request.packs` holds each pack's documents and source files as text (small: signatures, CompMD, JSX), so the app needs no fetch to process a document.
 - `sandbox.modules` maps a built module's place to `compmd/packs/<name>@<version>/<path>` and the file's `sha384`, which the plugin computes from the installed file.
 - `sandbox.trusted` imports each trusted pack's component files and wraps them in their binding (`react(Stars)`, `svelte(Rating)`, a plain mount as it is), by the file's extension and the import's `runtime`.
+- `registry` holds what `resolvePacks` takes from the configuration (below), or is `undefined` when it names no registry.
+
+## Packs from a registry
+
+With `registries`, a document may import a pack the app doesn't install ([packs from a registry](packs-from-a-registry.md)). The app resolves it before processing, as it fetches the document's data, and processes again when it arrives (decision 7 there):
+
+```ts
+import { defaultCache, resolvePacks } from "@compmd/registry";
+import { registry, request, sandbox } from "virtual:compmd";
+
+const asked = { ...request, path: "notes.comp.md", files, now: new Date().toISOString() };
+const resolved = registry && (await resolvePacks(asked, { ...registry, cache: defaultCache() }));
+const document = new OpenDocument(resolved?.request ?? asked);
+const view = createSandbox({ ...sandbox, page: "host", modules: (place) => resolved?.modules(place) ?? sandbox.modules(place) }).open(container, { components: document.components });
+```
+
+- **`registries` names the registries themselves**, npm's or a private one, never a URL of the app: the proxy needs them to pass requests on to, and with `direct` the reader's browser fetches from them. A document or a pack never names one (companion, section 4).
+- **`fetch: "host"`** (the default): every scope's registry in `registry` is the app's proxy, `compmd/registry/` under the app's base, so the registry learns nothing about readers (R1, F1). The dev server and `vite preview` serve it, with `registryProxy` from `@compmd/registry`; a deployed app serves it the same way, from a worker or its server (`registryProxy({ registries, base: "/compmd/registry/" })`, with the same registries). A static host with no server uses `direct` instead.
+- **`fetch: "direct"`**: `registry` holds the registries as named, and the reader's browser fetches from them (R1, F2), which the host tells its readers. There is no proxy.
+- **The size cap** is `maxPackSize`, when given; `resolvePacks`'s 5 MB otherwise (R6).
+- **Built modules from a registry** come as code (`{ code }`, R2): `resolved.modules` gives them, and `sandbox.modules` the installed packs'.
+- The app installs `@compmd/registry`, which `virtual:compmd` imports for `registry`.
 
 ## Questions, with proposed answers
 
 **V1. Where a release's integrity comes from.** The processor compares an import's `integrity` with the release's (spec §6.4). In a build, packs come from `node_modules`, which npm checked against the lock file when it installed them. Proposed: the plugin reads each pack's `integrity` from the lock file (`pnpm-lock.yaml`, `package-lock.json`; Yarn later), and gives none when there is no lock file, so a document's `integrity` key then fails to match, which the processor reports. The alternative, hashing the installed files ourselves, gives a hash no registry publishes, so no document could write it.
 
-**V2. A document importing a pack that isn't installed.** With P2 a document may import any pack, but a build has only what's installed. Proposed: such an import is F026, as a pack the registry doesn't have ("not installed in this app"); the plugin never fetches from the registry at run time. Fetching would make the app depend on the registry being up, and tell it who reads what (spec §15, privacy).
+**V2. A document importing a pack that isn't installed.** With P2 a document may import any pack, but a build has only what's installed. Proposed: such an import is F026, as a pack the registry doesn't have ("not installed in this app"); the plugin never fetches from the registry at run time. Fetching would make the app depend on the registry being up, and tell it who reads what (spec §15, privacy). *Since [packs from a registry](packs-from-a-registry.md):* this holds for an app whose configuration names no registry; one that names registries fetches such a pack at run time, through its own proxy unless it says `direct` (decision 8).
 
 **V3. A trusted pack's source in `request`.** The processor reads a component file a pack imports to know it exists and to check it (W104). Proposed: the request at run time carries a trusted pack's component files as empty text, since the app's bundle already holds their code and their checks ran at build; to be confirmed against the processor's loading.
 
@@ -99,6 +126,7 @@ view.render(document.expanded);
 
 - **`vite/example/`:** a small Vite app with `components/` as its app pack (`stars` in React, trusted and ambient), a document that uses `stars` and a code block of a strict pack from a folder installed as a dependency, rendered in host mode.
 - **Unit tests (Node):** reading and translating the configuration, with every error; finding packs; reading integrity from both lock files; the size limit.
+- **Registry tests:** an app with registries on the dev server and in a build under `vite preview`, against a local registry: with `host`, the proxy passes metadata and tarballs on and the page's registries are the proxy; with `direct`, they are the registries named, and there is no proxy; without registries, `registry` is `undefined`.
 - **Build tests:** the example built with the plugin; the output has `compmd/strict.html`, the pack files at their paths with the hashes `modules` gives, and the virtual module's contents.
 - **Browser tests (Vitest browser, Chrome and WebKit):** the example's page: `stars` mounts in the page and sets its input; the strict pack's component runs in a frame; a denied pack's use shows its fallback with its reason.
 - **Published** with the other packages (`RELEASING.md`, the release workflow).

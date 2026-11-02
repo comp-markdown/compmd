@@ -127,14 +127,14 @@ This is the host's configuration, never a pack's or a document's: `compmd.config
 
 ```json
 {
-  "registries": { "@notes": "https://npm.notes.example/", "*": "/compmd/registry/" },
+  "registries": { "@notes": "https://npm.notes.example/", "*": "https://registry.npmjs.org/" },
   "fetch": "host",
   "imports": "any",
   "packs": { "@notes/widgets": { "trust": "permissive", "network": ["https://api.notes.example"] } }
 }
 ```
 
-A user's document imports `@kit/mermaid@1` and `@notes/widgets@2`. The resolver asks the site's own registry for `@notes/widgets`, and the site's proxy at `/compmd/registry/` (which passes requests on to npm) for `@kit/mermaid`. `@kit/mermaid`'s document imports `@kit/theme@1`: that is fetched through the proxy too, since it is the site's configuration that decides, not `@kit/mermaid`. `@notes/widgets` runs permissive, reaching the site's API, because the site listed it; `@kit/mermaid` and `@kit/theme` run strict, as every unlisted pack does. If a document imports `@evil/pack` from a scope the site never listed, it comes from `*`, under the site's policy (strict, its size capped, `deny` applied). A document can't name `https://evil.example/` as a registry, and neither can a pack. Another host rendering the same document, say the playground, uses its own configuration: `"*": "https://registry.npmjs.org/"` with `"fetch": "direct"`.
+A user's document imports `@kit/mermaid@1` and `@notes/widgets@2`. With `"fetch": "host"`, the resolver in the reader's browser asks the site's proxy at `/compmd/registry/` for both, and the proxy passes each request on to its scope's registry: the site's own for `@notes/widgets`, npm for `@kit/mermaid`. `@kit/mermaid`'s document imports `@kit/theme@1`: that is fetched through the proxy too, since it is the site's configuration that decides, not `@kit/mermaid`. `@notes/widgets` runs permissive, reaching the site's API, because the site listed it; `@kit/mermaid` and `@kit/theme` run strict, as every unlisted pack does. If a document imports `@evil/pack` from a scope the site never listed, it comes from `*`, under the site's policy (strict, its size capped, `deny` applied). A document can't name `https://evil.example/` as a registry, and neither can a pack. Another host rendering the same document, say the playground, uses its own configuration: `"*": "https://registry.npmjs.org/"` with `"fetch": "direct"`.
 
 The keys:
 
@@ -151,8 +151,8 @@ The keys:
 }
 ```
 
-- **`registries`**: by scope, with `*` for every other scope, as `.npmrc` does. Without the key, no registry: imports of packs the host doesn't have stay F026. A document never names a registry, so it can't make a reader's browser contact a server of its choosing.
-- **`fetch`**: `"host"` (the default: the registry URLs are the host's proxy or mirror, F1) or `"direct"` (F2).
+- **`registries`**: by scope, with `*` for every other scope, as `.npmrc` does, each the registry itself (npm's, a mirror, a private registry), named in full. Without the key, no registry: imports of packs the host doesn't have stay F026. A document never names a registry, so it can't make a reader's browser contact a server of its choosing.
+- **`fetch`**: `"host"` (the default: the reader's browser reaches the registries only through the host's proxy, which passes requests on to them, F1) or `"direct"` (the reader's browser fetches from them, F2). With `@compmd/vite`, the proxy is at `compmd/registry/` under the app's base ([the configuration and `@compmd/vite`](vite.md), decision 8).
 - **`imports`**, **`deny`** and **`maxPackSize`** are the keys the configuration already has; the cap now also applies before a download, from the registry's metadata (R6).
 
 ## R6. What a CompMD pack on npm is
