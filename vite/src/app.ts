@@ -58,12 +58,13 @@ const BINDINGS: Record<ComponentFile["language"], TrustedComponent["binding"]> =
 const FRONTMATTER = /^---\r?\n([\s\S]*?)\r?\n---\r?\n/;
 
 /**
- * The app's configuration: `compmd.config.json` at `root`, or the `compmd` key of its `package.json`; none is an empty
- * configuration.
+ * The app's configuration: `given`, when the plugin's options give one; else `compmd.config.json` at `root`, or the
+ * `compmd` key of its `package.json`; none is an empty configuration.
  *
- * @throws AppError when both are there, or a file isn't JSON; ConfigError when the configuration is wrong.
+ * @throws AppError when both files have one, or a file isn't JSON; ConfigError when the configuration is wrong.
  */
-export async function configOf(root: string): Promise<ReadConfig> {
+export async function configOf(root: string, given?: unknown): Promise<ReadConfig> {
+  if (given !== undefined) return readConfig(given, "the plugin's `config`");
   const file = join(root, "compmd.config.json");
   const manifestFile = join(root, "package.json");
   const parse = async (path: string): Promise<unknown> => {
@@ -160,12 +161,12 @@ function check(listed: readonly Pack[], request: App["request"], warnings: strin
 }
 
 /**
- * Everything the plugin gives the app at `root`.
+ * Everything the plugin gives the app at `root`, with the configuration `given` in the plugin's options, if any.
  *
  * @throws AppError, ConfigError or PackError, saying what to fix.
  */
-export async function loadApp(root: string): Promise<App> {
-  const config = await configOf(root);
+export async function loadApp(root: string, given?: unknown): Promise<App> {
+  const config = await configOf(root, given);
   const folders = [...config.packs.keys()].filter(isFolder);
   const packs = await findPacks(root, folders);
   const byKey = (key: string) => packs.find((pack) => (isFolder(key) ? pack.folder === key : pack.name === key && pack.folder === undefined));

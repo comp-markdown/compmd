@@ -1,6 +1,8 @@
 # `@compmd/create-pack`, the pack template
 
-**Status: accepted (2026-10-30).** Builds S2 of [components from apps and packs](components-from-apps-and-packs.md#s2-built-modules-loaded-by-url-recommended-for-large-components), its *step by step*: `npm create @compmd/pack mermaid` writes a pack whose component is one built ES module, with its libraries bundled in, that a host loads by URL. Its test page uses [`@compmd/vite`](vite.md), whose design is accepted.
+**Status: accepted (2026-10-30); its build, checks and test page moved into `@compmd/pack` (2026-11-02).** Builds S2 of [components from apps and packs](components-from-apps-and-packs.md#s2-built-modules-loaded-by-url-recommended-for-large-components), its *step by step*: `npm create @compmd/pack mermaid` writes a pack whose component is one built ES module, with its libraries bundled in, that a host loads by URL. Its test page uses [`@compmd/vite`](vite.md), whose design is accepted.
+
+[Writing a pack](writing-a-pack.md) changed where decisions 3, 5 and 7 live: the build, the publish check and the test page are `@compmd/pack`'s, run by the pack's scripts as `compmd-pack build`, `dev` and `test`, and are no longer copied into each pack. What they do is as below. The pack holds only what is its own.
 
 ## Proposed decisions
 
@@ -11,7 +13,7 @@
 5. **`npm run dev` opens a test page built on `@compmd/vite`**, with the pack as a folder pack: a `demo.comp.md` that uses the component, rendered in the strict sandbox exactly as a host renders it, rebuilt on save.
 6. **`--renders <language>` makes it a code renderer** (spec §7.7): the signature says `renders: <language>`, `mount` reads `params.code`, and the demo writes a fenced block of that language.
 7. **`--library <package>` makes a library pack** of an npm package (companion `compmd-registry-v1.md`, section 5): `src/index.ts` re-exports it, built as one module, `dist/index.js`, with `"compmd": { "library": "dist/index.js" }` and `exports` naming the same file. It has no document, no component and no test page, so `--library` refuses `--renders` and `--component`. **Its version is the library's**: the build writes the installed library's version into `package.json`, with a warning, as it writes the runtimes it imports into `peerDependencies`, and `prepublishOnly` checks they match. `"single": true` is the author's to add, for a library that can't have two copies in a sandbox; its README says when.
-8. **A pack uses a library pack** by naming it in `peerDependencies` and importing it by that name; the pack's README gives the steps. Its test page, on `@compmd/vite`, gets the library only as one it offers (`libraries` in `demo/compmd.config.json`, L1), since `@compmd/vite` serves built modules by URL ([sharing library packs](sharing-library-packs.md), decision 8).
+8. **A pack uses a library pack** by naming it in `peerDependencies` and importing it by that name; the pack's README gives the steps. Its test page, on `@compmd/vite`, gets the library only as one it offers (`libraries` in a `compmd.config.json` beside `demo.comp.md`, L1), since `@compmd/vite` serves built modules by URL ([sharing library packs](sharing-library-packs.md), decision 8).
 
 ## What it writes
 
@@ -19,15 +21,12 @@ For `npm create @compmd/pack mermaid -- --name @kit/mermaid --renders mermaid`:
 
 ```
 mermaid/
-  package.json        name, version 0.1.0, "compmd": "./index.comp.md", the keyword compmd-pack, files, scripts, devDependencies
+  package.json        name, version 0.1.0, "compmd": "./index.comp.md", the keyword compmd-pack, files, scripts (compmd-pack), devDependencies
   index.comp.md       the export, the import of ./dist/mermaid.js, the signature
-  src/mermaid.ts      export default function mount(target, { params, fallback }) { … }
-  src/mermaid.test.ts the mount in happy-dom: it draws, updates and is destroyed
-  demo/index.html     the test page
-  demo/demo.comp.md   a document that imports the pack and uses it
-  demo/main.ts        the processor and the sandbox, from virtual:compmd
-  vite.config.ts      library mode for the build; @compmd/vite for the test page
-  tsconfig.json
+  src/mermaid.ts      export default component<Params>((target, context) => { … })
+  src/mermaid.test.ts the component through the host contract, with mountForTest: it draws, updates, follows the scheme and is destroyed
+  demo.comp.md        the test page's document: it imports the pack and uses it
+  tsconfig.json       { "extends": "@compmd/pack/tsconfig.json", "include": ["src"] }
   README.md           what to change, how to try it, how to publish
   .gitignore
 ```
@@ -47,10 +46,10 @@ md:
 
 ```compmd component=mermaid signature
 renders: mermaid
-params:
-  theme: default | dark = default
 ```
 ````
+
+The component draws in the page's colour scheme, `context.scheme` (spec §7.4), rather than taking a theme param.
 
 Without `--renders`, the signature has `params: { value: string }` and the demo a leaf, `:: mermaid[A fallback] {value="Hello"}`.
 
@@ -60,16 +59,14 @@ For `npm create @compmd/pack three -- --name @kit/three --library three`:
 three/
   package.json        "compmd": { "library": "dist/index.js" }, exports, the keyword compmd-pack, files, three in devDependencies
   src/index.ts        export * from "three";
-  vite.config.ts      library mode: one module in dist/; writes the library's version and the runtime peers into package.json
-  scripts/check.js    before publishing: the version is the library's
-  tsconfig.json
+  tsconfig.json       @compmd/pack's
   README.md           how a pack uses it, when to add "single", how to publish
   .gitignore
 ```
 
-**Scripts:** `build` (library mode), `dev` (the test page), `test` (Vitest), `lint` (the type check), `prepublishOnly` (build and test), so `npm publish` never publishes a stale `dist/`.
+**Scripts:** `build` (`compmd-pack build`: library mode, then the publish check), `dev` (`compmd-pack dev`, the test page), `test` (`compmd-pack test`, Vitest in happy-dom), `lint` (the type check), `prepublishOnly` (build and test), so `npm publish` never publishes a stale `dist/`. A library pack's `build` writes its library's version into `package.json` and checks it.
 
-**Versions:** `export.version` must match `package.json` (F022). The template's README says to change both, and `prepublishOnly` checks they match, failing with which to change.
+**Versions:** `export.version` must match `package.json` (F022). The template's README says to change both, and the build checks they match, failing with which to change.
 
 ## Questions, with proposed answers
 
@@ -85,4 +82,4 @@ three/
 
 - Publishing for the author: the README gives the steps (`npm login`, `npm publish --access public`, provenance from CI).
 - The playground loading the built pack.
-- A test page that offers the library packs in `peerDependencies` by itself: the author lists them in `demo/compmd.config.json` (decision 8).
+- A test page that offers the library packs in `peerDependencies` by itself: the author lists them in a `compmd.config.json` beside `demo.comp.md` (decision 8).

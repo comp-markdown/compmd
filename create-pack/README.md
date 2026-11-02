@@ -25,19 +25,20 @@ It asks nothing: everything is a flag, so it scripts the same way it runs.
 | `--renders <language>` | makes the component a code renderer of that language's code blocks (spec §7.7) |
 | `--library <package>` | makes a library pack of that npm package instead, which packs share (below) |
 
-It shares its version with the other `@compmd` packages, and the pack it writes pins `@compmd/vite`, `@compmd/processor`, `@compmd/sandbox`, Vite and Vitest at the versions released with it, so a pack made today builds the same later.
+It shares its version with the other `@compmd` packages, and the pack it writes pins [`@compmd/pack`](../pack/README.md) and Vitest at the versions released with it, so a pack made today builds the same later.
 
 ## What it writes
 
+Only what is the pack's own. The build, the checks before publishing and the test page are `@compmd/pack`'s, run by its scripts (`compmd-pack build`, `dev`, `test`), so upgrading that package updates them in packs made earlier ([writing a pack](../docs/writing-a-pack.md)).
+
 ```
 mermaid/
-  package.json         "compmd": "./index.comp.md", the keyword compmd-pack; publishes dist/, index.comp.md and the README
+  package.json         "compmd": "./index.comp.md", the keyword compmd-pack, scripts that run compmd-pack; publishes dist/, index.comp.md and the README
   index.comp.md        the export, the import of ./dist/mermaid.js, the signature
-  src/mermaid.ts       export default function mount(target, { params, fallback }) { … }
-  src/mermaid.test.ts  the component in happy-dom
-  demo/                the test page: a document that imports the pack, in the strict sandbox
-  vite.config.ts       vite build: one module in dist/; vite: the test page, rebuilt on save
-  scripts/check.js     before publishing: export.version is package.json's version
+  src/mermaid.ts       export default component<Params>((target, { params, fallback, scheme }) => { … })
+  src/mermaid.test.ts  the component through the host contract, with mountForTest
+  demo.comp.md         the test page's document, which imports the pack
+  tsconfig.json        one line: @compmd/pack's
   README.md            what to change, how to try it, how to publish
 ```
 
@@ -65,7 +66,7 @@ pnpm test            # writing packs, the template's components, written packs b
 pnpm lint            # eslint and the type check, the template's files too
 ```
 
-The template is in [`template/`](template): the files every pack has, those of a leaf or a code renderer, and a library pack's own. Its names are `__pack__`, `__component__`, `__language__` and `__library__`, which are valid in code, so its files are linted, type-checked and tested in place, but a library pack's `src/index.ts`, which imports the library only a written pack has.
+The template is in [`template/`](template): the files every pack has, those of a leaf or a code renderer, and a library pack's own. Its names are `__pack__`, `__component__`, `__language__` and `__library__`, which are valid in code, so its files are linted, type-checked and tested in place (the components in happy-dom, as `compmd-pack test` runs them), but a library pack's `src/index.ts`, which imports the library only a written pack has.
 
 ## License
 

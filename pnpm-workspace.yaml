@@ -4,6 +4,7 @@ packages:
   - registry
   - vite
   - vite/example
+  - pack
   - create-pack
   - guides
   - wasm

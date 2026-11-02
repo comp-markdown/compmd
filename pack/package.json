@@ -1,0 +1,67 @@
+{
+  "name": "@compmd/pack",
+  "version": "0.1.1",
+  "description": "Everything a CompMD pack would otherwise copy: compmd-pack builds, checks, tests and serves a pack's test page, with helpers for components that draw asynchronously and a kit to test them.",
+  "keywords": [
+    "compmd",
+    "markdown",
+    "components",
+    "pack",
+    "build"
+  ],
+  "homepage": "https://compmd.hakanserce.com/",
+  "bugs": "https://github.com/comp-markdown/compmd/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/comp-markdown/compmd.git",
+    "directory": "pack"
+  },
+  "author": "Hakan Serce",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "compmd-pack": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "tsconfig.pack.json"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./component": {
+      "types": "./dist/component.d.ts",
+      "default": "./dist/component.js"
+    },
+    "./testing": {
+      "types": "./dist/testing.d.ts",
+      "default": "./dist/testing.js"
+    },
+    "./tsconfig.json": "./tsconfig.pack.json"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "lint": "eslint . && tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@compmd/processor": "workspace:^",
+    "@compmd/registry": "workspace:^",
+    "@compmd/render": "workspace:^",
+    "@compmd/sandbox": "workspace:^",
+    "@compmd/vite": "workspace:^",
+    "vite": "8.3.4",
+    "vitest": "5.0.5",
+    "yaml": "2.9.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "26.6.5",
+    "eslint": "10.13.0",
+    "happy-dom": "21.0.3",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.0"
+  }
+}

@@ -127,6 +127,12 @@ describe("configOf", () => {
     expect((await configOf(root)).imports).toBe("listed");
   });
 
+  it("takes the configuration the plugin's options give over the files, and checks it the same way", async () => {
+    expect((await configOf(root, { imports: "listed" })).imports).toBe("listed");
+    expect((await loadApp(root, { packs: { "./components": { trust: "trusted" } } })).trusted.map(({ name }) => name)).toEqual(["stars", "rating-summary"]);
+    await expect(configOf(root, { imports: "some" })).rejects.toThrow(/the plugin's `config`/);
+  });
+
   it("refuses both, JSON that isn't, and a wrong configuration", async () => {
     await write({ "package.json": { name: "app", compmd: {} } });
     await expect(configOf(root)).rejects.toThrow("the configuration is in both compmd.config.json and package.json's `compmd` key: keep one");

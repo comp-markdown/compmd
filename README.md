@@ -27,7 +27,8 @@ CompMD (Component Markdown) is a Markdown flavor that adds components, container
 | [sandbox/](sandbox/README.md) | `@compmd/sandbox`: runs components at the spec's trust levels, in strict and permissive frames or trusted in the page, so no host writes a sandbox policy itself |
 | [registry/](registry/README.md) | `@compmd/registry`: packs from an npm registry, resolved as the processor asks, the host's policy applied before any download, each tarball checked against its integrity, cached; a proxy for hosts that keep readers private |
 | [vite/](vite/README.md) | `@compmd/vite`: a Vite plugin that reads `compmd.config.json`, gives the processor the app's packs, serves the sandbox and the packs' modules, and builds the app's own components with it |
-| [create-pack/](create-pack/README.md) | `@compmd/create-pack`: `npm create @compmd/pack` writes a pack, its component one built module, with a test page in the sandbox |
+| [pack/](pack/README.md) | `@compmd/pack`: `compmd-pack` builds, checks, tests and serves a pack's test page, so packs copy none of it; helpers for components that draw asynchronously, and a kit to test them |
+| [create-pack/](create-pack/README.md) | `@compmd/create-pack`: `npm create @compmd/pack` writes a pack on `@compmd/pack`, its component one built module, with a test page in the sandbox |
 | [editor/](editor/README.md) | The CompMD editor: a text area and the rendered page beside it, updated as you type; a static site that works offline once loaded |
 | [logo/](logo/README.md) | The CompMD logo: the mark and the name, light, dark and in one color, and the favicon |
 | [website/](website/README.md) | [The CompMD website](https://compmd.hakanserce.com/): the landing page, with the playground and the spec, published on GitHub Pages |

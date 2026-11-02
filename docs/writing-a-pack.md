@@ -72,12 +72,22 @@ Its unit test mocks Mermaid, and checks the theme for each scheme and that a par
 - **The spec**, §7.4: `scheme` and `fail` in the contract; a throw in `update` recovers at the next update; when to `fail` (S5). §7.6: the bindings pass both. §10.2: W118 is "threw while mounting or updating, or failed".
 - **`@compmd/render`**: the contract's two fields; reading the container's scheme at render, on a preference change, when printing and on `page.scheme()`; failure until the next update; the React and Svelte bindings.
 - **`@compmd/sandbox`**: frames pass the scheme to their renderer (the `scheme` message stays, and the frame's document keeps it, so a frame stays transparent on its page); the view's `scheme()`.
+- **`@compmd/vite`**: the configuration may be given in the plugin's options, for the test page.
 - **`@compmd/pack`**, new: the `compmd-pack` command, the test page, the publish check, the TypeScript base, the component helpers and the testing kit. Released with the other packages.
 - **`@compmd/create-pack`**: writes packs on `@compmd/pack`, leaf, renderer and library alike.
 - **The Mermaid pack**: rewritten on it.
 
+## What building it found
+
+- **A plain component's params are typed with `component<P>()`**, beside `draw<P>()`: `@compmd/pack/component` also has it, so a template's component needs no casts from the contract's `Record<string, unknown>`.
+- **The test page needs `@compmd/vite` to take its configuration in its options** (`compmd({ config })`), since the page has no `compmd.config.json` to read: the pack is the folder pack `./`.
+- **A pack that shares a library pack** lists it in a `compmd.config.json` beside `demo.comp.md`, which the test page reads, as `demo/compmd.config.json` was read before.
+- **A failure is reported as `threw`**, W118, through `onError` and the sandbox's `error`, with the component's message: the protocol needs no reason of its own for it.
+- **A frame's mount doesn't follow the scheme itself:** the frame's document takes it from the page (the `scheme` message), and the renderer inside the frame updates its components, so the page's renderer updates only the components it runs.
+- **A component the frame mounts again when its code changes** gets the renderer's context, whose `scheme` stays live, not a copy made at its last update.
+
 ## Not in this change
 
-- A Vite plugin of a pack's own. `compmd-pack` adds React's or Svelte's by the component's language; a pack that needs another is rare enough to wait for a real one.
+- A Vite plugin of a pack's own, or a framework's. `compmd-pack` builds TypeScript and JSX with Vite's own transform; a Svelte component rendered inside `mount` needs Svelte's plugin, which waits for a pack that has one.
 - Recovering from a throw in `mount`: the component never mounted, so there is nothing to update.
 - Generating a component's params type from its signature: the type repeats the signature for now.

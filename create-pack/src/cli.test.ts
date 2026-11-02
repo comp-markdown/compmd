@@ -30,7 +30,7 @@ describe("create-pack", () => {
   it("writes a pack, and says what to run next", () => {
     const { out, code } = run("Mermaid", "--name", "@kit/mermaid", "--renders", "mermaid");
     expect(code).toBe(0);
-    expect(out).toBe("Wrote @kit/mermaid in Mermaid: 13 files, with the component mermaid, a renderer of ```mermaid blocks.\n\n  cd Mermaid\n  npm install\n  npm run dev\n");
+    expect(out).toBe("Wrote @kit/mermaid in Mermaid: 8 files, with the component mermaid, a renderer of ```mermaid blocks.\n\n  cd Mermaid\n  npm install\n  npm run dev\n");
     expect(existsSync(join(dir, "Mermaid/src/mermaid.ts"))).toBe(true);
   });
 
@@ -40,7 +40,7 @@ describe("create-pack", () => {
   });
 
   it("writes a library pack with --library, and says to build it", () => {
-    expect(run("three", "--name", "@kit/three", "--library", "three")).toEqual({ out: "Wrote @kit/three in three: 7 files, a library pack of three.\n\n  cd three\n  npm install\n  npm run build\n", code: 0 });
+    expect(run("three", "--name", "@kit/three", "--library", "three")).toEqual({ out: "Wrote @kit/three in three: 5 files, a library pack of three.\n\n  cd three\n  npm install\n  npm run build\n", code: 0 });
     expect(existsSync(join(dir, "three/src/index.ts"))).toBe(true);
     expect(run("d3", "--name", "@kit/d3", "--library", "d3", "--component", "chart")).toEqual({ out: "a library pack has no components: leave out --component\n", code: 1 });
   });

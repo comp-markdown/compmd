@@ -11,7 +11,7 @@
     "erasableSyntaxOnly": true,
     "allowImportingTsExtensions": true,
     "rewriteRelativeImportExtensions": true,
-    "types": ["node", "vite/client", "@compmd/vite/client"],
+    "types": ["node", "vite/client"],
     "noEmit": true,
     "skipLibCheck": true
   },

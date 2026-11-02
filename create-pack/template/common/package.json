@@ -8,19 +8,16 @@
   "compmd": "./index.comp.md",
   "files": ["dist", "index.comp.md", "README.md"],
   "scripts": {
-    "build": "vite build",
-    "dev": "vite build && vite",
-    "test": "vitest run",
+    "build": "compmd-pack build",
+    "dev": "compmd-pack dev",
+    "test": "compmd-pack test",
     "lint": "tsc --noEmit",
-    "prepublishOnly": "npm run build && npm test && node scripts/check.js"
+    "prepublishOnly": "compmd-pack build && compmd-pack test"
   },
   "devDependencies": {
-    "@compmd/processor": "__version:@compmd/processor__",
-    "@compmd/sandbox": "__version:@compmd/sandbox__",
-    "@compmd/vite": "__version:@compmd/vite__",
+    "@compmd/pack": "__version:@compmd/pack__",
     "happy-dom": "__version:happy-dom__",
     "typescript": "__version:typescript__",
-    "vite": "__version:vite__",
     "vitest": "__version:vitest__"
   }
 }

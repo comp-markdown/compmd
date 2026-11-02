@@ -17,6 +17,11 @@ import type { ReadConfig } from "./config.ts";
 export interface CompmdOptions {
   /** The folder of the app, under its base, where the sandbox and the packs' files are served; `compmd/` by default. */
   folder?: string;
+  /**
+   * The configuration, in place of `compmd.config.json`: for a tool that serves a page of its own, such as a pack's
+   * test page. Folder packs in it are relative to Vite's root, as in the file.
+   */
+  config?: unknown;
 }
 
 const VIRTUAL = "virtual:compmd";
@@ -142,7 +147,7 @@ export function compmd(options: CompmdOptions = {}): Plugin {
 
   /** Reads the app again, and its sandbox once its libraries are known. */
   const load = async (): Promise<App> => {
-    app = await loadApp(config.root);
+    app = await loadApp(config.root, options.config);
     proxy = proxyOf(app.config, `${prefix}registry/`);
     built ??= buildSandbox(app, config.root, frames);
     definition = await built;
@@ -221,7 +226,7 @@ export function compmd(options: CompmdOptions = {}): Plugin {
     },
     async configurePreviewServer(server) {
       // A preview builds nothing: the proxy is the configuration's.
-      const previewed = proxyOf(await configOf(config.root), `${prefix}registry/`);
+      const previewed = proxyOf(await configOf(config.root, options.config), `${prefix}registry/`);
       server.middlewares.use(proxying(`${prefix}registry/`, () => previewed));
       server.middlewares.use((request, response, next) => {
         const path = new URL(request.url ?? "/", "http://localhost").pathname;

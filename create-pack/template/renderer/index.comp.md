@@ -11,10 +11,8 @@ md:
 
 # __pack__
 
-`__component__` draws every ` ```__language__ ` block of a document that imports it; a reader without it sees the code. Written as a leaf, its `code` is a param, for source made from data: `:: __component__[What it shows] {code=("…")}`.
+`__component__` draws every ` ```__language__ ` block of a document that imports it, in the page's colour scheme; a reader without it sees the code. Written as a leaf, its `code` is a param, for source made from data: `:: __component__[What it shows] {code=("…")}`.
 
 ```compmd component=__component__ signature
 renders: __language__
-params:
-  theme: light | dark = light
 ```

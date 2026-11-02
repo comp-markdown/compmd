@@ -1,0 +1,64 @@
+// The build: one file per module, with the runtimes and shared library packs left as imports, and `package.json` made
+// to say what the modules need.
+import { readdirSync, readFileSync } from "node:fs";
+import { rm } from "node:fs/promises";
+import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { documentOf, folder, write } from "../test/folders.ts";
+import { buildModules } from "./build.ts";
+import { checkPack } from "./check.ts";
+import { readPack } from "./pack.ts";
+
+let dir: string;
+
+/** The bare and relative imports left in a built module, static and dynamic. */
+const importsOf = (module: string): string[] => [...module.matchAll(/\b(?:import|from)\s*\(?\s*["']([^"']+)["']/g)].map((match) => match[1] ?? "");
+
+const manifestIn = (path: string) => JSON.parse(readFileSync(join(dir, path), "utf8")) as { version: string; peerDependencies?: Record<string, string> };
+
+beforeEach(async () => {
+  dir = await folder();
+  // Libraries as `npm install` would put them: one uses React, and loads a part of itself on demand.
+  await write(dir, {
+    "node_modules/tiny-lib/package.json": { name: "tiny-lib", version: "2.3.4", type: "module", exports: "./index.js" },
+    "node_modules/tiny-lib/index.js": 'import { useState } from "react";\nexport const answer = 42;\nexport const state = useState;\nexport const later = async () => (await import("./later.js")).value;\n',
+    "node_modules/tiny-lib/later.js": 'export const value = "later";\n',
+    "node_modules/react/package.json": { name: "react", version: "19.3.0" },
+    "node_modules/@kit/shared/package.json": { name: "@kit/shared", version: "1.0.0", type: "module", exports: "./index.js" },
+    "node_modules/@kit/shared/index.js": "export const shared = 1;\n",
+  });
+});
+
+afterEach(async () => {
+  await rm(dir, { recursive: true, force: true });
+});
+
+describe("buildModules", () => {
+  it("builds each component as one module, its runtimes and shared library packs left as imports, and adds the runtimes as peers", async () => {
+    await write(dir, {
+      "package.json": { name: "@kit/charts", version: "0.1.0", compmd: "./index.comp.md", files: ["dist", "index.comp.md"], peerDependencies: { "@kit/shared": "^1" } },
+      "index.comp.md": documentOf(["dist/line.js", "dist/bar.js"]),
+      "src/line.ts": 'import { later, state } from "tiny-lib";\nimport { shared } from "@kit/shared";\nexport default () => [later, state, shared];\n',
+      "src/bar.ts": "export default () => undefined;\n",
+    });
+    await buildModules(await readPack(dir), { logLevel: "silent" });
+    expect(readdirSync(join(dir, "dist")).sort()).toEqual(["bar.js", "line.LICENSES.md", "bar.LICENSES.md", "line.js"].sort());
+    const line = readFileSync(join(dir, "dist/line.js"), "utf8");
+    expect(importsOf(line).sort()).toEqual(["@kit/shared", "react"]);
+    expect(line).toContain('"later"');
+    expect(manifestIn("package.json").peerDependencies).toEqual({ "@kit/shared": "^1", react: "^19.3.0" });
+    expect(await checkPack(await readPack(dir))).toEqual([]);
+  });
+
+  it("builds a library pack as one module, and takes its library's version", async () => {
+    await write(dir, {
+      "package.json": { name: "@kit/tiny", version: "0.0.0", compmd: { library: "dist/index.js" }, files: ["dist"] },
+      "src/index.ts": 'export * from "tiny-lib";\n',
+    });
+    await buildModules(await readPack(dir), { logLevel: "silent" });
+    expect(readdirSync(join(dir, "dist")).sort()).toEqual(["LICENSES.md", "index.js"]);
+    expect(importsOf(readFileSync(join(dir, "dist/index.js"), "utf8"))).toEqual(["react"]);
+    expect(manifestIn("package.json")).toMatchObject({ version: "2.3.4", peerDependencies: { react: "^19.3.0" } });
+    expect(await checkPack(await readPack(dir))).toEqual([]);
+  });
+});

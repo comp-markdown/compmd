@@ -9,14 +9,13 @@
   "exports": { ".": "./dist/index.js" },
   "files": ["dist", "README.md"],
   "scripts": {
-    "build": "vite build",
+    "build": "compmd-pack build",
     "lint": "tsc --noEmit",
-    "prepublishOnly": "npm run build && node scripts/check.js"
+    "prepublishOnly": "compmd-pack build"
   },
   "devDependencies": {
     "__library__": "latest",
-    "@compmd/sandbox": "__version:@compmd/sandbox__",
-    "typescript": "__version:typescript__",
-    "vite": "__version:vite__"
+    "@compmd/pack": "__version:@compmd/pack__",
+    "typescript": "__version:typescript__"
   }
 }

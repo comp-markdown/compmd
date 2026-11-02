@@ -18,26 +18,13 @@ describe("createPack", () => {
   it("writes a leaf's pack, with its names filled in", async () => {
     const folder = join(dir, "badge");
     const written = await createPack({ folder, name: "@kit/badge", component: "badge" });
-    expect(written).toEqual([
-      ".gitignore",
-      "README.md",
-      "demo/compmd.config.json",
-      "demo/demo.comp.md",
-      "demo/index.html",
-      "demo/main.ts",
-      "index.comp.md",
-      "package.json",
-      "scripts/check.js",
-      "src/badge.test.ts",
-      "src/badge.ts",
-      "tsconfig.json",
-      "vite.config.ts",
-    ]);
+    // Only what is the pack's own: `@compmd/pack` holds the build, the checks and the test page.
+    expect(written).toEqual([".gitignore", "README.md", "demo.comp.md", "index.comp.md", "package.json", "src/badge.test.ts", "src/badge.ts", "tsconfig.json"]);
     const document = await readFile(join(folder, "index.comp.md"), "utf8");
     expect(document).toContain('    - from: ./dist/badge.js\n      names: [badge]\n  export:\n    pack: "@kit/badge"');
     expect(document).toContain("```compmd component=badge signature\nparams:\n  value: string\n```");
-    expect(await readFile(join(folder, "demo/demo.comp.md"), "utf8")).toContain('- from: "@kit/badge@0"');
-    expect(await readFile(join(folder, "vite.config.ts"), "utf8")).toContain('fileName: () => "badge.js"');
+    expect(await readFile(join(folder, "demo.comp.md"), "utf8")).toContain('- from: "@kit/badge@0"');
+    expect(await readFile(join(folder, "tsconfig.json"), "utf8")).toContain('"extends": "@compmd/pack/tsconfig.json"');
     const all = await Promise.all(written.map((path) => readFile(join(folder, path), "utf8")));
     expect(all.join("\n")).not.toMatch(/__(pack|component|language|version:[^_]*)__/);
   });
@@ -48,11 +35,10 @@ describe("createPack", () => {
     const manifest = JSON.parse(await readFile(join(folder, "package.json"), "utf8")) as { name: string; devDependencies: Record<string, string> };
     const ours = JSON.parse(await readFile(join(import.meta.dirname, "../package.json"), "utf8")) as { devDependencies: Record<string, string> };
     expect(manifest.name).toBe("@kit/badge");
-    expect(manifest.devDependencies.vite).toBe(ours.devDependencies.vite);
     expect(manifest.devDependencies.vitest).toBe(ours.devDependencies.vitest);
     // In the repository, `workspace:` is the version installed: the one the repository releases.
-    const vite = JSON.parse(await readFile(join(import.meta.dirname, "../../vite/package.json"), "utf8")) as { version: string };
-    expect(manifest.devDependencies["@compmd/vite"]).toBe(vite.version);
+    const pack = JSON.parse(await readFile(join(import.meta.dirname, "../../pack/package.json"), "utf8")) as { version: string };
+    expect(manifest.devDependencies["@compmd/pack"]).toBe(pack.version);
     expect(Object.values(manifest.devDependencies).every((version) => /^\d+\.\d+\.\d+$/.test(version))).toBe(true);
   });
 
@@ -60,14 +46,14 @@ describe("createPack", () => {
     const folder = join(dir, "diagram");
     await createPack({ folder, name: "@kit/diagram", component: "diagram", renders: "dot" });
     expect(await readFile(join(folder, "index.comp.md"), "utf8")).toContain("```compmd component=diagram signature\nrenders: dot\n");
-    expect(await readFile(join(folder, "demo/demo.comp.md"), "utf8")).toContain('```dot {alt="Two lines of dot"}');
+    expect(await readFile(join(folder, "demo.comp.md"), "utf8")).toContain('```dot {alt="Two lines of dot"}');
     expect(await readFile(join(folder, "src/diagram.ts"), "utf8")).toContain("code: string;");
   });
 
   it("writes a library pack with --library: one module, the field that says so, and no component", async () => {
     const folder = join(dir, "three");
     const written = await createPack({ folder, name: "@kit/three", component: "three", library: "three" });
-    expect(written).toEqual([".gitignore", "README.md", "package.json", "scripts/check.js", "src/index.ts", "tsconfig.json", "vite.config.ts"]);
+    expect(written).toEqual([".gitignore", "README.md", "package.json", "src/index.ts", "tsconfig.json"]);
     const manifest = JSON.parse(await readFile(join(folder, "package.json"), "utf8")) as Record<string, unknown> & { devDependencies: Record<string, string> };
     expect(manifest).toMatchObject({ name: "@kit/three", compmd: { library: "dist/index.js" }, exports: { ".": "./dist/index.js" }, keywords: ["compmd", "compmd-pack"], files: ["dist", "README.md"] });
     expect(manifest.devDependencies.three).toBe("latest");

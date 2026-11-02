@@ -1,17 +1,24 @@
-// A pack written by `createPack`, as its author gets it (docs/create-pack.md, C4): it builds into one module with no
-// import left but the runtimes', its publish check holds, and its test page renders the component in the strict sandbox,
-// in Chrome and WebKit. The pack sits in this package's folder, so it finds the repository's packages as installed.
+// A pack written by `createPack`, as its author gets it (docs/create-pack.md, C4; docs/writing-a-pack.md): it holds no
+// build, check or test page of its own, its scripts are `compmd-pack`'s, it builds into one module with no import left
+// but the runtimes', the build's check holds, and its test page renders the component in the strict sandbox, in Chrome
+// and WebKit, in light and dark. The pack sits in this package's folder, so it finds the repository's packages.
 import { RUNTIMES } from "@compmd/sandbox/build";
 import { execFileSync } from "node:child_process";
-import { readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { readPack, servePack } from "@compmd/pack";
 import { chromium, webkit, type Browser, type BrowserType, type LaunchOptions } from "playwright";
-import { build, createServer, type ViteDevServer } from "vite";
+import type { ViteDevServer } from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createPack } from "../src/create.ts";
 
 const OUT = join(import.meta.dirname, ".out");
+
+/** `compmd-pack`, as a pack's scripts run it. */
+const CLI = join(dirname(fileURLToPath(import.meta.resolve("@compmd/pack"))), "cli.js");
+const compmdPack = (folder: string, ...args: string[]): string => execFileSync("node", [CLI, ...args], { cwd: folder, encoding: "utf8", stdio: "pipe" });
 
 const PACKS = [
   { variant: "a leaf", folder: "badge", name: "@kit/badge", component: "badge", port: 4198, shows: { label: "Hello, from badge", text: "Hello" } },
@@ -44,35 +51,37 @@ describe.each(PACKS)("a pack of $variant", ({ folder: name, port, shows, ...opti
     await createPack({ folder, ...options });
     // Its own type check and tests pass as written, before anything is built.
     execFileSync(join(import.meta.dirname, "../node_modules/.bin/tsc"), ["--noEmit"], { cwd: folder, stdio: "pipe" });
-    execFileSync(join(import.meta.dirname, "../node_modules/.bin/vitest"), ["run"], { cwd: folder, stdio: "pipe" });
-    // The pack's config sets its own roots: the pack for the build, `demo/` for the test page.
-    await build({ configFile: join(folder, "vite.config.ts"), logLevel: "warn" });
-    server = await createServer({ configFile: join(folder, "vite.config.ts"), logLevel: "warn", server: { port, strictPort: true } });
-    await server.listen();
+    compmdPack(folder, "test");
+    compmdPack(folder, "build");
+    server = await servePack(await readPack(folder), { port });
   });
 
   afterAll(async () => {
     await server.close();
   });
 
+  it("holds only what is its own: no build, check or test page", () => {
+    for (const path of ["vite.config.ts", "scripts", "demo"]) expect(existsSync(join(folder, path)), path).toBe(false);
+    const { scripts } = JSON.parse(readFileSync(join(folder, "package.json"), "utf8")) as { scripts: Record<string, string> };
+    expect(scripts).toMatchObject({ build: "compmd-pack build", dev: "compmd-pack dev", test: "compmd-pack test" });
+  });
+
   it("builds into one module, with no import left but the runtimes'", () => {
-    expect(readdirSync(join(folder, "dist"))).toEqual([`${options.component}.js`]);
+    expect(readdirSync(join(folder, "dist")).filter((file) => file.endsWith(".js"))).toEqual([`${options.component}.js`]);
     const module = readFileSync(join(folder, "dist", `${options.component}.js`), "utf8");
-    const imports = importsOf(module);
     const runtimes = new Set(RUNTIMES.flatMap((runtime) => runtime.imports));
-    expect(imports.filter((specifier) => !runtimes.has(specifier))).toEqual([]);
+    expect(importsOf(module).filter((specifier) => !runtimes.has(specifier))).toEqual([]);
     // It imports no runtime, so it needs none from the host (spec §6.4).
     expect((JSON.parse(readFileSync(join(folder, "package.json"), "utf8")) as { peerDependencies?: unknown }).peerDependencies).toBeUndefined();
     expect(module).toMatch(/export\s*\{[^}]*as default/);
   });
 
-  it("checks before publishing that its document's version is package.json's", () => {
-    expect(() => execFileSync("node", ["scripts/check.js"], { cwd: folder, stdio: "pipe" })).not.toThrow();
+  it("checks in its build that its document's version is package.json's", () => {
     const manifest = join(folder, "package.json");
     const written = readFileSync(manifest, "utf8");
     writeFileSync(manifest, written.replace('"version": "0.1.0"', '"version": "0.2.0"'));
     try {
-      expect(() => execFileSync("node", ["scripts/check.js"], { cwd: folder, stdio: "pipe" })).toThrow(/export\.version is 0\.1\.0, package\.json's version is 0\.2\.0/);
+      expect(() => compmdPack(folder, "build")).toThrow(/export\.version is 0\.1\.0, package\.json's version is 0\.2\.0/);
     } finally {
       writeFileSync(manifest, written);
     }
@@ -101,6 +110,19 @@ describe.each(PACKS)("a pack of $variant", ({ folder: name, port, shows, ...opti
       expect(errors).toEqual([]);
       await page.close();
     });
+
+    it("switches the page between light and dark, and the frame follows", async () => {
+      const page = await browser.newPage();
+      await page.goto(`http://localhost:${String(port)}/`);
+      const frame = page.frameLocator("iframe");
+      await expect.poll(() => frame.locator(`[aria-label="${shows.label}"]`).count(), { timeout: 20_000 }).toBe(1);
+      const scheme = () => frame.locator(":root").evaluate((root) => getComputedStyle(root).colorScheme);
+      await page.selectOption("#scheme", "dark");
+      await expect.poll(scheme).toBe("dark");
+      await page.selectOption("#scheme", "light");
+      await expect.poll(scheme).toBe("light");
+      await page.close();
+    });
   });
 });
 
@@ -117,11 +139,11 @@ describe("a library pack", () => {
       "node_modules/tiny-lib/later.js": 'export const value = "later";\n',
       "node_modules/react/package.json": { name: "react", version: "19.3.0" },
     });
-    await build({ configFile: join(folder, "vite.config.ts"), logLevel: "silent" });
+    compmdPack(folder, "build");
   });
 
   it("builds into one module, with no chunk, and no import left but the runtimes'", () => {
-    expect(readdirSync(join(folder, "dist"))).toEqual(["index.js"]);
+    expect(readdirSync(join(folder, "dist")).filter((file) => file.endsWith(".js"))).toEqual(["index.js"]);
     const module = readFileSync(join(folder, "dist/index.js"), "utf8");
     expect(importsOf(module)).toEqual(["react"]);
     expect(module).toContain('"later"');
@@ -132,18 +154,6 @@ describe("a library pack", () => {
     expect(manifest.version).toBe("2.3.4");
     expect(manifest.peerDependencies).toEqual({ react: "^19.3.0" });
     expect(manifest.compmd).toEqual({ library: "dist/index.js" });
-  });
-
-  it("checks before publishing that its version is the library's", () => {
-    expect(() => execFileSync("node", ["scripts/check.js"], { cwd: folder, stdio: "pipe" })).not.toThrow();
-    const manifest = join(folder, "package.json");
-    const written = readFileSync(manifest, "utf8");
-    writeFileSync(manifest, written.replace('"version": "2.3.4"', '"version": "2.4.0"'));
-    try {
-      expect(() => execFileSync("node", ["scripts/check.js"], { cwd: folder, stdio: "pipe" })).toThrow(/package\.json's version is 2\.4\.0, tiny-lib's is 2\.3\.4/);
-    } finally {
-      writeFileSync(manifest, written);
-    }
   });
 });
 
@@ -156,8 +166,8 @@ describe("a pack that shares a library pack", () => {
     writeFileSync(join(folder, "package.json"), JSON.stringify({ ...manifest, peerDependencies: { "@kit/tiny": "^2.3" } }));
     const source = join(folder, "src/gauge.ts");
     writeFileSync(source, `import { answer } from "@kit/tiny";\nexport const shared = answer;\n${readFileSync(source, "utf8")}`);
-    await build({ configFile: join(folder, "vite.config.ts"), logLevel: "silent" });
-    expect(readdirSync(join(folder, "dist"))).toEqual(["gauge.js"]);
+    compmdPack(folder, "build");
+    expect(readdirSync(join(folder, "dist")).filter((file) => file.endsWith(".js"))).toEqual(["gauge.js"]);
     expect(importsOf(readFileSync(join(folder, "dist/gauge.js"), "utf8"))).toEqual(["@kit/tiny"]);
   });
 });

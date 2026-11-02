@@ -39,9 +39,8 @@
     "test": "vitest run"
   },
   "devDependencies": {
-    "@compmd/processor": "workspace:*",
+    "@compmd/pack": "workspace:*",
     "@compmd/sandbox": "workspace:*",
-    "@compmd/vite": "workspace:*",
     "@eslint/js": "10.0.1",
     "@types/node": "26.6.5",
     "eslint": "10.13.0",
