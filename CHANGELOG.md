@@ -6,6 +6,7 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
 
 ### 2026-11-02
 
+- **Where host metadata's diagnostics are (§2.1).** A diagnostic about a host's metadata, which has no place in the text, is at line 1. Before, the spec didn't say. Not breaking.
 - **Library packs (companion, section 5).** A library pack's own libraries are its `peerDependencies`. For a library that can't have two copies, the first pack to ask, in the order the document's imports resolve, decides its version. A library that can't be had (denied, refused, not allowed, no version matching, not a library pack, or in a cycle of libraries) is W121 on the import of the pack that names it, saying why. Before, the companion didn't say which pack decides or what a missing library is. Not breaking.
 - **Recursion through code blocks (§7.3, §10.2).** A code block a code renderer renders invokes it, so a `compmd` code renderer whose body leads back to it through such a block is F019, at the block's language, and the block shows its fallback. Before, the spec didn't say whether a rendered block counts as an invocation. Not breaking: such a document never rendered.
 

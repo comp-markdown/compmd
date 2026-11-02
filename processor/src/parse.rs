@@ -90,6 +90,13 @@ pub(crate) fn parse(text: &str, options: &ParseOptions) -> Parsed {
         if let Some(document) = document {
             settings = Settings::read(document, yaml);
         }
+    } else if let Some(given) = &options.metadata {
+        // A document without frontmatter takes the host's metadata as its frontmatter (spec §2.1).
+        let document = frontmatter::metadata(given, &mut diagnostics);
+        compmd = document.is_some();
+        if let Some(document) = document {
+            settings = Settings::read(document, "");
+        }
     }
     let syntax = Syntax {
         compmd,
@@ -281,5 +288,39 @@ mod tests {
         };
         let tree = serde_json::to_value(&*parse("[[Home]]", &options).root).unwrap();
         assert_eq!(tree["children"][0]["children"][0]["type"], "wikiLink");
+    }
+
+    #[test]
+    fn host_metadata_is_the_frontmatter_of_a_document_without_one_and_is_reported_at_line_1() {
+        let options = ParseOptions {
+            metadata: Some(serde_json::json!({
+                "title": "Notes",
+                "md": { "import": [{ "from": "@acme/kit@1", "names": "*" }], "imports": [] }
+            })),
+        };
+        let parsed = parse("Text.\n", &options);
+        assert_eq!(parsed.settings.doc["title"], "Notes");
+        assert_eq!(parsed.settings.imports[0].from.value, "@acme/kit@1");
+        assert_eq!(parsed.settings.imports[0].from.at, Location::new(1, 1));
+        let [unknown] = &parsed.diagnostics[..] else {
+            panic!("one diagnostic");
+        };
+        assert_eq!(
+            (unknown.code, unknown.range.start),
+            (Code::W111, Location::new(1, 1))
+        );
+    }
+
+    #[test]
+    fn host_metadata_of_another_major_version_makes_the_document_plain() {
+        let options = ParseOptions {
+            metadata: Some(serde_json::json!({ "md": { "version": 2 } })),
+        };
+        let parsed = parse("::: box\nText.\n::: /box\n", &options);
+        assert_eq!(parsed.diagnostics[0].code, Code::F001);
+        assert!(!matches!(
+            parsed.root.children[0],
+            Node::ComponentContainer(_)
+        ));
     }
 }

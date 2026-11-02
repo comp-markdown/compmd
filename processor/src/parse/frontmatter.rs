@@ -107,17 +107,38 @@ fn lines(text: &str) -> impl Iterator<Item = (usize, &str)> + Clone {
 /// Reads the frontmatter's YAML, with where each key and value is; `None` when CompMD processing doesn't apply
 /// (F001, F033).
 pub(crate) fn read(yaml_text: &str, diagnostics: &mut Vec<Diagnostic>) -> Option<yaml::Document> {
-    let at = |mark: Mark| Location::new(1 + mark.line, mark.column + 1);
-    let document = match yaml::parse(yaml_text) {
-        Ok(document) => document,
+    match yaml::parse(yaml_text) {
+        Ok(document) => checked(document, diagnostics),
         Err(Refused(mark, why)) => {
             diagnostics.push(Diagnostic::new(
                 Code::F033,
-                at(mark),
+                Location::new(1 + mark.line, mark.column + 1),
                 format!("the frontmatter isn't YAML 1.2 core: {why}; the document is read as plain Markdown"),
             ));
-            return None;
+            None
         }
+    }
+}
+
+/// A host's metadata as a frontmatter (spec §2.1): the same keys, with no place in the text, so that what is said of
+/// them is at line 1.
+pub(crate) fn metadata(value: &Value, diagnostics: &mut Vec<Diagnostic>) -> Option<yaml::Document> {
+    checked(
+        yaml::Document {
+            value: value.clone(),
+            ..yaml::Document::default()
+        },
+        diagnostics,
+    )
+}
+
+/// `document`, a frontmatter or a host's metadata, when CompMD processing applies to it (F001), with the warnings
+/// on its `md` keys (W110, W111). A key or value with no place is at line 1.
+fn checked(document: yaml::Document, diagnostics: &mut Vec<Diagnostic>) -> Option<yaml::Document> {
+    let place = |marks: &std::collections::HashMap<String, Mark>, pointer: &str| {
+        marks.get(pointer).map_or(Location::new(1, 1), |mark| {
+            Location::new(1 + mark.line, mark.column + 1)
+        })
     };
     let settings = document
         .value
@@ -138,7 +159,7 @@ pub(crate) fn read(yaml_text: &str, diagnostics: &mut Vec<Diagnostic>) -> Option
     if minor > MINOR {
         diagnostics.push(Diagnostic::new(
             Code::W110,
-            at(document.values["/md/version"]),
+            place(&document.values, "/md/version"),
             format!("the document declares version {MAJOR}.{minor}; this processor implements {MAJOR}.{MINOR}"),
         ));
     }
@@ -150,7 +171,7 @@ pub(crate) fn read(yaml_text: &str, diagnostics: &mut Vec<Diagnostic>) -> Option
             .map_or_else(String::new, |known| format!("; did you mean `{known}`?"));
         diagnostics.push(Diagnostic::new(
             Code::W111,
-            at(document.keys[&format!("/md/{key}")]),
+            place(&document.keys, &format!("/md/{key}")),
             format!("unknown key `md.{key}`, ignored{hint}"),
         ));
     }
@@ -162,7 +183,7 @@ pub(crate) fn read(yaml_text: &str, diagnostics: &mut Vec<Diagnostic>) -> Option
             {
                 diagnostics.push(Diagnostic::new(
                     Code::W111,
-                    at(document.values[&format!("/md/syntax/{i}")]),
+                    place(&document.values, &format!("/md/syntax/{i}")),
                     format!("unknown syntax {name} in `md.syntax`, ignored; known: `wiki-links`"),
                 ));
             }

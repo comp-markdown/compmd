@@ -102,7 +102,7 @@ The author's `version` is `md.doc.version`; CompMD's is `md.version` inside the 
 
 **YAML.** Frontmatter is YAML 1.2 with the core schema: `no` is a string and only `true` and `false` are booleans, and `2026-10-21` is a string. Tags (`!!…`), anchors and aliases (`&a`, `*a`) and duplicate keys are not allowed (F033). Processors MAY cap frontmatter size (F033). A leading byte order mark is ignored. Only `---` YAML is frontmatter; TOML (`+++`) is ordinary text. Write minor versions and other version-like values as strings: `1.10` is the number 1.1.
 
-**Metadata from a host.** A processor MAY receive a document's metadata apart from its text, for example from a host that keeps it in its own fields. Such metadata is equivalent to the same keys in frontmatter. A document whose text has its own frontmatter uses only that; there is no merging, and a processor that was also given metadata reports W115.
+**Metadata from a host.** A processor MAY receive a document's metadata apart from its text, for example from a host that keeps it in its own fields. Such metadata is equivalent to the same keys in frontmatter. A document whose text has its own frontmatter uses only that; there is no merging, and a processor that was also given metadata reports W115. Since metadata has no place in the text, a diagnostic about it (an unknown `md` key, an import that can't be loaded) is reported at line 1.
 
 ### 2.2 Versions
 
