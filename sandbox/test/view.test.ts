@@ -1,0 +1,235 @@
+// A `View`, as a host uses it (docs/running-components-in-the-sandbox.md, Q1, Q7): each method and event, in the
+// page modes where it differs, each a test. Its component is `label`, which shows its `label` param and sets the
+// input bound to its `result` param to it, when it mounts and on each update.
+
+import type { HostComponent } from "@compmd/processor";
+import type { ExpandedComponent, ExpandedRoot, Splice } from "@compmd/render";
+import { afterEach, describe, expect, it } from "vitest";
+import { createSandbox, type SandboxOptions, type View, type ViewEvents } from "../src/index.ts";
+import { frames, pause, probeCode } from "./harness.ts";
+
+const views: View[] = [];
+const areas: HTMLElement[] = [];
+afterEach(() => {
+  for (const view of views.splice(0)) view.destroy();
+  for (const area of areas.splice(0)) area.remove();
+});
+
+/**
+ * `label`'s code, with `prefix` before what it shows. It sets its input after an update, not in it: a renderer refuses
+ * `set` while it updates a component.
+ */
+const labelCode = (prefix = "") => `export default function mount(target, { params, set }) {
+  const show = (next) => { target.textContent = ${JSON.stringify(prefix)} + next.label; queueMicrotask(() => set("result", JSON.stringify(${JSON.stringify(prefix)} + next.label))); };
+  show(params);
+  return { update: (next) => show(next) };
+}`;
+
+const label = (prefix = ""): HostComponent => ({ name: "label", language: "js", code: labelCode(prefix), trust: { level: "strict" } });
+
+/** A use of `label` showing `text`, its result bound to the input `result`. */
+const use = (text: string): ExpandedComponent => ({
+  type: "componentLeaf",
+  name: "label",
+  params: [
+    { key: "label", breakpoint: null, value: text },
+    { key: "result", breakpoint: null, value: "", input: "result" },
+  ],
+  fallback: [{ type: "text", value: "label's fallback" }],
+});
+
+const RESULT = { result: { type: "string" as const, value: "" } };
+
+/** A document of one use of `label` showing `text`. */
+const page = (text: string): ExpandedRoot => ({ type: "root", children: [use(text)], inputs: RESULT });
+
+/** A splice that makes the first block a use showing `text`. */
+const spliceTo = (text: string): Splice => ({ from: 0, to: 1, nodes: [use(text)], lines: 0, offset: 0, inputs: RESULT });
+
+/** A view of `components` in `mode`, with what it reports, and a way to wait for an event. */
+function open(mode: "frame" | "host", components: HostComponent[] = [label()], options: Partial<SandboxOptions> = {}) {
+  const area = document.body.appendChild(document.createElement("div"));
+  area.style.height = "300px";
+  areas.push(area);
+  const view = createSandbox({ base: frames, page: mode, ...options }).open(area, { components });
+  views.push(view);
+  const events: { [T in keyof ViewEvents]: ViewEvents[T][] } = { set: [], link: [], error: [], rendered: [], loaded: [] };
+  const waiting: (() => void)[] = [];
+  for (const type of ["set", "link", "error", "rendered", "loaded"] as const) {
+    view.on(type, (event) => {
+      (events[type] as unknown[]).push(event);
+      for (const check of waiting) check();
+    });
+  }
+  /** Resolves once `done` holds of the events so far. */
+  const until = (done: () => boolean) =>
+    new Promise<void>((resolve) => {
+      const check = () => {
+        if (done()) resolve();
+      };
+      waiting.push(check);
+      check();
+    });
+  /** The values set so far, parsed. */
+  const values = () => events.set.map(({ value }) => JSON.parse(value as string) as unknown);
+  return { area, view, events, until, values };
+}
+
+const MODES = ["frame", "host"] as const;
+
+describe("render and splice", () => {
+  for (const mode of MODES) {
+    it(`renders a tree, then updates a use where it is from a splice, as an object or as JSON text (${mode} mode)`, async () => {
+      const { view, until, values } = open(mode);
+      view.render(page("one"));
+      await until(() => values().includes("one"));
+      view.splice([spliceTo("two")]);
+      await until(() => values().includes("two"));
+      view.splice([JSON.stringify(spliceTo("three"))]);
+      await until(() => values().includes("three"));
+      expect(values()).toEqual(["one", "two", "three"]);
+    });
+  }
+
+  it("says when the page is painted, and when its components are loaded", async () => {
+    const { view, events, until } = open("frame");
+    view.render(page("one"));
+    await until(() => events.rendered.length > 0 && events.loaded.length > 0);
+    expect(events.rendered[0]?.ms).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe("which inputs a page may set (frame mode)", () => {
+  it("passes on a set of an input the tree has", async () => {
+    const { view, events, until } = open("frame");
+    view.render(page("one"));
+    await until(() => events.set.length > 0);
+    expect(events.set[0]?.input).toBe("result");
+  });
+
+  it("drops a set of an input the tree doesn't have: the page's code may have written it", async () => {
+    // A use whose param is bound to `admin`, which the tree's inputs don't have.
+    const sneaky: ExpandedComponent = { ...use("one"), params: [{ key: "label", breakpoint: null, value: "one" }, { key: "result", breakpoint: null, value: "", input: "admin" }] };
+    const { view, events, until } = open("frame");
+    view.render({ type: "root", children: [sneaky, use("two")], inputs: RESULT });
+    await until(() => events.set.length > 0);
+    await pause(300);
+    expect(events.set).toEqual([{ input: "result", value: JSON.stringify("two") }]);
+  });
+
+  it("follows the inputs a splice gives: one it drops can't be set any more", async () => {
+    const { view, events, until, values } = open("frame");
+    view.render(page("one"));
+    await until(() => values().includes("one"));
+    view.splice([spliceTo("two")], undefined, { inputs: {} });
+    await pause(400);
+    expect(values()).toEqual(["one"]);
+    expect(events.set).toHaveLength(1);
+  });
+});
+
+describe("components", () => {
+  for (const mode of MODES) {
+    it(`swaps new code in where its component is mounted, with its last params, and resolves once it is in (${mode} mode)`, async () => {
+      const { view, until, values } = open(mode);
+      view.render(page("one"));
+      await until(() => values().includes("one"));
+      await view.components([label("new ")]);
+      await until(() => values().includes("new one"));
+      expect(values()).toEqual(["one", "new one"]);
+    });
+  }
+
+  it("makes the next render wait for a component it hadn't, so its use mounts with its code", async () => {
+    const { view, events, until, values } = open("host", []);
+    void view.components([label()]);
+    view.render(page("one"));
+    await until(() => values().includes("one"));
+    expect(events.error).toEqual([]);
+  });
+
+  it("shows a built module's use its fallback when the host gives no `modules`, with W121", async () => {
+    const built: HostComponent = { name: "label", language: "js", code: "", trust: { level: "strict" }, module: { pack: "@kit/labels", version: "1.0.0", path: "dist/label.js" } };
+    const { view, events, until } = open("host", [built]);
+    view.render(page("one"));
+    await until(() => events.error.length > 0);
+    expect(events.error[0]).toEqual({ component: "label", reason: "failed", code: "W121", message: "no URL for `@kit/labels@1.0.0/dist/label.js`" });
+  });
+
+  it("shows a trusted component's use its fallback, as missing, when the host gives no mount for it (host mode)", async () => {
+    const stars: HostComponent = { name: "label", language: "js", code: "", trust: { level: "trusted" } };
+    const { area, view, events, until } = open("host", [stars], { trusted: {} });
+    view.render(page("one"));
+    await until(() => events.error.length > 0);
+    expect(events.error[0]).toMatchObject({ component: "label", reason: "missing" });
+    expect(area.textContent).toContain("label's fallback");
+  });
+});
+
+describe("theme and styles", () => {
+  /** A component that sets `result` to the page's `--compmd-accent` and the host's stylesheets its frame has. */
+  const looking: HostComponent = {
+    name: "label",
+    language: "js",
+    code: probeCode(`async (target) => ({
+      accent: getComputedStyle(target).getPropertyValue("--compmd-accent").trim(),
+      styles: [...document.querySelectorAll("link[data-compmd-style]")].map((link) => link.href.split("/").pop()),
+    })`),
+    trust: { level: "strict" },
+  };
+
+  for (const mode of MODES) {
+    it(`gives the page's theme tokens and the host's stylesheets to the frames (${mode} mode)`, async () => {
+      const { view, until, values } = open(mode, [looking], { stylesheets: [`${frames}docs.css`] });
+      view.theme({ "--compmd-accent": "rgb(0, 128, 128)" });
+      view.render(page("one"));
+      await until(() => values().length > 0);
+      expect(values()[0]).toEqual({ accent: "rgb(0, 128, 128)", styles: ["docs.css"] });
+    });
+  }
+
+  it("replaces the frames' stylesheets with those `styles` gives", async () => {
+    const watching: HostComponent = {
+      ...looking,
+      code: probeCode(`async () => {
+        const hrefs = () => [...document.querySelectorAll("link[data-compmd-style]")].map((link) => link.href.split("/").pop());
+        while (!hrefs().includes("print.css")) await new Promise((resolve) => setTimeout(resolve, 20));
+        return hrefs();
+      }`),
+    };
+    const { view, until, values } = open("host", [watching], { stylesheets: [`${frames}docs.css`] });
+    view.render(page("one"));
+    await pause(300);
+    view.styles([`${frames}print.css`]);
+    await until(() => values().length > 0);
+    expect(values()[0]).toEqual(["print.css"]);
+  });
+});
+
+describe("destroy", () => {
+  it("removes the page, its frames and the compile frame, and reports nothing after", async () => {
+    const { area, view, events, until, values } = open("host");
+    view.render(page("one"));
+    await until(() => values().includes("one"));
+    view.destroy();
+    views.splice(views.indexOf(view), 1);
+    expect(area.querySelectorAll("iframe")).toHaveLength(0);
+    expect(document.querySelectorAll('iframe[title="compile"]')).toHaveLength(0);
+    const reported = events.set.length + events.error.length;
+    await pause(300);
+    expect(events.set.length + events.error.length).toBe(reported);
+  });
+});
+
+// WebKit runs these frames in the page's own process, so a frame that spins freezes the test page too.
+const webkit = !navigator.userAgent.includes("Chrome");
+
+describe("a page frame that hangs", () => {
+  it.skipIf(webkit)("is reported as code that threw (W118), once it hasn't answered within `timeout` (frame mode)", async () => {
+    const spinner: HostComponent = { name: "label", language: "js", code: probeCode("async () => { setTimeout(() => { for (const end = Date.now() + 4000; Date.now() < end; ) {} }, 200); return 'started'; }"), trust: { level: "strict" } };
+    const { view, events, until } = open("frame", [spinner], { timeout: 1500 });
+    view.render(page("one"));
+    await until(() => events.error.some(({ message }) => message === "the page's frame stopped answering"));
+    expect(events.error.find(({ message }) => message === "the page's frame stopped answering")).toEqual({ component: "", reason: "threw", code: "W118", message: "the page's frame stopped answering" });
+  });
+});

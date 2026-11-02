@@ -48,6 +48,7 @@ export interface View {
   theme(tokens: Record<string, string>): void;
   /** The host's stylesheets for the page and its frames, in place of `stylesheets`; served from the frames' origin. */
   styles(urls: readonly string[]): void;
+  /** Listens for `type`; a listener added as soon as `open` returns hears everything, opening's errors too. */
   on<T extends keyof ViewEvents>(type: T, listener: (event: ViewEvents[T]) => void): void;
   destroy(): void;
 }
@@ -101,9 +102,12 @@ export function createSandbox(options: SandboxOptions): Sandbox {
        * The page's components, compiled. Trees and splices wait for components of names or levels the page hasn't
        * had, so their uses mount with code; new code for the same ones swaps in where they are mounted.
        */
-      let ready = runtime.set(components).then(() => {
-        page.code();
-      });
+      // After `open` returns, so the listeners a host adds at once hear what the components' code reports.
+      let ready = Promise.resolve()
+        .then(() => runtime.set(components))
+        .then(() => {
+          page.code();
+        });
       let shape = shapeOf(components);
       return {
         render: (tree, change) => {

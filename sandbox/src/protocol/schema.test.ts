@@ -60,19 +60,17 @@ describe("protocol.schema.json", () => {
     expect(MESSAGES.map(({ type }) => type)).toEqual([...TO_FRAME, ...FROM_FRAME]);
   });
 
-  it("refuses what isn't a message", () => {
-    const diagram = { name: "diagram", level: "strict", code: new Blob([]) };
-    for (const message of [
-      { type: "level", level: "trusted" },
-      { type: "set", input: "x" },
-      { type: "ping", n: 1, extra: true },
-      { type: "other" },
-      { type: "code", components: [{ ...diagram, binding: "react", place: "@kit/mermaid@1.0.0/dist/diagram.js" }] },
-      { type: "code", components: [{ ...diagram, binding: "plain" }] },
-      { type: "code", components: [{ name: "chart", level: "strict", binding: "react", code: "", libraries: { "@kit/d3": { code: new Blob([]) } } }] },
-      { type: "code", components: [{ name: "mermaid", level: "strict", module: { url: "/packs/m.js", integrity: "sha384-x" }, libraries: {} }] },
-    ]) {
-      expect(validate(message), JSON.stringify(message)).toBe(false);
-    }
+  const diagram = { name: "diagram", level: "strict", code: new Blob([]) };
+  it.each([
+    ["a frame's level can't be trusted", { type: "level", level: "trusted" }],
+    ["a set has a value", { type: "set", input: "x" }],
+    ["a message has only its own fields", { type: "ping", n: 1, extra: true }],
+    ["a message is of a known type", { type: "other" }],
+    ["a Blob module is plain", { type: "code", components: [{ ...diagram, binding: "react", place: "@kit/mermaid@1.0.0/dist/diagram.js" }] }],
+    ["a Blob module has its place", { type: "code", components: [{ ...diagram, binding: "plain" }] }],
+    ["a library has its place", { type: "code", components: [{ name: "chart", level: "strict", binding: "react", code: "", libraries: { "@kit/d3": { code: new Blob([]) } } }] }],
+    ["a module by URL has no libraries", { type: "code", components: [{ name: "mermaid", level: "strict", module: { url: "/packs/m.js", integrity: "sha384-x" }, libraries: {} }] }],
+  ])("refuses what isn't a message: %s", (_rule, message) => {
+    expect(validate(message), JSON.stringify(message)).toBe(false);
   });
 });

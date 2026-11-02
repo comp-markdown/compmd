@@ -101,7 +101,7 @@ describe("createSandbox", () => {
   it("reports code that can't load as W121 and code that throws as W118 (spec §7.6, §10.2)", async () => {
     for (const page of ["frame", "host"] as const) {
       const { events, until } = open(page, broken, brokenTree);
-      // A load failure is reported again when a use mounts, so each component may report more than once.
+      // Each frame reports its own: a component that fails in two frames is reported by each.
       const reported = () => new Set(events.error.map(({ component, reason, code }) => `${component} ${reason} ${code ?? ""}`));
       await until(() => reported().size >= 2);
       expect([...reported()].sort(), page).toEqual(["thrower threw W118", "unloadable failed W121"]);

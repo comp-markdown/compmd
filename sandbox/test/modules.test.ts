@@ -6,7 +6,7 @@
 import type { HostComponent } from "@compmd/processor";
 import type { ExpandedRoot } from "@compmd/render";
 import { afterEach, describe, expect, it } from "vitest";
-import { createSandbox, type View } from "../src/index.ts";
+import { createSandbox, type SandboxOptions, type View } from "../src/index.ts";
 import { frames, leaf, probe, type Probe } from "./harness.ts";
 
 let probes: Probe[] = [];
@@ -153,27 +153,46 @@ describe("library packs (docs/sharing-library-packs.md)", () => {
     area.remove();
   });
 
-  it("can't be imported by a module given by its URL, or be given by its URL itself (W121)", async () => {
-    const component = (name: string): HostComponent => ({ name, language: "js", code: "", trust: { level: "strict" }, module: { pack: `@kit/${name}`, version: "1.0.0", path: "dist/index.js" }, libraries: { "@kit/count": counter("1.0.0") } });
-    /** Whether the library itself is served by its URL. */
-    let served = false;
-    const sandbox = createSandbox({
-      base: frames,
-      page: "host",
-      modules: ({ pack }) => (pack === "@kit/served" || (pack === "@kit/count" && served) ? { url: `${frames}packs/built.js`, integrity: "sha384-x" } : { code: new Blob([USES]) }),
-    });
-    const errors: string[] = [];
+  it("is imported by compiled source too: a component of a pack written in JavaScript, not built", async () => {
+    const source: HostComponent = { name: "probe", language: "js", code: USES, trust: { level: "strict" }, libraries: { "@kit/count": counter("1.0.0") } };
+    const sandbox = createSandbox({ base: frames, page: "host", modules: ({ version }) => ({ code: new Blob([count(version)]) }) });
     const area = document.body.appendChild(document.createElement("div"));
-    const view = sandbox.open(area, { components: [] });
+    const view = sandbox.open(area, { components: [source] });
     views.push(view);
-    view.on("error", ({ component: name, code, message }) => errors.push(`${name} ${String(code)} ${message}`));
-    await view.components([component("served")]);
-    served = true;
-    await view.components([component("given")]);
-    expect(errors).toEqual([
-      "served W121 `@kit/served@1.0.0/dist/index.js` loads by its URL, so its imports of library packs (`@kit/count`) can't be written: give it as code",
-      "given W121 the library pack `@kit/count@1.0.0/dist/count.js` isn't given as code, which a frame needs to load it",
-    ]);
+    const set = new Promise((resolve) => {
+      view.on("set", ({ value }) => {
+        resolve(JSON.parse(value as string));
+      });
+    });
+    view.render({ type: "root", children: [leaf("probe")], inputs: { result: { type: "string", value: "" } } });
+    expect(await set).toBe("1.0.0:1");
     area.remove();
+  });
+
+  /** The errors a host-mode view reports for `component`, with `modules` as given. */
+  async function errorsOf(component: HostComponent, modules: SandboxOptions["modules"]): Promise<string[]> {
+    const area = document.body.appendChild(document.createElement("div"));
+    const view = createSandbox({ base: frames, page: "host", ...(modules ? { modules } : {}) }).open(area, { components: [component] });
+    views.push(view);
+    const errors: string[] = [];
+    view.on("error", ({ code, message }) => errors.push(`${String(code)} ${message}`));
+    await view.components([component]);
+    area.remove();
+    return [...new Set(errors)];
+  }
+
+  const byUrl = { url: `${frames}packs/built.js`, integrity: "sha384-x" };
+  const built = (libraries: NonNullable<HostComponent["libraries"]>): HostComponent => ({ name: "chart", language: "js", code: "", trust: { level: "strict" }, module: { pack: "@kit/chart", version: "1.0.0", path: "dist/index.js" }, libraries });
+
+  it("can't be imported by a built module given by its URL: its file can't be written (W121)", async () => {
+    const errors = await errorsOf(built({ "@kit/count": counter("1.0.0") }), ({ pack }) => (pack === "@kit/chart" ? byUrl : { code: new Blob([count("1.0.0")]) }));
+    expect(errors).toEqual(["W121 `@kit/chart@1.0.0/dist/index.js` loads by its URL, so its imports of library packs (`@kit/count`) can't be written: give it as code"]);
+  });
+
+  it("can't be given by its URL itself, nor can a library it imports (W121)", async () => {
+    const math = { pack: "@kit/math", version: "1.0.0", path: "dist/math.js" };
+    const nested = built({ "@kit/count": { ...counter("1.0.0"), libraries: { "@kit/math": math } } });
+    const errors = await errorsOf(nested, ({ pack }) => (pack === "@kit/math" ? byUrl : { code: new Blob([USES]) }));
+    expect(errors).toEqual(["W121 the library pack `@kit/math@1.0.0/dist/math.js` isn't given as code, which a frame needs to load it"]);
   });
 });

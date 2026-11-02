@@ -104,6 +104,23 @@ export default function Chart({ compmd }) {
     ]);
   });
 
+  it("gives a handle for each use: `update` sends it new params, `destroy` removes its frame", async () => {
+    const { runtime, area, next } = setup();
+    // It sets its input after an update, not in it: a renderer refuses `set` while it updates.
+    const code = 'export default (target, { params, set }) => { set("result", JSON.stringify(params.label)); return { update: (next) => queueMicrotask(() => set("result", JSON.stringify(next.label))) }; };';
+    await runtime.set([{ name: "label", language: "js", code, trust: { level: "strict" } }]);
+    const labelled = (text: string): ExpandedComponent => ({ ...use("label"), params: [{ key: "label", breakpoint: null, value: text }, ...use("label").params] });
+    const inputs = { label: { type: "string", value: "" } };
+    const first = next("label");
+    const handle = runtime.mountUse(area, labelled("one"), inputs);
+    expect(await first).toBe("one");
+    const second = next("label");
+    handle.update(labelled("two"), inputs);
+    expect(await second).toBe("two");
+    handle.destroy();
+    expect(area.querySelector("iframe")).toBeNull();
+  });
+
   it("says which component didn't compile, and shows its fallback", async () => {
     const { runtime, errors } = setup();
     await runtime.set([{ name: "broken", language: "jsx", code: "export default () => <b>;", trust: { level: "strict" } }]);
