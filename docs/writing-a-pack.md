@@ -63,6 +63,8 @@ export default draw<{ code: string; theme: "auto" | "default" | "dark" | "neutra
 );
 ```
 
+`theme` is the pack's own param, declared in its signature (`theme: auto | default | dark | neutral | forest = auto`, in `index.comp.md`); a page picks one per block (` ```mermaid {theme=forest} `), and the processor checks the value against the signature. The type in `draw<…>` repeats the signature only so `render` is typed; the signature is what counts. `auto`, the default, is where `context.scheme` comes in: Mermaid's dark theme on a dark page, its default theme otherwise.
+
 Its unit test mocks Mermaid, and checks the theme for each scheme and that a parse error fails with Mermaid's message, with `mountForTest`. The pack keeps its browser tests (`test/`) only because they are this repository's checks of the sandbox and the registry; a pack author's are the unit tests.
 
 ## What changes
