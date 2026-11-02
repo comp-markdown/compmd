@@ -19,6 +19,7 @@ The designs behind the spec and its implementation. Each starts with its status 
 - [Resolving registry packs](resolving-registry-packs.md): how `@compmd/registry` resolves, fetches and checks packs; builds decisions 1 to 3 and 5 of *packs from a registry*.
 - [Sharing library packs](sharing-library-packs.md): how the processor, `@compmd/registry` and `@compmd/sandbox` let packs share a library pack; builds decision 8 of *packs from a registry*.
 - [Writing a pack](writing-a-pack.md): [`@compmd/pack`](../pack/README.md), which holds what every pack would otherwise copy (the build, the publish check, the test page, component helpers and a testing kit), and the host contract's `scheme` and `fail`.
+- [The Developer Tools](devtools.md): `@compmd/devtools`, the playground's tools as a part any page embeds, with the sandbox's observer and tabs for its frames, a console and the messages.
 - [The Mermaid pack](mermaid-pack.md): `@comp-markdown/mermaid`, a code renderer as a registry pack; builds the Mermaid example of *code renderers*.
 
 The processor's own designs are next to it, in [`processor/docs/`](../processor/docs/): [incremental processing](../processor/docs/incremental.md), [param values](../processor/docs/param-values.md) and [positional hints](../processor/docs/positional-hints.md).
