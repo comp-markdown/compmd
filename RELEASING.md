@@ -19,7 +19,7 @@ One version for the npm packages and the crate `compmd`, semantic, `0.x` until t
 
 ### 0. Prerequisites
 
-A release publishes only packages that npm and this repository's workflow already know. Before a package's first release, or after its trusted publisher changed, go through [prerequisites, once per package](#prerequisites-once-per-package): the package created on npm by a first version published by hand, trusted publishing set up for `release.yml`, the workflow publishing it, and each checked. `@compmd/sandbox`, `@compmd/registry`, `@compmd/vite`, `@compmd/pack` and `@compmd/create-pack` still need them.
+A release publishes only packages that npm and this repository's workflow already know. Before a package's first release, or after its trusted publisher changed, go through [prerequisites, once per package](#prerequisites-once-per-package): the package created on npm by a first version published by hand, trusted publishing set up for `release.yml`, the workflow publishing it, and each checked. Every package the workflow publishes has them, since `0.2.0`.
 
 ### 1. Prepare
 
@@ -80,7 +80,7 @@ docs.rs builds the documentation a few minutes later.
 
 `@comp-markdown/mermaid` (`packs/mermaid/`) has a version of its own, for its component's params and forms ([its design](docs/mermaid-pack.md), decision 2).
 
-1. **Once, before its first release:** the `@comp-markdown` organization exists on npm, and the publishing account may publish to it. The first version is published by hand, from outside the repository, as for any new package (below, [prerequisites](#prerequisites-once-per-package)): `pnpm --dir packs/mermaid build`, `pnpm --dir packs/mermaid pack --pack-destination ../packages`, the tarball checked (`dist/mermaid.js`, `dist/LICENSES.md`, `index.comp.md`, the README and its MIT `LICENSE`), then `npm publish` it. Then its trusted publisher is set up for the workflow `release-mermaid.yml`.
+1. **Once, before its first release** (done for `0.1.0`, 2026-11-02): the `@comp-markdown` organization exists on npm, and the publishing account may publish to it. The first version is published by hand, from outside the repository, as for any new package (below, [prerequisites](#prerequisites-once-per-package)): `pnpm --dir packs/mermaid build`, `pnpm --dir packs/mermaid pack --pack-destination ../packages`, the tarball checked (`dist/mermaid.js`, `dist/LICENSES.md`, `index.comp.md`, the README and its MIT `LICENSE`), then `npm publish` it. Then its trusted publisher is set up for the workflow `release-mermaid.yml`.
 2. **Each release:** the version in `packs/mermaid/package.json` and in `index.comp.md`'s `export.version`, the same in both, in one commit, with what changed in its README; `cargo make ci` green.
 3. Tag and push the tag:
 
@@ -106,7 +106,7 @@ docs.rs builds the documentation a few minutes later.
 
 ## Prerequisites, once per package
 
-Trusted publishing works only for a package that already exists on npm, so a new package is created by publishing its first version by hand, as `@compmd/render` and `@compmd/processor` were at `0.1.0`, and as `@compmd/sandbox`, `@compmd/registry`, `@compmd/vite`, `@compmd/pack` and `@compmd/create-pack` are to be at the version the others have. Then npm and the workflow are set up to publish it from then on. Each step is the author's, with their npm account; none is in the workflow.
+Trusted publishing works only for a package that already exists on npm, so a new package is created by publishing its first version by hand, as `@compmd/render` and `@compmd/processor` were at `0.1.0`, and `@compmd/sandbox`, `@compmd/registry`, `@compmd/vite`, `@compmd/pack` and `@compmd/create-pack` at `0.2.0`. Then npm and the workflow are set up to publish it from then on. Each step is the author's, with their npm account; none is in the workflow.
 
 **npm, once for the scope:**
 - The `@compmd` organization exists on npm, and the publishing account is a member that may publish to it.
