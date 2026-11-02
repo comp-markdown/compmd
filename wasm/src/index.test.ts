@@ -186,7 +186,7 @@ describe("a request's options, each as a host gives it", () => {
 
   it("refuses a request whose packs or policy don't have their shape", () => {
     expect(() => process(document("Text.\n", { packs: { "@acme/kit": [{ version: "one", files: {} }] } }))).toThrow();
-    expect(() => process(document("Text.\n", { policy: { imports: "some" } as unknown as Request["policy"] }))).toThrow();
+    expect(() => process(document("Text.\n", { policy: { imports: "some" } as unknown as NonNullable<Request["policy"]> }))).toThrow();
   });
 });
 
