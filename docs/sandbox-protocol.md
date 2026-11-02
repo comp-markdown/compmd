@@ -33,7 +33,7 @@ When a frame loads, its parent posts `hello` to its window with one end of a new
 |---|---|---|
 | `hello {version}` (a window message, with the port) | this is your port | every frame |
 | `level {level, policy?}` | your level; for `permissive.html`, the second policy, with the pack's origins, which the frame adds before anything else | every frame, first |
-| `code {components}` | each component's code: compiled text with its binding (`react`, `svelte`, `plain`) and CSS, or a module's `{url, integrity}`; for a permissive frame, its strict children's code too, which it passes on | P, U |
+| `code {components}` | each component's code: compiled text with its binding (`react`, `svelte`, `plain`) and CSS, a built module's file as a `Blob` with the plain binding and its `place` (`pack@version/path`), or a module's `{url, integrity}`; for a permissive frame, its strict children's code too, which it passes on | P, U |
 | `render`, `splices` | `@compmd/render`'s | P |
 | `part {node, inputs}` | the use to render, with its slots as expanded nodes, and the document's inputs | U |
 | `theme {tokens}` | `@compmd/render`'s | P, U |

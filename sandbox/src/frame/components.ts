@@ -34,8 +34,11 @@ interface Entry {
   instances: Set<Instance>;
 }
 
-const keyOf = (component: Runnable): string =>
-  "module" in component ? `${component.module.url}\n${component.module.integrity}` : `${component.binding}\n${component.css ?? ""}\n${component.code}`;
+function keyOf(component: Runnable): string {
+  if ("module" in component) return `${component.module.url}\n${component.module.integrity}`;
+  if ("place" in component) return component.place;
+  return `${component.binding}\n${component.css ?? ""}\n${component.code}`;
+}
 const messageOf = (error: unknown): string => (error instanceof Error ? error.message : String(error));
 
 export class Components {

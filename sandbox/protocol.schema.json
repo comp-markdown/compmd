@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://compmd.hakanserce.com/schema/sandbox-protocol.schema.json",
   "title": "The CompMD sandbox's frame protocol",
-  "description": "The messages between a frame and its parent, the window that made it (docs/sandbox-protocol.md), version 1. `@compmd/render`'s frame protocol travels on the same port beside them. `host` carries a MessagePort in the message's ports, which JSON can't hold.",
+  "description": "The messages between a frame and its parent, the window that made it (docs/sandbox-protocol.md), version 1. `@compmd/render`'s frame protocol travels on the same port beside them. `host` carries a MessagePort in the message's ports, and `code` may carry a Blob, which JSON can't hold.",
   "oneOf": [{ "$ref": "#/$defs/toFrame" }, { "$ref": "#/$defs/fromFrame" }],
   "$defs": {
     "toFrame": {
@@ -45,7 +45,7 @@
       "additionalProperties": false
     },
     "code": {
-      "description": "Each component with its level: compiled text with its binding, or a built module by its URL and its file's hash; one of a level above the frame's comes without code, and its uses show their fallbacks.",
+      "description": "Each component with its level: compiled text with its binding, a built module's file as a Blob with its place, or a built module by its URL and its file's hash; one of a level above the frame's comes without code, and its uses show their fallbacks.",
       "type": "object",
       "properties": {
         "type": { "const": "code" },
@@ -63,6 +63,18 @@
                   "css": { "type": "string" }
                 },
                 "required": ["name", "level", "binding", "code"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "level": { "$ref": "#/$defs/componentLevel" },
+                  "binding": { "const": "plain" },
+                  "code": { "description": "The module's file, a Blob the host's page has checked, which JSON can't hold." },
+                  "place": { "description": "The module's place, `pack@version/path`, by which a frame knows it has it already.", "type": "string" }
+                },
+                "required": ["name", "level", "binding", "code", "place"],
                 "additionalProperties": false
               },
               {

@@ -20,6 +20,7 @@ const MESSAGES: (ToFrame | FromFrame)[] = [
     type: "code",
     components: [
       { name: "chart", level: "strict", binding: "react", code: "export default () => null" },
+      { name: "diagram", level: "strict", binding: "plain", code: new Blob(["export default () => undefined"]), place: "@kit/mermaid@1.0.0/dist/diagram.js" },
       { name: "mermaid", level: "strict", module: { url: "/packs/m.js", integrity: "sha384-x" } },
       { name: "stars", level: "trusted" },
     ],
@@ -53,7 +54,15 @@ describe("protocol.schema.json", () => {
   });
 
   it("refuses what isn't a message", () => {
-    for (const message of [{ type: "level", level: "trusted" }, { type: "set", input: "x" }, { type: "ping", n: 1, extra: true }, { type: "other" }]) {
+    const diagram = { name: "diagram", level: "strict", code: new Blob([]) };
+    for (const message of [
+      { type: "level", level: "trusted" },
+      { type: "set", input: "x" },
+      { type: "ping", n: 1, extra: true },
+      { type: "other" },
+      { type: "code", components: [{ ...diagram, binding: "react", place: "@kit/mermaid@1.0.0/dist/diagram.js" }] },
+      { type: "code", components: [{ ...diagram, binding: "plain" }] },
+    ]) {
       expect(validate(message), JSON.stringify(message)).toBe(false);
     }
   });

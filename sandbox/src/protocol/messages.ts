@@ -13,14 +13,19 @@ export const HELLO = "compmd-sandbox";
 export type Level = "strict" | "permissive";
 
 /**
- * A component as a frame gets it, with its level: compiled text with its binding, or a built module by its URL. One of
- * a level above the frame's comes without code: the frame can't hold it, and its uses show their fallbacks.
+ * A component as a frame gets it, with its level: compiled text with its binding, a built module the host's page holds,
+ * or a built module by its URL. One of a level above the frame's comes without code: the frame can't hold it, and its
+ * uses show their fallbacks.
  */
 export type ComponentCode = Runnable | { name: string; level: Level | "trusted" };
 
-/** A component with its code. */
+/**
+ * A component with its code. A built module the host's page holds is a `Blob`, whose bytes the frames share, with its
+ * place (`pack@version/path`), by which a frame knows it has it already.
+ */
 export type Runnable = { name: string; level: Level | "trusted" } & (
   | { binding: "react" | "svelte" | "plain"; code: string; css?: string }
+  | { binding: "plain"; code: Blob; place: string }
   | { module: { url: string; integrity: string } }
 );
 

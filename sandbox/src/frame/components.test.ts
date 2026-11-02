@@ -115,6 +115,24 @@ describe("Components", () => {
     expect(loads).toEqual(["sha384-a", "sha384-b"]);
   });
 
+  it("loads a built module given as a Blob again only when its place changes", async () => {
+    const loads: string[] = [];
+    const components = new Components({
+      load: (c) => {
+        loads.push("place" in c ? c.place : "");
+        return Promise.resolve({ mount: () => undefined });
+      },
+      report: () => undefined,
+      adopt: () => undefined,
+    });
+    // Each message brings a copy of the Blob, so the same module comes as another Blob each time.
+    const mermaid = (place: string): Runnable => ({ name: "mermaid", level: "strict", binding: "plain", code: new Blob(["export default () => undefined"]), place });
+    await components.set([mermaid("@kit/mermaid@1.0.0/dist/mermaid.js")]);
+    await components.set([mermaid("@kit/mermaid@1.0.0/dist/mermaid.js")]);
+    await components.set([mermaid("@kit/mermaid@1.1.0/dist/mermaid.js")]);
+    expect(loads).toEqual(["@kit/mermaid@1.0.0/dist/mermaid.js", "@kit/mermaid@1.1.0/dist/mermaid.js"]);
+  });
+
   it("keeps the newest code when loads finish out of order", async () => {
     const { components } = setup();
     const target = document.createElement("div");

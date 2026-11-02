@@ -10,7 +10,7 @@
 4. **The host chooses where the page renders** (`page: "frame" | "host"`). In **frame mode** (the default) the page is one strict frame per document, and strict code shares it; permissive and trusted uses show their fallbacks. In **host mode** the page renders in the host's page: trusted components mount inline, and each use of a strict or permissive component is a frame of its own, with its slots inside it.
 5. **`host` goes to the permissive frames the host's page makes**, of packs the configuration gives `host` (`{"level": "permissive", "network": […], "host": true}`). Each frame's parent made it, so there is no frame to fake.
 6. **Layers a host can use apart:** the protocol (messages and rules, no DOM), the frame runtime (what runs in a frame), the host runtime (mount one use in a target the host gives, inline or in a frame), and defaults (the two frame documents, the import map, a compile frame, `createSandbox` with the two modes). A host with frame documents, libraries and compiling of its own uses the first three; a simple host uses all four.
-7. **A built module loads by its URL** with `<script type="module" integrity>`, so the browser checks the file's hash the host gives, and runs nothing that doesn't match. **Source** is compiled once per document, by default in a compile frame that runs no components.
+7. **A built module loads by its URL** with `<script type="module" integrity>`, so the browser checks the file's hash the host gives, and runs nothing that doesn't match; or, when the host's page holds the module's file already checked, as a registry pack's ([packs from a registry](packs-from-a-registry.md), R2), as a `blob:` module made from it. **Source** is compiled once per document, by default in a compile frame that runs no components.
 8. **Every threat in the threat model is a browser test,** in Chrome and WebKit. Where a browser can't keep a rule (WebRTC, below), the design says so, and the test records what the browser does.
 
 ## Today
@@ -267,6 +267,14 @@ modules: (module) => ({ url: `/packs/${module.pack}@${module.version}/${module.p
 | Cached | by URL in WebKit; in Chrome not at all for a strict frame, which downloads it again each time (measured 2026-11-02, [packs from a registry](packs-from-a-registry.md), R2) | the same as M1 | the download only; parsed in every frame |
 
 A module's own imports (its chunks) load from the same pack files, checked only by the host when it got the pack: a pack's module SHOULD be one file. Bare imports (`react`) resolve through the import map, as compiled source's do.
+
+**A built module the host's page holds.** A host whose page has a module's file already checked, as a resolver of registry packs has ([packs from a registry](packs-from-a-registry.md), R2), gives the file instead of a URL:
+
+```ts
+modules: (module) => ({ code: files.get(module) })   // a Blob
+```
+
+The sandbox sends it as it sends compiled source, with the plain binding (spec §7.6), and with the module's place (`pack@version/path`), by which a frame knows it has the module already, since each message brings a new copy of the `Blob`. The frame loads it as a `blob:` module. The `Blob`'s bytes are shared with the frames, not copied, and the strict frame's policy doesn't change. The module must be one file: a `blob:` module's relative imports have nothing to resolve against.
 
 **The import map** holds the libraries every frame shares: by default the runtimes of the spec's bindings (React 19 and React DOM, Svelte 5). `buildFrames` takes the other libraries a host offers (the playground adds d3 for its charts). What component code may import, and so what the map has to hold, is spec §7.6, from [what component code may import](what-component-code-may-import.md): the runtimes, the libraries a host offers, and the libraries a pack names in `peerDependencies`; the map's runtimes and libraries, with their versions, are the sandbox's library definition, which a processor and a pack's build check against. Libraries from the registry for packs are library packs ([packs from a registry](packs-from-a-registry.md), R9).
 

@@ -54,7 +54,7 @@ A strict frame loads scripts only from the frames' origin, and `blob:` modules (
 
 O1 changes nothing in the frames and keeps rule 2 (no network) exactly as it is; it works with F1 and F2. Its one requirement, one file per module, is decision 6. O3 remains for a host that runs a proxy and prefers URLs, and needs nothing new: its proxy's files are the host's.
 
-**The sandbox's side:** `sandbox.modules(place)` today returns `{ url, integrity }`; it may also return `{ code }`, a `Blob` the host has checked, which the sandbox sends as it sends compiled source, with the plain binding (spec §7.6).
+**The sandbox's side:** `sandbox.modules(place)` today returns `{ url, integrity }`; it may also return `{ code }`, a `Blob` the host has checked, which the sandbox sends as it sends compiled source, with the plain binding (spec §7.6), and with the module's place, by which a frame knows it has the module already: each message brings a new copy of the `Blob`, and a version's files never change (R4).
 
 **What it costs.** The text isn't copied per frame: a `Blob` posted to a frame shares its bytes with the host's page, and the frame makes its own `blob:` URL from it (a `blob:` URL is its maker's origin's only, so the host's page can't make it for the frame). What every frame pays is parsing and compiling the module, as with a URL. A URL could save compiling again where the browser keeps compiled code for it, and downloading again where it caches the file. What browsers do for a strict frame (measured 2026-11-02):
 

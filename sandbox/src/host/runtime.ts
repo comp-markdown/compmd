@@ -1,6 +1,6 @@
 // The host runtime (docs/running-components-in-the-sandbox.md, Q6, Q7): in the host's page, one per document. It
 // turns the processor's components into what frames run (compiled in the document's compile frame, or built modules
-// by their URL), mounts trusted components inline and frames every other use at its level, gives `host` to permissive
+// by their URL or as files the host holds), mounts trusted components inline and frames every other use at its level, gives `host` to permissive
 // frames of packs given it, and stops a frame that stops answering.
 
 import type { HostComponent, Trust } from "@compmd/processor";
@@ -11,8 +11,16 @@ import { connectCompiler, type Compiler } from "../protocol/compiler.ts";
 import { bindingOf, HELLO, SANDBOX_VERSION, type ComponentCode, type ErrorReason, type Level } from "../protocol/messages.ts";
 import { frameUse } from "../use.ts";
 
-/** Where a built module is served, and its file's hash, which the host checked when it got the pack. */
-export type ModuleSource = (module: NonNullable<HostComponent["module"]>) => { url: string; integrity: string };
+type Place = NonNullable<HostComponent["module"]>;
+
+/**
+ * A built module: where it is served, with its file's hash, which the host checked when it got the pack; or its file
+ * as a `Blob` the host has checked, as a resolver of registry packs gives it, which frames load as a `blob:` module.
+ */
+export type ModuleSource = (module: Place) => { url: string; integrity: string } | { code: Blob };
+
+/** A built module's place in its pack, `pack@version/path`. */
+const placeOf = ({ pack, version, path }: Place): string => `${pack}@${version}/${path}`;
 
 export interface HostRuntimeOptions {
   /** Where the host serves the frame documents (`buildFrames`), ending in `/`: a full URL, or one relative to the page. */
@@ -21,7 +29,7 @@ export interface HostRuntimeOptions {
   trusted?: Readonly<Record<string, Mount>>;
   /** What permissive components of packs given `host` can call. */
   host?: HostApi;
-  /** Where each built module is served; without it, a built module's uses show their fallbacks. */
+  /** Where each built module is served, or its file; without it, a built module's uses show their fallbacks. */
   modules?: ModuleSource;
   /** The host's stylesheets, which every frame loads; served from the frames' origin. */
   stylesheets?: readonly string[];
@@ -142,9 +150,11 @@ export class HostRuntime {
     const level = levelOf(component.trust);
     if (level === "trusted") return { name: component.name, level };
     if (component.module) {
+      const place = placeOf(component.module);
       const source = this.#options.modules?.(component.module);
+      if (source && "code" in source) return { name: component.name, level, binding: "plain", code: source.code, place };
       if (source) return { name: component.name, level, module: source };
-      this.#events.error(component.name, "failed", `no URL for \`${component.module.pack}@${component.module.version}/${component.module.path}\``);
+      this.#events.error(component.name, "failed", `no URL for \`${place}\``);
       return undefined;
     }
     try {

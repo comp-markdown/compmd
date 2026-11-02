@@ -108,19 +108,23 @@ describe("createSandbox", () => {
     }
   });
 
-  it("works when the host's page is itself in a sandboxed frame (decision 2)", async () => {
+  it("works when the host's page is itself in a sandboxed frame, with compiled source and a module it holds (decision 2)", async () => {
     for (const page of ["host", "frame"]) {
       const host = Object.assign(document.createElement("iframe"), { src: `${frames}host/host.html?page=${page}` });
       host.setAttribute("sandbox", "allow-scripts");
-      const message = new Promise<unknown>((resolve) => {
-        addEventListener("message", function listen({ source, data }: MessageEvent<{ from?: string }>) {
+      const sets = new Promise<Record<string, unknown>>((resolve) => {
+        const got: Record<string, unknown> = {};
+        addEventListener("message", function listen({ source, data }: MessageEvent<{ from?: string; input?: string; value?: unknown }>) {
           if (source !== host.contentWindow || data.from !== "sandboxed-host") return;
+          got[data.input ?? "error"] = data.input ? data.value : data;
+          if (Object.keys(got).length < 2) return;
           removeEventListener("message", listen);
-          resolve(data);
+          resolve(got);
         });
       });
       document.body.append(host);
-      expect(await message, page).toEqual({ from: "sandboxed-host", input: "result", value: JSON.stringify({ origin: "null", nested: true }) });
+      const ran = JSON.stringify({ origin: "null", nested: true });
+      expect(await sets, page).toEqual({ result: ran, diagram: ran });
       host.remove();
     }
   });

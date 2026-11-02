@@ -1,6 +1,7 @@
 // A component's code loaded as a module, whose imports the frame's import map resolves, and mounted through its
 // binding (spec §7.6): React's for JSX and TSX, Svelte's for Svelte, and a plain component's default export is its
-// mount. Compiled text loads as a `blob:` module; a built module by its URL, checked against its file's hash.
+// mount. Compiled text and a built module the host's page holds load as `blob:` modules; a built module by its URL,
+// checked against its file's hash.
 
 import type { Mount } from "@compmd/render";
 import { react } from "@compmd/render/react";
@@ -12,8 +13,8 @@ import type { Loaded } from "./components.ts";
 
 type Module = { default?: unknown };
 
-/** Loads `code` as a module. */
-async function imported(code: string): Promise<Module> {
+/** Loads `code` as a module: a `Blob` keeps its bytes, given the type a module needs. */
+async function imported(code: string | Blob): Promise<Module> {
   const url = URL.createObjectURL(new Blob([code], { type: "text/javascript" }));
   try {
     return (await import(/* @vite-ignore */ url)) as Module;
@@ -54,7 +55,7 @@ export async function load(component: Runnable): Promise<Loaded> {
   const exported = module.default;
   if (typeof exported !== "function") throw new Error(`\`${component.name}\`'s module has no default export to mount`);
   if ("module" in component) return { mount: exported as Mount };
-  const css = component.css ? { css: component.css } : {};
+  const css = "css" in component && component.css ? { css: component.css } : {};
   switch (component.binding) {
     case "react":
       return { mount: react(exported as ComponentType<Record<string, unknown>>), ...css };
