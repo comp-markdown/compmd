@@ -69,16 +69,25 @@ export function untar(archive: Uint8Array): Map<string, Uint8Array> {
   return files;
 }
 
+/**
+ * `bytes` as text, or `undefined` when they aren't UTF-8: an image or a font, which the processor never reads. A
+ * fatal decoder throws a `TypeError` for bytes that aren't; that is the only error dropped.
+ */
+function utf8(bytes: Uint8Array): string | undefined {
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch (error) {
+    if (error instanceof TypeError) return undefined;
+    throw error;
+  }
+}
+
 /** The files that are UTF-8 text, as text: what a release in a processor's request holds. */
 export function textFiles(files: Map<string, Uint8Array>): Record<string, string> {
-  const decoder = new TextDecoder("utf-8", { fatal: true });
   const text: Record<string, string> = {};
   for (const [path, bytes] of files) {
-    try {
-      text[path] = decoder.decode(bytes);
-    } catch {
-      // Not text: an image or a font, which the processor never reads.
-    }
+    const decoded = utf8(bytes);
+    if (decoded !== undefined) text[path] = decoded;
   }
   return text;
 }
