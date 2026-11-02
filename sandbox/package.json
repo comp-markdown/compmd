@@ -1,6 +1,6 @@
 {
   "name": "@compmd/sandbox",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Runs CompMD components in a browser at the trust levels of the spec: strict and permissive frames, trusted code inline, so no host writes a sandbox policy itself.",
   "keywords": [
     "compmd",

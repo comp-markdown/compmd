@@ -41,7 +41,7 @@ The release workflow:
 1. checks the tag is the version in every package's `package.json`;
 2. installs Playwright's WebKit, for the sandbox's, the registry's, the Vite plugin's and create-pack's browser tests, and runs `cargo make ci`;
 3. packs the packages with pnpm, which writes the versions in place of their `workspace:*` dependencies on each other;
-4. publishes them with npm's trusted publishing: the renderer, then the processor, then the sandbox, which depends on both, then the registry, which needs the processor, then the Vite plugin, which depends on the first three, then `@compmd/pack`, which depends on all of those, then create-pack, whose packs pin it. No token is stored; each version carries its provenance.
+4. publishes them with npm's trusted publishing: the renderer, then the processor, then the sandbox, which depends on both, then the registry, which needs the processor, then the Vite plugin, which depends on the first three, then `@compmd/pack`, which depends on all of those, then create-pack, whose packs pin it. No token is stored; each version carries its provenance. A version npm already has is left as it is, so a package whose first version was published by hand at the release's version is skipped, and a release that failed halfway can run again.
 
 Check, once it is green:
 
@@ -141,7 +141,9 @@ Trusted publishing works only for a package that already exists on npm, so a new
 - it installs what the package's tests need (the sandbox's, the registry's, the Vite plugin's and create-pack's: Playwright's WebKit), as `ci.yml` does;
 - `RELEASING.md` lists it, in the table above and in the checks after a release.
 
-**Validated:** npm checks the trusted publisher only at the workflow's first publish of the package. Once that release's workflow is green, the version is `latest` in the registry (`curl`, as above), and the package's page on npmjs.com shows its provenance, from `comp-markdown/compmd` and `release.yml`. If its publish fails with the packages before it already published, rerunning the workflow would publish those again, which npm refuses: fix the trusted publisher, and publish that one tarball by hand, as above.
+**Validated:** npm checks the trusted publisher only at the workflow's first publish of the package. Once that release's workflow is green, the version is `latest` in the registry (`curl`, as above), and the package's page on npmjs.com shows its provenance, from `comp-markdown/compmd` and `release.yml`. If its publish fails with the packages before it already published, fix the trusted publisher and run the workflow again: it skips the versions npm already has.
+
+**A first version at a release's version.** A new package depends on the others at the release's version, so its first version, by hand, is that version: publish the new packages by hand first, set up their trusted publishers, then push the tag. The workflow publishes the rest and skips the new ones. `0.2.0` went this way: `@compmd/sandbox`, `@compmd/registry`, `@compmd/vite`, `@compmd/pack` and `@compmd/create-pack` by hand, then `v0.2.0` for `@compmd/render` and `@compmd/processor`. Until the tag's workflow has published them, the new packages don't install, so the two go together.
 
 ## What publishing 0.1.0 taught
 

@@ -16,6 +16,7 @@ npm install @compmd/processor @compmd/render
 It implements the draft of the [CompMD specification](https://compmd.hakanserce.com/spec/), version 1, as the crate [`compmd`](https://crates.io/crates/compmd) does. Its versions are `0.x` until the spec's version 1 is published, and it shares its version with `@compmd/render` ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
 
 **Versions:**
+- **0.2.0:** the spec's draft as of 2026-11-02 ([its changelog](https://github.com/comp-markdown/compmd/blob/main/CHANGELOG.md)): among the changes, code renderers, packs from a registry (`sources`, a pack's `peerDependencies` and library packs), and what component code may import (W121). Released with the first versions of `@compmd/sandbox`, `@compmd/registry`, `@compmd/vite`, `@compmd/pack` and `@compmd/create-pack`.
 - **0.1.1:** the same as 0.1.0; the first version the release workflow publishes.
 - **0.1.0:** the first version.
 

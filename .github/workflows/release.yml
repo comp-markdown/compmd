@@ -54,14 +54,25 @@ jobs:
           pnpm --dir create-pack pack --pack-destination "$RUNNER_TEMP/packages"
       # Trusted publishing needs npm 11.5.1 or newer.
       - run: npm install --global npm@11.6.2
-      # Outside the repository, whose devEngines name pnpm; each package after those it depends on.
+      # Outside the repository, whose devEngines name pnpm; each package after those it depends on. A version npm has
+      # already is left as it is: a package's first version is published by hand (RELEASING.md), and a release that
+      # failed halfway can run again.
       - name: Publish
         working-directory: ${{ runner.temp }}/packages
         run: |
-          npm publish ./compmd-render-*.tgz --access public
-          npm publish ./compmd-processor-*.tgz --access public
-          npm publish ./compmd-sandbox-*.tgz --access public
-          npm publish ./compmd-registry-*.tgz --access public
-          npm publish ./compmd-vite-*.tgz --access public
-          npm publish ./compmd-pack-*.tgz --access public
-          npm publish ./compmd-create-pack-*.tgz --access public
+          publish() {
+            name="$(tar -xzOf "$1" package/package.json | node -p 'JSON.parse(require("fs").readFileSync(0, "utf8")).name')"
+            version="$(tar -xzOf "$1" package/package.json | node -p 'JSON.parse(require("fs").readFileSync(0, "utf8")).version')"
+            if npm view "$name@$version" version > /dev/null 2>&1; then
+              echo "$name@$version is on npm already"
+            else
+              npm publish "$1" --access public
+            fi
+          }
+          publish ./compmd-render-*.tgz
+          publish ./compmd-processor-*.tgz
+          publish ./compmd-sandbox-*.tgz
+          publish ./compmd-registry-*.tgz
+          publish ./compmd-vite-*.tgz
+          publish ./compmd-pack-*.tgz
+          publish ./compmd-create-pack-*.tgz

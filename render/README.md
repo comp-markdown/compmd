@@ -18,6 +18,7 @@ npm install @compmd/render @compmd/processor
 It implements the draft of the [CompMD specification](https://compmd.hakanserce.com/spec/), version 1. Its versions are `0.x` until the spec's version 1 is published, and it shares its version with `@compmd/processor` ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
 
 **Versions:**
+- **0.2.0:** the spec's draft as of 2026-11-02 ([its changelog](https://github.com/comp-markdown/compmd/blob/main/CHANGELOG.md)): among the changes, code renderers (a code block drawn by a component, with its code block as the fallback), and the host contract's `scheme` and `fail`: components follow the page's colour scheme (`page.scheme()`, `schemeOf`), and a component that fails shows its fallback until its next update. Released with the first versions of `@compmd/sandbox`, `@compmd/registry`, `@compmd/vite`, `@compmd/pack` and `@compmd/create-pack`.
 - **0.1.1:** the same as 0.1.0; the first version the release workflow publishes.
 - **0.1.0:** the first version.
 
