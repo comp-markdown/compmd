@@ -211,6 +211,9 @@ importers:
       '@compmd/processor':
         specifier: workspace:*
         version: link:../wasm
+      '@compmd/registry':
+        specifier: workspace:*
+        version: link:../registry
       '@compmd/render':
         specifier: workspace:*
         version: link:../render

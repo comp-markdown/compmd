@@ -1,6 +1,7 @@
-import { initSync, process } from "@compmd/processor";
+import { initSync, process, type PackRelease, type Request } from "@compmd/processor";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
+import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import { EXAMPLES, exampleIndex, textOf, type Example } from "./documents.ts";
 import { fixOf } from "./edit.ts";
@@ -16,6 +17,20 @@ const byId = (id: string): Example => {
   return found;
 };
 
+/** The Mermaid pack as npm gives it, from this repository's `packs/mermaid/`: its built module given by its place. */
+const MERMAID = join(import.meta.dirname, "../../packs/mermaid");
+const mermaidRelease = (): PackRelease => {
+  const manifest = readFileSync(join(MERMAID, "package.json"), "utf8");
+  return {
+    version: (JSON.parse(manifest) as { version: string }).version,
+    integrity: "sha512-from-the-repository",
+    files: { "package.json": manifest, "index.comp.md": readFileSync(join(MERMAID, "index.comp.md"), "utf8"), "dist/mermaid.js": "" },
+  };
+};
+
+/** `request` with the packs the playground would fetch from npm for it, here from the repository. */
+const withRegistryPacks = (request: Request): Request => ({ ...request, packs: { ...request.packs, "@comp-markdown/mermaid": [mermaidRelease()] } });
+
 /** The diagnostics of `example` with its document's text `text`, one line each. */
 const diagnosticsOf = (example: Example, text = textOf(example)) =>
   process({ ...example.request, files: { ...example.request.files, [example.request.path]: text } }).diagnostics;
@@ -23,7 +38,7 @@ const diagnosticsOf = (example: Example, text = textOf(example)) =>
 describe("EXAMPLES", () => {
   it("go from the syntax to the diagnostics, each with an id of its own", () => {
     expect(EXAMPLES.map((example) => example.id)).toEqual([
-      ...["tour", "definitions", "changelog", "dashboard", "inputs", "kyoto", "complete", "diagrams", "diagnostics", "notes"],
+      ...["tour", "definitions", "changelog", "dashboard", "inputs", "kyoto", "complete", "diagrams", "npm", "diagnostics", "notes"],
       "guides/authors/containers",
       "guides/authors/first-document",
       "guides/authors/markdown",
@@ -31,7 +46,7 @@ describe("EXAMPLES", () => {
       "guides/authors/values",
       "guides/developers/quick-start",
     ]);
-    expect(exampleIndex("guides/developers/quick-start")).toBe(15);
+    expect(exampleIndex("guides/developers/quick-start")).toBe(16);
     expect(exampleIndex("kyoto")).toBe(5);
     expect(exampleIndex("nothing")).toBe(0);
     expect(exampleIndex(null)).toBe(0);
@@ -39,12 +54,18 @@ describe("EXAMPLES", () => {
 
   for (const example of EXAMPLES.filter(({ id }) => id !== "diagnostics")) {
     it(`${example.name} renders without diagnostics`, () => {
-      const processed = process(example.request);
+      const processed = process(withRegistryPacks(example.request));
       const found = processed.diagnostics.map((d) => `${d.code} ${String(d.range.start.line)}: ${d.message}`);
       expect(found, found.join("\n")).toEqual([]);
       expect(processed.expanded.children.length).toBeGreaterThan(1);
     });
   }
+
+  it("gives the document of a pack from npm only the configured packs: until it is fetched, its import is F026", () => {
+    const { diagnostics, expanded } = process(byId("npm").request);
+    expect(diagnostics.map(({ code, message }) => `${code} ${message}`)).toEqual([expect.stringMatching(/^F026 .*@comp-markdown\/mermaid/)]);
+    expect(expanded.children.length).toBeGreaterThan(1);
+  });
 
   it("shows mistakes whose fixes, made one by one, leave none", () => {
     const example = byId("diagnostics");

@@ -5,6 +5,7 @@
 
 import type { Diagnostic, ExpandedInput, HostComponent, PositionalHint, Request } from "@compmd/processor";
 import type { Edit } from "./edit.ts";
+import type { Fetched } from "./processing.ts";
 import type { FromWorker, ToWorker } from "./protocol.ts";
 
 /** What the session needs of a worker: a `Worker` is one. */
@@ -24,6 +25,8 @@ export interface Update {
   inputs: Record<string, ExpandedInput>;
   /** The host-language components, when they changed. */
   components?: readonly HostComponent[];
+  /** The checked text of the built modules they load that came from the registry, by `pack@version/path`. */
+  modules?: Record<string, Blob>;
   /** What is at the caret in `text`. */
   hint?: PositionalHint;
   /** The text after the splices. */
@@ -60,6 +63,7 @@ export class Session {
   readonly #onUpdate: (update: Update) => void;
   readonly #onFailure: (message: string) => void;
   readonly #onHint: (hinted: Hinted) => void;
+  readonly #onFetched: (fetched: Fetched) => void;
   readonly #sent: Sent[] = [];
   #waiting: Waiting[] = [];
   #generation = 0;
@@ -69,13 +73,16 @@ export class Session {
   #caret = 0;
   #asked = 0;
 
-  constructor(worker: WorkerPort, onUpdate: (update: Update) => void, onFailure: (message: string) => void, onHint: (hinted: Hinted) => void) {
+  /** `onFetched` hears of packs the worker fetched from the registry, which answer no message. */
+  constructor(worker: WorkerPort, onUpdate: (update: Update) => void, onFailure: (message: string) => void, onHint: (hinted: Hinted) => void, onFetched: (fetched: Fetched) => void = () => undefined) {
     this.#worker = worker;
     this.#onUpdate = onUpdate;
     this.#onFailure = onFailure;
     this.#onHint = onHint;
+    this.#onFetched = onFetched;
     worker.addEventListener("message", ({ data }) => {
-      this.#answered(data);
+      if (data.type === "fetched") this.#onFetched({ arrived: data.arrived, problems: data.problems });
+      else this.#answered(data);
     });
   }
 
@@ -119,14 +126,14 @@ export class Session {
     this.#worker.postMessage(message);
   }
 
-  #answered(answer: FromWorker): void {
+  #answered(answer: Exclude<FromWorker, { type: "fetched" }>): void {
     const sent = this.#sent.shift();
     if (sent?.generation === this.#generation) {
       if (answer.type === "failed") this.#onFailure(answer.message);
       else if (answer.type === "hint") this.#onHint({ text: sent.text, ...(answer.hint ? { hint: answer.hint } : {}) });
       else {
-        const { splices, opened, diagnostics, inputs, components, hint, ms } = answer;
-        this.#onUpdate({ splices, opened, diagnostics, inputs, text: sent.text, since: sent.since, ms, ...(components ? { components } : {}), ...(hint ? { hint } : {}) });
+        const { splices, opened, diagnostics, inputs, components, modules, hint, ms } = answer;
+        this.#onUpdate({ splices, opened, diagnostics, inputs, text: sent.text, since: sent.since, ms, ...(components ? { components } : {}), ...(modules ? { modules } : {}), ...(hint ? { hint } : {}) });
       }
     }
     if (this.#sent.length === 0) this.#flush();

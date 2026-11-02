@@ -3,7 +3,7 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   // `packs/` holds packages of their own, each with its own build and tests.
-  { ignores: ["node_modules", "dist", "public", "examples", "packs"] },
+  { ignores: ["node_modules", "dist", "public", "examples", "packs", "test/.out"] },
   js.configs.recommended,
   ...tseslint.configs.strictTypeChecked,
   {

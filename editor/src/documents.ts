@@ -1,6 +1,7 @@
 // The documents the editor opens, each showing one side of CompMD, bundled with everything they need: their files,
-// packs, remote and host data. The editor fetches nothing: the packs come from its configuration, `compmd.config.json`,
-// which `@compmd/vite` reads at the site's build.
+// packs, remote and host data. The packs come from its configuration, `compmd.config.json`, which `@compmd/vite` reads
+// at the site's build; a pack a document imports that the configuration doesn't have is fetched from npm, which it
+// names as its registry.
 
 import type { Fetched, PackRelease, Request } from "@compmd/processor";
 import { request as configured } from "virtual:compmd";
@@ -135,6 +136,8 @@ export const EXAMPLES: Example[] = [
   example("kyoto", "Layout: Kyoto in four days", { path: "kyoto.comp.md", files: own("kyoto"), now: NOW }),
   example("complete", "Components in JSX and from packs: the spec's complete example", completeExample()),
   example("diagrams", "Packs: diagrams from a built module", { path: "diagrams.comp.md", files: own("diagrams"), now: NOW }, [DIAGRAMS_PACK]),
+  // Its pack isn't the playground's: it comes from npm, which the playground's configuration names.
+  example("npm", "Packs from npm: Mermaid diagrams", { path: "npm.comp.md", files: own("npm"), now: NOW }),
   example("diagnostics", "Diagnostics and their fixes", { path: "diagnostics.comp.md", files: own("diagnostics"), now: NOW }),
   example("notes", "A long document: field notes (52 KB, 20 charts)", { path: "notes.comp.md", files: filesIn(bundled.notes, NOTES), now: "2026-10-23T09:00:00Z" }, [CHARTS_PACK]),
 ];

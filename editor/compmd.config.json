@@ -4,5 +4,7 @@
     "./examples/charts": { "ambient": true },
     "./packs/minimermaid": {}
   },
-  "libraries": ["d3"]
+  "libraries": ["d3"],
+  "registries": { "*": "https://registry.npmjs.org/" },
+  "fetch": "direct"
 }

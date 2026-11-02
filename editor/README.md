@@ -1,6 +1,6 @@
 # The CompMD editor
 
-A text area on the left, the rendered page on the right, updated as you type. It opens the documents in its menu, from a tutorial to the spec's complete example, with everything they need bundled: their files, the packs of its configuration, remote and host data. Once loaded it makes no requests.
+A text area on the left, the rendered page on the right, updated as you type. It opens the documents in its menu, from a tutorial to the spec's complete example, with everything they need bundled: their files, the packs of its configuration, remote and host data. Once loaded it makes no requests, but for a pack a document imports that its configuration doesn't have, which it fetches from npm (below, *Packs*).
 
 **Website:** it is the playground at [compmd.hakanserce.com/playground/](https://compmd.hakanserce.com/playground/), on the [CompMD website](https://compmd.hakanserce.com/) with the spec.
 
@@ -47,13 +47,16 @@ Each document in the menu shows one side of CompMD. The files it reads (its fold
 | `kyoto` | Layout: *Kyoto in four days*, with blocks placed by position, grid areas that change at `md` and `lg`, a sticky column, a `display=contents` component, blocks shown and hidden by width | `examples/kyoto/` |
 | `complete` | Components in JSX and from packs: the spec's complete example | `../conformance/examples/complete-example-expanded/`, with its packs, remote and host data |
 | `diagrams` | Packs: diagrams from a built module, the pack `@preview/minimermaid`'s code renderer, as blocks and as a leaf made from data | `examples/diagrams/`, with the pack of `packs/minimermaid/` |
+| `npm` | Packs from npm: the published `@comp-markdown/mermaid`, which the playground fetches from npm, as a flowchart, a sequence diagram and a diagram made from data, and what a reader without it sees | `examples/npm/`; its pack from npm |
 | `diagnostics` | Diagnostics and their fixes: an unknown component, param and slot, and values a param doesn't take | `examples/diagnostics/` |
 | `notes` | A long document: field notes, a 52 KB body with 20 charts | `../wasm/bench/fixtures/notes/`, with the charts of `examples/charts/` |
 | `guides/<book>/<example>` | Each document of the guides' examples, which their **Try it** links open: `guides/developers/quick-start` | `../guides/<book>/examples/` |
 
 ### Packs
 
-The playground's packs come from its configuration, [`compmd.config.json`](compmd.config.json), which `@compmd/vite` reads at the site's build, as a web app's would: every document gets them, through `virtual:compmd` (`src/documents.ts`), and the site serves their files, so a reader's browser never asks a registry for one. A document can import only these; any other pack is F026.
+The playground's packs come from its configuration, [`compmd.config.json`](compmd.config.json), which `@compmd/vite` reads at the site's build, as a web app's would: every document gets them, through `virtual:compmd` (`src/documents.ts`), and the site serves their files.
+
+**Any other pack comes from npm**, which the configuration names as its registry, with `"fetch": "direct"`: the playground has no server, so the reader's browser fetches it ([packs from a registry](../docs/packs-from-a-registry.md), R1), and the About says what npm then learns: the reader's address and the packs' names and versions, never the document. The worker asks `sources` which packs a document imports that it doesn't have, once typing pauses, so a name typed letter by letter isn't fetched letter by letter, and resolves them with `@compmd/registry`'s `resolvePacks`: the tarball checked against npm's hash, and kept in Cache Storage across visits. Until they arrive the document renders with what it has, its uses showing their fallbacks (F026); when they do, the editor opens it again, and their built modules reach the sandbox as checked code, which the page's frame loads as a `blob:` module (`src/processing.ts`, `src/worker.ts`). The page gives the worker the registries' addresses, since a worker's bundle is built apart from the page's, without `virtual:compmd`. What couldn't be fetched is listed under the text.
 
 - `examples/charts/` is an ambient pack, `@preview/charts`, under the name the field notes give theirs: React components for columns, areas and a timeline, Svelte components for a donut and a sortable table, in plain SVG, compiled in the sandbox. Their colors are the `--viz-*` custom properties the frame sets for light and dark, a categorical palette checked for color vision deficiencies in both.
 - `packs/minimermaid/` is `@preview/minimermaid`, made with [`npm create @compmd/pack`](../create-pack/README.md): Mermaid's simplest flowcharts drawn by hand, as one built module with no library in it, which `pnpm packs` builds before the site.
@@ -66,7 +69,7 @@ The playground's packs come from its configuration, [`compmd.config.json`](compm
 pnpm dev     # the minimermaid pack's module, then a dev server with the sandbox under compmd/
 pnpm build   # the minimermaid pack's module, then the static site into dist/, the sandbox and the packs' modules in it
 pnpm lint    # eslint, tsc, and svelte-check for the .svelte files
-pnpm test    # edits, the session and the editor's loop, every document's page after the worker's splices against processing from scratch
+pnpm test    # edits, the session and the editor's loop, every document's page after the worker's splices against processing from scratch, and the document of a pack from npm in Chrome, light and dark, against a local registry (the Mermaid pack built first)
 pnpm bench   # the budgets, in Chrome
 ```
 

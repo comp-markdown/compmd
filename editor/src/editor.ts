@@ -47,6 +47,10 @@ export class Editor {
   readonly #session: Session;
   readonly #frame: Frame;
   readonly #onChange: () => void;
+  /** The built modules fetched from the registry, by `pack@version/path`, which the page's sandbox loads as code. */
+  readonly #modules: Map<string, Blob>;
+  /** What couldn't be fetched from the registry, listed with the components' problems. */
+  #unfetched: string[] = [];
   /** The text the last input left, and the selection before the next one. */
   #text = "";
   /** The text the diagnostics shown are of, and the one the hint is of. */
@@ -58,10 +62,14 @@ export class Editor {
   /** When each render sent to the frame started, for its paint. */
   readonly #rendering: number[] = [];
 
-  /** Runs with `worker` and `frame`; `onChange` is called when the state changes. */
-  constructor(worker: WorkerPort, frame: Frame, onChange: () => void) {
+  /**
+   * Runs with `worker` and `frame`; `onChange` is called when the state changes. The built modules fetched from the
+   * registry go in `modules`, where the page's sandbox finds them.
+   */
+  constructor(worker: WorkerPort, frame: Frame, onChange: () => void, modules = new Map<string, Blob>()) {
     this.#frame = frame;
     this.#onChange = onChange;
+    this.#modules = modules;
     this.#session = new Session(
       worker,
       (update) => {
@@ -74,6 +82,12 @@ export class Editor {
       (hinted) => {
         this.#hint(hinted);
         onChange();
+      },
+      // Packs the document imports came from the registry: it opens again with them.
+      ({ arrived, problems }) => {
+        this.#unfetched = [...this.#unfetched, ...problems.filter((problem) => !this.#unfetched.includes(problem))];
+        for (const problem of problems) this.#problem(problem);
+        if (arrived) this.#reopen();
       },
     );
     frame.on("rendered", ({ ms }) => {
@@ -98,6 +112,7 @@ export class Editor {
     this.#request = { ...example.request, origins: true };
     this.#inputs = {};
     this.#text = example.request.files?.[example.request.path] ?? "";
+    this.#unfetched = [];
     this.state.problems = [];
     delete this.state.hint;
     this.#session.open(this.#request, this.#text, at);
@@ -167,6 +182,8 @@ export class Editor {
   }
 
   #updated(update: Update): void {
+    // Before the components reach the frame, so the sandbox finds their modules.
+    for (const [place, code] of Object.entries(update.modules ?? {})) this.#modules.set(place, code);
     if (update.components) void this.#frame.components(update.components);
     const change: Change = { text: update.text, diagnostics: forRenderer(update.diagnostics) };
     this.#rendering.push(update.since);
@@ -177,7 +194,7 @@ export class Editor {
     this.#hint(update);
     this.state.updates++;
     this.state.processing.add(update.ms);
-    if (update.components) this.state.problems = [];
+    if (update.components) this.state.problems = [...this.#unfetched];
     this.#onChange();
   }
 

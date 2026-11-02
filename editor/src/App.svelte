@@ -6,7 +6,8 @@
   import type { Range } from "@compmd/processor";
   import { createSandbox, type View as Page } from "@compmd/sandbox";
   import { tick, untrack } from "svelte";
-  import { sandbox as sandboxOptions } from "virtual:compmd";
+  import { NpmRegistry } from "@compmd/registry";
+  import { registry, sandbox as sandboxOptions } from "virtual:compmd";
   import ComponentsView from "./ComponentsView.svelte";
   import DataView from "./DataView.svelte";
   import { EXAMPLES, exampleIndex, type SupportingFile } from "./documents.ts";
@@ -18,7 +19,7 @@
   import Split from "./Split.svelte";
   import { caretTop } from "./caret.ts";
   import { directiveFor, findPassage, fragmentOf, parseFragment, type Passage } from "./fragment.ts";
-  import { HOST_STYLES, type HostStyle } from "./protocol.ts";
+  import { HOST_STYLES, type HostStyle, type RegistryConfig } from "./protocol.ts";
   import { keep, recall } from "./stored.ts";
   import { plainPage, ViewsClient, type View, type ViewKind } from "./views.ts";
   import markDark from "../../logo/mark-dark.svg";
@@ -76,8 +77,27 @@
     page?.styles(stylesheetOf(hostStyle));
   });
 
-  /** The playground's sandbox, as `@compmd/vite` serves it: each page in a strict frame of its own, built modules by URL. */
-  const sandbox = createSandbox(sandboxOptions);
+  /** The registries the configuration names, for the worker, which fetches the packs a document imports from them. */
+  const registryConfig: RegistryConfig | undefined = registry && {
+    type: "registry",
+    registries: Object.fromEntries(Object.entries(registry.registries).flatMap(([scope, each]) => (each instanceof NpmRegistry ? [[scope, each.url]] : []))),
+    fetch: registry.fetch,
+    ...(registry.maxPackSize === undefined ? {} : { maxPackSize: registry.maxPackSize }),
+  };
+
+  /** The built modules the worker fetched from the registry, checked, by `pack@version/path`: the sandbox loads them as code. */
+  const fetchedModules = new Map<string, Blob>();
+  /**
+   * The playground's sandbox, as `@compmd/vite` serves it: each page in a strict frame of its own, the configuration's
+   * built modules by URL, and those fetched from the registry as code.
+   */
+  const sandbox = createSandbox({
+    ...sandboxOptions,
+    modules: (place) => {
+      const code = fetchedModules.get(`${place.pack}@${place.version}/${place.path}`);
+      return code ? { code } : sandboxOptions.modules(place);
+    },
+  });
 
   /** What the page is for: open on the first visit, until it is closed. */
   const ABOUT_KEY = "compmd-editor-about";
@@ -165,6 +185,7 @@
   function start(container: HTMLElement): () => void {
     worker?.terminate();
     worker = new Worker(new URL("./worker.ts", import.meta.url), { type: "module" });
+    if (registryConfig) worker.postMessage(registryConfig);
     const view = sandbox.open(container, { components: [] });
     view.styles(stylesheetOf(hostStyle));
     view.on("link", ({ url }) => {
@@ -173,9 +194,14 @@
       else if (/^(https?|mailto):/i.test(url)) open(url, "_blank", "noopener,noreferrer");
     });
     page = view;
-    const opened = new Editor(worker, view, () => {
-      shown = { ...opened.state };
-    });
+    const opened = new Editor(
+      worker,
+      view,
+      () => {
+        shown = { ...opened.state };
+      },
+      fetchedModules,
+    );
     editor = opened;
     if (example) text = opened.open(example);
     // A shared link selects its passage once, in the document it opened with.
@@ -250,7 +276,8 @@
       text, what the frontmatter gives the page, the components the document can name and where it uses them, and the trees the processor
       builds. Beside the document, try the stylesheets a host might give the page; above the tabs, other values for the document's inputs. Under the text,
       a line says what is at the caret and what it takes, with its values to click, and the diagnostics point at what's wrong and offer
-      fixes. Nothing leaves your browser.
+      fixes. The document never leaves your browser. When it imports a pack the playground doesn't have, your browser fetches the pack
+      from npm, which then learns your address and the pack's name and version: never the document, or what it shows.
       {#if __COMMIT__}
         Built from commit <a href="{REPOSITORY}/commit/{__COMMIT__}" target="_blank" rel="noreferrer"><code>{__COMMIT__.slice(0, 7)}</code></a>.
       {/if}

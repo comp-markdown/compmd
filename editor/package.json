@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@compmd/processor": "workspace:*",
+    "@compmd/registry": "workspace:*",
     "@compmd/render": "workspace:*",
     "@compmd/sandbox": "workspace:*",
     "@compmd/vite": "workspace:*",

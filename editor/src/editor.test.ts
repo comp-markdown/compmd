@@ -159,6 +159,32 @@ describe("Editor", () => {
     expect(worker.received[3]).toMatchObject({ type: "open", request: { inputs: { region: "eu", live: true } } });
   });
 
+  it("opens the document again when packs arrive from the registry, its fetched modules where the sandbox finds them first", () => {
+    const worker = new FakeWorker();
+    const frame = new FakeFrame();
+    const modules = new Map<string, Blob>();
+    const editor = new Editor(worker, frame, () => undefined, modules);
+    editor.open(example);
+    worker.answer(processed(["whole"], { opened: true }));
+    // Not an answer: the session still waits for none.
+    worker.answer({ type: "fetched", arrived: true, problems: ["@kit/other: the registry has no version 2"] });
+    expect(worker.received[1]).toEqual({ type: "open", request: { ...opened, inputs: {} }, caret: 0 });
+    const code = new Blob(["export default () => {};"]);
+    const component: HostComponent = { name: "hello", language: "js", code: "", trust: { level: "strict" }, module: { pack: "@kit/hello", version: "1.0.0", path: "dist/hello.js" } };
+    let found: Blob | undefined;
+    frame.components = (components) => {
+      found = modules.get("@kit/hello@1.0.0/dist/hello.js");
+      frame.sent.push(["components", components]);
+      return Promise.resolve();
+    };
+    worker.answer(processed(["whole"], { opened: true, components: [component], modules: { "@kit/hello@1.0.0/dist/hello.js": code } }));
+    expect(found).toBe(code);
+    // What couldn't be fetched stays listed when the components change.
+    expect(editor.state.problems).toEqual(["@kit/other: the registry has no version 2"]);
+    worker.answer({ type: "fetched", arrived: false, problems: [] });
+    expect(worker.received).toHaveLength(2);
+  });
+
   it("lists what the worker and the page couldn't do, once each, until the components change", () => {
     const { worker, frame, editor, changes } = setup();
     editor.open(example);

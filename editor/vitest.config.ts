@@ -8,5 +8,11 @@ export default defineConfig({
   // Svelte's browser build, which `mount` needs.
   resolve: { conditions: ["browser"] },
   server: { fs: { allow: [".."] } },
-  test: { environment: "happy-dom", include: ["src/**/*.test.ts"] },
+  test: {
+    projects: [
+      { extends: true, test: { name: "unit", environment: "happy-dom", include: ["src/**/*.test.ts"] } },
+      // The playground served as in development and opened in the installed Chrome, with packs from a local registry.
+      { test: { name: "page", environment: "node", include: ["test/**/*.test.ts"], testTimeout: 60_000, hookTimeout: 120_000 } },
+    ],
+  },
 });
