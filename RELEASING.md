@@ -138,7 +138,7 @@ Trusted publishing works only for a package that already exists on npm, so a new
 - the package's **Settings** → **Trusted publisher** → **GitHub Actions**;
 - the organization `comp-markdown`, the repository `compmd`, the workflow `release.yml` (for the Mermaid pack, `release-mermaid.yml`), no environment;
 - allowed actions: `npm stage publish` alone, which npm always allows; not `npm publish` or `npm dist-tag`, so nothing the workflow does is installable before the author approves it;
-- a trusted publisher can't be edited, only deleted and made again, and a new one must publish within 2 days or it expires. One made before 2026-05-20 allows `npm publish` alone, so it is made again, as `@compmd/render`'s and `@compmd/processor`'s were for `0.2.2`.
+- a new trusted publisher must publish within 2 days or it expires. One made before 2026-05-20 allows `npm publish` alone; its allowed actions can be edited in its settings to staging alone, as `@compmd/render`'s and `@compmd/processor`'s were for `0.2.2` (npm's documentation says a connection can't be edited, but the allowed actions could be).
 
 **The workflow, in this repository:**
 - `release.yml` checks the package's version against the tag, packs it, and stages it after the packages it depends on;
