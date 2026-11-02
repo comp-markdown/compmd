@@ -1,13 +1,8 @@
 // `minimermaid`: Mermaid's simplest flowcharts, drawn by hand in SVG, with no library: `graph LR` or `graph TD`, then
 // chains of steps joined by `-->`, each `id` or `id[label]`.
+import { component } from "@compmd/pack/component";
 
-/** What the host gives a component in the plain binding (CompMD spec §7.4). */
-export interface Context<Params> {
-  params: Params;
-  /** The block's `alt`, or a leaf's fallback: the drawing's text alternative. */
-  fallback: { text: string; element: Element };
-}
-
+/** The params, as the signature in `index.comp.md` declares them. */
 export interface Params {
   /** The code block's text. */
   code: string;
@@ -115,7 +110,8 @@ function add(parent: Element, name: string, attributes: Record<string, string | 
   return element;
 }
 
-export default function mount(target: HTMLElement, { params, fallback }: Context<Params>): { update(next: Params): void; destroy(): void } {
+// The block's `alt`, or a leaf's fallback, is the drawing's text alternative.
+export default component<Params>((target, { params, fallback }) => {
   const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const svg = add(target, "svg", { role: "img", "aria-label": fallback.text });
   svg.style.maxWidth = "100%";
@@ -181,4 +177,4 @@ export default function mount(target: HTMLElement, { params, fallback }: Context
       svg.remove();
     },
   };
-}
+});

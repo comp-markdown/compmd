@@ -1,6 +1,6 @@
-// @vitest-environment happy-dom
+import { mountForTest } from "@compmd/pack/testing";
 import { beforeAll, describe, expect, it } from "vitest";
-import mount, { parse } from "./minimermaid.ts";
+import component, { parse } from "./minimermaid.ts";
 
 beforeAll(() => {
   // happy-dom has no layout: an arrow's length is what the drawing asks it.
@@ -43,25 +43,24 @@ describe("parse", () => {
 
 describe("minimermaid", () => {
   it("draws a box per step and an arrow per link, with its text alternative", () => {
-    const target = document.createElement("div");
-    const fallback = { text: "Found, then reading, then read", element: document.createElement("pre") };
-    const mounted = mount(target, { params: { code: "graph LR; Found --> Reading --> Read", theme: "default" }, fallback });
-    const svg = target.querySelector("svg[role=img]");
+    const shown = mountForTest(component, { params: { code: "graph LR; Found --> Reading --> Read", theme: "default" }, fallback: "Found, then reading, then read" });
+    const svg = shown.target.querySelector("svg[role=img]");
     expect(svg?.getAttribute("aria-label")).toBe("Found, then reading, then read");
-    expect([...target.querySelectorAll("text")].map((text) => text.textContent)).toEqual(["Found", "Reading", "Read"]);
-    expect(target.querySelectorAll("g[stroke] path")).toHaveLength(4);
-    mounted.update({ code: "graph TD; A --> B", theme: "dark" });
-    expect([...target.querySelectorAll("text")].map((text) => text.textContent)).toEqual(["A", "B"]);
-    expect(target.querySelector("text")?.getAttribute("fill")).toBe("#fff");
-    mounted.destroy();
-    expect(target.children).toHaveLength(0);
+    expect([...shown.target.querySelectorAll("text")].map((text) => text.textContent)).toEqual(["Found", "Reading", "Read"]);
+    expect(shown.target.querySelectorAll("g[stroke] path")).toHaveLength(4);
+    shown.update({ code: "graph TD; A --> B", theme: "dark" });
+    expect([...shown.target.querySelectorAll("text")].map((text) => text.textContent)).toEqual(["A", "B"]);
+    expect(shown.target.querySelector("text")?.getAttribute("fill")).toBe("#fff");
+    shown.destroy();
+    expect(shown.target.children).toHaveLength(0);
   });
 
   it("draws the same wobble at every render", () => {
     const draw = () => {
-      const target = document.createElement("div");
-      mount(target, { params: { code: "graph LR; A --> B", theme: "neutral" }, fallback: { text: "", element: document.createElement("pre") } });
-      return target.innerHTML;
+      const shown = mountForTest(component, { params: { code: "graph LR; A --> B", theme: "neutral" } });
+      const drawn = shown.target.innerHTML;
+      shown.destroy();
+      return drawn;
     };
     expect(draw()).toBe(draw());
   });

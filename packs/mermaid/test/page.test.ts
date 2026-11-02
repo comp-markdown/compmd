@@ -85,16 +85,11 @@ describe.each(BROWSERS)("the test page in %s", (_name, type, options) => {
     await page.close();
   }, 60_000);
 
-  it("shows the code of a diagram Mermaid can't read, and reports what Mermaid found as W118, each frame its content's size", async () => {
+  // That each frame is its content's height is `@compmd/sandbox`'s test, and create-pack's for the test page.
+  it("shows the code of a diagram Mermaid can't read, and reports what Mermaid found as W118", async () => {
     const { page } = await open("light");
     const frame = await frameWith(page, "pre >> text=A -->");
     expect(await frame.locator("pre", { hasText: "A -->" }).count()).toBe(1);
-    // Each use's frame takes the height of what it shows: none scrolls, the error's neither.
-    // A frame reports its size after it draws, and its parent sizes it then.
-    const fits = (shown: Frame) => shown.evaluate(() => document.documentElement.scrollHeight <= window.innerHeight);
-    for (const shown of [...(await Promise.all(LABELS.map((label) => frameWith(page, drawing(label))))), frame]) {
-      await expect.poll(() => fits(shown), { timeout: 10_000, message: `the frame of ${shown.url()} scrolls` }).toBe(true);
-    }
     await expect.poll(() => page.locator("#diagnostics li").allInnerTexts(), { timeout: 30_000 }).toEqual([expect.stringMatching(/^W118: mermaid: Mermaid couldn't read this diagram: /)]);
     await page.close();
   }, 60_000);

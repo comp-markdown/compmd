@@ -48,10 +48,10 @@ Its review then found that it carried routine code (a Vite configuration, a publ
 
 ## Tests
 
-- **In Chrome and WebKit**, the test page `compmd-pack dev` serves (the module loaded by URL, in host mode, each diagram in a strict frame of its own that fits it), in light and dark (Playwright's `colorScheme`, the page `color-scheme: light dark`) and switched by the page's own control: a flowchart block, a sequence diagram block, a leaf computed from data, a diagram laid out with ELK, a block with a syntax error (its code, and W118 with what Mermaid found), and `theme=forest`; no frame scrolls, and the frames take the page's dark scheme.
+- **In Chrome and WebKit**, the test page `compmd-pack dev` serves (the module loaded by URL, in host mode, each diagram in a strict frame of its own that fits it), in light and dark (Playwright's `colorScheme`, the page `color-scheme: light dark`) and switched by the page's own control: a flowchart block, a sequence diagram block, a leaf computed from data, a diagram laid out with ELK, a block with a syntax error (its code, and W118 with what Mermaid found), and `theme=forest`; the frames take the page's dark scheme. That each frame is its content's height is `@compmd/sandbox`'s test, and create-pack's for the test page.
 - **As a registry pack**, in Chrome: the packed tarball served by a local registry, resolved by `resolvePacks` in a page, its module given to the sandbox as code (`{ code }`, a `blob:` module), and a diagram drawn.
 - **Unit tests** (with `mountForTest`, Mermaid stubbed): the theme `auto` chooses for each scheme, and the error path, failing until the code is fixed. The latest draw winning is `draw`'s, tested in `@compmd/pack`.
-- The built module: one file, its size under the cap, `dist/LICENSES.md` there.
+- The built module: one file, its size under the cap, which `compmd-pack build` checks; `dist/LICENSES.md` there, with Mermaid's, which a test checks.
 
 ## Not in this change
 

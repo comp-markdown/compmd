@@ -1,7 +1,6 @@
 // The pack as a host gets it from a registry (docs/mermaid-pack.md, Tests): its tarball as `pnpm pack` writes it,
 // served by a local registry; a host that installs no pack resolves the document's import through its proxy, checks
-// the tarball, and gives the frame the built module as code. Its size is under the registry's default cap.
-import { DEFAULT_MAX_PACK_SIZE } from "@compmd/registry";
+// the tarball, and gives the frame the built module as code.
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
@@ -73,9 +72,10 @@ afterAll(async () => {
 });
 
 describe("the pack from a registry", () => {
-  it("is one module with the licences of what it bundles, under the default size cap", () => {
-    expect(readdirSync(join(ROOT, "dist")).sort()).toEqual(["LICENSES.md", "mermaid.js"]);
-    expect(unpackedSize(tarball)).toBeLessThan(DEFAULT_MAX_PACK_SIZE);
+  // That it is one module, under the default size cap, is `compmd-pack build`'s check.
+  it("publishes the licences of what it bundles", () => {
+    expect(readdirSync(join(ROOT, "dist"))).toContain("LICENSES.md");
+    expect(readFileSync(join(ROOT, "dist/LICENSES.md"), "utf8")).toContain("mermaid");
   });
 
   it("draws in a host that installs no pack: fetched through its proxy, checked, and given to the frame as code", async () => {
