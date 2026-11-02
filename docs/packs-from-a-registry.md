@@ -50,34 +50,40 @@ A strict frame loads scripts only from the frames' origin, and `blob:` modules (
 | Checked against | the tarball's hash, before it is sent | jsDelivr's per-file hash list, which npm doesn't sign | the tarball's hash, by the proxy |
 | Network in the strict frame | none, as today | requests to the CDN, for that pack's files: a query string (`?leak=…`) on an allowed path reaches the CDN's logs | none beyond the host's own origin, as today |
 | Needs | a built module to be one file: a `blob:` module's relative imports have nothing to resolve against | per-pack policies, so a frame per pack | a server |
-| Caching | the resolver's own (R4): by integrity, in memory and in Cache Storage | the browser's, by URL | the browser's, by URL |
+| Caching | the resolver's own (R4): by integrity, in memory and in Cache Storage | the browser's, by URL, in WebKit; none in Chrome, which caches nothing a strict frame loads (below) | the same as O2 |
 
 O1 changes nothing in the frames and keeps rule 2 (no network) exactly as it is; it works with F1 and F2. Its one requirement, one file per module, is decision 6. O3 remains for a host that runs a proxy and prefers URLs, and needs nothing new: its proxy's files are the host's.
 
 **The sandbox's side:** `sandbox.modules(place)` today returns `{ url, integrity }`; it may also return `{ code }`, a `Blob` the host has checked, which the sandbox sends as it sends compiled source, with the plain binding (spec §7.6).
 
-**What it costs.** The text isn't copied per frame: a `Blob` posted to a frame shares its bytes with the host's page, and the frame makes its own `blob:` URL from it (a `blob:` URL is its maker's origin's only, so the host's page can't make it for the frame). What every frame pays is parsing and compiling the module, as with a URL; what O1 loses is the browser's code cache, which skips compiling a script it has seen at the same URL before. The hard cases:
+**What it costs.** The text isn't copied per frame: a `Blob` posted to a frame shares its bytes with the host's page, and the frame makes its own `blob:` URL from it (a `blob:` URL is its maker's origin's only, so the host's page can't make it for the frame). What every frame pays is parsing and compiling the module, as with a URL. A URL could save compiling again where the browser keeps compiled code for it, and downloading again where it caches the file. What browsers do for a strict frame (measured 2026-11-02):
 
-| Case | What happens with O1 | With URLs (M1, O3) |
-|---|---|---|
-| Mermaid (2.7 MB as one file, minified) used twice in host mode | one copy of the bytes; two frames each parse and compile it | the same, with the second compile from the code cache |
-| An editor rebuilding a widget's frame as it scrolls ([the sandbox](running-components-in-the-sandbox.md), Q6) | the module is compiled again each time the frame boots | from the code cache after the first |
-| A visit after the first | the tarball from the resolver's cache, compiled again | the file from the HTTP cache, compiled code too |
-| Many uses of a small module (ten charts, 50 KB each) | ten compiles of a small file: little | about the same |
+- **Chrome caches nothing a strict frame loads:** no HTTP cache, no code cache. A module loaded by URL is downloaded again for every frame, every frame an editor rebuilds and every visit, on a laptop and on a phone. Within one process, V8 does reuse what it compiled for the same URL, so a later frame compiles less: on an Apple M4, none of Mermaid's functions again, against 12 ms for a `blob:` module.
+- **WebKit caches a strict frame's requests by URL**, across visits too. It keeps no compiled code to show: a `blob:` module and a URL were within 10 ms.
+- **A frame's boot** (the sandbox's strict frame with a small React component, p95) is 33 ms in Chrome on an Apple M4, 80 ms in WebKit there, and 253 ms in Chrome on a Galaxy Z Fold5.
 
-So O1's extra cost is compiling a large module again where a URL would have it cached, about the cost of the first compile each time.
+Mermaid as one module file, minified (3.6 MB, 0.8 MB gzipped), its import and first diagram, p95 in ms:
+
+| Case | Chrome, laptop: URL / `blob:` | WebKit, laptop | Chrome, phone (Wi-Fi) |
+|---|---|---|---|
+| One frame | 171 / 93 | 74 / 66 | 510 / 196 |
+| Two frames in host mode: the second | 137 / 157 | 124 / 167 | 639 / 353 |
+| An editor rebuilding a widget's frame as it scrolls ([the sandbox](running-components-in-the-sandbox.md), Q6): later builds | 61 / 97 | 58 / 68 | 561 / 192 |
+| A visit after the first | 61 / 95 | 83 / 83 | 519 / 220 |
+
+So O1's extra cost is compiling again, where a URL would have the compiled code in the same process: 20 to 40 ms a frame on a laptop, for a large module. A URL costs a download per frame in Chrome. On the laptop the server was local, so that download cost nothing. On the phone it made a URL 1.8 to 3.3 times slower than O1. A small module (ten charts, 50 KB each) costs little either way.
 
 **Making it cheaper.** What compiling costs depends on what we can avoid: compiling the same code in many frames, compiling code that never runs, and compiling again what was compiled before.
 
 | Way | What it saves | What it needs |
 |---|---|---|
-| **A service worker serving the checked files as URLs** at the frames' origin, so a static host gets URLs without a server | it would have given the code cache and chunks for free | **not possible:** a frame with an opaque origin has no service worker, so its requests go to the network (checked 2026-10-31: the Service Worker spec's issue 1390 says no major browser hands them to one, and Chromium stopped doing it on purpose; the spike below confirms it in Chrome and WebKit) |
+| **A service worker serving the checked files as URLs** at the frames' origin, so a static host gets URLs without a server | it would have given the code cache and chunks for free | **not possible:** a frame with an opaque origin has no service worker, so its requests go to the network (checked 2026-10-31: the Service Worker spec's issue 1390 says no major browser hands them to one, and Chromium stopped doing it on purpose; measured 2026-11-02 in Chrome and WebKit: a worker at the frames' origin serves a frame of that origin, never a strict one) |
 | **Fewer frames that load the module** | one compile per frame that runs it | frame mode (one frame for the page), or keeping frames alive while an editor scrolls (`moveBefore`, [the sandbox](running-components-in-the-sandbox.md), Q6); host mode with ten diagrams stays ten compiles |
 | **Compile only what a document uses** | Mermaid's chunks for the diagram drawn, not all 2.7 MB | chunks (R7) |
-| **The code cache** | compiling again on later visits and in later frames | URLs from an origin the strict frame may load: the host's own (O3, a proxy) |
+| **The code cache** | compiling again on later visits and in later frames | **not there for a strict frame:** Chrome keeps no code cache for it, and WebKit shows none (above), so O3's URLs save no compile |
 | **Less than it looks** | browsers compile a function only when it first runs; a module's full cost is parsing it and compiling what it runs | measuring it |
 
-**Recommendation:** measure first, with a spike before the sandbox's part is built: Mermaid's module loaded as a `blob:` module and by URL, in Chrome and WebKit, in one frame, in two (host mode), and in a frame an editor rebuilds, on a laptop and a phone. If a frame's compile is small next to its boot, O1 stands; if not, the remedies above in that order: frame mode and frames kept alive first, chunks next, O3 for hosts with a server.
+**Recommendation: O1** (measured 2026-11-02, above). Where it costs more than a URL, in a second frame of a module and in a frame an editor rebuilds, frame mode and frames kept alive remove the extra compile. Chunks and O3 aren't needed for it: O3's URLs are downloaded again for every frame in Chrome.
 
 ## R3. What is checked
 
@@ -183,7 +189,7 @@ Beyond §6.4:
 
 A team's quarterly report, read on a static site with `"fetch": "direct"`, in host mode:
 
-- it imports `@acme/report-kit@2`: containers written in CompMD (a 20 KB tarball), which itself imports `@acme/charts@3` (five Svelte charts, built modules with their parts of d3, 150 KB unpacked) and `@kit/mermaid@1` (one 2.7 MB module, a 0.8 MB tarball);
+- it imports `@acme/report-kit@2`: containers written in CompMD (a 20 KB tarball), which itself imports `@acme/charts@3` (five Svelte charts, built modules with their parts of d3, 150 KB unpacked) and `@kit/mermaid@1` (one 3.6 MB module, a 0.8 MB tarball);
 - the report uses five charts and two diagrams.
 
 **Fetching**, the first visit. Pack imports form a tree, and each level waits for the one above it, since only the parent's document says what it imports; packs on one level are fetched together.
@@ -198,16 +204,16 @@ About 0.8 s until every pack is there. The text, the tables and the CompMD conta
 
 **Frames.** A pack's imports don't make frames: frames follow trust ([the sandbox](running-components-in-the-sandbox.md), decision 1), so they are at most three deep (the host's page, a permissive frame, a strict frame), whatever the depth of the pack tree. Here, in host mode: seven strict frames (five charts, two diagrams) and the compile frame; in frame mode, one page frame and the compile frame.
 
-**Memory and compiling**, estimated, to be measured when built ([the sandbox](running-components-in-the-sandbox.md), Q9):
+**Memory and compiling**: Mermaid's measured (2026-11-02, R2), the rest estimated, to be measured when built ([the sandbox](running-components-in-the-sandbox.md), Q9):
 
 | | Host mode | Frame mode |
 |---|---|---|
 | Pack files in the host's page | 3 MB of `Blob`s, shared with the frames | the same |
 | Frames | eight, each a few MB for its document, the sandbox's runtime and Svelte's | two |
-| Mermaid | compiled twice (once per diagram's frame), tens of ms each on a laptop, several times that on a phone, and tens of MB each once it draws | compiled once |
+| Mermaid | compiled twice (once per diagram's frame): its import and first diagram about 100 ms each on a laptop (Apple M4) and 200 ms on a phone (Galaxy Z Fold5), the second more while both load at once; about 20 MB of heap each once it draws | compiled once |
 | Charts | five small compiles | in the page's frame |
 
-So what grows with a document is frames, which the host chooses ([the sandbox](running-components-in-the-sandbox.md), Q1), not the depth of its packs; a large module costs a compile per frame that uses it, which frame mode or K3's code cache (R7) keeps down.
+So what grows with a document is frames, which the host chooses ([the sandbox](running-components-in-the-sandbox.md), Q1), not the depth of its packs; a large module costs a compile per frame that uses it, which frame mode keeps down; no browser keeps compiled code for a strict frame across visits (R2).
 
 ## R9. Libraries packs share (S3)
 

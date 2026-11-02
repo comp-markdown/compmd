@@ -264,7 +264,7 @@ modules: (module) => ({ url: `/packs/${module.pack}@${module.version}/${module.p
 |---|---|---|---|
 | How | the frame adds `<script type="module" src integrity>`, then imports the URL, which is the module the browser checked | the frame's import map lists each module's hash | `fetch(url, {integrity})` in the host's page, and the text sent to the frame as a `blob:` module |
 | Needs | nothing more | an import map per frame, so a page per frame (rejected in Q3) | the module as one file: its own imports can't resolve from `blob:` |
-| Cached | by URL, compiled code too | by URL | the download only; parsed in every frame |
+| Cached | by URL in WebKit; in Chrome not at all for a strict frame, which downloads it again each time (measured 2026-11-02, [packs from a registry](packs-from-a-registry.md), R2) | the same as M1 | the download only; parsed in every frame |
 
 A module's own imports (its chunks) load from the same pack files, checked only by the host when it got the pack: a pack's module SHOULD be one file. Bare imports (`react`) resolve through the import map, as compiled source's do.
 
@@ -361,7 +361,7 @@ Measured when built, not budgeted here:
 - A frame: its document, the sandbox's script and the runtime it needs, from the HTTP cache after the first; then parsing and running them, once per frame.
 - Host mode with ten charts: ten frames, each with React or Svelte. Frame mode: one.
 - A frame loaded again when an editor builds its widget again.
-- A built module: once per URL, then cached; Mermaid's 976 KB load only for a document that draws a diagram.
+- A built module: once per URL in WebKit; in Chrome once per strict frame, which caches nothing it loads ([packs from a registry](packs-from-a-registry.md), R2). Mermaid's 976 KB load only for a document that draws a diagram.
 
 ## What it means for the spec
 
