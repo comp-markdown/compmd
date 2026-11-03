@@ -367,6 +367,15 @@ describe("OpenDocument", () => {
     document.free();
   });
 
+  it("evaluates an expression in the document's scope as the last edit left it, or gives its F024", () => {
+    const document = new OpenDocument(request("---\nteam: [Ana]\nmd:\n  inputs:\n    n: number = 2\n---\n\nText.\n"));
+    expect(document.evaluate("md.doc.team.size() + md.input.n")).toEqual({ value: 3 });
+    document.edit(11, 14, "Ana, Kenji");
+    expect(document.evaluate("md.doc.team")).toEqual({ value: ["Ana", "Kenji"] });
+    expect(document.evaluate("md.doc.tem")).toMatchObject({ error: { code: "F024", range: { start: { line: 1, column: 8 } } } });
+    document.free();
+  });
+
   it("throws on a request it can't open", () => {
     expect(() => new OpenDocument({ path: "a.comp.md", files: {}, now })).toThrow("`a.comp.md` isn't one of the request's files");
   });

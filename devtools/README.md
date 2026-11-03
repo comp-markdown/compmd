@@ -56,7 +56,7 @@ It has every tab but the page. It observes the view from when it mounts, however
 In the order of decision 8: the page first, then why something is wrong, then what the document is made of, then the raw material.
 
 - **Page:** the document rendered, which stays mounted under the other tabs, with its state.
-- **Console:** what went wrong, newest last: each change's diagnostics when they change, what the editor couldn't do (a pack it couldn't fetch), and, from the sandbox's observer, each component that shows its fallback with why (W118, W121, `not-here`), each `set` the sandbox refused, each frame it stopped (`src/console.ts`).
+- **Console:** what went wrong, newest last: each change's diagnostics when they change, what the editor couldn't do (a pack it couldn't fetch), and, from the sandbox's observer, each component that shows its fallback with why (W118, W121, `not-here`), each `set` the sandbox refused, each frame it stopped (`src/console.ts`). Under the list, an input evaluates a CEL expression in the document, as a browser's console evaluates JavaScript (*Evaluating in the Console*, below).
 - **Components:** those the document defines and those it uses, each line selecting it in the text, and those it could use.
 - **Sandbox:** the page's windows as a tree, from the host's page down to the frames its frames make, each with its level, its network, what it renders and its last render's time, the components mounted in it with how long they took to mount and update, and its fallbacks (`src/frames.ts`).
 - **Data:** what the frontmatter gives the render: its fields, each data import with what was loaded, the inputs, the settings.
@@ -65,6 +65,15 @@ In the order of decision 8: the page first, then why something is wrong, then wh
 - **Parse tree** and **Expanded tree** (spec §12): JSON that folds, two levels open. A second worker makes these views from the current text while one of their tabs is open (`src/views.ts`).
 
 The Console, Sandbox and Messages tabs read [the sandbox's observer](../sandbox/README.md#observing-a-view), which the tools start with each page: frames report what happens in them, so the tabs mark what a frame reported as that frame's, since code of its level could have changed it ([the accepted risk](../docs/devtools.md#the-accepted-risk)), and show everything a frame sends as text, never as markup or a link (O1). A component's time is its mount's and its updates' calls: a React component's mount schedules its render, so the frame's own render time includes the rest.
+
+## Evaluating in the Console
+
+Write an expression of the CompMD CEL profile (spec §8.2), without its parentheses, in the input under the Console's list: `md.doc`, `md.data.sales.size()`, `md.data.sales.filter(s, s.region == md.input.region)`, `md.today()`.
+
+- **Its scope** is the document's, as its body sees it at the top level: `md.doc`, `md.data` with what was loaded, `md.input` with the inputs' values the page shows, `md.version`, `md.lang`, `md.tz`, and the `md.` functions at the render's time. Not what an `each` binds or a definition's params, which a place in the text has.
+- **Enter** evaluates it, **Shift+Enter** adds a line, and **↑** and **↓**, on the first and the last line, go through the expressions evaluated before, back to what was being written.
+- **Its value** shows under it as a tree, as the Data tab shows data. **An error** is F024 with its message, the expression shown with `^` under the column it is at: a syntax error, a name, field or function the document doesn't have (with the nearest one it has), a type that doesn't fit, an evaluation error such as a division by zero, or the work budget spent. Each stays in the list with its time, among the rest.
+- **Where it runs:** the views' worker opens the document as it is now, with `@compmd/processor`'s `evaluate`, which checks the expression against the document's types as an expression in it is checked, evaluates it within the same work budget, and changes nothing; then frees it. Expressions wait for the worker in order, before the tabs' views. The inspector has the same input, on the request the host gives.
 
 ## Testing a host's documents
 
@@ -77,7 +86,7 @@ The Console, Sandbox and Messages tabs read [the sandbox's observer](../sandbox/
 ```sh
 pnpm build   # dist/ with rolldown: the Svelte compiled in, the workers beside the code, the other packages left to the host
 pnpm lint    # eslint, tsc, and svelte-check for the .svelte files
-pnpm test    # edits, the session, the editor's loop, the processing, the views, and the observer tabs, in happy-dom
+pnpm test    # edits, the session, the editor's loop, the processing, the views, the observer tabs and the Console's input, in happy-dom
 ```
 
 The inspector's browser tests are `@compmd/vite`'s, on its example's dev server, in Chrome and WebKit, in both page modes; the editor's are the playground's.

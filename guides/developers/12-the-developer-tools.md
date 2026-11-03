@@ -166,7 +166,7 @@ In order: the page first, then why something is wrong, then what the document is
 | Tab | What it shows |
 | --- | --- |
 | **Page** | the document rendered (the editor only), kept mounted under the other tabs |
-| **Console** | what went wrong, newest last: each change's diagnostics, packs that couldn't be fetched, and from the sandbox each component that shows its fallback with why (W118, W121, `not-here`), each `set` it refused, each frame it stopped |
+| **Console** | what went wrong, newest last: each change's diagnostics, packs that couldn't be fetched, and from the sandbox each component that shows its fallback with why (W118, W121, `not-here`), each `set` it refused, each frame it stopped; and under them, an input that evaluates an expression in the document (below) |
 | **Components** | those the document defines and those it uses, and those it could use |
 | **Sandbox** | the windows as a tree, from the host's page down to the frames its frames make: each with its level, its network, what it renders and its last render's time, the components mounted in it with how long they took to mount and update, and its fallbacks |
 | **Data** | what the frontmatter gives the render: its fields, each data import with what was loaded, the inputs, the settings |
@@ -177,6 +177,27 @@ In order: the page first, then why something is wrong, then what the document is
 In the editor, a bar over the tabs lists the document's inputs, each with a control by its type; changing one there opens the document again with it. In the inspector, the inputs are your page's, and its Data tab shows them.
 
 A component's time is its `mount`'s and its updates' calls. A React component's mount schedules its render, so most of its time is in the frame's own render time.
+
+## Evaluating in the Console
+
+The input under the Console's list evaluates an expression in the document, as a browser's console evaluates JavaScript: write what you would write between a param's parentheses, and press Enter. For a document with a `title`, an input `region` set to `eu`, and three sales of 120 (`eu`), 80 (`us`) and 30 (`eu`):
+
+```text
+› md.data.sales.filter(s, s.region == md.input.region).map(s, s.amount)
+[120, 30]
+› md.sum(md.data.sales.map(s, s.amount))
+230
+› md.doc.titel
+         ^
+F024 unknown field 'titel'; did you mean 'title'?
+```
+
+- **What it sees** is what the document's body sees outside any component: `md.doc`, `md.data` with what was loaded, `md.input` with the values the page shows, `md.version`, `md.lang`, `md.tz`, and the `md.` functions at the render's time, `md.today()` among them. Not what an `each` names (`as`) or a `compmd` definition's params, which only a place in the text has.
+- **The keys:** Enter evaluates, Shift+Enter adds a line, and ↑ and ↓ go through what you evaluated before.
+- **A value** shows as a tree, as the Data tab shows data. **An error** is F024, as in a document: the expression with `^` under where it is, and the message, with the nearest name the document has when you wrote one it doesn't. It is checked against the document's types first, as an expression in the document is, and runs within the same work budget, so what works here works in a param.
+- **It changes nothing:** the document, the page and the diagnostics stay as they are. The inspector has the same input, on the request your app gives it.
+
+From code, an open document has the same: `opened.evaluate("md.data.sales.size()")` gives `{value}` or `{error}` (`@compmd/processor`), and in Rust, the expanded processor's `evaluate`.
 
 ## The observer behind them
 

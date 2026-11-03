@@ -1,8 +1,9 @@
 // The Console tab (docs/devtools.md, decision 7): a history of what went wrong, newest last. The diagnostics as each
 // change left them, and what the editor couldn't do (a pack it couldn't fetch, a request the worker couldn't open), come
 // from the editor; component fallbacks with why, refused `set`s and frames stopped come from the sandbox's observer.
+// Among them, the expressions the developer evaluated in the document, with their values.
 
-import type { Diagnostic } from "@compmd/processor";
+import type { Diagnostic, Evaluated } from "@compmd/processor";
 import { diagnosticOf, type FrameId, type ObservedEvent, type SandboxDiagnostic } from "@compmd/sandbox";
 
 /** One line of the console, at `at`, in milliseconds since the epoch. */
@@ -62,4 +63,66 @@ function sandboxEntries(events: readonly ObservedEvent[]): ConsoleEntry[] {
 /** The console's lines, oldest first: the editor's and the sandbox's, in the order they happened. */
 export function consoleOf(editor: readonly ConsoleEntry[], events: readonly ObservedEvent[]): ConsoleEntry[] {
   return [...editor, ...sandboxEntries(events)].sort((a, b) => a.at - b.at);
+}
+
+/**
+ * An expression the developer evaluated in the document, at `at`: its value, its F024, why it couldn't be evaluated
+ * (`failed`, a document the processor can't open), or none yet while the worker works.
+ */
+export interface Evaluation {
+  id: number;
+  at: number;
+  expression: string;
+  result?: Evaluated | { failed: string };
+}
+
+/** The console's lines and the evaluations, oldest first, as one list. */
+export function withEvaluations(entries: readonly ConsoleEntry[], evaluations: readonly Evaluation[]): (ConsoleEntry | ({ kind: "evaluation" } & Evaluation))[] {
+  return [...entries, ...evaluations.map((evaluation) => ({ kind: "evaluation" as const, ...evaluation }))].sort((a, b) => a.at - b.at);
+}
+
+/**
+ * `expression` with a mark, `^`, under the code point at `line` and `column` (1-based), on a line of its own after that
+ * line: where an F024 is.
+ *
+ * @example
+ * markedAt("md.doc.tem", 1, 8); // "md.doc.tem\n       ^"
+ */
+export function markedAt(expression: string, line: number, column: number): string {
+  const lines = expression.split("\n");
+  const mark = `${" ".repeat(Math.max(0, column - 1))}^`;
+  return [...lines.slice(0, line), mark, ...lines.slice(line)].join("\n");
+}
+
+/**
+ * The expressions evaluated, oldest first, for ↑ and ↓ as a browser's console walks them: ↑ gives the one before the
+ * one shown, ↓ the one after, and past the newest, what was being written.
+ */
+export class ExpressionHistory {
+  readonly #expressions: string[] = [];
+  /** Where ↑ and ↓ are: an index into the expressions, or their length for what is being written. */
+  #at = 0;
+  #draft = "";
+
+  /** `expression` was evaluated: it is the newest, and the walk starts again after it. */
+  add(expression: string): void {
+    if (this.#expressions.at(-1) !== expression) this.#expressions.push(expression);
+    this.#at = this.#expressions.length;
+    this.#draft = "";
+  }
+
+  /** The expression before the one shown, `current`, which is kept when it is what was being written; or none. */
+  previous(current: string): string | undefined {
+    if (this.#at === 0) return undefined;
+    if (this.#at === this.#expressions.length) this.#draft = current;
+    this.#at -= 1;
+    return this.#expressions[this.#at];
+  }
+
+  /** The expression after the one shown, or what was being written past the newest; or none at the end. */
+  next(): string | undefined {
+    if (this.#at >= this.#expressions.length) return undefined;
+    this.#at += 1;
+    return this.#at === this.#expressions.length ? this.#draft : this.#expressions[this.#at];
+  }
 }

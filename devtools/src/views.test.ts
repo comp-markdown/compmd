@@ -39,6 +39,13 @@ describe("viewOf", () => {
     expect(view).toMatchObject({ view: "diagnostics", diagnostics: [{ code: "F002" }] });
   });
 
+  it("evaluates an expression in the document, or gives its F024", () => {
+    const document = request("---\nteam: [Ana, Kenji]\n---\n");
+    expect(viewOf({ request: document, view: "evaluate", id: 7, expression: "md.doc.team.size()" })).toEqual({ view: "evaluate", id: 7, result: { value: 2 } });
+    expect(viewOf({ request: document, view: "evaluate", id: 8, expression: "md.doc.tem" })).toMatchObject({ view: "evaluate", id: 8, result: { error: { code: "F024" } } });
+    expect(viewOf({ request: { path: "a", now: "never" }, view: "evaluate", id: 9, expression: "1" })).toMatchObject({ view: "evaluate", id: 9, failed: expect.any(String) as string });
+  });
+
   it("says why a request can't be processed", () => {
     expect(viewOf({ request: { path: "a", now: "never" }, view: "trees" })).toMatchObject({ view: "trees", failed: expect.any(String) as string });
   });
@@ -90,5 +97,16 @@ describe("ViewsClient", () => {
       ["b", "diagnostics"],
       ["c", "plain"],
     ]);
+  });
+
+  it("sends every expression, in order, before the views that wait", () => {
+    const worker = new FakeWorker();
+    const client = new ViewsClient(worker, () => undefined);
+    client.request(request("a"), "trees");
+    client.request(request("b"), "plain");
+    client.evaluate(request("b"), 1, "1 + 1");
+    client.evaluate(request("b"), 2, "2 + 2");
+    for (const answer of [{ view: "trees", parse: {}, expanded: {} }, ...[1, 2].map((id) => ({ view: "evaluate", id, result: { value: 0 } }))] as View[]) worker.answer(answer);
+    expect(worker.received.map((asked) => (asked.view === "evaluate" ? asked.expression : asked.view))).toEqual(["trees", "1 + 1", "2 + 2", "plain"]);
   });
 });

@@ -4,28 +4,52 @@
 // keeps the document open and gives only what changed, so these come from a second worker that processes the
 // document from scratch, and only while a tab shows one.
 
-import { componentsOf, frontmatterOf, plainHtml, process, type Components, type Diagnostic, type Frontmatter, type Request } from "@compmd/processor";
+import { componentsOf, frontmatterOf, OpenDocumentJson, plainHtml, process, type Components, type Diagnostic, type Evaluated, type Frontmatter, type Request } from "@compmd/processor";
 
 /** A view the second worker makes: a tab's, or the diagnostics, for the inspector, which has no editor's. */
 export type ViewKind = "trees" | "plain" | "data" | "components" | "diagnostics";
 
-/** From the editor to the views' worker: the document as it is now, and the view to make of it. */
-export interface ViewRequest {
-  request: Request;
-  view: ViewKind;
-}
+/**
+ * From the editor to the views' worker: the document as it is now, and the view to make of it; or an expression the
+ * Console evaluates in it, numbered by `id`.
+ */
+export type ViewRequest = { request: Request; view: ViewKind } | { request: Request; view: "evaluate"; id: number; expression: string };
 
-/** A view of a document, or why it couldn't be made. */
+/** A view of a document, or why it couldn't be made; or an expression's value in it, or its F024. */
 export type View =
   | { view: "trees"; parse: unknown; expanded: unknown }
   | { view: "plain"; html: string }
   | { view: "data"; frontmatter: Frontmatter }
   | { view: "components"; components: Components }
   | { view: "diagnostics"; diagnostics: Diagnostic[] }
-  | { view: ViewKind; failed: string };
+  | { view: "evaluate"; id: number; result: Evaluated }
+  | { view: ViewKind | "evaluate"; id?: number; failed: string };
+
+/** `expression`'s value in `request`'s document, opened for it and freed after. */
+function evaluated(request: Request, expression: string): Evaluated {
+  const document = new OpenDocumentJson(request);
+  try {
+    return document.evaluate(expression);
+  } finally {
+    document.free();
+  }
+}
+
+const messageOf = (error: unknown): string => (error instanceof Error ? error.message : String(error));
 
 /** What the views' worker does with each request. */
-export function viewOf({ request, view }: ViewRequest): View {
+export function viewOf(asked: ViewRequest): View {
+  if (asked.view !== "evaluate") return documentView(asked.request, asked.view);
+  const { request, id, expression } = asked;
+  try {
+    return { view: "evaluate", id, result: evaluated(request, expression) };
+  } catch (error) {
+    return { view: "evaluate", id, failed: messageOf(error) };
+  }
+}
+
+/** The view `view` of `request`'s document. */
+function documentView(request: Request, view: ViewKind): View {
   try {
     if (view === "plain") return { view, html: plainHtml(request.files?.[request.path] ?? "") };
     if (view === "data") return { view, frontmatter: frontmatterOf(request) };
@@ -34,7 +58,7 @@ export function viewOf({ request, view }: ViewRequest): View {
     if (view === "diagnostics") return { view, diagnostics };
     return { view, parse, expanded };
   } catch (error) {
-    return { view, failed: error instanceof Error ? error.message : String(error) };
+    return { view, failed: messageOf(error) };
   }
 }
 
@@ -60,12 +84,13 @@ export interface ViewsPort {
 /**
  * Asks the views' worker for a view, one request at a time: a request made while it is busy waits, and a later one
  * takes its place, since only the latest text and tab matter. The diagnostics wait apart from a tab's view, so asking
- * for one never drops the other.
+ * for one never drops the other. Expressions to evaluate wait in order, and go first: each gets its answer.
  */
 export class ViewsClient {
   readonly #worker: ViewsPort;
   #busy = false;
   readonly #waiting = new Map<"tab" | "diagnostics", ViewRequest>();
+  readonly #evaluations: ViewRequest[] = [];
 
   /** Asks `worker`, and calls `onView` with each answer. */
   constructor(worker: ViewsPort, onView: (view: View) => void) {
@@ -83,12 +108,25 @@ export class ViewsClient {
     if (!this.#busy) this.#send();
   }
 
+  /** Asks for `expression`'s value in `request`'s document; its answer has `id`. */
+  evaluate(request: Request, id: number, expression: string): void {
+    this.#evaluations.push({ request, view: "evaluate", id, expression });
+    if (!this.#busy) this.#send();
+  }
+
   #send(): void {
-    const [next] = this.#waiting;
+    const next = this.#evaluations.shift() ?? this.#nextView();
     if (!next) return;
+    this.#busy = true;
+    this.#worker.postMessage(next);
+  }
+
+  /** The view that waits longest, taken from the waiting ones. */
+  #nextView(): ViewRequest | undefined {
+    const [next] = this.#waiting;
+    if (!next) return undefined;
     const [slot, waiting] = next;
     this.#waiting.delete(slot);
-    this.#busy = true;
-    this.#worker.postMessage(waiting);
+    return waiting;
   }
 }

@@ -209,6 +209,16 @@ impl Document {
         Ok(serde_json::to_string(&hint)?)
     }
 
+    /// `expression`'s value in the document's scope, as the last change left it (`compmd::Processor::evaluate`):
+    /// `{value}`, or `{error}` with its F024, placed in `expression`.
+    pub(crate) fn evaluate(&self, expression: &str) -> Result<String, Error> {
+        let evaluated = match self.processor.evaluate(expression) {
+            Ok(value) => serde_json::json!({ "value": value }),
+            Err(error) => serde_json::json!({ "error": error }),
+        };
+        Ok(serde_json::to_string(&evaluated)?)
+    }
+
     /// The document's inputs, by name: what the splice carries too, without the nodes.
     pub(crate) fn inputs(&self) -> Result<String, Error> {
         Ok(serde_json::to_string(&self.processor.expanded().inputs)?)
@@ -385,6 +395,23 @@ mod tests {
         );
         let document = open("Plain.\n");
         assert_eq!(document.hint(2).expect("no hint"), "null");
+    }
+
+    #[test]
+    fn an_expression_gives_its_value_in_the_documents_scope_or_its_f024() {
+        let document = open("---\nteam: [Ana, Kenji]\n---\n\nText.\n");
+        let evaluated = |expression: &str| -> Json {
+            serde_json::from_str(&document.evaluate(expression).expect("evaluated")).expect("JSON")
+        };
+        assert_eq!(
+            evaluated("md.doc.team"),
+            json!({ "value": ["Ana", "Kenji"] })
+        );
+        let error = &evaluated("md.doc.tem")["error"];
+        assert_eq!(
+            (&error["code"], &error["range"]["start"]),
+            (&json!("F024"), &json!({ "line": 1, "column": 8 }))
+        );
     }
 
     #[test]

@@ -1,13 +1,13 @@
 <!-- The tools' tabs and what each shows, for the editor and the inspector alike: the page (the editor's), what went
      wrong, the components, the sandbox's frames, the data, what a plain Markdown renderer shows, the messages and the
-     trees. The views' worker makes the document's views, from the document as it is now, while their tab is open; the
-     observer's tabs read what the sandbox's observer kept. -->
+     trees. The views' worker makes the document's views, from the document as it is now, while their tab is open, and
+     evaluates the Console's expressions in it; the observer's tabs read what the sandbox's observer kept. -->
 <script lang="ts">
   import type { Diagnostic, Range, Request } from "@compmd/processor";
   import type { ObservedEvent } from "@compmd/sandbox";
   import { untrack, type Snippet } from "svelte";
   import ComponentsView from "./ComponentsView.svelte";
-  import type { ConsoleEntry } from "./console.ts";
+  import { now, type ConsoleEntry, type Evaluation } from "./console.ts";
   import ConsoleView from "./ConsoleView.svelte";
   import DataView from "./DataView.svelte";
   import { treeOf } from "./frames.ts";
@@ -46,16 +46,30 @@
   /** How deep the trees open: two levels at first; "Open all" and "Fold all" set it. */
   let treeDepth = $state(2);
 
+  /** The expressions the Console evaluated in the document, each with its result once the views' worker gives it. */
+  let evaluations: Evaluation[] = $state.raw([]);
+
   let views: ViewsClient | undefined;
   /** The views' worker's client, which starts the worker the first time a view is asked for. */
   const client = (): ViewsClient =>
     (views ??= new ViewsClient(new Worker(new URL("./views-worker.js", import.meta.url), { type: "module" }), (answer) => {
-      if (answer.view !== "diagnostics") view = answer;
+      if (answer.view === "evaluate") {
+        const result = "failed" in answer ? { failed: answer.failed } : answer.result;
+        evaluations = evaluations.map((evaluation) => (evaluation.id === answer.id ? { ...evaluation, result } : evaluation));
+      } else if (answer.view !== "diagnostics") view = answer;
       else if ("diagnostics" in answer) ondiagnostics?.(answer.diagnostics);
     }));
 
   // Without the origins the editor's keys need, which would make the expanded tree three times as long.
   const asked = (request: Request): Request => ({ ...request, origins: false });
+
+  /** Evaluates `expression` in the document as it is now, in the views' worker. */
+  function evaluate(expression: string): void {
+    if (!document) return;
+    const id = (evaluations.at(-1)?.id ?? 0) + 1;
+    evaluations = [...evaluations, { id, at: now(), expression }];
+    client().evaluate(asked(document), id, expression);
+  }
 
   $effect(() => {
     void revision;
@@ -92,7 +106,7 @@
   {#if tab !== "page"}
     <div class="view" id="view-{tab}" role="tabpanel" aria-labelledby="tab-{tab}">
       {#if tab === "console"}
-        <ConsoleView {entries} {onselect} />
+        <ConsoleView {entries} {evaluations} onevaluate={document ? evaluate : undefined} {onselect} />
       {:else if tab === "sandbox"}
         <SandboxView {tree} {dropped} />
       {:else if tab === "messages"}

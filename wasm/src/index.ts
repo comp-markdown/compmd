@@ -446,6 +446,9 @@ export interface Library {
   version: string;
 }
 
+/** An expression's value in a document's scope ({@link OpenDocument.evaluate}), or its F024. */
+export type Evaluated = { value: unknown } | { error: Diagnostic };
+
 /** Data the host fetched for {@link OpenDocument.reload}, as a request gives it, and what of it is still pending. */
 export interface FetchedData {
   remote?: Record<string, Fetched>;
@@ -516,6 +519,11 @@ export class OpenDocumentJson {
   /** What is at UTF-16 position `offset`, as {@link OpenDocument.hintAt}. */
   hintAt(offset: number): PositionalHint | undefined {
     return (JSON.parse(this.#kept.hint(offset)) as PositionalHint | null) ?? undefined;
+  }
+
+  /** `expression`'s value in the document's scope, as {@link OpenDocument.evaluate}. */
+  evaluate(expression: string): Evaluated {
+    return JSON.parse(this.#kept.evaluate(expression)) as Evaluated;
   }
 
   /** What a render needs now that the request didn't hold, as {@link OpenDocument.sources}. */
@@ -608,6 +616,25 @@ export class OpenDocument {
    */
   hintAt(offset: number): PositionalHint | undefined {
     return this.#json.hintAt(offset);
+  }
+
+  /**
+   * Evaluates `expression`, a CEL expression of the profile without its parentheses (spec §8.2), in the scope the
+   * document's body sees at its top level, as the last change left it: `md.doc`, `md.data`, `md.input` with the
+   * inputs' values the render used, `md.version`, `md.lang`, `md.tz`, and the `md.` functions at the render's time. It
+   * is checked against the document's types, as an expression in the document is, and evaluated within the same work
+   * budget. Nothing of the document changes: for a developer's console.
+   *
+   * @returns `{value}`, as JSON gives it; or `{error}`, F024 with its message and its line and column in `expression`
+   * (a syntax error, an unknown name with the nearest known one, an evaluation error).
+   *
+   * @example
+   * const result = document.evaluate("md.data.sales.filter(s, s.region == md.input.region).size()");
+   * if ("error" in result) show(result.error.message, result.error.range.start.column);
+   * else show(result.value);
+   */
+  evaluate(expression: string): Evaluated {
+    return this.#json.evaluate(expression);
   }
 
   /**

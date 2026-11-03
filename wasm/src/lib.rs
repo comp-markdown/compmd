@@ -161,6 +161,16 @@ impl Handle {
         Ok(self.document()?.hint(at)?)
     }
 
+    /// `expression`'s value in the document's scope as the last change left it, `{value}`, or `{error}`, its F024 at
+    /// its line and column in `expression`. Nothing of the document changes.
+    ///
+    /// # Errors
+    ///
+    /// None in practice, as `splice`.
+    pub fn evaluate(&self, expression: &str) -> Result<String, JsError> {
+        Ok(self.document()?.evaluate(expression)?)
+    }
+
     /// The text's UTF-16 `start..end` became `text`.
     ///
     /// # Errors

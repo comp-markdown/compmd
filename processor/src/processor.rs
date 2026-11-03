@@ -57,6 +57,8 @@ use crate::tree::Move;
 use crate::{expand, tree, validate};
 use std::rc::Rc;
 
+mod evaluate;
+
 /// A document on its way through the stages, in the state `S`.
 pub struct Processor<S> {
     diagnostics: Vec<Diagnostic>,

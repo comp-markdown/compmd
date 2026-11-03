@@ -897,6 +897,75 @@ textarea::selection {
   color: var(--ink-secondary);
 }
 
+/* The list scrolls, and the input for the next expression stays under it, as a browser's console has it. */
+.console-pane {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.console-pane .console {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* An expression evaluated: what was written, then its value, or its F024 with a mark at its column. */
+.console > li.evaluation {
+  border-inline-start-color: var(--accent);
+}
+
+.evaluated {
+  flex-basis: 100%;
+  min-width: 0;
+}
+
+/* Every line indented alike, so the mark under an F024 stays under its column. */
+.evaluated .expression {
+  position: relative;
+  margin: 0;
+  padding-inline-start: 2ch;
+  font: 12.5px/1.6 var(--mono);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.evaluated .expression::before {
+  content: "›";
+  position: absolute;
+  inset-inline-start: 0;
+  color: var(--accent);
+}
+
+.evaluated .value {
+  font: 12.5px/1.65 var(--mono);
+}
+
+.evaluated .value .leaf {
+  padding-inline-start: 0;
+}
+
+.evaluated .pending {
+  color: var(--ink-secondary);
+}
+
+.evaluated .error {
+  color: var(--error);
+}
+
+textarea.evaluate {
+  flex: none;
+  padding: 9px 22px;
+  border-top: 1px solid var(--rule);
+  background: color-mix(in srgb, var(--accent) 3%, var(--sheet));
+  font: 12.5px/1.6 var(--mono);
+}
+
+textarea.evaluate:focus {
+  background: var(--sheet);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
 /* What a frame reported, which code of its level could have written: marked wherever it is shown. */
 
 .reported {
