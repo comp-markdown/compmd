@@ -33,6 +33,7 @@ CompMD has a spec, a playground and packages, but no front door: someone who hea
     - A release tag (`spec-v1.0`) adds `/spec/1.0/`, the spec as it was at that tag, never changed after; `/spec/` then shows the latest release, and `/spec/draft/` the draft.
     - Pages replaces the whole site on every deploy, so each build makes every released version again, from the spec at its tag (`git show spec-v1.0:compmd-spec-v1.md`): reproducible, with no old build kept anywhere.
     - The landing page and the playground follow `main`.
+12. **Search covers the whole site** (added 2026-11-03): a Search button in the header of every page, and the `/` key, open a dialog that searches the landing page, the spec at `/spec/` with its companion, and the guides, section by section, as the reader types. The site is static, so the index is made with it, from the pages as they are rendered, and searched in the browser with [MiniSearch](https://lucaong.github.io/minisearch/) (about 7 KB gzipped), our own index rather than a tool's, so its sections and results look as the site does. Both load the first time search opens, so the landing page's budget doesn't change.
 
 ## The landing page
 

@@ -4,17 +4,22 @@
 import type { ComponentProps } from "svelte";
 import type Guide from "../src/Guide.svelte";
 import { bookOf, guideLink, writtenOf } from "./guide.ts";
+import type { IndexedPage } from "./search.ts";
 import { renderMarkdown } from "./spec.ts";
 import { SITE } from "../src/site.ts";
 
 /** The books, in the order the site lists them: their folders in `guides/`. */
 export const BOOKS = ["authors", "developers"] as const;
 
-/** A page of the guides: its folder in the site, its path to the site's root, and what its component is given. */
+/**
+ * A page of the guides: its folder in the site, its path to the site's root, what its component is given, and what
+ * the search index takes of it, named by its book and chapter.
+ */
 export interface GuidePage {
   folder: string;
   root: string;
   props: ComponentProps<typeof Guide>;
+  search: IndexedPage;
 }
 
 /** A document's title: its first heading. */
@@ -40,23 +45,29 @@ export async function guidePages(read: (path: string) => string, blob: string): 
     const { html, toc } = await renderMarkdown(markdown, { blob: `${blob}guides/`, path }, { rules: false, sources: false, link });
     return { html, toc, root, books: shelf, title: titleOf(markdown) };
   };
-  const pages: GuidePage[] = [{ folder: "guides/", root: "../", props: { ...(await page("README.md", undefined, "../")), parts: [] } }];
+  const shelfPage = await page("README.md", undefined, "../");
+  const pages: GuidePage[] = [{ folder: "guides/", root: "../", props: { ...shelfPage, parts: [] }, search: { url: "guides/", page: "The guides", html: shelfPage.html } }];
   for (const book of books) {
     const chapters = writtenOf(book.parts);
     const link = (chapter: (typeof chapters)[number] | undefined, up: string) =>
       chapter && { title: `${String(chapter.number)}. ${chapter.title}`, href: `${up}${chapter.slug}/` };
+    const contents = await page(`${book.name}/README.md`, "", "../../");
     pages.push({
       folder: `guides/${book.name}/`,
       root: "../../",
-      props: { ...(await page(`${book.name}/README.md`, "", "../../")), book: book.name, parts: book.parts, next: link(chapters[0], "") },
+      props: { ...contents, book: book.name, parts: book.parts, next: link(chapters[0], "") },
+      search: { url: `guides/${book.name}/`, page: book.title, html: contents.html },
     });
     for (const [index, chapter] of chapters.entries()) {
+      const title = `${String(chapter.number)}. ${chapter.title}`;
+      const written = await page(`${book.name}/${chapter.file}`, "../", "../../../");
       pages.push({
         folder: `guides/${book.name}/${chapter.slug}/`,
         root: "../../../",
+        search: { url: `guides/${book.name}/${chapter.slug}/`, page: `${book.title}: ${title}`, html: written.html },
         props: {
-          ...(await page(`${book.name}/${chapter.file}`, "../", "../../../")),
-          title: `${String(chapter.number)}. ${chapter.title}`,
+          ...written,
+          title,
           book: book.name,
           parts: book.parts,
           current: chapter.slug,

@@ -1,4 +1,5 @@
-<!-- The site's header: the logo, home, and the places: the spec, the guides, the playground, GitHub. -->
+<!-- The site's header: the logo, home, the places (the spec, the guides, the playground, GitHub), and search, which
+     `search.ts` opens. -->
 <script lang="ts">
   import Logo from "./Logo.svelte";
   import { REPOSITORY } from "./site.ts";
@@ -21,6 +22,9 @@
       <a href="{root}guides/" aria-current={current === "guides" ? "page" : undefined}>Guides</a>
       <a href="{root}playground/">Playground</a>
       <a class="github" href={REPOSITORY}>GitHub</a>
+      <button type="button" class="search" data-root={root} aria-label="Search the site" title="Search (/)">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5" /><path d="m12.5 12.5 4.5 4.5" /></svg>
+      </button>
     </nav>
   </div>
 </header>

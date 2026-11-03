@@ -18,6 +18,7 @@
     "@compmd/render": "workspace:*",
     "@compmd/sandbox": "workspace:*",
     "d3": "7.9.0",
+    "minisearch": "7.1.2",
     "svelte": "5.57.2"
   },
   "devDependencies": {

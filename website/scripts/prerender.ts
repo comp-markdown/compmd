@@ -1,6 +1,6 @@
 // Writes the server-rendered pages into the client build, `dist/`: the landing page, each version of the spec with its
 // companion (`build/versions.ts`, `build/companion.ts`), the draft from the working tree and each release from its tag,
-// and the guides' pages. Runs
+// and the guides' pages; and the search index of them, `search.json` (`build/search.ts`). Runs
 // after `vite build` and the server build.
 import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -9,6 +9,7 @@ import { renderSpecPage } from "../build/companion.ts";
 import { bookPages, type BookProps } from "../build/book.ts";
 import { guidePages } from "../build/guide-pages.ts";
 import { prerendered, relocated, type Rendered } from "../build/prerender.ts";
+import { sectionsOf, sitePages } from "../build/search.ts";
 import { rootOf, specPages } from "../build/versions.ts";
 import type { ComponentProps } from "svelte";
 import type Guide from "../src/Guide.svelte";
@@ -28,7 +29,8 @@ const git = (...args: string[]) => execFileSync("git", args, { cwd: REPO, encodi
 const stylesheet = (folder: string) => (href: string) => readFileSync(join(DIST, folder, href), "utf8");
 
 const index = join(DIST, "index.html");
-writeFileSync(index, prerendered(readFileSync(index, "utf8"), server.renderPage(), stylesheet("")));
+const landing = server.renderPage();
+writeFileSync(index, prerendered(readFileSync(index, "utf8"), landing, stylesheet("")));
 
 const template = readFileSync(join(DIST, "spec/index.html"), "utf8");
 const pages = specPages(git("tag", "--list", "spec-v*").split("\n").filter(Boolean));
@@ -44,11 +46,14 @@ const fileAt = (ref: string | undefined, path: string): string | undefined => {
   }
 };
 
+/** The spec page's content at `spec/`, for the search index. */
+let specAtSpec = "";
 for (const page of pages) {
   const root = rootOf(page.folder);
   const blob = `${REPOSITORY}/blob/${page.ref ?? "main"}/`;
   // The spec and its companion, at the page's version; one released before the companion has the spec alone.
   const { html, toc } = await renderSpecPage((path) => fileAt(page.ref, path), blob);
+  if (page.folder === "spec/") specAtSpec = html;
   const rendered = server.renderSpecPage({
     html,
     toc,
@@ -68,6 +73,8 @@ for (const page of guide) {
   writeFileSync(join(DIST, page.folder, "index.html"), prerendered(relocated(guideTemplate, page.root), server.renderGuidePage(page.props), stylesheet(page.folder)));
 }
 // Each book as one page, which `scripts/pdf.ts` prints into the book's PDF, then removes.
+// The search index: every section of the landing page, the spec at `spec/` and the guides.
+writeFileSync(join(DIST, "search.json"), JSON.stringify(sectionsOf(sitePages(landing.body, specAtSpec, guide))));
 const books = await bookPages((path) => readFileSync(join(REPO, "guides", path), "utf8"), `${REPOSITORY}/blob/main/`);
 for (const page of books) {
   mkdirSync(join(DIST, page.folder), { recursive: true });

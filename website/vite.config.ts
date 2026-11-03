@@ -10,6 +10,7 @@ import { guidePages, type GuidePage } from "./build/guide-pages.ts";
 import { PRINT, printJobs, printPdf } from "./build/print.ts";
 import { specPages } from "./build/versions.ts";
 import { prerendered, relocated, type Rendered } from "./build/prerender.ts";
+import { sectionsOf, sitePages } from "./build/search.ts";
 import { COMPANION, renderSpecPage, SPEC } from "./build/companion.ts";
 import { serveFolder } from "./build/static.ts";
 
@@ -62,6 +63,31 @@ function specInDev(): Plugin {
         const { html: text, toc } = await rendered;
         return prerendered(html, devStylesheets(renderPage({ html: text, toc, root: "../", versions: [] })), () => "");
       },
+    },
+  };
+}
+
+/** In the dev server, the search index (`build/search.ts`), made from the working tree each time it is asked for. */
+function searchInDev(): Plugin {
+  return {
+    name: "compmd-search-dev",
+    apply: "serve",
+    configureServer(server) {
+      server.middlewares.use((request, response, next) => {
+        if (new URL(request.url ?? "/", "http://localhost").pathname !== "/search.json") {
+          next();
+          return;
+        }
+        const index = async () => {
+          const { renderPage } = (await server.ssrLoadModule("/src/server.ts")) as { renderPage: () => Rendered };
+          const read = (path: string) => readFileSync(join(REPO, path), "utf8");
+          const { html } = await renderSpecPage(read, "https://github.com/comp-markdown/compmd/blob/main/");
+          const guides = await guidePages((path) => read(join("guides", path)), "https://github.com/comp-markdown/compmd/blob/main/");
+          response.setHeader("Content-Type", "application/json");
+          response.end(JSON.stringify(sectionsOf(sitePages(renderPage().body, html, guides))));
+        };
+        index().catch(next);
+      });
     },
   };
 }
@@ -167,7 +193,7 @@ function pdfInDev(): Plugin {
 export default defineConfig({
   base: "./",
   // `compmd()` gives the site its own pack (`app/`, trusted) and the sandbox's frames, under `compmd/`.
-  plugins: [snapshotsOf(join(import.meta.dirname, "content"), import.meta.dirname), assembled(), specInDev(), guideInDev(), pdfInDev(), svelte(), compmd()],
+  plugins: [snapshotsOf(join(import.meta.dirname, "content"), import.meta.dirname), assembled(), specInDev(), guideInDev(), searchInDev(), pdfInDev(), svelte(), compmd()],
   build: {
     target: "es2024",
     rolldownOptions: { input: { index: "index.html", spec: "spec/index.html", guides: "guides/index.html" } },

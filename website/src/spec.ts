@@ -1,8 +1,10 @@
 // The spec page's script, on top of its static HTML: the contents mark the section being read, and fold into a menu on
-// a narrow screen. Without it the page reads the same, with the contents in full above the text.
+// a narrow screen, and the header's search opens. Without it the page reads the same, with the contents in full above
+// the text.
 import "./base.css";
 import { countAfterLoad } from "./count.ts";
 import { currentOf } from "./current.ts";
+import { attachSearch } from "./search.ts";
 import "./spec.css";
 
 // The dev server links these stylesheets in the head too, for the first paint; the imports above have applied them now,
@@ -73,4 +75,5 @@ if (toc) {
   scrollSpy(toc);
   menu(toc);
 }
+attachSearch(document);
 countAfterLoad(window);

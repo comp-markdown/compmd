@@ -11,6 +11,8 @@
 // - Every link within the site resolves.
 // - The spec: its contents, the section being read marked, the menu on a phone, and its companion, a section of the
 //   page, linked from the spec and back.
+// - Search finds sections of the spec and the guides, and opens them with the words found marked; on a phone, its
+//   dialog fits.
 // - The playground opens every document of its menu.
 // - The budgets (website/docs/design.md): the page before its live parts at most 100 KB gzipped, and painted within one
 //   second on a mid-range phone over fast 3G. `--no-timing` leaves the paint out, for a shared runner whose timings
@@ -239,6 +241,33 @@ async function spec(browser: Browser): Promise<void> {
   await phone.page.close();
 }
 
+/** Search: `/` opens it on a guide's page, results come from the spec and the guides, Enter opens the first with its words marked for a moment; on a phone, the header's button opens it, within the window. */
+async function search(browser: Browser): Promise<void> {
+  const { page, problems } = await open(browser, "guides/developers/quick-start/", VIEWS[0]);
+  await page.keyboard.press("/");
+  const dialog = page.locator("dialog.search");
+  await dialog.waitFor();
+  await dialog.locator("input").fill("remote data");
+  await dialog.locator(".search-results a").first().waitFor({ timeout: 15000 });
+  const places = await dialog.locator(".search-where").allTextContents();
+  check(places.includes("The spec"), `searching "remote data" finds nothing in the spec: ${places.join(", ")}`);
+  check(places.some((place) => place.includes("Guide")), `searching "remote data" finds nothing in the guides: ${places.join(", ")}`);
+  const first = new URL((await dialog.locator(".search-results a").first().getAttribute("href")) ?? "", page.url()).href;
+  await dialog.locator("input").press("Enter");
+  await page.waitForURL(first);
+  // The words found, marked where the result opens, then no more.
+  await page.waitForFunction(() => (CSS.highlights.get("compmd-search")?.size ?? 0) > 0);
+  await page.waitForFunction(() => !CSS.highlights.has("compmd-search"), undefined, { timeout: 10000 });
+  check(problems.length === 0, `search: ${problems.join("; ")}`);
+  await page.close();
+
+  const phone = await open(browser, "spec/", VIEWS[1]);
+  await phone.page.locator("header.site button.search").click();
+  const box = await phone.page.locator("dialog.search").boundingBox();
+  check(box !== null && box.x >= 0 && box.x + box.width <= VIEWS[1].width, `search's dialog on a phone isn't within the window: ${JSON.stringify(box)}`);
+  await phone.page.close();
+}
+
 async function playground(browser: Browser): Promise<void> {
   const { page, problems } = await open(browser, "playground/", VIEWS[0]);
   const documents = await page.locator("select").first().locator("option").count();
@@ -301,6 +330,7 @@ try {
     ["the landing page", landingPage],
     ["the links", links],
     ["the spec", spec],
+    ["search", search],
     ["the playground", playground],
   ] as const) {
     await step(browser);

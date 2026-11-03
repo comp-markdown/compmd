@@ -148,7 +148,134 @@ header.site nav a[aria-current="page"] {
   color: var(--accent);
 }
 
-/* On a phone, three places fit: GitHub is a card of "Where next" and a link on every page of the spec and the guide. */
+header.site nav {
+  align-items: center;
+}
+
+/* Search: a button in the header, which opens a dialog (`search.ts`). */
+header.site .search {
+  display: grid;
+  place-items: center;
+  inline-size: 2rem;
+  block-size: 2rem;
+  padding: 0;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--sheet);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+header.site .search:hover {
+  color: var(--accent);
+}
+
+header.site .search svg {
+  inline-size: 1rem;
+  block-size: 1rem;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+dialog.search {
+  inline-size: min(40rem, calc(100vw - 2 * var(--gutter)));
+  max-block-size: min(36rem, calc(100vh - 6rem));
+  margin-block-start: calc(var(--header) + 1rem);
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--sheet);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+
+dialog.search[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+dialog.search::backdrop {
+  background: rgb(16 20 25 / 35%);
+}
+
+dialog.search input {
+  inline-size: 100%;
+  padding: 14px 16px;
+  border: 0;
+  border-block-end: 1px solid var(--rule);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+}
+
+dialog.search input:focus-visible {
+  outline: none;
+}
+
+.search-status {
+  margin: 0;
+  padding-inline: 16px;
+  color: var(--ink-secondary);
+  font-size: 0.92rem;
+}
+
+.search-status:not(:empty) {
+  padding-block: 12px;
+}
+
+.search-results {
+  margin: 0;
+  padding: 6px;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.search-results a {
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.search-results a:hover,
+.search-results a:focus-visible {
+  outline: none;
+  background: var(--accent-wash);
+}
+
+.search-title {
+  font-weight: 600;
+}
+
+.search-where {
+  color: var(--ink-secondary);
+  font-size: 0.82rem;
+}
+
+.search-snippet {
+  color: var(--ink-secondary);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+/* The words a followed result found, marked where it opens for a few seconds. */
+::highlight(compmd-search) {
+  background-color: color-mix(in srgb, var(--accent) 30%, transparent);
+  color: inherit;
+}
+
+.search-snippet mark {
+  background: none;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* On a phone, three places and search fit: GitHub is a card of "Where next". */
 @media (width < 30rem) {
   header.site nav {
     gap: 12px;
