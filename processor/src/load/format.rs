@@ -76,17 +76,14 @@ impl Format {
         match self {
             Self::Json => serde_json::from_str(text)
                 .map(Parsed::value)
-                .map_err(|error| Failure {
-                    message: format!("`{name}` isn't JSON: {error}"),
-                    inside: Some((
-                        name.to_string(),
-                        Location::new(error.line(), error.column()),
-                    )),
+                .map_err(|error| {
+                    let at = Location::new(error.line(), error.column());
+                    Failure::inside(format!("`{name}` isn't JSON: {error}"), name, at)
                 }),
             Self::Yaml => {
-                let document = yaml::parse(text).map_err(|yaml::Refused(mark, why)| Failure {
-                    message: format!("`{name}` isn't YAML 1.2 core: {why}"),
-                    inside: Some((name.to_string(), Location::new(mark.line, mark.column + 1))),
+                let document = yaml::parse(text).map_err(|yaml::Refused(mark, why)| {
+                    let at = Location::new(mark.line, mark.column + 1);
+                    Failure::inside(format!("`{name}` isn't YAML 1.2 core: {why}"), name, at)
                 })?;
                 let count = document.value.as_array().map_or(0, Vec::len);
                 // A record is at its line, as a CSV record is: the parser marks a block mapping at its first `:`.
@@ -133,10 +130,11 @@ fn table(name: &str, text: &str, delimiter: u8) -> Result<Parsed, Failure> {
             Some("") | None => "an empty name".to_string(),
             Some(name) => format!("`{name}` twice"),
         };
-        return Err(Failure {
-            message: format!("the header of `{name}` has {why}"),
-            inside: at(1),
-        });
+        return Err(Failure::inside(
+            format!("the header of `{name}` has {why}"),
+            name,
+            Location::new(1, 1),
+        ));
     }
     let mut parsed = Parsed {
         text: true,

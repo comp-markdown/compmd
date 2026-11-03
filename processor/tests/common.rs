@@ -7,7 +7,7 @@
 use compmd::context::{RenderContext, parse_time};
 use compmd::diagnostic::Diagnostic;
 use compmd::expand::Options;
-use compmd::host::{Fetched, LoadedRelease, Time};
+use compmd::host::{Fetched, LoadedRelease, Time, WithPending};
 use compmd::policy::Policy;
 use compmd::processor::Expanded;
 use compmd::{Ambient, ParseOptions, Processor};
@@ -169,14 +169,27 @@ impl Time for Zones {
 /// What a document of a folder is processed with: the folder's files, and the rest from its `context.json`.
 pub(crate) struct Setup {
     pub(crate) files: Rc<HashMap<String, String>>,
-    packs: Rc<HashMap<String, Vec<LoadedRelease>>>,
+    packs: Rc<WithPending<HashMap<String, Vec<LoadedRelease>>>>,
     ambient: Ambient,
     policy: Policy,
     allowed_origins: Vec<String>,
     render: RenderContext,
-    remote: Rc<HashMap<String, Fetched>>,
-    host: Rc<HashMap<String, Value>>,
+    remote: Rc<WithPending<HashMap<String, Fetched>>>,
+    host: Rc<WithPending<HashMap<String, Value>>>,
     pub(crate) options: Options,
+}
+
+/// What a case's `context.json` says the host is still getting, of `kind` (`packs`, `remote` or `host`), with what
+/// it holds of it.
+fn with_pending<T>(context: &Value, kind: &str, held: T) -> Rc<WithPending<T>> {
+    let pending = context["pending"][kind].as_array().into_iter().flatten();
+    Rc::new(WithPending {
+        held,
+        pending: pending
+            .filter_map(Value::as_str)
+            .map(str::to_string)
+            .collect(),
+    })
 }
 
 impl Setup {
@@ -192,7 +205,7 @@ impl Setup {
         };
         Self {
             files: Rc::new(files_of(dir)),
-            packs: Rc::new(packs(dir, &context)),
+            packs: with_pending(&context, "packs", packs(dir, &context)),
             ambient: Ambient {
                 packs: context["ambient"]
                     .as_object()
@@ -214,8 +227,8 @@ impl Setup {
                 time: Rc::new(Zones),
                 inputs: context["inputs"].as_object().cloned().unwrap_or_default(),
             },
-            remote: Rc::new(remote(dir, &context)),
-            host: Rc::new(host(dir, &context)),
+            remote: with_pending(&context, "remote", remote(dir, &context)),
+            host: with_pending(&context, "host", host(dir, &context)),
             options: Options {
                 origins: case["requires"]
                     .as_array()

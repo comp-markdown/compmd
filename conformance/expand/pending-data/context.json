@@ -1,0 +1,7 @@
+{
+  "allowedOrigins": ["https://api.example.com"],
+  "pending": {
+    "remote": ["https://api.example.com/sales.json", "https://api.example.com/team.json"],
+    "host": ["tasks"]
+  }
+}

@@ -80,6 +80,11 @@ impl Store<'_> {
             self.packs.releases(pack)
         }
     }
+
+    /// Whether the host is still getting `pack`; never one of `@compmd/`.
+    pub(crate) fn pending(&self, pack: &str) -> bool {
+        !pack.starts_with(RESERVED_SCOPE) && self.packs.pending(pack)
+    }
 }
 
 /// A document, by its place in [`Resolved::documents`].
@@ -340,6 +345,8 @@ pub(crate) struct Resolved {
     /// The pack imports the host has no release for, each once, in the order they were loaded, then the library
     /// packs the packs name that it has none of.
     pub(crate) missing: Vec<NeededPack>,
+    /// The pack imports that are pending (spec §6.4), by pack, each once, in the order they were loaded.
+    pub(crate) pending: Vec<String>,
     /// The library packs chosen for the document.
     pub(crate) libraries: Libraries,
     /// The diagnostics of stage 2, and of stage 1 for the documents it imports.

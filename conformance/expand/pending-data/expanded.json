@@ -1,0 +1,17 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "paragraph",
+      "children": [{ "type": "text", "value": "Loading the sales." }]
+    },
+    {
+      "type": "paragraph",
+      "children": [{ "type": "text", "value": "Team: Ana." }]
+    },
+    {
+      "type": "paragraph",
+      "children": [{ "type": "text", "value": "No tasks yet." }]
+    }
+  ]
+}

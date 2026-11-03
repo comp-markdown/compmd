@@ -273,6 +273,8 @@ When a CompMD processor cannot render a component (unsupported definition langua
 - an `if` whose `when` fails: both branches, as a container;
 - an `each` that fails: its template once, as a plain renderer shows it.
 
+**A component on its way.** A use of a component whose pack is pending (section 6.4) renders the same fallback, marked as pending: in the expanded tree it is a `componentPending` node around the fallback (section 12.3). It reports no diagnostic. A renderer SHOULD show that the content is loading, without hiding the fallback, and draws the component in its place when its pack arrives.
+
 ## 5. Parameters
 
 Parameters are `key=value` pairs, checked against the component's signature. They never span lines except through continuation lines, so a broken quote or bracket damages only its own line.
@@ -414,6 +416,7 @@ Rules:
 - **`@compmd/*` is reserved** by this spec and never fetched from a registry: processors build `@compmd/core` in, whoever holds that scope on a registry.
 - Names are always scoped; an unscoped `from` that isn't a relative path is F026.
 - An import whose source can't be loaded (a missing file, no release matching the version) is F026. Its names are dropped, and their uses render fallbacks without F002.
+- **Pending packs.** A processor whose host gets packs while a reader views the document (from a registry, in an editor) MAY render before a pack arrives. Its host then names the packs, and the data sources (section 8.6), it is still getting: they are *pending*. A pending import reports nothing: its names stand for pending components, whose uses render their fallbacks marked as pending (section 4.5). When the pack arrives, the document renders again (section 8.5). The processor never decides that a pending source failed; the host does, on an error from the registry or after a time it chooses, and processes again without it among the pending: an import that can't be loaded then, F026. A processor that never fetches while it renders has no pending sources.
 - **Which packs a document may import** is the processor's configuration. By default, any pack in the registry: its code runs in the strict sandbox (section 15), so a pack nobody reviewed can't reach the reader's data, and only documents that import it are affected. A processor MAY instead allow only the packs its configuration lists, and MAY deny packs by name or version. A pack it doesn't allow is F026, with the reason in the message. A deny list is the host's own policy (content it won't show, packs it won't serve, licences, misuse); it isn't what keeps readers safe, which the sandbox does for every pack, known or not.
 - **The processor gets packs.** A processor that renders for a reader fetches packs itself or through its own cache, so the registry doesn't learn who reads which document (section 15, "Privacy"). Its configuration MAY instead let the reader's browser fetch them, from the registries the configuration names; it SHOULD then tell its readers, since the registry learns which packs they load ([*CompMD packs on a registry*](compmd-registry-v1.md), section 4). A document can never choose this. A processor MAY cap a pack's size; a larger pack is F026.
 - **Built modules.** A component file in a pack MAY be a built ES module (`.js`, the plain binding of section 7.6) with every library it imports bundled in, but its binding's runtime and the libraries its pack names in `peerDependencies`, which the processor provides (section 7.6). A built module SHOULD be one file, with no relative imports: a processor that passes a built module's text to where it runs can't load one that imports files of its own, and renders its components' fallbacks with W121. A processor MAY load such a file where it runs the component, by its place in the pack (the pack, its version and the file's path), instead of passing its text: the file MUST be the one the pack published, from files checked against the pack's integrity when the processor got them (F035). Loaded once, it can be cached by its place, since a published version never changes.
@@ -571,13 +574,13 @@ mount(target: Element, context: {
   host?: unknown,                         // what the processor gives components of permissive and trusted packs (below); absent otherwise
 }): { update?(params, slots): void; destroy?(): void }
 
-type SlotItem = { element: Element; component?: { name: string; params: Record<string, unknown> } }
+type SlotItem = { element: Element; component?: { name: string; params: Record<string, unknown>; pending?: true } }
 type SlotInstance = { value: unknown; items: SlotItem[] }   // a template slot: one per element (section 7.5)
 ```
 
 - **The outer box is the processor's.** It creates `target`, applies the common params and `class`, `id`, `lang` and `dir` to it (the definition fence's, overridden by the invocation's), and lays it out (section 9.2). The component owns what is inside `target` and doesn't receive those params.
 - **Slots are rendered by the processor**, into elements the component places in its own DOM. Components inside a slot are mounted by the processor and stay live, whatever framework the parent uses.
-- **A slot is a list of items**, one per top-level block (section 9.1): its element, and, when the block is a component, its name and params. A tabs component reads its tabs' labels from the items' params. An item's element is a box the processor makes around the block, so a block placed by position (section 9.2) is placed in its item, whatever the component's own markup; the component sizes it.
+- **A slot is a list of items**, one per top-level block (section 9.1): its element, and, when the block is a component, its name and params. A tabs component reads its tabs' labels from the items' params. A use of a component still on its way (section 4.5) is an item whose `component` has its name, no params, and `pending: true`. An item's element is a box the processor makes around the block, so a block placed by position (section 9.2) is placed in its item, whatever the component's own markup; the component sizes it.
 - **An item's width is the component's to give.** An item is the nearest box of the block in it, so when that block uses breakpoints, the item is the box they follow and doesn't take its width from its content (section 9.3). A component that lays its items out by their content, such as a toolbar that puts them side by side, gives such an item a width. A processor can't check this, since only the component knows its layout.
 - **Every slot is rendered up front**, including content the component hides; hiding is the component's own styling. A component may be laid out while hidden or at zero width, and SHOULD lay itself out again when it's resized.
 - **Updates, not remounts.** When params or slots change (an input or data changes, section 8.5), the processor calls `update`; the component keeps its state. `destroy` is called before `target` is removed.
@@ -1059,6 +1062,7 @@ md:
 - A processor that fetches while a reader views the document MUST ask the reader the first time a document needs an origin the reader hasn't decided on, and remember the answer. Origins the host configured need no question. Until the reader allows the origin, it is disallowed (F028), and the document renders with the `fallback`.
 - Documents carry no credentials. Authenticated sources are configured per origin by the host, or reached through a host-language component.
 - A failed fetch uses `fallback` if present; otherwise it is F026 and the data is `null` (an `each` over it renders its `empty` slot), in either mode: strict mode fails processing on it, as on any `F` error (section 10.1).
+- A source the host is still getting is pending (section 6.4): it loads as a failed fetch does, its `fallback` or `null`, but without F026. The document renders again when it arrives, and when the host gives up on it, it is a failed fetch.
 
 **Errors.** A missing, unreachable or unparseable source is F026, reported at the line and column inside the data file when available. A record that violates `schema` is F027, naming the record and field.
 
@@ -1313,7 +1317,7 @@ Every diagnostic MUST name its code, the line and column where it was detected, 
 | F023 | Name provided by two wildcard imports, or by a wildcard import and `@compmd/core`, is used; or a code block's language rendered by two code renderers at the same level (section 6.3) | the use, naming both sources                                         |
 | F024 | Expression parse, type or evaluation error, or a list or a map without a `name` interpolated into text                               | the column inside the expression, or the interpolation               |
 | F025 | each iteration does not match the shape its join mode requires                                                                        | the each opener, naming the first offending line                     |
-| F026 | Data or import source missing, unreachable, unparseable or not provided (`host:`), a relative path leaving its root, a bad CSV header, or a pack the processor's configuration doesn't allow or that exceeds its size cap (section 6.4) | the data entry or the import's `from`, and the position inside the data file when available |
+| F026 | Data or import source missing, unreachable, unparseable or not provided (`host:`), a relative path leaving its root, a bad CSV header, or a pack the processor's configuration doesn't allow or that exceeds its size cap (section 6.4); never for a source the host says is pending (sections 6.4, 8.6) | the data entry or the import's `from`, and the position inside the data file when available |
 | F027 | Data record violates its schema                                                                                                       | the record and field                                                 |
 | F028 | Remote data origin not allowed by processor configuration                                                                             | the from value                                                       |
 | F029 | Exported host-language component has no signature fence                                                                                  | the export.names entry                                               |
@@ -1431,7 +1435,7 @@ A processor works in stages. Each stage needs only what its row lists, and repor
 | 5. Render       | the expanded tree                                      | output (HTML, PDF, …)                          | W113 (offered libraries), W118, W121                           |
 
 - **Parsing needs no imports, signatures or data,** so editors, linters and formatters can parse any document. It reads the frontmatter as YAML, but interprets only `md.version` and `md.syntax` (and splits `from` strings into parts, section 12.2). Params stay as written and untyped: `count=3` is `"3"` until validation.
-- **Resolving MAY load packs** (from a registry, a cache or the file system).
+- **Resolving MAY load packs** (from a registry, a cache or the file system), or take those its host is still getting as pending (section 6.4), as loading takes pending data (section 8.6).
 - **Stages 1–3 depend only on the document and its imports.** A processor MAY keep their results until either changes, and run only stages 4a–5 when data or an input changes.
 - **Stage 4b is a function of its inputs** (section 8.5): the same checked tree, loaded data and render context always give the same expanded tree. All input and output happens in 2 and 4a.
 
@@ -1475,7 +1479,7 @@ A signature is `{params, slots, headings}`, plus `renders`, the list of its lang
 
 ### 12.3 The expanded tree
 
-Stage 4b replaces every `compmd` definition, `if`, `each`, `value` and `interpolation` with what it produces. The expanded tree is content only: definition fences, signature fences and the `yaml` node are left out (the parse tree keeps them). It holds mdast nodes, plus `componentContainer`, `componentLeaf` and `componentInline` nodes only for components the processor renders itself: `box`, the input components, and host-language components.
+Stage 4b replaces every `compmd` definition, `if`, `each`, `value` and `interpolation` with what it produces. The expanded tree is content only: definition fences, signature fences and the `yaml` node are left out (the parse tree keeps them). It holds mdast nodes, plus `componentContainer`, `componentLeaf` and `componentInline` nodes only for components the processor renders itself: `box`, the input components, and host-language components; and `componentPending` nodes for uses of components still on their way.
 
 - **Params** of those nodes are `{key, breakpoint, value, position}`, with `value` evaluated (JSON): `{"key": "gap", "breakpoint": "md", "value": "l"}`. All classes, from `.name` and `class`, merge into one `class` param, in written order without duplicates; `#name` is the `id` param. A param whose value is null is left out. `position` is where the param is written in the document, and absent when a definition computed it.
 - **A param bound to an input** (type `input<…>`, section 7.3) has the input's current value as its `value`, and `input`, the input's name: `{"key": "selected", "breakpoint": null, "value": "eu", "input": "region"}`. A renderer gives the component the value, and `set` changes the named input (section 7.4).
@@ -1483,6 +1487,7 @@ Stage 4b replaces every `compmd` definition, `if`, `each`, `value` and `interpol
 - **Slots** are expanded. A template slot (section 7.5) has `children: []` and `instances`, one `{value, children}` per element, with the slot content expanded for that element.
 - **A block `compmd` component** expands to a `box` holding its expanded body. The box's params are the fence's, evaluated, with the caller's common params, `class` and `id` applied over them: a fence param that a caller's param covers (the same property, or a part of it), at the caller's breakpoint or a wider one, is left out, and a fence shorthand the caller covers only in part is written as its longhands first. A `display=contents` component expands to its body alone. A host-language component's params hold its fence's params the same way.
 - **Headings** from `compmd` definition bodies have their computed `depth` (section 7.2).
+- **A use of a pending component** (section 4.5) is a `componentPending` node: `name`, the component's local name, `pack`, the pending pack as the import names it (`@kit/mermaid`), and `children`, the fallback the use renders (section 4.5), expanded. For a leaf or an inline component that is its fallback text, for a container its slots as Markdown, and for a code block a code renderer renders the code block, without its `component`. It is inline in inline content, and a block elsewhere. A renderer that doesn't know the node renders its children.
 - **A code block a code renderer renders** (section 7.7) stays a `code` node, with its `lang` and `value`, and adds `component`, `{name, params}`, with params as a component node's, its `code` param holding the block's text, so a renderer passes them on as for any leaf; and `alt`, when given: `{"type": "code", "lang": "mermaid", "value": "graph LR; A --> B", "component": {"name": "mermaid", "params": [{"key": "code", "breakpoint": null, "value": "graph LR; A --> B"}]}, "alt": "A, then B"}`. A renderer runs the component, and shows the code block as its fallback.
 - **Origins** (the `origins` feature, section 13.1). Every expanded node except the root has `origin`, the range of the processed document that made it: `start` and `end` points as in `position`, and `occurrence`, how many nodes before it in the same list of children have the same range (a template slot's instances count as one list). Lines and columns are 1-based, offsets 0-based, and columns and offsets count code points (section 10.5). The range is:
   - for a node from a `compmd` definition's body, local or imported, at any depth: the origin of the invocation in this document that led to it;
@@ -1528,7 +1533,7 @@ Each case is a folder, since imports and data need several files:
 conformance/<area>/<case>/
   case.json          what the case needs: {"requires": ["processor", "remote-data"]}
   input.comp.md       plus any imported documents and data files
-  context.json       optional: render time, time zone, input values, host metadata, URL-to-file map
+  context.json       optional: render time, time zone, input values, host metadata, URL-to-file map, pending sources
   parse.json         the expected tree after stage 1
   expanded.json      optional: the expected tree after stage 4b
   diagnostics.json   optional: the expected diagnostics, [{code, file, line, column, related}]; none when absent

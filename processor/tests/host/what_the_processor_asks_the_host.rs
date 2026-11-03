@@ -41,6 +41,31 @@ fn remote_data_is_fetched_only_from_the_origins_the_host_allows() {
 }
 
 #[test]
+fn data_the_host_is_still_getting_is_pending_without_f026_and_said_so() {
+    let pending = |sources: &[&str]| WithPending {
+        held: (),
+        pending: sources.iter().map(|source| (*source).to_string()).collect(),
+    };
+    let host = Host {
+        allowed_origins: vec!["https://a.org".into()],
+        remote: Rc::new(pending(&["https://a.org/x.json"])),
+        data: Rc::new(pending(&["tasks"])),
+        ..Host::default()
+    };
+    let processed = host.process(
+        "---\nmd:\n  data:\n    - from: https://a.org/x.json\n      as: sales\n    - from: host:tasks\n      as: tasks\n    - from: host:notes\n      as: notes\n---\n",
+    );
+    assert_eq!(
+        codes(&processed),
+        ["F026"],
+        "only `host:notes`, which isn't pending"
+    );
+    let said = processed.pending();
+    assert_eq!(said.remote, ["https://a.org/x.json"]);
+    assert_eq!(said.host, ["tasks"]);
+}
+
+#[test]
 fn a_hosts_data_is_asked_for_by_its_source_without_host() {
     let recording = Rc::new(Recording::default());
     let host = Host {

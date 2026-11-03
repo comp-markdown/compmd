@@ -46,6 +46,36 @@ fn a_missing_pack_is_listed_for_the_host_to_get_and_the_document_processed_again
 }
 
 #[test]
+fn a_pack_on_its_way_renders_its_uses_pending_then_draws_them_when_it_arrives() {
+    let text = importing(&["@acme/kit@1"], ":: card[Card]\n");
+    let mut host = Host::default();
+    host.pending.insert("@acme/kit".into());
+    let waiting = host.process(&text);
+    assert_eq!(diagnostics(&waiting), Vec::<String>::new());
+    assert_eq!(waiting.pending().packs, ["@acme/kit"]);
+    // Still listed, for the host that is getting it.
+    assert_eq!(waiting.sources().packs.len(), 1);
+    let tree = serde_json::to_value(waiting.expanded()).expect("a tree");
+    assert_eq!(tree["children"][0]["type"], "componentPending");
+    assert_eq!(shown(&waiting), "Card");
+    // It arrived: the release the host now holds is used, whatever it said before.
+    let arrived = host.with(
+        "@acme/kit",
+        release("@acme/kit", "1.2.0", &card_pack("A card."), json!({})),
+    );
+    let drawn = arrived.process(&text);
+    assert_eq!(drawn.pending().packs, Vec::<String>::new());
+    assert_eq!(shown(&drawn), "A card.");
+}
+
+#[test]
+fn a_pack_the_host_gave_up_on_is_f026_as_any_pack_that_cant_be_had() {
+    let text = importing(&["@acme/kit@1"], ":: card[Card]\n");
+    let host = Host::default();
+    assert_eq!(codes(&host.process(&text)), ["F026"]);
+}
+
+#[test]
 fn a_release_the_range_doesnt_take_leaves_the_pack_needed_and_the_import_f026() {
     let host = Host::default().with(
         "@acme/kit",

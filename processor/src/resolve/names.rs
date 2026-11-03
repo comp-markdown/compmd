@@ -28,6 +28,9 @@ pub enum Binding {
     Ambiguous(Vec<String>),
     /// A name from an import that failed: its uses render fallbacks, without F002.
     Dropped,
+    /// A name from an import of a pack the host is still getting, this one (spec §6.4): its uses render their
+    /// fallbacks marked as pending, without a diagnostic.
+    Pending(String),
 }
 
 /// The component names of a document.
@@ -36,6 +39,8 @@ pub struct Names {
     bindings: BTreeMap<String, Binding>,
     /// Whether a wildcard import failed, so that a name may be one of its unknown names.
     incomplete: bool,
+    /// The pack of a pending wildcard import, whose names aren't known yet: a name nothing else provides may be one.
+    pending: Option<Binding>,
 }
 
 impl Names {
@@ -45,6 +50,7 @@ impl Names {
         const DROPPED: &Binding = &Binding::Dropped;
         self.bindings
             .get(name)
+            .or(self.pending.as_ref())
             .or_else(|| self.incomplete.then_some(DROPPED))
     }
 
@@ -64,7 +70,7 @@ impl Names {
             .iter()
             .filter_map(|(name, binding)| match binding {
                 Binding::Component(id, level) => Some((name.as_str(), *id, *level)),
-                Binding::Ambiguous(_) | Binding::Dropped => None,
+                Binding::Ambiguous(_) | Binding::Dropped | Binding::Pending(_) => None,
             })
     }
 }
@@ -100,6 +106,7 @@ pub(crate) struct Builder {
     /// Ambient packs; the first to provide a name wins.
     ambient: BTreeMap<String, ComponentId>,
     incomplete: bool,
+    pending: Option<Binding>,
 }
 
 impl Builder {
@@ -136,6 +143,12 @@ impl Builder {
         self.incomplete = true;
     }
 
+    /// Notes that a wildcard import of `pack` is pending; the first such pack is the one its unknown names wait for.
+    pub(crate) fn pending(&mut self, pack: &str) {
+        self.pending
+            .get_or_insert_with(|| Binding::Pending(pack.to_string()));
+    }
+
     /// The names, each with what the highest level gives it.
     pub(crate) fn build(self) -> Names {
         let mut bindings = self.declared;
@@ -157,6 +170,7 @@ impl Builder {
         Names {
             bindings,
             incomplete: self.incomplete,
+            pending: self.pending,
         }
     }
 }
@@ -212,5 +226,23 @@ mod tests {
         let mut names = Builder::default();
         names.incomplete();
         assert_eq!(names.build().get("anything"), Some(&Binding::Dropped));
+    }
+
+    #[test]
+    fn a_pending_wildcard_import_may_hold_any_name_the_others_dont() {
+        let mut names = Builder::default();
+        names.declare("card", Binding::Component(ComponentId(0), Level::Local));
+        names.incomplete();
+        names.pending("@kit/charts");
+        names.pending("@kit/maps");
+        let names = names.build();
+        assert_eq!(
+            names.get("chart"),
+            Some(&Binding::Pending("@kit/charts".into()))
+        );
+        assert_eq!(
+            names.get("card"),
+            Some(&Binding::Component(ComponentId(0), Level::Local))
+        );
     }
 }

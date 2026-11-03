@@ -15,7 +15,7 @@ use crate::cel::{Key, Value};
 use crate::context::RenderContext;
 use crate::diagnostic::{Code, Diagnostic, Location, Stage};
 use crate::expanded::Inputs;
-use crate::host::{CacheKey, Data, Fetch, Needed};
+use crate::host::{CacheKey, Data, Fetch, Needed, Pending};
 use crate::resolve::{DocumentId, Origin, Resolved, Store};
 use crate::settings::DataImport;
 use crate::validate::Validated;
@@ -33,6 +33,8 @@ pub(crate) struct Loaded {
     pub(crate) inputs: Inputs,
     /// The diagnostics of stage 4a, until the processor takes them.
     pub(crate) diagnostics: Vec<Diagnostic>,
+    /// The remote and `host:` sources that were pending (spec §8.6); its `packs` are empty.
+    pub(crate) pending: Pending,
     data: HashMap<DocumentId, Value>,
 }
 
@@ -129,6 +131,7 @@ pub(crate) fn load(
         loaded: Loaded {
             inputs,
             diagnostics,
+            pending: Pending::default(),
             data: HashMap::new(),
         },
     };
@@ -144,7 +147,7 @@ pub(crate) fn load(
             {
                 loader.not_portable(id, import, source);
             }
-            loader.import(id, import, target)
+            loader.import(id, import, &target)
         };
         data.entry(id)
             .or_default()
@@ -191,6 +194,8 @@ struct Failure {
     message: String,
     /// The file and the place in it.
     inside: Option<(String, Location)>,
+    /// Whether the host is still getting the source (spec §8.6): no failure yet, so no F026.
+    pending: bool,
 }
 
 impl Failure {
@@ -198,6 +203,23 @@ impl Failure {
         Self {
             message: message.into(),
             inside: None,
+            pending: false,
+        }
+    }
+
+    /// The file `name` couldn't be read at `at`.
+    fn inside(message: String, name: &str, at: Location) -> Self {
+        Self {
+            inside: Some((name.to_string(), at)),
+            ..Self::new(message)
+        }
+    }
+
+    /// The host hasn't given the source, which it is still getting when `pending`.
+    fn missing(message: String, pending: bool) -> Self {
+        Self {
+            pending,
+            ..Self::new(message)
         }
     }
 }
@@ -217,23 +239,38 @@ impl Loader<'_, '_> {
         &mut self,
         id: DocumentId,
         import: &DataImport,
-        target: Result<Target, String>,
+        target: &Result<Target, String>,
     ) -> Value {
         let local = matches!(target, Ok(Target::File(_)));
-        let loaded = target
-            .map_err(Failure::new)
-            .and_then(|target| self.target(import, &target));
+        let loaded = match target {
+            Ok(target) => self.target(import, target),
+            Err(why) => Err(Failure::new(why.clone())),
+        };
         let failure = match loaded {
             Ok(parsed) => return self.typed(id, import, parsed),
             Err(failure) => failure,
         };
         let fallback = self.fallback(id, import);
         match &fallback {
+            _ if failure.pending => self.pending(target),
             None => self.failed(id, import, failure, "is null"),
             Some(_) if local => self.failed(id, import, failure, "is its fallback"),
             Some(_) => {}
         }
         fallback.unwrap_or(Value::Null)
+    }
+
+    /// Records `target`, a remote or `host:` source, as pending, once.
+    fn pending(&mut self, target: &Result<Target, String>) {
+        let pending = &mut self.loaded.pending;
+        let (list, source) = match target {
+            Ok(Target::Remote(url)) => (&mut pending.remote, url),
+            Ok(Target::Host(source)) => (&mut pending.host, source),
+            Ok(Target::File(_)) | Err(_) => return,
+        };
+        if !list.contains(source) {
+            list.push(source.clone());
+        }
     }
 
     /// The fallback of an import, typed; `None` without one, or when it fails too.
@@ -253,11 +290,10 @@ impl Loader<'_, '_> {
         match target {
             Target::File(origin) => self.file(origin, import),
             Target::Remote(url) => {
-                let fetched = self
-                    .host
-                    .fetch
-                    .fetch(url)
-                    .ok_or_else(|| Failure::new(format!("`{url}` couldn't be fetched")))?;
+                let fetched = self.host.fetch.fetch(url).ok_or_else(|| {
+                    let pending = self.host.fetch.pending(url);
+                    Failure::missing(format!("`{url}` couldn't be fetched"), pending)
+                })?;
                 let format = fetched
                     .content_type
                     .as_deref()
@@ -268,7 +304,11 @@ impl Loader<'_, '_> {
             }
             Target::Host(source) => {
                 let value = self.host.data.data(source).ok_or_else(|| {
-                    Failure::new(format!("this processor doesn't provide `host:{source}`"))
+                    let pending = self.host.data.pending(source);
+                    Failure::missing(
+                        format!("this processor doesn't provide `host:{source}`"),
+                        pending,
+                    )
                 })?;
                 Ok(Parsed::value(value))
             }

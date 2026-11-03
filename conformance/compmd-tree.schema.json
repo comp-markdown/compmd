@@ -296,6 +296,7 @@
         { "if": { "properties": { "type": { "enum": ["componentLeaf", "componentInline"] } } }, "then": { "$ref": "#/$defs/expandedLeaf" } },
         { "if": { "properties": { "type": { "const": "componentSlot" } } }, "then": { "$ref": "#/$defs/expandedSlot" } },
         { "if": { "properties": { "type": { "const": "code" } }, "required": ["component"] }, "then": { "$ref": "#/$defs/renderedCode" } },
+        { "if": { "properties": { "type": { "const": "componentPending" } } }, "then": { "$ref": "#/$defs/pendingUse" } },
         {
           "if": { "properties": { "type": { "not": { "enum": ["componentContainer", "componentLeaf", "componentInline", "componentSlot"] } } } },
           "then": {
@@ -385,6 +386,19 @@
           "additionalProperties": false
         },
         "alt": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "pendingUse": {
+      "description": "A use of a component whose pack is pending (§4.5, §12.3): its local name, the pack as the import names it, and the fallback it renders, expanded.",
+      "required": ["name", "pack", "children"],
+      "properties": {
+        "type": true,
+        "position": true,
+        "origin": true,
+        "name": { "type": "string" },
+        "pack": { "type": "string" },
+        "children": { "type": "array", "items": { "$ref": "#/$defs/expandedNode" } }
       },
       "additionalProperties": false
     }

@@ -64,6 +64,8 @@ pub(super) struct Loader<'h, 'p> {
     policy: &'h Policy,
     /// The pack imports the host has no release for, in the order they are loaded.
     missing: Vec<NeededPack>,
+    /// The pack imports that are pending, by pack, in the order they are loaded.
+    pending: Vec<String>,
     /// The library packs the loaded packs name, in the order they are loaded.
     asks: Vec<Ask>,
     /// Where each component file import is written, its `names` entry: it has no definition fence to report at.
@@ -91,6 +93,7 @@ impl<'h, 'p> Loader<'h, 'p> {
             ambient_names: Vec::new(),
             policy,
             missing: Vec::new(),
+            pending: Vec::new(),
             asks: Vec::new(),
             file_imports: HashMap::new(),
         }
@@ -126,6 +129,7 @@ impl<'h, 'p> Loader<'h, 'p> {
             cycles: HashSet::new(),
             policy: self.policy.clone(),
             missing: self.missing,
+            pending: self.pending,
             libraries: chosen.libraries,
             diagnostics: Found {
                 before: self.diagnostics,
@@ -216,6 +220,14 @@ impl<'h, 'p> Loader<'h, 'p> {
                 stem,
             }) => {
                 self.file(id, import, path, language, stem, names);
+                return;
+            }
+            Ok(Source::Pack(spec)) if self.pending(&spec) => {
+                self.missing(&spec, import);
+                if !self.pending.contains(&spec.name) {
+                    self.pending.push(spec.name.clone());
+                }
+                pend_names(&import.names, &spec.name, names);
                 return;
             }
             Ok(Source::Pack(spec)) => self.pack(id, &spec, import),
@@ -408,6 +420,21 @@ impl<'h, 'p> Loader<'h, 'p> {
         let document = self.package(&spec.name, release.version, from.at, false)?;
         self.check_needs(id, &spec.name, &version, from.at);
         Ok(document)
+    }
+
+    /// Whether the pack `spec` names is pending (spec §6.4): the host is still getting it, holds no release that
+    /// matches, and its policy doesn't refuse it, which would make it F026 whenever it came.
+    fn pending(&self, spec: &PackSpec) -> bool {
+        self.store.pending(&spec.name)
+            && self
+                .policy
+                .refusal(&spec.name, &self.ambient_names)
+                .is_none()
+            && !self
+                .store
+                .releases(&spec.name)
+                .iter()
+                .any(|release| spec.range.matches(&release.version))
     }
 
     /// Records the pack `spec` names as one the host has no release for, once.
@@ -968,6 +995,21 @@ fn drop_names(listed: &settings::Names, names: &mut Builder) {
             for entry in entries {
                 if !names.is_declared(&entry.renamed) {
                     names.declare(&entry.renamed, Binding::Dropped);
+                }
+            }
+        }
+    }
+}
+
+/// The names of an import of `pack`, which is pending: listed ones stand for pending components; a wildcard import
+/// may hold any name.
+fn pend_names(listed: &settings::Names, pack: &str, names: &mut Builder) {
+    match listed {
+        settings::Names::All(_) => names.pending(pack),
+        settings::Names::Listed(entries) => {
+            for entry in entries {
+                if !names.is_declared(&entry.renamed) {
+                    names.declare(&entry.renamed, Binding::Pending(pack.to_string()));
                 }
             }
         }

@@ -1,0 +1,48 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentPending",
+      "name": "chart",
+      "pack": "@kit/charts",
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [{ "type": "text", "value": "Sales by month: up 18%" }]
+        }
+      ]
+    },
+    {
+      "type": "componentPending",
+      "name": "panel",
+      "pack": "@kit/charts",
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [{ "type": "text", "value": "Install it." }]
+        },
+        {
+          "type": "paragraph",
+          "children": [{ "type": "text", "value": "Two minutes." }]
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "children": [
+        { "type": "text", "value": "A " },
+        {
+          "type": "componentPending",
+          "name": "icon",
+          "pack": "@kit/icons",
+          "children": [{ "type": "text", "value": "star" }]
+        },
+        { "type": "text", "value": " for each release." }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "children": [{ "type": "text", "value": "The office, in Kyoto" }]
+    }
+  ]
+}

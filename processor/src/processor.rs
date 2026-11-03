@@ -47,7 +47,7 @@
 use crate::context::RenderContext;
 use crate::diagnostic::Diagnostic;
 use crate::expanded::{self, Inputs};
-use crate::host::{CacheKey, Data, Fetch, Files, Needed, Packs};
+use crate::host::{CacheKey, Data, Fetch, Files, Needed, Packs, Pending};
 use crate::load;
 use crate::parse::{self, Change, ParseOptions, TextEdit};
 use crate::policy::Policy;
@@ -616,6 +616,39 @@ impl Processor<Expanded> {
             &validated.checks,
             &self.state.data.inputs,
         )
+    }
+
+    /// What the render treated as pending (spec §6.4, §8.6): the packs, remote URLs and `host:` sources it needed that
+    /// the host said it was still getting, whose uses render their fallbacks marked as pending and whose data is its
+    /// `fallback` or `null`, without F026.
+    ///
+    /// ```
+    /// use compmd::context::RenderContext;
+    /// use compmd::host::WithPending;
+    /// use compmd::{Ambient, ParseOptions, Processor};
+    /// use std::collections::HashSet;
+    /// use std::rc::Rc;
+    ///
+    /// let text = "---\nmd:\n  import:\n    - from: \"@kit/charts@1\"\n      names: [chart]\n---\n\n:: chart[Sales by month]\n";
+    /// let packs = WithPending { held: (), pending: HashSet::from(["@kit/charts".to_string()]) };
+    /// let context = RenderContext { now: 0, tz: "UTC".into(), time: Rc::new(()), inputs: Default::default() };
+    /// let processor = Processor::new("a.comp.md", text)
+    ///     .parse(&ParseOptions::default())
+    ///     .resolve((), packs, &Ambient::default())
+    ///     .validate(&[])
+    ///     .load(context, (), ())
+    ///     .expand(&Default::default());
+    /// assert!(processor.diagnostics().is_empty());
+    /// assert_eq!(processor.pending().packs, ["@kit/charts"]);
+    /// let json = serde_json::to_value(processor.expanded()).unwrap();
+    /// assert_eq!(json["children"][0]["type"], "componentPending");
+    /// ```
+    #[must_use]
+    pub fn pending(&self) -> Pending {
+        Pending {
+            packs: self.state.validated.resolved.pending.clone(),
+            ..self.state.data.pending.clone()
+        }
     }
 
     /// The expanded tree (spec §12.3).

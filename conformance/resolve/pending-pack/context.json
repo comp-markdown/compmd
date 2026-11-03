@@ -1,0 +1,4 @@
+{
+  "pending": { "packs": ["@kit/charts", "@kit/icons", "@huge/pack"] },
+  "policy": { "refused": { "@huge/pack": "larger than this host serves" } }
+}

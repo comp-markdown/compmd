@@ -154,10 +154,10 @@ impl<'r> Expander<'r> {
         out: &mut Vec<expanded::Node>,
     ) {
         let resolved = self.resolved;
-        let Some(Binding::Component(id, _)) =
-            resolved.document(env.document).names.get(invocation.name)
-        else {
-            return self.fallback(&invocation, env, out);
+        let id = match resolved.document(env.document).names.get(invocation.name) {
+            Some(Binding::Component(id, _)) => id,
+            Some(Binding::Pending(pack)) => return self.pending(&invocation, pack, env, out),
+            _ => return self.fallback(&invocation, env, out),
         };
         let component = resolved.component(*id);
         let given: Vec<&'r Param> = invocation
@@ -245,6 +245,25 @@ impl<'r> Expander<'r> {
                 out.push(made);
             }
         }
+    }
+
+    /// A use of a component whose pack, `pack`, is pending (spec §4.5): its fallback, in a node that says so.
+    fn pending(
+        &mut self,
+        invocation: &Invocation<'r>,
+        pack: &str,
+        env: &Env<'r>,
+        out: &mut Vec<expanded::Node>,
+    ) {
+        let mut children = Vec::new();
+        self.fallback(invocation, env, &mut children);
+        let content = Content::ComponentPending(expanded::Pending {
+            name: invocation.name.to_string(),
+            pack: pack.to_string(),
+            children,
+        });
+        let made = self.made(content, origins::of(invocation.node, env));
+        out.push(made);
     }
 
     /// A node the processor renders: `box`, an input component, a host-language component (spec §12.3). Its params

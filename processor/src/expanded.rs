@@ -127,6 +127,8 @@ pub enum Content {
     ComponentInline(Leaf),
     /// A leaf the processor renders: an input component, or a host-language one.
     ComponentLeaf(Leaf),
+    /// A use of a component whose pack is pending, with the fallback it renders meanwhile (spec §4.5).
+    ComponentPending(Pending),
     /// A link reference definition.
     Definition(LinkDefinition),
     /// GFM strikethrough.
@@ -196,7 +198,8 @@ impl Content {
             | Self::List(List { children, .. })
             | Self::ListItem(ListItem { children, .. })
             | Self::Table(Table { children, .. })
-            | Self::ComponentContainer(Container { children, .. }) => children,
+            | Self::ComponentContainer(Container { children, .. })
+            | Self::ComponentPending(Pending { children, .. }) => children,
             Self::ComponentLeaf(leaf) | Self::ComponentInline(leaf) => &leaf.fallback,
             _ => &[],
         }
@@ -247,7 +250,8 @@ impl Content {
             | Self::List(List { children, .. })
             | Self::ListItem(ListItem { children, .. })
             | Self::Table(Table { children, .. })
-            | Self::ComponentContainer(Container { children, .. }) => Some(children),
+            | Self::ComponentContainer(Container { children, .. })
+            | Self::ComponentPending(Pending { children, .. }) => Some(children),
             Self::ComponentLeaf(leaf) | Self::ComponentInline(leaf) => Some(&mut leaf.fallback),
             _ => None,
         }
@@ -345,6 +349,17 @@ pub struct Leaf {
     pub params: Vec<Param>,
     /// The fallback, expanded.
     pub fallback: Vec<Node>,
+}
+
+/// A use of a component whose pack is pending (spec §4.5, §12.3).
+#[derive(Clone, Debug, Default, PartialEq, Serialize)]
+pub struct Pending {
+    /// The component's name, as the document gives it.
+    pub name: String,
+    /// The pending pack, as the import names it.
+    pub pack: String,
+    /// The fallback the use renders until the pack arrives, expanded.
+    pub children: Vec<Node>,
 }
 
 /// An evaluated param (spec §12.3).

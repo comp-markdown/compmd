@@ -5,13 +5,13 @@
 
 use compmd::context::{RenderContext, parse_time};
 use compmd::expand::Options;
-use compmd::host::{Data, Fetch, LoadedRelease, Release, Time};
+use compmd::host::{Data, Fetch, LoadedRelease, Release, Time, WithPending};
 use compmd::policy::Policy;
 use compmd::processor::{Expanded, Validated};
 use compmd::{Ambient, ParseOptions, Processor};
 use semver::Version;
 use serde_json::{Value, json};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
 mod diagnostics_and_their_stages;
@@ -25,6 +25,8 @@ mod what_the_processor_asks_the_host;
 struct Host {
     files: HashMap<String, String>,
     packs: HashMap<String, Vec<LoadedRelease>>,
+    /// The packs the host is still getting.
+    pending: HashSet<String>,
     policy: Policy,
     ambient: Ambient,
     parse: ParseOptions,
@@ -39,6 +41,7 @@ impl Default for Host {
         Self {
             files: HashMap::new(),
             packs: HashMap::new(),
+            pending: HashSet::new(),
             policy: Policy::default(),
             ambient: Ambient::default(),
             parse: ParseOptions::default(),
@@ -62,7 +65,10 @@ impl Host {
             .parse(&self.parse)
             .resolve_with(
                 self.files.clone(),
-                self.packs.clone(),
+                WithPending {
+                    held: self.packs.clone(),
+                    pending: self.pending.clone(),
+                },
                 &self.ambient,
                 &self.policy,
             )

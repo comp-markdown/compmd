@@ -28,7 +28,7 @@
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use serde_json::Value as Json;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::hash::BuildHasher;
 use std::rc::Rc;
 
@@ -46,6 +46,12 @@ pub trait Packs {
 
     /// The file at `path` in a release of `pack`: `package.json`, the pack's document, or a file it imports.
     fn pack_file(&self, pack: &str, version: &Version, path: &str) -> Option<String>;
+
+    /// Whether the host is still getting `pack` (spec §6.4): an import of it that no release matches is pending, not
+    /// F026, and its names' uses render their fallbacks marked as pending. None is, by default.
+    fn pending(&self, _pack: &str) -> bool {
+        false
+    }
 }
 
 /// Remote data (the `remote data` feature, spec §8.6).
@@ -53,6 +59,12 @@ pub trait Fetch {
     /// What the host fetched for `url`, or `None` when it couldn't. Only `https:` URLs of origins the host allows
     /// reach this; the host fetches without credentials, and decides how long a copy is kept (`cache`).
     fn fetch(&self, url: &str) -> Option<Fetched>;
+
+    /// Whether the host is still getting `url` (spec §8.6): when it can't give it yet, the import loads its
+    /// `fallback` or `null`, without F026. None is, by default.
+    fn pending(&self, _url: &str) -> bool {
+        false
+    }
 }
 
 /// Data a host provides (spec §8.6).
@@ -60,6 +72,11 @@ pub trait Data {
     /// The data `source` names, as JSON, or `None` when the host doesn't provide it. `source` is what follows
     /// `host:` in a `from`, such as `tasks?status=open`.
     fn data(&self, source: &str) -> Option<Json>;
+
+    /// Whether the host is still getting `source`, as [`Fetch::pending`] for a URL. None is, by default.
+    fn pending(&self, _source: &str) -> bool {
+        false
+    }
 }
 
 /// The time zones the host knows: the browser's `Intl`, an app's own zone data. The crate carries none.
@@ -111,6 +128,18 @@ pub struct Needed {
     /// packs name in `peerDependencies` that none matches (companion, section 5). Packs the host's policy refuses
     /// aren't listed, nor are imports that name no pack.
     pub packs: Vec<NeededPack>,
+}
+
+/// What a render treated as pending (spec §6.4, §8.6): of what it needed, what the host said it was still getting,
+/// for a host's UI ("loading 1 pack"). Each once, in the order they are first written.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize)]
+pub struct Pending {
+    /// The packs, by name.
+    pub packs: Vec<String>,
+    /// The `https:` URLs, their values filled in.
+    pub remote: Vec<String>,
+    /// The `host:` sources, without `host:`.
+    pub host: Vec<String>,
 }
 
 /// What a host keys its cached copy of a data import's source by (spec §8.6): the source's final URL or path, its
@@ -264,6 +293,10 @@ impl<T: Packs + ?Sized> Packs for Rc<T> {
     fn pack_file(&self, pack: &str, version: &Version, path: &str) -> Option<String> {
         (**self).pack_file(pack, version, path)
     }
+
+    fn pending(&self, pack: &str) -> bool {
+        (**self).pending(pack)
+    }
 }
 
 /// Remote data a host shares with the processor.
@@ -271,12 +304,73 @@ impl<T: Fetch + ?Sized> Fetch for Rc<T> {
     fn fetch(&self, url: &str) -> Option<Fetched> {
         (**self).fetch(url)
     }
+
+    fn pending(&self, url: &str) -> bool {
+        (**self).pending(url)
+    }
 }
 
 /// Host data a host shares with the processor.
 impl<T: Data + ?Sized> Data for Rc<T> {
     fn data(&self, source: &str) -> Option<Json> {
         (**self).data(source)
+    }
+
+    fn pending(&self, source: &str) -> bool {
+        (**self).pending(source)
+    }
+}
+
+/// A host's packs, remote data or host data, `held`, with the sources it is still getting, `pending` (spec §6.4,
+/// §8.6): pack names, URLs, or `host:` sources without `host:`.
+///
+/// ```
+/// use compmd::host::{Packs, WithPending};
+/// use std::collections::HashSet;
+///
+/// let packs = WithPending { held: (), pending: HashSet::from(["@kit/mermaid".to_string()]) };
+/// assert!(packs.pending("@kit/mermaid"));
+/// assert!(!packs.pending("@kit/charts"));
+/// ```
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct WithPending<T> {
+    /// What the host holds.
+    pub held: T,
+    /// What it is still getting.
+    pub pending: HashSet<String>,
+}
+
+impl<T: Packs> Packs for WithPending<T> {
+    fn releases(&self, pack: &str) -> Vec<Release> {
+        self.held.releases(pack)
+    }
+
+    fn pack_file(&self, pack: &str, version: &Version, path: &str) -> Option<String> {
+        self.held.pack_file(pack, version, path)
+    }
+
+    fn pending(&self, pack: &str) -> bool {
+        self.pending.contains(pack)
+    }
+}
+
+impl<T: Fetch> Fetch for WithPending<T> {
+    fn fetch(&self, url: &str) -> Option<Fetched> {
+        self.held.fetch(url)
+    }
+
+    fn pending(&self, url: &str) -> bool {
+        self.pending.contains(url)
+    }
+}
+
+impl<T: Data> Data for WithPending<T> {
+    fn data(&self, source: &str) -> Option<Json> {
+        self.held.data(source)
+    }
+
+    fn pending(&self, source: &str) -> bool {
+        self.pending.contains(source)
     }
 }
 
