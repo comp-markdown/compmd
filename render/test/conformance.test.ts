@@ -8,7 +8,7 @@ import { definitionsOf, footnotesOf } from "../src/document.ts";
 import { createPage } from "../src/page.ts";
 import { createRegion } from "../src/region.ts";
 import { Stylesheet } from "../src/styles.ts";
-import { isComponent, walk, type ExpandedNode, type ExpandedRoot } from "../src/tree.ts";
+import { isComponent, rendererOf, walk, type ExpandedNode, type ExpandedRoot } from "../src/tree.ts";
 
 const CONFORMANCE = join(import.meta.dirname, "..", "..", "conformance");
 
@@ -32,7 +32,8 @@ function stubs(tree: ExpandedRoot): Record<string, Mount> {
   const names = new Set<string>();
   walk(tree.children, (node) => {
     if (isComponent(node)) names.add(node.name);
-    if (node.type === "code" && node.component) names.add(node.component.name);
+    const renderer = rendererOf(node);
+    if (renderer) names.add(renderer.name);
   });
   return Object.fromEntries(
     [...names].map((name) => [

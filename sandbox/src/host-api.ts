@@ -75,7 +75,7 @@ export function hostClient(port: MessagePort): HostClient {
  * createPage(container, { components, host: client });
  * emit("changed", { product: "p-1" });
  */
-export function localHost(api: HostApi): { client: HostClient; emit(event: string, data: unknown): void } {
+export function localHost(api: HostApi): { client: HostClient; emit: (event: string, data: unknown) => void } {
   const listeners = new Listeners();
   return {
     client: {

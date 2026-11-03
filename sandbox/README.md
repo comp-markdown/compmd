@@ -92,6 +92,23 @@ view.destroy();
 
 **Frames only go down in trust.** The host's page holds permissive and strict frames; a permissive frame holds strict ones; a strict frame holds none. A permissive or trusted component in a strict container's slot shows its fallback, with `not-here` naming why; write such a container in CompMD, or make it the host's own.
 
+## Asking before data from a new origin
+
+A host that fetches remote data while a reader views a document must ask the reader the first time a document needs an origin the reader hasn't decided on, and remember the answer (spec §8.6). `allowOrigins` does it in the host's page, never in a frame:
+
+```ts
+import { allowOrigins, localAnswers } from "@compmd/sandbox";
+
+const { remote } = sources(request);                     // the URLs a render needs
+view.render(process(request).expanded);                  // meanwhile, a new origin is F028 and shows its fallback
+const allowedOrigins = await allowOrigins(remote, { configured: config.allowedOrigins, document: title });
+view.render(process({ ...request, allowedOrigins, remote: await fetchFrom(remote, allowedOrigins) }).expanded);
+```
+
+- **Configured origins** are never asked about. Every other origin is asked about once, however many renders need it at once, and the answer, allow or deny, is kept per origin for every document: in `localStorage` by default (`localAnswers()`), or in a store the host gives (`answers`), such as one on its server.
+- **The question** is a plain `<dialog>` (`askWithDialog`): *This document wants to load data from api.example.com. Allow?*, with what the site learns, the values the reader picked, and the buttons *Allow* and *Don't allow*. A host asks in its own UI with `ask`, and `originQuestion(origin)` gives the words.
+- **Changing an answer:** `localAnswers().list()` gives every answer, and `forget(origin)` makes the next render ask again, for a page where the reader reviews them.
+
 ## Observing a view
 
 Developer tools see what a view's sandbox does ([the Developer Tools](../docs/devtools.md), decisions 5 and 6): its frames down to those its frames make, the messages on their ports, the components mounted in each window with how long they took, and their fallbacks.
