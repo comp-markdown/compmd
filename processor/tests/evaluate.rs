@@ -93,6 +93,13 @@ fn reports_f024_at_its_place_in_the_expression_for_each_kind_of_error() {
     assert!(message.contains("title"), "{message}");
     let (code, line, column, _) = error("[1,\n  1 / 0]");
     assert_eq!((code, line, column), ("F024", 2, 5));
+    // Found by the stage that finds it in a document: validating, or evaluating.
+    let stage = |expression: &str| {
+        let diagnostic = processor.evaluate(expression).expect_err(expression);
+        serde_json::to_value(&*diagnostic).expect("serializes")["stage"].clone()
+    };
+    assert_eq!(stage("md.doc.titel"), json!("validate"));
+    assert_eq!(stage("1 / 0"), json!("evaluate"));
 }
 
 #[test]

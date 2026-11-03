@@ -25,6 +25,7 @@ pub use eval::BUDGET;
 pub use types::Type;
 pub use value::{Key, Value};
 
+use crate::diagnostic::Stage;
 use std::collections::BTreeMap;
 
 /// An error in an expression, reported as F024. Each kind has the code point it is at, from the start of the
@@ -93,6 +94,14 @@ impl Error {
             | Self::Type { at, .. }
             | Self::Evaluation { at, .. }
             | Self::Budget { at } => *at,
+        }
+    }
+
+    /// The stage that finds it in a document (spec §11): validating finds parse and type errors, evaluating the rest.
+    pub(crate) fn stage(&self) -> Stage {
+        match self {
+            Self::Syntax { .. } | Self::Type { .. } => Stage::Validate,
+            Self::Evaluation { .. } | Self::Budget { .. } => Stage::Evaluate,
         }
     }
 

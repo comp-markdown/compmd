@@ -3,7 +3,8 @@
 
 use super::{Expanded, Processor};
 use crate::cel::{self, Program, Values};
-use crate::diagnostic::{Code, Diagnostic, Location, Stage};
+use crate::diagnostic::{Code, Diagnostic};
+use crate::lines::LineStarts;
 use crate::md::Signatures;
 use crate::validate::scope::Scope;
 
@@ -42,7 +43,11 @@ impl Processor<Expanded> {
         let main = resolved.main;
         let settings = &resolved.document(main).settings;
         let context = &self.state.render.context;
-        let failed = |error: cel::Error| f024(expression, &error);
+        // F024 at the error's line and column in the expression, found by the stage that finds it in a document.
+        let failed = |error: cel::Error| {
+            let at = LineStarts::new(expression).location(error.at());
+            Box::new(Diagnostic::new(Code::F024, at, error.message()).in_stage(error.stage()))
+        };
         let program = Program::parse(expression).map_err(failed)?;
         program
             .check(&Scope::body(resolved, main).cel(), &Signatures)
@@ -56,43 +61,5 @@ impl Processor<Expanded> {
             .evaluate(&values, &context.functions(settings))
             .map_err(failed)?;
         Ok(value.to_json())
-    }
-}
-
-/// The F024 of `error` in `expression`, at its line and column there; parse and type errors are found as validating
-/// finds a document's, evaluation errors as evaluating does.
-fn f024(expression: &str, error: &cel::Error) -> Box<Diagnostic> {
-    let stage = match error {
-        cel::Error::Evaluation { .. } | cel::Error::Budget { .. } => Stage::Evaluate,
-        cel::Error::Syntax { .. } | cel::Error::Type { .. } => Stage::Validate,
-    };
-    Box::new(
-        Diagnostic::new(Code::F024, place(expression, error.at()), error.message()).in_stage(stage),
-    )
-}
-
-/// The line and column, 1-based, of the code point `at` of `text`.
-fn place(text: &str, at: usize) -> Location {
-    let before: String = text.chars().take(at).collect();
-    let line = before.matches('\n').count() + 1;
-    let column = before
-        .rsplit('\n')
-        .next()
-        .map_or(0, |last| last.chars().count())
-        + 1;
-    Location::new(line, column)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::place;
-
-    #[test]
-    fn places_a_code_point_by_its_line_and_column() {
-        assert_eq!(place("md.doc", 3), crate::diagnostic::Location::new(1, 4));
-        assert_eq!(
-            place("[1,\n  2,\n  é + x]", 15),
-            crate::diagnostic::Location::new(3, 7)
-        );
     }
 }
