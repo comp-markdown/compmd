@@ -86,7 +86,7 @@ view.render(document.expanded);
 
 - `request.packs` holds each pack's documents and source files as text (small: signatures, CompMD, JSX), so the app needs no fetch to process a document.
 - `sandbox.modules` maps a built module's place to `compmd/packs/<name>@<version>/<path>` and the file's `sha384`, which the plugin computes from the installed file.
-- `sandbox.trusted` imports each trusted pack's component files and wraps them in their binding (`react(Stars)`, `svelte(Rating)`, a plain mount as it is), by the file's extension and the import's `runtime`.
+- `sandbox.trusted` imports each trusted pack's component files and wraps them in their binding (`react(Stars)`, `svelte(Rating)`, a plain mount as it is), by the file's extension: a component file runs with its binding's default runtime, and an import has no `runtime` of its own (spec §6.1).
 - `registry` holds what `resolvePacks` takes from the configuration (below), or is `undefined` when it names no registry.
 
 ## Packs from a registry
