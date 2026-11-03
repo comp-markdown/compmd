@@ -27,4 +27,10 @@ describe("guidePages", () => {
     expect(html).toContain('href="../../../playground/?doc=guides/developers/quick-start"');
     expect(html).not.toContain("https://compmd.hakanserce.com/");
   });
+
+  it("links each heading to itself, not to its source on GitHub", () => {
+    const html = htmlOf("guides/developers/quick-start/");
+    expect(html).toContain('class="anchor"');
+    expect(html).not.toContain('class="source"');
+  });
 });

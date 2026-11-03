@@ -55,11 +55,3 @@ If you write documents rather than code, [the Author's Guide](../authors/README.
 ## The examples
 
 Each chapter's code is a file in [`examples/`](examples), which the guides' tests type-check, build and run in Chrome and WebKit, and compare with the chapter's text, so the code you read is code that works.
-
-## Reading it on your machine
-
-The chapters read as they are on GitHub. To see them as the website shows them, run these from the repository's root, after `pnpm install`. Each guide page's **Try it** links then open a playground on your machine.
-
-- **Live, as you edit:** `pnpm --dir editor build` once, for the playground, then `pnpm --dir website dev`. Open [localhost:5173/guides/developers/](http://localhost:5173/guides/developers/); a page reloads when its chapter changes.
-- **As it will be published:** `pnpm --dir editor build`, `pnpm --dir website build`, then `pnpm --dir website preview`, and open the address it prints.
-- **The tests:** `pnpm --dir guides test` checks every chapter against its examples and runs the quick start in Chrome and WebKit.

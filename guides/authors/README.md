@@ -53,11 +53,3 @@ Components written in code, in React, Svelte or JavaScript, are [the Developer's
 ## The examples
 
 Each chapter's document is a file in [`examples/`](examples), which the guides' tests process and compare with the chapter's text. Every CompMD block in the book processes without a diagnostic, so what you copy works.
-
-## Reading it on your machine
-
-The chapters read as they are on GitHub, and their **Try it** links open the playground on the website. To see the book as the website shows it, with the playground on your machine, run these from the repository's root, after `pnpm install`:
-
-- **Live, as you edit:** `pnpm --dir editor build` once, for the playground, then `pnpm --dir website dev`. Open [localhost:5173/guides/authors/](http://localhost:5173/guides/authors/); a page reloads when its chapter changes.
-- **As it will be published:** `pnpm --dir editor build`, `pnpm --dir website build`, then `pnpm --dir website preview`, and open the address it prints.
-- **The tests:** `pnpm --dir guides test` checks every chapter against its examples.

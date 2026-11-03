@@ -25,11 +25,9 @@
     version?: string | undefined;
     /** Every version of the spec, this one among them. */
     versions: VersionLink[];
-    /** The spec's file on GitHub, at this version. */
-    source: string;
   }
 
-  let { html, toc, root, version, versions, source }: Props = $props();
+  let { html, toc, root, version, versions }: Props = $props();
   const title = $derived(version === undefined ? "CompMD specification, version 1 (draft)" : `CompMD specification, version ${version}`);
 </script>
 
@@ -47,7 +45,6 @@
       {:else}
         <strong>Version {version}.</strong> Released, and never changed after.
       {/if}
-      <a href={source}>The text on GitHub</a>
       <a href={specPdf(version)} download>Download as PDF</a>
     </p>
     {#if versions.length > 1}

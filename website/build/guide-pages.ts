@@ -37,8 +37,8 @@ export async function guidePages(read: (path: string) => string, blob: string): 
   const page = async (path: string, up: string | undefined, root: string) => {
     const markdown = read(path);
     const link = (href: string) => (href.startsWith(SITE) ? `${root}${href.slice(SITE.length)}` : guideLink(href, up));
-    const { html, toc } = await renderMarkdown(markdown, { blob: `${blob}guides/`, path }, { rules: false, link });
-    return { html, toc, root, books: shelf, source: `${blob}guides/${path}`, title: titleOf(markdown) };
+    const { html, toc } = await renderMarkdown(markdown, { blob: `${blob}guides/`, path }, { rules: false, sources: false, link });
+    return { html, toc, root, books: shelf, title: titleOf(markdown) };
   };
   const pages: GuidePage[] = [{ folder: "guides/", root: "../", props: { ...(await page("README.md", undefined, "../")), parts: [] } }];
   for (const book of books) {

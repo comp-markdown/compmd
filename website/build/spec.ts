@@ -80,6 +80,8 @@ export interface Source {
 export interface RenderOptions {
   /** Whether the requirement words (MUST, SHOULD, …) are marked: the spec's are rules. */
   rules?: boolean;
+  /** Whether each heading links to its line on GitHub (`Source`), as the spec's do. */
+  sources?: boolean;
   /**
    * Where a link goes on the site, or `undefined` to keep it: an address as written, a relative link to its file on
    * GitHub. Links within the page (`#…`) never reach it.
@@ -137,11 +139,13 @@ export async function renderMarkdown(markdown: string, source: Source, options: 
     self.href = `#${id}`;
     self.setAttribute("aria-label", `Link to “${text}”`);
     self.textContent = "#";
+    heading.append(self);
+    if (options.sources === false) continue;
     const original = document.createElement("a");
     original.className = "source";
     original.href = `${source.blob}${source.path}#L${String(lines[index] ?? 1)}`;
     original.textContent = "Source";
-    heading.append(self, original);
+    heading.append(original);
   }
 
   for (const link of root.querySelectorAll("a[href]")) {

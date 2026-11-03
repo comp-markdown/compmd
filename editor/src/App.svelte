@@ -102,7 +102,6 @@
     </select>
   </label>
   <nav class="links" aria-label="CompMD">
-    <a href={SITE}>Website</a>
     <a href="{SITE}spec/">Spec</a>
     <a href={REPOSITORY} target="_blank" rel="noreferrer">GitHub</a>
   </nav>

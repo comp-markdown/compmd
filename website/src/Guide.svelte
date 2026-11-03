@@ -40,13 +40,11 @@
     current?: string | undefined;
     previous?: ChapterLink | undefined;
     next?: ChapterLink | undefined;
-    /** Its file on GitHub. */
-    source: string;
     /** The title of the page: the chapter's, the book's or the shelf's. */
     title: string;
   }
 
-  let { html, toc, root, books, book, parts, current, previous, next, source, title }: Props = $props();
+  let { html, toc, root, books, book, parts, current, previous, next, title }: Props = $props();
   const guides = $derived(`${root}guides/`);
   const open = $derived(books.find((shelved) => shelved.name === book));
 </script>
@@ -61,7 +59,6 @@
   <div class="wrap">
     <p>
       <strong>{open?.title ?? "The CompMD guides"}.</strong> Written for the <code>@compmd</code> packages at 0.3.0, and following them as they change.
-      <a href={source}>This page on GitHub</a>
       {#if open}<a href="{guides}{open.name}/{guidePdf(open.name)}" download>Download the book as PDF</a>{/if}
     </p>
   </div>

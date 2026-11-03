@@ -5,7 +5,7 @@
 import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { renderSpecPage, SPEC } from "../build/companion.ts";
+import { renderSpecPage } from "../build/companion.ts";
 import { bookPages, type BookProps } from "../build/book.ts";
 import { guidePages } from "../build/guide-pages.ts";
 import { prerendered, relocated, type Rendered } from "../build/prerender.ts";
@@ -54,7 +54,6 @@ for (const page of pages) {
     toc,
     root,
     version: page.version,
-    source: `${blob}${SPEC}`,
     versions: versions.map((other) => ({ label: other.version ?? "Draft", href: `${root}${other.folder}`, current: other.version === page.version })),
   });
   mkdirSync(join(DIST, page.folder), { recursive: true });
