@@ -7,7 +7,7 @@
 
 CompMD (Component Markdown) is a Markdown flavor that adds components, containers, slots and CSS-like layout to CommonMark + GFM, while staying readable in any plain Markdown renderer.
 
-**Version 1, draft. Last changed 2026-11-02.** Every change is listed in the [changelog](CHANGELOG.md).
+**Version 1, draft. Last changed 2026-11-03.** Every change is listed in the [changelog](CHANGELOG.md).
 
 **Author:** Hakan Serce.
 
@@ -294,7 +294,7 @@ Parameters are `key=value` pairs, checked against the component's signature. The
 - A bare value is converted using the declared type: `number`, `boolean` (`true`/`false`), `string`, or an enum member. Conversion failure is F009.
 - Each key MAY appear once per component invocation, counting continuation lines (F017 on a repeat).
 - `class` and `id` are accepted by every component and need no declaration. `class` and `.name` add up: `{.person class=(p.team) .wide}` gives the classes `person`, the value of `p.team` and `wide`, in written order, without duplicates. `id` and `#name` set the same thing, so both together is F017. So are `lang` (a BCP 47 tag) and `dir` (`ltr`, `rtl`, `auto`), for a part in another language: `::: box {lang=fr}` around a French quote, or `dir=auto` around text from data whose direction isn't known. A code block a code renderer renders also accepts `alt`, its text alternative (section 7.7).
-- A param name may contain `-`. In expressions and interpolation paths, which follow CEL's identifier rules, it is written with `_`: inside a definition, `align-items` is read as `align_items`. Two params of one component whose names differ only in `-` and `_` are F013.
+- A param or slot name may contain `-`. In expressions and interpolation paths, which follow CEL's identifier rules, it is written with `_`: inside a definition, `align-items` is read as `align_items`, and the slot `:: #side-panel` is placed with `{{md.slot.side_panel}}`. Two params of one component, or two of its slots, whose names differ only in `-` and `_` are F013.
 
 `name=(expr)` passes the result of an expression (section 8.2), typed by the expression. `{{path}}` is allowed in param values only inside quoted strings.
 
@@ -634,7 +634,7 @@ A binding maps the host contract to one framework.
 | Svelte | `svelte`; `svelte@5` | the `children` snippet | a snippet prop of the same name | a `compmd` prop: `{slots, set, fallback, headingLevel, scheme, fail, host}` |
 | Plain | `js`, `ts`; none | `slots.default` | `slots.<name>` | the context, as in section 7.4 |
 
-In the React and Svelte bindings, params are props of the same name (a param with `-` in its name becomes camelCase: `align-items` is `alignItems`), and the binding implements `mount`, `update` and `destroy` with the framework's own mounting. In the plain binding the default export *is* `mount`, with the context of section 7.4, and params keep their names:
+In the React and Svelte bindings, params are props of the same name (a param with `-` in its name becomes camelCase: `align-items` is `alignItems`; so does a named slot's prop: the slot `side-panel` is `sidePanel`), and the binding implements `mount`, `update` and `destroy` with the framework's own mounting. In the plain binding the default export *is* `mount`, with the context of section 7.4, and params keep their names:
 
 ```js
 export default function mount(target, { params, fallback }) {
@@ -719,7 +719,7 @@ graph LR; Draft --> Review --> Published
 
 Everything CompMD provides, variables and functions, is under the `md.` namespace; other names are chosen by authors (params, `as` names and inputs). Authors cannot declare the name `md` (F013).
 
-**Form.** `{{`, optional spaces, a path, optional spaces, `}}`, on one line. A path is names joined by `.`, each a CEL identifier (`[A-Za-z_][A-Za-z0-9_]*`); v1 has no expressions, operators, indexes or filters. A param named with `-` is written with `_` (section 5.1); data keys that aren't identifiers are renamed in the data import's `schema` (section 8.6).
+**Form.** `{{`, optional spaces, a path, optional spaces, `}}`, on one line. A path is names joined by `.`, each a CEL identifier (`[A-Za-z_][A-Za-z0-9_]*`); v1 has no expressions, operators, indexes or filters. A param or a slot named with `-` is written with `_` (section 5.1); data keys that aren't identifiers are renamed in the data import's `schema` (section 8.6).
 
 **Where.**
 
@@ -1300,7 +1300,7 @@ Every diagnostic MUST name its code, the line and column where it was detected, 
 | F010 | Required param missing                                                                                                                | the opener or leaf                                                   |
 | F011 | Malformed param list (unterminated string, unbalanced bracket, invalid JSON, a character a bare value can't hold, an empty value)    | the `"`, `(`, `[` or `{` that doesn't close, the character a bare value can't hold, or the `=` with no value |
 | F012 | Continuation line not following an opener, leaf, or continuation                                                                      | the line                                                             |
-| F013 | Duplicate local name from definitions or explicit imports, or a keyword (`if`, `each`, `value`, `box`) defined, imported, exported or used as `as`; the name `md` declared; a CEL reserved word or type name as a `compmd` definition's param, an `as` name or an input (section 3.1); two params of one component differing only in `-` and `_` | the second declaration                                               |
+| F013 | Duplicate local name from definitions or explicit imports, or a keyword (`if`, `each`, `value`, `box`) defined, imported, exported or used as `as`; the name `md` declared; a CEL reserved word or type name as a `compmd` definition's param, an `as` name or an input (section 3.1); two params, or two slots, of one component differing only in `-` and `_` | the second declaration                                               |
 | F014 | Unknown interpolation path                                                                                                            | the path                                                             |
 | F015 | Slot line outside a container                                                                                                         | the line                                                             |
 | F016 | Malformed component line (starts with `::` but matches no form)                                                                             | the line, with the expected form                                     |

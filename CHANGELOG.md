@@ -4,6 +4,10 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
 
 ## Version 1 (draft)
 
+### 2026-11-03
+
+- **Slot names with `-` (§5.1, §7.6, §8.1, §10.2).** A slot named with `-`, as the naming convention suggests (`:: #side-panel`), is placed in a `compmd` body with `_` in its path, `{{md.slot.side_panel}}`, as a param is read, and is the camelCase prop or snippet in the React and Svelte bindings (`sidePanel`). Two slots of one component whose names differ only in `-` and `_` are F013, as two params are. Before, such a slot could be declared and filled but never placed. Not breaking: no document could place one.
+
 ### 2026-11-02
 
 - **The colour scheme and a late failure, in the host contract (§7.4, §7.6, §10.2).** The context gains `scheme`, `"light"` or `"dark"`, the scheme the processor shows the component in; when it changes, the processor calls `update` with the same params. It also gains `fail(message)`, for a component that finds after `mount` or `update` returned that it can't draw what it was given: W118 with the message, and the fallback until the next `update`. A throw in `update` is now treated as `fail`, so the component is updated again at the next change; before, a component that threw was never updated again. The React and Svelte bindings pass both in the `compmd` prop. Not breaking: a component that ignores both works as before.
