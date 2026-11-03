@@ -11,6 +11,10 @@ Everything a CompMD pack would otherwise copy into itself: `compmd-pack` builds 
 
 `npm create @compmd/pack` writes a pack on it ([`@compmd/create-pack`](../create-pack/README.md)). It shares its version with the other `@compmd` packages.
 
+**Versions:**
+- **0.4.0:** built modules minified in full, without the comments naming the files they were built from, and built for production whatever `NODE_ENV` says, so a TSX component built under a test runner loads in the frames.
+- **0.2.0:** the first version.
+
 ## The command
 
 A pack's scripts run it in the pack's folder:

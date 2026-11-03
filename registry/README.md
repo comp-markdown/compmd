@@ -15,6 +15,10 @@ npm install @compmd/registry @compmd/processor
 
 It implements the draft of the [CompMD specification](https://compmd.hakanserce.com/spec/), version 1, and shares its version with the other `@compmd/` packages ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
 
+**Versions:**
+- **0.4.0:** `timeout`, after which `resolvePacks` stops waiting for a pack and lists it in `problems`, for a host that renders with its packs pending meanwhile.
+- **0.2.0:** the first version.
+
 ```ts
 import { init, process } from "@compmd/processor";
 import { defaultCache, NpmRegistry, resolvePacks } from "@compmd/registry";

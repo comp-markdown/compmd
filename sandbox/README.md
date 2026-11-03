@@ -15,6 +15,12 @@ npm install @compmd/sandbox @compmd/render @compmd/processor
 
 It implements the draft of the [CompMD specification](https://compmd.hakanserce.com/spec/), version 1, and shares its version with `@compmd/render` and `@compmd/processor` ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
 
+**Versions:**
+- **0.4.0:** code blocks that show as code highlighted by Shiki, in light and dark (`shikiHighlight`, and CompMD's own grammar as `@compmd/sandbox/grammar`); where the page came from, through the view (`view.reveal`, `view.rectsAt`, `pointed`); a document's own images in frame mode, fetched by the host's page; the reader asked before data from a new origin, and the answer remembered (`loadData`); math typeset in host mode too; `host` for trusted components, as permissive ones get it, and `view.emit`; each failure naming its use, and `recovered`. Breaking: the frames speak `@compmd/render`'s frame protocol version 3, so a host's page and the frame documents it serves are upgraded together.
+- **0.3.0:** the observer, for developer tools (`view.observe`).
+- **0.2.1:** a frame the browser doesn't render (below the fold, or too small to see) sized to its content.
+- **0.2.0:** the first version.
+
 ## Commands
 
 ```sh

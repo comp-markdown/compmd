@@ -16,6 +16,7 @@ npm install @compmd/processor @compmd/render
 It implements the draft of the [CompMD specification](https://compmd.hakanserce.com/spec/), version 1, as the crate [`compmd`](https://crates.io/crates/compmd) does. Its versions are `0.x` until the spec's version 1 is published, and it shares its version with `@compmd/render` ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
 
 **Versions:**
+- **0.4.0:** the spec's draft as of 2026-11-03 ([its changelog](https://github.com/comp-markdown/compmd/blob/main/CHANGELOG.md)): `pending` packs and data, whose uses render as `componentPending` with no F026; strict and lenient `mode`, with `failed`; `cacheKeys`, for a document and an open one; `sources` gives the URLs of origins not allowed (`disallowed`); an open document's `evaluate`, an expression's value in the document's scope or its F024; slots named with `-`; `host` for trusted components; and the diagnostics 0.3.0 missed (undeclared slots, `grid-area` names, W105, W113 for `host:` sources, F010 for an input without a default).
 - **0.3.0:** the same processor as 0.2.2, released with `@compmd/sandbox`'s observer and the first version of `@compmd/devtools`.
 - **0.2.2:** the same as 0.2.1; the first version the release workflow stages and the author approves.
 - **0.2.1:** the same processor as 0.2.0, released with `@compmd/sandbox`'s fix for frames the browser doesn't render.
