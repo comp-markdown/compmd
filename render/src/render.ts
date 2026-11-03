@@ -2,7 +2,7 @@
 // by key where nodes have one (keys come from origins, `keys.ts`) and by place among nodes of the same shape where they
 // don't. A matched view updates in place, so components keep their instances and the DOM keeps focus and selection.
 import { mountComponent, type ComponentHandle } from "./component.ts";
-import type { ComponentError, Fallback, Mount, SlotInstance, SlotItem, Slots } from "./contract.ts";
+import type { ComponentError, ComponentRecovered, Fallback, Mount, SlotInstance, SlotItem, Slots } from "./contract.ts";
 import { applyBox } from "./box.ts";
 import { plainText, type LinkDefinition } from "./document.ts";
 import { safeUrl, withHtml } from "./html.ts";
@@ -58,6 +58,7 @@ export interface Surface {
   components: Readonly<Record<string, Mount>>;
   onSet: (input: string, value: unknown) => void;
   onError?: ((error: ComponentError) => void) | undefined;
+  onRecovered?: ((recovered: ComponentRecovered) => void) | undefined;
   host?: unknown;
   code: Readonly<Record<string, CodeRenderer>>;
   math?: MathRenderer | undefined;
@@ -533,6 +534,7 @@ class RenderedCodeView implements View {
       scheme: surface.schemes.current,
       onSet: surface.onSet,
       ...(surface.onError ? { onError: surface.onError } : {}),
+      ...(surface.onRecovered ? { onRecovered: surface.onRecovered } : {}),
       host: surface.host,
       stylesheet: surface.stylesheet,
       parent: pass.parent,
@@ -760,6 +762,7 @@ class ComponentView implements View {
       scheme: surface.schemes.current,
       onSet: surface.onSet,
       ...(surface.onError ? { onError: surface.onError } : {}),
+      ...(surface.onRecovered ? { onRecovered: surface.onRecovered } : {}),
       showFallback: (box, lasts) => {
         this.#showFallback(box, lasts, pass);
       },

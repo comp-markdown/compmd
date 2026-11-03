@@ -50,6 +50,45 @@ describe("mountComponent", () => {
     stylesheet.remove();
   });
 
+  it("says, by its use, when a component that failed draws again, and only then", () => {
+    const widget = document.createElement("div");
+    const stylesheet = new Stylesheet(document);
+    const fallback = { text: "Sales chart", element: document.createElement("span") };
+    const onError = vi.fn();
+    const onRecovered = vi.fn();
+    let fail: (message: string) => void = () => undefined;
+    const handle = mountComponent(widget, node([1]), {
+      mount: (_target, context) => {
+        fail = context.fail;
+        return { update: () => undefined };
+      },
+      slots: {},
+      fallback,
+      headingLevel: 2,
+      onSet: () => undefined,
+      onError,
+      onRecovered,
+      stylesheet,
+    });
+    handle.update(node([2]), { slots: {} });
+    expect(onRecovered).not.toHaveBeenCalled();
+    fail("can't read the rows");
+    expect(onError).toHaveBeenCalledWith(expect.objectContaining({ component: "chart", use: handle.use, reason: "threw" }));
+    handle.update(node([3]), { slots: {} });
+    expect(onRecovered).toHaveBeenCalledWith({ component: "chart", use: handle.use });
+    handle.update(node([4]), { slots: {} });
+    expect(onRecovered).toHaveBeenCalledTimes(1);
+    stylesheet.remove();
+  });
+
+  it("gives each use an id of its own", () => {
+    const first = setup(() => undefined);
+    const second = setup(() => undefined);
+    expect(first.handle.use).not.toBe(second.handle.use);
+    first.stylesheet.remove();
+    second.stylesheet.remove();
+  });
+
   it("shows the fallback when the component throws, and reports it", () => {
     const { handle, onError, stylesheet } = setup(() => {
       throw new Error("boom");
@@ -63,7 +102,7 @@ describe("mountComponent", () => {
   it("shows the fallback when there is no component", () => {
     const { handle, onError, stylesheet } = setup(undefined);
     expect(handle.element.textContent).toBe("Sales chart");
-    expect(onError).toHaveBeenCalledWith({ component: "chart", reason: "missing" });
+    expect(onError).toHaveBeenCalledWith({ component: "chart", use: handle.use, reason: "missing" });
     stylesheet.remove();
   });
 });
@@ -85,7 +124,7 @@ describe("a component that fails", () => {
     await Promise.resolve();
     expect(handle.element.textContent).toBe("Sales chart");
     expect(handle.failed).toBe(false);
-    expect(onError).toHaveBeenCalledWith({ component: "chart", reason: "threw", error: new Error("no rows to draw") });
+    expect(onError).toHaveBeenCalledWith({ component: "chart", use: handle.use, reason: "threw", error: new Error("no rows to draw") });
     handle.update(node([3]), { slots: {} });
     expect(handle.element.textContent).toBe("drawn [3]");
     stylesheet.remove();

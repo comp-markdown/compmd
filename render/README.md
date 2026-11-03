@@ -86,7 +86,7 @@ for (const [pane, nodes] of [[left, before], [right, after]]) {
 
 **Light and dark.** A component's `context.scheme` is the colour scheme of what the page or region renders into: its `color-scheme`, and the reader's preference where it allows both (`schemeOf(element)`). It is read at each render, when the reader's preference changes, and when printing starts and ends; a host that switches its own theme with a class calls `page.scheme()` (or `region.scheme()`) after it. When the scheme changes, every component on the page gets it and an `update` with the same params. A component that draws with CSS colours needs none of this; one that takes its colours when it draws (a diagram, a canvas chart) reads `context.scheme`.
 
-**A component that fails.** `context.fail(message)` is for a component that finds, after `mount` or `update` returned, that it can't draw what it was given: it reports `threw` through `onError` with `message` (W118), and shows the fallback until its next `update`, when the box is emptied and given back. A throw in `update` does the same; a throw in `mount` shows the fallback for good.
+**A component that fails.** `context.fail(message)` is for a component that finds, after `mount` or `update` returned, that it can't draw what it was given: it reports `threw` through `onError` with `message` (W118), and shows the fallback until its next `update`, when the box is emptied and given back. A throw in `update` does the same; a throw in `mount` shows the fallback for good. Each error names its use, `use`, an id unique in the window, and when the use draws again after such a failure, `onRecovered({component, use})` says so, so a host that lists failures takes that one off; a frame posts it as `recovered`.
 
 ## In a frame
 

@@ -110,7 +110,10 @@ export type FromFrame =
   | { type: "ready"; sandbox: number }
   | { type: "loaded" }
   | { type: "set"; input: string; value: unknown }
-  | { type: "error"; reason: ErrorReason; component?: string; message: string }
+  /** `use` names the use that shows its fallback, which a later `recovered` names too; ids under a frame's own are prefixed by its parent. */
+  | { type: "error"; reason: ErrorReason; component?: string; use?: string; message: string }
+  /** A use that failed draws again, by the `use` its `error` named. */
+  | { type: "recovered"; component: string; use: string }
   | { type: "link"; url: string }
   | { type: "rendered"; ms: number }
   | { type: "size"; width: number; height: number }
@@ -124,7 +127,7 @@ export type FromFrame =
 
 /** Every message type, each way: what the schema (`protocol.schema.json`) has too. */
 export const TO_FRAME: readonly ToFrame["type"][] = ["level", "code", "part", "styles", "scheme", "host", "ping", "compile", "observe", "fetched"];
-export const FROM_FRAME: readonly FromFrame["type"][] = ["ready", "loaded", "set", "error", "link", "rendered", "size", "pong", "compiled", "failed", "observed", "image"];
+export const FROM_FRAME: readonly FromFrame["type"][] = ["ready", "loaded", "set", "error", "recovered", "link", "rendered", "size", "pong", "compiled", "failed", "observed", "image"];
 
 /** What the protocol needs of a port: a `MessagePort` is one. It is `@compmd/render`'s, with transfers and ports. */
 export interface Port {

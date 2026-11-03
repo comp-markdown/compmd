@@ -25,7 +25,9 @@ export type ChildFailure = { reason: "version"; version: number } | { reason: "h
 
 export interface ChildEvents {
   set: { input: string; value: unknown };
-  error: { reason: ErrorReason; component?: string; message: string };
+  error: { reason: ErrorReason; component?: string; use?: string; message: string };
+  /** A use that failed draws again, as the frame says: code of its level may have said it, so it only clears a listing. */
+  recovered: { component: string; use: string };
   link: { url: string };
   loaded: Record<string, never>;
   rendered: { ms: number };
@@ -68,7 +70,7 @@ type Listeners = { [T in keyof ChildEvents]: ((event: ChildEvents[T]) => void)[]
  */
 export function connectChild(port: Port, options: ChildOptions): ChildEnd {
   if (options.host && options.level !== "permissive") throw new Error("only a permissive frame is given host");
-  const listeners: Listeners = { set: [], error: [], link: [], loaded: [], rendered: [], size: [], failed: [], observed: [], refused: [] };
+  const listeners: Listeners = { set: [], error: [], recovered: [], link: [], loaded: [], rendered: [], size: [], failed: [], observed: [], refused: [] };
   const emit = <T extends keyof ChildEvents>(type: T, event: ChildEvents[T]) => {
     for (const listener of listeners[type]) listener(event);
   };
@@ -138,8 +140,18 @@ export function connectChild(port: Port, options: ChildOptions): ChildEnd {
         else emit("refused", { input: String(data.input as unknown) });
         break;
       case "error":
-        emit("error", { reason: data.reason, message: data.message, ...(data.component === undefined ? {} : { component: data.component }) });
+        emit("error", {
+          reason: data.reason,
+          message: data.message,
+          ...(data.component === undefined ? {} : { component: data.component }),
+          ...(typeof data.use === "string" ? { use: data.use } : {}),
+        });
         break;
+      case "recovered": {
+        const { component, use } = data as { component: unknown; use: unknown };
+        if (typeof component === "string" && typeof use === "string") emit("recovered", { component, use });
+        break;
+      }
       case "link":
         emit("link", { url: data.url });
         break;

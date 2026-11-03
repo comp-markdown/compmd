@@ -47,7 +47,10 @@ export interface HostEvents {
   set(input: string, value: unknown): void;
   /** A link a reader clicked in a frame; the host shows its URL before it opens (spec §15 rule 4). */
   link(url: string): void;
-  error(component: string, reason: ErrorReason, message: string): void;
+  /** A component shows its fallback; `use` names the use, when it has one, for a later `recovered`. */
+  error(component: string, reason: ErrorReason, message: string, use?: string): void;
+  /** The use `use` of `component`, which failed, draws again. */
+  recovered?(component: string, use: string): void;
 }
 
 const messageOf = (error: unknown): string => (error instanceof Error ? error.message : String(error));
@@ -139,7 +142,10 @@ export class HostRuntime {
         this.#events.set(input, value);
       },
       onError: (error) => {
-        if ("component" in error) this.#fallback(error.component, error.reason, messageOf(error.error ?? ""));
+        if ("component" in error) this.#fallback(error.component, error.reason, messageOf(error.error ?? ""), error.use);
+      },
+      onRecovered: ({ component, use }) => {
+        this.#events.recovered?.(component, use);
       },
       ...(this.#local ? { host: this.#local.client } : {}),
     });
@@ -178,9 +184,9 @@ export class HostRuntime {
   }
 
   /** A component shows its fallback in the host's page, or none of its uses can: its code failed. */
-  #fallback(component: string, reason: ErrorReason, message: string): void {
+  #fallback(component: string, reason: ErrorReason, message: string, use?: string): void {
     this.#options.observer?.fallback(component, reason, message);
-    this.#events.error(component, reason, message);
+    this.#events.error(component, reason, message, use);
   }
 
   async #codeOf(component: HostComponent): Promise<ComponentCode | undefined> {
@@ -295,8 +301,11 @@ export class HostRuntime {
         link: ({ url }) => {
           this.#events.link(url);
         },
-        error: ({ reason, component: name, message }) => {
-          this.#events.error(name ?? component.name, reason, message);
+        error: ({ reason, component: name, message, use }) => {
+          this.#events.error(name ?? component.name, reason, message, use);
+        },
+        recovered: ({ component: name, use }) => {
+          this.#events.recovered?.(name, use);
         },
         failed: (failure) => {
           failed(failure.reason === "hung" ? "its frame stopped answering" : `its frame is of protocol version ${String(failure.version)}`);

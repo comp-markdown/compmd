@@ -1,6 +1,6 @@
 // The component layer: one host-language component node in its outer box, run through the host contract
 // (spec §7.4). Its caller renders the slots and the fallback, so a region and an editor's widget can both use it.
-import type { ComponentError, Fallback, Mount, Mounted, MountContext, Scheme, Slots } from "./contract.ts";
+import type { ComponentError, ComponentRecovered, Fallback, Mount, Mounted, MountContext, Scheme, Slots } from "./contract.ts";
 import { applyBox } from "./box.ts";
 import { ownParams, type ParentLayout, type Stylesheet } from "./styles.ts";
 import type { ExpandedComponent } from "./tree.ts";
@@ -19,6 +19,8 @@ export interface ComponentOptions {
   onSet(input: string, value: unknown): void;
   /** The component shows its fallback instead: it is missing, it threw, or it failed (W118). */
   onError?(error: ComponentError): void;
+  /** The component draws again after a failure that didn't last, with the `use` its `onError` named. */
+  onRecovered?(recovered: ComponentRecovered): void;
   /**
    * Shows the fallback in the box when the component can't run; by default `fallback.element` is placed there. It
    * `lasts` when the component never mounted; otherwise the next update takes the box back, after `hideFallback`.
@@ -38,12 +40,17 @@ export interface ComponentOptions {
   later?: (mount: () => void) => void;
 }
 
+/** The next use's id in this window. */
+let nextUse = 0;
+
 /** What changes on an update besides the node: the slots the caller rendered again, and the parent's layout. */
 export type ComponentUpdate = Pick<ComponentOptions, "slots"> & Partial<Pick<ComponentOptions, "parent">>;
 
 export interface ComponentHandle {
   /** The outer box (spec §9.2), the component's `target`. */
   readonly element: HTMLElement;
+  /** The use's id, unique in its window, which its errors and recovery name. */
+  readonly use: string;
   /** Whether the component never mounted, so it shows its fallback for good. */
   readonly failed: boolean;
   update(node: ExpandedComponent, next: ComponentUpdate): void;
@@ -66,6 +73,7 @@ export interface ComponentHandle {
  */
 export function mountComponent(target: ParentNode & Node, node: ExpandedComponent, options: ComponentOptions): ComponentHandle {
   const document = target.ownerDocument ?? (target as Document);
+  const use = `u${String(nextUse++)}`;
   const element = document.createElement(node.type === "componentInline" ? "span" : "div");
   element.classList.add("compmd-component");
   target.appendChild(element);
@@ -79,6 +87,8 @@ export function mountComponent(target: ParentNode & Node, node: ExpandedComponen
   let showing = false;
   let updating = false;
   let destroyed = false;
+  /** Whether the fallback is in the box now: `update` may have called `fail`, which TypeScript can't see. */
+  const shows = (): boolean => showing;
 
   const showFallback = (lasts: boolean) => {
     element.replaceChildren();
@@ -89,13 +99,13 @@ export function mountComponent(target: ParentNode & Node, node: ExpandedComponen
     failed = true;
     mounted = undefined;
     showFallback(true);
-    options.onError?.({ component: current.name, reason, ...(error === undefined ? {} : { error }) });
+    options.onError?.({ component: current.name, use, reason, ...(error === undefined ? {} : { error }) });
   };
   const fallBack = (error: unknown) => {
     if (destroyed || failed || showing) return;
     showing = true;
     showFallback(false);
-    options.onError?.({ component: current.name, reason: "threw", error });
+    options.onError?.({ component: current.name, use, reason: "threw", error });
   };
   const set = (param: string, value: unknown) => {
     if (destroyed) return;
@@ -118,6 +128,7 @@ export function mountComponent(target: ParentNode & Node, node: ExpandedComponen
   };
   const runUpdate = () => {
     if (failed || !mounted?.update) return;
+    const recovering = showing;
     if (showing) {
       showing = false;
       options.hideFallback?.(element);
@@ -131,6 +142,8 @@ export function mountComponent(target: ParentNode & Node, node: ExpandedComponen
     } finally {
       updating = false;
     }
+    // It has its box back and drew without failing: what its failure listed can go. A later `fail` reports again.
+    if (recovering && !shows()) options.onRecovered?.({ component: current.name, use });
   };
 
   applyBox(element, current.params, parent, options.stylesheet);
@@ -154,6 +167,7 @@ export function mountComponent(target: ParentNode & Node, node: ExpandedComponen
 
   return {
     element,
+    use,
     get failed() {
       return failed;
     },

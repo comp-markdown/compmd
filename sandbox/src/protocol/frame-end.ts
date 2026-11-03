@@ -25,7 +25,10 @@ export interface FrameHandlers {
 /** What the frame tells its parent. */
 export interface FrameEnd {
   set(input: string, value: unknown): void;
-  error(reason: ErrorReason, message: string, component?: string): void;
+  /** A component shows its fallback; `use` names the use, for a later `recovered`. */
+  error(reason: ErrorReason, message: string, component?: string, use?: string): void;
+  /** The use `use` of `component`, which failed, draws again. */
+  recovered(component: string, use: string): void;
   link(url: string): void;
   rendered(ms: number): void;
   size(width: number, height: number): void;
@@ -116,8 +119,11 @@ export function serveParent(port: Port, handlers: FrameHandlers): FrameEnd {
     set: (input, value) => {
       post({ type: "set", input, value });
     },
-    error: (reason, message, component) => {
-      post({ type: "error", reason, message, ...(component === undefined ? {} : { component }) });
+    error: (reason, message, component, use) => {
+      post({ type: "error", reason, message, ...(component === undefined ? {} : { component }), ...(use === undefined ? {} : { use }) });
+    },
+    recovered: (component, use) => {
+      post({ type: "recovered", component, use });
     },
     link: (url) => {
       post({ type: "link", url });

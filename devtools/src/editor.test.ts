@@ -62,6 +62,30 @@ function setup() {
   return { worker, frame, editor, changes: () => changes };
 }
 
+describe("Editor's problems", () => {
+  it("lists a use that failed until it draws again, and keeps another use's that still fails", () => {
+    const { frame, editor } = setup();
+    editor.open(example);
+    frame.emit("error", { component: "mermaid", reason: "threw", code: "W118", message: "Parse error", use: "u1" });
+    frame.emit("error", { component: "mermaid", reason: "threw", code: "W118", message: "Lexical error", use: "u2" });
+    expect(editor.state.problems).toEqual(["W118 mermaid: Parse error", "W118 mermaid: Lexical error"]);
+    frame.emit("recovered", { component: "mermaid", use: "u1" });
+    expect(editor.state.problems).toEqual(["W118 mermaid: Lexical error"]);
+    frame.emit("recovered", { component: "mermaid", use: "u9" });
+    expect(editor.state.problems).toEqual(["W118 mermaid: Lexical error"]);
+  });
+
+  it("keeps a problem two uses share until both draw again", () => {
+    const { frame, editor } = setup();
+    editor.open(example);
+    for (const use of ["u1", "u2"]) frame.emit("error", { component: "mermaid", reason: "threw", code: "W118", message: "Parse error", use });
+    frame.emit("recovered", { component: "mermaid", use: "u1" });
+    expect(editor.state.problems).toEqual(["W118 mermaid: Parse error"]);
+    frame.emit("recovered", { component: "mermaid", use: "u2" });
+    expect(editor.state.problems).toEqual([]);
+  });
+});
+
 describe("Editor", () => {
   it("opens the document with origins, then sends each input as an edit, and passes each answer's splices on", () => {
     const { worker, frame, editor } = setup();

@@ -40,6 +40,9 @@ export interface UseFrame {
   destroy(): void;
 }
 
+/** The next use frame's key in this window, which the use ids its frame reports are prefixed with. */
+let nextFrame = 0;
+
 /**
  * Frames `options.node` in `target`. The frame connects each time its document loads, as when an editor builds its
  * widget again and the frame loads again, and gets its level, code and part each time.
@@ -66,6 +69,7 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
   let tokens: Readonly<Record<string, string>> | undefined;
   let scheme: Scheme | undefined;
   let child: ChildEnd | undefined;
+  const key = `f${String(nextFrame++)}`;
   const { observer } = options;
   const id = observer?.frame(options.level, { kind: "use", component: iframe.title }, options.network);
   const connect = () => {
@@ -93,7 +97,19 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
       iframe.style.height = `${String(Math.max(1, height))}px`;
       if (node.type === "componentInline") iframe.style.width = `${String(width)}px`;
     });
-    for (const [type, listener] of Object.entries(options.on)) end.on(type as keyof ChildEvents, listener as (event: unknown) => void);
+    // A use id is its window's: this frame's key goes in front, so ids from different frames never meet.
+    const { error, recovered, ...rest } = options.on;
+    if (error) {
+      end.on("error", (event) => {
+        error(event.use === undefined ? event : { ...event, use: `${key}/${event.use}` });
+      });
+    }
+    if (recovered) {
+      end.on("recovered", (event) => {
+        recovered({ ...event, use: `${key}/${event.use}` });
+      });
+    }
+    for (const [type, listener] of Object.entries(rest)) end.on(type as keyof ChildEvents, listener as (event: unknown) => void);
     if (styles.length > 0) end.styles([...styles]);
     if (scheme) end.scheme(scheme);
     end.code([...code]);

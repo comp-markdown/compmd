@@ -52,6 +52,8 @@ export class Editor {
   readonly #modules: Map<string, Blob>;
   /** What couldn't be fetched from the registry, listed with the components' problems. */
   #unfetched: string[] = [];
+  /** The problem each use that failed is listed for, by its `use`, until it draws again. */
+  readonly #failures = new Map<string, string>();
   /** The text the last input left, and the selection before the next one. */
   #text = "";
   /** The text the diagnostics shown are of, and the one the hint is of. */
@@ -110,9 +112,19 @@ export class Editor {
       this.setInput(input, value);
     });
     // A component that couldn't compile, load or run (W121, W118), or isn't allowed where it is used; a page's own
-    // problem has none.
-    frame.on("error", ({ component, code, message }) => {
-      if (component) this.#problem(`${code ? `${code} ` : ""}${component}: ${message}`);
+    // problem has none. A use that failed and draws again takes its problem off the list.
+    frame.on("error", ({ component, code, message, use }) => {
+      if (!component) return;
+      const problem = `${code ? `${code} ` : ""}${component}: ${message}`;
+      if (use !== undefined) this.#failures.set(use, problem);
+      this.#problem(problem);
+    });
+    frame.on("recovered", ({ use }) => {
+      const problem = this.#failures.get(use);
+      this.#failures.delete(use);
+      if (problem === undefined || [...this.#failures.values()].includes(problem)) return;
+      this.state.problems = this.state.problems.filter((listed) => listed !== problem);
+      onChange();
     });
   }
 
@@ -123,6 +135,7 @@ export class Editor {
     this.#inputs = {};
     this.#text = request.files?.[request.path] ?? "";
     this.#unfetched = [];
+    this.#failures.clear();
     this.state.problems = [];
     delete this.state.hint;
     this.#session.open(this.#request, this.#text, at);
@@ -224,7 +237,10 @@ export class Editor {
     this.#hint(update);
     this.state.updates++;
     this.state.processing.add(update.ms);
-    if (update.components) this.state.problems = [...this.#unfetched];
+    if (update.components) {
+      this.state.problems = [...this.#unfetched];
+      this.#failures.clear();
+    }
     this.#onChange();
   }
 

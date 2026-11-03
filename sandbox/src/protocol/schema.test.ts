@@ -44,6 +44,7 @@ const MESSAGES: (ToFrame | FromFrame)[] = [
   { type: "loaded" },
   { type: "set", input: "region", value: "eu" },
   { type: "error", reason: "not-here", component: "map", message: "a permissive component can't be in a strict frame" },
+  { type: "recovered", component: "mermaid", use: "f2/u7" },
   { type: "link", url: "https://example.com" },
   { type: "rendered", ms: 2.5 },
   { type: "size", width: 320, height: 200 },

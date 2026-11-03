@@ -1,6 +1,6 @@
 // The region layer: any list of expanded nodes rendered into a target and updated in place by key, with
 // components through the component layer. A page is the region at the root; an editor can put regions in its widgets.
-import type { ComponentError, Mount, RenderError } from "./contract.ts";
+import type { ComponentError, ComponentRecovered, Mount, RenderError } from "./contract.ts";
 import type { LinkDefinition } from "./document.ts";
 import type { ImageSource } from "./images.ts";
 import type { KeyOf } from "./keys.ts";
@@ -20,6 +20,8 @@ export interface SurfaceOptions {
    * container to follow (`no-container`), reported once.
    */
   onError?(error: RenderError): void;
+  /** A use that failed draws again, the `use` its error named: what a list of failures shows can go. */
+  onRecovered?(recovered: ComponentRecovered): void;
   /** What components get as `host` (spec §7.4). */
   host?: unknown;
   /** Renderers for fenced code blocks by language, such as `mermaid`; others show their source. */
@@ -75,6 +77,7 @@ export function surfaceOf(document: Document, stylesheet: Stylesheet, schemes: S
     components: options.components ?? {},
     onSet: (input, value) => options.onSet?.(input, value),
     ...(options.onError ? { onError: (error: ComponentError) => options.onError?.(error) } : {}),
+    ...(options.onRecovered ? { onRecovered: (recovered: ComponentRecovered) => options.onRecovered?.(recovered) } : {}),
     ...(options.host === undefined ? {} : { host: options.host }),
     code: options.code ?? {},
     math: options.math,

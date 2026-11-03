@@ -37,10 +37,12 @@ export interface SpliceOptions {
 export type FrameMessage =
   | { type: "ready"; version: number }
   | { type: "set"; input: string; value: unknown }
-  | { type: "error"; reason: RenderError["reason"]; component?: string; message: string }
+  | { type: "error"; reason: RenderError["reason"]; component?: string; use?: string; message: string }
+  /** A use that failed draws again, by the `use` its `error` named. */
+  | { type: "recovered"; component: string; use: string }
   | { type: "rendered"; ms: number };
 
-export interface FrameOptions extends Omit<PageOptions, "onSet" | "onError"> {
+export interface FrameOptions extends Omit<PageOptions, "onSet" | "onError" | "onRecovered"> {
   /** Where the page renders, inside the frame. */
   container: HTMLElement;
   /** Host-language components by name; component code stays in the frame, since modules can't be posted. */
@@ -79,8 +81,11 @@ export function serveFrame(port: Port, options: FrameOptions): { page: Page; clo
       post({ type: "set", input, value });
     },
     onError: (error) => {
-      if ("component" in error) post({ type: "error", reason: error.reason, component: error.component, message: messageOf(error.error) });
+      if ("component" in error) post({ type: "error", reason: error.reason, component: error.component, ...(error.use === undefined ? {} : { use: error.use }), message: messageOf(error.error) });
       else post({ type: "error", reason: error.reason, message: error.message });
+    },
+    onRecovered: ({ component, use }) => {
+      post({ type: "recovered", component, use });
     },
   });
   const view = options.container.ownerDocument.defaultView;
@@ -146,7 +151,7 @@ export interface FrameConnection {
  * frame.render(tree);
  */
 export function connectFrame(port: Port): FrameConnection {
-  const listeners: Listeners = { ready: [], set: [], error: [], rendered: [] };
+  const listeners: Listeners = { ready: [], set: [], error: [], recovered: [], rendered: [] };
   let waiting: HostMessage[] | undefined = [];
   const send = (message: HostMessage) => {
     if (waiting) waiting.push(message);

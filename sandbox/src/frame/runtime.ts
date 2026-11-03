@@ -163,10 +163,10 @@ function start(port: MessagePort): void {
     parent.observed(events);
   });
   const observer = new Observer(reports.sink);
-  /** A component of this frame shows its fallback; a nested frame's own are passed up as they come. */
-  const report = (name: string, reason: ErrorReason, message: string) => {
+  /** A component of this frame shows its fallback, its use named when it has one; a nested frame's are passed up as they come. */
+  const report = (name: string, reason: ErrorReason, message: string, use?: string) => {
     observer.fallback(name, reason, message);
-    parent.error(reason, message, name);
+    parent.error(reason, message, name, use);
   };
   const loaded = new Components({
     load,
@@ -195,8 +195,11 @@ function start(port: MessagePort): void {
           link: ({ url }) => {
             parent.link(url);
           },
-          error: ({ reason, component: name, message }) => {
-            parent.error(reason, message, name ?? component.name);
+          error: ({ reason, component: name, message, use }) => {
+            parent.error(reason, message, name ?? component.name, use);
+          },
+          recovered: ({ component: name, use }) => {
+            parent.recovered(name, use);
           },
           failed: (failure) => {
             failed(failure.reason === "hung" ? "its frame stopped answering" : `its frame is of protocol version ${String(failure.version)}`);
@@ -243,7 +246,10 @@ function start(port: MessagePort): void {
         parent.set(input, value);
       },
       onError: (error) => {
-        if ("component" in error) report(error.component, error.reason, error.error instanceof Error ? error.error.message : "");
+        if ("component" in error) report(error.component, error.reason, error.error instanceof Error ? error.error.message : "", error.use);
+      },
+      onRecovered: ({ component, use }) => {
+        parent.recovered(component, use);
       },
       ...(host ? { host } : {}),
     });

@@ -54,9 +54,9 @@ function open(mode: "frame" | "host", components: HostComponent[] = [label()], o
   areas.push(area);
   const view = createSandbox({ base: frames, page: mode, ...options }).open(area, { components });
   views.push(view);
-  const events: { [T in keyof ViewEvents]: ViewEvents[T][] } = { set: [], link: [], error: [], rendered: [], loaded: [] };
+  const events: { [T in keyof ViewEvents]: ViewEvents[T][] } = { set: [], link: [], error: [], recovered: [], rendered: [], loaded: [] };
   const waiting: (() => void)[] = [];
-  for (const type of ["set", "link", "error", "rendered", "loaded"] as const) {
+  for (const type of ["set", "link", "error", "recovered", "rendered", "loaded"] as const) {
     view.on(type, (event) => {
       (events[type] as unknown[]).push(event);
       for (const check of waiting) check();
@@ -158,14 +158,17 @@ describe("a component that fails", () => {
   };
 
   for (const mode of MODES) {
-    it(`shows its fallback with W118 and its message, until the next update draws it (${mode} mode)`, async () => {
+    it(`shows its fallback with W118 and its message, until the next update draws it and says so, by its use (${mode} mode)`, async () => {
       const { view, events, until, values } = open(mode, [failing]);
       view.render(page("bad"));
       await until(() => events.error.length > 0);
-      expect(events.error[0]).toEqual({ component: "label", reason: "threw", code: "W118", message: "can't read bad" });
+      expect(events.error[0]).toMatchObject({ component: "label", reason: "threw", code: "W118", message: "can't read bad" });
+      const use = events.error[0]?.use;
+      expect(typeof use).toBe("string");
       view.render(page("good"));
-      await until(() => values().includes("good"));
+      await until(() => values().includes("good") && events.recovered.length > 0);
       expect(events.error).toHaveLength(1);
+      expect(events.recovered).toEqual([{ component: "label", use }]);
     });
   }
 });

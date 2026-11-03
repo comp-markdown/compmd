@@ -24,8 +24,13 @@ export interface ViewEvents {
   set: { input: string; value: unknown };
   /** A reader clicked a link in the page; the host shows its URL before it opens (spec §15 rule 4). */
   link: { url: string };
-  /** A component shows its fallback, why, and the diagnostic it is when it is one (`diagnosticOf`). */
-  error: { component: string; reason: ErrorReason; code?: SandboxDiagnostic; message: string };
+  /**
+   * A component shows its fallback, why, and the diagnostic it is when it is one (`diagnosticOf`). `use` names the
+   * use, an opaque id, when it has one: a later `recovered` with the same `use` says it draws again.
+   */
+  error: { component: string; reason: ErrorReason; code?: SandboxDiagnostic; message: string; use?: string };
+  /** A use that failed draws again: what the host listed for its `error`, with the same `use`, can go. */
+  recovered: { component: string; use: string };
   /** A render or splice is painted, `ms` after it started. */
   rendered: { ms: number };
   /** The components last given are loaded in the page, or show their fallbacks: a host may show the page from now. */
@@ -88,10 +93,10 @@ export interface Sandbox {
   open(container: HTMLElement, options: { components: readonly HostComponent[] }): View;
 }
 
-/** The `error` event for `component`, with its diagnostic. */
-const errorEvent = (component: string, reason: ErrorReason, message: string): ViewEvents["error"] => {
+/** The `error` event for `component`, with its diagnostic, and its use when it has one. */
+const errorEvent = (component: string, reason: ErrorReason, message: string, use?: string): ViewEvents["error"] => {
   const code = diagnosticOf(reason);
-  return code ? { component, reason, code, message } : { component, reason, message };
+  return { component, reason, ...(code ? { code } : {}), message, ...(use === undefined ? {} : { use }) };
 };
 
 type Listeners = { [T in keyof ViewEvents]: ((event: ViewEvents[T]) => void)[] };
@@ -112,7 +117,7 @@ const shapeOf = (components: readonly HostComponent[]): string =>
 export function createSandbox(options: SandboxOptions): Sandbox {
   return {
     open(container, { components }) {
-      const listeners: Listeners = { set: [], link: [], error: [], rendered: [], loaded: [] };
+      const listeners: Listeners = { set: [], link: [], error: [], recovered: [], rendered: [], loaded: [] };
       const emit = <T extends keyof ViewEvents>(type: T, event: ViewEvents[T]) => {
         for (const listener of listeners[type]) listener(event);
       };
@@ -133,8 +138,11 @@ export function createSandbox(options: SandboxOptions): Sandbox {
           link: (url) => {
             emit("link", { url });
           },
-          error: (component, reason, message) => {
-            emit("error", errorEvent(component, reason, message));
+          error: (component, reason, message, use) => {
+            emit("error", errorEvent(component, reason, message, use));
+          },
+          recovered: (component, use) => {
+            emit("recovered", { component, use });
           },
         },
       );
@@ -270,7 +278,10 @@ function hostPage(container: HTMLElement, runtime: HostRuntime, observer: Observ
       if (!("component" in error)) return;
       const message = error.error instanceof Error ? error.error.message : "";
       observer.fallback(error.component, error.reason, message);
-      emit("error", errorEvent(error.component, error.reason, message));
+      emit("error", errorEvent(error.component, error.reason, message, error.use));
+    },
+    onRecovered: (recovered) => {
+      emit("recovered", recovered);
     },
   });
   /** Reports a render once it is painted: after the next frame, and once the browser has drawn it. */
@@ -344,8 +355,11 @@ function framePage(container: HTMLElement, runtime: HostRuntime, options: Sandbo
   child.on("link", (event) => {
     emit("link", event);
   });
-  child.on("error", ({ reason, component, message }) => {
-    emit("error", errorEvent(component ?? "", reason, message));
+  child.on("error", ({ reason, component, message, use }) => {
+    emit("error", errorEvent(component ?? "", reason, message, use));
+  });
+  child.on("recovered", (event) => {
+    emit("recovered", event);
   });
   child.on("rendered", (event) => {
     emit("rendered", event);

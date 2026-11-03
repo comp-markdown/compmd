@@ -64,7 +64,8 @@ const view = sandbox.open(container, { components: processed.hostComponents });
 view.render(processed.expanded);              // or view.splice(splices, change, { replace, inputs })
 view.on("set", ({ input, value }) => rerender({ [input]: value }));
 view.on("link", ({ url }) => confirmAndOpen(url));   // a reader's click; show the URL before opening it (spec §15)
-view.on("error", ({ component, reason, code, message }) => report(component, code ?? reason, message));   // code: W118 (threw or failed), W121
+view.on("error", ({ component, reason, code, message, use }) => report(use, component, code ?? reason, message));   // code: W118 (threw or failed), W121
+view.on("recovered", ({ use }) => unreport(use));   // a use that failed draws again
 view.components(next.hostComponents);         // when the document's components change
 view.styles(["/sandbox/docs.css"]);           // the host's stylesheets, served from the frames' origin
 view.theme(tokens);
@@ -74,6 +75,8 @@ view.destroy();
 ```
 
 **`host`** (spec §7.4) is the same for a trusted component in the host's page and a permissive one in its frame, so one component works at either level: `host.call(name, ...args)` calls the host's function of that name and resolves with what it returned (the arguments and the result must be copyable, since a frame's cross a port), and `host.on(event, listener)` hears what `view.emit(event, data)` sends, until the function it returns is called. A name the host doesn't give fails the call. Strict components never get `host`, nor hear its events. `HostClient` is its type, for a component written in TypeScript.
+
+**Failures and recoveries, by use.** An `error` names the use that shows its fallback in `use`, an opaque id, when it has one: each window gives each mounted use its own, and a frame's parent puts the frame's key in front, so ids from different frames never meet. When a use that failed (W118, by `fail` or a throw in `update`) draws again after its next update, `recovered` comes with the same `use`, so a host that lists failures removes the one it listed, and keeps another use's of the same component. A frame's code could send `recovered` itself; it only clears a listing.
 
 **Light and dark.** Every frame takes the colour scheme of the page around it: the view reads its container's `color-scheme` (and the reader's preference, where it allows both) when it opens, at each render, when the preference changes and when printing starts and ends, and sends it to its frames, which set it on their documents. So frames stay transparent on a dark page, their text in its colours, and every component, framed or inline, gets it as `context.scheme` (spec §7.4), with an update when it changes. A page that switches its scheme itself sets `color-scheme` on the container, or above it, and calls `view.scheme()` (or renders).
 

@@ -69,8 +69,16 @@ export type Mount = (target: Element, context: MountContext) => Mounted | undefi
  */
 export interface ComponentError {
   component: string;
+  /** The use that shows its fallback: an id the renderer gives each mounted use, which a later `onRecovered` names. */
+  use?: string;
   reason: "missing" | "threw";
   error?: unknown;
+}
+
+/** A use that failed (`threw`, without giving up for good) draws again: after an update that follows its failure. */
+export interface ComponentRecovered {
+  component: string;
+  use: string;
 }
 
 /**

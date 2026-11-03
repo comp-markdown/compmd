@@ -27,6 +27,7 @@
         { "$ref": "#/$defs/loaded" },
         { "$ref": "#/$defs/set" },
         { "$ref": "#/$defs/error" },
+        { "$ref": "#/$defs/recovered" },
         { "$ref": "#/$defs/link" },
         { "$ref": "#/$defs/rendered" },
         { "$ref": "#/$defs/size" },
@@ -213,9 +214,17 @@
         "type": { "const": "error" },
         "reason": { "enum": ["missing", "threw", "failed", "not-here"] },
         "component": { "type": "string" },
+        "use": { "description": "The use that shows its fallback, an id its window gives it, which a later `recovered` names; a parent puts its frame's own id in front.", "type": "string" },
         "message": { "type": "string" }
       },
       "required": ["type", "reason", "message"],
+      "additionalProperties": false
+    },
+    "recovered": {
+      "description": "A use that failed draws again, by the `use` its `error` named. Code of the frame's level may have sent it: it only clears what a host listed.",
+      "type": "object",
+      "properties": { "type": { "const": "recovered" }, "component": { "type": "string" }, "use": { "type": "string" } },
+      "required": ["type", "component", "use"],
       "additionalProperties": false
     },
     "link": {
