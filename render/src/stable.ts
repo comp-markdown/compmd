@@ -68,29 +68,36 @@ function offsetOf(text: string, { line, column }: Point): number {
   return offset + column - 1;
 }
 
+/** What a block shows, and whether it is a kept render (rule 3), whose origins are an older text's. */
+export interface ShownNodes {
+  nodes: ExpandedNode[];
+  kept: boolean;
+}
+
 /**
  * What a block shows: its node, or what rules 2 and 3 say for an error in it. Its origins are `lines` lines and
  * `shift` code points behind the text; `keys` are its node's tree's, to which a kept render's are added.
  */
-export function shownOf(node: ExpandedNode, place: { lines: number; shift: number }, keys: Map<ExpandedNode, string>, rules: Rules): ExpandedNode[] {
+export function shownOf(node: ExpandedNode, place: { lines: number; shift: number }, keys: Map<ExpandedNode, string>, rules: Rules): ShownNodes {
+  const itself = { nodes: [node], kept: false };
   const origin = node.origin;
-  if (!origin || rules.errors.length === 0) return [node];
+  if (!origin || rules.errors.length === 0) return itself;
   const start = moved(origin.start, place.lines);
   const end = moved(origin.end, place.lines);
   const inNode = rules.errors.filter((d) => !before(d, start) && (before(d, end) || at(d, start)));
-  if (inNode.length === 0) return [node];
+  if (inNode.length === 0) return itself;
   if (node.type === "componentContainer" && rules.text !== undefined && inNode.some((d) => d.code === "F004" && at(d, start))) {
-    return asText(node, rules.text, origin.start.offset === undefined ? offsetOf(rules.text, start) : origin.start.offset + place.shift);
+    return { nodes: asText(node, rules.text, origin.start.offset === undefined ? offsetOf(rules.text, start) : origin.start.offset + place.shift), kept: false };
   }
   const key = keys.get(node);
   const good = key === undefined ? undefined : rules.good.get(key);
-  if (!good) return [node];
+  if (!good) return itself;
   // A kept render is the last tree's, so its nodes' keys are the last ones.
   walk([good.node], (n) => {
     const kept = good.keys.get(n);
     if (kept !== undefined) keys.set(n, kept);
   });
-  return [good.node];
+  return { nodes: [good.node], kept: true };
 }
 
 /** An unclosed container as its opener line, in a paragraph with the container's origin, followed by its content. */

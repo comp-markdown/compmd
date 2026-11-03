@@ -3,11 +3,12 @@
 // own channel to the frame (a sandbox's bootstrap) hands one over, and any bridge fits behind a small adapter.
 import type { Mount, RenderError } from "./contract.ts";
 import { createPage, type Page, type PageOptions } from "./page.ts";
+import { reveal, type Source } from "./source.ts";
 import type { Change } from "./stable.ts";
-import type { ExpandedRoot, Splice } from "./tree.ts";
+import type { ExpandedRoot, Point, Splice } from "./tree.ts";
 
 /** The protocol's version, sent in `ready`; a host checks it, since a host page and its frame may be deployed apart. */
-export const PROTOCOL_VERSION = 2;
+export const PROTOCOL_VERSION = 3;
 
 /** What the protocol needs of a port: a `MessagePort` is one. */
 export interface Port {
@@ -25,7 +26,21 @@ export interface Port {
 export type HostMessage =
   | { type: "render"; tree: ExpandedRoot; change?: Change }
   | { type: "splices"; splices: (Splice | string)[]; change?: Change; replace?: boolean }
-  | { type: "theme"; tokens: Record<string, string> };
+  | { type: "theme"; tokens: Record<string, string> }
+  /** Scroll to what the source at `offset`, a code-point offset, drew, and mark it briefly (`reveal`). */
+  | { type: "reveal"; offset: number }
+  /** Which boxes what the source at `offset` drew has: the frame answers with `rects` and the same `id`. */
+  | { type: "rects"; id: number; offset: number }
+  /** Report the source of what the reader clicks (`pointed`), or stop. */
+  | { type: "point"; on: boolean };
+
+/** A box in the frame's viewport, in CSS pixels, as an element's `getBoundingClientRect()` gives it. */
+export interface Rect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
 
 /** How a host sends splices. */
 export interface SpliceOptions {
@@ -40,7 +55,11 @@ export type FrameMessage =
   | { type: "error"; reason: RenderError["reason"]; component?: string; use?: string; message: string }
   /** A use that failed draws again, by the `use` its `error` named. */
   | { type: "recovered"; component: string; use: string }
-  | { type: "rendered"; ms: number };
+  | { type: "rendered"; ms: number }
+  /** The answer to `rects` of the same `id`: one box per element, none when nothing came from there. */
+  | { type: "rects"; id: number; rects: Rect[] }
+  /** The reader clicked what came from `source`, while the host asked with `point`. */
+  | { type: "pointed"; source: Source };
 
 export interface FrameOptions extends Omit<PageOptions, "onSet" | "onError" | "onRecovered"> {
   /** Where the page renders, inside the frame. */
@@ -63,9 +82,15 @@ function applySplices(page: Page, { splices, change, replace }: Extract<HostMess
   if (rest.length > 0) page.splice(rest, change);
 }
 
+const rectOf = (element: Element): Rect => {
+  const { x, y, width, height } = element.getBoundingClientRect();
+  return { x, y, width, height };
+};
+
 /**
  * Runs the frame's end: renders what the host sends into `options.container`, and tells the host about `set` calls,
- * components that show their fallback, and each render once it is painted.
+ * components that show their fallback, and each render once it is painted. It scrolls to and marks what a source
+ * offset drew (`reveal`), gives its boxes (`rects`), and, once asked (`point`), the source of what the reader clicks.
  *
  * @example
  * // inside the frame
@@ -89,12 +114,30 @@ export function serveFrame(port: Port, options: FrameOptions): { page: Page; clo
     },
   });
   const view = options.container.ownerDocument.defaultView;
+  let pointing = false;
+  // Captured, so a component that stops a click's propagation still has it reported.
+  const pointed = (event: Event) => {
+    // A click's target is the node clicked, inside the container.
+    const target = event.target as Node | null;
+    const source = pointing && target ? page.sourceOf(target) : undefined;
+    if (source) post({ type: "pointed", source });
+  };
+  options.container.addEventListener("click", pointed, { capture: true });
   const listener = ({ data }: { data: unknown }) => {
     const message = data as HostMessage;
     const started = performance.now();
     switch (message.type) {
       case "theme":
         page.theme(message.tokens);
+        return;
+      case "reveal":
+        reveal(page.elementsAt(message.offset));
+        return;
+      case "rects":
+        post({ type: "rects", id: message.id, rects: page.elementsAt(message.offset).map(rectOf) });
+        return;
+      case "point":
+        pointing = message.on;
         return;
       case "render":
         page.render(message.tree, message.change);
@@ -122,6 +165,7 @@ export function serveFrame(port: Port, options: FrameOptions): { page: Page; clo
     page,
     close() {
       port.removeEventListener("message", listener);
+      options.container.removeEventListener("click", pointed, { capture: true });
       page.destroy();
     },
   };
@@ -135,8 +179,48 @@ export interface FrameConnection {
   /** Applies `splices` in the frame, as `Page.splice` does; each may be a processor's JSON text, passed on unread. */
   splice(splices: readonly (Splice | string)[], change?: Change, options?: SpliceOptions): void;
   theme(tokens: Record<string, string>): void;
+  /** Scrolls the frame's page to what the source at `offset`, a code-point offset, drew, and marks it briefly. */
+  reveal(offset: number): void;
+  /**
+   * The boxes of what the source at `offset` drew, one per element, in the frame's viewport: a host adds where the
+   * frame is in its own. None when nothing came from there, or once the connection is closed.
+   */
+  rectsAt(offset: number): Promise<Rect[]>;
+  /** Asks the frame to report the source of what the reader clicks, as `pointed`, or to stop. */
+  point(on: boolean): void;
+  /**
+   * Listens for the frame's messages. A frame's code may be untrusted: `pointed` carries only a well-formed source,
+   * and other messages are as the frame sent them.
+   */
   on<T extends FrameMessage["type"]>(type: T, listener: (message: Extract<FrameMessage, { type: T }>) => void): void;
   close(): void;
+}
+
+const isCount = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value);
+
+/** `value` as a point, if it is one: a frame's code may have sent anything. */
+function pointOf(value: unknown): Point | undefined {
+  if (typeof value !== "object" || value === null) return undefined;
+  const { line, column, offset } = value as Record<string, unknown>;
+  if (!isCount(line) || !isCount(column) || (offset !== undefined && !isCount(offset))) return undefined;
+  return { line, column, ...(offset === undefined ? {} : { offset }) };
+}
+
+function sourceOf(value: unknown): Source | undefined {
+  if (typeof value !== "object" || value === null) return undefined;
+  const { start, end } = value as Record<string, unknown>;
+  const [from, to] = [pointOf(start), pointOf(end)];
+  return from && to ? { start: from, end: to } : undefined;
+}
+
+/** The boxes of a `rects` answer that are boxes. */
+function rectsOf(value: unknown): Rect[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((rect: unknown) => {
+    if (typeof rect !== "object" || rect === null) return [];
+    const { x, y, width, height } = rect as Record<string, unknown>;
+    return isCount(x) && isCount(y) && isCount(width) && isCount(height) ? [{ x, y, width, height }] : [];
+  });
 }
 
 /**
@@ -151,11 +235,17 @@ export interface FrameConnection {
  * frame.render(tree);
  */
 export function connectFrame(port: Port): FrameConnection {
-  const listeners: Listeners = { ready: [], set: [], error: [], recovered: [], rendered: [] };
+  const listeners: Listeners = { ready: [], set: [], error: [], recovered: [], rendered: [], rects: [], pointed: [] };
   let waiting: HostMessage[] | undefined = [];
   const send = (message: HostMessage) => {
     if (waiting) waiting.push(message);
     else port.postMessage(message);
+  };
+  /** The `rects` asked for and not answered yet, by id. */
+  const asked = new Map<number, (rects: Rect[]) => void>();
+  let lastAsked = 0;
+  const notify = (message: FrameMessage) => {
+    for (const listen of listeners[message.type] as ((message: FrameMessage) => void)[] | undefined ?? []) listen(message);
   };
   const listener = ({ data }: { data: unknown }) => {
     const message = data as FrameMessage;
@@ -163,11 +253,37 @@ export function connectFrame(port: Port): FrameConnection {
       for (const queued of waiting) port.postMessage(queued);
       waiting = undefined;
     }
-    for (const notify of listeners[message.type] as ((message: FrameMessage) => void)[] | undefined ?? []) notify(message);
+    if (message.type === "rects") {
+      const answer = asked.get(message.id);
+      asked.delete(message.id);
+      const rects = rectsOf(message.rects);
+      answer?.(rects);
+      notify({ type: "rects", id: message.id, rects });
+      return;
+    }
+    if (message.type === "pointed") {
+      const source = sourceOf(message.source);
+      if (source) notify({ type: "pointed", source });
+      return;
+    }
+    notify(message);
   };
   port.addEventListener("message", listener);
   port.start?.();
   return {
+    reveal(offset) {
+      send({ type: "reveal", offset });
+    },
+    rectsAt(offset) {
+      const id = ++lastAsked;
+      return new Promise((resolve) => {
+        asked.set(id, resolve);
+        send({ type: "rects", id, offset });
+      });
+    },
+    point(on) {
+      send({ type: "point", on });
+    },
     render(tree, change) {
       send({ type: "render", tree, ...(change ? { change } : {}) });
     },
@@ -182,6 +298,8 @@ export function connectFrame(port: Port): FrameConnection {
     },
     close() {
       port.removeEventListener("message", listener);
+      for (const answer of asked.values()) answer([]);
+      asked.clear();
     },
   };
 }

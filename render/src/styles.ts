@@ -200,6 +200,7 @@ const BASE_RULES = `
 .compmd-task > input:first-child + p { display: inline; }
 .compmd-input { display: inline-flex; align-items: center; gap: 0.5em; }
 .compmd-pending { opacity: 0.6; }
+.compmd-revealed { outline: 2px solid var(--compmd-accent, #0969da); outline-offset: 2px; }
 .compmd-align-left { text-align: start; }
 .compmd-align-center { text-align: center; }
 .compmd-align-right { text-align: end; }

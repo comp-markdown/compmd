@@ -8,7 +8,7 @@
 2. **A frame believes its parent only,** by its window (`event.source === window.parent`), never by its origin: the host's page may have an opaque origin itself. Parents are never less trusted than their children ([sandbox, decision 1](running-components-in-the-sandbox.md#proposed-decisions)), and the frame documents' policies make sure of it, so a message from a parent is one the frame may act on.
 3. **The protocol is a layer of its own, with no DOM.** The message types, with their version, and each end's rules as plain state machines over `@compmd/render`'s `Port`: a frame takes `code` only after `level`; a parent gives `host` only to children it was told to; `set` is checked against the use's node. It is tested in Node, apart from the browser, and its messages are published as a JSON Schema (`sandbox/protocol.schema.json`), so a frame runtime or host runtime written elsewhere, a host's own or a sandbox outside a browser, can check itself against it.
 4. **Two runtimes implement it,** the frame runtime (one end in each frame) and the host runtime (the other end, in the host's page and in every frame that has children). The browser's part, making frames, adding the policy, the ping timer, is theirs, not the protocol's.
-5. **`@compmd/render`'s protocol stays as it is,** for a page's tree: `render`, `splices`, `theme`, `ready`, `set`, `error`, `rendered`. The sandbox's messages travel on the same port, with their own version, as the playground's do today.
+5. **`@compmd/render`'s protocol stays as it is,** for a page's tree: `render`, `splices`, `theme`, `ready`, `set`, `error`, `rendered`, and, from its version 3, where the page came from: `reveal`, `rects`, `point`, `pointed`. The sandbox's messages travel on the same port, with their own version, as the playground's do today.
 
 ## The windows
 
@@ -38,6 +38,7 @@ When a frame loads, its parent posts `hello` to its window with one end of a new
 | `scheme {scheme}` | the colour scheme of the page around the frame, `light` or `dark`, which the frame sets on its document and passes to its own frames; again when it changes | P, U |
 | `part {node, inputs}` | the use to render, with its slots as expanded nodes, and the document's inputs; a code block a code renderer renders is its own node, with its `alt` and code, which are its fallback (spec §7.7) | U |
 | `theme {tokens}` | `@compmd/render`'s | P, U |
+| `reveal {offset}`, `rects {id, offset}`, `point {on}` | `@compmd/render`'s: scroll to and mark what the text at `offset` drew, give its boxes, report the source of clicks or stop | P |
 | `styles {urls}` | the host's stylesheets | P, U |
 | `host {port}` | a port for `host`, as calls and events | U frames of permissive packs given `host`, from H only |
 | `ping {n}` | answer, or be stopped | every frame |
@@ -56,6 +57,7 @@ When a frame loads, its parent posts `hello` to its window with one end of a new
 | `recovered {component, use}` | a use that failed draws again, by the `use` its `error` named: H takes the failure off what it listed | P, U |
 | `link {url}` | a link was clicked; H decides what opens, and shows the reader the URL first (spec §15 rule 4) | P, U |
 | `rendered {ms}` | `@compmd/render`'s | P, U |
+| `rects {id, rects}`, `pointed {source}` | `@compmd/render`'s: the boxes asked for, in P's viewport; the source of what the reader clicked, only after `point {on: true}` | P |
 | `size {width, height}` | the content's size, for the parent to set on the frame | U |
 | `pong {n}` | the answer to `ping` | every frame |
 | `compiled {name, code, css?}`, `failed {name, message}` | a compile's result | C |
@@ -96,6 +98,7 @@ For developer tools ([the Developer Tools](devtools.md), decisions 5 and 6, and 
 | to post `set` for an input its use isn't bound to | its parent checks `set` against the use's node, and drops it |
 | to get `host` | only H gives `host`, and only to a `permissive.html` frame of a pack given `host` |
 | to have H fetch a URL for it, through `image` | H fetches only the images of the trees and splices it sent P, so a URL code made up, with data in it, is never fetched |
+| to send H a `pointed` or `rects` of its own | H takes from them only a source and boxes that are numbers; a made-up click can move an editor's caret, nothing more |
 
 ## The sequences, drawn
 
@@ -184,7 +187,7 @@ sequenceDiagram
 
 - **A frame:** its port comes in a window message from its parent; it adds the `level` policy before it loads any code; it runs code and renders parts only from its port; it answers `ping`.
 - **A parent:** it makes children only of a lower level than its own (a permissive frame, only strict ones); it sends each child only its own use's part and code; it checks each `set` against the use's node; it pings its children; it takes `observed` only after it asked, and checks each event.
-- **H:** it gives `host` only to permissive frames of packs the configuration gives `host`; it never acts on `link` without the reader; it fetches for `image` only the images of the trees and splices it sent P, without credentials or a `Referer`, and answers only with a file that is an image.
+- **H:** it gives `host` only to permissive frames of packs the configuration gives `host`; it never acts on `link` without the reader; it asks P for clicks (`point`) only once its host listens for `pointed`, and passes on only a well-formed source and boxes; it fetches for `image` only the images of the trees and splices it sent P, without credentials or a `Referer`, and answers only with a file that is an image.
 
 ## Versions
 

@@ -6,6 +6,7 @@ import { Blocks } from "./blocks.ts";
 import { diff, editOf, type Edit } from "./keys.ts";
 import { surfaceOf, type SurfaceOptions } from "./region.ts";
 import { Schemes } from "./scheme.ts";
+import { elementsIn, sourceIn, type Source } from "./source.ts";
 import { breaksDocument, errorsOf, type Change } from "./stable.ts";
 import { Stylesheet } from "./styles.ts";
 import type { ExpandedRoot, Splice } from "./tree.ts";
@@ -37,6 +38,35 @@ export interface Page {
   destroy(): void;
   /** The document's stylesheet, for regions and components an editor renders inside the page. */
   readonly stylesheet: Stylesheet;
+  /**
+   * The range of the source that made `node`, a node of the page's DOM (an element or text, in a component's shadow
+   * root too): its own expanded node's origin, or that of the nearest one around it that has one, in the current
+   * text. What the renderer adds itself (a footnote's ↩) has its parent's range; a component's own DOM, the
+   * component's. `undefined` outside the page's blocks, or when the tree has no origins (request them with
+   * `origins: true`; spec §12.3).
+   *
+   * @param node - Where the reader clicked or the selection is: an event's `target`, a selection's `anchorNode`.
+   * @returns Lines and columns 1-based, offsets 0-based, columns and offsets in code points.
+   *
+   * @example
+   * root.addEventListener("click", (event) => {
+   *   const source = page.sourceOf(event.target as Node);
+   *   if (source?.start.offset !== undefined) editor.moveCaret(utf16Offset(text, source.start.offset));
+   * });
+   */
+  sourceOf(node: Node): Source | undefined;
+  /**
+   * The elements that the source at `offset` drew: those of the innermost node whose range holds it. Where one range
+   * ends and the next starts, the next. Several when its node drew several (each iteration of an `each`); of elements
+   * drawn inside one another for one range (a `compmd` component's box and its body), the outermost. Empty when nothing
+   * the page shows came from there (a definition fence, the frontmatter), or when the tree has no origins.
+   *
+   * @param offset - A code-point offset in the current text; an editor's UTF-16 offset through `codePointOffset`.
+   *
+   * @example
+   * editor.onCaret((caret) => page.elementsAt(codePointOffset(text, caret))[0]?.scrollIntoView({ block: "nearest" }));
+   */
+  elementsAt(offset: number): Element[];
 }
 
 /**
@@ -47,6 +77,7 @@ export interface Page {
  * page.render(tree);                                   // an input changed: same text, same keys
  * page.render(tree, { text, diagnostics, edit });      // a keystroke in an editor
  * page.splice([splice], { text, diagnostics });        // a keystroke, with a document kept open
+ * page.elementsAt(42);                                 // what the source at offset 42 drew
  */
 export function createPage(root: HTMLElement, options: PageOptions = {}): Page {
   root.classList.add("compmd-page");
@@ -91,6 +122,8 @@ export function createPage(root: HTMLElement, options: PageOptions = {}): Page {
     scheme() {
       schemes.read();
     },
+    sourceOf: (node) => sourceIn(blocks.placed(), node, root),
+    elementsAt: (offset) => elementsIn(blocks.placed(), offset),
     destroy() {
       schemes.destroy();
       blocks.destroy();

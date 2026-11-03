@@ -7,9 +7,10 @@ import { footnotesFrom, linksFrom, notesOf, type Footnotes, type LinkDefinition,
 import { stillOpen, tagsOf, withHtml, type Tag } from "./html.ts";
 import { Keys, type Edit, type KeyOf, type Keyed } from "./keys.ts";
 import { destroyAll, discard, Matcher, placedIn, viewsFor, type Pass, type Surface, type View } from "./render.ts";
-import { shownOf, type Diagnostic, type Good, type Rules } from "./stable.ts";
+import { moved, placedOf, type DrawnFor, type Placed, type Source } from "./source.ts";
+import { shownOf, type Diagnostic, type Good, type Rules, type ShownNodes } from "./stable.ts";
 import { fills, usesBreakpoints } from "./styles.ts";
-import { walk, type ExpandedInput, type ExpandedNode, type Splice } from "./tree.ts";
+import { walk, type ExpandedInput, type ExpandedNode, type Origin, type Splice } from "./tree.ts";
 
 /** What the page needs to know of a shown block without walking it again. */
 interface Summary {
@@ -24,8 +25,7 @@ interface Summary {
 }
 
 /** What a block shows (its node, or what the rules for invalid text say), with keys, and its node's ids. */
-interface Shown extends Keyed {
-  nodes: ExpandedNode[];
+interface Shown extends Keyed, ShownNodes {
   summary: Summary;
 }
 
@@ -46,7 +46,7 @@ interface Group {
   views: View[];
 }
 
-const NOTHING: Shown = { nodes: [], ids: new Map(), keys: new Map(), summary: { notes: notesOf([]), heading: undefined, container: false, fills: false, tags: [] } };
+const NOTHING: Shown = { nodes: [], kept: false, ids: new Map(), keys: new Map(), summary: { notes: notesOf([]), heading: undefined, container: false, fills: false, tags: [] } };
 
 const shown = (block: Block): Shown => block.shown ?? NOTHING;
 
@@ -77,14 +77,18 @@ function keyOfBlocks(blocks: readonly Block[]): KeyOf {
   };
 }
 
-const element = (tag: string, attributes: Record<string, string>, content: { text?: string; children?: ExpandedNode[] }): ExpandedNode => ({ type: "compmdElement", tag, attributes, ...content });
+const element = (tag: string, attributes: Record<string, string>, content: { text?: string; children?: ExpandedNode[] } & DrawnFor): ExpandedNode => ({ type: "compmdElement", tag, attributes, ...content });
 
-/** The footnotes' list, as GitHub shows it: a rule, then each definition with a link back to its first reference. */
+/**
+ * The footnotes' list, as GitHub shows it: a rule, then each definition with a link back to its first reference. Each
+ * item is drawn for its definition, so the source of what it shows is the definition's.
+ */
 function footnotesList({ definitions }: Footnotes): ExpandedNode[] {
   if (definitions.length === 0) return [];
-  const items = definitions.map(({ number, children }) =>
+  const items = definitions.map(({ number, children, node }) =>
     element("li", { id: `compmd-fn-${String(number)}` }, {
       children: [...children, element("a", { href: `#compmd-fnref-${String(number)}`, class: "compmd-footnote-back", "aria-label": `Back to reference ${String(number)}` }, { text: "↩" })],
+      drawnFor: node,
     }),
   );
   return [element("section", { class: "compmd-footnotes" }, { children: [element("hr", {}, {}), element("ol", {}, { children: items })] })];
@@ -197,6 +201,19 @@ export class Blocks {
     this.#root.classList.toggle("compmd-fills", this.#blocks.some((block) => shown(block).summary.fills));
   }
 
+  /**
+   * What the shown blocks drew, each with its range in the current text: its origin, moved by what changed before its
+   * block since it came. A kept render (rule 3 of `stable.ts`) is an older text's, so all of it has its block's range.
+   */
+  placed(): Placed[] {
+    return this.#blocks.flatMap((block) => {
+      const { nodes, kept } = shown(block);
+      const at = ({ start, end }: Origin): Source => ({ start: moved(start, block.lines, block.shift), end: moved(end, block.lines, block.shift) });
+      const own = block.node.origin;
+      return placedOf(nodes, this.#surface.drawn, this.#root, kept && own ? () => at(own) : at);
+    });
+  }
+
   destroy(): void {
     for (const block of this.#blocks) if (block.group?.blocks[0] === block) destroyAll(block.group.views);
     destroyAll(this.#released);
@@ -206,8 +223,8 @@ export class Blocks {
 
   #show(block: Block, rules: Rules): Shown {
     const keyed = this.#keys.assign([block.node], block.shift);
-    const nodes = shownOf(block.node, block, keyed.keys, rules);
-    return { ...keyed, nodes, summary: summaryOf(nodes) };
+    const shownNodes = shownOf(block.node, block, keyed.keys, rules);
+    return { ...keyed, ...shownNodes, summary: summaryOf(shownNodes.nodes) };
   }
 
   #release({ shown: was, shift, group }: Block): void {

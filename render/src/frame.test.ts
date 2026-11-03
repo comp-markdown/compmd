@@ -41,8 +41,9 @@ describe("the host and frame protocol", () => {
       });
     };
     const served = serveFrame(frame, { container, components: { chart } });
-    await settle();
-    expect(container.textContent).toBe("queued before ready");
+    await vi.waitFor(() => {
+      expect(container.textContent).toBe("queued before ready");
+    });
 
     connection.render({
       type: "root",
@@ -113,6 +114,51 @@ describe("the host and frame protocol", () => {
     expect(rendered, "a paint for the render alone").toHaveLength(1);
     served.close();
     container.remove();
+  });
+
+  it("reveals and measures what a source offset drew, and reports the source of a click once asked", async () => {
+    const [host, frame] = channel();
+    const container = document.body.appendChild(document.createElement("main"));
+    const served = serveFrame(frame, { container });
+    const connection = connectFrame(host);
+    const pointed: unknown[] = [];
+    connection.on("pointed", ({ source }) => pointed.push(source));
+    const origin = { start: { line: 1, column: 1, offset: 0 }, end: { line: 1, column: 5, offset: 4 }, occurrence: 0 };
+    connection.render({ type: "root", children: [{ type: "paragraph", origin, children: [{ type: "text", value: "Text", origin }] }] });
+    connection.reveal(2);
+    const rects = await connection.rectsAt(2);
+    expect(rects.map((rect) => Object.keys(rect))).toEqual([["x", "y", "width", "height"]]);
+    expect(container.querySelector("p")?.classList.contains("compmd-revealed")).toBe(true);
+    expect(await connection.rectsAt(40)).toEqual([]);
+
+    container.querySelector("p")?.click();
+    connection.point(true);
+    await connection.rectsAt(0);
+    container.querySelector("p")?.click();
+    await vi.waitFor(() => {
+      expect(pointed).toEqual([{ start: origin.start, end: origin.end }]);
+    });
+    served.close();
+    container.remove();
+  });
+
+  it("passes on only a well-formed source and boxes, whatever the frame sent", async () => {
+    const [host, frame] = channel();
+    const connection = connectFrame(host);
+    const pointed: unknown[] = [];
+    connection.on("pointed", ({ source }) => pointed.push(source));
+    frame.addEventListener("message", ({ data }) => {
+      const { type, id } = data as { type: string; id?: number };
+      if (type === "rects") frame.postMessage({ type: "rects", id, rects: [{ x: 1, y: 2, width: 3, height: 4 }, { x: "1" }, null] });
+    });
+    frame.postMessage({ type: "ready", version: PROTOCOL_VERSION });
+    frame.postMessage({ type: "pointed", source: { start: { line: "1", column: 1 }, end: {} } });
+    frame.postMessage({ type: "pointed", source: { start: { line: 1, column: 1, offset: 0, extra: "x" }, end: { line: 1, column: 2 } } });
+    expect(await connection.rectsAt(0)).toEqual([{ x: 1, y: 2, width: 3, height: 4 }]);
+    expect(pointed).toEqual([{ start: { line: 1, column: 1, offset: 0 }, end: { line: 1, column: 2 } }]);
+    const unanswered = connection.rectsAt(0);
+    connection.close();
+    expect(await unanswered).toEqual([]);
   });
 
   it("applies theme tokens sent by the host", async () => {

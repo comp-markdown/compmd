@@ -54,7 +54,7 @@ function open(mode: "frame" | "host", components: HostComponent[] = [label()], o
   areas.push(area);
   const view = createSandbox({ base: frames, page: mode, ...options }).open(area, { components });
   views.push(view);
-  const events: { [T in keyof ViewEvents]: ViewEvents[T][] } = { set: [], link: [], error: [], recovered: [], rendered: [], loaded: [] };
+  const events: { [T in keyof ViewEvents]: ViewEvents[T][] } = { set: [], link: [], error: [], recovered: [], rendered: [], loaded: [], pointed: [] };
   const waiting: (() => void)[] = [];
   for (const type of ["set", "link", "error", "recovered", "rendered", "loaded"] as const) {
     view.on(type, (event) => {
@@ -381,6 +381,55 @@ describe("theme and styles", () => {
     view.styles([`${frames}print.css`]);
     await until(() => values().length > 0);
     expect(values()[0]).toEqual(["print.css"]);
+  });
+});
+
+describe("where the page came from", () => {
+  /** "Intro" at 0-5 on line 1. */
+  const origin = { start: { line: 1, column: 1, offset: 0 }, end: { line: 1, column: 6, offset: 5 }, occurrence: 0 };
+  const intro: ExpandedRoot = { type: "root", children: [{ type: "paragraph", origin, children: [{ type: "text", value: "Intro", origin }] }] };
+  /** A strict component in the page, which clicks the page's paragraph once it mounts: the frame's reader, as it were. */
+  const clicker: HostComponent = { name: "clicker", language: "js", code: "export default function mount() { setTimeout(() => document.querySelector('p').click(), 100); }", trust: { level: "strict" } };
+
+  for (const mode of MODES) {
+    it(`gives the boxes of what a source offset drew, in the host's viewport, and none for an offset nothing came from (${mode} mode)`, async () => {
+      const { area, view, events, until } = open(mode, []);
+      view.render(intro);
+      await until(() => events.rendered.length > 0);
+      const [box, ...more] = await view.rectsAt(2);
+      expect(more).toEqual([]);
+      const around = (mode === "host" ? area.querySelector("p") : area.querySelector("iframe"))?.getBoundingClientRect();
+      expect(box && around && box.top >= around.top && box.left >= around.left && box.width > 0).toBe(true);
+      if (mode === "host") expect(box?.toJSON()).toEqual(around?.toJSON());
+      expect(await view.rectsAt(40)).toEqual([]);
+    });
+  }
+
+  it("reveals what a source offset drew: scrolls to it and marks it a while (host mode)", async () => {
+    const { area, view, events, until } = open("host", []);
+    view.render(intro);
+    await until(() => events.rendered.length > 0);
+    view.reveal(2);
+    await expect.poll(() => area.querySelector("p")?.classList.contains("compmd-revealed")).toBe(true);
+  });
+
+  it("reports the source of what the reader clicks once the host listens, and not before (host mode)", async () => {
+    const { area, view, events, until } = open("host", []);
+    view.render(intro);
+    await until(() => events.rendered.length > 0);
+    const pointed: ViewEvents["pointed"][] = [];
+    area.querySelector("p")?.click();
+    view.on("pointed", (event) => pointed.push(event));
+    area.querySelector("p")?.click();
+    expect(pointed).toEqual([{ source: { start: origin.start, end: origin.end } }]);
+  });
+
+  it("reports the source of what is clicked in the page's frame, once the host listens (frame mode)", async () => {
+    const { view } = open("frame", [clicker]);
+    const pointed: ViewEvents["pointed"][] = [];
+    view.on("pointed", (event) => pointed.push(event));
+    view.render({ type: "root", children: [...intro.children, { type: "componentLeaf", name: "clicker", params: [], fallback: [] }] });
+    await expect.poll(() => pointed, { timeout: 5000 }).toEqual([{ source: { start: origin.start, end: origin.end } }]);
   });
 });
 

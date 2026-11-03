@@ -88,6 +88,54 @@ for (const [pane, nodes] of [[left, before], [right, after]]) {
 
 **A component that fails.** `context.fail(message)` is for a component that finds, after `mount` or `update` returned, that it can't draw what it was given: it reports `threw` through `onError` with `message` (W118), and shows the fallback until its next `update`, when the box is emptied and given back. A throw in `update` does the same; a throw in `mount` shows the fallback for good. Each error names its use, `use`, an id unique in the window, and when the use draws again after such a failure, `onRecovered({component, use})` says so, so a host that lists failures takes that one off; a frame posts it as `recovered`.
 
+## Where the page came from
+
+An app that embeds the page often needs the link between what the page shows and the text that made it. An editor moves its caret to what the reader clicked, or scrolls the preview to the caret; a review tool marks the passage a comment is on. The page and a region keep it, from the tree's origins (spec §12.3: request them with `origins: true`), and give it both ways:
+
+| Call | Gives |
+|---|---|
+| `page.sourceOf(node)` | The range of the text that made `node`, an element or a text node of the page (one in a component's shadow root too), or `undefined` |
+| `page.elementsAt(offset)` | The elements the text at `offset` drew, or `[]` |
+| `reveal(elements)` | Scrolls to them, as little as shows the first, and marks each for `REVEALED_MS` (1.5 s) |
+
+```ts
+import { codePointOffset, createPage, reveal, utf16Offset } from "@compmd/render";
+
+const page = createPage(preview, { components });
+page.render(tree, { text });                               // a tree processed with `origins: true`
+
+// The reader clicked in the preview: the caret goes where it came from.
+preview.addEventListener("click", (event) => {
+  const source = page.sourceOf(event.target as Node);
+  if (source?.start.offset === undefined) return;
+  const caret = utf16Offset(text, source.start.offset);
+  textarea.setSelectionRange(caret, caret);
+});
+
+// The caret moved: the preview shows what it is in.
+textarea.addEventListener("selectionchange", () => reveal(page.elementsAt(codePointOffset(text, textarea.selectionStart))));
+```
+
+**A range** (`Source`) is `{start, end}`, each point as an origin has it: `line` and `column` 1-based, `offset` 0-based, columns and offsets in code points (spec §10.5). It is in the current text: after `page.splice`, the origins of the blocks it kept are behind the text, by what changed before them, and the page moves them on. An editor's offsets are UTF-16 (a text area's selection, CodeMirror's positions): `codePointOffset(text, utf16)` and `utf16Offset(text, codePoint)` convert them.
+
+**What maps to what.** Each node of the page's DOM maps to the expanded node it was drawn for, or, when it has none of its own, to the nearest one around it that has one. So the rules for origins (spec §12.3) decide what a click gives:
+
+| What was clicked | Its range |
+|---|---|
+| Markdown | its own node's: a word in `*em*` gives the emphasis, a link its link |
+| Text a `value` or an interpolation produced | the node holding it, its parent |
+| What a `compmd` definition's body drew | the invocation in this document, at any depth |
+| A host-language component's own DOM | the component's; its slot items, each its own block |
+| A footnote's item in the list at the end | its definition's |
+| What the renderer adds itself (a task's checkbox, a footnote's ↩, an alert's title) | the node it belongs to |
+| A component's fallback, while it shows | its own nodes' |
+
+**Which elements a range drew.** `elementsAt` takes the innermost range that holds the offset, from its start to its end; where one range ends and the next starts, the one that starts there, and at the end of the last, that one. A range can draw several elements: each iteration of an `each` and each instance of a template slot (they share their template's range), all of them. Of elements one range drew inside one another, as a `compmd` component's box and its body, the outermost.
+
+**Its limits.** A tree without origins maps nothing. A block that keeps its last good render while its text is invalid (rule 3 above) maps all of it to the block's range in the current text, since what it shows is an older text's; while the frontmatter doesn't parse (rule 1), what the page still shows of the blocks it let go maps to nothing. Inside a component's own DOM there is nothing finer than the component, and what a component renders in a frame of its own (a sandbox's use frame) maps to the component as a whole. A region maps from the origins of the nodes it rendered last, as given: it has no splices.
+
+**`reveal`'s mark** is the class `compmd-revealed`, an outline in the theme's accent (`--compmd-accent`), which a host may restyle. A second reveal of an element starts its time again.
+
 ## In a frame
 
 The page runs inside a frame its caller supplies, such as a sandboxed iframe, and a port carries trees in and `set` calls out. Both ends take a port the caller made, so a host whose sandbox already has a channel to the frame hands one over. A `MessagePort` is a port; any bridge with `postMessage` and a message listener fits behind a small adapter.
@@ -101,12 +149,18 @@ frame.on("set", ({ input, value }) => processAgain({ [input]: value }));
 frame.on("error", ({ reason, component }) => report(reason, component));   // missing, or threw (W118)
 frame.render(tree, change);
 frame.splice(splices, change);                    // each a Splice, or a processor's JSON text of one
+frame.reveal(offset);                             // scroll the frame's page to what the text at offset drew
+const boxes = await frame.rectsAt(offset);        // its boxes, in the frame's viewport
+frame.point(true);                                // report the source of what the reader clicks
+frame.on("pointed", ({ source }) => moveCaret(source.start.offset));
 
 // inside the frame
 addEventListener("message", ({ ports: [port] }) => serveFrame(port, { container: document.body, components }));
 ```
 
-Host to frame: `render {tree, change?}`, `splices {splices, change?, replace?}`, `theme {tokens}`. A splice can be the JSON text a processor gives (`@compmd/processor`'s `OpenDocumentJson`), which a host passes on unread: posted text is copied in one piece, and the frame parses it once. `replace` says the first splice is of an empty tree, as after opening a document again. The frame ignores any other message, so a host can send its own on the same port, as an editor does with the components to compile. Frame to host: `ready {version}`, `set {input, value}`, `error {reason, component?, message}`, `rendered {ms}` (after the render is painted). The host's messages wait for `ready` with this protocol's version, since a host page and its frame may be deployed apart. Component code stays in the frame: modules can't be posted.
+Host to frame: `render {tree, change?}`, `splices {splices, change?, replace?}`, `theme {tokens}`, `reveal {offset}`, `rects {id, offset}`, `point {on}`. A splice can be the JSON text a processor gives (`@compmd/processor`'s `OpenDocumentJson`), which a host passes on unread: posted text is copied in one piece, and the frame parses it once. `replace` says the first splice is of an empty tree, as after opening a document again. The frame ignores any other message, so a host can send its own on the same port, as an editor does with the components to compile. Frame to host: `ready {version}`, `set {input, value}`, `error {reason, component?, use?, message}`, `recovered {component, use}`, `rendered {ms}` (after the render is painted), `rects {id, rects}` (the answer to `rects` of the same `id`, each `{x, y, width, height}` in the frame's viewport), and, after `point {on: true}`, `pointed {source}` for each click in the page. The host's messages wait for `ready` with this protocol's version (3), since a host page and its frame may be deployed apart. Component code stays in the frame: modules can't be posted.
+
+**Where the page came from, through the frame.** The host can't reach the frame's elements, so the frame's end does what `elementsAt` and `sourceOf` would: `reveal(offset)` scrolls the frame's page and marks what the text there drew, `rectsAt(offset)` resolves with its boxes (none once the connection closes), and `point(true)` has the frame report the source of each click, as `pointed`. A frame's code may be untrusted, so `connectFrame` passes on only a well-formed `source` and the boxes that are numbers.
 
 **A component that renders its slots itself.** `rendersSlots(mount)` makes a component for `components` whose slots the renderer doesn't render: `mount` gets the use's node, with its slots as expanded nodes, and the document's inputs, and its `update` gets them again. A sandbox uses it to render a use and its slots inside the use's own frame ([`@compmd/sandbox`](../sandbox/README.md)); a code block's renderer gets its leaf, with the block's text as `code`.
 
@@ -122,6 +176,7 @@ The HTML and CSS this package writes for the built-ins is the reference renderin
 | A block with a position (`inset-*` not `auto`) | — | `position: absolute` with its insets; every box is `position: relative` |
 | A host-language component | `<div class="compmd-component compmd-bN">` (its `target`), each slot item in `<div class="compmd-item">` | its common params on its box |
 | An input component | `<label class="compmd-box compmd-input">` with `<span class="compmd-input-label">`, the fallback before its first colon (`From: today` gives `From`, since what follows is the default), then `<input type="date">`, `number`, `text`, `checkbox`, or `<select>` with the enum's members | the label and the control side by side |
+| What `reveal` shows | adds `compmd-revealed` for 1.5 s | an outline in `--compmd-accent` |
 | A use of a component on its way (`componentPending`, spec §4.5) | its fallback in `<div class="compmd-pending" aria-busy="true">`, a `<span>` in inline content; in a host component's slot, an item whose `component` is `{name, params: {}, pending: true}` | a little faded (`opacity: 0.6`), which a host may restyle |
 | An alert | `<div class="compmd-alert compmd-alert-note" role="note">` with `<p class="compmd-alert-title">Note</p>` first | a rule on the start edge |
 | A quote | `<blockquote class="compmd-quote">` | a lighter rule on the start edge |
@@ -147,6 +202,7 @@ The HTML and CSS this package writes for the built-ins is the reference renderin
 - **Unit tests** next to the code: the styles, raw HTML, images from a source, keys, the component layer, the page and its splices (blocks kept, several in order, footnotes, links, headings, raw HTML across blocks, inputs, broken frontmatter), a region's container, the frame protocol.
 - **[`test/identity.test.ts`](test/identity.test.ts):** every edit of a document of stateful components (typing above, inside and in params, inside an `each`, adding, removing and pasting blocks, undo, a record added, a block moved), checking which components keep their instance and their state. Each runs with whole trees and with splices, which give the same page.
 - **[`test/invalid.test.ts`](test/invalid.test.ts):** an unclosed container, a half-written expression, a half-typed component line and broken frontmatter, typed and finished, with whole trees and with splices.
+- **[`src/source.test.ts`](src/source.test.ts), [`test/source.test.ts`](test/source.test.ts):** where the page came from: each rule of what maps to what, splices, a region, `reveal`; and on every edit of the fixtures, a page brought up to date by splices maps every element and every offset as one given each whole tree does.
 - **[`test/conformance.test.ts`](test/conformance.test.ts):** every expanded tree in the conformance set renders, as a page and as a region per block, with the same text.
 - **[`test/bindings.test.ts`](test/bindings.test.ts):** the React and Svelte bindings.
 

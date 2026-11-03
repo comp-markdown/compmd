@@ -26,7 +26,12 @@ type Listener = (event: unknown) => void;
 /** A page in its sandbox that records what it is sent, and lets the test report what the page would. */
 class FakeFrame implements Frame {
   readonly sent: (["splice", readonly unknown[], Change | undefined, ViewSpliceOptions | undefined] | ["components", readonly HostComponent[]])[] = [];
+  /** The offsets revealed, in code points. */
+  readonly revealed: number[] = [];
   readonly #listeners = new Map<string, Listener[]>();
+  reveal(offset: number): void {
+    this.revealed.push(offset);
+  }
   splice(splices: readonly unknown[], change?: Change, options?: ViewSpliceOptions): void {
     this.sent.push(["splice", splices, change, options]);
   }
@@ -83,6 +88,20 @@ describe("Editor's problems", () => {
     expect(editor.state.problems).toEqual(["W118 mermaid: Parse error"]);
     frame.emit("recovered", { component: "mermaid", use: "u2" });
     expect(editor.state.problems).toEqual([]);
+  });
+});
+
+describe("Editor's caret on the page", () => {
+  it("reveals where the reader moves the caret, in code points, but not where typing leaves it", () => {
+    const { frame, editor } = setup();
+    editor.open({ request: { ...example.request, files: { "a.comp.md": "😀 Hello" } } });
+    editor.moveCaret(3);
+    editor.moveCaret(3);
+    editor.beforeInput({ start: 8, end: 8 });
+    editor.input("😀 Hello!", 9);
+    editor.moveCaret(9);
+    editor.moveCaret(0);
+    expect(frame.revealed).toEqual([2, 0]);
   });
 });
 

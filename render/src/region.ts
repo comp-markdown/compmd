@@ -6,6 +6,7 @@ import type { ImageSource } from "./images.ts";
 import type { KeyOf } from "./keys.ts";
 import { destroyAll, needsContainer, patch, PendingMounts, type CodeRenderer, type MathRenderer, type Surface, type View } from "./render.ts";
 import { Schemes } from "./scheme.ts";
+import { Drawn, elementsIn, placedOf, sourceIn, type Source } from "./source.ts";
 import { Stylesheet, type ParentLayout } from "./styles.ts";
 import type { ExpandedInput, ExpandedNode } from "./tree.ts";
 
@@ -63,6 +64,13 @@ export interface Region {
    * read at each render too, when the reader's preference changes, and when printing starts and ends.
    */
   scheme(): void;
+  /**
+   * The range of the source that made `node`, a node of the region's DOM: as a page's `sourceOf`, from the origins of
+   * the nodes last rendered, as given. A region has no splices, so they are the caller's to keep current.
+   */
+  sourceOf(node: Node): Source | undefined;
+  /** The elements that the source at `offset` drew, a code-point offset: as a page's `elementsAt`. */
+  elementsAt(offset: number): Element[];
   destroy(): void;
   readonly stylesheet: Stylesheet;
 }
@@ -83,6 +91,7 @@ export function surfaceOf(document: Document, stylesheet: Stylesheet, schemes: S
     math: options.math,
     wikiLink: options.wikiLink?.bind(options),
     images: options.images,
+    drawn: new Drawn(),
   };
 }
 
@@ -112,6 +121,8 @@ export function createRegion(target: HTMLElement, options: RegionOptions = {}): 
   const schemes = new Schemes(target);
   const surface = surfaceOf(document, stylesheet, schemes, options);
   let views: View[] = [];
+  let rendered: readonly ExpandedNode[] = [];
+  const placed = () => placedOf(rendered, surface.drawn, target, ({ start, end }) => ({ start, end }));
   let checked = false;
   // Checked once the target is in the document: an editor's widget is rendered before it is attached.
   const checkContainer = () => {
@@ -125,6 +136,7 @@ export function createRegion(target: HTMLElement, options: RegionOptions = {}): 
     stylesheet,
     render(nodes, context = {}) {
       schemes.read();
+      rendered = nodes;
       views = patch(surface, target, views, nodes, {
         inputs: context.inputs ?? {},
         heading: { level: context.headingLevel ?? 0 },
@@ -142,10 +154,13 @@ export function createRegion(target: HTMLElement, options: RegionOptions = {}): 
     scheme() {
       schemes.read();
     },
+    sourceOf: (node) => sourceIn(placed(), node, target),
+    elementsAt: (offset) => elementsIn(placed(), offset),
     destroy() {
       schemes.destroy();
       destroyAll(views);
       views = [];
+      rendered = [];
       target.replaceChildren();
       if (!options.stylesheet) stylesheet.remove();
     },

@@ -99,6 +99,7 @@ And `main.ts`. The app is the quick start's, with the same `vite.config.ts`:
 
 ```ts snippet=live-editor/main.ts
 import { init, OpenDocument, type Diagnostic, type TextEdit } from "@compmd/processor";
+import { codePointOffset, utf16Offset } from "@compmd/render";
 import { createSandbox } from "@compmd/sandbox";
 import { request, sandbox } from "virtual:compmd";
 import text from "./dinner.comp.md?raw";
@@ -192,6 +193,18 @@ function showHint() {
 editor.addEventListener("keyup", showHint);
 editor.addEventListener("click", showHint);
 
+// The text and the page, both ways: a click on the page puts the caret where what was clicked came from, and a
+// click in the text shows on the page what the caret is in.
+view.on("pointed", ({ source }) => {
+  if (source.start.offset === undefined) return;
+  const caret = utf16Offset(shown, source.start.offset);
+  editor.setSelectionRange(caret, caret);
+  showHint();
+});
+editor.addEventListener("click", () => {
+  view.reveal(codePointOffset(shown, editor.selectionStart));
+});
+
 // A reader changed an input: the same text, opened again with the new value.
 view.on("set", ({ input, value }) => {
   inputs = { ...inputs, [input]: value };
@@ -201,7 +214,21 @@ view.on("set", ({ input, value }) => {
 });
 ```
 
-Run it, and type in the text area: a line typed at the end shows on the page as you type it. Change the guests to 6 on the page, and the heading says *Dinner for 6* and the box *900 g*, while the text stays as you wrote it. Write `border=subtl`: the list shows F009 with a *Write subtle* button, which mends the text as typing would. Put the caret in `border`, and the line under the text says what it takes.
+Run it, and type in the text area: a line typed at the end shows on the page as you type it. Change the guests to 6 on the page, and the heading says *Dinner for 6* and the box *900 g*, while the text stays as you wrote it. Write `border=subtl`: the list shows F009 with a *Write subtle* button, which mends the text as typing would. Put the caret in `border`, and the line under the text says what it takes. Click *To buy* on the page, and the caret goes to that line of the text; click in the heading's line of the text, and the page outlines the heading for a moment.
+
+## The text and the page, both ways
+
+The page knows which text made each thing it shows, from the origins (`origins: true`), so an editor can go from one to the other. A sandbox's view does it the same in both page modes, though in frame mode the page is in a frame the host can't reach:
+
+- **`view.on("pointed", ({ source }) => …)`**: the reader clicked on the page, on what came from `source`, a range of the text: `start` and `end`, each with its `line`, `column` and `offset`. The page reports clicks only once you listen. The click goes on as usual, so a link still comes as `link`.
+- **`view.reveal(offset)`** scrolls the page to what the text at `offset` drew, as little as it takes, and outlines it for a moment in the theme's accent (the class `compmd-revealed`).
+- **`view.rectsAt(offset)`** resolves with the boxes of what it drew, in the page's coordinates, for an editor that draws its own marks beside or over the page.
+
+Offsets count code points, as the processor's do, and a text area's count UTF-16 units: an emoji is one code point and two units. `codePointOffset(text, utf16)` and `utf16Offset(text, codePoint)`, from `@compmd/render`, convert one to the other in the text the page shows (`shown` here).
+
+What a click gives follows the origins: a word in `*em*` gives the emphasis, text a `value` made the node holding it, anything a `compmd` component's body drew the line that uses the component, and a host-language component's own drawing the component. An offset gives the innermost thing that came from there, all of them for an `each`, whose items share their template's text. [`@compmd/render`'s README](../../render/README.md#where-the-page-came-from) has the whole table, and `page.sourceOf(node)` and `page.elementsAt(offset)`, the same for a page you render yourself.
+
+The example reveals on a click in the text only. The playground reveals on every move of the caret the reader makes, by keys too, but not while they type, where the outline would follow every key press.
 
 ## Edits from a text area
 

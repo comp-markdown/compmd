@@ -42,7 +42,7 @@ function open(page: "frame" | "host", given: HostComponent[] = components, root:
   areas.push(area);
   const view = createSandbox({ base: frames, page, trusted: { stars } }).open(area, { components: given });
   views.push(view);
-  const events: { [T in keyof ViewEvents]: ViewEvents[T][] } = { set: [], link: [], error: [], recovered: [], rendered: [], loaded: [] };
+  const events: { [T in keyof ViewEvents]: ViewEvents[T][] } = { set: [], link: [], error: [], recovered: [], rendered: [], loaded: [], pointed: [] };
   const waiters: (() => void)[] = [];
   for (const type of ["set", "link", "error", "recovered", "rendered", "loaded"] as const) {
     view.on(type, (event) => {

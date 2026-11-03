@@ -119,7 +119,7 @@ The dev server, `npx vite`, serves the page with the inspector under it; `npx vi
 
 ## Embedding the editor
 
-The editor is the playground's: the text with the hint at the caret and the diagnostics under it, the page beside it, updated as you type. The example's second page is one, which fills the window:
+The editor is the playground's: the text with the hint at the caret and the diagnostics under it, the page beside it, updated as you type. A click on the page puts the caret where what was clicked came from, and moving the caret outlines on the page what it is in ([chapter 5](05-live-editing.md#the-text-and-the-page-both-ways)). The example's second page is one, which fills the window:
 
 ```html snippet=devtools/editor.html
 <!doctype html>

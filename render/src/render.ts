@@ -9,6 +9,7 @@ import { safeUrl, withHtml } from "./html.ts";
 import type { ImageSource } from "./images.ts";
 import { nodesMountOf, runnable } from "./nodes.ts";
 import type { Schemes } from "./scheme.ts";
+import type { Drawn } from "./source.ts";
 import { fills, layoutOf, ownParams, usesBreakpoints, type ParentLayout, type Stylesheet } from "./styles.ts";
 import { contentOf, isComponent, rendererOf, textOf, type ExpandedCode, type ExpandedComponent, type ExpandedInput, type ExpandedInstance, type ExpandedNode, type MarkdownNode } from "./tree.ts";
 
@@ -66,6 +67,8 @@ export interface Surface {
   wikiLink?: ((target: string) => string | undefined) | undefined;
   /** Where images come from; without it, each loads from its `src`. */
   images?: ImageSource | undefined;
+  /** The views drawn for each node with an origin. */
+  drawn: Drawn;
 }
 
 /** What one render carries in document order. */
@@ -167,9 +170,10 @@ function arrange(parent: Node, nodes: readonly Node[]): void {
 export function viewsFor(surface: Surface, matcher: Matcher<View>, nodes: readonly ExpandedNode[], pass: Pass): View[] {
   return nodes.map((node) => {
     const old = matcher.take(node, pass);
-    if (!old) return createView(surface, node, pass);
-    old.update(node, pass);
-    return old;
+    const view = old ?? createView(surface, node, pass);
+    old?.update(node, pass);
+    surface.drawn.add(node, view);
+    return view;
   });
 }
 
@@ -870,6 +874,7 @@ class ComponentView implements View {
         old.view.update(node, itemPass);
         old.node = node;
       }
+      this.#surface.drawn.add(node, item.view);
       markBox(item.element, [node], "block");
       return item;
     });

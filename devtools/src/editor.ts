@@ -4,7 +4,7 @@
 // It times each change from its first key press to the page painted.
 
 import type { Diagnostic, ExpandedInput, PositionalHint, Request } from "@compmd/processor";
-import type { Change } from "@compmd/render";
+import { codePointOffset, type Change } from "@compmd/render";
 import { loadData, type View } from "@compmd/sandbox";
 import type { DevtoolsDocument } from "./document.ts";
 import { editOf, fixOf, type Selection } from "./edit.ts";
@@ -36,8 +36,8 @@ export interface Replaced {
   caret: number;
 }
 
-/** What the editor uses of the document's view in its sandbox: its splices, its components and what it reports. */
-export type Frame = Pick<View, "splice" | "components" | "on">;
+/** What the editor uses of the document's view in its sandbox: its splices, its components, `reveal`, and what it reports. */
+export type Frame = Pick<View, "splice" | "components" | "reveal" | "on">;
 
 /** A processor diagnostic as the renderer's rules for invalid text read it: the processed document's only. */
 const forRenderer = (diagnostics: Diagnostic[]): NonNullable<Change["diagnostics"]> =>
@@ -60,6 +60,8 @@ export class Editor {
   #processed: string | undefined;
   #hinted: string | undefined;
   #selection: Selection = { start: 0, end: 0 };
+  /** Where the caret is: after an input, it moves there without the reader moving it. */
+  #caret = 0;
   #request: Request | undefined;
   /** The origins the document came with, which the reader is never asked about. */
   #configured: readonly string[] = [];
@@ -134,6 +136,7 @@ export class Editor {
     this.#configured = request.allowedOrigins ?? [];
     this.#inputs = {};
     this.#text = request.files?.[request.path] ?? "";
+    this.#caret = 0;
     this.#unfetched = [];
     this.#failures.clear();
     this.state.problems = [];
@@ -151,12 +154,19 @@ export class Editor {
   input(text: string, caret: number, at = performance.now()): void {
     const edit = editOf(this.#text, text, this.#selection);
     this.#text = text;
+    this.#caret = caret;
     this.#session.edit(edit, text, caret, at);
   }
 
-  /** The caret moved to `caret` without an input: the hint follows it. */
+  /**
+   * The caret moved to `caret`, a UTF-16 offset, without an input: the hint follows it, and the page shows what is
+   * at it (`View.reveal`). Typing moves it too, but the page doesn't follow that: it would mark every key press.
+   */
   moveCaret(caret: number): void {
     this.#session.moveCaret(caret);
+    if (caret === this.#caret) return;
+    this.#caret = caret;
+    this.#frame.reveal(codePointOffset(this.#text, caret));
   }
 
   /**

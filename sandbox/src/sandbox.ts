@@ -4,7 +4,7 @@
 // trees and gets `set`, links and errors, and never writes a frame or a policy itself.
 
 import type { HostComponent } from "@compmd/processor";
-import { createPage, schemeOf, type Change, type ExpandedInput, type ExpandedRoot, type Page, type Splice } from "@compmd/render";
+import { createPage, reveal, schemeOf, type Change, type ExpandedInput, type ExpandedRoot, type Page, type Source, type Splice } from "@compmd/render";
 import { connectFrame, type FrameConnection, type SpliceOptions } from "@compmd/render/frame";
 import { frameUrl, HostRuntime, type HostRuntimeOptions } from "./host/runtime.ts";
 import { PageImages } from "./images.ts";
@@ -35,6 +35,12 @@ export interface ViewEvents {
   rendered: { ms: number };
   /** The components last given are loaded in the page, or show their fallbacks: a host may show the page from now. */
   loaded: Record<string, never>;
+  /**
+   * The reader clicked in the page, on what came from `source` (as `@compmd/render`'s `Page.sourceOf` gives it): an
+   * editor moves its caret there. Only once the host listens: the first listener turns it on, so a page doesn't
+   * report its reader's clicks unasked. The click itself goes on as usual, a link to `link`.
+   */
+  pointed: { source: Source };
 }
 
 /** How a host sends splices. */
@@ -72,7 +78,33 @@ export interface View {
    * view.emit("ratings-changed", { product: "p-1" });
    */
   emit(event: string, data: unknown): void;
-  /** Listens for `type`; a listener added as soon as `open` returns hears everything, opening's errors too. */
+  /**
+   * Scrolls the page, as little as it takes, to what the source at `offset` drew (`Page.elementsAt`), and marks it
+   * briefly (`reveal`, class `compmd-revealed`). Nothing when nothing the page shows came from there. In order with
+   * renders and splices: after the last one sent.
+   *
+   * @param offset - A code-point offset in the text of the last render or splice; an editor's caret through
+   * `codePointOffset`.
+   *
+   * @example
+   * editor.onCaret((caret) => view.reveal(codePointOffset(text, caret)));
+   */
+  reveal(offset: number): void;
+  /**
+   * The boxes of what the source at `offset` drew, one per element, in the host's viewport (as
+   * `getBoundingClientRect()` gives them), for a host that draws its own marks over the page. In frame mode the
+   * frame measures them and the frame's place is added; they are as of when the frame answered. Empty when nothing
+   * came from there, or the view is gone. In order with renders and splices, as `reveal`.
+   *
+   * @example
+   * const [box] = await view.rectsAt(offset);
+   * if (box) Object.assign(marker.style, { top: `${box.top + scrollY}px`, height: `${box.height}px` });
+   */
+  rectsAt(offset: number): Promise<DOMRect[]>;
+  /**
+   * Listens for `type`; a listener added as soon as `open` returns hears everything, opening's errors too. The first
+   * listener for `pointed` asks the page to report clicks.
+   */
   on<T extends keyof ViewEvents>(type: T, listener: (event: ViewEvents[T]) => void): void;
   /**
    * Observes the view (docs/devtools.md, decisions 5 and 6), for developer tools: its frames, down to those its frames
@@ -117,7 +149,7 @@ const shapeOf = (components: readonly HostComponent[]): string =>
 export function createSandbox(options: SandboxOptions): Sandbox {
   return {
     open(container, { components }) {
-      const listeners: Listeners = { set: [], link: [], error: [], recovered: [], rendered: [], loaded: [] };
+      const listeners: Listeners = { set: [], link: [], error: [], recovered: [], rendered: [], loaded: [], pointed: [] };
       const emit = <T extends keyof ViewEvents>(type: T, event: ViewEvents[T]) => {
         for (const listener of listeners[type]) listener(event);
       };
@@ -210,7 +242,14 @@ export function createSandbox(options: SandboxOptions): Sandbox {
         emit: (event, data) => {
           runtime.emit(event, data);
         },
+        reveal: (offset) => {
+          void ready.then(() => {
+            page.reveal(offset);
+          });
+        },
+        rectsAt: (offset) => ready.then(() => page.rectsAt(offset)),
         on: (type, listener) => {
+          if (type === "pointed" && listeners.pointed.length === 0) page.point();
           listeners[type].push(listener);
         },
         observe: (listener) => {
@@ -258,6 +297,10 @@ interface PageEnd {
   scheme(scheme: Scheme): void;
   /** The host switched its own theme: a page in the host's page reads its scheme again, for its trusted components. */
   reread(): void;
+  reveal(offset: number): void;
+  rectsAt(offset: number): Promise<DOMRect[]>;
+  /** Reports the source of what the reader clicks, as `pointed`, from now on. */
+  point(): void;
   destroy(): void;
 }
 
@@ -284,6 +327,11 @@ function hostPage(container: HTMLElement, runtime: HostRuntime, observer: Observ
       emit("recovered", recovered);
     },
   });
+  // Captured, so a component that stops a click's propagation still has it reported, as in a page's frame.
+  const pointed = (event: Event) => {
+    const source = page.sourceOf(event.target as Node);
+    if (source) emit("pointed", { source });
+  };
   /** Reports a render once it is painted: after the next frame, and once the browser has drawn it. */
   const painted = (started: number) => {
     requestAnimationFrame(() => {
@@ -317,7 +365,15 @@ function hostPage(container: HTMLElement, runtime: HostRuntime, observer: Observ
     reread: () => {
       page.scheme();
     },
+    reveal: (offset) => {
+      reveal(page.elementsAt(offset));
+    },
+    rectsAt: (offset) => Promise.resolve(page.elementsAt(offset).map((element) => element.getBoundingClientRect())),
+    point: () => {
+      container.addEventListener("click", pointed, { capture: true });
+    },
     destroy: () => {
+      container.removeEventListener("click", pointed, { capture: true });
       page.destroy();
     },
   };
@@ -367,6 +423,9 @@ function framePage(container: HTMLElement, runtime: HostRuntime, options: Sandbo
   child.on("loaded", (event) => {
     emit("loaded", event);
   });
+  frame.on("pointed", ({ source }) => {
+    emit("pointed", { source });
+  });
   child.on("failed", (failure) => {
     observer.gone(id, failure.reason);
     emit("error", errorEvent("", "threw", failure.reason === "hung" ? "the page's frame stopped answering" : `the page's frame is of protocol version ${String(failure.version)}`));
@@ -401,6 +460,18 @@ function framePage(container: HTMLElement, runtime: HostRuntime, options: Sandbo
     },
     // The page's frame takes its scheme from `scheme`.
     reread: () => undefined,
+    reveal: (offset) => {
+      frame.reveal(offset);
+    },
+    // The frame's boxes are in its viewport: where the frame's content starts in the host's is added.
+    rectsAt: async (offset) => {
+      const rects = await frame.rectsAt(offset);
+      const { x, y } = iframe.getBoundingClientRect();
+      return rects.map((rect) => new DOMRect(rect.x + x + iframe.clientLeft, rect.y + y + iframe.clientTop, rect.width, rect.height));
+    },
+    point: () => {
+      frame.point(true);
+    },
     destroy: () => {
       frame.close();
       child.close();

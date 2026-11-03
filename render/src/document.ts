@@ -10,8 +10,8 @@ export interface LinkDefinition {
 /** The document's footnotes, as GitHub shows them: references numbered in reading order, definitions in that order. */
 export interface Footnotes {
   numbers: ReadonlyMap<string, number>;
-  /** Each definition's content, in the order of its number (unreferenced ones last). */
-  definitions: readonly { identifier: string; number: number; children: ExpandedNode[] }[];
+  /** Each definition's content and its `footnoteDefinition` node, in the order of its number (unreferenced ones last). */
+  definitions: readonly { identifier: string; number: number; children: ExpandedNode[]; node: ExpandedNode }[];
 }
 
 /** What some of the document's blocks hold of its footnotes and links, so the page can put them together. */
@@ -19,7 +19,7 @@ export interface Notes {
   /** The footnotes they reference, in reading order. */
   references: string[];
   /** Their footnote definitions, by identifier. */
-  footnotes: [string, ExpandedNode[]][];
+  footnotes: [string, ExpandedNode][];
   /** Their link reference definitions, by identifier. */
   links: [string, LinkDefinition][];
   /** Whether they have a link or image reference, which a definition anywhere resolves. */
@@ -35,7 +35,7 @@ export function notesOf(nodes: readonly ExpandedNode[]): Notes {
     const identifier = node.identifier;
     if (typeof identifier !== "string") return;
     if (node.type === "footnoteReference") notes.references.push(identifier);
-    if (node.type === "footnoteDefinition") notes.footnotes.push([identifier, node.children ?? []]);
+    if (node.type === "footnoteDefinition") notes.footnotes.push([identifier, node]);
     if (node.type === "definition") notes.links.push([identifier, { url: textOf(node.url), title: (node.title as string | null | undefined) ?? null }]);
   });
   return notes;
@@ -44,13 +44,13 @@ export function notesOf(nodes: readonly ExpandedNode[]): Notes {
 /** The footnotes of the whole document, from the notes of its blocks in order. */
 export function footnotesFrom(parts: readonly Notes[]): Footnotes {
   const numbers = new Map<string, number>();
-  const definitions = new Map<string, ExpandedNode[]>();
+  const definitions = new Map<string, ExpandedNode>();
   for (const { references, footnotes } of parts) {
     for (const identifier of references) if (!numbers.has(identifier)) numbers.set(identifier, numbers.size + 1);
-    for (const [identifier, children] of footnotes) definitions.set(identifier, children);
+    for (const [identifier, node] of footnotes) definitions.set(identifier, node);
   }
   for (const identifier of definitions.keys()) if (!numbers.has(identifier)) numbers.set(identifier, numbers.size + 1);
-  const ordered = [...definitions].map(([identifier, children]) => ({ identifier, number: numbers.get(identifier) ?? 0, children }));
+  const ordered = [...definitions].map(([identifier, node]) => ({ identifier, number: numbers.get(identifier) ?? 0, children: node.children ?? [], node }));
   return { numbers, definitions: ordered.sort((a, b) => a.number - b.number) };
 }
 

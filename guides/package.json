@@ -14,6 +14,7 @@
     "@compmd/pack": "workspace:*",
     "@compmd/processor": "workspace:*",
     "@compmd/registry": "workspace:*",
+    "@compmd/render": "workspace:*",
     "@compmd/sandbox": "workspace:*",
     "@compmd/vite": "workspace:*",
     "@sveltejs/vite-plugin-svelte": "7.3.1",

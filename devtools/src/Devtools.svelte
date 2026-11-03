@@ -5,6 +5,7 @@
      and a page of its own; the sandbox's observer watches the page from its start. -->
 <script lang="ts">
   import type { Range } from "@compmd/processor";
+  import { utf16Offset, type Source } from "@compmd/render";
   import { createSandbox, type Observation, type ObservedEvent, type SandboxOptions, type View as Page } from "@compmd/sandbox";
   import { tick, untrack } from "svelte";
   import { caretTop } from "./caret.ts";
@@ -114,8 +115,25 @@
     if (!textarea) return;
     textarea.focus();
     textarea.setSelectionRange(start, end);
-    const lineHeight = Number.parseFloat(getComputedStyle(textarea).lineHeight) || 20;
-    textarea.scrollTop = Math.max(0, caretTop(textarea, start) - 2 * lineHeight);
+    scrollTextTo(textarea, start);
+    noteSelection();
+  }
+
+  /** Scrolls `area` so the line of `offset` is near the top, a few lines below it. */
+  function scrollTextTo(area: HTMLTextAreaElement, offset: number): void {
+    const lineHeight = Number.parseFloat(getComputedStyle(area).lineHeight) || 20;
+    area.scrollTop = Math.max(0, caretTop(area, offset) - 2 * lineHeight);
+  }
+
+  /**
+   * Puts the caret where `source` starts, what the reader clicked in the page came from, and scrolls the text to it.
+   * The focus stays in the page: the reader may have clicked an input component, to type in it.
+   */
+  function showSource(source: Source): void {
+    if (!textarea || source.start.offset === undefined || file !== undefined) return;
+    const caret = utf16Offset(textarea.value, source.start.offset);
+    textarea.setSelectionRange(caret, caret);
+    scrollTextTo(textarea, caret);
     noteSelection();
   }
 
@@ -188,6 +206,9 @@
       if (url.includes(":~:text=")) void showPassage(url);
       // Only to another site, a reader's click the sandbox passes on: never a script or a page of the host's own.
       else if (/^(https?|mailto):/i.test(url)) window.open(url, "_blank", "noopener,noreferrer");
+    });
+    view.on("pointed", ({ source }) => {
+      showSource(source);
     });
     page = view;
     const editing = new Editor(

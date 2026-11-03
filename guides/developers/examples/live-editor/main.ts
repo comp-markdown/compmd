@@ -1,4 +1,5 @@
 import { init, OpenDocument, type Diagnostic, type TextEdit } from "@compmd/processor";
+import { codePointOffset, utf16Offset } from "@compmd/render";
 import { createSandbox } from "@compmd/sandbox";
 import { request, sandbox } from "virtual:compmd";
 import text from "./dinner.comp.md?raw";
@@ -91,6 +92,18 @@ function showHint() {
 
 editor.addEventListener("keyup", showHint);
 editor.addEventListener("click", showHint);
+
+// The text and the page, both ways: a click on the page puts the caret where what was clicked came from, and a
+// click in the text shows on the page what the caret is in.
+view.on("pointed", ({ source }) => {
+  if (source.start.offset === undefined) return;
+  const caret = utf16Offset(shown, source.start.offset);
+  editor.setSelectionRange(caret, caret);
+  showHint();
+});
+editor.addEventListener("click", () => {
+  view.reveal(codePointOffset(shown, editor.selectionStart));
+});
 
 // A reader changed an input: the same text, opened again with the new value.
 view.on("set", ({ input, value }) => {
