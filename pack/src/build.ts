@@ -67,7 +67,10 @@ export function moduleConfig(pack: Pack, module: Pack["modules"][number], option
       // Two copies of React break its hooks, so a built module never bundles a runtime. A host may load the module
       // as text, where a chunk has no path to load from, so a library that loads parts of itself on demand stays in
       // the one file.
-      rolldownOptions: { external: (id: string) => isExternal(id, shared), plugins: [manifest(pack)], output: { codeSplitting: false } },
+      // Minified in full: Vite's `minify` keeps an ES library's whitespace, and the comments naming the files the module
+      // was built from, which hold the author's paths. A frame loads the module as it is, with no bundler after it that
+      // would need the annotations kept for it.
+      rolldownOptions: { external: (id: string) => isExternal(id, shared), plugins: [manifest(pack)], output: { codeSplitting: false, minify: true } },
     },
   };
 }

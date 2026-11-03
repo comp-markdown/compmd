@@ -181,11 +181,11 @@ The frames provide Svelte 5, for the Svelte components documents define in their
 Each module the pack's document imports, `./dist/<name>.js`, is built from `src/<name>.ts` (or `.tsx`, `.js`, `.jsx`) into one ES module:
 
 - **Everything it imports is in it**, but the runtimes above and the library packs the pack names in `peerDependencies` (below): the libraries from npm, your own files, `@compmd/pack/component`, which is a few KB. A bundler keeps only what the module uses.
-- **One file, its names shortened** (its whitespace and comments stay, as Vite leaves them in an ES library), with code splitting off: a library that loads parts of itself on demand stays in the one file, since a host that fetches the pack from a registry loads the module as text, where a second file has no path to load from. The build's check fails when a script is left beside the modules.
+- **One file, minified**, with no comments naming the files it was built from, and code splitting off: a library that loads parts of itself on demand stays in the one file, since a host that fetches the pack from a registry loads the module as text, where a second file has no path to load from. The build's check fails when a script is left beside the modules.
 - **The licences of what it bundles** go into `dist/LICENSES.md`, or `dist/<name>.LICENSES.md` for each module of a pack with several. `files` publishes them with `dist/`.
 - **Nothing from the network.** A strict frame has none, so fonts, icons and data the component needs are in the module, or come in its params.
 
-A pack is at most 10 MB unpacked, the size a host takes by default, which the build checks. The Mermaid pack, the whole of Mermaid with its layout engines, is 7.0 MB built.
+A pack is at most 10 MB unpacked, the size a host takes by default, which the build checks. The Mermaid pack, the whole of Mermaid with its layout engines, is 5.2 MB built.
 
 ## Drawing asynchronously
 

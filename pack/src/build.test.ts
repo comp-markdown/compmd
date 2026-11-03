@@ -48,7 +48,8 @@ describe("buildModules", () => {
     expect(readdirSync(join(dir, "dist")).sort()).toEqual(["bar.js", "line.LICENSES.md", "bar.LICENSES.md", "line.js"].sort());
     const line = readFileSync(join(dir, "dist/line.js"), "utf8");
     expect(importsOf(line).sort()).toEqual(["@kit/shared", "react"]);
-    expect(line).toContain('"later"');
+    // The part `tiny-lib` loads on demand is in the module, in whichever quotes the minifier writes.
+    expect(line).toMatch(/["'`]later["'`]/);
     expect(manifestIn("package.json").peerDependencies).toEqual({ "@kit/shared": "^1", react: "^19.3.0" });
     expect(await checkPack(await readPack(dir))).toEqual([]);
   });
@@ -67,6 +68,20 @@ describe("buildModules", () => {
     expect(counter).not.toContain("the development build");
     expect(counter).not.toContain("process.env");
     expect(importsOf(counter)).toEqual(["react/jsx-runtime"]);
+  });
+
+  it("minifies a module's whitespace as well as its names, with no comment naming where it was built", async () => {
+    await write(dir, {
+      "package.json": { name: "@kit/sum", version: "0.1.0", compmd: "./index.comp.md", files: ["dist", "index.comp.md"] },
+      "index.comp.md": documentOf(["dist/sum.js"]),
+      "src/sum.ts": "export default function mount(target: Element, { params }: { params: { values: number[] } }) {\n  let total = 0;\n  for (const value of params.values) {\n    total += value;\n  }\n  target.textContent = String(total);\n  return { destroy: () => target.replaceChildren() };\n}\n",
+    });
+    await buildModules(await readPack(dir), { logLevel: "silent" });
+    const sum = readFileSync(join(dir, "dist/sum.js"), "utf8");
+    expect(sum).not.toMatch(/^[\t ]/m);
+    expect(sum.trim().split("\n")).toHaveLength(1);
+    expect(sum).not.toContain(dir);
+    expect(sum).not.toContain("sum.ts");
   });
 
   it("builds a library pack as one module, and takes its library's version", async () => {

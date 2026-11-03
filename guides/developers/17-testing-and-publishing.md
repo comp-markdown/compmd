@@ -106,7 +106,7 @@ Params come from documents, so test what a document may give: here a value past 
 
 ## What the build checks
 
-`npm run build` runs `compmd-pack build`: each component's module, built from `src/` into `dist/` as one ES module, its names shortened, with every library bundled in but the runtimes the frames give (React, React DOM and Svelte, which it adds to `peerDependencies` at the version it was built with). Then it checks the pack as a host would, and fails, saying what to fix, when:
+`npm run build` runs `compmd-pack build`: each component's module, built from `src/` into `dist/` as one minified ES module, with every library bundled in but the runtimes the frames give (React, React DOM and Svelte, which it adds to `peerDependencies` at the version it was built with). Then it checks the pack as a host would, and fails, saying what to fix, when:
 
 - the document's `export.version` isn't `package.json`'s version: a host reports `F022`;
 - a file the document imports isn't there, or isn't in `package.json`'s `files`, so it wouldn't be published;

@@ -28,7 +28,7 @@ graph LR
 
 ## Size
 
-`dist/mermaid.js` is 7.0 MB minified, 1.6 MB gzipped (measured 2026-11-02): all of Mermaid's diagram types, with the ELK layout engine (2.5 MB of it before minifying), in one file, so a host can load it by URL or as text. A host fetches it once per version, and only for documents that import it. `@compmd/registry`'s default size cap is 10 MB.
+`dist/mermaid.js` is 5.2 MB minified; the published package is 1.5 MB gzipped (measured 2026-11-02): all of Mermaid's diagram types, with the ELK layout engine (2.5 MB of it before minifying), in one file, so a host can load it by URL or as text. A host fetches it once per version, and only for documents that import it. `@compmd/registry`'s default size cap is 10 MB.
 
 ## Licences
 

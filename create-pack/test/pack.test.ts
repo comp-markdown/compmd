@@ -166,7 +166,8 @@ describe("a library pack", () => {
     expect(readdirSync(join(folder, "dist")).filter((file) => file.endsWith(".js"))).toEqual(["index.js"]);
     const module = readFileSync(join(folder, "dist/index.js"), "utf8");
     expect(importsOf(module)).toEqual(["react"]);
-    expect(module).toContain('"later"');
+    // The part it loads on demand is in the module, in whichever quotes the minifier writes.
+    expect(module).toMatch(/["'`]later["'`]/);
   });
 
   it("takes the library's version as its own, and its runtimes as peers", () => {
