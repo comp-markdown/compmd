@@ -36,6 +36,20 @@ describe("process", () => {
     }
   });
 
+  it("renders a pack the host is still getting as pending, without F026, and says so", () => {
+    const text = '---\nmd:\n  import:\n    - from: "@kit/charts@1"\n      names: [chart]\n---\n\n:: chart[Sales by month]\n';
+    const request: Request = { path: "a.comp.md", files: { "a.comp.md": text }, now: "2026-10-22T09:00:00Z", pending: { packs: ["@kit/charts"] } };
+    const processed = process(request);
+    expect(processed.diagnostics).toEqual([]);
+    expect(processed.expanded.children[0]?.type).toBe("componentPending");
+    expect(processed.pending).toEqual({ packs: ["@kit/charts"], remote: [], host: [] });
+    const open = new OpenDocument(request);
+    expect(open.pending().packs).toEqual(["@kit/charts"]);
+    open.free();
+    // The host gave up on it: F026, as for any pack that can't be had.
+    expect(process({ ...request, pending: {} }).diagnostics.map(({ code }) => code)).toEqual(["F026"]);
+  });
+
   it("gives origins when asked", () => {
     const processed = process({ path: "a.comp.md", files: { "a.comp.md": "Hello\n" }, now: "2026-10-22T09:00:00Z", origins: true });
     expect(processed.expanded.children[0]?.origin).toEqual({

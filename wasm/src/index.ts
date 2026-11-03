@@ -50,6 +50,19 @@ export interface Request {
    * fails processing (spec §10.1): {@link Processed.failed}. Both report the same diagnostics and make the same trees.
    */
   mode?: "lenient" | "strict";
+  /**
+   * What the host is still getting (spec §6.4, §8.6): packs by name, remote URLs and `host:` sources. A pending
+   * pack's uses render their fallbacks marked as pending (`componentPending`), and pending data is its `fallback` or
+   * `null`; neither is F026. Leave a source out once the host gives up on it, and it is F026, as any that can't be had.
+   */
+  pending?: Partial<Pending>;
+}
+
+/** Packs by name, remote URLs and `host:` sources (without `host:`) that are pending. */
+export interface Pending {
+  packs: string[];
+  remote: string[];
+  host: string[];
 }
 
 /** A release of a pack, with its files: `package.json`, the pack's document, and what it imports. */
@@ -108,6 +121,8 @@ export interface Processed {
    * source by (spec §8.6): its final URL or path, the inputs filled in. An import whose origin isn't allowed has none.
    */
   cacheKeys: CacheKey[];
+  /** What the render treated as pending, of what the request's `pending` names: for a host's "loading 1 pack". */
+  pending: Pending;
 }
 
 /** A data import's cache key. */
@@ -431,10 +446,11 @@ export interface Library {
   version: string;
 }
 
-/** Data the host fetched for {@link OpenDocument.reload}, as a request gives it. */
+/** Data the host fetched for {@link OpenDocument.reload}, as a request gives it, and what of it is still pending. */
 export interface FetchedData {
   remote?: Record<string, Fetched>;
   host?: Record<string, unknown>;
+  pending?: Partial<Omit<Pending, "packs">>;
 }
 
 /** Moves every origin under `value` by `lines` and `offset`. */
@@ -510,6 +526,11 @@ export class OpenDocumentJson {
   /** Each data import's cache key for the inputs as they are now, as {@link OpenDocument.cacheKeys}. */
   cacheKeys(): CacheKey[] {
     return JSON.parse(this.#kept.cacheKeys()) as CacheKey[];
+  }
+
+  /** What the last render treated as pending, as {@link OpenDocument.pending}. */
+  pending(): Pending {
+    return JSON.parse(this.#kept.pending()) as Pending;
   }
 
   /** Loads and expands again with the data the host fetched, as {@link OpenDocument.reload}. */
@@ -607,6 +628,14 @@ export class OpenDocument {
    */
   cacheKeys(): CacheKey[] {
     return this.#json.cacheKeys();
+  }
+
+  /**
+   * What the last render treated as pending, of what the request (packs) and the last reload (data) said is: for a
+   * host's "loading 1 pack".
+   */
+  pending(): Pending {
+    return this.#json.pending();
   }
 
   /** Loads and expands again with the data the host fetched, in place of what it was given before. */

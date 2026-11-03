@@ -4,14 +4,14 @@
 use compmd::context::{RenderContext, parse_time};
 use compmd::diagnostic::{Diagnostic, Mode};
 use compmd::expand::Options;
-use compmd::host::{CacheKey, Fetched, LoadedRelease, Time};
+use compmd::host::{CacheKey, Fetched, LoadedRelease, Time, WithPending};
 use compmd::policy::Policy;
 use compmd::processor::{Expanded, Validated};
 use compmd::{Ambient, ParseOptions, Processor, expanded, tree};
 use serde::de::Error as _;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::{Map, Value as Json};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
 /// A document to process, with everything it needs.
@@ -59,6 +59,21 @@ struct Request {
     /// `lenient` (the default) or `strict`, in which any `F` diagnostic fails processing (spec §10.1).
     #[serde(default)]
     mode: Mode,
+    /// What the host is still getting (spec §6.4, §8.6).
+    #[serde(default)]
+    pending: Pending,
+}
+
+/// The packs, remote URLs and `host:` sources the host is still getting: their uses render their fallbacks marked
+/// as pending, and their data is its `fallback` or `null`, without F026.
+#[derive(Debug, Default, Deserialize)]
+struct Pending {
+    #[serde(default)]
+    packs: HashSet<String>,
+    #[serde(default)]
+    remote: HashSet<String>,
+    #[serde(default)]
+    host: HashSet<String>,
 }
 
 /// What processing gave.
@@ -72,6 +87,8 @@ struct Processed<'a> {
     failed: bool,
     /// The final URL or path of each data import, which a cached copy is kept by (spec §8.6).
     cache_keys: Vec<CacheKey>,
+    /// What the render treated as pending, of what the request said is.
+    pending: compmd::host::Pending,
 }
 
 /// A request's document through stage 3, with what loading and expanding it take.
@@ -80,8 +97,8 @@ pub(crate) struct Prepared {
     pub(crate) text: String,
     pub(crate) validated: Processor<Validated>,
     pub(crate) context: RenderContext,
-    remote: HashMap<String, Fetched>,
-    host: HashMap<String, Json>,
+    remote: WithPending<HashMap<String, Fetched>>,
+    host: WithPending<HashMap<String, Json>>,
     options: Options,
 }
 
@@ -96,7 +113,7 @@ pub(crate) enum Error {
     NoDocument(String),
 }
 
-/// Runs stages 1 to 4b on the request in `json`: `{parse, expanded, diagnostics, failed, cacheKeys}`.
+/// Runs stages 1 to 4b on the request in `json`: `{parse, expanded, diagnostics, failed, cacheKeys, pending}`.
 pub(crate) fn process(json: &str, time: Rc<dyn Time>) -> Result<String, Error> {
     let processor = prepare(json, time)?.expand();
     let processed = Processed {
@@ -105,6 +122,7 @@ pub(crate) fn process(json: &str, time: Rc<dyn Time>) -> Result<String, Error> {
         diagnostics: processor.diagnostics(),
         failed: processor.failed(),
         cache_keys: processor.cache_keys(),
+        pending: processor.pending(),
     };
     Ok(serde_json::to_string(&processed)?)
 }
@@ -157,9 +175,18 @@ impl Request {
             packs: self.ambient,
             report: self.report_ambient,
         };
+        let Pending {
+            packs: pending_packs,
+            remote: pending_remote,
+            host: pending_host,
+        } = self.pending;
+        let packs = WithPending {
+            held: self.packs,
+            pending: pending_packs,
+        };
         let validated = Processor::new(self.path, text.as_str())
             .parse(&ParseOptions::default())
-            .resolve_with(self.files, self.packs, &ambient, &self.policy)
+            .resolve_with(self.files, packs, &ambient, &self.policy)
             .validate(&self.allowed_origins);
         Ok(Prepared {
             text,
@@ -170,8 +197,14 @@ impl Request {
                 time,
                 inputs: self.inputs,
             },
-            remote: self.remote,
-            host: self.host,
+            remote: WithPending {
+                held: self.remote,
+                pending: pending_remote,
+            },
+            host: WithPending {
+                held: self.host,
+                pending: pending_host,
+            },
             options: Options {
                 origins: self.origins,
                 mode: self.mode,
@@ -316,6 +349,30 @@ mod tests {
         let defaults = self::request(&json!({ "path": "a", "now": "2026-10-22T09:00:00Z" }));
         assert_eq!(defaults.tz, "UTC");
         assert!(!defaults.origins);
+    }
+
+    #[test]
+    fn what_the_host_is_still_getting_is_pending_and_said_so() {
+        let text = "---\nmd:\n  import:\n    - from: \"@kit/charts@1\"\n      names: [chart]\n  data:\n    - from: https://a.org/x.json\n      as: x\n    - from: host:tasks\n      as: tasks\n---\n\n:: chart[Sales]\n";
+        let request = json!({
+            "path": "a.comp.md",
+            "files": { "a.comp.md": text },
+            "allowedOrigins": ["https://a.org"],
+            "now": "2026-10-22T09:00:00Z",
+            "pending": { "packs": ["@kit/charts"], "remote": ["https://a.org/x.json"], "host": ["tasks"] }
+        });
+        let processed: Json =
+            serde_json::from_str(&process(&request.to_string(), Rc::new(())).expect("processed"))
+                .expect("JSON");
+        assert_eq!(processed["diagnostics"], json!([]));
+        assert_eq!(
+            processed["expanded"]["children"][0]["type"],
+            "componentPending"
+        );
+        assert_eq!(
+            processed["pending"],
+            json!({ "packs": ["@kit/charts"], "remote": ["https://a.org/x.json"], "host": ["tasks"] })
+        );
     }
 
     #[test]

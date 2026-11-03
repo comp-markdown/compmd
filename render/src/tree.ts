@@ -60,6 +60,15 @@ export interface MarkdownNode {
   [field: string]: unknown;
 }
 
+/** A use of a component whose pack is pending (spec §4.5): the fallback it renders meanwhile, as `children`. */
+export interface ExpandedPending extends MarkdownNode {
+  type: "componentPending";
+  name: string;
+  /** The pending pack, as the import names it. */
+  pack: string;
+  children: ExpandedNode[];
+}
+
 /** A node in a list of blocks or inline content. (Named slots are only ever in a component's `slots`.) */
 export type ExpandedNode = ExpandedComponent | MarkdownNode;
 

@@ -122,6 +122,7 @@ The HTML and CSS this package writes for the built-ins is the reference renderin
 | A block with a position (`inset-*` not `auto`) | — | `position: absolute` with its insets; every box is `position: relative` |
 | A host-language component | `<div class="compmd-component compmd-bN">` (its `target`), each slot item in `<div class="compmd-item">` | its common params on its box |
 | An input component | `<label class="compmd-box compmd-input">` with `<span class="compmd-input-label">`, the fallback before its first colon (`From: today` gives `From`, since what follows is the default), then `<input type="date">`, `number`, `text`, `checkbox`, or `<select>` with the enum's members | the label and the control side by side |
+| A use of a component on its way (`componentPending`, spec §4.5) | its fallback in `<div class="compmd-pending" aria-busy="true">`, a `<span>` in inline content; in a host component's slot, an item whose `component` is `{name, params: {}, pending: true}` | a little faded (`opacity: 0.6`), which a host may restyle |
 | An alert | `<div class="compmd-alert compmd-alert-note" role="note">` with `<p class="compmd-alert-title">Note</p>` first | a rule on the start edge |
 | A quote | `<blockquote class="compmd-quote">` | a lighter rule on the start edge |
 | A tight list (`spread: false`) | `<ul class="compmd-tight">`, `<ol class="compmd-tight">` | its items' paragraphs without margins, as HTML renders a tight list without `<p>` |

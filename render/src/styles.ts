@@ -199,6 +199,7 @@ const BASE_RULES = `
 .compmd-task > input:first-child { margin-block: 0; margin-inline: 0 0.5em; }
 .compmd-task > input:first-child + p { display: inline; }
 .compmd-input { display: inline-flex; align-items: center; gap: 0.5em; }
+.compmd-pending { opacity: 0.6; }
 .compmd-align-left { text-align: start; }
 .compmd-align-center { text-align: center; }
 .compmd-align-right { text-align: end; }

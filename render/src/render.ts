@@ -111,7 +111,16 @@ export function shapeOf(node: ExpandedNode): string {
     return renderer ? `code:${textOf(node.lang)}:${renderer.name}` : `code:${textOf(node.lang)}`;
   }
   if (type === "compmdElement" || type === "compmdHtml") return `${type}:${textOf(node.tag)}`;
+  if (type === "componentPending") return `${type}:${pendingTag(node.children ?? [])}`;
   return type;
+}
+
+/** Nodes of inline content: what a paragraph holds. */
+const INLINE = new Set(["text", "emphasis", "strong", "delete", "inlineCode", "inlineMath", "link", "linkReference", "image", "imageReference", "break", "footnoteReference", "wikiLink", "html", "componentInline", "componentPending"]);
+
+/** The element a pending use is drawn in: a `span` in inline content, as an inline component's fallback is, else a `div`. */
+function pendingTag(children: readonly ExpandedNode[]): "span" | "div" {
+  return children.every((child) => INLINE.has(child.type)) ? "span" : "div";
 }
 
 // ── matching ─────────────────────────────────────────────────────────────────
@@ -328,6 +337,9 @@ function renderingOf(surface: Surface, node: MarkdownNode, pass: Pass): Renderin
       const own = node as unknown as ElementNode;
       return { tag: own.tag, attributes: own.attributes ?? {}, ...(own.text === undefined ? { children: own.children ?? [] } : { text: own.text }) };
     }
+    case "componentPending":
+      // A use of a component whose pack is on its way (spec §4.5): its fallback, busy, until the pack arrives.
+      return { tag: pendingTag(children), attributes: { class: "compmd-pending", "aria-busy": "true" }, children };
     case "definition":
     case "footnoteDefinition":
       // A definition shows where it is used; the page lists footnotes at the end.
@@ -707,6 +719,7 @@ function itemsOf(slot: SlotView): ItemView[] {
 }
 
 function slotItem({ element, node }: ItemView): SlotItem {
+  if (node.type === "componentPending") return { element, component: { name: textOf(node.name), params: {}, pending: true } };
   return isComponent(node) ? { element, component: { name: node.name, params: ownParams(node.params) } } : { element };
 }
 

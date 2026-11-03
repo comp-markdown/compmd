@@ -5,13 +5,13 @@
 
 use crate::request::{self, Error};
 use crate::text::Text;
-use compmd::host::{Fetched, Time};
+use compmd::host::{Fetched, Time, WithPending};
 use compmd::policy::Trust;
 use compmd::processor::{Expanded, HostComponent, LibraryModule};
 use compmd::{Processor, TextEdit, context::RenderContext, expanded};
 use serde::{Deserialize, Serialize};
 use serde_json::Value as Json;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::rc::Rc;
 
 /// The processor of an open document, its text, the render context its loads use, its host-language components,
@@ -130,12 +130,22 @@ impl<'a> From<&'a TextEdit> for Edit<'a> {
     }
 }
 
-/// Data the host fetched, for a reload: remote data by URL, and `host:` data by source.
+/// Data the host fetched, for a reload: remote data by URL, and `host:` data by source; and what of either it is
+/// still getting (spec §8.6).
 #[derive(Default, Deserialize)]
 #[serde(default)]
 pub(crate) struct Data {
     remote: HashMap<String, Fetched>,
     host: HashMap<String, Json>,
+    pending: PendingData,
+}
+
+/// The remote URLs and `host:` sources a host is still getting.
+#[derive(Default, Deserialize)]
+#[serde(default)]
+struct PendingData {
+    remote: HashSet<String>,
+    host: HashSet<String>,
 }
 
 impl Data {
@@ -232,6 +242,11 @@ impl Document {
         Ok(serde_json::to_string(&self.processor.cache_keys())?)
     }
 
+    /// What the last render treated as pending, `{packs, remote, host}` (spec §6.4, §8.6).
+    pub(crate) fn pending(&self) -> Result<String, Error> {
+        Ok(serde_json::to_string(&self.processor.pending())?)
+    }
+
     /// The remote and `host:` sources a render needs now, `{remote, host}`.
     pub(crate) fn sources(&self) -> Result<String, Error> {
         Ok(serde_json::to_string(&self.processor.sources())?)
@@ -239,9 +254,20 @@ impl Document {
 
     /// The document loaded and expanded again with `data`.
     pub(crate) fn reload(self, data: Data) -> Self {
-        let processor = self
-            .processor
-            .reload(self.context.clone(), data.remote, data.host);
+        let Data {
+            remote,
+            host,
+            pending,
+        } = data;
+        let remote = WithPending {
+            held: remote,
+            pending: pending.remote,
+        };
+        let host = WithPending {
+            held: host,
+            pending: pending.host,
+        };
+        let processor = self.processor.reload(self.context.clone(), remote, host);
         Self {
             processor,
             edit: None,
@@ -296,6 +322,26 @@ mod tests {
         let inputs: Json =
             serde_json::from_str(&with_inputs.inputs().expect("inputs")).expect("JSON");
         assert_eq!(inputs, json!({ "n": { "type": "number", "value": 1 } }));
+    }
+
+    #[test]
+    fn a_reload_says_what_is_still_pending_and_the_document_says_what_was() {
+        let document =
+            open("---\nmd:\n  data:\n    - from: https://a.org/x.json\n      as: x\n---\n");
+        let pending = |document: &Document| -> Json {
+            serde_json::from_str(&document.pending().expect("pending")).expect("JSON")
+        };
+        assert_eq!(changes(&document)["diagnostics"][0]["code"], "F026");
+        let data =
+            Data::from_json(r#"{"pending": {"remote": ["https://a.org/x.json"]}}"#).expect("data");
+        let waiting = document.reload(data);
+        assert_eq!(changes(&waiting)["diagnostics"], json!([]));
+        assert_eq!(pending(&waiting)["remote"], json!(["https://a.org/x.json"]));
+        let arrived = waiting.reload(
+            Data::from_json(r#"{"remote": {"https://a.org/x.json": {"text": "{}", "contentType": "application/json"}}}"#)
+                .expect("data"),
+        );
+        assert_eq!(pending(&arrived)["remote"], json!([]));
     }
 
     #[test]

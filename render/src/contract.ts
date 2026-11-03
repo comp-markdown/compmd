@@ -3,10 +3,14 @@
 /** A component's params, validated and typed by the processor. */
 export type Params = Record<string, unknown>;
 
-/** One block of a slot: the box the renderer made around it, and, when the block is a component, its name and params. */
+/**
+ * One block of a slot: the box the renderer made around it, and, when the block is a component, its name and params.
+ * A component still on its way has `pending: true` and no params (spec §7.4): its item shows its fallback until it
+ * arrives.
+ */
 export interface SlotItem {
   element: Element;
-  component?: { name: string; params: Params };
+  component?: { name: string; params: Params; pending?: true };
 }
 
 /** One element of a template slot (spec §7.5), with its rendered template. */

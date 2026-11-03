@@ -33,7 +33,7 @@ impl Time for Intl {
     }
 }
 
-/// Runs stages 1 to 4b on `request`: `{parse, expanded, diagnostics}`.
+/// Runs stages 1 to 4b on `request`: `{parse, expanded, diagnostics, failed, cacheKeys, pending}`.
 ///
 /// # Errors
 ///
@@ -190,7 +190,17 @@ impl Handle {
         Ok(self.document()?.cache_keys()?)
     }
 
-    /// Loads and expands again with the data the host fetched, `{remote, host}`.
+    /// What the last render treated as pending, `{packs, remote, host}`: of what the request, or the last reload, said
+    /// the host is still getting.
+    ///
+    /// # Errors
+    ///
+    /// None in practice, as `splice`.
+    pub fn pending(&self) -> Result<String, JsError> {
+        Ok(self.document()?.pending()?)
+    }
+
+    /// Loads and expands again with the data the host fetched, `{remote, host, pending}`.
     ///
     /// # Errors
     ///
