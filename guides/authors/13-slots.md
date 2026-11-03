@@ -148,7 +148,7 @@ Headings in a slot keep the levels you wrote. Only the body's own headings follo
 
 ## Slots and their names
 
-A slot's name is one word, such as `jobs` or `footer`. A name with a `-` can be declared, but it can't be placed: `{{md.slot.what-to-bring}}` isn't a path, and `{{md.slot.what_to_bring}}` is `F014`.
+A slot's name is a word, such as `jobs` or `footer`, or words joined by `-`, as params' are: `:: #what-to-bring`. In the body, a path's steps can't hold a `-`, so it is written with `_`: `{{md.slot.what_to_bring}}` places it. Two slots of one component whose names differ only in `-` and `_` are `F013`, since their paths would be the same.
 
 The built-in containers have slots too: `if` has `else`, and `each` has `before` and `empty` (chapter 5). They are filled the same way.
 

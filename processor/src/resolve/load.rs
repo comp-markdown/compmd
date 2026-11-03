@@ -20,7 +20,7 @@ use crate::reserved;
 use crate::settings::{self, Import};
 use crate::tree::{
     Declaration, DeclaredType, Definition, DefinitionBody, Node, Position, Signature,
-    SignatureFence, TypeName,
+    SignatureFence, SlotDeclaration, TypeName,
 };
 use semver::{Version, VersionReq};
 use serde_json::Value;
@@ -731,9 +731,23 @@ impl<'h, 'p> Loader<'h, 'p> {
         }
     }
 
-    /// F013 for a signature's params: two whose names differ only in `-` and `_`, which expressions can't tell apart,
-    /// and, for a `compmd` definition, a name expressions can't use (a `name` param binds a name and is never read).
+    /// F013 for a signature's params and slots: two whose names differ only in `-` and `_`, which paths and
+    /// expressions can't tell apart (spec §5.1), and, for a `compmd` definition, a param name expressions can't use (a
+    /// `name` param binds a name and is never read).
     fn check_params(&mut self, id: DocumentId, signature: &Signature, at: Location, compmd: bool) {
+        let mut slots: HashMap<String, &str> = HashMap::new();
+        for slot in signature.slots.iter().flatten() {
+            let (SlotDeclaration::Name(name) | SlotDeclaration::Template { name, .. }) = slot;
+            match slots.insert(name.replace('-', "_"), name) {
+                Some(other) if other != name => self.report(
+                    id,
+                    Code::F013,
+                    at,
+                    format!("the slots `{other}` and `{name}` differ only in `-` and `_`, which `md.slot` paths read alike"),
+                ),
+                _ => {}
+            }
+        }
         let mut seen = HashSet::new();
         for param in &signature.params {
             if !seen.insert(param.name.replace('-', "_")) {

@@ -96,14 +96,14 @@ impl<'r> Expander<'r> {
             slots
                 .named
                 .iter()
-                .find(|slot| slot.name == name)
+                .find(|slot| names_slot(name, &slot.name))
                 .map_or(&[][..], |slot| slot.children.as_slice())
         };
         let mut placed = Vec::new();
         match slots
             .templates
             .iter()
-            .find(|template| template.slot == name)
+            .find(|template| names_slot(name, &template.slot))
         {
             Some(template) => {
                 for index in 0..template.items.len() {
@@ -240,6 +240,12 @@ fn slot_name(path: &str) -> Option<&str> {
     }
 }
 
+/// Whether the slot `name` of a path is the slot `slot` as written: a `-` in a slot's name is `_` in a path (spec
+/// §5.1), `{{md.slot.side_panel}}` for `:: #side-panel`.
+fn names_slot(name: &str, slot: &str) -> bool {
+    slot.replace('-', "_") == name
+}
+
 /// A URL's scheme, lowercased, when it has one.
 fn scheme(url: &str) -> Option<String> {
     let (scheme, _) = url.split_once(':')?;
@@ -307,5 +313,12 @@ mod tests {
         assert_eq!(slot_name("md.slot"), Some("default"));
         assert_eq!(slot_name("md.slot.footer"), Some("footer"));
         assert_eq!(slot_name("md.doc"), None);
+    }
+
+    #[test]
+    fn a_path_names_a_slot_with_underscores_for_its_hyphens() {
+        assert!(names_slot("side_panel", "side-panel"));
+        assert!(names_slot("footer", "footer"));
+        assert!(!names_slot("side_panel", "side"));
     }
 }

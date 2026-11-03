@@ -161,13 +161,15 @@ impl<'r> Scope<'r> {
         None
     }
 
+    /// Whether the definition declares the slot a path names: a `-` in a slot's name is written `_` there, as in a
+    /// param's (spec §5.1).
     fn has_slot(&self, name: &str) -> bool {
         self.definition
             .and_then(|signature| signature.slots.as_ref())
             .is_some_and(|slots| {
                 slots.iter().any(|slot| match slot {
                     SlotDeclaration::Name(slot) | SlotDeclaration::Template { name: slot, .. } => {
-                        slot == name
+                        slot.replace('-', "_") == name
                     }
                 })
             })

@@ -1,5 +1,6 @@
 // The React and Svelte bindings (spec §7.6), through the page: params as props in camelCase, slots as children and
-// named props, the rest in `compmd`, and state kept through an update. A slot's element keeps its focus.
+// named props, in camelCase too (`side-note` is `sideNote`), the rest in `compmd`, and state kept through an update. A
+// slot's element keeps its focus.
 import { createElement, useState, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 import { afterEach, describe, expect, it } from "vitest";
@@ -10,7 +11,7 @@ import { createPage } from "../src/page.ts";
 import type { ExpandedRoot } from "../src/tree.ts";
 import Card from "./Card.svelte";
 
-function ReactCard({ title, fontSize, children, footer, compmd }: { title: string; fontSize: string; children: ReactNode; footer: ReactNode; compmd: { headingLevel: number } }) {
+function ReactCard({ title, fontSize, children, sideNote, compmd }: { title: string; fontSize: string; children: ReactNode; sideNote: ReactNode; compmd: { headingLevel: number } }) {
   const [clicks, setClicks] = useState(0);
   return createElement(
     "section",
@@ -22,7 +23,7 @@ function ReactCard({ title, fontSize, children, footer, compmd }: { title: strin
       },
     }, String(clicks)),
     children,
-    footer,
+    sideNote,
   );
 }
 
@@ -38,7 +39,7 @@ const card = (title: string): ExpandedRoot => ({
         { key: "font-size", breakpoint: null, value: "small" },
       ],
       children: [{ type: "componentLeaf", name: "notes", params: [], fallback: [] }],
-      slots: [{ type: "componentSlot", name: "footer", children: [{ type: "paragraph", children: [{ type: "text", value: "Footer" }] }] }],
+      slots: [{ type: "componentSlot", name: "side-note", children: [{ type: "paragraph", children: [{ type: "text", value: "A side note" }] }] }],
     },
   ],
 });
@@ -63,7 +64,7 @@ describe.each([
     const heading = root.querySelector("h3")!;
     expect(heading.textContent).toBe("One");
     expect(heading.dataset.level).toBe("2");
-    expect(root.querySelector("section")?.textContent).toContain("Footer");
+    expect(root.querySelector("section")?.textContent).toContain("A side note");
 
     const button = root.querySelector("button")!;
     flushSync(() => {
