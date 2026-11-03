@@ -1,5 +1,5 @@
 # A release of the implementation (docs/releases.md): a tag v<version> builds and checks the repository, then publishes
-# stages @compmd/render, @compmd/processor, @compmd/sandbox, @compmd/registry, @compmd/vite, @compmd/pack and @compmd/create-pack on npm with trusted publishing, for the author to approve: GitHub proves to npm which
+# stages @compmd/render, @compmd/processor, @compmd/sandbox, @compmd/registry, @compmd/devtools, @compmd/vite, @compmd/pack and @compmd/create-pack on npm with trusted publishing, for the author to approve: GitHub proves to npm which
 # repository and workflow publishes, so no npm token is stored, and each version carries its provenance.
 name: Release
 
@@ -33,7 +33,7 @@ jobs:
       - name: The tag is every package's version
         run: |
           version="${GITHUB_REF_NAME#v}"
-          for package in render wasm sandbox registry vite pack create-pack; do
+          for package in render wasm sandbox registry devtools vite pack create-pack; do
             written="$(node -p "require('./$package/package.json').version")"
             if [ "$written" != "$version" ]; then
               echo "::error::$package/package.json is $written, the tag $GITHUB_REF_NAME"
@@ -49,6 +49,7 @@ jobs:
           pnpm --dir wasm pack --pack-destination "$RUNNER_TEMP/packages"
           pnpm --dir sandbox pack --pack-destination "$RUNNER_TEMP/packages"
           pnpm --dir registry pack --pack-destination "$RUNNER_TEMP/packages"
+          pnpm --dir devtools pack --pack-destination "$RUNNER_TEMP/packages"
           pnpm --dir vite pack --pack-destination "$RUNNER_TEMP/packages"
           pnpm --dir pack pack --pack-destination "$RUNNER_TEMP/packages"
           pnpm --dir create-pack pack --pack-destination "$RUNNER_TEMP/packages"
@@ -74,6 +75,7 @@ jobs:
           publish ./compmd-processor-*.tgz
           publish ./compmd-sandbox-*.tgz
           publish ./compmd-registry-*.tgz
+          publish ./compmd-devtools-*.tgz
           publish ./compmd-vite-*.tgz
           publish ./compmd-pack-*.tgz
           publish ./compmd-create-pack-*.tgz

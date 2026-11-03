@@ -1,7 +1,6 @@
 {
   "name": "@compmd/devtools",
-  "version": "0.2.2",
-  "private": true,
+  "version": "0.3.0",
   "description": "The CompMD Developer Tools as a part any page embeds: a document's text and its page side by side, the views of what the processor makes of it, and what its sandbox does: its frames, a console and the messages between them.",
   "keywords": [
     "compmd",

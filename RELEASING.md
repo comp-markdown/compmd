@@ -6,7 +6,7 @@ Four things are released, each on its own:
 
 | What | Where | How |
 |---|---|---|
-| The implementation: `@compmd/render`, `@compmd/processor`, `@compmd/sandbox`, `@compmd/registry`, `@compmd/vite`, `@compmd/pack`, `@compmd/create-pack` | npm | a tag `v<version>`; `.github/workflows/release.yml` publishes |
+| The implementation: `@compmd/render`, `@compmd/processor`, `@compmd/sandbox`, `@compmd/registry`, `@compmd/devtools`, `@compmd/vite`, `@compmd/pack`, `@compmd/create-pack` | npm | a tag `v<version>`; `.github/workflows/release.yml` publishes |
 | The implementation: the crates `compmd-markdown`, `compmd` | crates.io | by hand, after the tag |
 | The Mermaid pack, `@comp-markdown/mermaid` | npm | a tag `mermaid-v<version>`; `.github/workflows/release-mermaid.yml` publishes |
 | The spec | the website, `/spec/<version>/` | a tag `spec-v<version>`; the Pages workflow deploys |
@@ -26,7 +26,7 @@ A release publishes only packages that npm and this repository's workflow alread
 - The [prerequisites](#prerequisites-once-per-package) hold for every package the release publishes.
 - `cargo make ci` is green on `main`.
 - Each package's README says what changed, until the implementation has a changelog of its own.
-- The version, in one commit: `render/package.json`, `wasm/package.json`, `sandbox/package.json`, `registry/package.json`, `vite/package.json`, `pack/package.json`, `create-pack/package.json` and `processor/Cargo.toml`.
+- The version, in one commit: `render/package.json`, `wasm/package.json`, `sandbox/package.json`, `registry/package.json`, `devtools/package.json`, `vite/package.json`, `pack/package.json`, `create-pack/package.json` and `processor/Cargo.toml`.
 - If the fork changed since its last release: its version in `markdown-rs/Cargo.toml` (on its `compmd` branch), and the same version in the `compmd-markdown` dependency of `processor/Cargo.toml` and `markdown-rs/mdast_util_to_markdown/Cargo.toml`.
 - Push: the fork first, then this repository.
 
@@ -41,7 +41,7 @@ The release workflow:
 1. checks the tag is the version in every package's `package.json`;
 2. installs Playwright's WebKit, for the sandbox's, the registry's, the Vite plugin's and create-pack's browser tests, and runs `cargo make ci`;
 3. packs the packages with pnpm, which writes the versions in place of their `workspace:*` dependencies on each other;
-4. stages them with npm's trusted publishing (`npm stage publish`): the renderer, then the processor, then the sandbox, which depends on both, then the registry, which needs the processor, then the Vite plugin, which depends on the first three, then `@compmd/pack`, which depends on all of those, then create-pack, whose packs pin it. No token is stored; each version carries its provenance. A version npm already has is left as it is, so a package whose first version was published by hand at the release's version is skipped, and a release that failed halfway can run again; a version it staged and nobody approved or rejected yet can't be staged again, so settle those first.
+4. stages them with npm's trusted publishing (`npm stage publish`): the renderer, then the processor, then the sandbox, which depends on both, then the registry, which needs the processor, then the Developer Tools, which depend on those four, then the Vite plugin, which depends on the first three, then `@compmd/pack`, which depends on all of those, then create-pack, whose packs pin it. No token is stored; each version carries its provenance. A version npm already has is left as it is, so a package whose first version was published by hand at the release's version is skipped, and a release that failed halfway can run again; a version it staged and nobody approved or rejected yet can't be staged again, so settle those first.
 
 A staged version isn't installable until the author approves it, with two-factor authentication: on npmjs.com, or `(cd ~ && npm stage list @compmd/render)` then `(cd ~ && npm stage approve <stage-id>)` for each. Approve in the order they were staged, so a package is never on npm before those it depends on. One that is wrong is rejected (`npm stage reject <stage-id>`) and its fix released as the next version.
 
@@ -52,6 +52,7 @@ curl -s https://registry.npmjs.org/-/package/@compmd%2frender/dist-tags
 curl -s https://registry.npmjs.org/-/package/@compmd%2fprocessor/dist-tags
 curl -s https://registry.npmjs.org/-/package/@compmd%2fsandbox/dist-tags
 curl -s https://registry.npmjs.org/-/package/@compmd%2fregistry/dist-tags
+curl -s https://registry.npmjs.org/-/package/@compmd%2fdevtools/dist-tags
 curl -s https://registry.npmjs.org/-/package/@compmd%2fvite/dist-tags
 curl -s https://registry.npmjs.org/-/package/@compmd%2fpack/dist-tags
 curl -s https://registry.npmjs.org/-/package/@compmd%2fcreate-pack/dist-tags
@@ -109,7 +110,7 @@ docs.rs builds the documentation a few minutes later.
 
 ## Prerequisites, once per package
 
-Trusted publishing works only for a package that already exists on npm, so a new package is created by publishing its first version by hand, as `@compmd/render` and `@compmd/processor` were at `0.1.0`, and `@compmd/sandbox`, `@compmd/registry`, `@compmd/vite`, `@compmd/pack` and `@compmd/create-pack` at `0.2.0`. Then npm and the workflow are set up to publish it from then on. Each step is the author's, with their npm account; none is in the workflow.
+Trusted publishing works only for a package that already exists on npm, so a new package is created by publishing its first version by hand, as `@compmd/render` and `@compmd/processor` were at `0.1.0`, `@compmd/sandbox`, `@compmd/registry`, `@compmd/vite`, `@compmd/pack` and `@compmd/create-pack` at `0.2.0`, and `@compmd/devtools` at `0.3.0`. Then npm and the workflow are set up to publish it from then on. Each step is the author's, with their npm account; none is in the workflow.
 
 **npm, once for the scope:**
 - The `@compmd` organization exists on npm, and the publishing account is a member that may publish to it.
@@ -124,9 +125,9 @@ Trusted publishing works only for a package that already exists on npm, so a new
    pnpm --dir sandbox pack --pack-destination ../packages
    ```
 
-2. Check the tarball before publishing: `tar tzf` for its files (`dist/`, for the sandbox `protocol.schema.json`, for the Vite plugin `client.d.ts` and `compmd.config.schema.json`, for `@compmd/pack` `tsconfig.pack.json`, for create-pack `template/`, whose `gitignore` has no dot), and `tar xzf <file> -O package/LICENSE` for its licence, which must be MIT; its `package.json` names the other packages' versions, not `workspace:*`.
+2. Check the tarball before publishing: `tar tzf` for its files (`dist/`, for the Developer Tools its workers `dist/worker.js` and `dist/views-worker.js` beside `dist/index.js`, for the sandbox `protocol.schema.json`, for the Vite plugin `client.d.ts` and `compmd.config.schema.json`, for `@compmd/pack` `tsconfig.pack.json`, for create-pack `template/`, whose `gitignore` has no dot), and `tar xzf <file> -O package/LICENSE` for its licence, which must be MIT; its `package.json` names the other packages' versions, not `workspace:*`.
 3. Try it without publishing, from outside the repository: `(cd ~ && npm publish <path>/compmd-sandbox-<version>.tgz --access public --dry-run)`.
-4. Publish from outside the repository, after `npm login`. Dependencies go first: the renderer, then the processor, then the sandbox, then the registry, then the Vite plugin, then `@compmd/pack`, then create-pack.
+4. Publish from outside the repository, after `npm login`. Dependencies go first: the renderer, then the processor, then the sandbox, then the registry, then the Developer Tools, then the Vite plugin, then `@compmd/pack`, then create-pack.
 
    ```sh
    (cd ~ && npm publish <path>/compmd-sandbox-<version>.tgz --access public)
@@ -147,7 +148,7 @@ Trusted publishing works only for a package that already exists on npm, so a new
 
 **Validated:** npm checks the trusted publisher only at the workflow's first publish of the package. Once that release's workflow is green and the version approved, the version is `latest` in the registry (`curl`, as above), and the package's page on npmjs.com shows its provenance, from `comp-markdown/compmd` and `release.yml`. If its publish fails with the packages before it already published, fix the trusted publisher and run the workflow again: it skips the versions npm already has. A trusted publisher that doesn't allow what the workflow does fails with `403 … OIDC permission denied for this action`: so `0.2.1` failed at the sandbox, whose publisher allowed staging while the workflow still ran `npm publish`.
 
-**A first version at a release's version.** A new package depends on the others at the release's version, so its first version, by hand, is that version: publish the new packages by hand first, set up their trusted publishers, then push the tag. The workflow publishes the rest and skips the new ones. `0.2.0` went this way: `@compmd/sandbox`, `@compmd/registry`, `@compmd/vite`, `@compmd/pack` and `@compmd/create-pack` by hand, then `v0.2.0` for `@compmd/render` and `@compmd/processor`. Until the tag's workflow has published them, the new packages don't install, so the two go together.
+**A first version at a release's version.** A new package depends on the others at the release's version, so its first version, by hand, is that version: publish the new packages by hand first, set up their trusted publishers, then push the tag. The workflow publishes the rest and skips the new ones. `0.2.0` went this way: `@compmd/sandbox`, `@compmd/registry`, `@compmd/vite`, `@compmd/pack` and `@compmd/create-pack` by hand, then `v0.2.0` for `@compmd/render` and `@compmd/processor`. Until the tag's workflow has published them, the new packages don't install, so the two go together. `0.3.0` went the same way: `@compmd/devtools` by hand, since it needs the sandbox's observer, new in `0.3.0`, then `v0.3.0` for the rest.
 
 ## What publishing 0.1.0 taught
 

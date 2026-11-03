@@ -2,10 +2,10 @@
 
 The CompMD Developer Tools as a part any page embeds ([the design](../docs/devtools.md)): a document's text on the left, its page on the right, updated as you type, with the views of what the processor makes of it and of what its sandbox does. The [playground](../editor/README.md) is a page that embeds it.
 
-**Status: in development;** not published yet. Two ways to embed it (decision 3): the editor, below, and the inspector, attached to a view a host app already renders (*The inspector*).
+**Status: in development,** as the processor is; first released at 0.3.0, with the sandbox's observer it reads, and versioned with the other packages. Two ways to embed it (decision 3): the editor, below, and the inspector, attached to a view a host app already renders (*The inspector*).
 
 ```ts
-import { mountDevtools } from "@compmd/devtools";
+import { mountDevtools } from "@compmd/devtools";   // npm install @compmd/devtools
 
 const tools = mountDevtools(element, {
   sandbox: { base: "/sandbox/", modules },             // as `createSandbox` takes it (@compmd/sandbox)
