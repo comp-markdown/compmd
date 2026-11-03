@@ -176,23 +176,30 @@ struct Loader<'r, 'h> {
 }
 
 impl Loader<'_, '_> {
-    /// One data import: its source, else its fallback, typed by its schema. F026 when neither loads.
+    /// One data import: its source, else its fallback, typed by its schema. F026 when neither loads, and for a
+    /// local file that doesn't, since `fallback` is for remote and `host:` sources (spec §8.6): its fallback is then
+    /// only the recovery (this processor's choice, `processor/README.md`).
     fn import(
         &mut self,
         id: DocumentId,
         import: &DataImport,
         target: Result<Target, String>,
     ) -> Value {
+        let local = matches!(target, Ok(Target::File(_)));
         let loaded = target
             .map_err(Failure::new)
             .and_then(|target| self.target(import, &target));
-        match loaded {
-            Ok(parsed) => self.typed(id, import, parsed),
-            Err(failure) => self.fallback(id, import).unwrap_or_else(|| {
-                self.failed(id, import, failure);
-                Value::Null
-            }),
+        let failure = match loaded {
+            Ok(parsed) => return self.typed(id, import, parsed),
+            Err(failure) => failure,
+        };
+        let fallback = self.fallback(id, import);
+        match &fallback {
+            None => self.failed(id, import, failure, "is null"),
+            Some(_) if local => self.failed(id, import, failure, "is its fallback"),
+            Some(_) => {}
         }
+        fallback.unwrap_or(Value::Null)
     }
 
     /// The fallback of an import, typed; `None` without one, or when it fails too.
@@ -286,9 +293,10 @@ impl Loader<'_, '_> {
         );
     }
 
-    /// F026: at the place inside the data file when known, else at the import's `from`.
-    fn failed(&mut self, id: DocumentId, import: &DataImport, failure: Failure) {
-        let message = format!("{}; `md.data.{}` is null", failure.message, import.name);
+    /// F026: at the place inside the data file when known, else at the import's `from`, saying what `md.data.<name>`
+    /// is instead (`recovered`).
+    fn failed(&mut self, id: DocumentId, import: &DataImport, failure: Failure, recovered: &str) {
+        let message = format!("{}; `md.data.{}` {recovered}", failure.message, import.name);
         let diagnostic = match failure.inside {
             Some((file, at)) => Diagnostic::new(Code::F026, at, message).in_file(Some(file)),
             None => {

@@ -1,0 +1,22 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "code",
+      "lang": "mermaid",
+      "meta": "{alt=\"{{md.doc.first}}, then review\"}",
+      "value": "graph LR; Draft --> Review",
+      "component": {
+        "name": "mermaid",
+        "params": [
+          {
+            "key": "code",
+            "breakpoint": null,
+            "value": "graph LR; Draft --> Review"
+          }
+        ]
+      },
+      "alt": "Draft, then review"
+    }
+  ]
+}

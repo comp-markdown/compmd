@@ -272,7 +272,8 @@ pub struct Code {
 #[derive(Clone, Debug, Default, PartialEq)]
 pub(crate) struct Info {
     pub(crate) params: Vec<Param>,
-    pub(crate) alt: Option<String>,
+    /// The `alt` param as written, whose interpolations are filled in where the block renders (spec §8.1).
+    pub(crate) alt: Option<Param>,
     pub(crate) problems: Vec<Diagnostic>,
 }
 

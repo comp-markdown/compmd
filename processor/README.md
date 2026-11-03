@@ -66,6 +66,7 @@ What this processor does where the spec says what is wrong but not what code rep
 
 - **An input without a default.** Every input must have one (§8.7). It is F010 at the declaration, and the input starts with its type's empty value: `""`, `0`, `false`, `[]`, `{}`, or an enum's first member; `null` for an optional type, and for a date.
 - **Content before the first slot line of a component that declares no `default` slot.** It is F006 at the content's first line. The content follows the component as normal content, with that of any undeclared slot, so nothing the author wrote is dropped.
+- **A `fallback` on a local source.** `fallback` is for remote and `host:` sources (§8.6). When a local file doesn't load, it is still F026, and its fallback, if it loads, is the data instead of `null`.
 
 ## Commands
 

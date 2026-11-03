@@ -17,25 +17,6 @@ use crate::tree::{
 /// The text alternative a rendered code block takes (spec §7.7).
 const ALT: &str = "alt";
 
-/// The text of a bare or quoted value, interpolations as written: `alt`'s.
-fn literal_text(value: &ParamValue) -> Option<String> {
-    match value {
-        ParamValue::Bare(text) => Some(text.clone()),
-        ParamValue::String(parts) => Some(
-            parts
-                .iter()
-                .map(|part| match part {
-                    StringPart::Text(text) => text.value.clone(),
-                    StringPart::Interpolation(interpolation) => {
-                        format!("{{{{{}}}}}", interpolation.path)
-                    }
-                })
-                .collect(),
-        ),
-        _ => None,
-    }
-}
-
 /// Where a param starts.
 fn param_start(param: &Param) -> Location {
     param
@@ -438,9 +419,9 @@ impl Converter<'_, '_> {
                 false
             }
             Some(ALT) => {
-                match literal_text(&param.value) {
-                    Some(text) => alt = Some(text),
-                    None => problems.push(Diagnostic::new(
+                match param.value {
+                    ParamValue::Bare(_) | ParamValue::String(_) => alt = Some(param.clone()),
+                    _ => problems.push(Diagnostic::new(
                         Code::F009,
                         param_start(param),
                         "`alt` is text: write it bare or quoted; ignored",

@@ -188,6 +188,7 @@ impl Shift for Signature {
 impl Shift for Info {
     fn shift(&mut self, by: Move) {
         self.params.shift(by);
+        self.alt.shift(by);
         self.problems.shift(by);
     }
 }

@@ -27,11 +27,12 @@ function expandedTrees(): { name: string; tree: ExpandedRoot }[] {
   });
 }
 
-/** A plain component for every host-language component a tree uses, showing its name. */
+/** A plain component for every host-language component a tree uses, showing its name: code renderers too. */
 function stubs(tree: ExpandedRoot): Record<string, Mount> {
   const names = new Set<string>();
   walk(tree.children, (node) => {
     if (isComponent(node)) names.add(node.name);
+    if (node.type === "code" && node.component) names.add(node.component.name);
   });
   return Object.fromEntries(
     [...names].map((name) => [

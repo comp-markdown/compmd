@@ -41,6 +41,9 @@ pub fn parse_time(text: &str) -> Option<i128> {
 /// `md.lang` of a document without a `lang` key (spec §2.1).
 const DEFAULT_LANG: &str = "en";
 
+/// `md.version` of a document without a `version` key, which is version 1 (spec §2.1).
+const DEFAULT_VERSION: &str = "1";
+
 impl RenderContext {
     /// The `md.` functions for expressions written in a document with `settings`: its language, and its time zone
     /// or the processor's.
@@ -56,13 +59,15 @@ impl RenderContext {
     /// `md` of a document with `settings`, as far as the document alone gives it: `doc`, `version`, `lang` and `tz`
     /// (spec §8.1). A render adds `data` and `input` to it, and templates `loop`.
     pub(crate) fn md(&self, settings: &Settings) -> MdValue {
-        let text = |text: Option<&str>| text.map_or(Value::Null, Value::string);
         MdValue(IndexMap::from([
             (
                 key("doc"),
                 Value::from_json(&Json::Object(settings.doc.clone())),
             ),
-            (key("version"), text(settings.version.as_deref())),
+            (
+                key("version"),
+                Value::string(settings.version.as_deref().unwrap_or(DEFAULT_VERSION)),
+            ),
             (
                 key("lang"),
                 Value::string(settings.lang.as_deref().unwrap_or(DEFAULT_LANG)),

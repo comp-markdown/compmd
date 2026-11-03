@@ -2,14 +2,15 @@
 //! a template gives its own names.
 
 use super::Checker;
-use super::params::literal;
+use super::params::{literal, value_at};
 use super::scope::Scope;
 use crate::diagnostic::{Code, Location, Stage};
 use crate::parse::params::interpolations;
 use crate::reserved::Keyword;
 use crate::resolve::{Binding, Body, Renderer};
 use crate::tree::{
-    Code as CodeBlock, Container, Definition, Interpolation, Node, Param, Position, StringPart,
+    Code as CodeBlock, Container, Definition, Interpolation, Node, Param, ParamValue, Position,
+    StringPart,
 };
 use crate::values::forms::area_names;
 use std::rc::Rc;
@@ -126,6 +127,11 @@ impl<'r> Checker<'r, '_> {
                     );
                 }
                 self.invocation(name, &info.params, code.position, None, scope);
+                if let Some(alt) = &info.alt
+                    && let ParamValue::String(parts) = &alt.value
+                {
+                    self.string_paths(parts, value_at(alt), scope);
+                }
                 if info.alt.is_none() {
                     self.report(
                         Code::W101,

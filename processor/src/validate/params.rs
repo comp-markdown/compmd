@@ -561,7 +561,7 @@ impl<'r> Checker<'r, '_> {
     }
 
     /// F014 for the interpolations of a quoted param whose `"` is at `at`.
-    fn string_paths(&mut self, parts: &[StringPart], at: Location, scope: &Scope) {
+    pub(super) fn string_paths(&mut self, parts: &[StringPart], at: Location, scope: &Scope) {
         let paths: Vec<&str> = parts
             .iter()
             .filter_map(|part| match part {

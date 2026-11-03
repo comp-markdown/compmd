@@ -315,13 +315,23 @@ impl<'r> Expander<'r> {
             }),
             Kind::Code(code) => Content::Code(expanded::Code {
                 component: Some(expanded::Rendered { name, params }),
-                alt: code.info.as_ref().and_then(|info| info.alt.clone()),
+                alt: self.alt(code, env),
                 ..super::plain_code(code)
             }),
         };
         let made = self.made(content, origins::of(invocation.node, env));
         out.push(made);
         self.after(invocation, signature, env, out);
+    }
+
+    /// A rendered code block's text alternative, its interpolations filled in (spec §8.1).
+    fn alt(&mut self, code: &'r tree::Code, env: &Env<'r>) -> Option<String> {
+        let alt = code.info.as_ref()?.alt.as_ref()?;
+        let text = DeclaredType::Name(tree::TypeName::String);
+        self.param_value(alt, Some(&text), env)?
+            .written()
+            .ok()
+            .flatten()
     }
 
     /// A slot of a rendered node: its content expanded, or for a template slot, once per element.
