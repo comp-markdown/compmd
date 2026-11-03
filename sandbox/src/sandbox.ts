@@ -7,6 +7,7 @@ import type { HostComponent } from "@compmd/processor";
 import { createPage, schemeOf, type Change, type ExpandedInput, type ExpandedRoot, type Page, type Splice } from "@compmd/render";
 import { connectFrame, type FrameConnection, type SpliceOptions } from "@compmd/render/frame";
 import { frameUrl, HostRuntime, type HostRuntimeOptions } from "./host/runtime.ts";
+import { temmlMath } from "./math.ts";
 import { codeFor } from "./mounts.ts";
 import { Log, reportedBy, type Observation, type ObservedEvent } from "./observation.ts";
 import { Observer } from "./observer.ts";
@@ -257,6 +258,8 @@ type Emit = <T extends keyof ViewEvents>(type: T, event: ViewEvents[T]) => void;
 function hostPage(container: HTMLElement, runtime: HostRuntime, observer: Observer, emit: Emit): PageEnd {
   const page: Page = createPage(container, {
     components: runtime.mounts,
+    // As the page's frame does in frame mode, so math looks the same in both modes.
+    math: temmlMath(),
     // The trusted components in this page get `host` as the runtime gives it; framed ones get theirs from their frame.
     ...(runtime.host ? { host: runtime.host } : {}),
     onSet: (input, value) => {

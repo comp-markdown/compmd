@@ -1,5 +1,6 @@
-// Math typeset as MathML, which the browser lays out: Temml turns the TeX into it. Temml loads the first time a page
-// has math, so until then, and when the TeX doesn't typeset, the math shows as its source.
+// Math typeset as MathML, which the browser lays out: Temml turns the TeX into it, in both page modes (in the page's
+// frame, or in the host's page). Temml loads the first time a page has math, so until then, and when the TeX doesn't
+// typeset, the math shows as its source.
 
 import type { MathRenderer } from "@compmd/render";
 
@@ -10,6 +11,11 @@ export interface Typesetter {
 
 /** The TeX each element is to show last, so a typesetting that finishes after a newer one is dropped. */
 const latest = new WeakMap<HTMLElement, string>();
+
+/** The math renderer both page modes use: Temml, loaded the first time a page has math. */
+export function temmlMath(): MathRenderer {
+  return typesetMath(async () => (await import("temml")).default);
+}
 
 /**
  * A math renderer for the page, typesetting with what `load` gives, loaded once.

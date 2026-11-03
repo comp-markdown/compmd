@@ -284,6 +284,52 @@ describe("`host` and its events (host mode)", () => {
   });
 });
 
+describe("math", () => {
+  /** A paragraph with inline math, display math, and TeX that doesn't typeset. */
+  const math: ExpandedRoot = {
+    type: "root",
+    children: [
+      { type: "paragraph", children: [{ type: "text", value: "Square: " }, { type: "inlineMath", value: "x^2" }] },
+      { type: "math", value: "\\frac{1}{2}" },
+      { type: "paragraph", children: [{ type: "inlineMath", value: "\\frac{1}{" }] },
+    ],
+  };
+
+  /** What a page shows of its math: how many `<math>` elements, and the source of the math that didn't typeset. */
+  const shown = (root: ParentNode) => ({
+    typeset: root.querySelectorAll(".compmd-math math").length,
+    source: [...root.querySelectorAll(".compmd-math")].filter((math) => !math.querySelector("math")).map((math) => math.textContent),
+  });
+
+  /** A strict component in the page's frame, which reports what the frame's page shows once Temml has typeset. */
+  const looking: HostComponent = {
+    name: "label",
+    language: "js",
+    code: probeCode(`async () => {
+      const shown = ${shown.toString()};
+      for (let tries = 0; tries < 100 && shown(document).typeset < 2; tries++) await new Promise((done) => setTimeout(done, 20));
+      return shown(document);
+    }`),
+    trust: { level: "strict" },
+  };
+
+  const expected = { typeset: 2, source: ["\\frac{1}{"] };
+
+  it("typesets the page's math as MathML in frame mode", async () => {
+    const { view, until, values } = open("frame", [looking]);
+    view.render({ ...math, children: [...math.children, use("one")], inputs: RESULT });
+    await until(() => values().length > 0);
+    expect(values()[0]).toEqual(expected);
+  });
+
+  it("typesets the page's math as MathML in host mode, as in frame mode", async () => {
+    const { area, view } = open("host");
+    view.render(math);
+    for (let tries = 0; tries < 100 && shown(area).typeset < 2; tries++) await pause(20);
+    expect(shown(area)).toEqual(expected);
+  });
+});
+
 describe("theme and styles", () => {
   /** A component that sets `result` to the page's `--compmd-accent` and the host's stylesheets its frame has. */
   const looking: HostComponent = {

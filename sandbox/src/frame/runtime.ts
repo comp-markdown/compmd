@@ -15,7 +15,7 @@ import { frameUse } from "../use.ts";
 import { compile } from "./compile.ts";
 import { Components } from "./components.ts";
 import { load } from "./load.ts";
-import { typesetMath } from "./math.ts";
+import { temmlMath } from "../math.ts";
 import { narrowed, networkPolicy } from "./narrow.ts";
 
 /** The level this document is for, from its root: a strict document stays strict whatever its parent says. */
@@ -30,7 +30,7 @@ for (const name of ["RTCPeerConnection", "webkitRTCPeerConnection", "RTCDataChan
 }
 
 /** Math typeset by Temml, which loads the first time a page has math. */
-const math = typesetMath(async () => (await import("temml")).default);
+const math = temmlMath();
 
 /** Each component's stylesheet, adopted by the frame's document. */
 const sheets = new Map<string, CSSStyleSheet>();

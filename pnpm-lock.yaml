@@ -574,6 +574,9 @@ importers:
       es-module-lexer:
         specifier: 2.3.2
         version: 2.3.2
+      temml:
+        specifier: 0.14.0
+        version: 0.14.0
     devDependencies:
       '@compmd/processor':
         specifier: workspace:*
@@ -620,9 +623,6 @@ importers:
       svelte:
         specifier: 5.57.2
         version: 5.57.2(@typescript-eslint/types@8.72.0)
-      temml:
-        specifier: 0.14.0
-        version: 0.14.0
       typescript:
         specifier: 6.0.3
         version: 6.0.3
