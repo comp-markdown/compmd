@@ -21,6 +21,13 @@
 
   let { entries, evaluations = [], onevaluate, onselect }: Props = $props();
 
+  /** The input's tooltip: what it takes, and where the language is described. */
+  const EXPRESSIONS_HELP = [
+    "An expression of the CompMD CEL profile, as in a param's parentheses: Enter evaluates it, Shift+Enter adds a line, ↑ and ↓ go through the earlier ones.",
+    "The profile, its variables and its md. functions: the CompMD spec, section 8.2, https://compmd.hakanserce.com/spec/#82-expressions",
+    "CEL itself, by example: https://celbyexample.com/",
+  ].join("\n\n");
+
   const lines = $derived(withEvaluations(entries, evaluations));
   const history = new ExpressionHistory();
   let written = $state("");
@@ -113,6 +120,7 @@
       rows={written.split("\n").length}
       spellcheck="false"
       placeholder="An expression to evaluate in the document: md.doc, md.data.sales.size(), md.today()"
+      title={EXPRESSIONS_HELP}
       aria-label="An expression to evaluate in the document. Enter evaluates it, Shift+Enter adds a line, the arrow keys go through the earlier ones."
       bind:value={written}
       onkeydown={(event) => void keydown(event)}

@@ -57,6 +57,12 @@ describe("the Console's input", () => {
     expect(input.value).toBe("half");
   });
 
+  it("says in its tooltip where the expressions are described: the spec's section 8.2, and CEL by example", () => {
+    const { input } = consoleWith();
+    expect(input.title).toContain("https://compmd.hakanserce.com/spec/#82-expressions");
+    expect(input.title).toContain("https://celbyexample.com/");
+  });
+
   it("doesn't evaluate what is only spaces", () => {
     const { asked, write, press } = consoleWith();
     write("   ");
