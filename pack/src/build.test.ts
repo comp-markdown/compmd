@@ -26,6 +26,9 @@ beforeEach(async () => {
     "node_modules/react/package.json": { name: "react", version: "19.3.0" },
     "node_modules/@kit/shared/package.json": { name: "@kit/shared", version: "1.0.0", type: "module", exports: "./index.js" },
     "node_modules/@kit/shared/index.js": "export const shared = 1;\n",
+    // A library with a development build, as React's own packages and many others have.
+    "node_modules/two-builds/package.json": { name: "two-builds", version: "1.0.0", type: "module", exports: "./index.js" },
+    "node_modules/two-builds/index.js": 'export const build = process.env.NODE_ENV === "production" ? "the production build" : "the development build";\n',
   });
 });
 
@@ -48,6 +51,22 @@ describe("buildModules", () => {
     expect(line).toContain('"later"');
     expect(manifestIn("package.json").peerDependencies).toEqual({ "@kit/shared": "^1", react: "^19.3.0" });
     expect(await checkPack(await readPack(dir))).toEqual([]);
+  });
+
+  // Vitest runs this with NODE_ENV=test, as a pack's own tests or a CI step may build it.
+  it("builds for production whatever NODE_ENV says: no development branches, no development JSX", async () => {
+    expect(process.env.NODE_ENV).toBe("test");
+    await write(dir, {
+      "package.json": { name: "@kit/counter", version: "0.1.0", compmd: "./index.comp.md", files: ["dist", "index.comp.md"] },
+      "index.comp.md": documentOf(["dist/counter.js"]),
+      "src/counter.tsx": 'import { build } from "two-builds";\nexport const Counter = () => <p>{build}</p>;\nexport default Counter;\n',
+    });
+    await buildModules(await readPack(dir), { logLevel: "silent" });
+    const counter = readFileSync(join(dir, "dist/counter.js"), "utf8");
+    expect(counter).toContain("the production build");
+    expect(counter).not.toContain("the development build");
+    expect(counter).not.toContain("process.env");
+    expect(importsOf(counter)).toEqual(["react/jsx-runtime"]);
   });
 
   it("builds a library pack as one module, and takes its library's version", async () => {

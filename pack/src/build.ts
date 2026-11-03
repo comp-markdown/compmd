@@ -49,6 +49,12 @@ export function moduleConfig(pack: Pack, module: Pack["modules"][number], option
     configFile: false,
     root: pack.dir,
     logLevel: options.logLevel ?? "warn",
+    // What is published, whatever NODE_ENV the build runs under (a test runner sets `test`): the production JSX, and
+    // the production branches of the libraries it bundles, with no `process` left, which a frame doesn't have.
+    mode: "production",
+    define: { "process.env.NODE_ENV": JSON.stringify("production") },
+    // Vite takes development JSX from NODE_ENV itself, whatever the mode.
+    oxc: { jsx: { runtime: "automatic", development: false } },
     build: {
       lib: { entry: join(pack.dir, ...module.source.split("/")), formats: ["es"], fileName: () => out.at(-1) ?? "index.js" },
       outDir: join(pack.dir, ...out.slice(0, -1)),
