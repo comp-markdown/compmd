@@ -169,6 +169,8 @@ Where nothing is interactive, a plain renderer or a printout, the page shows the
 
 Inputs belong to the document being read. A component of your own (Part IV) doesn't see `md.input`: give it the value as a param, `:: fee-table[…] {size=(md.input.size)}`. An input of another document that this one loads (chapter 6) isn't used.
 
+So input components go in the document's own text, never in a component's definition: there, no input is declared for `bind` to name, and `:: select-input[Size: small] {bind=size}` is `F030`. A form that lays its controls out, with their labels, is written in the document; a box or a grid around them can still be a component of your own, with the controls in its slot.
+
 A component from a pack can change an input too, when its params say so and you bind one to it: a chart whose bars the reader clicks to pick a region, written `selected=region`. Its README says which params do. Since such a component's code can set the input, that input can't be used in a data import's `from` (`F031`): code could otherwise send what it likes through it.
 
 The [spec's inputs](https://compmd.hakanserce.com/spec/#87-inputs) have every rule.
