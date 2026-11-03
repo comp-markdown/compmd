@@ -180,6 +180,16 @@ impl Handle {
         Ok(self.document()?.sources()?)
     }
 
+    /// Each data import's cache key for the inputs as they are now, `[{as, key}]`: its final URL or path.
+    ///
+    /// # Errors
+    ///
+    /// None in practice, as `splice`.
+    #[wasm_bindgen(js_name = cacheKeys)]
+    pub fn cache_keys(&self) -> Result<String, JsError> {
+        Ok(self.document()?.cache_keys()?)
+    }
+
     /// Loads and expands again with the data the host fetched, `{remote, host}`.
     ///
     /// # Errors

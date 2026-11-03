@@ -502,6 +502,11 @@ export class OpenDocumentJson {
     return JSON.parse(this.#kept.sources()) as Needed;
   }
 
+  /** Each data import's cache key for the inputs as they are now, as {@link OpenDocument.cacheKeys}. */
+  cacheKeys(): CacheKey[] {
+    return JSON.parse(this.#kept.cacheKeys()) as CacheKey[];
+  }
+
   /** Loads and expands again with the data the host fetched, as {@link OpenDocument.reload}. */
   reload(fetched: FetchedData): ChangesJson {
     this.#kept.reload(JSON.stringify(fetched));
@@ -586,6 +591,17 @@ export class OpenDocument {
    */
   sources(): Needed {
     return this.#json.sources();
+  }
+
+  /**
+   * Each data import's cache key for the inputs as they are now, as {@link Processed.cacheKeys}: its final URL or path,
+   * which a host keeps its fetched copies by. Computed when asked, not with each change.
+   *
+   * @example
+   * const cached = new Map(document.cacheKeys().map(({ as, key }) => [as, cache.get(key)]));
+   */
+  cacheKeys(): CacheKey[] {
+    return this.#json.cacheKeys();
   }
 
   /** Loads and expands again with the data the host fetched, in place of what it was given before. */

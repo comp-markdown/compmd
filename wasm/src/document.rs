@@ -226,6 +226,12 @@ impl Document {
         }
     }
 
+    /// Each data import's cache key for the inputs as they are now, `[{as, key}]`: what `process` gives as
+    /// `cacheKeys`.
+    pub(crate) fn cache_keys(&self) -> Result<String, Error> {
+        Ok(serde_json::to_string(&self.processor.cache_keys())?)
+    }
+
     /// The remote and `host:` sources a render needs now, `{remote, host}`.
     pub(crate) fn sources(&self) -> Result<String, Error> {
         Ok(serde_json::to_string(&self.processor.sources())?)
@@ -403,6 +409,9 @@ mod tests {
             })
         );
         assert_eq!(changes(&document)["diagnostics"][0]["code"], "F026");
+        let keys: Json =
+            serde_json::from_str(&document.cache_keys().expect("cache keys")).expect("JSON");
+        assert_eq!(keys, json!([{ "as": "x", "key": "https://a.org/x.json" }]));
         let fetched = json!({ "remote": { "https://a.org/x.json": { "text": "{\"n\": \"fetched\"}", "contentType": "application/json" } } });
         let data = Data::from_json(&fetched.to_string()).expect("data");
         let changes = changes(&document.reload(data));

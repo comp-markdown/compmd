@@ -81,6 +81,22 @@ describe("process", () => {
   });
 });
 
+describe("OpenDocument.cacheKeys", () => {
+  it("gives each data import's key as the text is now", () => {
+    const text = "---\nmd:\n  data:\n    - from: https://a.org/x.json\n      as: x\n---\nText.\n";
+    const request: Request = { path: "a.comp.md", files: { "a.comp.md": text }, allowedOrigins: ["https://a.org"], now: "2026-10-22T09:00:00Z" };
+    const document = new OpenDocument(request);
+    expect(document.cacheKeys()).toEqual([{ as: "x", key: "https://a.org/x.json" }]);
+    const at = text.indexOf("x.json");
+    document.edit(at, at + 1, "y");
+    expect(document.cacheKeys()).toEqual([{ as: "x", key: "https://a.org/y.json" }]);
+    const json = new OpenDocumentJson(request);
+    expect(json.cacheKeys()).toEqual([{ as: "x", key: "https://a.org/x.json" }]);
+    document.free();
+    json.free();
+  });
+});
+
 describe("frontmatterOf", () => {
   it("gives the document's fields, settings, data and inputs", () => {
     const frontmatter = frontmatterOf(completeExample());
