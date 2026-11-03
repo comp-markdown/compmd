@@ -13,7 +13,7 @@ mod tree;
 use common::place;
 use compmd::context::RenderContext;
 use compmd::expand;
-use compmd::host::{Fetched, LoadedRelease, Needed, Release};
+use compmd::host::{CacheKey, Fetched, LoadedRelease, Needed, Release};
 use compmd::{Ambient, Language, ParseOptions, Processor};
 use semver::Version;
 use serde_json::Value;
@@ -41,6 +41,9 @@ struct Rendered {
     sources: Needed,
     /// The host-language components, by name and language.
     components: Vec<(String, Language)>,
+    /// Whether processing failed, in the setup's mode.
+    failed: bool,
+    cache_keys: Vec<CacheKey>,
 }
 
 fn render(input: &str, setup: Setup) -> Rendered {
@@ -108,6 +111,8 @@ fn render(input: &str, setup: Setup) -> Rendered {
             .into_iter()
             .map(|c| (c.name, c.language))
             .collect(),
+        failed: expanded.failed(),
+        cache_keys: expanded.cache_keys(),
     }
 }
 

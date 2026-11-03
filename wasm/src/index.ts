@@ -45,6 +45,11 @@ export interface Request {
   inputs?: Record<string, unknown>;
   /** Whether expanded nodes carry their origins (spec §12.3), as a live preview needs. */
   origins?: boolean;
+  /**
+   * `lenient` (the default), for previews and editors, or `strict`, for CI and publishing, in which any `F` diagnostic
+   * fails processing (spec §10.1): {@link Processed.failed}. Both report the same diagnostics and make the same trees.
+   */
+  mode?: "lenient" | "strict";
 }
 
 /** A release of a pack, with its files: `package.json`, the pack's document, and what it imports. */
@@ -96,6 +101,21 @@ export interface Processed {
   expanded: ExpandedRoot;
   /** The diagnostics of every stage, in stage order. */
   diagnostics: Diagnostic[];
+  /** Whether processing failed: in `strict` mode, on any `F` diagnostic. The trees are there either way. */
+  failed: boolean;
+  /**
+   * The processed document's data imports, in written order, each with the key a host keeps its cached copy of the
+   * source by (spec §8.6): its final URL or path, the inputs filled in. An import whose origin isn't allowed has none.
+   */
+  cacheKeys: CacheKey[];
+}
+
+/** A data import's cache key. */
+export interface CacheKey {
+  /** The import's name, `sales` for `md.data.sales`. */
+  as: string;
+  /** An `https:` URL, a `host:` source with `host:`, or a file's path in the root folder or in a pack (`@acme/kit@1.4.2/icons.json`). */
+  key: string;
 }
 
 /** What a render needs that the request doesn't hold, each once, in the order it is written. */

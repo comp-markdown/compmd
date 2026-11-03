@@ -47,7 +47,7 @@
 use crate::context::RenderContext;
 use crate::diagnostic::Diagnostic;
 use crate::expanded::{self, Inputs};
-use crate::host::{Data, Fetch, Files, Needed, Packs};
+use crate::host::{CacheKey, Data, Fetch, Files, Needed, Packs};
 use crate::load;
 use crate::parse::{self, Change, ParseOptions, TextEdit};
 use crate::policy::Policy;
@@ -573,6 +573,44 @@ impl Processor<Expanded> {
     pub fn tree(&self) -> &tree::Root {
         let resolved = &self.state.validated.resolved;
         &resolved.document(resolved.main).root
+    }
+
+    /// Whether processing failed: in strict mode ([`expand::Options::mode`]), any `F` diagnostic fails it (spec
+    /// §10.1). The tree and the diagnostics are there either way.
+    ///
+    /// ```
+    /// use compmd::context::RenderContext;
+    /// use compmd::diagnostic::Mode;
+    /// use compmd::expand::Options;
+    /// use compmd::{Ambient, ParseOptions, Processor};
+    /// use std::rc::Rc;
+    ///
+    /// let context = RenderContext { now: 0, tz: "UTC".into(), time: Rc::new(()), inputs: Default::default() };
+    /// let strict = Options { mode: Mode::Strict, ..Options::default() };
+    /// let processor = Processor::new("a.comp.md", "Hello {{nobody}}.\n")
+    ///     .parse(&ParseOptions::default())
+    ///     .resolve((), (), &Ambient::default())
+    ///     .validate(&[])
+    ///     .load(context, (), ())
+    ///     .expand(&strict);
+    /// assert!(processor.failed());
+    /// assert!(!processor.expanded().children.is_empty());
+    /// ```
+    #[must_use]
+    pub fn failed(&self) -> bool {
+        self.state.options.mode.fails(&self.diagnostics)
+    }
+
+    /// The cache key of each of the processed document's data imports, for the input values this render used: the
+    /// final URL or path a host keys its cached copy by (spec §8.6).
+    #[must_use]
+    pub fn cache_keys(&self) -> Vec<CacheKey> {
+        let validated = &self.state.validated;
+        load::cache_keys(
+            &validated.resolved,
+            &validated.checks,
+            &self.state.data.inputs,
+        )
     }
 
     /// The expanded tree (spec §12.3).

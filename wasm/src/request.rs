@@ -2,9 +2,9 @@
 //! (`camelCase`), as `src/index.ts` types it.
 
 use compmd::context::{RenderContext, parse_time};
-use compmd::diagnostic::Diagnostic;
+use compmd::diagnostic::{Diagnostic, Mode};
 use compmd::expand::Options;
-use compmd::host::{Fetched, LoadedRelease, Time};
+use compmd::host::{CacheKey, Fetched, LoadedRelease, Time};
 use compmd::policy::Policy;
 use compmd::processor::{Expanded, Validated};
 use compmd::{Ambient, ParseOptions, Processor, expanded, tree};
@@ -56,14 +56,22 @@ struct Request {
     /// Whether expanded nodes carry their origins (spec §12.3).
     #[serde(default)]
     origins: bool,
+    /// `lenient` (the default) or `strict`, in which any `F` diagnostic fails processing (spec §10.1).
+    #[serde(default)]
+    mode: Mode,
 }
 
 /// What processing gave.
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 struct Processed<'a> {
     parse: &'a tree::Root,
     expanded: &'a expanded::Root,
     diagnostics: &'a [Diagnostic],
+    /// Whether processing failed: in strict mode, on any `F` diagnostic. The trees are there either way.
+    failed: bool,
+    /// The final URL or path of each data import, which a cached copy is kept by (spec §8.6).
+    cache_keys: Vec<CacheKey>,
 }
 
 /// A request's document through stage 3, with what loading and expanding it take.
@@ -88,13 +96,15 @@ pub(crate) enum Error {
     NoDocument(String),
 }
 
-/// Runs stages 1 to 4b on the request in `json`: `{parse, expanded, diagnostics}`.
+/// Runs stages 1 to 4b on the request in `json`: `{parse, expanded, diagnostics, failed, cacheKeys}`.
 pub(crate) fn process(json: &str, time: Rc<dyn Time>) -> Result<String, Error> {
     let processor = prepare(json, time)?.expand();
     let processed = Processed {
         parse: processor.tree(),
         expanded: processor.expanded(),
         diagnostics: processor.diagnostics(),
+        failed: processor.failed(),
+        cache_keys: processor.cache_keys(),
     };
     Ok(serde_json::to_string(&processed)?)
 }
@@ -164,6 +174,7 @@ impl Request {
             host: self.host,
             options: Options {
                 origins: self.origins,
+                mode: self.mode,
                 ..Options::default()
             },
         })
@@ -335,5 +346,37 @@ mod tests {
                 "packs": [{ "pack": "@kit/mermaid", "range": "1.2.0", "integrity": "sha512-m" }]
             })
         );
+    }
+
+    #[test]
+    fn strict_mode_fails_on_an_error_and_keys_name_each_source() {
+        let text = "---\nmd:\n  data:\n    - from: ./missing.json\n      as: gone\n    - from: https://status.example.org/{{md.input.region}}.json\n      as: status\n  inputs:\n    region: eu | us = eu\n---\nText.\n";
+        let processed = |mode: &str| -> Json {
+            let request = json!({
+                "path": "a.comp.md",
+                "files": { "a.comp.md": text },
+                "allowedOrigins": ["https://status.example.org"],
+                "now": "2026-10-22T09:00:00Z",
+                "inputs": { "region": "us" },
+                "mode": mode
+            });
+            serde_json::from_str(&process(&request.to_string(), Rc::new(())).expect("processed"))
+                .expect("JSON")
+        };
+        let lenient = processed("lenient");
+        let strict = processed("strict");
+        assert_eq!(lenient["failed"], false);
+        assert_eq!(strict["failed"], true);
+        assert_eq!(strict["diagnostics"], lenient["diagnostics"]);
+        assert_eq!(strict["expanded"], lenient["expanded"]);
+        assert_eq!(
+            lenient["cacheKeys"],
+            json!([
+                { "as": "gone", "key": "missing.json" },
+                { "as": "status", "key": "https://status.example.org/us.json" }
+            ])
+        );
+        let defaults = request(&json!({ "path": "a", "now": "2026-10-22T09:00:00Z" }));
+        assert_eq!(defaults.mode, Mode::Lenient);
     }
 }

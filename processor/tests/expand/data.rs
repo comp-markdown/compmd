@@ -3,6 +3,7 @@
 
 use super::*;
 use crate::common::at;
+use compmd::diagnostic::Mode;
 use serde_json::json;
 
 #[test]
@@ -30,6 +31,75 @@ fn inputs_take_given_values_that_fit_or_their_defaults() {
     assert_eq!(inputs["flag"]["value"], Value::Null);
     assert_eq!(inputs["n"], json!({ "type": "number", "value": 2 }));
     assert_eq!(inputs["odd"], json!({ "type": "whatever", "value": "x" }));
+}
+
+#[test]
+fn a_failed_fetch_is_f026_in_either_mode_and_fails_only_strict_processing() {
+    let input = "---\nmd:\n  data:\n    - from: https://api.example.com/gone.json\n      as: gone\n---\n\n[{{md.data.gone}}]\n";
+    let setup = |mode| Setup {
+        allowed: vec!["https://api.example.com"],
+        options: expand::Options {
+            mode,
+            ..expand::Options::default()
+        },
+        ..Setup::default()
+    };
+    let lenient = render(input, setup(Mode::Lenient));
+    let strict = render(input, setup(Mode::Strict));
+    assert_eq!(lenient.found, [at("F026", 4, 13)]);
+    assert_eq!(
+        strict.found, lenient.found,
+        "the mode changes no diagnostic"
+    );
+    assert_eq!(text(&strict.tree), "[]", "strict mode still makes the tree");
+    assert!(!lenient.failed && strict.failed);
+    // An opener right after a paragraph line: W108 alone.
+    let warned = render("Text.\n::: box\nIn a box.\n::: /box\n", setup(Mode::Strict));
+    assert_eq!(warned.found, [at("W108", 2, 1)]);
+    assert!(!warned.failed, "only errors fail it");
+}
+
+#[test]
+fn each_data_import_has_the_cache_key_of_its_final_source() {
+    let input = "---\nmd:\n  import:\n    - from: \"@acme/kit@1\"\n      names: \"*\"\n  inputs:\n    month: november | december = november\n    region: eu | us = eu\n  data:\n    - from: ./jobs-{{md.input.month}}.yaml\n      as: jobs\n    - from: https://api.example.com/s?r={{md.input.region}}\n      as: sales\n    - from: host:tasks?status=open\n      as: tasks\n    - from: \"@acme/kit/icons.json\"\n      as: icons\n    - from: https://elsewhere.example.com/x.json\n      as: refused\n---\n\nText.\n";
+    let rendered = render(
+        input,
+        Setup {
+            files: vec![("jobs-december.yaml", "- Oil the tools\n")],
+            kit: vec![
+                (
+                    "package.json",
+                    "{\"name\": \"@acme/kit\", \"version\": \"1.0.0\"}",
+                ),
+                ("index.comp.md", "---\nmd:\n  export:\n    names: []\n---\n"),
+                ("icons.json", "{\"star\": \"*\"}"),
+            ],
+            web: vec![(
+                "https://api.example.com/s?r=us",
+                "n: 5\n",
+                Some("application/yaml"),
+            )],
+            host: json!({ "tasks?status=open": [] }),
+            inputs: json!({ "month": "december", "region": "us" }),
+            allowed: vec!["https://api.example.com"],
+            ..Setup::default()
+        },
+    );
+    let keys: Vec<(&str, &str)> = rendered
+        .cache_keys
+        .iter()
+        .map(|key| (key.name.as_str(), key.key.as_str()))
+        .collect();
+    // The origin validating refuses (F028) has no key: nothing is fetched for it.
+    assert_eq!(
+        keys,
+        [
+            ("jobs", "jobs-december.yaml"),
+            ("sales", "https://api.example.com/s?r=us"),
+            ("tasks", "host:tasks?status=open"),
+            ("icons", "@acme/kit@1.0.0/icons.json"),
+        ]
+    );
 }
 
 #[test]

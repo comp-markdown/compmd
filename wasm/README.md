@@ -36,12 +36,15 @@ const request = {
   origins: true,
 };
 const { remote, host, packs } = sources(request); // the URLs, host: sources and packs to get first, if any
-const { parse, expanded, diagnostics } = process(request);
+const { parse, expanded, diagnostics, failed, cacheKeys } = process(request);
 ```
+
+- **`mode`**, in the request, is `lenient` (the default) or `strict` (spec §10.1). Both report the same diagnostics and make the same trees; `failed` is true when strict mode failed on an `F` diagnostic, for CI and publishing.
+- **`cacheKeys`** gives each of the document's data imports with its final URL or path, the inputs filled in (`{as: "sales", key: "https://api.example.com/sales?region=eu"}`): a host that keeps fetched copies keys them by it (spec §8.6), so a copy is reused only for the same values.
 
 `sources` lists the packs the document, and the packs the request holds, import that `packs` has no matching release of, each once with its range as written and its pinned `integrity` (`{pack: "@kit/mermaid", range: "1"}`), for a host that gets packs from a registry: it fetches them, adds them to `packs`, and asks again, until none is missing. Packs the `policy` refuses aren't listed. The processor itself fetches nothing. [`@compmd/registry`](../registry/README.md) does this loop. `newestMatching(range, versions)` picks a version for a range as the processor does, and a release a host found broken (its tarball doesn't match its integrity) is given with `broken: "<why>"`, which makes an import of it F035.
 
-A request holds the files of the document's root folder by path, the registry's packs with their files, the ambient packs, the host's `policy` for packs (those it lists with their trust, whether a document may import others, those it denies or left out; spec §6.4, §15), the origins remote data may come from, remote data fetched beforehand by URL (`{text, contentType}`), host data by source, the render time (RFC 3339), the time zone, the inputs' values, and whether expanded nodes carry origins. `process` throws when the request isn't valid or its document isn't one of its files; everything wrong with the document itself is a diagnostic.
+A request holds the files of the document's root folder by path, the registry's packs with their files, the ambient packs, the host's `policy` for packs (those it lists with their trust, whether a document may import others, those it denies or left out; spec §6.4, §15), the origins remote data may come from, remote data fetched beforehand by URL (`{text, contentType}`), host data by source, the render time (RFC 3339), the time zone, the inputs' values, whether expanded nodes carry origins, and the mode. `process` throws when the request isn't valid or its document isn't one of its files; everything wrong with the document itself is a diagnostic.
 
 An editor keeps the document open instead, and sends each edit ([incremental processing](../processor/docs/incremental.md)):
 

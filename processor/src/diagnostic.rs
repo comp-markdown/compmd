@@ -2,7 +2,7 @@
 
 use crate::named::named;
 use serde::ser::SerializeStruct;
-use serde::{Serialize, Serializer};
+use serde::{Deserialize, Serialize, Serializer};
 use std::fmt;
 
 named! {
@@ -166,6 +166,37 @@ pub enum Severity {
     Error,
     /// A `W` code.
     Warning,
+}
+
+/// How processing treats errors (spec §10.1). Either way, the processor reports every diagnostic, applies the recovery
+/// rules and makes the whole tree; the mode only says whether its errors fail the result.
+///
+/// ```
+/// use compmd::diagnostic::{Code, Diagnostic, Location, Mode};
+///
+/// let found = [Diagnostic::new(Code::F014, Location::new(1, 3), "unknown interpolation path")];
+/// assert!(Mode::Strict.fails(&found));
+/// assert!(!Mode::Lenient.fails(&found));
+/// ```
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Mode {
+    /// Errors are reported and processing goes on with fallbacks: for previews and editors.
+    #[default]
+    Lenient,
+    /// Any `F` error fails processing: for CI and publishing.
+    Strict,
+}
+
+impl Mode {
+    /// Whether processing that found `diagnostics` fails in this mode.
+    #[must_use]
+    pub fn fails(self, diagnostics: &[Diagnostic]) -> bool {
+        self == Self::Strict
+            && diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.code.severity() == Severity::Error)
+    }
 }
 
 /// The stage that found a diagnostic (spec §11).

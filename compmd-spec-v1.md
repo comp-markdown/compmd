@@ -1058,7 +1058,7 @@ md:
 - A processor fetches only from origins allowed by its user or host configuration; the document cannot grant access. A disallowed origin is F028.
 - A processor that fetches while a reader views the document MUST ask the reader the first time a document needs an origin the reader hasn't decided on, and remember the answer. Origins the host configured need no question. Until the reader allows the origin, it is disallowed (F028), and the document renders with the `fallback`.
 - Documents carry no credentials. Authenticated sources are configured per origin by the host, or reached through a host-language component.
-- A failed fetch uses `fallback` if present; otherwise it is F026 in strict mode, and `null` in lenient mode (an `each` over it renders its `empty` slot).
+- A failed fetch uses `fallback` if present; otherwise it is F026 and the data is `null` (an `each` over it renders its `empty` slot), in either mode: strict mode fails processing on it, as on any `F` error (section 10.1).
 
 **Errors.** A missing, unreachable or unparseable source is F026, reported at the line and column inside the data file when available. A record that violates `schema` is F027, naming the record and field.
 

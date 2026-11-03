@@ -50,6 +50,31 @@ describe("process", () => {
     expect(processed.diagnostics).toMatchObject([{ code: "F002", severity: "error", range: { start: { line: 1, column: 4 } }, stage: "resolve" }]);
   });
 
+  it("fails only in strict mode, with the same trees and diagnostics", () => {
+    const request: Request = { path: "a.comp.md", files: { "a.comp.md": "Hello {{nobody}}.\n" }, now: "2026-10-22T09:00:00Z" };
+    const lenient = process(request);
+    const strict = process({ ...request, mode: "strict" });
+    expect(lenient.failed).toBe(false);
+    expect(strict.failed).toBe(true);
+    expect(strict.diagnostics).toEqual(lenient.diagnostics);
+    expect(strict.expanded).toEqual(lenient.expanded);
+  });
+
+  it("gives each data import's cache key, its inputs filled in", () => {
+    const text = "---\nmd:\n  inputs:\n    region: eu | us = eu\n  data:\n    - from: https://status.example.org/{{md.input.region}}.json\n      as: status\n    - from: ./notes.json\n      as: notes\n---\nText.\n";
+    const processed = process({
+      path: "a.comp.md",
+      files: { "a.comp.md": text, "notes.json": "[]" },
+      allowedOrigins: ["https://status.example.org"],
+      inputs: { region: "us" },
+      now: "2026-10-22T09:00:00Z",
+    });
+    expect(processed.cacheKeys).toEqual([
+      { as: "status", key: "https://status.example.org/us.json" },
+      { as: "notes", key: "notes.json" },
+    ]);
+  });
+
   it("throws on a request it can't process", () => {
     expect(() => process({ path: "a.comp.md", files: {}, now: "2026-10-22T09:00:00Z" })).toThrow("`a.comp.md` isn't one of the request's files");
     expect(() => process({ path: "a.comp.md", files: { "a.comp.md": "" }, now: "today" })).toThrow("`today` isn't an RFC 3339 time");

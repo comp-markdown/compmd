@@ -15,7 +15,7 @@ use crate::cel::{Key, Value};
 use crate::context::RenderContext;
 use crate::diagnostic::{Code, Diagnostic, Location, Stage};
 use crate::expanded::Inputs;
-use crate::host::{Data, Fetch, Needed};
+use crate::host::{CacheKey, Data, Fetch, Needed};
 use crate::resolve::{DocumentId, Origin, Resolved, Store};
 use crate::settings::DataImport;
 use crate::validate::Validated;
@@ -69,6 +69,30 @@ pub(crate) fn sources(
         }
     }
     needed
+}
+
+/// The cache key of each of the processed document's data imports, for the values `inputs` hold, in written order;
+/// an import validating refused, or whose `from` gives no source, has none.
+pub(crate) fn cache_keys(
+    resolved: &Resolved,
+    validated: &Validated,
+    inputs: &Inputs,
+) -> Vec<CacheKey> {
+    let input = inputs.value();
+    imports(resolved, validated)
+        .filter(|(id, _, _)| *id == resolved.main)
+        .filter_map(|(id, _, import)| {
+            let key = match from::target(resolved, id, import, &input).ok()? {
+                Target::File(origin) => origin.to_string(),
+                Target::Remote(url) => url,
+                Target::Host(source) => format!("host:{source}"),
+            };
+            Some(CacheKey {
+                name: import.name.clone(),
+                key,
+            })
+        })
+        .collect()
 }
 
 /// The host's sources of data: its files and packs, remote data and `host:` data.

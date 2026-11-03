@@ -109,6 +109,18 @@ pub struct Needed {
     pub packs: Vec<NeededPack>,
 }
 
+/// What a host keys its cached copy of a data import's source by (spec §8.6): the source's final URL or path, its
+/// inputs filled in, so a copy is reused only for the same values.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct CacheKey {
+    /// The import's name, its `as`: `sales` for `md.data.sales`.
+    #[serde(rename = "as")]
+    pub name: String,
+    /// An `https:` URL, a `host:` source with `host:`, or a file's path: in the root folder (`data/sales.csv`) or in
+    /// a pack (`@acme/kit@1.4.2/icons.json`).
+    pub key: String,
+}
+
 /// A pack import, or a library a pack names, that [`Packs`] has no release for.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct NeededPack {

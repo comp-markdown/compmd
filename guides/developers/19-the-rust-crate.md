@@ -47,11 +47,11 @@ assert_eq!(json["children"][0]["children"][0]["value"], "Ana, Kenji");
 | `.resolve_with(files, packs, &Ambient, &Policy)` | 2, resolve | the same, with the host's policy for packs |
 | `.validate(&allowed_origins)` | 3, validate | the origins remote data may come from, `https://api.example.com` |
 | `.load(context, fetch, data)` | 4a, load | the render context, remote data, `host:` data |
-| `.expand(&expand::Options)` | 4b, evaluate | the options; `origins: true` puts an origin on every expanded node |
+| `.expand(&expand::Options)` | 4b, evaluate | the options; `origins: true` puts an origin on every expanded node, and `mode` is `Mode::Lenient` (the default) or `Mode::Strict` |
 
 `RenderContext` is the render: `now` in nanoseconds since 1970 (`compmd::context::parse_time` gives it from RFC 3339 text), the processor's time zone `tz`, the host's time zones `time`, and the values given for the document's `inputs`, as JSON by name.
 
-Each state gives what its stage made: `tree()` after parsing (the parse tree, spec §12.1), `inputs()` after loading, and after expanding `expanded()` (the expanded tree), `host_components()` (each host-language component with its code, for a renderer), `frontmatter()`, `components()` and `hint_at(offset)` for editors. Every tree serializes, with serde, to the spec's JSON. From the expanded state, `reload(context, fetch, data)` renders again for other inputs or data without the first three stages, and `edit(&TextEdit)` takes an edit of the text and redoes only the blocks it touches, with `splice()` saying what changed. [The README](../../processor/README.md) lists them all.
+Each state gives what its stage made: `tree()` after parsing (the parse tree, spec §12.1), `inputs()` after loading, and after expanding `expanded()` (the expanded tree), `host_components()` (each host-language component with its code, for a renderer), `failed()` (whether strict mode failed), `cache_keys()` (each data import's final URL or path, which a host keys its cached copies by), `frontmatter()`, `components()` and `hint_at(offset)` for editors. Every tree serializes, with serde, to the spec's JSON. From the expanded state, `reload(context, fetch, data)` renders again for other inputs or data without the first three stages, and `edit(&TextEdit)` takes an edit of the text and redoes only the blocks it touches, with `splice()` saying what changed. [The README](../../processor/README.md) lists them all.
 
 ## What the host gives
 
@@ -120,31 +120,33 @@ A `Diagnostic` serializes to the spec's [machine form](https://compmd.hakanserce
 
 ## Checking documents in CI
 
-The spec's [strict mode](https://compmd.hakanserce.com/spec/#101-modes) fails on any F code: for CI and publishing. A program that checks every document among the files it is given, prints each diagnostic, and fails on an error:
+The spec's [strict mode](https://compmd.hakanserce.com/spec/#101-modes) fails on any F code: for CI and publishing. It reports the same diagnostics and makes the same tree as lenient mode; `failed()` says whether it failed. A program that checks every document among the files it is given, prints each diagnostic, and fails on an error:
 
 ```rust
 use compmd::context::RenderContext;
-use compmd::diagnostic::Severity;
+use compmd::diagnostic::Mode;
+use compmd::expand::Options;
 use compmd::{Ambient, ParseOptions, Processor};
 use std::collections::HashMap;
 use std::process::ExitCode;
 use std::rc::Rc;
 
-/// The diagnostics of the document at `path`, each as `file:line:column: code message`, and whether one is an error.
+/// The diagnostics of the document at `path`, each as `file:line:column: code message`, and whether it failed.
 fn check(path: &str, files: &HashMap<String, String>) -> (Vec<String>, bool) {
     let context = RenderContext { now: 0, tz: "UTC".into(), time: Rc::new(()), inputs: Default::default() };
+    let strict = Options { mode: Mode::Strict, ..Options::default() };
     let processor = Processor::new(path, files[path].as_str())
         .parse(&ParseOptions::default())
         .resolve(files.clone(), (), &Ambient::default())
         .validate(&[])
         .load(context, (), ())
-        .expand(&Default::default());
-    let diagnostics = processor.diagnostics();
-    let lines = diagnostics
+        .expand(&strict);
+    let lines = processor
+        .diagnostics()
         .iter()
         .map(|d| format!("{}:{}:{}: {} {}", d.file.as_deref().unwrap_or(path), d.range.start.line, d.range.start.column, d.code, d.message))
         .collect();
-    (lines, diagnostics.iter().any(|d| d.severity() == Severity::Error))
+    (lines, processor.failed())
 }
 
 fn main() -> ExitCode {
@@ -155,9 +157,9 @@ fn main() -> ExitCode {
         .collect();
     let mut failed = false;
     for path in files.keys().filter(|path| path.ends_with(".comp.md")) {
-        let (lines, errors) = check(path, &files);
+        let (lines, failed_here) = check(path, &files);
         lines.iter().for_each(|line| eprintln!("{line}"));
-        failed |= errors;
+        failed |= failed_here;
     }
     if failed { ExitCode::FAILURE } else { ExitCode::SUCCESS }
 }
@@ -171,7 +173,7 @@ What it leaves to you:
 - **Remote and `host:` data.** None is given, so a remote import loads its `fallback` or is F026, and a URL's origin is F028 unless you list it in `validate`. A check that should reach the network fetches what `sources` lists first.
 - **Warnings** are printed and pass. Fail on them too, if your documents should have none.
 
-The same check runs in Node with `@compmd/processor`'s `process`, which gives the same diagnostics; the Vite plugin checks a listed pack's documents that way when an app builds ([chapter 20](20-the-configurations-reference.md#what-the-plugin-checks)).
+The same check runs in Node with `@compmd/processor`'s `process` and `mode: "strict"`, which gives the same diagnostics and `failed`; the Vite plugin checks a listed pack's documents that way when an app builds ([chapter 20](20-the-configurations-reference.md#what-the-plugin-checks)).
 
 ## What the crate doesn't do
 

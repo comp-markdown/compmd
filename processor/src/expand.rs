@@ -15,7 +15,7 @@ mod text;
 
 use crate::cel::{Error, Program, Value, Values};
 use crate::context::RenderContext;
-use crate::diagnostic::{Code, Diagnostic, Location, Stage};
+use crate::diagnostic::{Code, Diagnostic, Location, Mode, Stage};
 use crate::expanded::{self, Content, Origin, Root};
 use crate::lines::Lines;
 use crate::load::Loaded;
@@ -40,6 +40,8 @@ pub struct Options {
     pub origins: bool,
     /// The most nodes the expanded tree may have; beyond it, F034 (spec §8.5).
     pub limit: usize,
+    /// Whether errors fail the result (spec §10.1): [`Processor::failed`](crate::Processor#method.failed).
+    pub mode: Mode,
 }
 
 impl Default for Options {
@@ -47,6 +49,7 @@ impl Default for Options {
         Self {
             origins: false,
             limit: LIMIT,
+            mode: Mode::default(),
         }
     }
 }

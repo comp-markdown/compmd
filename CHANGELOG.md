@@ -6,6 +6,7 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
 
 ### 2026-11-03
 
+- **A failed fetch in lenient mode (§8.6).** A failed fetch without `fallback` is F026 in either mode, with `null` for the data; strict mode fails on it, as on any `F` error. Before, the sentence could be read as `null` with no diagnostic in lenient mode, which §10.1 contradicts. Not breaking.
 - **`host` for trusted components too (§7.4, §15).** A processor may give `host` to components of trusted packs as well as permissive ones, the same at both levels, so a component written against it works whichever level its pack is given. Before, `host` was for permissive components alone, though a trusted one reaches more anyway. Not breaking.
 - **Slot names with `-` (§5.1, §7.6, §8.1, §10.2).** A slot named with `-`, as the naming convention suggests (`:: #side-panel`), is placed in a `compmd` body with `_` in its path, `{{md.slot.side_panel}}`, as a param is read, and is the camelCase prop or snippet in the React and Svelte bindings (`sidePanel`). Two slots of one component whose names differ only in `-` and `_` are F013, as two params are. Before, such a slot could be declared and filled but never placed. Not breaking: no document could place one.
 
