@@ -2,7 +2,7 @@
 // after `pnpm build`. It fails on the first problem it finds, saying what it was.
 //
 // - Every page, light and dark, at a desktop's and a phone's width: no page errors, no failed requests, nothing wider
-//   than the window.
+//   than the window; and each painted styled before any script runs.
 // - The landing page: the hero goes live and follows an edit; the plain toggle switches; the input example follows its
 //   input; the JSX and code renderer examples render in the site's sandbox; the site's own stars mount in the page
 //   and set their input; a section chosen in the contents wheel scrolls into
@@ -69,6 +69,17 @@ async function everyPage(browser: Browser): Promise<void> {
         await page.close();
       }
     }
+  }
+}
+
+/** Every page paints styled from its HTML alone, its stylesheets inlined, so a link followed shows no unstyled page. */
+async function firstPaint(browser: Browser): Promise<void> {
+  for (const path of PAGES) {
+    const page = await browser.newPage({ javaScriptEnabled: false, colorScheme: "light" });
+    await page.goto(ROOT + path);
+    const background = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+    check(background === "rgb(233, 237, 241)", `/${path} paints unstyled before its script runs (its background is ${background})`);
+    await page.close();
   }
 }
 
@@ -220,6 +231,7 @@ const browser = await chromium.launch({ channel: "chrome" });
 try {
   for (const [name, step] of [
     ["every page", everyPage],
+    ["the first paint", firstPaint],
     ["the landing page", landingPage],
     ["the links", links],
     ["the spec", spec],

@@ -12,6 +12,15 @@ import { serveFolder } from "./build/static.ts";
 const REPO = join(import.meta.dirname, "..");
 const SPEC_FILES = [SPEC, COMPANION].map((file) => join(REPO, file));
 
+/**
+ * In the dev server, what the spec's and the guides' pages link in their head: the stylesheets `src/spec.ts` imports,
+ * which the build inlines, so a page paints styled before its script runs. The script removes them (`data-dev`).
+ */
+const devStylesheets = (rendered: Rendered): Rendered => ({
+  ...rendered,
+  head: `${rendered.head}${["/src/base.css", "/src/spec.css"].map((href) => `<link rel="stylesheet" href="${href}" data-dev>`).join("")}`,
+});
+
 /** In the dev server, what the build assembles into the site (`scripts/assemble.ts`): the playground's build and the logo. */
 function assembled(): Plugin {
   return {
@@ -41,7 +50,7 @@ function specInDev(): Plugin {
         const { renderSpecPage: renderPage } = (await server.ssrLoadModule("/src/server.ts")) as { renderSpecPage: (props: object) => Rendered };
         const { html: text, toc } = await renderSpecPage((path) => readFileSync(join(REPO, path), "utf8"), "https://github.com/comp-markdown/compmd/blob/main/");
         const rendered = renderPage({ html: text, toc, root: "../", source: "", versions: [] });
-        return prerendered(html, rendered, () => "");
+        return prerendered(html, devStylesheets(rendered), () => "");
       },
     },
   };
@@ -79,7 +88,7 @@ function guideInDev(): Plugin {
         const pages = await guidePages((path) => readFileSync(join(guide, path), "utf8"), "https://github.com/comp-markdown/compmd/blob/main/");
         const page = pages.find((candidate) => candidate.folder === folder);
         if (!page) return html;
-        return prerendered(relocated(html, page.root), renderGuidePage(page.props), () => "");
+        return prerendered(relocated(html, page.root), devStylesheets(renderGuidePage(page.props)), () => "");
       },
     },
   };

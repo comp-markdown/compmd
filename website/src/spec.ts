@@ -5,6 +5,10 @@ import { countAfterLoad } from "./count.ts";
 import { currentOf } from "./current.ts";
 import "./spec.css";
 
+// The dev server links these stylesheets in the head too, for the first paint; the imports above have applied them now,
+// and update them when they change.
+for (const link of document.querySelectorAll("link[data-dev]")) link.remove();
+
 const NARROW = matchMedia("(width < 960px)");
 
 function scrollSpy(toc: HTMLElement): void {
