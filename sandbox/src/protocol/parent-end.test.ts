@@ -232,4 +232,28 @@ describe("the parent's end (connectChild)", () => {
     expect(types(got)).toEqual(["level"]);
     expect(sets).toEqual([]);
   });
+
+  it("answers a frame's `image` with the file `image` gives, or none: without it, or when it fails", async () => {
+    const { parent, frame, got } = parentChannel();
+    const file = new Blob(["x"], { type: "image/png" });
+    const image = (url: string) => (url === "./logo.png" ? Promise.resolve(file) : url === "./broken.png" ? Promise.reject(new Error("offline")) : Promise.resolve(undefined));
+    connectChild(parent, { level: "strict", binds: () => false, image });
+    frame.postMessage({ type: "ready", sandbox: SANDBOX_VERSION });
+    frame.postMessage({ type: "image", url: "./logo.png" });
+    frame.postMessage({ type: "image", url: "./broken.png" });
+    frame.postMessage({ type: "image", url: "https://tracker.example.com/" });
+    await settle();
+    const answers = got.slice(1) as { type: string; url: string; image?: Blob }[];
+    expect(answers.map(({ type, url, image: answered }) => ({ type, url, image: answered?.type }))).toEqual([
+      { type: "fetched", url: "./logo.png", image: "image/png" },
+      { type: "fetched", url: "./broken.png", image: undefined },
+      { type: "fetched", url: "https://tracker.example.com/", image: undefined },
+    ]);
+    const { parent: alone, frame: asking, got: none } = parentChannel();
+    connectChild(alone, { level: "strict", binds: () => false });
+    asking.postMessage({ type: "ready", sandbox: SANDBOX_VERSION });
+    asking.postMessage({ type: "image", url: "./logo.png" });
+    await settle();
+    expect(none.slice(1)).toEqual([{ type: "fetched", url: "./logo.png" }]);
+  });
 });

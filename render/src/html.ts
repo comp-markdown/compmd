@@ -76,6 +76,11 @@ function tokensOf(html: string): Token[] {
   return tokens;
 }
 
+/** The `src` of each image of raw HTML that renders, as {@link withHtml} keeps it. */
+export function htmlImageSources(html: string): string[] {
+  return tokensOf(html).flatMap((token) => (token.kind === "open" && token.tag === "img" && token.attributes.src !== undefined ? [token.attributes.src] : []));
+}
+
 /** An allowed tag of raw HTML that can pair across siblings: an opener of an element that isn't void, or a closer. */
 export interface Tag {
   open: boolean;

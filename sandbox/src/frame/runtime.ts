@@ -4,7 +4,7 @@
 // on the same port) or one use with its slots.
 // A component of a lower level gets a nested strict frame; one of a higher level shows its fallback.
 
-import { createRegion, type Page, type Region } from "@compmd/render";
+import { createRegion, type ImageSource, type Page, type Region } from "@compmd/render";
 import { serveFrame, type Port as RenderPort } from "@compmd/render/frame";
 import { hostClient, type HostClient } from "../host-api.ts";
 import { codeFor, Mounts } from "../mounts.ts";
@@ -131,6 +131,27 @@ function recordingFallbacks(port: MessagePort, observer: Observer): RenderPort {
   };
 }
 
+/**
+ * A page frame's images: it has no network, so its parent gives each image's file, and the page shows it from a
+ * `blob:` URL, which the frame's policy allows. One the parent gave is asked for once; one it didn't, again when the
+ * page shows it again, since it may have been fixed.
+ */
+function imagesFrom(parent: FrameEnd): ImageSource {
+  const shown = new Map<string, Promise<string | undefined>>();
+  return (src) => {
+    let url = shown.get(src);
+    if (!url) {
+      url = parent.image(src).then((file) => {
+        if (file) return URL.createObjectURL(file);
+        shown.delete(src);
+        return undefined;
+      });
+      shown.set(src, url);
+    }
+    return url;
+  };
+}
+
 function start(port: MessagePort): void {
   let level: Level = "strict";
   let components: readonly ComponentCode[] = [];
@@ -232,7 +253,7 @@ function start(port: MessagePort): void {
       if (own === "permissive") narrow(network ?? networkPolicy([]));
       // A page frame (frame mode) renders the page through `@compmd/render`'s protocol, on the same port.
       const container = document.getElementById("page");
-      if (container) page = serveFrame(recordingFallbacks(port, observer), { container, components: mounts.mounts, math }).page;
+      if (container) page = serveFrame(recordingFallbacks(port, observer), { container, components: mounts.mounts, math, images: imagesFrom(parent) }).page;
     },
     code: async (next) => {
       components = next;

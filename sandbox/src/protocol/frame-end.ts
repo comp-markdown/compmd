@@ -31,6 +31,8 @@ export interface FrameEnd {
   size(width: number, height: number): void;
   /** Reports what the frame's observer recorded, once the parent asked. */
   observed(events: Observed[]): void;
+  /** Asks for an image of the frame's page by its `src`: its file, or `undefined` when the parent gives none. */
+  image(url: string): Promise<Blob | undefined>;
   close(): void;
 }
 
@@ -49,7 +51,9 @@ export function serveParent(port: Port, handlers: FrameHandlers): FrameEnd {
     port.postMessage(message);
   };
   let level: Level | undefined;
-  const listener = ({ data, ports }: { data: unknown; ports?: readonly MessagePort[] }) => {
+  /** The images asked for and not answered yet, by URL. */
+  const images = new Map<string, ((image: Blob | undefined) => void)[]>();
+  const listener =({ data, ports }: { data: unknown; ports?: readonly MessagePort[] }) => {
     if (!isMessage<ToFrame>(data, TO_FRAME)) return;
     if (data.type === "level") {
       if (level !== undefined) return;
@@ -97,6 +101,12 @@ export function serveParent(port: Port, handlers: FrameHandlers): FrameEnd {
       case "observe":
         handlers.observe?.(data.on);
         break;
+      case "fetched": {
+        const answered = images.get(data.url) ?? [];
+        images.delete(data.url);
+        for (const resolve of answered) resolve(data.image instanceof Blob ? data.image : undefined);
+        break;
+      }
     }
   };
   port.addEventListener("message", listener);
@@ -121,6 +131,16 @@ export function serveParent(port: Port, handlers: FrameHandlers): FrameEnd {
     observed: (events) => {
       post({ type: "observed", events });
     },
+    image: (url) =>
+      new Promise((resolve) => {
+        const waiting = images.get(url);
+        if (waiting) {
+          waiting.push(resolve);
+          return;
+        }
+        images.set(url, [resolve]);
+        post({ type: "image", url });
+      }),
     close: () => {
       port.removeEventListener("message", listener);
     },

@@ -2,6 +2,7 @@
 // components through the component layer. A page is the region at the root; an editor can put regions in its widgets.
 import type { ComponentError, Mount, RenderError } from "./contract.ts";
 import type { LinkDefinition } from "./document.ts";
+import type { ImageSource } from "./images.ts";
 import type { KeyOf } from "./keys.ts";
 import { destroyAll, needsContainer, patch, PendingMounts, type CodeRenderer, type MathRenderer, type Surface, type View } from "./render.ts";
 import { Schemes } from "./scheme.ts";
@@ -27,6 +28,8 @@ export interface SurfaceOptions {
   math?: MathRenderer;
   /** Where a wiki link points; without an answer it shows its label. */
   wikiLink?(target: string): string | undefined;
+  /** Where images come from, for a page that can't load them itself; without it, each loads from its `src`. */
+  images?: ImageSource;
 }
 
 export interface RegionOptions extends SurfaceOptions {
@@ -76,6 +79,7 @@ export function surfaceOf(document: Document, stylesheet: Stylesheet, schemes: S
     code: options.code ?? {},
     math: options.math,
     wikiLink: options.wikiLink?.bind(options),
+    images: options.images,
   };
 }
 

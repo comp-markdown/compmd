@@ -188,4 +188,25 @@ describe("the frame's end (serveParent)", () => {
       { type: "failed", name: "b", message: "unexpected token" },
     ]);
   });
+
+  it("asks for an image once while it waits, and gives each asker the file its parent answered, or none", async () => {
+    const { parent, frame, got } = frameChannel();
+    const end = serveParent(frame, { level: () => undefined });
+    parent.postMessage({ type: "level", level: "strict" });
+    await settle();
+    const first = end.image("./logo.png");
+    const second = end.image("./logo.png");
+    const missing = end.image("./missing.png");
+    await settle();
+    expect(got.slice(1)).toEqual([
+      { type: "image", url: "./logo.png" },
+      { type: "image", url: "./missing.png" },
+    ]);
+    const file = new Blob(["x"], { type: "image/png" });
+    parent.postMessage({ type: "fetched", url: "./logo.png", image: file });
+    parent.postMessage({ type: "fetched", url: "./missing.png", image: "not a Blob" });
+    expect((await first)?.type).toBe("image/png");
+    expect((await second)?.type).toBe("image/png");
+    expect(await missing).toBeUndefined();
+  });
 });

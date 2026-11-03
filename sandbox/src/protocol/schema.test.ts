@@ -39,6 +39,7 @@ const MESSAGES: (ToFrame | FromFrame)[] = [
   { type: "ping", n: 1 },
   { type: "compile", name: "chart", language: "jsx", code: "export default () => null" },
   { type: "observe", on: true },
+  { type: "fetched", url: "./logo.png", image: new Blob([], { type: "image/png" }) },
   { type: "ready", sandbox: 1 },
   { type: "loaded" },
   { type: "set", input: "region", value: "eu" },
@@ -64,6 +65,7 @@ const MESSAGES: (ToFrame | FromFrame)[] = [
       { type: "dropped", frame: "", count: 12, at: 9 },
     ],
   },
+  { type: "image", url: "./logo.png" },
 ];
 
 describe("protocol.schema.json", () => {

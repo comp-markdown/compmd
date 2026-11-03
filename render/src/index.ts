@@ -9,6 +9,7 @@ export { Keys, type EditRange, type KeyOf, type Keyed } from "./keys.ts";
 export type { Change, Diagnostic } from "./stable.ts";
 export { footnotesOf, definitionsOf, plainText, type Footnotes, type LinkDefinition } from "./document.ts";
 export type { CodeRenderer, MathRenderer } from "./render.ts";
+export { imageSources, type ImageSource } from "./images.ts";
 export type * from "./contract.ts";
 export type * from "./tree.ts";
 export { contentOf, isComponent, rendererOf, walk } from "./tree.ts";

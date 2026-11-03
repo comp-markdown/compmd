@@ -7,6 +7,7 @@ import type { HostComponent } from "@compmd/processor";
 import { createPage, schemeOf, type Change, type ExpandedInput, type ExpandedRoot, type Page, type Splice } from "@compmd/render";
 import { connectFrame, type FrameConnection, type SpliceOptions } from "@compmd/render/frame";
 import { frameUrl, HostRuntime, type HostRuntimeOptions } from "./host/runtime.ts";
+import { PageImages } from "./images.ts";
 import { temmlMath } from "./math.ts";
 import { codeFor } from "./mounts.ts";
 import { Log, reportedBy, type Observation, type ObservedEvent } from "./observation.ts";
@@ -321,10 +322,16 @@ function framePage(container: HTMLElement, runtime: HostRuntime, options: Sandbo
   iframe.style.cssText = "border: 0; width: 100%; height: 100%; display: block;";
   /** The document's inputs, which its page may set, from the last tree or splice. */
   let inputs: Readonly<Record<string, ExpandedInput>> = {};
+  const images = new PageImages(fetch, document.baseURI);
   const { port1, port2 } = new MessageChannel();
   const id = observer.frame("strict", { kind: "page" });
   const port = observer.port(id, port1);
-  const child: ChildEnd = connectChild(port, { level: "strict", binds: (input) => input in inputs, ping: { every: 1000, timeout: options.timeout ?? 5000 } });
+  const child: ChildEnd = connectChild(port, {
+    level: "strict",
+    binds: (input) => input in inputs,
+    ping: { every: 1000, timeout: options.timeout ?? 5000 },
+    image: (url) => images.file(url),
+  });
   observer.connected(id, child);
   child.on("refused", ({ input }) => {
     observer.refused(id, input);
@@ -357,11 +364,13 @@ function framePage(container: HTMLElement, runtime: HostRuntime, options: Sandbo
   return {
     render: (tree, change) => {
       inputs = tree.inputs ?? {};
+      images.rendered(tree);
       frame.render(tree, change);
     },
     splice: (splices, change, spliceOptions = {}) => {
       for (const splice of splices) if (typeof splice !== "string" && splice.inputs) inputs = splice.inputs;
       if (spliceOptions.inputs) inputs = spliceOptions.inputs;
+      images.spliced(splices);
       frame.splice(splices, change, spliceOptions.replace ? { replace: true } : {});
     },
     code: () => {

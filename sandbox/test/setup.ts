@@ -23,6 +23,8 @@ declare module "vitest" {
 const ROOT = join(import.meta.dirname, "..");
 const OUT = join(ROOT, "test/.frames");
 const TYPES: Record<string, string> = { ".html": "text/html", ".js": "text/javascript", ".json": "application/json", ".css": "text/css" };
+/** An image of 4 by 4 pixels. */
+const SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"><rect width="4" height="4" fill="teal"/></svg>';
 
 /** Every request a server got: its path with its query. */
 type Hits = string[];
@@ -60,8 +62,10 @@ export default async function setup(project: TestProject): Promise<() => Promise
       },
     );
   });
-  const probed = (_path: string, answer: (status: number, body?: string) => void) => {
-    answer(200, "probed");
+  // A probe's `.svg` is an image, so a page's image from another origin can be one of the probes'.
+  const probed = (path: string, answer: (status: number, body?: string, type?: string) => void) => {
+    if (extname(path) === ".svg") answer(200, SVG, "image/svg+xml");
+    else answer(200, "probed");
   };
   const probes = [recording([], probed), recording([], probed)];
   const base = await listen(frames);

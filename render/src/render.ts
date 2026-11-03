@@ -6,6 +6,7 @@ import type { ComponentError, Fallback, Mount, SlotInstance, SlotItem, Slots } f
 import { applyBox } from "./box.ts";
 import { plainText, type LinkDefinition } from "./document.ts";
 import { safeUrl, withHtml } from "./html.ts";
+import type { ImageSource } from "./images.ts";
 import { nodesMountOf, runnable } from "./nodes.ts";
 import type { Schemes } from "./scheme.ts";
 import { fills, layoutOf, ownParams, usesBreakpoints, type ParentLayout, type Stylesheet } from "./styles.ts";
@@ -62,6 +63,8 @@ export interface Surface {
   math?: MathRenderer | undefined;
   /** Where a wiki link points (spec §2.3); without an answer it renders its label as text. */
   wikiLink?: ((target: string) => string | undefined) | undefined;
+  /** Where images come from; without it, each loads from its `src`. */
+  images?: ImageSource | undefined;
 }
 
 /** What one render carries in document order. */
@@ -197,6 +200,7 @@ export function createView(surface: Surface, node: ExpandedNode, pass: Pass): Vi
     return new ComponentView(surface, node, pass, key);
   }
   if (node.type === "text") return textView(surface, node, key);
+  if (surface.images && isImage(node)) return new ImageView(surface, surface.images, node, pass, key);
   const renderer = rendererOf(node);
   if (renderer) return new RenderedCodeView(surface, node, renderer, pass, key);
   if ((node.type === "code" && typeof node.lang === "string" && surface.code[node.lang]) || ((node.type === "math" || node.type === "inlineMath") && surface.math)) {
@@ -364,6 +368,88 @@ class ElementView implements View {
 
   destroy(): void {
     destroyAll(this.#children);
+  }
+}
+
+/** Whether `node` is an image: in Markdown, by reference, or in raw HTML. */
+function isImage(node: MarkdownNode): boolean {
+  return node.type === "image" || node.type === "imageReference" || (node.type === "compmdHtml" && node.tag === "img");
+}
+
+/**
+ * An image whose file the caller gives (`SurfaceOptions.images`): its alt text shows until the file comes, and stays
+ * when it can't be had.
+ */
+class ImageView implements View {
+  readonly shape: string;
+  readonly key: string | undefined;
+  readonly #surface: Surface;
+  readonly #images: ImageSource;
+  #dom: HTMLElement;
+  #src: string | undefined;
+  #alt = "";
+  #title: string | undefined;
+  #destroyed = false;
+
+  constructor(surface: Surface, images: ImageSource, node: MarkdownNode, pass: Pass, key: string | undefined) {
+    this.#surface = surface;
+    this.#images = images;
+    this.shape = shapeOf(node);
+    this.key = key;
+    this.#dom = this.#altText();
+    this.update(node, pass);
+  }
+
+  get dom(): Node {
+    return this.#dom;
+  }
+
+  update(node: ExpandedNode, pass: Pass): void {
+    const { attributes, text } = renderingOf(this.#surface, node as MarkdownNode, pass);
+    this.#alt = attributes.alt ?? text ?? "";
+    this.#title = attributes.title;
+    if (attributes.src !== this.#src) {
+      this.#src = attributes.src;
+      this.#show(this.#altText());
+      if (attributes.src !== undefined) this.#load(attributes.src);
+    }
+    this.#describe();
+  }
+
+  destroy(): void {
+    this.#destroyed = true;
+  }
+
+  #altText(): HTMLElement {
+    const span = this.#surface.document.createElement("span");
+    span.className = "compmd-image-alt";
+    return span;
+  }
+
+  #load(src: string): void {
+    this.#images(src).then(
+      (shown) => {
+        if (this.#destroyed || this.#src !== src || shown === undefined) return;
+        const image = this.#surface.document.createElement("img");
+        image.src = shown;
+        this.#show(image);
+        this.#describe();
+      },
+      () => undefined,
+    );
+  }
+
+  #show(element: HTMLElement): void {
+    this.#dom.replaceWith(element);
+    this.#dom = element;
+  }
+
+  #describe(): void {
+    const dom = this.#dom;
+    if (dom.tagName === "IMG") dom.setAttribute("alt", this.#alt);
+    else if (dom.textContent !== this.#alt) dom.textContent = this.#alt;
+    if (this.#title) dom.title = this.#title;
+    else dom.removeAttribute("title");
   }
 }
 

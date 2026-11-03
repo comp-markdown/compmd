@@ -16,7 +16,8 @@
         { "$ref": "#/$defs/host" },
         { "$ref": "#/$defs/ping" },
         { "$ref": "#/$defs/compile" },
-        { "$ref": "#/$defs/observe" }
+        { "$ref": "#/$defs/observe" },
+        { "$ref": "#/$defs/fetched" }
       ]
     },
     "fromFrame": {
@@ -32,7 +33,8 @@
         { "$ref": "#/$defs/pong" },
         { "$ref": "#/$defs/compiled" },
         { "$ref": "#/$defs/failed" },
-        { "$ref": "#/$defs/observed" }
+        { "$ref": "#/$defs/observed" },
+        { "$ref": "#/$defs/image" }
       ]
     },
     "componentLevel": { "description": "A component's trust level.", "enum": ["strict", "permissive", "trusted"] },
@@ -270,6 +272,20 @@
       "type": "object",
       "properties": { "type": { "const": "observed" }, "events": { "type": "array", "items": { "$ref": "#/$defs/observedEvent" } } },
       "required": ["type", "events"],
+      "additionalProperties": false
+    },
+    "image": {
+      "description": "A page frame asks for an image of its page by its `src`, since it has no network. Code of the frame's level may have asked: its parent gives only images of the trees it sent.",
+      "type": "object",
+      "properties": { "type": { "const": "image" }, "url": { "type": "string" } },
+      "required": ["type", "url"],
+      "additionalProperties": false
+    },
+    "fetched": {
+      "description": "The answer to `image`, with the URL it asked for: the image's file as a Blob, which JSON can't hold, or none when the parent can't or won't give it.",
+      "type": "object",
+      "properties": { "type": { "const": "fetched" }, "url": { "type": "string" }, "image": { "description": "The image's file, a Blob." } },
+      "required": ["type", "url"],
       "additionalProperties": false
     },
     "frameId": { "description": "A frame by its path from the window that recorded it: empty for that window itself, `2` for its second frame, `2/1` for that frame's first.", "type": "string", "pattern": "^([0-9]+(/[0-9]+)*)?$" },

@@ -13,6 +13,11 @@ export interface ChildOptions {
   host?: MessagePort;
   /** How often to ping the frame, and how long it may not answer before it is stopped, in ms. */
   ping?: { every: number; timeout: number };
+  /**
+   * The file of an image a page frame asks for by its `src`, or `undefined` for none. Strict code may have asked, so
+   * it gives only images of the page it sent. Without it, the frame gets no images.
+   */
+  image?(url: string): Promise<Blob | undefined>;
 }
 
 /** Why the parent stopped listening to a frame. */
@@ -151,6 +156,17 @@ export function connectChild(port: Port, options: ChildOptions): ChildEnd {
         // Unasked, it is a report no one wants, and code of the frame's level may have sent it.
         if (observing && Array.isArray(data.events)) emit("observed", { events: data.events.slice(0, BATCH) });
         break;
+      case "image": {
+        // Strict code may have written anything as the URL: one that isn't text gets no answer.
+        const { url } = data as { url: unknown };
+        if (typeof url !== "string") break;
+        void (options.image?.(url) ?? Promise.resolve(undefined))
+          .catch(() => undefined)
+          .then((image) => {
+            if (!closed) port.postMessage({ type: "fetched", url, ...(image ? { image } : {}) } satisfies ToFrame);
+          });
+        break;
+      }
       case "compiled":
       case "failed":
         // The compile frame's; its own parent end reads them (`connectCompiler`).

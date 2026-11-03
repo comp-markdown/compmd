@@ -43,6 +43,7 @@ When a frame loads, its parent posts `hello` to its window with one end of a new
 | `ping {n}` | answer, or be stopped | every frame |
 | `compile {name, language, runtime, code}` | compile this | C |
 | `observe {on}` | record what passes in you and report it, asking your own frames too; or stop ([observing](#observing)) | P, U |
+| `fetched {url, image?}` | the answer to `image`: the image's file as a `Blob`, or none when H can't or won't give it | P, from H |
 
 **A frame to its parent:**
 
@@ -58,6 +59,7 @@ When a frame loads, its parent posts `hello` to its window with one end of a new
 | `pong {n}` | the answer to `ping` | every frame |
 | `compiled {name, code, css?}`, `failed {name, message}` | a compile's result | C |
 | `observed {events}` | what the frame recorded since its last report, its own frames' reports in it; only after `observe {on}` | P, U |
+| `image {url}` | the page needs an image by its `src`, which it can't fetch: H fetches it, only if it is an image of the trees and splices H sent P, and answers with `fetched` | P |
 
 A parent passes its children's `set`, `link` and `error` up, each with what it knows of where they came from, so H gets them all.
 
@@ -92,6 +94,7 @@ For developer tools ([the Developer Tools](devtools.md), decisions 5 and 6, and 
 | to send a frame a second policy, code or params | the frame takes them only on its port, from its parent |
 | to post `set` for an input its use isn't bound to | its parent checks `set` against the use's node, and drops it |
 | to get `host` | only H gives `host`, and only to a `permissive.html` frame of a pack given `host` |
+| to have H fetch a URL for it, through `image` | H fetches only the images of the trees and splices it sent P, so a URL code made up, with data in it, is never fetched |
 
 ## The sequences, drawn
 
@@ -180,7 +183,7 @@ sequenceDiagram
 
 - **A frame:** its port comes in a window message from its parent; it adds the `level` policy before it loads any code; it runs code and renders parts only from its port; it answers `ping`.
 - **A parent:** it makes children only of a lower level than its own (a permissive frame, only strict ones); it sends each child only its own use's part and code; it checks each `set` against the use's node; it pings its children; it takes `observed` only after it asked, and checks each event.
-- **H:** it gives `host` only to permissive frames of packs the configuration gives `host`; it never acts on `link` without the reader.
+- **H:** it gives `host` only to permissive frames of packs the configuration gives `host`; it never acts on `link` without the reader; it fetches for `image` only the images of the trees and splices it sent P, without credentials or a `Referer`, and answers only with a file that is an image.
 
 ## Versions
 
