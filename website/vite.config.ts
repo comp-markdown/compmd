@@ -1,7 +1,7 @@
 import { compmd } from "@compmd/vite";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, relative } from "node:path";
 import { defineConfig, type Plugin } from "vite";
 import { snapshotsOf } from "./build/plugin.ts";
 import { guidePages, type GuidePage } from "./build/guide-pages.ts";
@@ -66,8 +66,8 @@ function specInDev(): Plugin {
 const BOOK = /^\/guides\/([a-z-]+\/(?:[a-z0-9-]+\/)?)$/;
 
 /**
- * In the dev server, the guides' pages rendered from the working tree, all of them when it starts and again when a
- * guide's file changes: the shelf, `/guides/`, a book's `/guides/<book>/` and a chapter's `/guides/<book>/<slug>/`, which the build
+ * In the dev server, the guides' pages rendered from the working tree, all of them when it starts, and again at the
+ * next request after a chapter or a contents changes: the shelf, `/guides/`, a book's `/guides/<book>/` and a chapter's `/guides/<book>/<slug>/`, which the build
  * prerenders. A book's and a chapter's addresses are served from the shelf's page.
  */
 function guideInDev(): Plugin {
@@ -87,8 +87,10 @@ function guideInDev(): Plugin {
       pages = render();
       server.watcher.add(guide);
       server.watcher.on("change", (file) => {
-        if (!file.startsWith(guide)) return;
-        pages = render();
+        // A book's own files: the chapters and the contents, not what the guides' tests write into `test/.out/`.
+        if (!/^(?:[^/\\]+[/\\])?[^/\\]+\.md$/.test(relative(guide, file))) return;
+        // Rendered again when a page is next asked for, so a burst of changes renders once.
+        pages = undefined;
         server.ws.send({ type: "full-reload" });
       });
       server.middlewares.use((request, _response, next) => {
