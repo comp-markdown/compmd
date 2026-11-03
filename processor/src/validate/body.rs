@@ -2,13 +2,17 @@
 //! a template gives its own names.
 
 use super::Checker;
+use super::params::literal;
 use super::scope::Scope;
 use crate::diagnostic::{Code, Location, Stage};
 use crate::parse::params::interpolations;
+use crate::reserved::Keyword;
 use crate::resolve::{Binding, Body, Renderer};
 use crate::tree::{
-    Code as CodeBlock, Container, Definition, Interpolation, Node, Position, StringPart,
+    Code as CodeBlock, Container, Definition, Interpolation, Node, Param, Position, StringPart,
 };
+use crate::values::forms::area_names;
+use std::rc::Rc;
 
 impl<'r> Checker<'r, '_> {
     pub(super) fn nodes(&mut self, nodes: &'r [Node], scope: &Scope<'r>) {
@@ -34,12 +38,56 @@ impl<'r> Checker<'r, '_> {
             Node::ComponentContainer(container) => self.container(container, scope),
             Node::ComponentLeaf(leaf) | Node::ComponentInline(leaf) => {
                 self.invocation(&leaf.name, &leaf.params, leaf.position, None, scope);
-                self.nodes(&leaf.fallback, scope);
+                self.within(None, |this| this.nodes(&leaf.fallback, scope));
             }
-            Node::ComponentDefinition(definition) => self.definition(definition),
+            Node::ComponentDefinition(definition) => {
+                self.within(None, |this| this.definition(definition));
+            }
             Node::Code(code) => self.code_block(code, scope),
-            _ => self.nodes(node.children(), scope),
+            _ => self.within(None, |this| this.nodes(node.children(), scope)),
         }
+    }
+
+    /// Runs `check` with `areas` as the areas of the box whose items it checks.
+    fn within(&mut self, areas: Option<Rc<[String]>>, check: impl FnOnce(&mut Self)) {
+        let outer = std::mem::replace(&mut self.areas, areas);
+        check(self);
+        self.areas = outer;
+    }
+
+    /// The areas a container's items are placed in, when they are known: those of a literal `grid-template-areas` its
+    /// invocation gives, or else its definition's fence; the outer ones in `if` and `each`, which expand to their
+    /// content; none for a host-language component, whose code makes its box.
+    fn items_areas(&self, container: &Container) -> Option<Rc<[String]>> {
+        let resolved = self.resolved;
+        let Some(Binding::Component(id, _)) = resolved.document(self.id).names.get(&container.name)
+        else {
+            return None;
+        };
+        let component = resolved.component(*id);
+        if matches!(component.keyword(), Some(Keyword::If | Keyword::Each)) {
+            return self.areas.clone();
+        }
+        if component.body.is_host() {
+            return None;
+        }
+        let gives_areas = |param: &&Param| param.key.as_deref() == Some("grid-template-areas");
+        let mut written: Vec<&Param> = container.params.iter().filter(gives_areas).collect();
+        if written.is_empty() {
+            written = component.fence.iter().filter(gives_areas).collect();
+        }
+        if written.is_empty() {
+            return None;
+        }
+        let mut names: Vec<String> = Vec::new();
+        for param in written {
+            for name in area_names(&literal(&param.value)?)? {
+                if !names.iter().any(|known| known == name) {
+                    names.push(name.to_string());
+                }
+            }
+        }
+        Some(names.into())
     }
 
     /// A code block a code renderer renders (spec §7.7): F023 when two at one level render its language; otherwise
@@ -141,10 +189,15 @@ impl<'r> Checker<'r, '_> {
             Some(container),
             scope,
         );
-        self.nodes(&container.children, &invoked.scope("default", scope));
-        for slot in &container.slots {
-            self.nodes(&slot.children, &invoked.scope(&slot.name, scope));
-        }
+        let areas = self.items_areas(container);
+        self.within(areas, |this| {
+            this.nodes(&container.children, &invoked.scope("default", scope));
+        });
+        self.within(None, |this| {
+            for slot in &container.slots {
+                this.nodes(&slot.children, &invoked.scope(&slot.name, scope));
+            }
+        });
     }
 
     /// A definition of this document: its fence's params, and a `compmd` body, in the definition's scope.

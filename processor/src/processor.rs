@@ -405,6 +405,7 @@ impl Processor<Validated> {
                 store: validated.store.store(),
                 fetch: &*render.fetch,
                 data: &*render.data,
+                report: validated.edit_context.ambient.report,
             };
             let data = load::load(
                 &validated.resolved,

@@ -108,6 +108,30 @@ fn a_common_param_says_what_it_takes() {
 }
 
 #[test]
+fn a_grid_area_names_an_area_of_its_box_and_writes_the_nearest() {
+    let refused = one(
+        "::: grid {grid-template-areas=\"'head head' 'side main'\"}\n:: chip[A] {grid-area=mian}\n::: /grid\n\n```compmd component=chip\nslots: [default]\n---\nChip.\n```\n",
+        Code::F009,
+    );
+    assert_eq!(
+        refused.message,
+        "`grid-area` names no area of the box it is placed in, whose areas are head, side, main, so the param is treated as absent; did you mean `main`?"
+    );
+    assert_eq!(
+        fix(&refused),
+        Some((Location::new(2, 23), Location::new(2, 27), "main".into()))
+    );
+    // In a paragraph, a list or a named slot, a block isn't an item of the grid.
+    let elsewhere = validated(
+        "::: grid {grid-template-areas=\"'a b'\"}\n- :: chip[A] {grid-area=z}\n::: /grid\n\n```compmd component=chip\n---\nChip.\n```\n",
+    );
+    assert!(
+        elsewhere.iter().all(|d| d.code != Code::F009),
+        "{elsewhere:?}"
+    );
+}
+
+#[test]
 fn an_unknown_path_says_when_a_colon_had_no_space_after_it() {
     let message = |frontmatter: &str, path: &str| {
         one(

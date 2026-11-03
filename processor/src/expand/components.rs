@@ -101,6 +101,29 @@ impl<'r> Invocation<'r> {
         }
     }
 
+    /// Its default slot as `signature` sees it: its own content, then that of each named slot the signature doesn't
+    /// declare, which joins it (F006).
+    pub(super) fn default_content(&self, signature: Option<&Signature>) -> Vec<&'r [Node]> {
+        let undeclared = self
+            .named_slots()
+            .iter()
+            .filter(|slot| !declared(signature, slot))
+            .map(|slot| slot.children.as_slice());
+        std::iter::once(self.default_slot())
+            .chain(undeclared)
+            .collect()
+    }
+
+    /// Its named slots `signature` declares; all of them without one.
+    pub(super) fn declared_slots(
+        &self,
+        signature: Option<&Signature>,
+    ) -> impl Iterator<Item = &'r tree::Slot> {
+        self.named_slots()
+            .iter()
+            .filter(move |slot| declared(signature, slot))
+    }
+
     /// The content of the named slot `name`.
     pub(super) fn slot(&self, name: &str) -> &'r [Node] {
         self.named_slots()
@@ -108,6 +131,18 @@ impl<'r> Invocation<'r> {
             .find(|slot| slot.name == name)
             .map_or(&[], |slot| slot.children.as_slice())
     }
+}
+
+/// Whether the named slot `slot` is one `signature` takes: any slot when there is no signature, or its `slots` key
+/// is missing (F018).
+fn declared(signature: Option<&Signature>, slot: &tree::Slot) -> bool {
+    signature
+        .is_none_or(|signature| signature.slots.is_none() || signature.declares_slot(&slot.name))
+}
+
+/// Whether a component with `signature` has a default slot: any component without a signature does.
+fn has_default(signature: Option<&Signature>) -> bool {
+    signature.is_none_or(|signature| signature.declares_slot("default"))
 }
 
 impl<'r> Expander<'r> {
@@ -150,7 +185,7 @@ impl<'r> Expander<'r> {
     }
 
     /// After a component that rendered: a body given to a component that takes none follows it as normal content
-    /// (F018).
+    /// (F018), and so does the default slot of one without a default slot (F006).
     pub(super) fn after(
         &mut self,
         invocation: &Invocation<'r>,
@@ -158,8 +193,14 @@ impl<'r> Expander<'r> {
         env: &Env<'r>,
         out: &mut Vec<expanded::Node>,
     ) {
-        if signature.is_some_and(|signature| signature.slots.is_none()) {
+        let Some(signature) = signature else {
+            return;
+        };
+        if signature.slots.is_none() {
             self.stray_body(invocation, env, out);
+        } else if !has_default(Some(signature)) {
+            let content = invocation.default_content(Some(signature));
+            out.extend(self.parts(&content, env));
         }
     }
 
@@ -228,21 +269,20 @@ impl<'r> Expander<'r> {
         let name = invocation.name.to_string();
         let content = match invocation.kind {
             Kind::Container(_) => {
-                let (children, instances) = self.rendered_slot(
-                    invocation,
-                    signature,
-                    "default",
-                    invocation.default_slot(),
-                    given,
-                    env,
-                );
+                let default = if has_default(signature) {
+                    invocation.default_content(signature)
+                } else {
+                    Vec::new()
+                };
+                let (children, instances) =
+                    self.rendered_slot(invocation, signature, "default", &default, given, env);
                 let mut slots = Vec::new();
-                for slot in invocation.named_slots() {
+                for slot in invocation.declared_slots(signature) {
                     let (children, instances) = self.rendered_slot(
                         invocation,
                         signature,
                         &slot.name,
-                        &slot.children,
+                        &[&slot.children],
                         given,
                         env,
                     );
@@ -290,14 +330,14 @@ impl<'r> Expander<'r> {
         invocation: &Invocation<'r>,
         signature: Option<&Signature>,
         name: &str,
-        content: &'r [Node],
+        content: &[&'r [Node]],
         given: &[&'r Param],
         env: &Env<'r>,
     ) -> (Vec<expanded::Node>, Option<Vec<Instance>>) {
         let Some(template) =
             signature.and_then(|signature| self.template(signature, name, given, env))
         else {
-            return (self.list(content, env), None);
+            return (self.parts(content, env), None);
         };
         let instances = self.expanding(env, invocation.at(), |this| {
             let mut instances = Vec::new();
@@ -308,15 +348,24 @@ impl<'r> Expander<'r> {
                 let inner = env.iteration(&template.name, &template.items, index);
                 instances.push(Instance {
                     value: template.items[index].to_json(),
-                    children: this.list(content, &inner),
+                    children: this.parts(content, &inner),
                 });
             }
             instances
         });
         match instances {
             Some(instances) => (Vec::new(), Some(instances)),
-            None => (self.list(content, env), None),
+            None => (self.parts(content, env), None),
         }
+    }
+
+    /// The parts of a slot's content, each expanded in `env`, one after the other.
+    pub(super) fn parts(&mut self, parts: &[&'r [Node]], env: &Env<'r>) -> Vec<expanded::Node> {
+        let mut out = Vec::new();
+        for part in parts {
+            out.extend(self.list(part, env));
+        }
+        out
     }
 
     /// The template slot `name` of an invocation, with its elements and the name it binds them to (spec §7.5).
@@ -529,7 +578,7 @@ impl<'r> Expander<'r> {
             scope: Scope::definition(&self.resolved.document(document).settings, signature),
             values,
             slots: Some(Rc::new(Slots {
-                default: invocation.default_slot(),
+                default: invocation.default_content(signature),
                 named: invocation.named_slots(),
                 env: env.clone(),
                 templates,

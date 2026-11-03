@@ -31,8 +31,8 @@ pub(super) struct Env<'r> {
 
 /// The slots of a `compmd` component's invocation, expanded where its body places them.
 pub(super) struct Slots<'r> {
-    /// The default slot.
-    pub(super) default: &'r [Node],
+    /// The default slot's content, in parts: its own, then that of each named slot the signature doesn't declare.
+    pub(super) default: Vec<&'r [Node]>,
     /// The named slots.
     pub(super) named: &'r [Slot],
     /// The caller's environment, which slot content is expanded in.

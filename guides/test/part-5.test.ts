@@ -287,9 +287,9 @@ describe("chapter 21, the diagnostics", () => {
     expect(diagnostics.find((diagnostic) => diagnostic.code === code)?.stage, diagnostics.map(({ code, message }) => `${code} ${message}`).join("\n")).toBe(stage);
   });
 
-  it("reports W113 for names from ambient packs only, not for a host: source, as the appendix says", () => {
+  it("reports W113 for a host: source too, when loading, as the appendix says", () => {
     const text = "---\nmd:\n  data:\n    - from: host:tasks\n      as: tasks\n---\n\nText.\n";
     const { diagnostics } = processDocument({ path: "doc.comp.md", files: { "doc.comp.md": text }, host: { tasks: [] }, reportAmbient: true, now: "2026-11-02T09:00:00Z" });
-    expect(diagnostics.map(({ code }) => code)).toEqual([]);
+    expect(diagnostics.map(({ code, stage }) => [code, stage])).toEqual([["W113", "load"]]);
   });
 });

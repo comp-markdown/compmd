@@ -9,7 +9,7 @@ use crate::diagnostic::{Code, Diagnostic, Stage};
 use crate::expanded::{Input, Inputs};
 use crate::resolve::Resolved;
 use crate::settings::Settings;
-use crate::tree::{DeclaredType, DefaultValue, ParamValue, StringPart};
+use crate::tree::{DeclaredType, DefaultValue, ParamValue, StringPart, TypeName};
 use serde_json::Value as Json;
 
 /// The inputs of the processed document, and the errors of their defaults (F024).
@@ -28,14 +28,14 @@ pub(super) fn of(resolved: &Resolved, context: &RenderContext) -> (Inputs, Vec<D
                 .filter(|value| read((*value).clone(), declared, false, false).is_ok())
                 .cloned();
             let value = given.unwrap_or_else(|| {
-                default(declaration.default.as_ref(), declared, settings, context).unwrap_or_else(
-                    |message| {
-                        diagnostics.push(
-                            Diagnostic::new(Code::F024, input.at, message).in_stage(Stage::Load),
-                        );
-                        Json::Null
-                    },
-                )
+                let Some(default) = declaration.default.as_ref() else {
+                    return empty(declared, declaration.optional);
+                };
+                written(default, declared, settings, context).unwrap_or_else(|message| {
+                    diagnostics
+                        .push(Diagnostic::new(Code::F024, input.at, message).in_stage(Stage::Load));
+                    Json::Null
+                })
             });
             let (kind, members) = match declared {
                 DeclaredType::Enum { members } => ("enum".to_string(), Some(members.clone())),
@@ -54,17 +54,37 @@ pub(super) fn of(resolved: &Resolved, context: &RenderContext) -> (Inputs, Vec<D
     (Inputs(inputs), diagnostics)
 }
 
+/// The value of an input declared without a default, which validating reports (F010): its type's empty value, so the
+/// document still renders; `null` for an optional type, and for a type with no empty value, such as a date (this
+/// processor's choice, `processor/README.md`).
+fn empty(declared: &DeclaredType, optional: bool) -> Json {
+    if optional {
+        return Json::Null;
+    }
+    match declared {
+        DeclaredType::Name(TypeName::String) => Json::from(""),
+        // A whole number, as the expanded tree writes one.
+        DeclaredType::Name(TypeName::Number) => Json::from(0),
+        DeclaredType::Name(TypeName::Boolean) => Json::from(false),
+        DeclaredType::Name(TypeName::Array) => Json::Array(Vec::new()),
+        DeclaredType::Name(TypeName::Object) => Json::Object(serde_json::Map::new()),
+        DeclaredType::Enum { members } => members
+            .first()
+            .map_or(Json::Null, |member| Json::from(member.as_str())),
+        _ => Json::Null,
+    }
+}
+
 /// An input's default, as the expanded tree writes it.
-fn default(
-    default: Option<&DefaultValue>,
+fn written(
+    default: &DefaultValue,
     declared: &DeclaredType,
     settings: &Settings,
     context: &RenderContext,
 ) -> Result<Json, String> {
     let value = match default {
-        None => Value::Null,
-        Some(DefaultValue::Yaml(yaml)) => Value::from_json(yaml),
-        Some(DefaultValue::Param(value)) => match value {
+        DefaultValue::Yaml(yaml) => Value::from_json(yaml),
+        DefaultValue::Param(value) => match value {
             ParamValue::Bare(text) => Value::bare(text, Some(declared)),
             ParamValue::String(parts) => Value::string(&text_of(parts, settings, context)?),
             ParamValue::Json(text) => {
@@ -103,4 +123,24 @@ fn evaluate(source: &str, settings: &Settings, context: &RenderContext) -> Resul
     Program::parse(source)
         .and_then(|program| program.evaluate(&values, &context.functions(settings)))
         .map_err(|error| error.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn an_input_without_a_default_starts_empty() {
+        let name = |name| DeclaredType::Name(name);
+        assert_eq!(empty(&name(TypeName::String), false), json!(""));
+        assert_eq!(empty(&name(TypeName::Number), false), json!(0));
+        assert_eq!(empty(&name(TypeName::Boolean), false), json!(false));
+        assert_eq!(empty(&name(TypeName::Array), false), json!([]));
+        assert_eq!(empty(&name(TypeName::Object), false), json!({}));
+        let members = vec!["all".to_string(), "eu".to_string()];
+        assert_eq!(empty(&DeclaredType::Enum { members }, false), json!("all"));
+        assert_eq!(empty(&name(TypeName::Date), false), Json::Null);
+        assert_eq!(empty(&name(TypeName::String), true), Json::Null);
+    }
 }

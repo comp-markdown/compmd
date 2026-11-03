@@ -1,0 +1,18 @@
+{
+  "type": "root",
+  "inputs": {
+    "region": { "type": "string", "value": "" },
+    "count": { "type": "number", "value": 0 }
+  },
+  "children": [
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "Region: , count: 0."
+        }
+      ]
+    }
+  ]
+}

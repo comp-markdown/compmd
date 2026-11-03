@@ -67,9 +67,9 @@ The imports, packs and names. What a pack's files cause is reported in the pack'
 | F029 | error | an exported host-language component without a signature fence | pack author | its signature fence |
 | F035 | error | a pack whose release doesn't match the import's `integrity`, or that the host found broken | writer, host | the integrity npm publishes for that version, or the host giving the release's real integrity |
 | F037 | error | a declaration's type isn't in the type grammar, in a signature, an input or a data `schema`; it takes any value | writer, pack author | the type the message suggests |
-| W105 | warning | a local host-language component without a signature fence, whose params can't be typed | writer | a signature fence |
+| W105 | warning | a local host-language component, or an imported component file (`./Chart.jsx`), without a signature fence, whose params can't be typed | writer | a signature fence |
 | W112 | warning | a local definition or explicit import shadows a `@compmd/core` component | writer | another name, if it wasn't meant |
-| W113 | warning | a name from an ambient pack is used, when the host asks for it (`reportAmbient`) | host | nothing: it tells a writer the document isn't portable |
+| W113 | warning | a name from an ambient pack is used, when the host asks for it (`reportAmbient`); for a `host:` data source, found when loading | host | nothing: it tells a writer the document isn't portable |
 | W117 | warning | an exported host-language component without `runtime=` | pack author | `runtime=react@19` or `svelte@5` on its fence |
 | W121 | warning | a pack's `peerDependencies` names a runtime or library the host doesn't have in that range, or a library pack that can't be had (see also rendering, below) | pack author, host | the host offering it, a pack range it meets, or the library pack published |
 
@@ -79,10 +79,10 @@ Every use against its signature, the paths, the expressions' types, the inputs a
 
 | Code | Severity | What causes it | Who | What fixes it |
 |---|---|---|---|---|
-| F006 | error | a slot its component doesn't declare | writer | a declared slot |
+| F006 | error | a slot its component doesn't declare, whose content joins the default slot; or content before the first slot line of a component without a default slot, which follows the component | writer | a declared slot |
 | F008 | error | an unknown param, or a breakpoint on a param that takes none | writer | the param the message suggests |
-| F009 | error | a param value that doesn't match its type or grammar, and, found in resolving, a code renderer's `code` declared as anything but a required `string`, or an import's `integrity` on a range instead of an exact version | writer, pack author | a value of the type, which the message lists |
-| F010 | error | a required param missing | writer | the param |
+| F009 | error | a param value that doesn't match its type or grammar, or a `grid-area` naming no area of its box's literal `grid-template-areas`, and, found in resolving, a code renderer's `code` declared as anything but a required `string`, or an import's `integrity` on a range instead of an exact version | writer, pack author | a value of the type, which the message lists |
+| F010 | error | a required param missing, or an input without a default, which then starts empty | writer | the param, or the input's default |
 | F014 | error | an unknown interpolation path | writer | the path, or `\{{` for literal braces |
 | F018 | error | a body given to a component that declares no slots | writer | the component as a leaf |
 | F028 | error | remote data from an origin the host doesn't allow (`allowedOrigins`) | writer, host | the host allowing the origin, or a `fallback` |
@@ -146,6 +146,6 @@ The crate takes a document's metadata apart from its text (`ParseOptions::metada
 |---|---|---|---|---|
 | W104 | warning | a signature fence and its component disagree: a prop, type or slot | pack author | the fence and the component the same |
 
-W104 needs the spec's *component analysis* feature, reading a component's code for its props, which no package implements yet: a signature fence is believed as it is written. W113 for a `host:` data source or a library the host offers, which the spec allows, isn't reported either; W113 is only for names from ambient packs.
+W104 needs the spec's *component analysis* feature, reading a component's code for its props, which no package implements yet: a signature fence is believed as it is written. W113 for a library the host offers, which the spec allows, isn't reported either.
 
 Next: [a glossary](22-a-glossary.md).

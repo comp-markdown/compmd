@@ -165,32 +165,37 @@ fn is_language(text: &str) -> bool {
 
 /// `'head head' 'side main'`.
 fn is_areas(text: &str) -> bool {
+    area_rows(text).is_some()
+}
+
+/// The names of the areas of `text`, a value of the form [`Form::Areas`], each once, in written order; `None` when
+/// `text` isn't of that form.
+pub(crate) fn area_names(text: &str) -> Option<Vec<&str>> {
+    let mut names: Vec<&str> = Vec::new();
+    for cell in area_rows(text)?.into_iter().flatten() {
+        if cell != "." && !names.contains(&cell) {
+            names.push(cell);
+        }
+    }
+    Some(names)
+}
+
+/// The cells of each quoted row of `text`: area names or `.`, as many in each row.
+fn area_rows(text: &str) -> Option<Vec<Vec<&str>>> {
     let mut rows = Vec::new();
     let mut rest = text.trim();
     while !rest.is_empty() {
-        let Some(quote) = rest.chars().next().filter(|c| *c == '\'' || *c == '"') else {
-            return false;
-        };
-        let Some(end) = rest[1..].find(quote) else {
-            return false;
-        };
-        rows.push(&rest[1..=end]);
+        let quote = rest.chars().next().filter(|c| *c == '\'' || *c == '"')?;
+        let end = rest[1..].find(quote)?;
+        let cells: Vec<&str> = rest[1..=end].split_whitespace().collect();
+        if !cells.iter().all(|cell| *cell == "." || is_css_ident(cell)) {
+            return None;
+        }
+        rows.push(cells);
         rest = rest[end + 2..].trim_start();
     }
-    let lengths: Vec<usize> = rows
-        .iter()
-        .map(|row| {
-            let cells: Vec<&str> = row.split_whitespace().collect();
-            if cells.iter().all(|cell| *cell == "." || is_css_ident(cell)) {
-                cells.len()
-            } else {
-                0
-            }
-        })
-        .collect();
-    lengths
-        .first()
-        .is_some_and(|first| *first > 0 && lengths.iter().all(|n| n == first))
+    let first = rows.first()?.len();
+    (first > 0 && rows.iter().all(|row| row.len() == first)).then_some(rows)
 }
 
 /// Splits `text` at top-level separators: white space, or `,` when `commas`. Parentheses group.
@@ -581,6 +586,11 @@ mod tests {
             &["", "'head' 'side main'", "head head", "'a", "'a-b! c'"],
         );
         check(Form::AreaName, &["side", "main_2"], &["2col", "a b"]);
+        assert_eq!(
+            area_names("'head head' 'side main' '. main'"),
+            Some(vec!["head", "side", "main"])
+        );
+        assert_eq!(area_names("'head' 'side main'"), None);
     }
 
     #[test]

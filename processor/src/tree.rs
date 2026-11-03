@@ -758,6 +758,22 @@ pub enum SlotDeclaration {
     },
 }
 
+impl Signature {
+    /// Whether it declares the slot `name`, as a slot line writes it.
+    pub(crate) fn declares_slot(&self, name: &str) -> bool {
+        self.slots.iter().flatten().any(|slot| slot.name() == name)
+    }
+}
+
+impl SlotDeclaration {
+    /// The slot's name.
+    pub(crate) fn name(&self) -> &str {
+        match self {
+            Self::Name(name) | Self::Template { name, .. } => name,
+        }
+    }
+}
+
 /// How headings in a `compmd` definition's body are leveled (spec §7.2).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]

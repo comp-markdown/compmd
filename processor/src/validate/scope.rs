@@ -5,7 +5,7 @@
 use crate::cel::{self, Type};
 use crate::resolve::{DocumentId, Resolved};
 use crate::settings::{Input, Settings};
-use crate::tree::{DeclaredType, Signature, SlotDeclaration, TypeName};
+use crate::tree::{DeclaredType, Signature, TypeName};
 use serde_json::Value;
 use std::collections::BTreeMap;
 
@@ -167,11 +167,9 @@ impl<'r> Scope<'r> {
         self.definition
             .and_then(|signature| signature.slots.as_ref())
             .is_some_and(|slots| {
-                slots.iter().any(|slot| match slot {
-                    SlotDeclaration::Name(slot) | SlotDeclaration::Template { name: slot, .. } => {
-                        slot.replace('-', "_") == name
-                    }
-                })
+                slots
+                    .iter()
+                    .any(|slot| slot.name().replace('-', "_") == name)
             })
     }
 

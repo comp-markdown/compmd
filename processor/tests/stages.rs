@@ -87,9 +87,14 @@ fn a_component_file_exports_one_component_named_after_its_stem() {
         &Packs::default(),
         &[],
     );
+    // `Chart` has no signature, so its params can't be typed: W105 at its `names` entry.
     assert_eq!(
         found,
-        [("F013".into(), 7, 14, None), ("F021".into(), 5, 47, None),]
+        [
+            ("F013".into(), 7, 14, None),
+            ("F021".into(), 5, 47, None),
+            ("W105".into(), 5, 15, None),
+        ]
     );
 }
 

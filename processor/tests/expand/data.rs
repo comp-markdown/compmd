@@ -15,8 +15,12 @@ fn inputs_take_given_values_that_fit_or_their_defaults() {
             ..Setup::default()
         },
     );
-    // `whatever` isn't a type: F037, and the input still takes its value.
-    assert_eq!(rendered.found, [at("F024", 9, 5), at("F037", 15, 10)]);
+    // `none` has no default: F010, and the optional input is `null`. `whatever` isn't a type: F037, and the input
+    // still takes its value.
+    assert_eq!(
+        rendered.found,
+        [at("F010", 11, 5), at("F024", 9, 5), at("F037", 15, 10)]
+    );
     assert_eq!(
         text(&rendered.tree),
         "2 false Hi Ana 3 [] 2026-10-21 plain 2026-10-01"

@@ -91,13 +91,14 @@ impl<'r> Expander<'r> {
             return;
         };
         let content = if name == "default" {
-            slots.default
+            slots.default.clone()
         } else {
             slots
                 .named
                 .iter()
                 .find(|slot| names_slot(name, &slot.name))
-                .map_or(&[][..], |slot| slot.children.as_slice())
+                .map(|slot| vec![slot.children.as_slice()])
+                .unwrap_or_default()
         };
         let mut placed = Vec::new();
         match slots
@@ -111,10 +112,10 @@ impl<'r> Expander<'r> {
                         break;
                     }
                     let inner = slots.env.iteration(&template.name, &template.items, index);
-                    placed.extend(self.list(content, &inner));
+                    placed.extend(self.parts(&content, &inner));
                 }
             }
-            None => placed = self.list(content, &slots.env),
+            None => placed = self.parts(&content, &slots.env),
         }
         match placed.as_mut_slice() {
             [single] if !block && matches!(single.content, Content::Paragraph(_)) => {

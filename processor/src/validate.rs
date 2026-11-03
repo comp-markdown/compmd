@@ -244,6 +244,9 @@ struct Checker<'r, 'd> {
     file: Option<String>,
     /// The inputs the document binds to params of host-language components, which `from` may not interpolate (F031).
     bound_by_hosts: HashSet<String>,
+    /// The areas of the box whose items are being checked, when its `grid-template-areas` is written literally, which
+    /// `grid-area` names one of (F009).
+    areas: Option<Rc<[String]>>,
     found: Checks,
     programs: &'d mut Programs,
 }
@@ -256,6 +259,7 @@ impl<'r, 'd> Checker<'r, 'd> {
             lines: resolved.document(id).lines(),
             file: resolved.file(id),
             bound_by_hosts: HashSet::new(),
+            areas: None,
             found: Checks::default(),
             programs,
         }
@@ -313,12 +317,22 @@ impl Checker<'_, '_> {
         self.found.refused.push(Refused::Data(self.id, index));
     }
 
-    /// F013 for an input named what expressions can't use.
+    /// F013 for an input named what expressions can't use, and F010 for one without a default, which every input needs
+    /// so a document always renders (spec §8.7): the spec names no code for it, so this processor reports the one for a
+    /// required value missing, and the input takes its type's empty value (`processor/README.md`).
     fn inputs(&mut self) {
         let document = self.resolved.document(self.id);
         for input in &document.settings.inputs {
-            if let Some(why) = reserved::as_variable(&input.declaration.name) {
+            let declaration = &input.declaration;
+            if let Some(why) = reserved::as_variable(&declaration.name) {
                 self.report(Code::F013, input.at, why);
+            }
+            if declaration.default.is_none() {
+                self.report(
+                    Code::F010,
+                    input.at,
+                    format!("the input `{}` has no default, which every input needs so the document renders before a reader sets it; it starts empty", declaration.name),
+                );
             }
         }
     }

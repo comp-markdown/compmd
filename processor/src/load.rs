@@ -76,6 +76,8 @@ pub(crate) struct Host<'a> {
     pub(crate) store: Store<'a>,
     pub(crate) fetch: &'a dyn Fetch,
     pub(crate) data: &'a dyn Data,
+    /// Whether to report each `host:` source (W113), as the host asked for its ambient names (`Ambient::report`).
+    pub(crate) report: bool,
 }
 
 /// Loads, stage 4a of spec §11: the inputs' values for `context`, and every data import that validating didn't
@@ -103,6 +105,11 @@ pub(crate) fn load(
             loader.fallback(id, import).unwrap_or(Value::Null)
         } else {
             let target = from::target(resolved, id, import, &input);
+            if let Ok(Target::Host(source)) = &target
+                && host.report
+            {
+                loader.not_portable(id, import, source);
+            }
             loader.import(id, import, target)
         };
         data.entry(id)
@@ -260,6 +267,23 @@ impl Loader<'_, '_> {
                 .push(diagnostic.in_stage(Stage::Load));
         }
         Value::from_json(&value)
+    }
+
+    /// W113 at a `host:` source's `from` (spec §8.6): its data is this processor's, so the document isn't portable.
+    fn not_portable(&mut self, id: DocumentId, import: &DataImport, source: &str) {
+        let diagnostic = Diagnostic::new(
+            Code::W113,
+            import.from.at,
+            format!(
+                "`host:{source}` is this processor's own data, so `md.data.{}` is empty where another processor renders the document",
+                import.name
+            ),
+        );
+        self.loaded.diagnostics.push(
+            diagnostic
+                .in_file(self.resolved.file(id))
+                .in_stage(Stage::Load),
+        );
     }
 
     /// F026: at the place inside the data file when known, else at the import's `from`.

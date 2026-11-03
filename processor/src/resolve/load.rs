@@ -66,6 +66,8 @@ pub(super) struct Loader<'h, 'p> {
     missing: Vec<NeededPack>,
     /// The library packs the loaded packs name, in the order they are loaded.
     asks: Vec<Ask>,
+    /// Where each component file import is written, its `names` entry: it has no definition fence to report at.
+    file_imports: HashMap<ComponentId, Location>,
 }
 
 impl<'h, 'p> Loader<'h, 'p> {
@@ -90,6 +92,7 @@ impl<'h, 'p> Loader<'h, 'p> {
             policy,
             missing: Vec::new(),
             asks: Vec::new(),
+            file_imports: HashMap::new(),
         }
     }
 
@@ -330,6 +333,7 @@ impl<'h, 'p> Loader<'h, 'p> {
                     fence: Vec::new(),
                     position: None,
                 });
+                self.file_imports.insert(component, at);
                 names.declare(&local, Binding::Component(component, Level::Listed));
             }
         }
@@ -915,7 +919,8 @@ impl<'h, 'p> Loader<'h, 'p> {
         }
     }
 
-    /// W105: a local host-language component without a signature fence, whose params can't be typed.
+    /// W105: a local host-language component without a signature fence, whose params can't be typed: one defined in a
+    /// fence, at the fence, or a component file the document imports, at its `names` entry (spec §7.1).
     fn untyped(&mut self, id: DocumentId, exports: &BTreeMap<String, Binding>) {
         let exported: HashSet<ComponentId> = exports
             .values()
@@ -930,11 +935,18 @@ impl<'h, 'p> Loader<'h, 'p> {
             .enumerate()
             .filter(|(index, component)| {
                 component.document == id
-                    && matches!(component.body, Body::Host { .. })
+                    && component.body.is_host()
                     && component.signature.is_none()
                     && !exported.contains(&ComponentId(*index))
             })
-            .map(|(_, component)| (component.name.clone(), location(component.position)))
+            .map(|(index, component)| {
+                let at = self
+                    .file_imports
+                    .get(&ComponentId(index))
+                    .copied()
+                    .unwrap_or_else(|| location(component.position));
+                (component.name.clone(), at)
+            })
             .collect();
         for (name, at) in untyped {
             self.report(

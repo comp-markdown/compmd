@@ -60,6 +60,13 @@ let tree = serde_json::to_value(parsed.tree())?; // the JSON of §12.4
 
 It is on crates.io as `compmd`, `cargo add compmd`, with the npm packages' version: each release publishes it with them (0.3.0 is the npm packages' 0.3.0). Its parser, the fork of markdown-rs in `markdown-rs/`, is published first, as `compmd-markdown`, with a version of its own that moves when its code changes. The library keeps the name `markdown`, so here it is a path dependency with that version, and the published crate depends on the version.
 
+## Where the spec leaves the choice
+
+What this processor does where the spec says what is wrong but not what code reports it or what renders:
+
+- **An input without a default.** Every input must have one (§8.7). It is F010 at the declaration, and the input starts with its type's empty value: `""`, `0`, `false`, `[]`, `{}`, or an enum's first member; `null` for an optional type, and for a date.
+- **Content before the first slot line of a component that declares no `default` slot.** It is F006 at the content's first line. The content follows the component as normal content, with that of any undeclared slot, so nothing the author wrote is dropped.
+
 ## Commands
 
 The parser is a fork of markdown-rs in the submodule `markdown-rs/`; fetch it once after cloning. `cargo make ci` (with [cargo-make](https://github.com/sagiegurari/cargo-make)) runs every check: formatting, clippy with warnings as errors, the tests with the conformance set, [cargo-deny](https://github.com/EmbarkStudios/cargo-deny), line coverage of at least 99% with [cargo-llvm-cov](https://github.com/taiki-e/cargo-llvm-cov), and the TypeScript packages built and tested (which needs pnpm), the renderer's tests checking it against `params.json`.

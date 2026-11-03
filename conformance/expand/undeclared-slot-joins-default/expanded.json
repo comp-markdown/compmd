@@ -1,0 +1,57 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [],
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "Run it."
+            }
+          ]
+        },
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "Not a slot of card."
+            }
+          ]
+        }
+      ],
+      "slots": []
+    },
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [],
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "Inside."
+            }
+          ]
+        },
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "Not a slot of box."
+            }
+          ]
+        }
+      ],
+      "slots": []
+    }
+  ]
+}

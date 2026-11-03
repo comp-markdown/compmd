@@ -20,7 +20,7 @@ use crate::values::Kind;
 use std::collections::{HashMap, HashSet};
 
 /// The text of a bare value, or of a string without interpolations: what a misspelt token is looked for in.
-fn literal(value: &ParamValue) -> Option<String> {
+pub(super) fn literal(value: &ParamValue) -> Option<String> {
     match value {
         ParamValue::Bare(text) => Some(text.clone()),
         ParamValue::String(parts) => parts
@@ -66,6 +66,18 @@ pub(crate) fn value_at(param: &Param) -> Location {
         }
     };
     Location::new(start.line, start.column + prefix)
+}
+
+/// The fix that writes `text` as a param's value, which runs to the param's end: a quoted one's quotes go with it.
+fn value_fix(param: &Param, text: &str) -> Option<Fix> {
+    let position = param.position?;
+    Some(Fix {
+        range: Range {
+            start: value_at(param),
+            end: Some(position.end.into()),
+        },
+        text: text.to_string(),
+    })
 }
 
 fn param_at(param: &Param) -> Location {
@@ -408,28 +420,42 @@ impl<'r> Checker<'r, '_> {
     /// F009 for a value `key` doesn't take: what it takes, and the nearest token when one is close, with the fix
     /// that writes it. The only place that says what a param takes.
     fn refused(&mut self, param: &Param, key: &str, kind: &Kind) -> Verdict {
-        let at = value_at(param);
         let written = literal(&param.value);
         let near = written.as_deref().and_then(|written| kind.suggest(written));
         let hint = near.map_or_else(String::new, |near| format!("; did you mean `{near}`?"));
-        // The value runs to the param's end: a quoted one's quotes go with it.
-        let fix = near.zip(param.position).map(|(near, position)| Fix {
-            range: Range {
-                start: at,
-                end: Some(position.end.into()),
-            },
-            text: near.to_string(),
-        });
         self.report_fixed(
             Code::F009,
-            at,
+            value_at(param),
             format!(
                 "`{key}` takes {}, so the param is treated as absent{hint}",
                 kind.describe()
             ),
-            fix,
+            near.and_then(|near| value_fix(param, near)),
         );
         Verdict::Refused
+    }
+
+    /// F009 for a `grid-area` naming no area of the box it is placed in, when that box's areas are known, with the fix
+    /// that writes the nearest; whether it names one.
+    fn names_area(&mut self, param: &Param) -> bool {
+        let (Some(areas), Some(written)) = (self.areas.clone(), literal(&param.value)) else {
+            return true;
+        };
+        if areas.contains(&written) {
+            return true;
+        }
+        let near = nearest(&written, areas.iter().map(String::as_str));
+        let hint = near.map_or_else(String::new, |near| format!("; did you mean `{near}`?"));
+        self.report_fixed(
+            Code::F009,
+            value_at(param),
+            format!(
+                "`grid-area` names no area of the box it is placed in, whose areas are {}, so the param is treated as absent{hint}",
+                areas.join(", ")
+            ),
+            near.and_then(|near| value_fix(param, near)),
+        );
+        false
     }
 
     /// A param of type `input<…>`: the name of a declared input of a type it binds (F030).
@@ -489,11 +515,11 @@ impl<'r> Checker<'r, '_> {
             self.string_paths(parts, at, scope);
         }
         let kind = universal.kind();
-        let fits = kind.accepts(value);
-        if !fits {
+        if !kind.accepts(value) {
             self.refused(param, key, &kind);
+            return false;
         }
-        fits
+        universal != Universal::GridArea || self.names_area(param)
     }
 
     /// Type-checks an expression written at `at` (its `(`), against what `key` takes: F024 at the column inside
@@ -556,7 +582,8 @@ impl<'r> Checker<'r, '_> {
         }
     }
 
-    /// F018 for a body given to a component without slots; F006 for an undeclared slot.
+    /// F018 for a body given to a component without slots; F006 for an undeclared slot, and for content before the
+    /// first slot line of a component without a default slot.
     fn slots(&mut self, name: &str, container: &Container, signature: &Signature, start: Point) {
         let Some(slots) = &signature.slots else {
             if !container.children.is_empty() || !container.slots.is_empty() {
@@ -568,18 +595,14 @@ impl<'r> Checker<'r, '_> {
             }
             return;
         };
-        let declared: Vec<&str> = slots
-            .iter()
-            .map(|slot| match slot {
-                SlotDeclaration::Name(slot) | SlotDeclaration::Template { name: slot, .. } => {
-                    slot.as_str()
-                }
-            })
-            .collect();
+        if !signature.declares_slot("default") {
+            self.no_default_slot(name, container, start);
+        }
+        let declared: Vec<&str> = slots.iter().map(SlotDeclaration::name).collect();
         for slot in container
             .slots
             .iter()
-            .filter(|slot| !declared.contains(&slot.name.as_str()))
+            .filter(|slot| !signature.declares_slot(&slot.name))
         {
             let near = nearest(&slot.name, declared.iter().copied());
             let hint = near.map_or_else(String::new, |near| format!("; did you mean `{near}`?"));
@@ -601,6 +624,23 @@ impl<'r> Checker<'r, '_> {
                 fix,
             );
         }
+    }
+
+    /// F006 at the content before the first slot line of a component that declares no default slot: the spec doesn't
+    /// say what becomes of it, so this processor shows it after the component, as normal content
+    /// (`processor/README.md`).
+    fn no_default_slot(&mut self, name: &str, container: &Container, start: Point) {
+        let Some(first) = container.children.first() else {
+            return;
+        };
+        let at = first
+            .position()
+            .map_or(start.into(), |position| position.start.into());
+        self.report(
+            Code::F006,
+            at,
+            format!("`{name}` has no default slot, so the content before its first slot line follows it as normal content"),
+        );
     }
 
     /// A definition fence's params (spec §7, §9.2): the universal params, and on a `compmd` fence `box`'s own;
