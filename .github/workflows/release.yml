@@ -1,6 +1,8 @@
-# A release of the implementation (docs/releases.md): a tag v<version> builds and checks the repository, then publishes
-# stages @compmd/render, @compmd/processor, @compmd/sandbox, @compmd/registry, @compmd/devtools, @compmd/vite, @compmd/pack and @compmd/create-pack on npm with trusted publishing, for the author to approve: GitHub proves to npm which
-# repository and workflow publishes, so no npm token is stored, and each version carries its provenance.
+# A release of the implementation (docs/releases.md): a tag v<version> builds and checks the repository, then stages
+# @compmd/render, @compmd/processor, @compmd/sandbox, @compmd/registry, @compmd/devtools, @compmd/vite, @compmd/pack and
+# @compmd/create-pack on npm with trusted publishing, for the author to approve: GitHub proves to npm which repository
+# and workflow publishes, so no npm token is stored, and each version carries its provenance. Then, once the author
+# approves it, it publishes the crates compmd-markdown and compmd on crates.io the same way.
 name: Release
 
 on:
@@ -40,6 +42,11 @@ jobs:
               exit 1
             fi
           done
+          written="$(cargo pkgid -p compmd | sed 's/.*@//')"
+          if [ "$written" != "$version" ]; then
+            echo "::error::processor/Cargo.toml is $written, the tag $GITHUB_REF_NAME"
+            exit 1
+          fi
       # Every check, and every package built.
       - run: cargo make ci
       # pnpm writes the version `workspace:*` stands for into the packages' dependencies on each other.
@@ -79,3 +86,41 @@ jobs:
           publish ./compmd-vite-*.tgz
           publish ./compmd-pack-*.tgz
           publish ./compmd-create-pack-*.tgz
+
+  # The crates, once the release's checks passed and its npm packages are staged. crates.io has no staging, and a
+  # published version can only be yanked, so the job waits in the environment `crates-io` for its required reviewer,
+  # the author, to approve it on GitHub; the crates' trusted publishers on crates.io name this workflow and that
+  # environment, so nothing else can publish them (RELEASING.md).
+  crates:
+    needs: release
+    runs-on: ubuntu-24.04
+    environment: crates-io
+    permissions:
+      contents: read
+      # Trusted publishing.
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+      - name: Rust toolchain (rust-toolchain.toml)
+        run: rustup toolchain install
+      # A token for this job alone, which the action revokes when the job ends.
+      - uses: rust-lang/crates-io-auth-action@c6f97d42243bad5fab37ca0427f495c86d5b1a18 # v1.0.5
+        id: auth
+      # compmd-markdown first, since compmd depends on it by version. A version crates.io has already is left as it
+      # is: the fork's version moves only when its code changes, and a release that failed halfway can run again.
+      - name: Publish
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
+        run: |
+          publish() {
+            version="$(cargo pkgid --manifest-path "$2" -p "$1" | sed 's/.*@//')"
+            if curl -sf -A "comp-markdown/compmd release workflow" "https://crates.io/api/v1/crates/$1/$version" > /dev/null; then
+              echo "$1@$version is on crates.io already"
+            else
+              cargo publish --manifest-path "$2" -p "$1"
+            fi
+          }
+          publish compmd-markdown markdown-rs/Cargo.toml
+          publish compmd Cargo.toml

@@ -7,7 +7,7 @@ Four things are released, each on its own:
 | What | Where | How |
 |---|---|---|
 | The implementation: `@compmd/render`, `@compmd/processor`, `@compmd/sandbox`, `@compmd/registry`, `@compmd/devtools`, `@compmd/vite`, `@compmd/pack`, `@compmd/create-pack` | npm | a tag `v<version>`; `.github/workflows/release.yml` publishes |
-| The implementation: the crates `compmd-markdown`, `compmd` | crates.io | by hand, after the tag |
+| The implementation: the crates `compmd-markdown`, `compmd` | crates.io | the same tag `v<version>`; the workflow publishes once the author approves its `crates` job |
 | The Mermaid pack, `@comp-markdown/mermaid` | npm | a tag `mermaid-v<version>`; `.github/workflows/release-mermaid.yml` publishes |
 | The spec | the website, `/spec/<version>/` | a tag `spec-v<version>`; the Pages workflow deploys |
 
@@ -38,7 +38,7 @@ git push origin v0.1.1
 ```
 
 The release workflow:
-1. checks the tag is the version in every package's `package.json`;
+1. checks the tag is the version in every package's `package.json` and in `processor/Cargo.toml`;
 2. installs Playwright's WebKit, for the sandbox's, the registry's, the Vite plugin's and create-pack's browser tests, and runs `cargo make ci`;
 3. packs the packages with pnpm, which writes the versions in place of their `workspace:*` dependencies on each other;
 4. stages them with npm's trusted publishing (`npm stage publish`): the renderer, then the processor, then the sandbox, which depends on both, then the registry, which needs the processor, then the Developer Tools, which depend on those four, then the Vite plugin, which depends on the first three, then `@compmd/pack`, which depends on all of those, then create-pack, whose packs pin it. No token is stored; each version carries its provenance. A version npm already has is left as it is, so a package whose first version was published by hand at the release's version is skipped, and a release that failed halfway can run again; a version it staged and nobody approved or rejected yet can't be staged again, so settle those first.
@@ -60,24 +60,28 @@ curl -s https://registry.npmjs.org/-/package/@compmd%2fcreate-pack/dist-tags
 
 Each gives the new version as `latest`.
 
-### 3. Publish the crates, by hand
+### 3. The crates: the author approves, the workflow publishes
 
-A published crate version can't be deleted, only yanked, so dry-run first. Publishing needs `cargo login` once, with a crates.io token that has the `publish-new` and `publish-update` scopes; the token stays with the author.
+Once the npm packages are staged, the workflow's second job, `crates`, waits in the GitHub environment `crates-io` for the author's approval: on the run's page on GitHub, **Review deployments**, then approve. crates.io has no staging, and a published crate version can't be deleted, only yanked, so this approval is the last look. The job then publishes with crates.io's trusted publishing (no token is stored; `rust-lang/crates-io-auth-action` gets one for the job and revokes it after):
 
-1. Only if the fork changed: publish `compmd-markdown` first, since `compmd` depends on it:
+1. `compmd-markdown`, only when its version (`markdown-rs/Cargo.toml`) isn't on crates.io yet, since `compmd` depends on it;
+2. `compmd`, at the release's version.
 
-   ```sh
-   cargo publish --manifest-path markdown-rs/Cargo.toml -p compmd-markdown
-   ```
+A version crates.io already has is skipped, so a release that failed halfway can run again. Check: `cargo search compmd` gives the new version. docs.rs builds the documentation a few minutes later.
 
-2. Then `compmd`. Its dry run builds it against the published `compmd-markdown`, so it only works once that is on crates.io:
+**Once, before the first release that publishes a crate this way** (each step the author's):
+- On crates.io, each crate's **Settings** → **Trusted Publishing** → **GitHub**: the owner `comp-markdown`, the repository `compmd`, the workflow `release.yml`, the environment `crates-io`. For both `compmd` and `compmd-markdown`: `compmd-markdown`'s code is the fork's, but it is published from this repository's workflow.
+- On GitHub, the repository's **Settings** → **Environments** → `crates-io`: the author as its required reviewer, and only `v*` tags allowed to deploy to it.
 
-   ```sh
-   cargo publish --dry-run -p compmd
-   cargo publish -p compmd
-   ```
+**By hand**, when the workflow can't (a crate's first version, which trusted publishing needs to exist): dry-run first, from the tag's commit, with `cargo login` once (a token with the `publish-new` and `publish-update` scopes, kept by the author):
 
-docs.rs builds the documentation a few minutes later.
+```sh
+git worktree add ../compmd-v0.3.0 v0.3.0 && git -C ../compmd-v0.3.0 submodule update --init
+cargo publish --dry-run -p compmd --manifest-path ../compmd-v0.3.0/Cargo.toml
+cargo publish -p compmd --manifest-path ../compmd-v0.3.0/Cargo.toml
+```
+
+`compmd` 0.3.0 was published so, on 2026-11-03, after its npm release: from the tag, so the crate is the same code as the packages.
 
 ## The Mermaid pack
 
@@ -158,4 +162,4 @@ Trusted publishing works only for a package that already exists on npm, so a new
 - **npm stages a new package's first version.** The registry first shows a placeholder, `0.0.0-stage`, as `latest`, with "an operational version … is awaiting a staged release". The real version follows by itself: for `0.1.0`, within about an hour, with nothing to approve. `npm install` fails until then, so publish packages that depend on each other together.
 - **Each package has its own `LICENSE`.** Without one, pnpm packs the repository's root `LICENSE`, which is the CC BY 4.0 licence of the spec's text, not the code's MIT.
 - **npm doesn't run inside this repository.** Its `devEngines` names pnpm, so npm stops with `EBADDEVENGINES`. Run npm from another folder (`cd ~`), and ask the registry with `curl` (as above) rather than `npm view`.
-- **The crates go in order.** `compmd` depends on `compmd-markdown` by path here and by version on crates.io, and crates.io rejects it until that version is published.
+- **The crates go in order.** `compmd` depends on `compmd-markdown` by path here and by version on crates.io, and crates.io rejects it until that version is published. The workflow publishes them in that order.

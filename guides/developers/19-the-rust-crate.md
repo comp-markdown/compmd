@@ -4,16 +4,15 @@ The processor is a Rust crate, `compmd`; `@compmd/processor` is that crate compi
 
 ## Getting it
 
-The crate is the folder `processor/` of [the repository](https://github.com/comp-markdown/compmd). Its parser, a fork of markdown-rs, is a submodule there, so a clone needs it fetched once:
+The crate is [`compmd` on crates.io](https://crates.io/crates/compmd), with `serde_json` beside it for the trees as JSON:
 
 ```sh
-git clone https://github.com/comp-markdown/compmd
-git -C compmd submodule update --init
+cargo add compmd serde_json
 ```
 
-Then depend on it by path, `compmd = { path = "compmd/processor" }`, with `serde_json` beside it for the trees as JSON.
+Its parser, a fork of markdown-rs, comes with it as the crate `compmd-markdown`.
 
-**Versions.** The crate shares its version with the npm packages: this chapter is written for 0.3.0, as the rest of the guide is. It is also on crates.io as `compmd`, published by hand after the packages' release ([RELEASING.md](../../RELEASING.md), "Publish the crates, by hand"), with its parser as the crate `compmd-markdown`. On crates.io the newest version is 0.1.1 so far: 0.2 and 0.3 haven't been published as crates, so `compmd = "0.1"` is an older processor than the packages', and this chapter's API may differ from it. Until 0.3.0 is on crates.io, use the repository.
+**Versions.** The crate shares its version with the npm packages, and each release publishes both ([RELEASING.md](../../RELEASING.md)): this chapter is written for 0.3.0, as the rest of the guide is. Its source is the folder `processor/` of [the repository](https://github.com/comp-markdown/compmd), and its API documentation is on [docs.rs](https://docs.rs/compmd).
 
 ## The stages
 
