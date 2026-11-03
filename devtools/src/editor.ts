@@ -1,10 +1,11 @@
 // The editor's loop: each input in the text area becomes an edit, the worker processes it, and the page's sandbox
 // applies the splices it gave, which the editor passes on unread. An input component's `set` on the page, or the inputs
-// panel, opens the document again with the new value. It times each change from its first key press to the page painted.
+// panel, opens the document again with the new value, and so does remote data the reader allowed and the page fetched.
+// It times each change from its first key press to the page painted.
 
 import type { Diagnostic, ExpandedInput, PositionalHint, Request } from "@compmd/processor";
 import type { Change } from "@compmd/render";
-import type { View } from "@compmd/sandbox";
+import { loadData, type View } from "@compmd/sandbox";
 import type { DevtoolsDocument } from "./document.ts";
 import { editOf, fixOf, type Selection } from "./edit.ts";
 import { Session, type Hinted, type Update, type WorkerPort } from "./session.ts";
@@ -58,18 +59,23 @@ export class Editor {
   #hinted: string | undefined;
   #selection: Selection = { start: 0, end: 0 };
   #request: Request | undefined;
+  /** The origins the document came with, which the reader is never asked about. */
+  #configured: readonly string[] = [];
+  readonly #load: typeof loadData;
   #inputs: Record<string, unknown> = {};
   /** When each render sent to the frame started, for its paint. */
   readonly #rendering: number[] = [];
 
   /**
    * Runs with `worker` and `frame`; `onChange` is called when the state changes. The built modules fetched from the
-   * registry go in `modules`, where the page's sandbox finds them.
+   * registry go in `modules`, where the page's sandbox finds them. `load` asks the reader about the remote data's new
+   * origins and fetches it (`loadData` by default).
    */
-  constructor(worker: WorkerPort, frame: Frame, onChange: () => void, modules = new Map<string, Blob>()) {
+  constructor(worker: WorkerPort, frame: Frame, onChange: () => void, modules = new Map<string, Blob>(), load: typeof loadData = loadData) {
     this.#frame = frame;
     this.#onChange = onChange;
     this.#modules = modules;
+    this.#load = load;
     this.#session = new Session(
       worker,
       (update) => {
@@ -88,6 +94,9 @@ export class Editor {
         this.#unfetched = [...this.#unfetched, ...problems.filter((problem) => !this.#unfetched.includes(problem))];
         for (const problem of problems) this.#problem(problem);
         if (arrived) this.#reopen();
+      },
+      (urls) => {
+        void this.#loadRemote(urls);
       },
     );
     frame.on("rendered", ({ ms }) => {
@@ -110,6 +119,7 @@ export class Editor {
   /** Opens `document`: its text is the text area's. Its nodes carry origins, which the renderer's keys come from. */
   open({ request }: DevtoolsDocument, at = performance.now()): string {
     this.#request = { ...request, origins: true };
+    this.#configured = request.allowedOrigins ?? [];
     this.#inputs = {};
     this.#text = request.files?.[request.path] ?? "";
     this.#unfetched = [];
@@ -173,6 +183,26 @@ export class Editor {
     if (!request) return undefined;
     const files = { ...request.files, [request.path]: this.#text };
     return { ...request, files, inputs: { ...request.inputs, ...this.#inputs } };
+  }
+
+  /**
+   * The remote data the document needs at `urls`: the reader is asked about their new origins, in the page, and what
+   * the allowed ones gave opens the document again with it (origins are decided when it is validated). Data the
+   * document came with isn't fetched again.
+   */
+  async #loadRemote(urls: readonly string[]): Promise<void> {
+    const request = this.#request;
+    if (!request) return;
+    const needed = urls.filter((url) => !(url in (request.remote ?? {})));
+    if (needed.length === 0) return;
+    const { allowedOrigins, remote } = await this.#load(needed, { configured: this.#configured, document: request.path });
+    const current = this.#request;
+    if (current !== request) return;
+    const known = new Set(request.allowedOrigins ?? []);
+    const newOrigins = allowedOrigins.filter((origin) => !known.has(origin));
+    if (newOrigins.length === 0 && Object.keys(remote).length === 0) return;
+    this.#request = { ...request, allowedOrigins: [...known, ...newOrigins], remote: { ...request.remote, ...remote } };
+    this.#reopen();
   }
 
   /** The document again, with the current text and the inputs' values. */

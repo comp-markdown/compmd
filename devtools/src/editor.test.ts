@@ -83,6 +83,41 @@ describe("Editor", () => {
     expect(editor.state.processing.values).toEqual([2, 1]);
   });
 
+  it("loads the remote data the worker reports, asking about new origins in the page, and opens the document again with it", async () => {
+    const worker = new FakeWorker();
+    const asked: { urls: readonly string[]; configured: readonly string[] }[] = [];
+    const load = (urls: readonly string[], { configured }: { configured: readonly string[] }) => {
+      asked.push({ urls, configured });
+      return Promise.resolve({ allowedOrigins: [...configured, "https://api.example.com"], remote: { "https://api.example.com/n.json": { text: "1", contentType: "application/json" } } });
+    };
+    const editor = new Editor(worker, new FakeFrame(), () => undefined, new Map(), load);
+    const bundled = { "https://status.example.org/s.json": { text: "{}", contentType: "application/json" } };
+    editor.open({ request: { ...example.request, allowedOrigins: ["https://status.example.org"], remote: bundled } });
+    worker.answer(processed(["whole"], { opened: true }));
+    worker.answer({ type: "remote", urls: ["https://status.example.org/s.json", "https://api.example.com/n.json"] });
+    await Promise.resolve();
+    await Promise.resolve();
+    // What the document came with isn't fetched again; its configured origins are never asked about.
+    expect(asked).toEqual([{ urls: ["https://api.example.com/n.json"], configured: ["https://status.example.org"] }]);
+    const reopened = worker.received.at(-1);
+    expect(reopened?.type).toBe("open");
+    if (reopened?.type !== "open") return;
+    expect(reopened.request.allowedOrigins).toEqual(["https://status.example.org", "https://api.example.com"]);
+    expect(Object.keys(reopened.request.remote ?? {})).toEqual(["https://status.example.org/s.json", "https://api.example.com/n.json"]);
+  });
+
+  it("doesn't open the document again when the reader allowed nothing new", async () => {
+    const worker = new FakeWorker();
+    const load = () => Promise.resolve({ allowedOrigins: [], remote: {} });
+    const editor = new Editor(worker, new FakeFrame(), () => undefined, new Map(), load);
+    editor.open(example);
+    worker.answer(processed(["whole"], { opened: true }));
+    worker.answer({ type: "remote", urls: ["https://api.example.com/n.json"] });
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(worker.received).toHaveLength(1);
+  });
+
   it("gives the document as it is now, and counts the answers that changed it", () => {
     const { worker, editor } = setup();
     expect(editor.document).toBeUndefined();

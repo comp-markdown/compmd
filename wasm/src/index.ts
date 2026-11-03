@@ -124,6 +124,11 @@ export interface Needed {
   /** `host:` sources, without `host:`. */
   host: string[];
   /**
+   * Remote URLs not fetched because their origin isn't in `allowedOrigins` (F028), for a host that asks the reader
+   * about new origins first (spec §8.6): `loadData` in `@compmd/sandbox` takes them with `remote`.
+   */
+  disallowed: string[];
+  /**
    * The packs the document and the packs it holds import that no release in `packs` matches (spec §6.4), for a host
    * that gets packs from a registry to fetch and add before it processes again; then the library packs those packs
    * name in `peerDependencies` that none matches. Packs the policy refuses aren't listed.

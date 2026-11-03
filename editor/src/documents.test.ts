@@ -30,6 +30,17 @@ const mermaidRelease = (): PackRelease => {
 /** `request` with the packs the playground would fetch from npm for it, here from the repository. */
 const withRegistryPacks = (request: Request): Request => ({ ...request, packs: { ...request.packs, "@comp-markdown/mermaid": [mermaidRelease()] } });
 
+/** npm's registry, which the document of data from the web reads once the reader allows it. */
+const NPM = "https://registry.npmjs.org";
+const LATEST = `${NPM}/@comp-markdown/mermaid/latest`;
+
+/** `request` as the reader's Allow leaves it: npm's registry allowed, and its answer fetched. */
+const withNpmAllowed = (request: Request): Request => ({
+  ...request,
+  allowedOrigins: [...(request.allowedOrigins ?? []), NPM],
+  remote: { ...request.remote, [LATEST]: { text: JSON.stringify({ name: "@comp-markdown/mermaid", version: "9.9.9", description: "From npm." }), contentType: "application/json" } },
+});
+
 /** The diagnostics of `example` with its document's text `text`, one line each. */
 const diagnosticsOf = (example: Example, text = textOf(example)) =>
   process({ ...example.request, files: { ...example.request.files, [example.request.path]: text } }).diagnostics;
@@ -37,12 +48,12 @@ const diagnosticsOf = (example: Example, text = textOf(example)) =>
 describe("EXAMPLES", () => {
   it("go from the syntax to the diagnostics, each with an id of its own", () => {
     expect(EXAMPLES.map((example) => example.id)).toEqual([
-      ...["tour", "definitions", "changelog", "dashboard", "inputs", "kyoto", "complete", "diagrams", "npm", "diagnostics", "notes"],
+      ...["tour", "definitions", "changelog", "dashboard", "inputs", "kyoto", "complete", "diagrams", "npm", "remote", "diagnostics", "notes"],
       ...["a-pack", "breakpoints", "code-blocks", "containers", "data", "definitions", "first-document", "in-code", "inputs", "layout", "lists"].map((name) => `guides/authors/${name}`),
       ...["markdown", "placing", "showing", "signatures", "slots", "template-slots", "values"].map((name) => `guides/authors/${name}`),
       ...["check-docs", "devtools", "live-editor", "orders", "other-hosts", "packs-from-npm", "quick-start", "styled-page", "two-modes"].map((name) => `guides/developers/${name}`),
     ]);
-    expect(exampleIndex("guides/developers/quick-start")).toBe(35);
+    expect(exampleIndex("guides/developers/quick-start")).toBe(36);
     expect(exampleIndex("kyoto")).toBe(5);
     expect(exampleIndex("nothing")).toBe(0);
     expect(exampleIndex(null)).toBe(0);
@@ -50,7 +61,7 @@ describe("EXAMPLES", () => {
 
   for (const example of EXAMPLES.filter(({ id }) => id !== "diagnostics")) {
     it(`${example.name} renders without diagnostics`, () => {
-      const processed = process(withRegistryPacks(example.request));
+      const processed = process(withNpmAllowed(withRegistryPacks(example.request)));
       const found = processed.diagnostics.map((d) => `${d.code} ${String(d.range.start.line)}: ${d.message}`);
       expect(found, found.join("\n")).toEqual([]);
       expect(processed.expanded.children.length).toBeGreaterThan(1);
@@ -61,6 +72,14 @@ describe("EXAMPLES", () => {
     const { diagnostics, expanded } = process(byId("npm").request);
     expect(diagnostics.map(({ code, message }) => `${code} ${message}`)).toEqual([expect.stringMatching(/^F026 .*@comp-markdown\/mermaid/)]);
     expect(expanded.children.length).toBeGreaterThan(1);
+  });
+
+  it("gives the document of data from the web its fallback until the reader allows npm's registry, then npm's answer", () => {
+    const before = process(byId("remote").request);
+    expect(before.diagnostics.map(({ code, message }) => `${code} ${message}`)).toEqual([expect.stringMatching(/^F028 .*registry\.npmjs\.org/)]);
+    expect(JSON.stringify(before.expanded)).toContain("0.1.1 (a saved copy)");
+    const after = process(withNpmAllowed(byId("remote").request));
+    expect(JSON.stringify(after.expanded)).toContain("9.9.9");
   });
 
   it("shows mistakes whose fixes, made one by one, leave none", () => {

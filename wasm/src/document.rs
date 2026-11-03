@@ -405,6 +405,7 @@ mod tests {
             json!({
                 "remote": ["https://a.org/x.json"],
                 "host": [],
+                "disallowed": [],
                 "packs": []
             })
         );

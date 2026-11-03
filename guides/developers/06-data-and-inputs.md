@@ -160,7 +160,7 @@ When your data changes, open the document again with the new data: rendering is 
 
 ## Data from URLs
 
-A document may read an `https://` URL, but only from an origin you allow, in `allowedOrigins`. A document can't grant itself access: any other origin is F028, and the import gets its fallback.
+A document may read an `https://` URL, but only from an origin in `allowedOrigins`. A document can't grant itself access: any other origin is F028, and the import gets its fallback.
 
 ```yaml
 md:
@@ -170,25 +170,37 @@ md:
       fallback: ./status.json
 ```
 
-`sources(request).remote` lists the URLs a render needs from the allowed origins, with the inputs' values in them. Fetch them, and give each response as `{text, contentType}` in `remote`; the `Content-Type` decides the format, or else the URL's extension:
+What the spec asks of a host that fetches while a reader views a document ([spec §8.6](https://compmd.hakanserce.com/spec/#86-data-imports) and [§15](https://compmd.hakanserce.com/spec/#15-security)), which is your app, since the processor fetches nothing:
 
-```ts
-const asked = { ...request, path, files, now, allowedOrigins: ["https://status.example.org"] };
-const remote: Record<string, Fetched> = {};
-for (const url of sources(asked).remote) {
-  const response = await fetch(url, { credentials: "omit", referrerPolicy: "no-referrer" });
-  if (response.ok) remote[url] = { text: await response.text(), contentType: response.headers.get("content-type") };
-}
-const opened = new OpenDocument({ ...asked, remote });
-```
-
-A URL you couldn't fetch is left out, and the document shows its fallback, or F026 without one. What the spec asks of a host that fetches while a reader views a document ([spec §8.6](https://compmd.hakanserce.com/spec/#86-data-imports) and [§15](https://compmd.hakanserce.com/spec/#15-security)):
-
-- **The reader decides.** The first time a document needs an origin the reader hasn't decided on, ask, and remember the answer. Until the reader allows it, leave it out of `allowedOrigins`. Origins your app configures need no question.
+- **The reader decides.** The first time a document needs an origin the reader hasn't decided on, ask, and remember the answer. Until the reader allows it, it isn't in `allowedOrigins`. Origins your app configures need no question.
 - **No credentials:** no cookies or other credentials with a document's fetches, except those you configured for that origin, and no `Referer`.
 - **The origin learns** the reader's address, the time, and the input values in the URL. A shared cache, by URL, tells it less.
 
-A document rendered once, at build time, reveals no reader: fetch there, and nothing reaches the origin from your readers.
+`loadData`, from `@compmd/sandbox`, does all three in your page. `sources(request)` lists the URLs a render needs, with the inputs' values in them: `remote` from the allowed origins, `disallowed` from the others. Give both to `loadData`, which asks the reader about new origins, fetches from the allowed ones without credentials or a `Referer`, and gives `{allowedOrigins, remote}` for the request:
+
+```ts
+import { loadData } from "@compmd/sandbox";
+
+const configured = ["https://status.example.org"];
+const asked = { ...request, path, files, now, allowedOrigins: configured };
+let opened = new OpenDocument(asked);            // meanwhile, a new origin is F028 and shows its fallback
+view.render(opened.expanded);
+const { remote, disallowed } = sources(asked);
+const loaded = await loadData([...remote, ...disallowed], { configured, document: path });
+opened.free();
+opened = new OpenDocument({ ...asked, ...loaded }); // origins are checked when a document is opened
+view.render(opened.expanded);
+```
+
+- **Configured origins** are never asked about. Every other origin is asked about once, however many documents need it, and the answer, allow or deny, is kept per origin for every document.
+- **The question** is a plain dialog in your page, never in a frame, whose code could draw a question of its own: *This document wants to load data from api.example.com. Allow?*, saying what the site learns. Give `ask: (origin, document) => Promise<"allow" | "deny">` to ask in your own UI; `originQuestion(origin)` gives the words.
+- **The answers** are kept in `localStorage` (`localAnswers()`), or in a store you give (`answers`), such as one on your server for signed-in readers. `localAnswers().list()` and `forget(origin)` let a reader see and change them, on a settings page of yours.
+- **A URL that can't be fetched** is left out: the document shows its fallback, or F026 without one.
+- **Your own fetching:** a host that fetches through its server, or caches by URL, calls `allowOrigins(urls, options)`, which asks and gives the allowed origins alone. Fetch only from those.
+
+The playground does this: [try it](https://compmd.hakanserce.com/playground/?doc=remote) with a document that reads a pack's latest release from npm's registry, which the playground doesn't list.
+
+A document rendered once, at build time or on a server, has no reader to ask: give `loadData` an `ask` that denies, and it fetches only from your configured origins, so nothing reaches another origin.
 
 ## Inputs and their values
 

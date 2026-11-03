@@ -102,6 +102,10 @@ pub struct Needed {
     pub remote: Vec<String>,
     /// The sources [`Data`] will be asked for, without `host:`.
     pub host: Vec<String>,
+    /// The `https:` URLs not fetched because their origin isn't one the host allows (F028), their values filled in:
+    /// for a host that asks the reader about new origins before it fetches (spec §8.6), then validates again with the
+    /// ones allowed.
+    pub disallowed: Vec<String>,
     /// The packs imported, by the document or by a pack it loaded, that no release in [`Packs`] matches, for a host
     /// that gets packs from a registry (spec §6.4) to fetch before it resolves again; then the library packs those
     /// packs name in `peerDependencies` that none matches (companion, section 5). Packs the host's policy refuses

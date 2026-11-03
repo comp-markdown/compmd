@@ -85,7 +85,7 @@ Every use against its signature, the paths, the expressions' types, the inputs a
 | F010 | error | a required param missing, or an input without a default, which then starts empty | writer | the param, or the input's default |
 | F014 | error | an unknown interpolation path | writer | the path, or `\{{` for literal braces |
 | F018 | error | a body given to a component that declares no slots | writer | the component as a leaf |
-| F028 | error | remote data from an origin the host doesn't allow (`allowedOrigins`) | writer, host | the host allowing the origin, or a `fallback` |
+| F028 | error | remote data from an origin the host doesn't allow (`allowedOrigins`), or that the reader hasn't allowed yet (`loadData`) | writer, host | the host or the reader allowing the origin, or a `fallback` |
 | F030 | error | a bound param or input component's `bind` names an undeclared input, or one of another type | writer | the input declared, of that type |
 | F031 | error | a `from` that interpolates something other than `md.input` and `md.doc`, an input a component can set, or a URL's scheme or host | writer | literal scheme and host; values in the path and query only |
 | W102 | warning | a use of a component whose definition language or runtime the processor doesn't run (`vue`, or a runtime the host's `policy.runtimes` doesn't have); its fallback is shown | writer, pack author, host | a supported language and runtime, or the runtime in the frames |

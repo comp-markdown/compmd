@@ -7,7 +7,19 @@ export { HostRuntime, type HostEvents, type HostRuntimeOptions, type ModuleSourc
 export { frameUse, type UseFrame, type UseFrameOptions } from "./use.ts";
 export { hostClient, localHost, serveHost, type HostApi, type HostClient } from "./host-api.ts";
 export { networkPolicy } from "./frame/narrow.ts";
-export { allowOrigins, askWithDialog, localAnswers, originQuestion, type AllowOriginsOptions, type AskOrigin, type OriginAnswer, type OriginAnswers } from "./origins.ts";
+export {
+  allowOrigins,
+  askWithDialog,
+  loadData,
+  localAnswers,
+  originQuestion,
+  type AllowOriginsOptions,
+  type AskOrigin,
+  type LoadDataOptions,
+  type LoadedData,
+  type OriginAnswer,
+  type OriginAnswers,
+} from "./origins.ts";
 export { Observer } from "./observer.ts";
 export type { Observation, ObservedEvent } from "./observation.ts";
 export type { FrameId, Gone, Observed, Renders } from "./protocol/observed.ts";

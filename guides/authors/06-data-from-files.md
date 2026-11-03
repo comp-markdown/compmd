@@ -201,9 +201,15 @@ md:
       fallback: ./frost.json
 ```
 
-The document can't decide on its own to fetch from a site. The app that shows it decides which sites its documents may read from. A site it doesn't allow is `F028`, and the document gets its `fallback`, a file of its own folder, or `null` without one. A fetch that fails also takes the fallback. The playground fetches from no site, so there such a document shows `F028` and its fallback.
+The document can't decide on its own to fetch from a site. The app that shows it has a list of sites its documents may read from, and for any other site it asks the reader, the first time a document needs it:
 
-So give remote data a `fallback`, kept up to date now and then, and the page reads well wherever it's opened. The site you fetch from learns that the document was opened, and the values it asks with (chapter 7). A document carries no passwords: data that needs one comes through the app, below.
+> This document wants to load data from weather.example.org. Allow?
+
+The reader's answer is kept for every document, so they are asked once per site. Until they answer, and if they say no, the site is `F028`, and the document gets its `fallback`, a file of its own folder, or `null` without one. Once they allow it, the page shows the site's data. A fetch that fails also takes the fallback. An app with no reader to ask, such as one that prints documents on a server, reads only from its list.
+
+[Try it](https://compmd.hakanserce.com/playground/?doc=remote) in the playground: a document that reads a pack's latest release from npm, a site the playground doesn't list. It shows its fallback, and the playground asks you.
+
+So give remote data a `fallback`, kept up to date now and then, and the page reads well wherever it's opened, before the reader answers and after a no. The site you fetch from learns that the document was opened, and the values it asks with (chapter 7). A document carries no passwords: data that needs one comes through the app, below.
 
 ## Data from the app
 

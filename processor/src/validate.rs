@@ -6,7 +6,7 @@
 //! them. Each definition is checked once, however often it is used (spec §10.4).
 
 mod body;
-mod data;
+pub(crate) mod data;
 pub(crate) mod params;
 pub(crate) mod scope;
 pub(crate) mod universal;

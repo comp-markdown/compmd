@@ -1,5 +1,6 @@
 // The editor's worker: processing never runs in the text area's input handler, so each key press is painted first. It
-// also fetches the packs a document imports from the registries the page says the playground's configuration names.
+// also fetches the packs a document imports from the registries the page says the playground's configuration names,
+// and tells the page the remote URLs a document needs, which the page asks the reader about and fetches.
 
 import { init, OpenDocumentJson } from "@compmd/processor";
 import { defaultCache, NpmRegistry, resolvePacks } from "@compmd/registry";
@@ -13,6 +14,9 @@ const post = (message: FromWorker) => {
 const processing = new Processing((request) => new OpenDocumentJson(request), {
   onFetched: (fetched) => {
     post({ type: "fetched", ...fetched });
+  },
+  onRemote: (urls) => {
+    post({ type: "remote", urls });
   },
 });
 

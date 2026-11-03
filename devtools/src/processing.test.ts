@@ -2,7 +2,7 @@ import { initSync, OpenDocumentJson, process, type Request } from "@compmd/proce
 import { createPage, type Page } from "@compmd/render";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
-import { afterEach, beforeAll, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { Processing } from "./processing.ts";
 import type { FromWorker } from "./protocol.ts";
 
@@ -39,6 +39,25 @@ function apply(target: Page, answer: FromWorker, text: string): void {
 
 /** A page's HTML, without the numbers of its boxes' classes, which go on counting as boxes render again. */
 const html = (root: HTMLElement) => root.innerHTML.replaceAll(/compmd-b\d+/g, "compmd-b");
+
+describe("Processing, with remote data", () => {
+  it("reports the remote URLs a document needs once typing pauses, each once, for the page to ask about and fetch", async () => {
+    const reported: string[][] = [];
+    const processing = new Processing(open, { onRemote: (urls) => reported.push(urls), pause: 5 });
+    const text = "---\nmd:\n  data:\n    - from: https://api.example.com/a.json\n      as: a\n---\n\nText.\n";
+    processing.handle({ type: "open", request: request(text), caret: 0 });
+    await vi.waitFor(() => {
+      expect(reported).toEqual([["https://api.example.com/a.json"]]);
+    });
+    // The document opened again with the data, and a new source typed in: only the new one is reported.
+    processing.handle({ type: "open", request: request(text), caret: 0 });
+    const at = text.indexOf("---\n\nText");
+    processing.handle({ type: "edits", edits: [{ start: at, end: at, text: "    - from: https://api.example.com/b.json\n      as: b\n" }], caret: 0 });
+    await vi.waitFor(() => {
+      expect(reported).toEqual([["https://api.example.com/a.json"], ["https://api.example.com/b.json"]]);
+    });
+  });
+});
 
 describe("Processing", () => {
   it("gives a splice per edit, which a page applies to show what a new process gives", () => {

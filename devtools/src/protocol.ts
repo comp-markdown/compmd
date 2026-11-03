@@ -51,4 +51,9 @@ export type FromWorker =
    * Not an answer: packs the document imports came from the registry (`arrived`: the editor opens it again with them),
    * or some couldn't be had (`problems`).
    */
-  | { type: "fetched"; arrived: boolean; problems: string[] };
+  | { type: "fetched"; arrived: boolean; problems: string[] }
+  /**
+   * Not an answer: remote URLs the document needs that the worker hasn't reported yet, once typing pauses. The page
+   * asks the reader about their origins and fetches them (`loadData`, spec §8.6), never the worker.
+   */
+  | { type: "remote"; urls: string[] };

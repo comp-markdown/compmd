@@ -19,6 +19,7 @@ use crate::host::{CacheKey, Data, Fetch, Needed};
 use crate::resolve::{DocumentId, Origin, Resolved, Store};
 use crate::settings::DataImport;
 use crate::validate::Validated;
+use crate::validate::data::origin;
 use format::{Format, Parsed};
 use from::Target;
 use indexmap::IndexMap;
@@ -45,12 +46,13 @@ impl Loaded {
     }
 }
 
-/// The remote and `host:` sources a render with `context` needs, each once, in the order they are first written, and
-/// the packs resolving found no release for.
+/// The remote and `host:` sources a render with `context` needs, each once, in the order they are first written; the
+/// remote URLs of origins `allowed_origins` leaves out; and the packs resolving found no release for.
 pub(crate) fn sources(
     resolved: &Resolved,
     validated: &Validated,
     context: &RenderContext,
+    allowed_origins: &[String],
 ) -> Needed {
     let (inputs, _) = inputs::of(resolved, context);
     let input = inputs.value();
@@ -58,11 +60,19 @@ pub(crate) fn sources(
         packs: resolved.missing.clone(),
         ..Needed::default()
     };
-    for (id, _, import) in imports(resolved, validated) {
+    for (id, index, import) in all_imports(resolved) {
+        let refused = validated.refuses_data(id, index);
         let (list, source) = match from::target(resolved, id, import, &input) {
-            Ok(Target::Remote(url)) => (&mut needed.remote, url),
-            Ok(Target::Host(source)) => (&mut needed.host, source),
-            Ok(Target::File(_)) | Err(_) => continue,
+            Ok(Target::Remote(url)) if !refused => (&mut needed.remote, url),
+            Ok(Target::Remote(url))
+                if origin(&url).is_some_and(|origin| {
+                    !allowed_origins.iter().any(|allowed| allowed == origin)
+                }) =>
+            {
+                (&mut needed.disallowed, url)
+            }
+            Ok(Target::Host(source)) if !refused => (&mut needed.host, source),
+            Ok(_) | Err(_) => continue,
         };
         if !list.contains(&source) {
             list.push(source);

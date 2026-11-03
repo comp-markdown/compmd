@@ -29,6 +29,8 @@ export interface ProcessingOptions {
   resolve?: (request: Request) => Promise<Resolution>;
   /** Packs were fetched, or couldn't be. */
   onFetched?: (fetched: Fetched) => void;
+  /** Remote URLs the document needs that weren't reported before, for the page to ask about and fetch. */
+  onRemote?: (urls: string[]) => void;
   /** How long typing must pause before missing packs are asked for, so a name typed letter by letter isn't (ms). */
   pause?: number;
 }
@@ -48,6 +50,8 @@ export class Processing {
   #text = "";
   /** The imports asked for already, so each is fetched once. */
   readonly #asked = new Set<string>();
+  /** The remote URLs reported already, so each is reported once. */
+  readonly #reported = new Set<string>();
   /** The releases fetched, and the packs the registry's size cap refused, which every request opened gets. */
   #fetched: Record<string, PackRelease[]> = {};
   #refused: Record<string, string> = {};
@@ -134,11 +138,24 @@ export class Processing {
     return modules;
   }
 
-  /** Asks for the document's missing packs once typing pauses. */
+  /** Asks for the document's missing packs, and reports the remote URLs it needs, once typing pauses. */
   #askLater(): void {
-    if (!this.#options.resolve) return;
+    if (!this.#options.resolve && !this.#options.onRemote) return;
     clearTimeout(this.#waiting);
-    this.#waiting = setTimeout(() => void this.#ask(), this.#options.pause ?? 600);
+    this.#waiting = setTimeout(() => {
+      this.#report();
+      void this.#ask();
+    }, this.#options.pause ?? 600);
+  }
+
+  /** Reports the remote URLs the document needs that weren't reported before: of allowed origins, and of others. */
+  #report(): void {
+    const onRemote = this.#options.onRemote;
+    const sources = this.#document?.sources();
+    const urls = sources ? [...sources.remote, ...sources.disallowed].filter((url) => !this.#reported.has(url)) : [];
+    if (!onRemote || urls.length === 0) return;
+    for (const url of urls) this.#reported.add(url);
+    onRemote(urls);
   }
 
   async #ask(): Promise<void> {

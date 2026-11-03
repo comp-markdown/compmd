@@ -118,7 +118,8 @@
       give the page; above the tabs, other values for the document's inputs. Under the text, a line says what is at the caret and what it
       takes, with its values to click, and the diagnostics point at what's wrong and offer fixes. The document never leaves your browser.
       When it imports a pack the playground doesn't have, your browser fetches the pack from npm, which then learns your address and the
-      pack's name and version: never the document, or what it shows.
+      pack's name and version: never the document, or what it shows. When it loads data from a site, the playground asks you first, the
+      first time, and remembers your answer; that site then learns your address and what the document asks it for.
       {#if __COMMIT__}
         Built from commit <a href="{REPOSITORY}/commit/{__COMMIT__}" target="_blank" rel="noreferrer"><code>{__COMMIT__.slice(0, 7)}</code></a>.
       {/if}

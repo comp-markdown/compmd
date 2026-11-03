@@ -103,6 +103,36 @@ async function frameWith(page: Page, selector: string): Promise<Frame> {
 
 const drawing = (label: string) => `[role="img"][aria-label="${label}"] svg`;
 
+describe("the document of data from the web", () => {
+  const LATEST = "https://registry.npmjs.org/@comp-markdown/mermaid/latest";
+
+  it("shows the fallback, asks the reader in the playground's page, and with their Allow shows npm's data", async () => {
+    const page = await browser.newPage();
+    const asked: string[] = [];
+    // npm's answer, from the test: nothing reaches the network.
+    await page.route(LATEST, async (route) => {
+      asked.push(route.request().url());
+      await route.fulfill({ status: 200, contentType: "application/json", headers: { "access-control-allow-origin": "*" }, body: JSON.stringify({ name: NAME, version: "9.9.9", description: "Fetched just now." }) });
+    });
+    await page.goto(`http://localhost:${String(PLAYGROUND_PORT)}/?doc=remote`);
+    const frame = await frameWith(page, "text=0.1.1 (a saved copy)");
+    expect(await page.locator(".diagnostics li").allTextContents()).toEqual([expect.stringContaining("F028")]);
+    const question = page.locator("dialog.compmd-origin-question");
+    await expect.poll(() => question.isVisible(), { timeout: 10_000 }).toBe(true);
+    expect(await question.textContent()).toContain("This document wants to load data from registry.npmjs.org. Allow?");
+    await question.getByRole("button", { name: "Allow", exact: true }).click();
+    await expect.poll(() => frame.locator("text=9.9.9").count(), { timeout: 10_000 }).toBe(1);
+    expect(await frame.locator("text=Fetched just now.").count()).toBe(1);
+    await expect.poll(() => page.locator(".diagnostics li").count(), { timeout: 10_000 }).toBe(0);
+    expect(asked).toEqual([LATEST]);
+    // Remembered: the next visit isn't asked again, and fetches at once.
+    await page.reload();
+    await frameWith(page, "text=9.9.9");
+    expect(await question.count()).toBe(0);
+    await page.close();
+  });
+});
+
 describe.each(["light", "dark"] as const)("the document of a pack from npm, %s", (scheme) => {
   it("fetches the pack, checks it, and draws its diagrams in the page, with no diagnostics", async () => {
     const page = await browser.newPage({ colorScheme: scheme });

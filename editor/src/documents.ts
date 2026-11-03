@@ -156,6 +156,8 @@ export const EXAMPLES: Example[] = [
   example("diagrams", "Packs: diagrams from a built module", { path: "diagrams.comp.md", files: own("diagrams"), now: NOW }, [DIAGRAMS_PACK]),
   // Its pack isn't the playground's: it comes from npm, which the playground's configuration names.
   example("npm", "Packs from npm: Mermaid diagrams", { path: "npm.comp.md", files: own("npm"), now: NOW }),
+  // Its data is npm's registry's, an origin the playground isn't configured for: the reader is asked first.
+  example("remote", "Data from the web: asked first", { path: "remote.comp.md", files: own("remote"), now: NOW }),
   example("diagnostics", "Diagnostics and their fixes", { path: "diagnostics.comp.md", files: own("diagnostics"), now: NOW }),
   example("notes", "A long document: field notes (52 KB, 20 charts)", { path: "notes.comp.md", files: filesIn(bundled.notes, NOTES), now: "2026-10-23T09:00:00Z" }, [CHARTS_PACK]),
 ];

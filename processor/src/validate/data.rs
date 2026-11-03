@@ -33,7 +33,7 @@ fn literal_prefix(from: &[char]) -> usize {
 }
 
 /// A remote `from`'s origin, its scheme and host, when they are written as is.
-fn origin(from: &str) -> Option<&str> {
+pub(crate) fn origin(from: &str) -> Option<&str> {
     let scheme_end = from.find("://")?;
     let host_end = from[scheme_end + 3..]
         .find(['/', '?', '#'])

@@ -104,7 +104,7 @@ fn each_data_import_has_the_cache_key_of_its_final_source() {
 
 #[test]
 fn each_source_is_needed_once_at_its_first_place() {
-    let input = "---\nmd:\n  data:\n    - from: https://api.example.com/b.json\n      as: b\n    - from: host:tasks\n      as: tasks\n    - from: https://api.example.com/a.json\n      as: a\n    - from: https://api.example.com/b.json\n      as: again\n    - from: host:tasks\n      as: same\n---\nText.\n";
+    let input = "---\nmd:\n  data:\n    - from: https://api.example.com/b.json\n      as: b\n    - from: host:tasks\n      as: tasks\n    - from: https://api.example.com/a.json\n      as: a\n    - from: https://api.example.com/b.json\n      as: again\n    - from: host:tasks\n      as: same\n    - from: https://new.example.org/c.json\n      as: c\n    - from: https://new.example.org/c.json\n      as: c_again\n---\nText.\n";
     let rendered = render(
         input,
         Setup {
@@ -120,6 +120,8 @@ fn each_source_is_needed_once_at_its_first_place() {
                 "https://api.example.com/a.json".into(),
             ],
             host: vec!["tasks".into()],
+            // Its origin isn't allowed (F028): a host may ask the reader about it.
+            disallowed: vec!["https://new.example.org/c.json".into()],
             packs: Vec::new(),
         }
     );
@@ -178,6 +180,7 @@ fn data_comes_from_packs_urls_and_hosts() {
                 "https://api.example.com/gone".into(),
             ],
             host: vec!["tasks".into(), "none".into()],
+            disallowed: Vec::new(),
             packs: Vec::new(),
         }
     );

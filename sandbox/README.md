@@ -94,16 +94,18 @@ view.destroy();
 
 ## Asking before data from a new origin
 
-A host that fetches remote data while a reader views a document must ask the reader the first time a document needs an origin the reader hasn't decided on, and remember the answer (spec §8.6). `allowOrigins` does it in the host's page, never in a frame:
+A host that fetches remote data while a reader views a document must ask the reader the first time a document needs an origin the reader hasn't decided on, and remember the answer (spec §8.6). `loadData` does it in the host's page, never in a frame: it asks about new origins, then fetches from the allowed ones, without credentials or a `Referer`, and gives what the request takes.
 
 ```ts
-import { allowOrigins, localAnswers } from "@compmd/sandbox";
+import { loadData } from "@compmd/sandbox";
 
-const { remote } = sources(request);                     // the URLs a render needs
+const { remote, disallowed } = sources(request);          // the URLs a render needs: of allowed origins, and of others
 view.render(process(request).expanded);                  // meanwhile, a new origin is F028 and shows its fallback
-const allowedOrigins = await allowOrigins(remote, { configured: config.allowedOrigins, document: title });
-view.render(process({ ...request, allowedOrigins, remote: await fetchFrom(remote, allowedOrigins) }).expanded);
+const loaded = await loadData([...remote, ...disallowed], { configured: request.allowedOrigins ?? [], document: title });
+view.render(process({ ...request, ...loaded }).expanded); // { allowedOrigins, remote }: the origins are checked again
 ```
+
+A host that fetches on its own uses `allowOrigins(urls, options)`, which asks and gives the allowed origins alone. With no reader to ask (a server, a build), give an `ask` that denies: nothing is fetched then but from the configured origins.
 
 - **Configured origins** are never asked about. Every other origin is asked about once, however many renders need it at once, and the answer, allow or deny, is kept per origin for every document: in `localStorage` by default (`localAnswers()`), or in a store the host gives (`answers`), such as one on its server.
 - **The question** is a plain `<dialog>` (`askWithDialog`): *This document wants to load data from api.example.com. Allow?*, with what the site learns, the values the reader picked, and the buttons *Allow* and *Don't allow*. A host asks in its own UI with `ask`, and `originQuestion(origin)` gives the words.

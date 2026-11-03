@@ -106,7 +106,7 @@ assert_eq!(policy.imports, Imports::Listed);
 assert_eq!(policy.trust("@acme/charts"), Trust::Strict);
 ```
 
-**What to fetch first.** The processor fetches nothing. After validating, `sources(&context)` says what a render needs that the host hasn't given: the remote URLs, the `host:` sources, and the packs no release matches (each `NeededPack` with its range and pinned integrity), for a host that fetches them, then loads; `compmd::host::newest_matching(range, versions)` picks a version as the processor will.
+**What to fetch first.** The processor fetches nothing. After validating, `sources(&context)` says what a render needs that the host hasn't given: the remote URLs, those of origins it doesn't allow (`disallowed`, for a host that asks its reader), the `host:` sources, and the packs no release matches (each `NeededPack` with its range and pinned integrity), for a host that fetches them, then loads; `compmd::host::newest_matching(range, versions)` picks a version as the processor will.
 
 ## Diagnostics
 

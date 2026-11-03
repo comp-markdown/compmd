@@ -35,7 +35,7 @@ const request = {
   tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
   origins: true,
 };
-const { remote, host, packs } = sources(request); // the URLs, host: sources and packs to get first, if any
+const { remote, host, packs, disallowed } = sources(request); // the URLs, host: sources and packs to get first, if any; and the URLs of origins not allowed
 const { parse, expanded, diagnostics, failed, cacheKeys } = process(request);
 ```
 

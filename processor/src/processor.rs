@@ -384,7 +384,12 @@ impl Processor<Validated> {
     /// ```
     #[must_use]
     pub fn sources(&self, context: &RenderContext) -> Needed {
-        load::sources(&self.state.resolved, &self.state.checks, context)
+        load::sources(
+            &self.state.resolved,
+            &self.state.checks,
+            context,
+            &self.state.allowed_origins,
+        )
     }
 
     /// Stage 4a, loading, for a render with `context`: the inputs' values and every data import, with the host's
@@ -715,6 +720,7 @@ impl Processor<Expanded> {
             &validated.resolved,
             &validated.checks,
             &self.state.render.context,
+            &validated.allowed_origins,
         )
     }
 

@@ -343,6 +343,7 @@ mod tests {
             json!({
                 "remote": ["https://status.example.org/us.json"],
                 "host": ["tasks?open=true"],
+                "disallowed": [],
                 "packs": [{ "pack": "@kit/mermaid", "range": "1.2.0", "integrity": "sha512-m" }]
             })
         );

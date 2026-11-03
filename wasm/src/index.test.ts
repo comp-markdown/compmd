@@ -128,8 +128,15 @@ describe("sources", () => {
     expect(sources(completeExample())).toEqual({
       remote: ["https://status.rayplay.dev/today.json?region=all"],
       host: ["tasks?project=rayplay"],
+      disallowed: [],
       packs: [],
     });
+  });
+
+  it("lists the URLs of origins not allowed, for a host that asks its reader", () => {
+    const text = "---\nmd:\n  data:\n    - from: https://new.example.org/x.json\n      as: x\n---\n";
+    const request = { path: "a.comp.md", files: { "a.comp.md": text }, now: "2026-10-22T09:00:00Z" };
+    expect(sources(request)).toMatchObject({ remote: [], disallowed: ["https://new.example.org/x.json"] });
   });
 
   it("lists the packs the request has no release of, with their ranges and pinned integrity", () => {
@@ -305,7 +312,7 @@ describe("OpenDocument", () => {
     expect(changes.diagnostics.map((d) => d.code)).toEqual(["F002"]);
     expect(changes).not.toHaveProperty("components");
     expect(changes.inputs).toEqual({});
-    expect(document.sources()).toEqual({ remote: [], host: [], packs: [] });
+    expect(document.sources()).toEqual({ remote: [], host: [], disallowed: [], packs: [] });
     expect(JSON.parse(document.reload({}).splice)).not.toHaveProperty("edit");
     document.free();
   });
@@ -315,7 +322,7 @@ describe("OpenDocument", () => {
     const frontmatter = "---\nmd:\n  inputs:\n    n: number = 1\n  data:\n    - from: https://a.org/x.json\n      as: x\n---\n";
     document.edit(0, 0, frontmatter);
     document.edit(frontmatter.length + 6, frontmatter.length + 6, "\n{{md.data.x.n}}\n");
-    expect(document.sources()).toEqual({ remote: ["https://a.org/x.json"], host: [], packs: [] });
+    expect(document.sources()).toEqual({ remote: ["https://a.org/x.json"], host: [], disallowed: [], packs: [] });
     expect(document.expanded.inputs?.["n"]).toMatchObject({ value: 1 });
     expect(document.diagnostics[0]?.code).toBe("F026");
     const changes = document.reload({ remote: { "https://a.org/x.json": { text: '{"n": "fetched"}', contentType: "application/json" } } });

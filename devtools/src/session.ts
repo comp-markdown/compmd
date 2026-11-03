@@ -64,6 +64,7 @@ export class Session {
   readonly #onFailure: (message: string) => void;
   readonly #onHint: (hinted: Hinted) => void;
   readonly #onFetched: (fetched: Fetched) => void;
+  readonly #onRemote: (urls: string[]) => void;
   readonly #sent: Sent[] = [];
   #waiting: Waiting[] = [];
   #generation = 0;
@@ -73,15 +74,27 @@ export class Session {
   #caret = 0;
   #asked = 0;
 
-  /** `onFetched` hears of packs the worker fetched from the registry, which answer no message. */
-  constructor(worker: WorkerPort, onUpdate: (update: Update) => void, onFailure: (message: string) => void, onHint: (hinted: Hinted) => void, onFetched: (fetched: Fetched) => void = () => undefined) {
+  /**
+   * `onFetched` hears of packs the worker fetched from the registry, and `onRemote` of the remote URLs the document
+   * needs, neither of which answers a message.
+   */
+  constructor(
+    worker: WorkerPort,
+    onUpdate: (update: Update) => void,
+    onFailure: (message: string) => void,
+    onHint: (hinted: Hinted) => void,
+    onFetched: (fetched: Fetched) => void = () => undefined,
+    onRemote: (urls: string[]) => void = () => undefined,
+  ) {
     this.#worker = worker;
     this.#onUpdate = onUpdate;
     this.#onFailure = onFailure;
     this.#onHint = onHint;
     this.#onFetched = onFetched;
+    this.#onRemote = onRemote;
     worker.addEventListener("message", ({ data }) => {
       if (data.type === "fetched") this.#onFetched({ arrived: data.arrived, problems: data.problems });
+      else if (data.type === "remote") this.#onRemote(data.urls);
       else this.#answered(data);
     });
   }
@@ -126,7 +139,7 @@ export class Session {
     this.#worker.postMessage(message);
   }
 
-  #answered(answer: Exclude<FromWorker, { type: "fetched" }>): void {
+  #answered(answer: Exclude<FromWorker, { type: "fetched" | "remote" }>): void {
     const sent = this.#sent.shift();
     if (sent?.generation === this.#generation) {
       if (answer.type === "failed") this.#onFailure(answer.message);
