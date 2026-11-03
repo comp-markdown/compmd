@@ -38,6 +38,7 @@ const MESSAGES: (ToFrame | FromFrame)[] = [
   { type: "host" },
   { type: "ping", n: 1 },
   { type: "compile", name: "chart", language: "jsx", code: "export default () => null" },
+  { type: "observe", on: true },
   { type: "ready", sandbox: 1 },
   { type: "loaded" },
   { type: "set", input: "region", value: "eu" },
@@ -48,6 +49,20 @@ const MESSAGES: (ToFrame | FromFrame)[] = [
   { type: "pong", n: 1 },
   { type: "compiled", name: "card", code: "", css: "p{}" },
   { type: "failed", name: "card", message: "unexpected token" },
+  {
+    type: "observed",
+    events: [
+      { type: "frame", frame: "1", level: "permissive", renders: { kind: "use", component: "map" }, network: ["https://tiles.example.com"], at: 1 },
+      { type: "frame", frame: "2", level: "strict", renders: { kind: "page" }, at: 1 },
+      { type: "gone", frame: "1/1", why: "hung", at: 2 },
+      { type: "message", frame: "1", way: "down", data: { type: "part", part: {} }, at: 3 },
+      { type: "mounted", frame: "", use: 1, component: "legend", ms: 0.4, at: 4 },
+      { type: "updated", frame: "", use: 1, ms: 0.1, at: 5 },
+      { type: "unmounted", frame: "", use: 1, at: 6 },
+      { type: "fallback", frame: "", component: "legend", reason: "threw", message: "boom", at: 7 },
+      { type: "dropped", frame: "", count: 12, at: 8 },
+    ],
+  },
 ];
 
 describe("protocol.schema.json", () => {
@@ -71,6 +86,9 @@ describe("protocol.schema.json", () => {
     ["a Blob module has its place", { type: "code", components: [{ ...diagram, binding: "plain" }] }],
     ["a library has its place", { type: "code", components: [{ name: "chart", level: "strict", binding: "react", code: "", libraries: { "@kit/d3": { code: new Blob([]) } } }] }],
     ["a module by URL has no libraries", { type: "code", components: [{ name: "mermaid", level: "strict", module: { url: "/packs/m.js", integrity: "sha384-x" }, libraries: {} }] }],
+    ["an observed frame's id is a path of numbers", { type: "observed", events: [{ type: "gone", frame: "../1", why: "hung", at: 1 }] }],
+    ["an observed frame is of a frame's level", { type: "observed", events: [{ type: "frame", frame: "1", level: "trusted", renders: { kind: "page" }, at: 1 }] }],
+    ["an observed event is of a known type", { type: "observed", events: [{ type: "other", frame: "", at: 1 }] }],
   ])("refuses what isn't a message: %s", (_rule, message) => {
     expect(validate(message), JSON.stringify(message)).toBe(false);
   });

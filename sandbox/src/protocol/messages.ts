@@ -83,7 +83,9 @@ export type ToFrame =
   | { type: "scheme"; scheme: Scheme }
   | { type: "host" }
   | { type: "ping"; n: number }
-  | ({ type: "compile" } & CompileRequest);
+  | ({ type: "compile" } & CompileRequest)
+  /** Record what passes in the frame, and report it, or stop (docs/devtools.md, decision 6). */
+  | { type: "observe"; on: boolean };
 
 /** Why a component shows its fallback: `@compmd/render`'s reasons, code that didn't load, a level the frame can't hold. */
 export type ErrorReason = "missing" | "threw" | "failed" | "not-here";
@@ -112,11 +114,13 @@ export type FromFrame =
   | { type: "size"; width: number; height: number }
   | { type: "pong"; n: number }
   | { type: "compiled"; name: string; code: string; css?: string }
-  | { type: "failed"; name: string; message: string };
+  | { type: "failed"; name: string; message: string }
+  /** What the frame's observer recorded since its last report, once its parent asked: `Observed` events, unchecked. */
+  | { type: "observed"; events: unknown[] };
 
 /** Every message type, each way: what the schema (`protocol.schema.json`) has too. */
-export const TO_FRAME: readonly ToFrame["type"][] = ["level", "code", "part", "styles", "scheme", "host", "ping", "compile"];
-export const FROM_FRAME: readonly FromFrame["type"][] = ["ready", "loaded", "set", "error", "link", "rendered", "size", "pong", "compiled", "failed"];
+export const TO_FRAME: readonly ToFrame["type"][] = ["level", "code", "part", "styles", "scheme", "host", "ping", "compile", "observe"];
+export const FROM_FRAME: readonly FromFrame["type"][] = ["ready", "loaded", "set", "error", "link", "rendered", "size", "pong", "compiled", "failed", "observed"];
 
 /** What the protocol needs of a port: a `MessagePort` is one. It is `@compmd/render`'s, with transfers and ports. */
 export interface Port {

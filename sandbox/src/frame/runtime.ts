@@ -5,9 +5,10 @@
 // A component of a lower level gets a nested strict frame; one of a higher level shows its fallback.
 
 import { createRegion, type Page, type Region } from "@compmd/render";
-import { serveFrame } from "@compmd/render/frame";
+import { serveFrame, type Port as RenderPort } from "@compmd/render/frame";
 import { hostClient, type HostClient } from "../host-api.ts";
 import { codeFor, Mounts } from "../mounts.ts";
+import { batches, Observer } from "../observer.ts";
 import { serveParent, type FrameEnd } from "../protocol/frame-end.ts";
 import { hasCode, HELLO, SANDBOX_VERSION, type ComponentCode, type ErrorReason, type Level, type Part, type Scheme } from "../protocol/messages.ts";
 import { frameUse } from "../use.ts";
@@ -107,13 +108,43 @@ function reportSize(parent: FrameEnd): void {
   new MutationObserver(report).observe(body, { subtree: true, childList: true, attributes: true, characterData: true });
 }
 
+/**
+ * `port`, for a page frame's renderer, which posts its components' fallbacks up itself: the frame's observer records each
+ * as it goes.
+ */
+function recordingFallbacks(port: MessagePort, observer: Observer): RenderPort {
+  return {
+    postMessage: (message) => {
+      const { type, reason, component, message: text } = message as { type?: unknown; reason?: unknown; component?: unknown; message?: unknown };
+      if (type === "error" && typeof component === "string" && (reason === "missing" || reason === "threw")) observer.fallback(component, reason, typeof text === "string" ? text : "");
+      port.postMessage(message);
+    },
+    addEventListener: (type, listener) => {
+      port.addEventListener(type, listener);
+    },
+    removeEventListener: (type, listener) => {
+      port.removeEventListener(type, listener);
+    },
+    start: () => {
+      port.start();
+    },
+  };
+}
+
 function start(port: MessagePort): void {
   let level: Level = "strict";
   let components: readonly ComponentCode[] = [];
   /** The host's stylesheets, which this frame's nested frames get too. */
   let stylesheets: readonly string[] = [];
   // Every callback below runs on a message, after `parent` is set at the end.
+  /** What passes in this frame, reported to the parent in batches once it asks (docs/devtools.md, decision 6). */
+  const reports = batches((events) => {
+    parent.observed(events);
+  });
+  const observer = new Observer(reports.sink);
+  /** A component of this frame shows its fallback; a nested frame's own are passed up as they come. */
   const report = (name: string, reason: ErrorReason, message: string) => {
+    observer.fallback(name, reason, message);
     parent.error(reason, message, name);
   };
   const loaded = new Components({
@@ -135,6 +166,7 @@ function start(port: MessagePort): void {
         inputs,
         styles: stylesheets,
         ping: { every: 1000, timeout: 5000 },
+        observer,
         on: {
           set: ({ input, value }) => {
             parent.set(input, value);
@@ -143,7 +175,7 @@ function start(port: MessagePort): void {
             parent.link(url);
           },
           error: ({ reason, component: name, message }) => {
-            report(name ?? component.name, reason, message);
+            parent.error(reason, message, name ?? component.name);
           },
           failed: (failure) => {
             failed(failure.reason === "hung" ? "its frame stopped answering" : `its frame is of protocol version ${String(failure.version)}`);
@@ -175,6 +207,7 @@ function start(port: MessagePort): void {
       };
     },
     report,
+    observer,
   });
   /** What a permissive frame's components get as `host`, when the parent gives it, before the first part. */
   let host: HostClient | undefined;
@@ -199,7 +232,7 @@ function start(port: MessagePort): void {
       if (own === "permissive") narrow(network ?? networkPolicy([]));
       // A page frame (frame mode) renders the page through `@compmd/render`'s protocol, on the same port.
       const container = document.getElementById("page");
-      if (container) page = serveFrame(port, { container, components: mounts.mounts, math }).page;
+      if (container) page = serveFrame(recordingFallbacks(port, observer), { container, components: mounts.mounts, math }).page;
     },
     code: async (next) => {
       components = next;
@@ -230,6 +263,14 @@ function start(port: MessagePort): void {
       host = hostClient(hostPort);
     },
     compile,
+    observe: (on) => {
+      if (on) {
+        observer.start();
+        return;
+      }
+      observer.stop();
+      reports.clear();
+    },
   });
   // A use frame's theme (a page frame's is `serveFrame`'s): the tokens on its part, and on its own nested frames.
   port.addEventListener("message", ({ data }: MessageEvent<{ type?: unknown; tokens?: Record<string, string> }>) => {

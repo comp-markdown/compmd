@@ -27,7 +27,12 @@ export interface ChildEvents {
   size: { width: number; height: number };
   /** The frame is of another version, or stopped answering: the parent removes it, and its use shows its fallback. */
   failed: ChildFailure;
+  /** What the frame's observer reports, unchecked (`observedOf` checks each event); only while the parent asks. */
+  observed: { events: unknown[] };
 }
+
+/** The most events a parent takes from one `observed` message; a frame that has more reports them later. */
+const BATCH = 2000;
 
 export interface ChildEnd {
   code(components: ComponentCode[]): void;
@@ -36,6 +41,8 @@ export interface ChildEnd {
   scheme(scheme: Scheme): void;
   /** Sends a message of `@compmd/render`'s protocol, for a page frame, once the frame has its level. */
   send(message: unknown): void;
+  /** Asks the frame to record what passes in it and report it (`observed`), or to stop. */
+  observe(on: boolean): void;
   on<T extends keyof ChildEvents>(type: T, listener: (event: ChildEvents[T]) => void): void;
   close(): void;
 }
@@ -54,13 +61,15 @@ type Listeners = { [T in keyof ChildEvents]: ((event: ChildEvents[T]) => void)[]
  */
 export function connectChild(port: Port, options: ChildOptions): ChildEnd {
   if (options.host && options.level !== "permissive") throw new Error("only a permissive frame is given host");
-  const listeners: Listeners = { set: [], error: [], link: [], loaded: [], rendered: [], size: [], failed: [] };
+  const listeners: Listeners = { set: [], error: [], link: [], loaded: [], rendered: [], size: [], failed: [], observed: [] };
   const emit = <T extends keyof ChildEvents>(type: T, event: ChildEvents[T]) => {
     for (const listener of listeners[type]) listener(event);
   };
   /** What waits for the frame's `ready`; `undefined` once it came. */
   let waiting: (() => void)[] | undefined = [];
   let closed = false;
+  /** Whether the parent asked the frame to report: it takes `observed` only then. */
+  let observing = false;
   const whenReady = (send: () => void) => {
     if (closed) return;
     if (waiting) waiting.push(send);
@@ -134,6 +143,10 @@ export function connectChild(port: Port, options: ChildOptions): ChildEnd {
       case "size":
         emit("size", { width: data.width, height: data.height });
         break;
+      case "observed":
+        // Unasked, it is a report no one wants, and code of the frame's level may have sent it.
+        if (observing && Array.isArray(data.events)) emit("observed", { events: data.events.slice(0, BATCH) });
+        break;
       case "compiled":
       case "failed":
         // The compile frame's; its own parent end reads them (`connectCompiler`).
@@ -164,6 +177,11 @@ export function connectChild(port: Port, options: ChildOptions): ChildEnd {
     },
     send: (message) => {
       post(message);
+    },
+    observe: (on) => {
+      if (on === observing) return;
+      observing = on;
+      post({ type: "observe", on } satisfies ToFrame);
     },
     on: (type, listener) => {
       listeners[type].push(listener);

@@ -42,6 +42,7 @@ When a frame loads, its parent posts `hello` to its window with one end of a new
 | `host {port}` | a port for `host`, as calls and events | U frames of permissive packs given `host`, from H only |
 | `ping {n}` | answer, or be stopped | every frame |
 | `compile {name, language, runtime, code}` | compile this | C |
+| `observe {on}` | record what passes in you and report it, asking your own frames too; or stop ([observing](#observing)) | P, U |
 
 **A frame to its parent:**
 
@@ -56,8 +57,19 @@ When a frame loads, its parent posts `hello` to its window with one end of a new
 | `size {width, height}` | the content's size, for the parent to set on the frame | U |
 | `pong {n}` | the answer to `ping` | every frame |
 | `compiled {name, code, css?}`, `failed {name, message}` | a compile's result | C |
+| `observed {events}` | what the frame recorded since its last report, its own frames' reports in it; only after `observe {on}` | P, U |
 
 A parent passes its children's `set`, `link` and `error` up, each with what it knows of where they came from, so H gets them all.
+
+## Observing
+
+For developer tools ([the Developer Tools](devtools.md), decisions 5 and 6, and its threat model). Only H starts it, when its host observes a view; each window then records its own part, and a frame reports it to its parent:
+
+- **What a window records:** the frames it makes (`frame`, with the level, the network and what it renders; `gone`, with why), a copy of each message on their ports (`message`, `down` or `up`), the components it mounts (`mounted`, `updated`, `unmounted`, each with its time) and their fallbacks (`fallback`), and `dropped` when it held too many. Each has its time, `at`, in milliseconds since the epoch. Pings, pongs, `observe` and `observed` aren't copied: one a second from every frame would push the rest out. Values longer than a limit are kept by their size (`{ $text: length, start }`, `{ $blob: size, mime }`, `{ $more: count }`).
+- **Ids are paths:** in what a window records, `""` is the window itself and `"2"` its second frame. A parent puts its child's id in front of each id the child reports (`""` becomes `"2"`, `"1"` becomes `"2/1"`), so a frame can only report on itself and the frames under it.
+- **A frame starts** when it gets `observe {on: true}`: it reports its live frames and components first, asks its frames, and sends `observed` every 100 ms with at most 2,000 events, counting what it drops. `observe {on: false}` stops it and its frames, and drops what waits.
+- **A parent takes `observed` only while it asked,** at most 2,000 events of one, checks each event against the schema's `observedEvent`, rebuilt from its own fields, drops what isn't one, and nests the rest under the frame's id. It acts on none of it: levels, `set`, `host` and which frames to stop come from the checks above, never from a report. H keeps the last 2,000 events of each source, itself and each of its frames, and marks what a frame reported as that frame's.
+
 
 ## Sequences
 
@@ -167,7 +179,7 @@ sequenceDiagram
 ## Checks, by end
 
 - **A frame:** its port comes in a window message from its parent; it adds the `level` policy before it loads any code; it runs code and renders parts only from its port; it answers `ping`.
-- **A parent:** it makes children only of a lower level than its own (a permissive frame, only strict ones); it sends each child only its own use's part and code; it checks each `set` against the use's node; it pings its children.
+- **A parent:** it makes children only of a lower level than its own (a permissive frame, only strict ones); it sends each child only its own use's part and code; it checks each `set` against the use's node; it pings its children; it takes `observed` only after it asked, and checks each event.
 - **H:** it gives `host` only to permissive frames of packs the configuration gives `host`; it never acts on `link` without the reader.
 
 ## Versions

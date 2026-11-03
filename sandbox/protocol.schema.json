@@ -15,7 +15,8 @@
         { "$ref": "#/$defs/scheme" },
         { "$ref": "#/$defs/host" },
         { "$ref": "#/$defs/ping" },
-        { "$ref": "#/$defs/compile" }
+        { "$ref": "#/$defs/compile" },
+        { "$ref": "#/$defs/observe" }
       ]
     },
     "fromFrame": {
@@ -30,7 +31,8 @@
         { "$ref": "#/$defs/size" },
         { "$ref": "#/$defs/pong" },
         { "$ref": "#/$defs/compiled" },
-        { "$ref": "#/$defs/failed" }
+        { "$ref": "#/$defs/failed" },
+        { "$ref": "#/$defs/observed" }
       ]
     },
     "componentLevel": { "description": "A component's trust level.", "enum": ["strict", "permissive", "trusted"] },
@@ -255,6 +257,96 @@
       "properties": { "type": { "const": "failed" }, "name": { "type": "string" }, "message": { "type": "string" } },
       "required": ["type", "name", "message"],
       "additionalProperties": false
+    },
+    "observe": {
+      "description": "Record what passes in the frame and report it in `observed`, asking the frame's own frames too; or stop.",
+      "type": "object",
+      "properties": { "type": { "const": "observe" }, "on": { "type": "boolean" } },
+      "required": ["type", "on"],
+      "additionalProperties": false
+    },
+    "observed": {
+      "description": "What the frame's observer recorded since its last report, sent only after its parent asked. Code of the frame's level may have written it: its parent checks each event, drops what isn't one, and puts the frame's id in front of each event's frame.",
+      "type": "object",
+      "properties": { "type": { "const": "observed" }, "events": { "type": "array", "items": { "$ref": "#/$defs/observedEvent" } } },
+      "required": ["type", "events"],
+      "additionalProperties": false
+    },
+    "frameId": { "description": "A frame by its path from the window that recorded it: empty for that window itself, `2` for its second frame, `2/1` for that frame's first.", "type": "string", "pattern": "^([0-9]+(/[0-9]+)*)?$" },
+    "observedEvent": {
+      "description": "One thing a window's observer saw, at `at`, in milliseconds since the epoch.",
+      "type": "object",
+      "properties": { "frame": { "$ref": "#/$defs/frameId" }, "at": { "type": "number", "minimum": 0 } },
+      "required": ["type", "frame", "at"],
+      "oneOf": [
+        {
+          "description": "The window made a frame.",
+          "properties": {
+            "type": { "const": "frame" },
+            "frame": true,
+            "at": true,
+            "level": { "enum": ["strict", "permissive"] },
+            "renders": {
+              "oneOf": [
+                { "type": "object", "properties": { "kind": { "enum": ["page", "compile"] } }, "required": ["kind"], "additionalProperties": false },
+                { "type": "object", "properties": { "kind": { "const": "use" }, "component": { "type": "string" } }, "required": ["kind", "component"], "additionalProperties": false }
+              ]
+            },
+            "network": { "type": "array", "items": { "type": "string" } }
+          },
+          "required": ["level", "renders"],
+          "additionalProperties": false
+        },
+        {
+          "description": "A frame went: removed, stopped when it hung, or of another protocol version.",
+          "properties": { "type": { "const": "gone" }, "frame": true, "at": true, "why": { "enum": ["removed", "hung", "version"] } },
+          "required": ["why"],
+          "additionalProperties": false
+        },
+        {
+          "description": "A copy of a message between the window and its frame, down to it or up from it; large values kept by their size.",
+          "properties": { "type": { "const": "message" }, "frame": true, "at": true, "way": { "enum": ["down", "up"] }, "data": {} },
+          "required": ["way", "data"],
+          "additionalProperties": false
+        },
+        {
+          "description": "A component mounted in the window, as its use `use`, in `ms`.",
+          "properties": { "type": { "const": "mounted" }, "frame": true, "at": true, "use": { "type": "integer", "minimum": 0 }, "component": { "type": "string" }, "ms": { "type": "number", "minimum": 0 } },
+          "required": ["use", "component", "ms"],
+          "additionalProperties": false
+        },
+        {
+          "description": "A use updated, in `ms`.",
+          "properties": { "type": { "const": "updated" }, "frame": true, "at": true, "use": { "type": "integer", "minimum": 0 }, "ms": { "type": "number", "minimum": 0 } },
+          "required": ["use", "ms"],
+          "additionalProperties": false
+        },
+        {
+          "description": "A use went.",
+          "properties": { "type": { "const": "unmounted" }, "frame": true, "at": true, "use": { "type": "integer", "minimum": 0 } },
+          "required": ["use"],
+          "additionalProperties": false
+        },
+        {
+          "description": "A component shows its fallback in the window.",
+          "properties": {
+            "type": { "const": "fallback" },
+            "frame": true,
+            "at": true,
+            "component": { "type": "string" },
+            "reason": { "enum": ["missing", "threw", "failed", "not-here"] },
+            "message": { "type": "string" }
+          },
+          "required": ["component", "reason", "message"],
+          "additionalProperties": false
+        },
+        {
+          "description": "The window dropped events it couldn't hold.",
+          "properties": { "type": { "const": "dropped" }, "frame": true, "at": true, "count": { "type": "integer", "minimum": 0 } },
+          "required": ["count"],
+          "additionalProperties": false
+        }
+      ]
     }
   }
 }

@@ -4,6 +4,7 @@
 
 import type { ExpandedInput, ExpandedUse } from "@compmd/render";
 import { networkPolicy } from "./frame/narrow.ts";
+import type { Observer } from "./observer.ts";
 import { boundInputs } from "./protocol/inputs.ts";
 import { HELLO, SANDBOX_VERSION, type ComponentCode, type Level, type Scheme } from "./protocol/messages.ts";
 import { connectChild, type ChildEnd, type ChildEvents } from "./protocol/parent-end.ts";
@@ -22,6 +23,8 @@ export interface UseFrameOptions {
   styles?: readonly string[];
   ping?: { every: number; timeout: number };
   on: { [T in keyof ChildEvents]?: (event: ChildEvents[T]) => void };
+  /** The observer of the window the frame is made in, which records the frame and the messages on its port. */
+  observer?: Observer;
 }
 
 export interface UseFrame {
@@ -63,17 +66,26 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
   let tokens: Readonly<Record<string, string>> | undefined;
   let scheme: Scheme | undefined;
   let child: ChildEnd | undefined;
+  const { observer } = options;
+  const id = observer?.frame(options.level, { kind: "use", component: iframe.title }, options.network);
   const connect = () => {
     child?.close();
     const { port1, port2 } = new MessageChannel();
     iframe.contentWindow?.postMessage({ type: HELLO, version: SANDBOX_VERSION }, "*", [port2]);
-    const end = connectChild(port1, {
+    const end = connectChild(observer && id !== undefined ? observer.port(id, port1) : port1, {
       level: options.level,
       ...(options.network ? { policy: networkPolicy(options.network) } : {}),
       binds: (input) => bound.has(input),
       ...(options.host ? { host: options.host() } : {}),
       ...(options.ping ? { ping: options.ping } : {}),
     });
+    if (observer && id !== undefined) {
+      observer.connected(id, end);
+      // Before the use's own listener, which removes the frame: it went because it failed.
+      end.on("failed", ({ reason }) => {
+        observer.gone(id, reason);
+      });
+    }
     end.on("size", ({ width, height }) => {
       iframe.style.height = `${String(Math.max(1, height))}px`;
       if (node.type === "componentInline") iframe.style.width = `${String(width)}px`;
@@ -117,6 +129,7 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
       iframe.removeEventListener("load", connect);
       child?.close();
       iframe.remove();
+      if (id !== undefined) observer?.gone(id, "removed");
     },
   };
 }

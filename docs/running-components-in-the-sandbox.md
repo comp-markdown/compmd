@@ -129,6 +129,8 @@ What changes between them: who the host's page is (a top-level page, or a frame 
 | T9 | A component runs forever and freezes the page | each parent pings its frames; a frame that doesn't answer in time is removed and its use shows its fallback (W118, spec §15 rule 5) |
 | T10 | A component draws a fake prompt over the host's interface | frames are placed as the document's content, inside the page's box, never over it |
 
+**The observer**, for developer tools ([the Developer Tools](devtools.md), decisions 5 and 6), has threats of its own, O1 to O8, kept in that design with what stops each: a message shown as markup (O1), a flood of reports (O2), observing that changes what the sandbox does (O3), a document or pack that turns it on (O4), what it keeps leaving the page (O5), a frame that reports a false tree (O6), reports as a channel to the host's page (O7), and code that behaves differently while observed (O8). Its [accepted risk](devtools.md#the-accepted-risk): what a frame reports can be false, so the tools mark it as that frame's report, and no decision of the sandbox reads one.
+
 **What a browser can't stop**, and so this design can't either:
 
 - **WebRTC.** A content security policy doesn't cover `RTCPeerConnection` in current browsers, and a STUN request can carry data to any server. The frame removes the WebRTC constructors before any component runs; strict code may still get fresh ones from a nested `srcdoc` frame, if a browser doesn't apply `frame-src 'none'` to it. The browser tests record what each browser does; a host that must close it serves the sandbox's files from a separate site and turns WebRTC off there with a `Permissions-Policy`, where a browser supports one.

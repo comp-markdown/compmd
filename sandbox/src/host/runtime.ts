@@ -7,6 +7,7 @@ import type { HostComponent, Trust } from "@compmd/processor";
 import { createRegion, type ExpandedInput, type ExpandedUse, type Mount } from "@compmd/render";
 import { serveHost, type HostApi } from "../host-api.ts";
 import { codeFor, Mounts } from "../mounts.ts";
+import type { Observer } from "../observer.ts";
 import { connectCompiler, type Compiler } from "../protocol/compiler.ts";
 import { bindingOf, HELLO, SANDBOX_VERSION, type ComponentCode, type ErrorReason, type Level, type Libraries, type LibraryCode, type Scheme } from "../protocol/messages.ts";
 import { frameUse } from "../use.ts";
@@ -36,6 +37,8 @@ export interface HostRuntimeOptions {
   stylesheets?: readonly string[];
   /** How long a frame may not answer before it is stopped, in ms (default 5000). */
   timeout?: number;
+  /** The observer of the host's page, which records the document's frames, their messages and its components. */
+  observer?: Observer;
 }
 
 /** What a document's components do that the host hears of. */
@@ -68,7 +71,7 @@ export class HostRuntime {
   readonly #mounts: Mounts;
   #code: ComponentCode[] = [];
   #trust = new Map<string, Trust>();
-  #compiler: { compiler: Compiler; frame: HTMLIFrameElement } | undefined;
+  #compiler: { compiler: Compiler; frame: HTMLIFrameElement; id: string | undefined } | undefined;
   #styles: readonly string[];
 
   constructor(options: HostRuntimeOptions, events: HostEvents) {
@@ -80,8 +83,9 @@ export class HostRuntime {
       inline: options.trusted ?? {},
       frame: (target, node, inputs, component) => this.#frame(target, node, inputs, component),
       report: (component, reason, message) => {
-        events.error(component, reason, message);
+        this.#fallback(component, reason, message);
       },
+      ...(options.observer ? { observer: options.observer } : {}),
     });
   }
 
@@ -115,7 +119,7 @@ export class HostRuntime {
         this.#events.set(input, value);
       },
       onError: (error) => {
-        if ("component" in error) this.#events.error(error.component, error.reason, messageOf(error.error ?? ""));
+        if ("component" in error) this.#fallback(error.component, error.reason, messageOf(error.error ?? ""));
       },
       ...(this.#options.host ? { host: this.#options.host } : {}),
     });
@@ -149,7 +153,14 @@ export class HostRuntime {
   destroy(): void {
     this.#compiler?.compiler.close();
     this.#compiler?.frame.remove();
+    if (this.#compiler?.id !== undefined) this.#options.observer?.gone(this.#compiler.id, "removed");
     this.#compiler = undefined;
+  }
+
+  /** A component shows its fallback in the host's page, or none of its uses can: its code failed. */
+  #fallback(component: string, reason: ErrorReason, message: string): void {
+    this.#options.observer?.fallback(component, reason, message);
+    this.#events.error(component, reason, message);
   }
 
   async #codeOf(component: HostComponent): Promise<ComponentCode | undefined> {
@@ -157,7 +168,7 @@ export class HostRuntime {
     if (level === "trusted") return { name: component.name, level };
     const given = this.#given(component);
     if (typeof given === "string") {
-      this.#events.error(component.name, "failed", given);
+      this.#fallback(component.name, "failed", given);
       return undefined;
     }
     const withLibraries = Object.keys(given.libraries).length > 0 ? { libraries: given.libraries } : {};
@@ -169,7 +180,7 @@ export class HostRuntime {
       const { code, css } = await this.#compilerFor().compile({ name: component.name, language: component.language, code: component.code, ...(component.runtime ? { runtime: component.runtime } : {}) });
       return { name: component.name, level, binding: bindingOf(component.language), code, ...(css === undefined ? {} : { css }), ...withLibraries };
     } catch (error) {
-      this.#events.error(component.name, "failed", messageOf(error));
+      this.#fallback(component.name, "failed", messageOf(error));
       return undefined;
     }
   }
@@ -221,8 +232,10 @@ export class HostRuntime {
     frame.addEventListener("load", () => frame.contentWindow?.postMessage({ type: HELLO, version: SANDBOX_VERSION }, "*", [port2]), { once: true });
     frame.src = frameUrl(this.#options.base, "strict.html");
     document.body.append(frame);
-    const compiler = connectCompiler(port1);
-    this.#compiler = { compiler, frame };
+    const { observer } = this.#options;
+    const id = observer?.frame("strict", { kind: "compile" });
+    const compiler = connectCompiler(observer && id !== undefined ? observer.port(id, port1) : port1);
+    this.#compiler = { compiler, frame, id };
     return compiler;
   }
 
@@ -250,6 +263,7 @@ export class HostRuntime {
         : {}),
       styles: this.#styles,
       ping: { every: 1000, timeout: this.#options.timeout ?? 5000 },
+      ...(this.#options.observer ? { observer: this.#options.observer } : {}),
       on: {
         set: ({ input, value }) => {
           this.#events.set(input, value);

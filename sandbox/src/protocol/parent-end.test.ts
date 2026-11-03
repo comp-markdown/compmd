@@ -180,6 +180,41 @@ describe("the parent's end (connectChild)", () => {
     expect(types(got)).toEqual(["level"]);
   });
 
+  it("takes a frame's report only while it asks for one (docs/devtools.md, O7)", async () => {
+    const { parent, frame, got } = parentChannel();
+    const child = connectChild(parent, { level: "strict", binds: () => false });
+    const reports: unknown[] = [];
+    child.on("observed", ({ events }) => reports.push(events));
+    frame.postMessage({ type: "ready", sandbox: SANDBOX_VERSION });
+    const report = { type: "observed", events: [{ type: "dropped", frame: "", count: 1, at: 1 }] };
+    frame.postMessage(report);
+    await settle();
+    expect(reports).toEqual([]);
+    child.observe(true);
+    child.observe(true);
+    frame.postMessage(report);
+    frame.postMessage({ type: "observed", events: "not a list" });
+    await settle();
+    expect(reports).toEqual([report.events]);
+    child.observe(false);
+    frame.postMessage(report);
+    await settle();
+    expect(reports).toHaveLength(1);
+    expect(types(got)).toEqual(["level", "observe", "observe"]);
+  });
+
+  it("takes at most 2,000 events of one report", async () => {
+    const { parent, frame } = parentChannel();
+    const child = connectChild(parent, { level: "strict", binds: () => false });
+    const reports: unknown[][] = [];
+    child.on("observed", ({ events }) => reports.push(events));
+    frame.postMessage({ type: "ready", sandbox: SANDBOX_VERSION });
+    child.observe(true);
+    frame.postMessage({ type: "observed", events: Array.from({ length: 2500 }, () => ({})) });
+    await settle();
+    expect(reports[0]).toHaveLength(2000);
+  });
+
   it("sends and passes on nothing once closed", async () => {
     const { parent, frame, got } = parentChannel();
     const child = connectChild(parent, { level: "strict", binds: () => true });

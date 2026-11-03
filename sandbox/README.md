@@ -88,6 +88,19 @@ view.destroy();
 
 **Frames only go down in trust.** The host's page holds permissive and strict frames; a permissive frame holds strict ones; a strict frame holds none. A permissive or trusted component in a strict container's slot shows its fallback, with `not-here` naming why; write such a container in CompMD, or make it the host's own.
 
+## Observing a view
+
+Developer tools see what a view's sandbox does ([the Developer Tools](../docs/devtools.md), decisions 5 and 6): its frames down to those its frames make, the messages on their ports, the components mounted in each window with how long they took, and their fallbacks.
+
+```ts
+const observation = view.observe((events) => tools.update(observation.events));
+observation.events;    // the last 2,000 events of the host's page and of each of its frames, in the order they came
+observation.dropped;   // what was dropped, by source
+observation.stop();    // the sandbox observes while an observation listens
+```
+
+Only the host's page turns it on; nothing a document, a pack or a frame sends does. Each frame records its own part once its parent asks, and reports it up: an event with `by` is the report of that frame of the host's page, which code of its level may have changed, so the tools mark it so and nothing in the sandbox acts on it. Ids are paths, `"2/1"` the first frame of the second, and a parent puts its child's id in front of each it reports, so a frame can only report on frames under it. Long values in a message are kept by size (`{ $text: length, start }`, `{ $blob: size }`), and pings aren't copied.
+
 ## In an editor
 
 An editor that renders a document's blocks in its own widgets (CodeMirror's) uses the host runtime directly, one use per widget:
@@ -114,5 +127,5 @@ use.destroy();
 
 ## Tests
 
-- **Unit tests** next to the code, in Node: the protocol's ends, its schema, the policies, compiling, the components a frame loads, a component's imports of library packs, `host` across a port.
-- **[`test/`](test/)**, in Chrome and WebKit, with the frame documents served from a server of their own and probes that record every request: what a strict frame can't reach (T1 to T5), a permissive frame's origins and what it can't nest (T1, T6), a frame that ignores all but its parent (T7), built modules and their hashes (T8), built modules the host's page holds, library packs (one instance per version in a frame), a frame that hangs (T9, Chrome), one document's frames apart from another's (T4), both page modes, and a host's page that is itself in a sandboxed frame.
+- **Unit tests** next to the code, in Node: the protocol's ends, its schema, the policies, compiling, the components a frame loads, a component's imports of library packs, `host` across a port, the observer, the reports a parent takes and the bound on what it keeps.
+- **[`test/`](test/)**, in Chrome and WebKit, with the frame documents served from a server of their own and probes that record every request: what a strict frame can't reach (T1 to T5), a permissive frame's origins and what it can't nest (T1, T6), a frame that ignores all but its parent (T7), built modules and their hashes (T8), built modules the host's page holds, library packs (one instance per version in a frame), a frame that hangs (T9, Chrome), one document's frames apart from another's (T4), both page modes, a host's page that is itself in a sandboxed frame, and the observer: the whole tree in both modes, a forged report (O6), an unasked one (O4, O7), a flood (O2), and the same messages with and without it (O3).

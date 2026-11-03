@@ -2,6 +2,7 @@
 // asks for. The level comes first and once: before it, the frame acts on nothing, since its policy isn't narrowed yet.
 
 import { isMessage, SANDBOX_VERSION, TO_FRAME, type CompileRequest, type ComponentCode, type ErrorReason, type FromFrame, type Level, type Part, type Port, type Scheme, type ToFrame } from "./messages.ts";
+import type { Observed } from "./observed.ts";
 
 /** What the frame does with each message; the frame runtime implements it. */
 export interface FrameHandlers {
@@ -17,6 +18,8 @@ export interface FrameHandlers {
   host?(port: MessagePort): void;
   /** Compiles a source: what only the compile frame does. */
   compile?(request: CompileRequest): Promise<{ code: string; css?: string }>;
+  /** The parent asks the frame to record what passes in it and report it, or to stop. */
+  observe?(on: boolean): void;
 }
 
 /** What the frame tells its parent. */
@@ -26,6 +29,8 @@ export interface FrameEnd {
   link(url: string): void;
   rendered(ms: number): void;
   size(width: number, height: number): void;
+  /** Reports what the frame's observer recorded, once the parent asked. */
+  observed(events: Observed[]): void;
   close(): void;
 }
 
@@ -89,6 +94,9 @@ export function serveParent(port: Port, handlers: FrameHandlers): FrameEnd {
         );
         break;
       }
+      case "observe":
+        handlers.observe?.(data.on);
+        break;
     }
   };
   port.addEventListener("message", listener);
@@ -109,6 +117,9 @@ export function serveParent(port: Port, handlers: FrameHandlers): FrameEnd {
     },
     size: (width, height) => {
       post({ type: "size", width, height });
+    },
+    observed: (events) => {
+      post({ type: "observed", events });
     },
     close: () => {
       port.removeEventListener("message", listener);

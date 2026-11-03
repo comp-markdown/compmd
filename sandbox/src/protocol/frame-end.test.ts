@@ -150,6 +150,20 @@ describe("the frame's end (serveParent)", () => {
     ]);
   });
 
+  it("starts and stops observing as its parent asks, after its level, and reports what it observed", async () => {
+    const { parent, frame, got } = frameChannel();
+    const asked: boolean[] = [];
+    const end = serveParent(frame, { level: () => undefined, observe: (on) => asked.push(on) });
+    parent.postMessage({ type: "observe", on: true });
+    parent.postMessage({ type: "level", level: "strict" });
+    parent.postMessage({ type: "observe", on: true });
+    parent.postMessage({ type: "observe", on: false });
+    end.observed([{ type: "dropped", frame: "", count: 1, at: 1 }]);
+    await settle();
+    expect(asked).toEqual([true, false]);
+    expect(got.slice(1)).toEqual([{ type: "observed", events: [{ type: "dropped", frame: "", count: 1, at: 1 }] }]);
+  });
+
   it("acts on nothing once closed", async () => {
     const { parent, frame } = frameChannel();
     const { calls, handlers } = recording();

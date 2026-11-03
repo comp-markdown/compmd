@@ -8,6 +8,8 @@ import { createPage, schemeOf, type Change, type ExpandedInput, type ExpandedRoo
 import { connectFrame, type FrameConnection, type SpliceOptions } from "@compmd/render/frame";
 import { frameUrl, HostRuntime, type HostRuntimeOptions } from "./host/runtime.ts";
 import { codeFor } from "./mounts.ts";
+import { Log, reportedBy, type Observation, type ObservedEvent } from "./observation.ts";
+import { Observer } from "./observer.ts";
 import { diagnosticOf, HELLO, SANDBOX_VERSION, type ErrorReason, type SandboxDiagnostic, type Scheme } from "./protocol/messages.ts";
 import { connectChild, type ChildEnd } from "./protocol/parent-end.ts";
 
@@ -56,6 +58,17 @@ export interface View {
   styles(urls: readonly string[]): void;
   /** Listens for `type`; a listener added as soon as `open` returns hears everything, opening's errors too. */
   on<T extends keyof ViewEvents>(type: T, listener: (event: ViewEvents[T]) => void): void;
+  /**
+   * Observes the view (docs/devtools.md, decisions 5 and 6), for developer tools: its frames, down to those its frames
+   * make, the messages on their ports, the components mounted in each window, with their times, and their fallbacks.
+   * `listener` gets each event as it comes; what a frame reported is marked with `by`. Only the host's page can turn
+   * this on: nothing a document or a frame sends does. The sandbox observes while an observation listens.
+   *
+   * @example
+   * const observation = view.observe((events) => { tools.update(observation.events); });
+   * observation.stop();
+   */
+  observe(listener: (events: readonly ObservedEvent[]) => void): Observation;
   destroy(): void;
 }
 
@@ -92,18 +105,29 @@ export function createSandbox(options: SandboxOptions): Sandbox {
       const emit = <T extends keyof ViewEvents>(type: T, event: ViewEvents[T]) => {
         for (const listener of listeners[type]) listener(event);
       };
-      const runtime = new HostRuntime(options, {
-        set: (input, value) => {
-          emit("set", { input, value });
-        },
-        link: (url) => {
-          emit("link", { url });
-        },
-        error: (component, reason, message) => {
-          emit("error", errorEvent(component, reason, message));
-        },
+      const observations = new Set<{ log: Log; listener: (events: readonly ObservedEvent[]) => void }>();
+      const observer = new Observer((events, by) => {
+        const marked = reportedBy(events, by);
+        for (const { log, listener } of observations) {
+          log.add(marked);
+          listener(marked);
+        }
       });
-      const page = options.page === "host" ? hostPage(container, runtime, emit) : framePage(container, runtime, options, emit);
+      const runtime = new HostRuntime(
+        { ...options, observer },
+        {
+          set: (input, value) => {
+            emit("set", { input, value });
+          },
+          link: (url) => {
+            emit("link", { url });
+          },
+          error: (component, reason, message) => {
+            emit("error", errorEvent(component, reason, message));
+          },
+        },
+      );
+      const page = options.page === "host" ? hostPage(container, runtime, observer, emit) : framePage(container, runtime, options, observer, emit);
       // The frames take the page's colour scheme: when the view opens, when the reader's preference changes, when
       // printing starts and ends, at each render, and when the host says it switched its own.
       let scheme: Scheme | undefined;
@@ -167,7 +191,28 @@ export function createSandbox(options: SandboxOptions): Sandbox {
         on: (type, listener) => {
           listeners[type].push(listener);
         },
+        observe: (listener) => {
+          const observation = { log: new Log(), listener };
+          // A second observation starts with the host's page's live frames and components; the first, with frames' too.
+          if (observer.on) observation.log.add(observer.live());
+          observations.add(observation);
+          observer.start();
+          return {
+            get events() {
+              return observation.log.events;
+            },
+            get dropped() {
+              return observation.log.dropped;
+            },
+            stop: () => {
+              observations.delete(observation);
+              if (observations.size === 0) observer.stop();
+            },
+          };
+        },
         destroy: () => {
+          observer.stop();
+          observations.clear();
           preference.removeEventListener("change", followScheme);
           removeEventListener("beforeprint", followScheme);
           removeEventListener("afterprint", followScheme);
@@ -197,14 +242,17 @@ interface PageEnd {
 type Emit = <T extends keyof ViewEvents>(type: T, event: ViewEvents[T]) => void;
 
 /** Host mode: the page in the host's page, with the runtime's components. */
-function hostPage(container: HTMLElement, runtime: HostRuntime, emit: Emit): PageEnd {
+function hostPage(container: HTMLElement, runtime: HostRuntime, observer: Observer, emit: Emit): PageEnd {
   const page: Page = createPage(container, {
     components: runtime.mounts,
     onSet: (input, value) => {
       emit("set", { input, value });
     },
     onError: (error) => {
-      if ("component" in error) emit("error", errorEvent(error.component, error.reason, error.error instanceof Error ? error.error.message : ""));
+      if (!("component" in error)) return;
+      const message = error.error instanceof Error ? error.error.message : "";
+      observer.fallback(error.component, error.reason, message);
+      emit("error", errorEvent(error.component, error.reason, message));
     },
   });
   /** Reports a render once it is painted: after the next frame, and once the browser has drawn it. */
@@ -247,7 +295,7 @@ function hostPage(container: HTMLElement, runtime: HostRuntime, emit: Emit): Pag
 }
 
 /** Frame mode: the page in one strict frame, which renders it through `@compmd/render`'s frame protocol. */
-function framePage(container: HTMLElement, runtime: HostRuntime, options: SandboxOptions, emit: Emit): PageEnd {
+function framePage(container: HTMLElement, runtime: HostRuntime, options: SandboxOptions, observer: Observer, emit: Emit): PageEnd {
   const iframe = document.createElement("iframe");
   iframe.setAttribute("sandbox", "allow-scripts");
   iframe.setAttribute("allow", "");
@@ -257,9 +305,12 @@ function framePage(container: HTMLElement, runtime: HostRuntime, options: Sandbo
   /** The document's inputs, which its page may set, from the last tree or splice. */
   let inputs: Readonly<Record<string, ExpandedInput>> = {};
   const { port1, port2 } = new MessageChannel();
-  const child: ChildEnd = connectChild(port1, { level: "strict", binds: (input) => input in inputs, ping: { every: 1000, timeout: options.timeout ?? 5000 } });
+  const id = observer.frame("strict", { kind: "page" });
+  const port = observer.port(id, port1);
+  const child: ChildEnd = connectChild(port, { level: "strict", binds: (input) => input in inputs, ping: { every: 1000, timeout: options.timeout ?? 5000 } });
+  observer.connected(id, child);
   // `@compmd/render`'s protocol on the same port: its messages wait for the page's renderer, which starts after the level.
-  const frame: FrameConnection = connectFrame(port1);
+  const frame: FrameConnection = connectFrame(port);
   child.on("set", (event) => {
     emit("set", event);
   });
@@ -276,6 +327,7 @@ function framePage(container: HTMLElement, runtime: HostRuntime, options: Sandbo
     emit("loaded", event);
   });
   child.on("failed", (failure) => {
+    observer.gone(id, failure.reason);
     emit("error", errorEvent("", "threw", failure.reason === "hung" ? "the page's frame stopped answering" : `the page's frame is of protocol version ${String(failure.version)}`));
   });
   if (options.stylesheets?.length) child.styles([...options.stylesheets]);
@@ -310,6 +362,7 @@ function framePage(container: HTMLElement, runtime: HostRuntime, options: Sandbo
       frame.close();
       child.close();
       iframe.remove();
+      observer.gone(id, "removed");
     },
   };
 }
