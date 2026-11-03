@@ -1,0 +1,49 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [
+        {
+          "key": "padding",
+          "breakpoint": null,
+          "value": "l"
+        },
+        {
+          "key": "background",
+          "breakpoint": null,
+          "value": "subtle"
+        }
+      ],
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "A "
+            },
+            {
+              "type": "inlineCode",
+              "value": "space"
+            },
+            {
+              "type": "text",
+              "value": " and a "
+            },
+            {
+              "type": "inlineCode",
+              "value": "surface"
+            },
+            {
+              "type": "text",
+              "value": " param, passed on to the box: both are CEL strings."
+            }
+          ]
+        }
+      ],
+      "slots": []
+    }
+  ]
+}

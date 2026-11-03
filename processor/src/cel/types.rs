@@ -144,12 +144,14 @@ impl Type {
     }
 
     /// Whether a value of this type can be given where `expected` is asked for: `dyn` fits everywhere and takes
-    /// everything; a record fits a map from strings; a string fits a grammar's type, which is checked when the
-    /// value is used.
+    /// everything; a record fits a map from strings; a grammar's type is a CEL `string` (spec §8.2), so strings and
+    /// grammars fit one another, and the value is checked against its grammar when it is used.
     #[must_use]
     pub fn fits(&self, expected: &Self) -> bool {
         match (self, expected) {
-            (Self::Dyn, _) | (_, Self::Dyn) | (Self::String, Self::Grammar(_)) => true,
+            (Self::Dyn, _)
+            | (_, Self::Dyn)
+            | (Self::String | Self::Grammar(_), Self::String | Self::Grammar(_)) => true,
             (Self::List(a), Self::List(b)) => a.fits(b),
             (Self::Map(k, v), Self::Map(l, w)) => k.fits(l) && v.fits(w),
             (Self::Record(fields), Self::Map(key, value)) => {
@@ -276,7 +278,8 @@ mod tests {
         assert!(!Type::Int.fits(&Type::Double));
         assert!(Type::Dyn.fits(&Type::Int) && Type::Int.fits(&Type::Dyn));
         assert!(Type::String.fits(&Type::Grammar("length")));
-        assert!(!Type::Grammar("length").fits(&Type::String));
+        assert!(Type::Grammar("space").fits(&Type::String));
+        assert!(Type::Grammar("space").fits(&Type::Grammar("length")));
         assert!(Type::list(Type::Int).fits(&Type::list(Type::Dyn)));
         assert!(!Type::list(Type::Int).fits(&Type::list(Type::String)));
         assert!(Type::map(Type::String, Type::Int).fits(&Type::map(Type::String, Type::Dyn)));

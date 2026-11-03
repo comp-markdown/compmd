@@ -343,11 +343,19 @@ fn declared_type(text: &str) -> DeclaredType {
     }
     if text.contains('|') {
         return DeclaredType::Enum {
-            members: text
-                .split('|')
-                .map(|member| member.trim().to_string())
-                .collect(),
+            members: text.split('|').map(member).collect(),
         };
     }
     DeclaredType::named(text)
+}
+
+/// An enum member as written: a name, or text with spaces in double quotes, which aren't part of it (spec §7.3,
+/// `'"to do" | done = done'`).
+fn member(written: &str) -> String {
+    let written = written.trim();
+    written
+        .strip_prefix('"')
+        .and_then(|inner| inner.strip_suffix('"'))
+        .unwrap_or(written)
+        .to_string()
 }
