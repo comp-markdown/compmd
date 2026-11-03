@@ -1,20 +1,11 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { highlighter, splitYaml } from "./highlight.ts";
+import { highlighter } from "./highlight.ts";
 
 const highlight = await highlighter();
 /** The light colors of `html`'s text, by the text without the spaces Shiki puts in a token beside it. */
 const colors = (html: string): Record<string, string> =>
   Object.fromEntries([...html.matchAll(/<span style="color:(#\w+);[^"]*">([^<]*)<\/span>/g)].map(([, color = "", text = ""]) => [text.trim(), color]));
-
-describe("splitYaml", () => {
-  it("splits frontmatter, and a signature before its body", () => {
-    expect(splitYaml("---\na: 1\n---\n# T", true)).toEqual(["---\na: 1\n---", "# T"]);
-    expect(splitYaml("# T\n\n---\n", true)).toEqual(["", "# T\n\n---\n"]);
-    expect(splitYaml("params:\n  a: string\n---\n**{{a}}**", false)).toEqual(["params:\n  a: string\n---", "**{{a}}**"]);
-    expect(splitYaml("params:\n  a: string", false)).toEqual(["params:\n  a: string", ""]);
-  });
-});
 
 describe("highlighter", () => {
   it("shows CompMD's syntax in Markdown, and the frontmatter as YAML", () => {

@@ -15,6 +15,7 @@ import { frameUse } from "../use.ts";
 import { compile } from "./compile.ts";
 import { Components } from "./components.ts";
 import { load } from "./load.ts";
+import { shikiHighlight } from "../highlight/highlight.ts";
 import { temmlMath } from "../math.ts";
 import { narrowed, networkPolicy } from "./narrow.ts";
 
@@ -31,6 +32,8 @@ for (const name of ["RTCPeerConnection", "webkitRTCPeerConnection", "RTCDataChan
 
 /** Math typeset by Temml, which loads the first time a page has math. */
 const math = temmlMath();
+/** Code blocks highlighted by Shiki, which loads the first time a page has a code block. */
+const highlight = shikiHighlight();
 
 /** Each component's stylesheet, adopted by the frame's document. */
 const sheets = new Map<string, CSSStyleSheet>();
@@ -242,6 +245,7 @@ function start(port: MessagePort): void {
     createRegion(target, {
       components: mounts.mounts,
       math,
+      highlight,
       onSet: (input, value) => {
         parent.set(input, value);
       },
@@ -259,7 +263,7 @@ function start(port: MessagePort): void {
       if (own === "permissive") narrow(network ?? networkPolicy([]));
       // A page frame (frame mode) renders the page through `@compmd/render`'s protocol, on the same port.
       const container = document.getElementById("page");
-      if (container) page = serveFrame(recordingFallbacks(port, observer), { container, components: mounts.mounts, math, images: imagesFrom(parent) }).page;
+      if (container) page = serveFrame(recordingFallbacks(port, observer), { container, components: mounts.mounts, math, highlight, images: imagesFrom(parent) }).page;
     },
     code: async (next) => {
       components = next;

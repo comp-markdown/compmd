@@ -574,6 +574,18 @@ importers:
       '@compmd/render':
         specifier: workspace:*
         version: link:../render
+      '@shikijs/core':
+        specifier: 4.5.0
+        version: 4.5.0
+      '@shikijs/engine-javascript':
+        specifier: 4.5.0
+        version: 4.5.0
+      '@shikijs/langs':
+        specifier: 4.5.0
+        version: 4.5.0
+      '@shikijs/themes':
+        specifier: 4.5.0
+        version: 4.5.0
       es-module-lexer:
         specifier: 2.3.2
         version: 2.3.2

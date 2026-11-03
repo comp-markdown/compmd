@@ -4,7 +4,7 @@ import type { ComponentError, ComponentRecovered, Mount, RenderError } from "./c
 import type { LinkDefinition } from "./document.ts";
 import type { ImageSource } from "./images.ts";
 import type { KeyOf } from "./keys.ts";
-import { destroyAll, needsContainer, patch, PendingMounts, type CodeRenderer, type MathRenderer, type Surface, type View } from "./render.ts";
+import { destroyAll, needsContainer, patch, PendingMounts, type CodeHighlighter, type CodeRenderer, type MathRenderer, type Surface, type View } from "./render.ts";
 import { Schemes } from "./scheme.ts";
 import { Drawn, elementsIn, placedOf, sourceIn, type Source } from "./source.ts";
 import { Stylesheet, type ParentLayout } from "./styles.ts";
@@ -29,6 +29,11 @@ export interface SurfaceOptions {
   code?: Record<string, CodeRenderer>;
   /** A renderer for math; without one, math shows its TeX source (spec §2.3). */
   math?: MathRenderer;
+  /**
+   * Highlights the code blocks that show as code: those no code renderer draws, and a code renderer's fallback. Without
+   * it, their text is plain.
+   */
+  highlight?: CodeHighlighter;
   /** Where a wiki link points; without an answer it shows its label. */
   wikiLink?(target: string): string | undefined;
   /** Where images come from, for a page that can't load them itself; without it, each loads from its `src`. */
@@ -89,6 +94,7 @@ export function surfaceOf(document: Document, stylesheet: Stylesheet, schemes: S
     ...(options.host === undefined ? {} : { host: options.host }),
     code: options.code ?? {},
     math: options.math,
+    highlight: options.highlight,
     wikiLink: options.wikiLink?.bind(options),
     images: options.images,
     drawn: new Drawn(),

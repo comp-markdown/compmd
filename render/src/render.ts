@@ -17,6 +17,12 @@ import { contentOf, isComponent, rendererOf, textOf, type ExpandedCode, type Exp
 export type CodeRenderer = (source: string, target: HTMLElement) => void;
 /** Renders TeX math into `target`. */
 export type MathRenderer = (tex: string, options: { display: boolean }, target: HTMLElement) => void;
+/**
+ * Highlights a code block that shows as code: `code`, written in the fence language `language` (`""` for none), into
+ * `target`, the block's `<code>`, which holds `code` as text until then. It may do so later, once what it needs has
+ * loaded; it is called again only when the block's text or language changes.
+ */
+export type CodeHighlighter = (code: string, language: string, target: HTMLElement) => void;
 
 /**
  * The mounts of the components a render made, waiting until it has placed their boxes in the document and flushed the
@@ -63,6 +69,8 @@ export interface Surface {
   host?: unknown;
   code: Readonly<Record<string, CodeRenderer>>;
   math?: MathRenderer | undefined;
+  /** Highlights the code blocks that show as code; without it, their text is plain. */
+  highlight?: CodeHighlighter | undefined;
   /** Where a wiki link points (spec §2.3); without an answer it renders its label as text. */
   wikiLink?: ((target: string) => string | undefined) | undefined;
   /** Where images come from; without it, each loads from its `src`. */
@@ -220,6 +228,7 @@ export function createView(surface: Surface, node: ExpandedNode, pass: Pass): Vi
   if ((node.type === "code" && typeof node.lang === "string" && surface.code[node.lang]) || ((node.type === "math" || node.type === "inlineMath") && surface.math)) {
     return new CallbackView(surface, node, key);
   }
+  if (node.type === "code") return new CodeBlockView(surface, node, key);
   return new ElementView(surface, node, pass, key);
 }
 
@@ -321,8 +330,6 @@ function renderingOf(surface: Surface, node: MarkdownNode, pass: Pass): Renderin
     }
     case "table":
       return table(node);
-    case "code":
-      return { tag: "pre", attributes: {}, children: [element("code", { ...(node.lang ? { attributes: { class: `language-${textOf(node.lang)}` } } : {}), text: textOf(node.value) })] };
     case "math":
       return { tag: "pre", attributes: {}, children: [element("code", { attributes: { class: "language-math math-display" }, text: textOf(node.value) })] };
     case "inlineMath":
@@ -385,6 +392,45 @@ class ElementView implements View {
 
   destroy(): void {
     destroyAll(this.#children);
+  }
+}
+
+/**
+ * A code block that shows as code, `<pre><code class="language-…">`: one no code renderer draws, or a code renderer's
+ * fallback. The caller's highlighter, if any, highlights it, again only when its text or language changes.
+ */
+class CodeBlockView implements View {
+  readonly shape: string;
+  readonly key: string | undefined;
+  readonly dom: HTMLElement;
+  readonly #surface: Surface;
+  readonly #code: HTMLElement;
+  /** The language and text shown, as one string. */
+  #shown: string | undefined;
+
+  constructor(surface: Surface, node: MarkdownNode, key: string | undefined) {
+    this.#surface = surface;
+    this.shape = shapeOf(node);
+    this.key = key;
+    this.dom = surface.document.createElement("pre");
+    this.#code = this.dom.appendChild(surface.document.createElement("code"));
+    this.update(node);
+  }
+
+  update(next: ExpandedNode): void {
+    const language = textOf((next as MarkdownNode).lang);
+    const code = textOf((next as MarkdownNode).value);
+    const shown = `${language}\u0000${code}`;
+    if (shown === this.#shown) return;
+    this.#shown = shown;
+    if (language) this.#code.className = `language-${language}`;
+    else this.#code.removeAttribute("class");
+    this.#code.textContent = code;
+    this.#surface.highlight?.(code, language, this.#code);
+  }
+
+  destroy(): void {
+    return undefined;
   }
 }
 
@@ -524,7 +570,7 @@ class RenderedCodeView implements View {
     this.shape = shapeOf(node);
     this.key = key;
     this.#current = { node: node as ExpandedCode, inputs: pass.inputs };
-    this.#code = new ElementView(surface, plainCode(node), pass, undefined);
+    this.#code = new CodeBlockView(surface, plainCode(node), undefined);
     const fallback = surface.document.createElement("div");
     fallback.appendChild(this.#code.dom);
     this.#surface = surface;

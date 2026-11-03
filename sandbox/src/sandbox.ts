@@ -6,6 +6,7 @@
 import type { HostComponent } from "@compmd/processor";
 import { createPage, reveal, schemeOf, type Change, type ExpandedInput, type ExpandedRoot, type Page, type Source, type Splice } from "@compmd/render";
 import { connectFrame, type FrameConnection, type SpliceOptions } from "@compmd/render/frame";
+import { shikiHighlight } from "./highlight/highlight.ts";
 import { frameUrl, HostRuntime, type HostRuntimeOptions } from "./host/runtime.ts";
 import { PageImages } from "./images.ts";
 import { temmlMath } from "./math.ts";
@@ -310,8 +311,9 @@ type Emit = <T extends keyof ViewEvents>(type: T, event: ViewEvents[T]) => void;
 function hostPage(container: HTMLElement, runtime: HostRuntime, observer: Observer, emit: Emit): PageEnd {
   const page: Page = createPage(container, {
     components: runtime.mounts,
-    // As the page's frame does in frame mode, so math looks the same in both modes.
+    // As the page's frame does in frame mode, so math and code look the same in both modes.
     math: temmlMath(),
+    highlight: shikiHighlight(),
     // The trusted components in this page get `host` as the runtime gives it; framed ones get theirs from their frame.
     ...(runtime.host ? { host: runtime.host } : {}),
     onSet: (input, value) => {

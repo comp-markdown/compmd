@@ -9,7 +9,7 @@ export { Keys, codePointOffset, utf16Offset, type EditRange, type KeyOf, type Ke
 export { reveal, REVEALED_MS, type Source } from "./source.ts";
 export type { Change, Diagnostic } from "./stable.ts";
 export { footnotesOf, definitionsOf, plainText, type Footnotes, type LinkDefinition } from "./document.ts";
-export type { CodeRenderer, MathRenderer } from "./render.ts";
+export type { CodeHighlighter, CodeRenderer, MathRenderer } from "./render.ts";
 export { imageSources, type ImageSource } from "./images.ts";
 export type * from "./contract.ts";
 export type * from "./tree.ts";

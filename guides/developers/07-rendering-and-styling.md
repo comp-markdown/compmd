@@ -159,6 +159,12 @@ The page takes its colour scheme from where you put it: the container's `color-s
 
 An app that switches its own theme, with a class or a style as the example does, calls `view.scheme()` after it: the view reads the scheme again, and the frames and components follow. A component that draws with CSS colours needs nothing more; one that takes its colours when it draws, a diagram or a canvas, reads `context.scheme`, and gets an update when it changes ([chapter 10](10-your-apps-own-components.md)).
 
+## Code blocks
+
+A code block shows as code when no renderer draws it: a language nothing renders, or a code renderer's block whose component is missing or fails, which shows its code block as its fallback. The sandbox highlights it, in both page modes, with Shiki in GitHub's light and dark themes, in about 60 popular languages, CompMD's own syntax in `md` and `compmd` blocks among them; any other language stays plain ([the sandbox's README](../../sandbox/README.md#code-blocks) lists them). Each language loads the first time a block of it shows, so a page without code blocks loads nothing of it. The colours follow the page's light or dark as frames do, with nothing more to call.
+
+To style it, a stylesheet styles `pre` and `code` as it would any page's: the tokens are spans in the `<code>`, each with its colour.
+
 ## Links and the `link` event
 
 A component in a sandbox can't navigate or open a window ([spec §15](https://compmd.hakanserce.com/spec/#15-security), rule 4). When a reader clicks a link in a frame, the frame doesn't follow it: it sends the view `link`, `{url}`, with the `href` as written, and your app decides. Only a reader's real click sends it; a link to a place in the page, a footnote, stays in the frame.
@@ -191,7 +197,7 @@ page.render(opened.expanded);                            // or page.splice(splic
 
 It runs only the components you give it in `components`; every other component the document names shows its fallback, and `onError` hears of it as `missing`. Without a sandbox, though, the page is in your page: its links are your page's, and its images load from wherever they point. So use it alone for documents you trust as your own code, and the sandbox for any other.
 
-Its options, beside `components`, `onSet`, `onError` and `tokens`: `code` renders the code blocks of a language (`{ mermaid: (source, target) => … }`), `math` renders TeX (`(tex, { display }, target) => …`), `wikiLink` says where a wiki link points, and `host` is what components get as `context.host`. The page has `theme(tokens)` and `scheme()` as a view has, and `destroy()`.
+Its options, beside `components`, `onSet`, `onError` and `tokens`: `code` renders the code blocks of a language (`{ mermaid: (source, target) => … }`), `math` renders TeX (`(tex, { display }, target) => …`), `highlight` highlights the code blocks that show as code (`(code, language, target) => …`, or the sandbox's `shikiHighlight()`), `wikiLink` says where a wiki link points, and `host` is what components get as `context.host`. The page has `theme(tokens)` and `scheme()` as a view has, and `destroy()`.
 
 A **region** draws any list of nodes, for an editor that shows blocks in its own widgets: `createRegion(target, { components, stylesheet: page.stylesheet }).render(nodes, { inputs, headingLevel })`. Breakpoints are container queries, so a region outside a page needs a container to follow: the class `compmd-container` on its target, or on an element around it. Without one, `onError` reports `no-container` once. A region in a sandbox, one use per widget, is `HostRuntime`'s `mountUse` ([chapter 11](11-the-sandbox-closer.md)).
 

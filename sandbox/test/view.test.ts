@@ -333,6 +333,50 @@ describe("math", () => {
   });
 });
 
+describe("code blocks", () => {
+  /** A JavaScript block, and a Mermaid block whose code renderer isn't here, so its code block shows as its fallback. */
+  const blocks: ExpandedRoot["children"] = [
+    { type: "code", lang: "js", meta: null, value: "const a = 1;" },
+    { type: "code", lang: "mermaid", meta: null, value: "graph LR; A --> B", component: { name: "mermaid", params: [{ key: "code", breakpoint: null, value: "graph LR; A --> B" }] } },
+  ];
+
+  /** Each code block's language, how many tokens it shows, and its first token's colour, once all are highlighted. */
+  const shown = async (root: ParentNode) => {
+    const codes = () => [...root.querySelectorAll("pre code")];
+    for (let tries = 0; tries < 200 && (codes().length < 2 || codes().some((code) => !code.querySelector("span"))); tries++) await new Promise((done) => setTimeout(done, 20));
+    return codes().map((code) => ({ language: code.className, tokens: code.querySelectorAll("span").length, text: code.textContent, color: getComputedStyle(code.querySelector("span") ?? code).color }));
+  };
+
+  /** A strict component in the page's frame, which reports what the frame's page shows of its code blocks. */
+  const looking: HostComponent = { name: "label", language: "js", code: probeCode(`async () => (${shown.toString()})(document)`), trust: { level: "strict" } };
+
+  // GitHub's colours for `const`, a keyword: #D73A49 in the light theme, #F97583 in the dark one.
+  const keyword = { light: "rgb(215, 58, 73)", dark: "rgb(249, 117, 131)" };
+
+  for (const scheme of ["light", "dark"] as const) {
+    it(`highlights the page's code blocks and a code renderer's fallback, in the ${scheme} theme (frame mode)`, async () => {
+      const { area, view, until, values } = open("frame", [looking]);
+      area.style.colorScheme = scheme;
+      view.render({ type: "root", children: [...blocks, use("one")], inputs: RESULT });
+      await until(() => values().length > 0);
+      const [js, mermaid] = values()[0] as Awaited<ReturnType<typeof shown>>;
+      expect(js).toMatchObject({ language: "language-js", text: "const a = 1;", color: keyword[scheme] });
+      expect(js?.tokens).toBeGreaterThan(1);
+      expect(mermaid).toMatchObject({ language: "language-mermaid", text: "graph LR; A --> B" });
+      expect(mermaid?.tokens).toBeGreaterThan(1);
+    });
+
+    it(`highlights the page's code blocks and a code renderer's fallback, in the ${scheme} theme (host mode)`, async () => {
+      const { area, view } = open("host", []);
+      area.style.colorScheme = scheme;
+      view.render({ type: "root", children: blocks });
+      const [js, mermaid] = await shown(area);
+      expect(js).toMatchObject({ language: "language-js", text: "const a = 1;", color: keyword[scheme] });
+      expect(mermaid?.tokens).toBeGreaterThan(1);
+    });
+  }
+});
+
 describe("theme and styles", () => {
   /** A component that sets `result` to the page's `--compmd-accent` and the host's stylesheets its frame has. */
   const looking: HostComponent = {

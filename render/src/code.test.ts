@@ -63,6 +63,13 @@ describe("a code block a code renderer renders", () => {
     expect(code()).toBe("A --> C");
   });
 
+  it("has its fallback's code block highlighted when the renderer isn't here", () => {
+    const highlighted: string[] = [];
+    const page = createPage(area, { highlight: (code, language) => highlighted.push(`${language}: ${code}`) });
+    page.render({ type: "root", children: [rendered("A --> B")] });
+    expect(highlighted).toEqual(["mermaid: A --> B"]);
+  });
+
   it("is a view of its own, apart from a plain block of the same language", () => {
     const mermaid: Mount = (target) => {
       target.append("drawn");
@@ -72,5 +79,37 @@ describe("a code block a code renderer renders", () => {
     page.render({ type: "root", children: [{ type: "code", lang: "mermaid", meta: null, value: "A --> B" }] });
     expect(area.querySelector(".compmd-component")).toBeNull();
     expect(area.querySelector("pre code.language-mermaid")?.textContent).toBe("A --> B");
+  });
+});
+
+describe("a code block that shows as code", () => {
+  const block = (value: string, lang: string | null = "js"): ExpandedNode => ({ type: "code", lang, meta: null, value });
+
+  it("is highlighted into its `<code>`, which holds its text until then, and again only when its text or language changes", () => {
+    const calls: [string, string, string][] = [];
+    const page = createPage(area, {
+      highlight: (code, language, target) => {
+        calls.push([code, language, target.textContent]);
+        target.replaceChildren(Object.assign(document.createElement("span"), { textContent: code }));
+      },
+    });
+    page.render({ type: "root", children: [block("let a;")] });
+    expect(area.innerHTML).toBe('<pre><code class="language-js"><span>let a;</span></code></pre>');
+    page.render({ type: "root", children: [block("let a;")], inputs: { x: { type: "string", value: "" } } });
+    page.render({ type: "root", children: [block("let b;")] });
+    page.render({ type: "root", children: [block("let b;", "ts")] });
+    page.render({ type: "root", children: [block("plain", null)] });
+    expect(calls).toEqual([
+      ["let a;", "js", "let a;"],
+      ["let b;", "js", "let b;"],
+      ["let b;", "ts", "let b;"],
+      ["plain", "", "plain"],
+    ]);
+    expect(area.innerHTML).toBe("<pre><code><span>plain</span></code></pre>");
+  });
+
+  it("is plain without a highlighter", () => {
+    createPage(area).render({ type: "root", children: [block("let a;")] });
+    expect(area.innerHTML).toBe('<pre><code class="language-js">let a;</code></pre>');
   });
 });
