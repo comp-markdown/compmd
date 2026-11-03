@@ -17,9 +17,10 @@ type Place = NonNullable<HostComponent["module"]>;
 /**
  * A built module: where it is served, with its file's hash, which the host checked when it got the pack; or its file
  * as a `Blob` the host has checked, as a resolver of registry packs gives it, which frames load as a `blob:` module.
- * A library pack's module is asked for the same way, and must be given as code.
+ * A library pack's module is asked for the same way, and must be given as code. `undefined` when the host has none:
+ * its uses show their fallbacks.
  */
-export type ModuleSource = (module: Place) => { url: string; integrity: string } | { code: Blob };
+export type ModuleSource = (module: Place) => { url: string; integrity: string } | { code: Blob } | undefined;
 
 /** A built module's place in its pack, `pack@version/path`. */
 const placeOf = ({ pack, version, path }: Place): string => `${pack}@${version}/${path}`;
@@ -189,7 +190,7 @@ export class HostRuntime {
    * What the host gives for `component`: the modules of the library packs it imports, and a built module's file or
    * URL, with its place; why not, when one of them isn't given as a frame needs it.
    */
-  #given(component: HostComponent): { libraries: Libraries } | { libraries: Libraries; module: ReturnType<ModuleSource>; place: string } | string {
+  #given(component: HostComponent): { libraries: Libraries } | { libraries: Libraries; module: NonNullable<ReturnType<ModuleSource>>; place: string } | string {
     const libraries = this.#librariesOf(component.libraries);
     if (typeof libraries === "string") return libraries;
     if (!component.module) return { libraries };

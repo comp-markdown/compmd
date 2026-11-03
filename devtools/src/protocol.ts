@@ -1,4 +1,4 @@
-// The messages between the editor and its worker, and the host stylesheets the editor offers its page.
+// The messages between the editor and its worker.
 
 import type { Diagnostic, ExpandedInput, HostComponent, PositionalHint, Request } from "@compmd/processor";
 import type { Edit } from "./edit.ts";
@@ -10,16 +10,20 @@ import type { Edit } from "./edit.ts";
 export type ToWorker = { type: "open"; request: Request; caret: number } | { type: "edits"; edits: Edit[]; caret: number } | { type: "hint"; caret: number };
 
 /**
- * From the page to the worker, before the first document: the registries the playground's configuration names, which
- * the worker fetches missing packs from. The page has them from `virtual:compmd`, which a worker's own build lacks.
+ * Where the worker fetches the packs a document imports that its request doesn't hold, as a host's configuration names
+ * them (docs/packs-from-a-registry.md).
  */
-export interface RegistryConfig {
-  type: "registry";
+export interface Registries {
   /** Each scope's registry by its URL, `*` for every other scope. */
   registries: Record<string, string>;
+  /** Who fetches: the host's server, or the reader's browser. */
   fetch: "host" | "direct";
+  /** The largest pack it fetches, in bytes, unpacked. */
   maxPackSize?: number;
 }
+
+/** From the page to the worker, before the first document: the registries, which a worker can't be built with. */
+export type RegistryConfig = { type: "registry" } & Registries;
 
 /** From the worker to the editor, once per message it was sent. */
 export type FromWorker =
@@ -48,17 +52,3 @@ export type FromWorker =
    * or some couldn't be had (`problems`).
    */
   | { type: "fetched"; arrived: boolean; problems: string[] };
-
-/** The stylesheets a host might give the page, which the editor lets the author try: `frame.css?host=<id>`. */
-export const HOST_STYLES = [
-  { id: "reference", label: "Reference" },
-  { id: "github", label: "GitHub-like" },
-  { id: "docs", label: "Documentation" },
-  { id: "fancy", label: "Fancy" },
-  { id: "terminal", label: "Terminal" },
-  { id: "magazine", label: "Magazine" },
-  { id: "sketch", label: "Hand-drawn" },
-  { id: "unstyled", label: "Unstyled" },
-] as const;
-
-export type HostStyle = (typeof HOST_STYLES)[number]["id"];

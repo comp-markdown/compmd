@@ -3,22 +3,16 @@
 // at the site's build; a pack a document imports that the configuration doesn't have is fetched from npm, which it
 // names as its registry.
 
+import type { DevtoolsDocument, SupportingFile } from "@compmd/devtools";
 import type { Fetched, PackRelease, Request } from "@compmd/processor";
 import { request as configured } from "virtual:compmd";
 
-export interface Example {
+/** A document of the menu, as the tools open it. */
+export interface Example extends DevtoolsDocument {
   /** What `?doc=` names it by. */
   id: string;
   name: string;
-  request: Request;
-  /** What the document reads besides itself, shown read-only beside it: its files, its packs' files, its remote and host data. */
   files: SupportingFile[];
-}
-
-/** A file a document reads, by the name it is shown under. */
-export interface SupportingFile {
-  name: string;
-  text: string;
 }
 
 /** Files bundled as text, by path from this file. */

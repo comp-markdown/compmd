@@ -206,8 +206,63 @@ importers:
         specifier: 5.0.5
         version: 5.0.5(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
 
+  devtools:
+    dependencies:
+      '@compmd/processor':
+        specifier: workspace:^
+        version: link:../wasm
+      '@compmd/registry':
+        specifier: workspace:^
+        version: link:../registry
+      '@compmd/render':
+        specifier: workspace:^
+        version: link:../render
+      '@compmd/sandbox':
+        specifier: workspace:^
+        version: link:../sandbox
+    devDependencies:
+      '@eslint/js':
+        specifier: 10.0.1
+        version: 10.0.1(eslint@10.13.0)
+      '@sveltejs/vite-plugin-svelte':
+        specifier: 7.3.1
+        version: 7.3.1(svelte@5.57.2(@typescript-eslint/types@8.72.0))(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
+      '@types/node':
+        specifier: 26.6.5
+        version: 26.6.5
+      eslint:
+        specifier: 10.13.0
+        version: 10.13.0
+      happy-dom:
+        specifier: 21.0.3
+        version: 21.0.3
+      rolldown:
+        specifier: 1.2.15
+        version: 1.2.15
+      svelte:
+        specifier: 5.57.2
+        version: 5.57.2(@typescript-eslint/types@8.72.0)
+      svelte-check:
+        specifier: 4.7.7
+        version: 4.7.7(picomatch@4.0.7)(svelte@5.57.2(@typescript-eslint/types@8.72.0))(typescript@6.0.3)
+      typescript:
+        specifier: 6.0.3
+        version: 6.0.3
+      typescript-eslint:
+        specifier: 8.72.0
+        version: 8.72.0(eslint@10.13.0)(typescript@6.0.3)
+      vite:
+        specifier: 8.3.4
+        version: 8.3.4(@types/node@26.6.5)(yaml@2.9.1)
+      vitest:
+        specifier: 5.0.5
+        version: 5.0.5(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
+
   editor:
     dependencies:
+      '@compmd/devtools':
+        specifier: workspace:*
+        version: link:../devtools
       '@compmd/processor':
         specifier: workspace:*
         version: link:../wasm

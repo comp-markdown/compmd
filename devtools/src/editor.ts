@@ -5,8 +5,8 @@
 import type { Diagnostic, ExpandedInput, PositionalHint, Request } from "@compmd/processor";
 import type { Change } from "@compmd/render";
 import type { View } from "@compmd/sandbox";
+import type { DevtoolsDocument } from "./document.ts";
 import { editOf, fixOf, type Selection } from "./edit.ts";
-import type { Example } from "./documents.ts";
 import { Session, type Hinted, type Update, type WorkerPort } from "./session.ts";
 import { Timings } from "./timings.ts";
 
@@ -107,11 +107,11 @@ export class Editor {
     });
   }
 
-  /** Opens `example`: its text is the text area's. Its nodes carry origins, which the renderer's keys come from. */
-  open(example: Example, at = performance.now()): string {
-    this.#request = { ...example.request, origins: true };
+  /** Opens `document`: its text is the text area's. Its nodes carry origins, which the renderer's keys come from. */
+  open({ request }: DevtoolsDocument, at = performance.now()): string {
+    this.#request = { ...request, origins: true };
     this.#inputs = {};
-    this.#text = example.request.files?.[example.request.path] ?? "";
+    this.#text = request.files?.[request.path] ?? "";
     this.#unfetched = [];
     this.state.problems = [];
     delete this.state.hint;

@@ -2,7 +2,7 @@ import type { HostComponent } from "@compmd/processor";
 import type { Change } from "@compmd/render";
 import type { ViewEvents, ViewSpliceOptions } from "@compmd/sandbox";
 import { describe, expect, it } from "vitest";
-import type { Example } from "./documents.ts";
+import type { DevtoolsDocument } from "./document.ts";
 import { Editor, type Frame } from "./editor.ts";
 import type { FromWorker, ToWorker } from "./protocol.ts";
 import type { WorkerPort } from "./session.ts";
@@ -42,7 +42,7 @@ class FakeFrame implements Frame {
   }
 }
 
-const example: Example = { id: "a", name: "A", request: { path: "a.comp.md", files: { "a.comp.md": "Hello", "b.csv": "x" }, now: "2026-10-22T09:00:00Z" }, files: [] };
+const example: DevtoolsDocument = { request: { path: "a.comp.md", files: { "a.comp.md": "Hello", "b.csv": "x" }, now: "2026-10-22T09:00:00Z" } };
 const opened = { ...example.request, origins: true };
 const processed = (splices: string[], extra: Partial<Extract<FromWorker, { type: "processed" }>> = {}): FromWorker => ({ type: "processed", splices, opened: false, diagnostics: [], inputs: {}, ms: 1, ...extra });
 const diagnostic = (file?: string) => ({

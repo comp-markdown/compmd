@@ -1,6 +1,7 @@
 packages:
   - render
   - sandbox
+  - devtools
   - registry
   - vite
   - vite/example

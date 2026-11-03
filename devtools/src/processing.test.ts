@@ -3,8 +3,6 @@ import { createPage, type Page } from "@compmd/render";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
-import { EXAMPLES, textOf } from "./documents.ts";
-import type { Edit } from "./edit.ts";
 import { Processing } from "./processing.ts";
 import type { FromWorker } from "./protocol.ts";
 
@@ -42,15 +40,6 @@ function apply(target: Page, answer: FromWorker, text: string): void {
 /** A page's HTML, without the numbers of its boxes' classes, which go on counting as boxes render again. */
 const html = (root: HTMLElement) => root.innerHTML.replaceAll(/compmd-b\d+/g, "compmd-b");
 
-/** The page a fresh process of `text` gives. */
-function fresh(base: Request, text: string): string {
-  const { page: other, root } = page();
-  other.render(process({ ...base, files: { ...base.files, [base.path]: text } }).expanded);
-  return html(root);
-}
-
-const edited = (text: string, { start, end, text: inserted }: Edit) => text.slice(0, start) + inserted + text.slice(end);
-
 describe("Processing", () => {
   it("gives a splice per edit, which a page applies to show what a new process gives", () => {
     const processing = new Processing(open);
@@ -64,41 +53,15 @@ describe("Processing", () => {
       { start: 10, end: 10, text: "Zero.\n\n" },
     ];
     const answer = processing.handle({ type: "edits", edits, caret: 0 });
-    for (const edit of edits) text = edited(text, edit);
+    for (const { start, end, text: inserted } of edits) text = text.slice(0, start) + inserted + text.slice(end);
     expect(answer).toMatchObject({ type: "processed", opened: false, diagnostics: process(request(text)).diagnostics });
     expect(answer).not.toHaveProperty("components");
     expect(answer.type === "processed" && answer.splices).toHaveLength(2);
     apply(shown, answer, text);
-    expect(html(root)).toBe(fresh(request(text), text));
+    const { page: fresh, root: freshRoot } = page();
+    fresh.render(process(request(text)).expanded);
+    expect(html(root)).toBe(html(freshRoot));
   });
-
-  for (const example of EXAMPLES) {
-    it(`${example.name}: the page after each edit's splices is the page a new process gives`, () => {
-      const base = { ...example.request, origins: true };
-      const processing = new Processing(open);
-      const { page: shown, root } = page();
-      let text = textOf(example);
-      apply(shown, processing.handle({ type: "open", request: base, caret: 0 }), text);
-      const middle = text.indexOf("\n\n", text.length / 2) + 2;
-      // Each step's edits, in the text the step before left.
-      const steps: ((now: string) => Edit[])[] = [
-        () => [{ start: middle, end: middle, text: "x" }],
-        () => [{ start: middle, end: middle + 1, text: "" }],
-        () => [
-          { start: middle, end: middle, text: "A new paragraph.\n\n" },
-          { start: 0, end: 0, text: "Typed first.\n\n" },
-        ],
-        (now) => [{ start: now.length - 1, end: now.length - 1, text: "\n\nThe end." }],
-      ];
-      for (const step of steps) {
-        const edits = step(text);
-        const answer = processing.handle({ type: "edits", edits, caret: 0 });
-        for (const edit of edits) text = edited(text, edit);
-        apply(shown, answer, text);
-        expect(html(root), JSON.stringify(edits)).toBe(fresh(base, text));
-      }
-    });
-  }
 
   it("gives the inputs with their values", () => {
     const processing = new Processing(open);

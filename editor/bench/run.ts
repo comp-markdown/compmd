@@ -93,9 +93,10 @@ for (const { name, doc, at, budget } of EDITS) {
     }).observe({ type: "event", durationThreshold: 16, buffered: true } as PerformanceObserverInit);
   });
   await page.goto(`http://127.0.0.1:${String(port)}/index.html?doc=${doc}`);
-  await page.waitForFunction(() => ((window as { compmdEditor?: { state: { painted: { count: number } } } }).compmdEditor?.state.painted.count ?? 0) > 0, null, { timeout: 60_000 });
+  await page.waitForFunction(() => ((window as { compmdEditor?: { state?: { painted: { count: number } } } }).compmdEditor?.state?.painted.count ?? 0) > 0, null, { timeout: 60_000 });
   const placed = await page.evaluate((text) => {
-    const textarea = document.querySelector("textarea");
+    // In the tools' shadow root.
+    const textarea = document.querySelector(".tools")?.shadowRoot?.querySelector("textarea");
     const found = textarea?.value.indexOf(text) ?? -1;
     if (!textarea || found < 0) return false;
     textarea.focus();

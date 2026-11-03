@@ -3,9 +3,8 @@ import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
+import { findPassage, fixOf, parseFragment } from "@compmd/devtools/testing";
 import { EXAMPLES, exampleIndex, textOf, type Example } from "./documents.ts";
-import { fixOf } from "./edit.ts";
-import { findPassage, parseFragment } from "./fragment.ts";
 
 beforeAll(() => {
   initSync({ module: readFileSync(createRequire(import.meta.url).resolve("@compmd/processor/compmd_wasm_bg.wasm")) });

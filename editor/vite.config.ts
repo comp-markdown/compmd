@@ -24,7 +24,8 @@ export default defineConfig({
   define: { __COMMIT__: JSON.stringify(commit()) },
   build: { target: "es2024" },
   worker: { format: "es" },
-  optimizeDeps: { entries: ["index.html"] },
+  // The tools' workers are files of their own, which Vite builds only in a package it doesn't pre-bundle.
+  optimizeDeps: { entries: ["index.html"], exclude: ["@compmd/devtools"] },
   server: { cors, fs: { allow: [".."] } },
   preview: { cors },
 });
