@@ -1,10 +1,10 @@
-# 16. Testing and publishing
+# 17. Testing and publishing
 
 A pack is ready to publish when its components are tested, its build has passed the checks a host would make, and its `package.json` says what it is. This chapter takes a small pack, a progress bar, from its tests to npm, and then to an app that uses it.
 
 ## The pack
 
-`npm create @compmd/pack` writes a pack like this one ([chapter 12](README.md#contents)): a component in TypeScript, its signature in the pack's document, its tests, and a `package.json` whose scripts run `@compmd/pack`'s command, which builds, checks, tests and serves the pack, so the pack holds only what is its own.
+`npm create @compmd/pack` writes a pack like this one ([chapter 13](13-your-first-pack.md)): a component in TypeScript, its signature in the pack's document, its tests, and a `package.json` whose scripts run `@compmd/pack`'s command, which builds, checks, tests and serves the pack, so the pack holds only what is its own.
 
 ```ts snippet=progress-pack/src/progress.ts
 import { component } from "@compmd/pack/component";
@@ -106,7 +106,7 @@ Params come from documents, so test what a document may give: here a value past 
 
 ## What the build checks
 
-`npm run build` runs `compmd-pack build`: each component's module, built from `src/` into `dist/` as one minified ES module with every library bundled in but the runtimes the frames give (React, React DOM and Svelte, which it adds to `peerDependencies` at the version it was built with). Then it checks the pack as a host would, and fails, saying what to fix, when:
+`npm run build` runs `compmd-pack build`: each component's module, built from `src/` into `dist/` as one ES module, its names shortened, with every library bundled in but the runtimes the frames give (React, React DOM and Svelte, which it adds to `peerDependencies` at the version it was built with). Then it checks the pack as a host would, and fails, saying what to fix, when:
 
 - the document's `export.version` isn't `package.json`'s version: a host reports `F022`;
 - a file the document imports isn't there, or isn't in `package.json`'s `files`, so it wouldn't be published;
@@ -190,4 +190,4 @@ A pack bundles every library its components use, which is right for most: a bund
 
 An app that wants the pack installs it, `npm install @you/progress`, and its documents import it, `from: "@you/progress@0"`, then write `:: progress[3 of 4 done] {value=3 max=4}`: with `@compmd/vite`, nothing else ([chapter 9](09-packs-from-npm.md)). An app with registries in its configuration doesn't even install it: it fetches the pack when a document imports it. Either way it runs strict, unless the app's configuration lists it for more.
 
-Next: Part V, beyond Vite *(to come)*.
+Next: Part V, beyond Vite, starting with [other hosts](18-other-hosts.md).

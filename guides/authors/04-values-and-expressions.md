@@ -66,9 +66,10 @@ Quote a value that would otherwise read as something else: a time such as `"9:30
 - `md.doc` is your frontmatter, so `{{md.doc.issue}}` is the `issue` key: *November 2026*.
 - A dot goes into a record: `{{md.doc.plots.small}}` is *12*, and `{{md.doc.editor.phone}}` is *555-0142*.
 - A record with a `name` reads as its name, since it stands for someone or something: `{{md.doc.editor}}` is *Maya Okafor*.
+- `md.lang` is the document's language, `en` unless the frontmatter says otherwise (below).
 - A number is written as it is (*25*, *12.5*), and a date as you wrote it (*2026-11-07*). To write them for readers, *$25.00* or *November 7*, use `value`, below.
 
-A list isn't inserted as it is, since there are many ways to write one; `{{md.doc.helpers}}` is a diagnostic (`F024`). Write it with `md.list`, below, or one item at a time with `each` (chapter 5).
+`true` and `false` are written as they are, and an empty value (`note:` with nothing after it) as nothing. A list isn't inserted as it is, since there are many ways to write one; `{{md.doc.helpers}}` is a diagnostic (`F024`), and so is a record without a `name`. Write it with `md.list`, below, or one item at a time with `each` (chapter 5).
 
 `{{…}}` works in text, in headings, in table cells, in a link's address (`[the rules](https://example.org/{{md.doc.rules}})`), and in params written in quotes (`title="Plot {{md.doc.plot}}"`). It doesn't work in code, which always shows what you wrote.
 
@@ -96,19 +97,67 @@ Expressions are written in [CEL](https://cel.dev), a small language for formulas
 
 | Written | Is |
 | --- | --- |
-| `md.doc.fees.small * 4` | arithmetic: `+`, `-`, `*`, `/` |
+| `md.doc.fees.small * 4` | arithmetic: `+`, `-`, `*`, `/`, and `%` for the remainder |
 | `md.doc.plots.taken < 20` | a comparison: `==`, `!=`, `<`, `<=`, `>`, `>=` |
 | `a && b`, `a \|\| b`, `!a` | and, or, not |
 | `soon ? "accent" : "subtle"` | one value or another: if `soon` is true, `"accent"`, otherwise `"subtle"` |
 | `"Plot " + md.doc.plot` | text joined to text |
 | `string(md.doc.fees.small)` | a number as text, *25* |
 | `size(md.doc.helpers)` | how many items a list has |
+| `md.doc.helpers[0]` | an item of a list by its place, counting from 0: *Maya* |
+| `"Jun" in md.doc.helpers` | true when the list holds the value |
+| `["Maya", "Jun"]` | a list, written in the expression |
+| `has(md.doc.subtitle)` | true when the frontmatter has the key |
 
-Text in an expression is in double quotes. Paths work as in `{{…}}`: `md.doc.fees.small` is the small plots' fee.
+Text in an expression is in double quotes, or single ones: `'subtle'`. Paths work as in `{{…}}`: `md.doc.fees.small` is the small plots' fee. Parentheses group, as in arithmetic: `(md.doc.plots.small + md.doc.plots.large) * 2`. An expression is written on one line.
 
 `value` shows text, so a number goes through `string(…)` or one of the formatting functions below first: `of=(string(size(md.doc.helpers)))`, not `of=(size(md.doc.helpers))`.
 
-A mistake in an expression is a diagnostic (`F024`) that points to the place in the expression, and for a misspelt name, suggests the right one.
+Text has a few functions of its own, written after it with a dot:
+
+| Written | Gives |
+| --- | --- |
+| `md.doc.title.contains("Garden")` | true when the text holds the other; also `startsWith` and `endsWith` |
+| `md.doc.title.upperAscii()` | *ELM STREET GARDEN*; `lowerAscii()` for small letters (A to Z only) |
+| `md.doc.title.replace("Street", "St.")` | *Elm St. Garden* |
+| `" Elm ".trim()` | the text without spaces at its ends: *Elm* |
+| `"a,b".split(",")` | a list of the parts: `["a", "b"]` |
+| `md.doc.helpers.join(", ")` | the items of a list of text, joined: *Maya, Tomás, Priya, Jun* |
+
+### Keys that may be missing
+
+A path to a key the frontmatter doesn't have is a mistake, in `{{…}}` and in expressions alike. When a key is there in some issues and not in others, ask first with `has`, and read it only when it's there:
+
+```md
+---
+title: Elm Street Garden
+---
+
+# :value[Elm Street Garden]{of=(has(md.doc.subtitle) ? md.doc.title + ": " + md.doc.subtitle : md.doc.title)}
+```
+
+### Numbers, text and true or false
+
+An expression knows what kind of value each part is, and checks that they fit before the page is made:
+
+- **Text and numbers don't mix.** `"Plot " + 4` is a mistake: write `"Plot " + string(4)`. Comparing them is one too.
+- **Whole numbers.** A number written in an expression without a decimal point, `4`, and what `size(…)` and `md.loop` give, are whole numbers, and dividing two of them drops the remainder: `size(md.doc.helpers) / 3` is *1* with four helpers. Write `double(size(md.doc.helpers)) / 3` for *1.333…*. A number from the frontmatter is never whole in this sense, so `md.doc.fees.small / 2` is *12.5*. A list's place must be a whole number, and `int(…)` makes one: `md.doc.helpers[int(md.doc.plots.taken) % 4]`.
+- **Dates are text**, written year, month and day, so they compare as dates do: `md.doc.workday < md.doc.water_off` is true.
+- **`true` and `false`** are what comparisons give, and what `when` takes in chapter 5. `if` and `?` take nothing else: a number or a text is a mistake there, never a stand-in for true.
+
+### When an expression is wrong
+
+A mistake in an expression is a diagnostic (`F024`) that points to the place in it, and says what is wrong:
+
+| Written | The diagnostic says |
+| --- | --- |
+| `md.doc.fess.small` | unknown field 'fess'; did you mean 'fees'? |
+| `"Fee " + md.doc.fees.small` | '+' can't be applied to string and double |
+| `of=(size(md.doc.helpers))` | `of` takes string, but the expression gives int |
+
+*string*, *double* and *int* are the expression's words for text, a number and a whole number. Where the mistake is, the component shows its fallback, or the param is left out as if you hadn't written it, so the rest of the page is still there.
+
+`{{…}}` takes only a path, never a formula: `{{ md.doc.fees.small * 4 }}` shows as written, with a warning (`W106`) that suggests `value`.
 
 ## Formatting for readers
 
@@ -116,17 +165,17 @@ CompMD's own functions start with `md.`. These format values for readers:
 
 | Function | Example | Gives |
 | --- | --- | --- |
-| `md.date(date, style)` | `md.date(md.doc.workday, "long")` | *November 7, 2026*; the styles are `"short"`, `"medium"`, `"long"` and `"full"` |
-| `md.currency(n, code)` | `md.currency(md.doc.fees.large, "USD")` | *$40.00* |
-| `md.number(n, digits)` | `md.number(12.345, 1)` | *12.3* |
-| `md.plural(n, one, other)` | `md.plural(3, "plot", "plots")` | *plots* |
-| `md.list(list)` | `md.list(md.doc.helpers)` | *Maya, Tomás, Priya, and Jun* |
+| `md.date(date, style)` | `md.date(md.doc.workday, "long")` | *November 7, 2026*; the other styles give *11/7/26* (`"short"`), *Nov 7, 2026* (`"medium"`) and *Saturday, November 7, 2026* (`"full"`) |
+| `md.currency(n, code)` | `md.currency(md.doc.fees.large, "USD")` | *$40.00*; the code is the currency's three letters, such as `"EUR"` or `"GBP"` |
+| `md.number(n, digits)` | `md.number(1636.5, 2)` | *1,636.50*: rounded to that many digits after the point, with the language's separators |
+| `md.plural(n, one, other)` | `md.plural(3, "plot", "plots")` | *plots*: the first word for one, the second for any other number |
+| `md.list(list)` | `md.list(md.doc.helpers)` | *Maya, Tomás, Priya, and Jun*; `md.list(md.doc.helpers, "or")` gives *Maya, Tomás, Priya, or Jun* |
 
 And these work with dates:
 
 | Function | Gives |
 | --- | --- |
-| `md.today()` | today's date, when the page is made |
+| `md.today()` | today's date, when the page is made, in the document's time zone, `tz` under `md` ([chapter 8](08-dates-numbers-and-lists.md)), or else the app's |
 | `md.daysBetween(a, b)` | the days from `a` to `b`: `md.daysBetween(md.today(), md.doc.water_off)` |
 | `md.addDays(date, n)` | the date `n` days later, or earlier for a negative `n` |
 

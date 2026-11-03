@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>A live CompMD editor</title>
+  </head>
+  <body style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem">
+    <div>
+      <textarea id="text" spellcheck="false" style="width: 100%; height: 20rem; font-family: monospace"></textarea>
+      <p id="hint"></p>
+      <ul id="problems"></ul>
+    </div>
+    <main id="page" style="height: 24rem"></main>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

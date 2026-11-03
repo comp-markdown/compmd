@@ -1,0 +1,6 @@
+{
+  "packs": {
+    "./components": { "trust": "trusted", "ambient": true },
+    "./reviews": { "trust": "permissive", "host": true }
+  }
+}

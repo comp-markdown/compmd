@@ -10,6 +10,7 @@
     "allowImportingTsExtensions": true,
     "noEmit": true,
     "skipLibCheck": true,
+    "jsx": "react-jsx",
     "types": ["node", "vite/client", "@compmd/vite/client"]
   },
   "include": ["*/examples", "test", "*.ts"]

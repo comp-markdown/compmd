@@ -18,34 +18,39 @@ If you write documents rather than code, [the Author's Guide](../authors/README.
 2. [Quick start](02-quick-start.md)
 3. [How it fits together](03-how-it-fits-together.md)
 
-**Part II. Documents in your app** *(to come)*
+**Part II. Documents in your app**
 
-4. Processing documents
-5. Live editing
-6. Data and inputs
-7. Rendering and styling
+4. [Processing documents](04-processing-documents.md)
+5. [Live editing](05-live-editing.md)
+6. [Data and inputs](06-data-and-inputs.md)
+7. [Rendering and styling](07-rendering-and-styling.md)
 
 **Part III. Components**
 
-8. Components and trust
+8. [Components and trust](08-components-and-trust.md)
 9. [Packs from npm](09-packs-from-npm.md)
-10. Your app's own components
-11. The sandbox, closer
+10. [Your app's own components](10-your-apps-own-components.md)
+11. [The sandbox, closer](11-the-sandbox-closer.md)
+12. [The Developer Tools](12-the-developer-tools.md)
 
 **Part IV. Writing packs**
 
-12. Your first pack
-13. Signatures and params
-14. React, Svelte and libraries
-15. Code renderers
-16. [Testing and publishing](16-testing-and-publishing.md)
+13. [Your first pack](13-your-first-pack.md)
+14. [Signatures and params](14-signatures-and-params.md)
+15. [React, Svelte and libraries](15-react-svelte-and-libraries.md)
+16. [Code renderers](16-code-renderers.md)
+17. [Testing and publishing](17-testing-and-publishing.md)
 
-**Part V. Beyond Vite** *(to come)*
+**Part V. Beyond Vite**
 
-17. Other hosts
-18. The Rust crate
+18. [Other hosts](18-other-hosts.md)
+19. [The Rust crate](19-the-rust-crate.md)
 
-**Appendices** *(to come)*: the configuration's reference, the diagnostics, a glossary.
+**Appendices**
+
+20. [The configuration's reference](20-the-configurations-reference.md)
+21. [The diagnostics](21-the-diagnostics.md)
+22. [A glossary](22-a-glossary.md)
 
 ## The examples
 

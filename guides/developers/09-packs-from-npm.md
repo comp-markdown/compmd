@@ -161,4 +161,4 @@ The example waits for its packs before showing anything. An editor can't: it pro
 
 The same as an installed one: a pack nobody listed runs strict, whoever published it, wherever it came from. Only your configuration gives a pack more, by name, and it applies to the pack wherever your app gets it. So a document from anyone can import any pack, and still can't reach your page, your session, or your readers' data.
 
-Next: your app's own components *(to come)*.
+Next: [your app's own components](10-your-apps-own-components.md).

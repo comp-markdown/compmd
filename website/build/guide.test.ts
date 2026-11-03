@@ -18,6 +18,10 @@ Words.
 
 3. Processing documents
 
+**Appendices**
+
+4. [The diagnostics](04-the-diagnostics.md)
+
 ## The examples
 
 1. [Not a chapter](examples/x.md)
@@ -35,8 +39,9 @@ describe("bookOf", () => {
         ],
       },
       { title: "Part II. Documents", later: true, chapters: [{ number: 3, title: "Processing documents" }] },
+      { title: "Appendices", later: false, chapters: [{ number: 4, title: "The diagnostics", file: "04-the-diagnostics.md", slug: "the-diagnostics" }] },
     ]);
-    expect(writtenOf(bookOf(CONTENTS)).map((chapter) => chapter.slug)).toEqual(["introduction", "quick-start"]);
+    expect(writtenOf(bookOf(CONTENTS)).map((chapter) => chapter.slug)).toEqual(["introduction", "quick-start", "the-diagnostics"]);
   });
 
   it("reads the guides' own contents", () => {

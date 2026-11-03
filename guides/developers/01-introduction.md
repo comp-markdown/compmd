@@ -40,7 +40,12 @@ This guide is for developers who put CompMD in an application: a notes app, a do
 | [`@compmd/render`](../../render/README.md) | Renders the expanded tree as a live page, and updates it in place as the document changes. |
 | [`@compmd/sandbox`](../../sandbox/README.md) | Runs components at the trust their pack is given: in frames with no network, or your own in your page. |
 | [`@compmd/vite`](../../vite/README.md) | Reads `compmd.config.json`, gives the processor your packs, and serves the sandbox and the packs' files from your app. |
+| [`@compmd/registry`](../../registry/README.md) | Gets the packs a document imports that your app doesn't install, from npm or another registry, checked against their integrity. |
+| [`@compmd/devtools`](../../devtools/README.md) | The Developer Tools: a document's text, its page and what the processor and the sandbox make of it, as a part a page embeds. |
+| [`@compmd/pack`](../../pack/README.md) | `compmd-pack`, which builds a pack, checks it before it is published, runs its tests and serves its test page. |
 | [`@compmd/create-pack`](../../create-pack/README.md) | Writes a new pack: a component as one built module, its signature, and a test page. |
+
+An app that shows documents uses the first four, and `@compmd/registry` when it fetches packs it doesn't install ([chapter 9](09-packs-from-npm.md)). The quick start installs `@compmd/processor`, `@compmd/sandbox` and `@compmd/vite`; `@compmd/render` comes with the sandbox. The last two are for writing packs, in Part IV.
 
 A document goes through them like this:
 
@@ -52,6 +57,24 @@ A document goes through them like this:
 ```
 
 The processor does no I/O of its own: your application gives it the document, the files it reads, its packs and its data, and gets back everything the page needs. That's what lets the same processor run in a browser, in a worker, in a build, or natively in Rust.
+
+## Words this guide uses
+
+| Word | Means |
+| --- | --- |
+| document | a CompMD file, `.comp.md`, or any Markdown file with an `md` key in its frontmatter |
+| frontmatter | the YAML between `---` lines at the top: CompMD's settings under `md`, the author's own values beside them |
+| component | a named piece of a page: a container (`::: box` … `::: /box`), a leaf (`:: chart[…] {…}`) or an inline one (`:value[…]{…}`) |
+| params | a component's settings, in braces: `{padding=m}` |
+| fallback | what shows where a component can't: a leaf's or inline component's text in brackets, a container's body |
+| signature | the params and slots a component takes, which the processor checks every use against |
+| pack | a document that exports components, published on npm or kept in a folder of your app |
+| expanded tree | the processor's result: the document's content, with every value computed, ready to render |
+| diagnostic | a mistake the processor found, with a code (`F…` an error, `W…` a warning), a place and a message |
+| host | your application: what gives the processor its request and shows the page |
+| trust level | how far a pack's code is trusted: strict, permissive or trusted, set by your configuration ([chapter 3](03-how-it-fits-together.md)) |
+
+[The glossary](22-a-glossary.md) has the rest, linked to the spec.
 
 ## How to read this guide
 

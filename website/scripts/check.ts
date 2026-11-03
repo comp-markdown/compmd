@@ -19,29 +19,18 @@ import { createServer } from "node:http";
 import { join } from "node:path";
 import { gzipSync } from "node:zlib";
 import { chromium, type Browser, type Page } from "playwright-core";
+import { bookOf, writtenOf } from "../build/guide.ts";
 import { serveFolder } from "../build/static.ts";
 
 const DIST = join(import.meta.dirname, "../dist");
 const PORT = 4191;
 const ROOT = `http://localhost:${String(PORT)}/`;
-const PAGES = [
-  "",
-  "spec/",
-  "guides/",
-  "guides/authors/",
-  "guides/authors/a-first-document/",
-  "guides/authors/the-markdown-you-know/",
-  "guides/authors/containers-and-params/",
-  "guides/authors/values-and-expressions/",
-  "guides/authors/showing-and-repeating/",
-  "guides/authors/using-a-pack/",
-  "guides/developers/",
-  "guides/developers/introduction/",
-  "guides/developers/quick-start/",
-  "guides/developers/how-it-fits-together/",
-  "guides/developers/packs-from-npm/",
-  "guides/developers/testing-and-publishing/",
-];
+/** A guide's pages: its contents, then each chapter it lists, as the site builds them. */
+const bookPages = (book: string): string[] => {
+  const chapters = writtenOf(bookOf(readFileSync(join(import.meta.dirname, `../../guides/${book}/README.md`), "utf8")));
+  return [`guides/${book}/`, ...chapters.map(({ slug }) => `guides/${book}/${slug}/`)];
+};
+const PAGES = ["", "spec/", "guides/", ...bookPages("authors"), ...bookPages("developers")];
 const VIEWS = [
   { name: "desktop", width: 1280, height: 860 },
   { name: "phone", width: 390, height: 844 },

@@ -1,0 +1,6 @@
+{
+  "packs": { "@comp-markdown/mermaid": {} },
+  "imports": "listed",
+  "registries": { "*": "https://registry.npmjs.org/" },
+  "fetch": "host"
+}

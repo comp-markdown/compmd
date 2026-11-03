@@ -1,0 +1,8 @@
+/* The app's look for its documents, which the page's frame loads: served from the app, as the frames' policy allows. */
+body {
+  font: 16px/1.6 Georgia, serif;
+}
+
+h1 {
+  color: var(--compmd-accent);
+}

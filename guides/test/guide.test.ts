@@ -39,6 +39,18 @@ beforeAll(() => {
   initSync({ module: readFileSync(createRequire(import.meta.url).resolve("@compmd/processor/compmd_wasm_bg.wasm")) });
 });
 
+/** The text files of an example's folder, by their path in it. */
+function filesOf(folder: string): Record<string, string> {
+  return Object.fromEntries(
+    readdirSync(folder, { recursive: true, withFileTypes: true })
+      .filter((entry) => entry.isFile())
+      .map((entry) => {
+        const path = join(entry.parentPath, entry.name);
+        return [path.slice(folder.length + 1).split("\\").join("/"), readFileSync(path, "utf8")];
+      }),
+  );
+}
+
 /** The integrity npm publishes for the Mermaid pack's versions the chapters pin. */
 const PINNED: Record<string, string> = { "0.1.1": "sha512-EwevqkkUdxOsFLHV85W74wEL+LoyZhaZkmnj8bJax3zLG48uuiGrezFTixCdlS6VQC/GHVU8Ra0vVXjeFftc7Q==" };
 
@@ -81,10 +93,15 @@ describe.each(BOOKS)("the %s' guide", (book) => {
       }
     });
 
-    // A pack's own document imports its built module, so it is checked where the pack is built (below).
+    // A pack's own document imports its built module, so it is checked where the pack is built (below). An example's
+    // document has the other files of its folder, which it reads; any other block is a document on its own.
     it(`${chapter}: its CompMD documents process without diagnostics`, () => {
       for (const { info, text } of blocksOf(markdown).filter(({ info }) => info.split(" ")[0] === "md" && !inPack(info))) {
-        const { diagnostics } = process({ path: "doc.comp.md", files: { "doc.comp.md": text }, packs: registryPacks(), now: "2026-10-31T09:00:00Z" });
+        const file = /\bsnippet=(\S+)/.exec(info)?.[1];
+        const [name = "", ...rest] = file?.split("/") ?? [];
+        const path = rest.length > 0 ? rest.join("/") : "doc.comp.md";
+        const files = file === undefined ? { [path]: text } : { ...filesOf(join(examples, name)), [path]: text };
+        const { diagnostics } = process({ path, files, packs: registryPacks(), now: "2026-10-31T09:00:00Z" });
         expect(diagnostics.map(({ code, message }) => `${code} ${message}`), `${chapter}: ${info}`).toEqual([]);
       }
     });
@@ -125,7 +142,8 @@ describe("the developers' quick start", () => {
   let server: PreviewServer;
 
   beforeAll(async () => {
-    const config = { root, configFile: false as const, logLevel: "warn" as const, plugins: [compmd()], build: { outDir: out, emptyOutDir: true, target: "es2024" } };
+    // A cache of its own: the plugin empties the frames' folder in it, which test files building at once would share.
+    const config = { root, configFile: false as const, logLevel: "warn" as const, cacheDir: join(out, ".vite"), plugins: [compmd()], build: { outDir: join(out, "site"), emptyOutDir: true, target: "es2024" } };
     await build(config);
     server = await preview({ ...config, preview: { port, strictPort: true } });
   });
@@ -234,7 +252,7 @@ describe("the developers' packs from npm", () => {
     await new Promise<void>((resolve) => registry.listen(registryPort, "127.0.0.1", resolve));
     const written = JSON.parse(readFileSync(join(root, "compmd.config.json"), "utf8")) as Record<string, unknown>;
     const plugin = compmd({ config: { ...written, registries: { "*": `http://127.0.0.1:${String(registryPort)}/` } } });
-    const config = { root, configFile: false as const, logLevel: "warn" as const, plugins: [plugin], build: { outDir: join(out, "site"), emptyOutDir: true, target: "es2024" } };
+    const config = { root, configFile: false as const, logLevel: "warn" as const, cacheDir: join(out, ".vite"), plugins: [plugin], build: { outDir: join(out, "site"), emptyOutDir: true, target: "es2024" } };
     await build(config);
     server = await preview({ ...config, preview: { port, strictPort: true } });
   });

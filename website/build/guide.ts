@@ -21,15 +21,15 @@ export interface Part {
 export const slugOf = (file: string): string => file.replace(/^\d+-/, "").replace(/\.md$/, "");
 
 /**
- * The book's parts and chapters, from the contents page's `## Contents`: a part is a line in bold, `**Part I. …**`,
- * with `*(to come)*` after it when none of its chapters is written; a chapter is a numbered line, linked to its file
- * when it is written.
+ * The book's parts and chapters, from the contents page's `## Contents`: a part is a line in bold, `**Part I. …**` or
+ * `**Appendices**`, with `*(to come)*` after it when none of its chapters is written; a chapter (or an appendix,
+ * numbered on from the chapters) is a numbered line, linked to its file when it is written.
  */
 export function bookOf(contents: string): Part[] {
   const section = contents.split(/^## Contents$/m)[1]?.split(/^## /m)[0] ?? "";
   const parts: Part[] = [];
   for (const line of section.split("\n")) {
-    const part = /^\*\*(Part [^*]+)\*\*(.*)$/.exec(line);
+    const part = /^\*\*(Part [^*]+|Appendices)\*\*(.*)$/.exec(line);
     if (part) {
       parts.push({ title: part[1] ?? "", chapters: [], later: (part[2] ?? "").includes("to come") });
       continue;

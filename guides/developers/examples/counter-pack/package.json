@@ -1,0 +1,27 @@
+{
+  "name": "@you/counter",
+  "version": "0.1.0",
+  "description": "A CompMD pack: a counter the reader clicks, in React.",
+  "keywords": ["compmd", "compmd-pack"],
+  "license": "MIT",
+  "type": "module",
+  "compmd": "./index.comp.md",
+  "files": ["dist", "index.comp.md", "README.md"],
+  "scripts": {
+    "build": "compmd-pack build",
+    "dev": "compmd-pack dev",
+    "test": "compmd-pack test",
+    "lint": "tsc --noEmit",
+    "prepublishOnly": "compmd-pack build && compmd-pack test"
+  },
+  "devDependencies": {
+    "@compmd/pack": "0.3.0",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "happy-dom": "21.0.3",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "typescript": "6.0.3",
+    "vitest": "5.0.5"
+  }
+}

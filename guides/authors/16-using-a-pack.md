@@ -116,4 +116,4 @@ While you write, the playground helps too: its Components tab lists every compon
 
 A pack is a CompMD document that *exports* components: it lists, in its own frontmatter, the components it offers. Some are written in CompMD itself, as you'll write your own in Part IV; others are written in code, such as this diagram, which draws with a library called Mermaid. To your document they're all the same: a name, params, and a fallback.
 
-Next: code blocks a pack draws *(to come)*: a pack like this one can also draw a document's ` ```mermaid ` code blocks.
+Next: [code blocks a pack draws](17-code-blocks-a-pack-draws.md): a pack like this one can also draw a document's ` ```mermaid ` code blocks.

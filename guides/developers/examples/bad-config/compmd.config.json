@@ -1,0 +1,8 @@
+{
+  "packs": {
+    "@acme/maps": { "trust": "trusted", "network": ["https://tiles.example.com/v2"] },
+    "charts": {}
+  },
+  "imports": "some",
+  "maxPackSize": "lots"
+}

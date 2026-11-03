@@ -31,8 +31,31 @@ const bundled = {
   // The charts are a pack of the configuration, which `virtual:compmd` brings.
   examples: import.meta.glob(["../examples/**/*", "!../examples/charts/**"], { query: "?raw", import: "default", eager: true }),
   // The guides' documents, which their **Try it** links open (`?doc=guides/<book>/<example>`); but a pack's own
-  // document, `index.comp.md`, which imports its built module and renders only where the pack is built.
-  guides: import.meta.glob(["../../guides/*/examples/*/*.comp.md", "!../../guides/*/examples/*/index.comp.md"], { query: "?raw", import: "default", eager: true }),
+  // document, `index.comp.md`, which imports its built module and renders only where the pack is built, and the
+  // document of an app's own components, which only that app has.
+  guides: import.meta.glob(["../../guides/*/examples/*/*.comp.md", "!../../guides/*/examples/*/index.comp.md", "!../../guides/developers/examples/own-components/*.comp.md"], {
+    query: "?raw",
+    import: "default",
+    eager: true,
+  }),
+  // What a guide's document reads in its folder: its data beside it, the documents it imports in a folder below, and,
+  // in the Author's Guide, the components it imports. Not an app's own files (its code, its page, its configuration),
+  // which the playground has no use for.
+  guideFiles: import.meta.glob(
+    [
+      "../../guides/*/examples/*/**/*.{csv,tsv,json,yaml,yml,txt}",
+      "../../guides/*/examples/*/*/**/*.comp.md",
+      "../../guides/authors/examples/*/**/*.{jsx,tsx,svelte}",
+      "!**/package.json",
+      "!**/compmd.config.json",
+      "!**/tsconfig.json",
+    ],
+    {
+      query: "?raw",
+      import: "default",
+      eager: true,
+    },
+  ),
 } as Record<string, Bundle>;
 
 /** The files of `bundle` under `dir`, by their path from it. */
@@ -140,12 +163,18 @@ export const EXAMPLES: Example[] = [
 /** The guides, by their folders in `guides/`. */
 const BOOKS: Record<string, string> = { authors: "Author's Guide", developers: "Developer's Guide" };
 
-/** The guides' examples' documents, each by its book's and its example's folders: `guides/developers/quick-start`. */
+/**
+ * The guides' examples' documents, each by its book's and its example's folders (`guides/developers/quick-start`), with
+ * the files it reads in its folder.
+ */
 const GUIDES = "../../guides/";
+/** The time the guides' tests process their documents at, so a chapter's dates read as it says. */
+const GUIDES_NOW = "2026-10-31T09:00:00Z";
 const guideExamples: Example[] = Object.entries(bundled.guides ?? {}).map(([path, text]) => {
   const [book = "", , folder = "", file = ""] = path.slice(GUIDES.length).split("/");
   const title = folder.replaceAll("-", " ");
-  return example(`guides/${book}/${folder}`, `${BOOKS[book] ?? book}: ${title}`, { path: file, files: { [file]: text }, now: NOW });
+  const read = filesIn(bundled.guideFiles, `${GUIDES}${book}/examples/${folder}/`);
+  return example(`guides/${book}/${folder}`, `${BOOKS[book] ?? book}: ${title}`, { path: file, files: { ...read, [file]: text }, now: GUIDES_NOW });
 });
 EXAMPLES.push(...guideExamples);
 

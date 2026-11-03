@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en" style="color-scheme: light">
+  <head>
+    <meta charset="utf-8" />
+    <title>A styled CompMD page</title>
+  </head>
+  <body style="background: Canvas; color: CanvasText">
+    <button id="scheme">Dark</button>
+    <main id="page" style="height: 20rem"></main>
+    <h2>What a plain renderer shows</h2>
+    <iframe id="plain" sandbox="" title="The plain rendering" style="width: 100%; height: 14rem; border: 0"></iframe>
+    <dialog id="link">
+      <p>This link goes to <output></output></p>
+      <form method="dialog">
+        <button value="cancel">Stay here</button>
+        <button value="open">Open it</button>
+      </form>
+    </dialog>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

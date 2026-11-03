@@ -20,32 +20,35 @@ Components written in code, in React, Svelte or JavaScript, are [the Developer's
 4. [Values and expressions](04-values-and-expressions.md)
 5. [Showing and repeating](05-showing-and-repeating.md)
 
-**Part II. Data and inputs** *(to come)*
+**Part II. Data and inputs**
 
-6. Data from files
-7. Inputs the reader changes
-8. Dates, numbers and lists
+6. [Data from files](06-data-from-files.md)
+7. [Inputs the reader changes](07-inputs-the-reader-changes.md)
+8. [Dates, numbers and lists](08-dates-numbers-and-lists.md)
 
-**Part III. Layout** *(to come)*
+**Part III. Layout**
 
-9. Boxes, rows, stacks and grids
-10. Widths and breakpoints
-11. Placing blocks
+9. [Boxes, rows, stacks and grids](09-boxes-rows-stacks-and-grids.md)
+10. [Widths and breakpoints](10-widths-and-breakpoints.md)
+11. [Placing blocks](11-placing-blocks.md)
 
-**Part IV. Components of your own** *(to come)*
+**Part IV. Components of your own**
 
-12. Definitions
-13. Slots
-14. Template slots
-15. Signatures and fallbacks
+12. [Definitions](12-definitions.md)
+13. [Slots](13-slots.md)
+14. [Template slots](14-template-slots.md)
+15. [Signatures and fallbacks](15-signatures-and-fallbacks.md)
 
 **Part V. Packs**
 
 16. [Using a pack](16-using-a-pack.md)
-17. Code blocks a pack draws
-18. Components in code, in brief
+17. [Code blocks a pack draws](17-code-blocks-a-pack-draws.md)
+18. [Components in code, in brief](18-components-in-code-in-brief.md)
 
-**Appendices** *(to come)*: the syntax at a glance, the diagnostics and their fixes.
+**Appendices**
+
+19. [The syntax at a glance](19-the-syntax-at-a-glance.md)
+20. [The diagnostics and their fixes](20-the-diagnostics-and-their-fixes.md)
 
 ## The examples
 

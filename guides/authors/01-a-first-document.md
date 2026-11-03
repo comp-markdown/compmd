@@ -46,6 +46,21 @@ The page shows the heading *Elm Street Garden*, the line *News from the plots, N
 - `md:` holds CompMD's own settings. `version: 1` says which version of CompMD the document is written in. With the `md` key, the file stays CompMD wherever it goes, even renamed to `.md`.
 - `title` and `issue` are yours. Any key that isn't `md` is the author's, and you can name it what you like.
 
+`version` is one of a few settings under `md`. The others come up in the chapters ahead:
+
+| Under `md` | Says | Chapter |
+| --- | --- | --- |
+| `version` | the version of CompMD, `1` | this one |
+| `lang` | the document's language, such as `en` or `de`, for dates and numbers | [4](04-values-and-expressions.md) |
+| `dir` | the direction the text runs, `ltr`, `rtl` or `auto`; by default the direction of `lang`'s script | [3](03-containers-and-params.md) |
+| `tz` | the time zone of "today", such as `Europe/Berlin` | [8](08-dates-numbers-and-lists.md) |
+| `syntax` | extra syntax the document turns on, such as wiki links | [2](02-the-markdown-you-know.md) |
+| `data` | files and addresses the document reads values from | [6](06-data-from-files.md) |
+| `inputs` | values the reader changes | [7](07-inputs-the-reader-changes.md) |
+| `import` | the packs the document uses | [16](16-using-a-pack.md) |
+
+A key under `md` that CompMD doesn't know is a warning that names the nearest one it does, so a misspelt `lnag` doesn't go unnoticed.
+
 **`{{md.doc.title}}`** puts the value of your `title` key where it stands. `md.doc` is your frontmatter, so `{{md.doc.issue}}` is *November 2026*. Change the value at the top, and every place that uses it follows. Chapter 4 says more about values.
 
 **The box** is a *component*: a piece of the page with a name, here `box`. It starts with a line of its own, `::: box`, and ends with `::: /box`. What's between the two lines is its body, ordinary Markdown; the blank lines around it are there for plain renderers, as the next section shows. What's in the braces, `{padding=m border=subtle border-radius=m}`, are its *params*: a medium padding, a subtle border and medium rounded corners. Chapter 3 is about components and params.
@@ -76,5 +91,15 @@ The heading reads `{{md.doc.title}}`, which tells a reader where the title comes
 Mistakes don't stop the page. Delete the `::: /box` line, and the page still renders, with the box running to the end of the document. Under the text, the playground lists a *diagnostic*: what is wrong, where, and often a button that fixes it. Here it says that the box was never closed.
 
 Each diagnostic has a code, such as `F004`, so you can look it up. Codes starting with `F` are failures, which change what renders; codes starting with `W` are warnings, which don't.
+
+A diagnostic also says where it is, as a line and a column, and what is wrong, in a sentence. The one for the missing closer reads:
+
+```text
+F004 12:1  `::: box` isn't closed
+```
+
+Line 12, column 1 is where the box opens, counting the frontmatter's lines too; the playground marks the place in the text, so you needn't count. A mistake gives one diagnostic, not a cascade of them: the box that runs on doesn't add a diagnostic for everything after it.
+
+Whatever goes wrong, CompMD shows your text rather than hide it: a component it can't show is replaced by its fallback (chapter 3), never by a blank. [Chapter 20](20-the-diagnostics-and-their-fixes.md) lists every code with its fix.
 
 Next: [the Markdown you know](02-the-markdown-you-know.md), and what CompMD adds to it.
