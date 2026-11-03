@@ -132,9 +132,12 @@ header.site .home {
   stroke: var(--accent);
 }
 
+/* On a phone the places nearly fill the header, and fonts differ by system: they wrap rather than overflow. */
 header.site nav {
   display: flex;
-  gap: clamp(14px, 3vw, 28px);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px clamp(10px, 3vw, 28px);
 }
 
 header.site nav a {
