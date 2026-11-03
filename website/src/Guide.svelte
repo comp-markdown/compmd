@@ -59,7 +59,7 @@
 <div class="status">
   <div class="wrap">
     <p>
-      <strong>{open?.title ?? "The CompMD guides"}.</strong> Written for the <code>@compmd</code> packages at 0.1.1, and following them as they change.
+      <strong>{open?.title ?? "The CompMD guides"}.</strong> Written for the <code>@compmd</code> packages at 0.3.0, and following them as they change.
       <a href={source}>This page on GitHub</a>
     </p>
   </div>

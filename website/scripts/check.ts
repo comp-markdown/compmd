@@ -34,10 +34,13 @@ const PAGES = [
   "guides/authors/containers-and-params/",
   "guides/authors/values-and-expressions/",
   "guides/authors/showing-and-repeating/",
+  "guides/authors/using-a-pack/",
   "guides/developers/",
   "guides/developers/introduction/",
   "guides/developers/quick-start/",
   "guides/developers/how-it-fits-together/",
+  "guides/developers/packs-from-npm/",
+  "guides/developers/testing-and-publishing/",
 ];
 const VIEWS = [
   { name: "desktop", width: 1280, height: 860 },

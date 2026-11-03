@@ -2,7 +2,7 @@
 
 How to build with [CompMD](https://compmd.hakanserce.com/): documents people write as text, rendered as pages in your application, with components of your own and from packs, and safe to open from anyone. The [spec](../../compmd-spec-v1.md) says what CompMD is; the package READMEs say what each package has; this guide shows how to build with them, from a first page to a published pack. Writing documents themselves is [the Author's Guide](../authors/README.md).
 
-It is written for the `@compmd` packages at version 0.1.1, and follows them as they change. On the website it is at [compmd.hakanserce.com/guides/developers/](https://compmd.hakanserce.com/guides/developers/).
+It is written for the `@compmd` packages at version 0.3.0, and follows them as they change. On the website it is at [compmd.hakanserce.com/guides/developers/](https://compmd.hakanserce.com/guides/developers/).
 
 ## Who it is for
 
@@ -25,20 +25,20 @@ If you write documents rather than code, [the Author's Guide](../authors/README.
 6. Data and inputs
 7. Rendering and styling
 
-**Part III. Components** *(to come)*
+**Part III. Components**
 
 8. Components and trust
-9. Packs from npm
+9. [Packs from npm](09-packs-from-npm.md)
 10. Your app's own components
 11. The sandbox, closer
 
-**Part IV. Writing packs** *(to come)*
+**Part IV. Writing packs**
 
 12. Your first pack
 13. Signatures and params
 14. React, Svelte and libraries
 15. Code renderers
-16. Testing and publishing
+16. [Testing and publishing](16-testing-and-publishing.md)
 
 **Part V. Beyond Vite** *(to come)*
 

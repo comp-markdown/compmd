@@ -345,9 +345,18 @@ importers:
 
   guides:
     devDependencies:
+      '@comp-markdown/mermaid':
+        specifier: workspace:*
+        version: link:../packs/mermaid
+      '@compmd/pack':
+        specifier: workspace:*
+        version: link:../pack
       '@compmd/processor':
         specifier: workspace:*
         version: link:../wasm
+      '@compmd/registry':
+        specifier: workspace:*
+        version: link:../registry
       '@compmd/sandbox':
         specifier: workspace:*
         version: link:../sandbox
@@ -357,6 +366,9 @@ importers:
       '@types/node':
         specifier: 26.6.5
         version: 26.6.5
+      happy-dom:
+        specifier: 21.0.3
+        version: 21.0.3
       playwright:
         specifier: 1.64.1
         version: 1.64.1

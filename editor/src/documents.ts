@@ -30,8 +30,9 @@ const bundled = {
   notes: import.meta.glob("../../wasm/bench/fixtures/notes/notes.comp.md", { query: "?raw", import: "default", eager: true }),
   // The charts are a pack of the configuration, which `virtual:compmd` brings.
   examples: import.meta.glob(["../examples/**/*", "!../examples/charts/**"], { query: "?raw", import: "default", eager: true }),
-  // The guides' documents, which their **Try it** links open (`?doc=guides/<book>/<example>`).
-  guides: import.meta.glob("../../guides/*/examples/*/*.comp.md", { query: "?raw", import: "default", eager: true }),
+  // The guides' documents, which their **Try it** links open (`?doc=guides/<book>/<example>`); but a pack's own
+  // document, `index.comp.md`, which imports its built module and renders only where the pack is built.
+  guides: import.meta.glob(["../../guides/*/examples/*/*.comp.md", "!../../guides/*/examples/*/index.comp.md"], { query: "?raw", import: "default", eager: true }),
 } as Record<string, Bundle>;
 
 /** The files of `bundle` under `dir`, by their path from it. */

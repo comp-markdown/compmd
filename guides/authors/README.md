@@ -39,9 +39,9 @@ Components written in code, in React, Svelte or JavaScript, are [the Developer's
 14. Template slots
 15. Signatures and fallbacks
 
-**Part V. Packs** *(to come)*
+**Part V. Packs**
 
-16. Using a pack
+16. [Using a pack](16-using-a-pack.md)
 17. Code blocks a pack draws
 18. Components in code, in brief
 

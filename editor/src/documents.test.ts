@@ -38,14 +38,16 @@ describe("EXAMPLES", () => {
   it("go from the syntax to the diagnostics, each with an id of its own", () => {
     expect(EXAMPLES.map((example) => example.id)).toEqual([
       ...["tour", "definitions", "changelog", "dashboard", "inputs", "kyoto", "complete", "diagrams", "npm", "diagnostics", "notes"],
+      "guides/authors/a-pack",
       "guides/authors/containers",
       "guides/authors/first-document",
       "guides/authors/markdown",
       "guides/authors/showing",
       "guides/authors/values",
+      "guides/developers/packs-from-npm",
       "guides/developers/quick-start",
     ]);
-    expect(exampleIndex("guides/developers/quick-start")).toBe(16);
+    expect(exampleIndex("guides/developers/quick-start")).toBe(18);
     expect(exampleIndex("kyoto")).toBe(5);
     expect(exampleIndex("nothing")).toBe(0);
     expect(exampleIndex(null)).toBe(0);
