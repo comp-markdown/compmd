@@ -192,6 +192,29 @@ describe("the observer", () => {
     expect(sent.filter((message) => (message as { type?: string }).type === "observe")).toEqual([{ type: "observe", on: true }]);
   });
 
+  it("records a `set` the host's page refused, of an input no use of the frame binds", async () => {
+    const setter = probing(
+      "chart",
+      { level: "strict" },
+      `async () => {
+        const port = await new Promise((resolve) => {
+          const post = MessagePort.prototype.postMessage;
+          MessagePort.prototype.postMessage = function (message, transfer) { resolve(this); return post.call(this, message, transfer); };
+        });
+        port.postMessage({ type: "set", input: "secret", value: 1 });
+        return "set";
+      }`,
+    );
+    const { observation, sets } = open("host", [setter], treeOf([use("chart")], ["chart"]));
+    if (!observation) return;
+    await until(observation, (events) => events.some((event) => event.type === "refused"));
+    const chart = frameOf(observation.events, "chart");
+    const refused = observation.events.find((event) => event.type === "refused");
+    expect(refused).toMatchObject({ frame: chart?.frame, input: "secret" });
+    expect(refused && "by" in refused).toBe(false);
+    expect(sets.has("secret")).toBe(false);
+  });
+
   it("keeps the last 2,000 events of a frame that floods its reports, and the host's page's own (O2)", async () => {
     const flood = probing(
       "chart",

@@ -29,6 +29,8 @@ export interface ChildEvents {
   failed: ChildFailure;
   /** What the frame's observer reports, unchecked (`observedOf` checks each event); only while the parent asks. */
   observed: { events: unknown[] };
+  /** The frame set an input none of its uses binds, and the parent dropped it. */
+  refused: { input: string };
 }
 
 /** The most events a parent takes from one `observed` message; a frame that has more reports them later. */
@@ -61,7 +63,7 @@ type Listeners = { [T in keyof ChildEvents]: ((event: ChildEvents[T]) => void)[]
  */
 export function connectChild(port: Port, options: ChildOptions): ChildEnd {
   if (options.host && options.level !== "permissive") throw new Error("only a permissive frame is given host");
-  const listeners: Listeners = { set: [], error: [], link: [], loaded: [], rendered: [], size: [], failed: [], observed: [] };
+  const listeners: Listeners = { set: [], error: [], link: [], loaded: [], rendered: [], size: [], failed: [], observed: [], refused: [] };
   const emit = <T extends keyof ChildEvents>(type: T, event: ChildEvents[T]) => {
     for (const listener of listeners[type]) listener(event);
   };
@@ -127,6 +129,8 @@ export function connectChild(port: Port, options: ChildOptions): ChildEnd {
       case "set":
         // A frame may set only what one of its uses is bound to; strict code may have written this message.
         if (options.binds(data.input)) emit("set", { input: data.input, value: data.value });
+        // As text: strict code may have written anything as the input's name.
+        else emit("refused", { input: String(data.input as unknown) });
         break;
       case "error":
         emit("error", { reason: data.reason, message: data.message, ...(data.component === undefined ? {} : { component: data.component }) });

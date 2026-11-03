@@ -50,7 +50,8 @@ describe("observedOf", () => {
       { type: "updated", frame: "", use: 1, ms: 0.1, at: 5 },
       { type: "unmounted", frame: "", use: 1, at: 6 },
       { type: "fallback", frame: "", component: "legend", reason: "threw", message: "boom", at: 7 },
-      { type: "dropped", frame: "", count: 3, at: 8 },
+      { type: "refused", frame: "1", input: "secret", at: 8 },
+      { type: "dropped", frame: "", count: 3, at: 9 },
     ];
     expect(events.map(observedOf)).toEqual(events);
   });

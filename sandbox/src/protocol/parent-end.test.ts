@@ -89,11 +89,14 @@ describe("the parent's end (connectChild)", () => {
     const bound = boundInputs([chart]);
     const child = connectChild(parent, { level: "strict", binds: (input) => bound.has(input) });
     const sets: unknown[] = [];
+    const refused: unknown[] = [];
     child.on("set", (event) => sets.push(event));
+    child.on("refused", (event) => refused.push(event));
     frame.postMessage({ type: "ready", sandbox: SANDBOX_VERSION });
     frame.postMessage({ type: "set", input: "secret", value: "x" });
     await settle();
     expect(sets).toEqual([]);
+    expect(refused).toEqual([{ input: "secret" }]);
   });
 
   it("drops what the frame sends before it is ready", async () => {

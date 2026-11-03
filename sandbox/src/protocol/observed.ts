@@ -28,6 +28,8 @@ export type Observed =
   | { type: "unmounted"; frame: FrameId; use: number; at: number }
   /** A component shows its fallback in the window `frame`. */
   | { type: "fallback"; frame: FrameId; component: string; reason: ErrorReason; message: string; at: number }
+  /** The window dropped a `set` of `input` from its frame `frame`: none of the frame's uses binds it. */
+  | { type: "refused"; frame: FrameId; input: string; at: number }
   /** The window `frame` dropped `count` events it couldn't keep. */
   | { type: "dropped"; frame: FrameId; count: number; at: number };
 
@@ -116,6 +118,8 @@ export function observedOf(data: unknown): Observed | undefined {
       if (!isText(component) || !isText(reason) || !REASONS.includes(reason) || typeof message !== "string") return undefined;
       return { type: "fallback", frame, component, reason: reason as ErrorReason, message: message.length > LIMITS.text ? `${message.slice(0, LIMITS.text)}…` : message, at };
     }
+    case "refused":
+      return isText(event.input) ? { type: "refused", frame, input: event.input, at } : undefined;
     case "dropped":
       return isCount(event.count) ? { type: "dropped", frame, count: event.count, at } : undefined;
     default:

@@ -144,6 +144,11 @@ export class Observer {
     this.#record({ type: "fallback", frame: "", component, reason, message, at: now() });
   }
 
+  /** The window dropped a `set` of `input` from its frame `frame`, which none of its uses binds. */
+  refused(frame: FrameId, input: string): void {
+    this.#record({ type: "refused", frame, input, at: now() });
+  }
+
   #record(event: Observed): void {
     if (this.#on) this.#sink([event]);
   }

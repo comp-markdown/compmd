@@ -341,6 +341,12 @@
           "additionalProperties": false
         },
         {
+          "description": "The window dropped a `set` of `input` from its frame: none of the frame's uses binds it.",
+          "properties": { "type": { "const": "refused" }, "frame": true, "at": true, "input": { "type": "string" } },
+          "required": ["input"],
+          "additionalProperties": false
+        },
+        {
           "description": "The window dropped events it couldn't hold.",
           "properties": { "type": { "const": "dropped" }, "frame": true, "at": true, "count": { "type": "integer", "minimum": 0 } },
           "required": ["count"],

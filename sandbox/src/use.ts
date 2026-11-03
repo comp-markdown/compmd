@@ -85,6 +85,9 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
       end.on("failed", ({ reason }) => {
         observer.gone(id, reason);
       });
+      end.on("refused", ({ input }) => {
+        observer.refused(id, input);
+      });
     }
     end.on("size", ({ width, height }) => {
       iframe.style.height = `${String(Math.max(1, height))}px`;

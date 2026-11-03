@@ -38,15 +38,17 @@ describe("Observer", () => {
     const id = observer.frame("strict", { kind: "use", component: "chart" });
     const use = observer.mounted("stars", 1);
     observer.fallback("map", "not-here", "no");
+    observer.refused(id, "secret");
     expect(all()).toEqual([]);
     observer.start();
     expect(all().map(({ type, frame }) => [type, frame])).toEqual([
       ["frame", id],
       ["mounted", ""],
     ]);
+    observer.refused(id, "secret");
     observer.unmounted(use);
     observer.gone(id, "removed");
-    expect(all().map(({ type }) => type)).toEqual(["frame", "mounted", "unmounted", "gone"]);
+    expect(all().map(({ type }) => type)).toEqual(["frame", "mounted", "refused", "unmounted", "gone"]);
   });
 
   it("reports a frame gone once, and only a live one", () => {

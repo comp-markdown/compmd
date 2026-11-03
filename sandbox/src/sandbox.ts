@@ -309,6 +309,9 @@ function framePage(container: HTMLElement, runtime: HostRuntime, options: Sandbo
   const port = observer.port(id, port1);
   const child: ChildEnd = connectChild(port, { level: "strict", binds: (input) => input in inputs, ping: { every: 1000, timeout: options.timeout ?? 5000 } });
   observer.connected(id, child);
+  child.on("refused", ({ input }) => {
+    observer.refused(id, input);
+  });
   // `@compmd/render`'s protocol on the same port: its messages wait for the page's renderer, which starts after the level.
   const frame: FrameConnection = connectFrame(port);
   child.on("set", (event) => {
