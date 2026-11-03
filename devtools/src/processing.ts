@@ -18,9 +18,12 @@ export interface Resolution {
   problems: { pack: string; message: string }[];
 }
 
-/** What fetched packs give the editor: whether to open the document again with them, and what couldn't be had. */
+/**
+ * What fetching packs gives the editor: whether to open the document again (packs arrived, or began or stopped being
+ * pending), and what couldn't be had.
+ */
 export interface Fetched {
-  arrived: boolean;
+  again: boolean;
   problems: string[];
 }
 
@@ -55,6 +58,8 @@ export class Processing {
   /** The releases fetched, and the packs the registry's size cap refused, which every request opened gets. */
   #fetched: Record<string, PackRelease[]> = {};
   #refused: Record<string, string> = {};
+  /** The packs being fetched, which the document is opened with as pending (spec §6.4): loading, not F026. */
+  readonly #pending = new Set<string>();
   readonly #resolutions: Resolution[] = [];
   #waiting: ReturnType<typeof setTimeout> | undefined;
 
@@ -110,6 +115,14 @@ export class Processing {
     this.#request = request;
     this.#text = request.files?.[request.path] ?? "";
     this.#document = this.#open(this.#withFetched(request));
+    // Packs it imports that will be fetched are pending from the first render, so it shows them loading at once.
+    const fresh = this.#options.resolve ? this.#document.sources().packs.filter((needed) => !this.#asked.has(keyOf(needed))) : [];
+    if (fresh.length > 0) {
+      for (const { pack } of fresh) this.#pending.add(pack);
+      this.#document.free();
+      this.#document = this.#open(this.#withFetched(request));
+      void this.#ask();
+    }
     return this.#document.changes();
   }
 
@@ -122,9 +135,10 @@ export class Processing {
     });
   }
 
-  /** `request` with the packs fetched so far, its own over them. */
+  /** `request` with the packs fetched so far, its own over them, and those still being fetched as pending. */
   #withFetched(request: Request): Request {
-    return { ...request, packs: { ...this.#fetched, ...request.packs }, policy: { ...request.policy, refused: { ...this.#refused, ...request.policy?.refused } } };
+    const pending = this.#pending.size > 0 ? { pending: { ...request.pending, packs: [...(request.pending?.packs ?? []), ...this.#pending] } } : {};
+    return { ...request, packs: { ...this.#fetched, ...request.packs }, policy: { ...request.policy, refused: { ...this.#refused, ...request.policy?.refused } }, ...pending };
   }
 
   /** The fetched text of each built module `components` load, by its place. */
@@ -164,16 +178,22 @@ export class Processing {
     const missing = this.#document?.sources().packs.filter((needed) => !this.#asked.has(keyOf(needed))) ?? [];
     if (!resolve || !request || missing.length === 0) return;
     for (const needed of missing) this.#asked.add(keyOf(needed));
+    // An import typed since the document opened: pending now, so the editor opens it again showing it loading.
+    const fresh = missing.filter(({ pack }) => !this.#pending.has(pack));
+    for (const { pack } of missing) this.#pending.add(pack);
+    if (fresh.length > 0) this.#options.onFetched?.({ again: true, problems: [] });
     try {
       const resolution = await resolve(this.#withFetched({ ...request, files: { ...request.files, [request.path]: this.#text } }));
       this.#resolutions.push(resolution);
-      const before = Object.keys(this.#fetched).length;
       for (const [pack, releases] of Object.entries(resolution.request.packs ?? {})) if (!request.packs?.[pack]) this.#fetched[pack] = releases;
       this.#refused = { ...this.#refused, ...resolution.request.policy?.refused };
       const problems = resolution.problems.map(({ pack, message }) => `${pack}: ${message}`);
-      this.#options.onFetched?.({ arrived: Object.keys(this.#fetched).length > before, problems });
+      for (const { pack } of missing) this.#pending.delete(pack);
+      // Arrived, or given up on: either way the document opens again, without them pending.
+      this.#options.onFetched?.({ again: true, problems });
     } catch (error) {
-      this.#options.onFetched?.({ arrived: false, problems: [messageOf(error)] });
+      for (const { pack } of missing) this.#pending.delete(pack);
+      this.#options.onFetched?.({ again: true, problems: [messageOf(error)] });
     }
   }
 }

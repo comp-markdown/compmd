@@ -93,7 +93,7 @@ export class Session {
     this.#onFetched = onFetched;
     this.#onRemote = onRemote;
     worker.addEventListener("message", ({ data }) => {
-      if (data.type === "fetched") this.#onFetched({ arrived: data.arrived, problems: data.problems });
+      if (data.type === "fetched") this.#onFetched({ again: data.again, problems: data.problems });
       else if (data.type === "remote") this.#onRemote(data.urls);
       else this.#answered(data);
     });

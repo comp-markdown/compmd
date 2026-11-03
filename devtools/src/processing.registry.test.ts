@@ -1,5 +1,6 @@
-// Packs from the registry, in the worker: a document renders with what it has, the missing packs are asked for once
-// typing pauses, and when they arrive the document opens again with them, their built modules given as code.
+// Packs from the registry, in the worker: a document renders with what it has, its missing packs pending (spec §6.4),
+// asked for at once on opening and, for an import typed, once typing pauses; when they arrive the document opens
+// again with them, their built modules given as code, and when they can't be had, with them F026.
 import { initSync, OpenDocumentJson, type PackRelease, type Request } from "@compmd/processor";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -45,13 +46,15 @@ function registry() {
 const codes = (answer: ReturnType<Processing["handle"]>) => (answer.type === "processed" ? answer.diagnostics.map(({ code }) => code) : []);
 
 describe("Processing, with a registry", () => {
-  it("renders with what it has, fetches the missing pack once typing pauses, and opens with it, its module as code", async () => {
+  it("renders the missing pack's uses pending, without F026, fetches it at once, and opens with it, its module as code", async () => {
     const { asked, resolve } = registry();
     const fetched: Fetched[] = [];
     const processing = new Processing(open, { resolve, onFetched: (each) => fetched.push(each), pause: 5 });
-    expect(codes(processing.handle({ type: "open", request: request(), caret: 0 }))).toEqual(["F026"]);
+    const first = processing.handle({ type: "open", request: request(), caret: 0 });
+    expect(codes(first)).toEqual([]);
+    expect(first.type === "processed" && first.splices[0]).toContain('"type":"componentPending"');
     await vi.waitFor(() => {
-      expect(fetched).toEqual([{ arrived: true, problems: [] }]);
+      expect(fetched).toEqual([{ again: true, problems: [] }]);
     });
     expect(asked).toHaveLength(1);
     // The editor opens the document again, with the same request: the worker adds the packs it fetched.
@@ -64,17 +67,19 @@ describe("Processing, with a registry", () => {
     expect(asked).toHaveLength(1);
   });
 
-  it("asks only for the import as it is once typing pauses, not for each name typed on the way", async () => {
+  it("asks for an import typed only as it is once typing pauses, not for each name on the way", async () => {
     const { asked, resolve } = registry();
     const processing = new Processing(open, { resolve, pause: 30 });
     const text = DOCUMENT.replace("@kit/hello@1", "@kit/h@1");
+    // An opened document's imports are asked for at once: it is a document, not one being typed.
     processing.handle({ type: "open", request: request(text), caret: 0 });
+    expect(asked).toHaveLength(1);
     const at = text.indexOf("@kit/h") + "@kit/h".length;
     ["e", "l", "l", "o"].forEach((letter, i) => processing.handle({ type: "edits", edits: [{ start: at + i, end: at + i, text: letter }], caret: 0 }));
     await vi.waitFor(() => {
-      expect(asked).toHaveLength(1);
+      expect(asked).toHaveLength(2);
     });
-    expect(asked[0]?.files?.["a.comp.md"]).toContain('from: "@kit/hello@1"');
+    expect(asked[1]?.files?.["a.comp.md"]).toContain('from: "@kit/hello@1"');
   });
 
   it("says what it couldn't fetch, and asks for it only once", async () => {
@@ -87,8 +92,10 @@ describe("Processing, with a registry", () => {
     const processing = new Processing(open, { resolve, onFetched: (each) => fetched.push(each), pause: 5 });
     processing.handle({ type: "open", request: request(), caret: 0 });
     await vi.waitFor(() => {
-      expect(fetched).toEqual([{ arrived: false, problems: ["@kit/hello: the registry has no version 1"] }]);
+      expect(fetched).toEqual([{ again: true, problems: ["@kit/hello: the registry has no version 1"] }]);
     });
+    // Opened again, as the editor does: no longer pending, so F026.
+    expect(codes(processing.handle({ type: "open", request: request(), caret: 0 }))).toEqual(["F026"]);
     processing.handle({ type: "edits", edits: [{ start: DOCUMENT.length, end: DOCUMENT.length, text: "\nMore.\n" }], caret: 0 });
     await new Promise((resolved) => setTimeout(resolved, 20));
     expect(asked).toHaveLength(1);

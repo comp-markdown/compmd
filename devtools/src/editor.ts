@@ -91,11 +91,11 @@ export class Editor {
         this.#hint(hinted);
         onChange();
       },
-      // Packs the document imports came from the registry: it opens again with them.
-      ({ arrived, problems }) => {
+      // Packs the document imports began being fetched, came, or couldn't be had: it opens again, showing which.
+      ({ again, problems }) => {
         this.#unfetched = [...this.#unfetched, ...problems.filter((problem) => !this.#unfetched.includes(problem))];
         for (const problem of problems) this.#problem(problem);
-        if (arrived) this.#reopen();
+        if (again) this.#reopen();
       },
       (urls) => {
         void this.#loadRemote(urls);

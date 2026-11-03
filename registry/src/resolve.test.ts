@@ -59,6 +59,20 @@ async function whileFailing<T>(use: () => Promise<T>): Promise<T> {
   }
 }
 
+describe("a registry that doesn't answer", () => {
+  it("is given up on after `timeout`: a problem, and the import F026, so a host showing it pending stops", async () => {
+    const silent: Registry = {
+      url: local.url,
+      versions: () => new Promise(() => undefined),
+      tarball: () => new Promise(() => undefined),
+    };
+    const request = importing("@kit/report@1");
+    const { request: given, problems } = await resolvePacks(request, { registries: { "*": silent }, timeout: 50 });
+    expect(problems).toEqual([{ pack: "@kit/report", message: "`@kit/report` didn't come within 0.05 s" }]);
+    expect(diagnostics(given).map((diagnostic) => diagnostic.slice(0, 4))).toEqual(["F026"]);
+  });
+});
+
 describe("a document's packs", () => {
   it("are added to the request: those it imports, then those they import, a level each round", async () => {
     const { request: ready, problems } = await resolvePacks(importing("@kit/report@1"), options());

@@ -25,7 +25,15 @@ export interface ResolveOptions {
   cache?: PackCache;
   /** The largest unpacked size of a pack, in bytes; 10 MB when not given. */
   maxPackSize?: number;
+  /**
+   * How long a pack may take to come, in ms (30 s when not given): one that hasn't is a problem, and stays missing, so
+   * a host that shows it as pending meanwhile (spec §6.4) stops, and the processor reports F026.
+   */
+  timeout?: number;
 }
+
+/** How long a pack may take when the host sets nothing. */
+export const DEFAULT_TIMEOUT = 30_000;
 
 /** Where a built module is in its pack, as the processor gives it with a host component. */
 export type ModulePlace = NonNullable<HostComponent["module"]>;
@@ -114,6 +122,7 @@ class Resolver {
   readonly #registries: Readonly<Record<string, Registry>>;
   readonly #cache: PackCache;
   readonly #maxSize: number;
+  readonly #timeout: number;
   /** In a browser with `fetch: "host"`, the only origin requests may go to. */
   readonly #origin: string | undefined;
   /** The text of every built module fetched, by its place, `pack@version/path`. */
@@ -123,10 +132,11 @@ class Resolver {
   /** The files of each version being got, by integrity. */
   readonly #fetching = new Map<string, Promise<Record<string, string> | undefined>>();
 
-  constructor({ registries, fetch = "host", cache = memoryCache(), maxPackSize = DEFAULT_MAX_PACK_SIZE }: ResolveOptions) {
+  constructor({ registries, fetch = "host", cache = memoryCache(), maxPackSize = DEFAULT_MAX_PACK_SIZE, timeout = DEFAULT_TIMEOUT }: ResolveOptions) {
     this.#registries = registries;
     this.#cache = cache;
     this.#maxSize = maxPackSize;
+    this.#timeout = timeout;
     this.#origin = fetch === "host" ? pageOrigin() : undefined;
     for (const registry of Object.values(registries)) this.#allow(registry.url);
   }
@@ -143,15 +153,23 @@ class Resolver {
     return text === undefined ? undefined : { code: new Blob([text], { type: "text/javascript" }) };
   }
 
-  /** One missing pack: its release, or why it isn't there. */
+  /** One missing pack: its release, or why it isn't there, a registry that didn't answer in time among them. */
   async resolve(needed: NeededPack, policy: Policy | undefined): Promise<Outcome> {
     const { pack } = needed;
     const registry = this.#registries[pack.slice(0, pack.indexOf("/"))] ?? this.#registries["*"];
     if (!registry) return { problem: `no registry is configured for \`${pack}\`'s scope` };
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const late = new Promise<Outcome>((resolve) => {
+      timer = setTimeout(() => {
+        resolve({ problem: `\`${pack}\` didn't come within ${String(this.#timeout / 1000)} s` });
+      }, this.#timeout);
+    });
     try {
-      return await this.#resolveFrom(registry, needed, policy);
+      return await Promise.race([this.#resolveFrom(registry, needed, policy), late]);
     } catch (error) {
       return { problem: messageOf(error) };
+    } finally {
+      clearTimeout(timer);
     }
   }
 

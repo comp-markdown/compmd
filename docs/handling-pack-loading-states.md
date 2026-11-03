@@ -48,7 +48,7 @@ N1 keeps the fallback whole and the meaning in one place. It is a new node type,
 - **Unavailable:** the fallback as today, unfaded, and the diagnostic in the host's list.
 - **When it arrives:** the use draws in place; with origins, the renderer's keys keep the rest of the page as it was.
 
-For the playground's `npm` document: while `@comp-markdown/mermaid` loads, each diagram shows its code, faded and busy, and the diagnostics list nothing; once it arrives, the diagrams draw. With `@comp-markdown/mermaid@9`, which npm doesn't have, the resolver fails at once: the blocks show their code unfaded, and F026 says why.
+For the playground's `npm` document: while `@comp-markdown/mermaid` loads, the diagnostics list nothing, and a use of its names (`:: mermaid[…]`) shows its fallback, faded and busy; once it arrives, the diagrams draw. Its code blocks show their code, unmarked: which languages a pack's code renderers draw is in the pack, so a code block can't be known pending before it arrives (corrected while building it). With `@comp-markdown/mermaid@9`, which npm doesn't have, the resolver fails at once, and F026 says why.
 
 ## Q4. When a host gives up
 

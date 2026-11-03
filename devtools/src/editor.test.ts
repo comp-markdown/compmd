@@ -226,7 +226,7 @@ describe("Editor", () => {
     editor.open(example);
     worker.answer(processed(["whole"], { opened: true }));
     // Not an answer: the session still waits for none.
-    worker.answer({ type: "fetched", arrived: true, problems: ["@kit/other: the registry has no version 2"] });
+    worker.answer({ type: "fetched", again: true, problems: ["@kit/other: the registry has no version 2"] });
     expect(worker.received[1]).toEqual({ type: "open", request: { ...opened, inputs: {} }, caret: 0 });
     const code = new Blob(["export default () => {};"]);
     const component: HostComponent = { name: "hello", language: "js", code: "", trust: { level: "strict" }, module: { pack: "@kit/hello", version: "1.0.0", path: "dist/hello.js" } };
@@ -240,7 +240,7 @@ describe("Editor", () => {
     expect(found).toBe(code);
     // What couldn't be fetched stays listed when the components change.
     expect(editor.state.problems).toEqual(["@kit/other: the registry has no version 2"]);
-    worker.answer({ type: "fetched", arrived: false, problems: [] });
+    worker.answer({ type: "fetched", again: false, problems: [] });
     expect(worker.received).toHaveLength(2);
   });
 

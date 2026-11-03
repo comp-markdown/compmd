@@ -21,10 +21,13 @@ describe("sectionsOf", () => {
   });
 });
 
+// Rendered once, as `guide-pages.test.ts` does: every chapter, which takes longer than a test's time while all the
+// packages' tests run.
+const GUIDES = join(import.meta.dirname, "../../guides");
+const pages = await guidePages((path) => readFileSync(join(GUIDES, path), "utf8"), "https://github.com/comp-markdown/compmd/blob/main/");
+
 describe("sitePages", () => {
-  it("names each guide page by its book and chapter", async () => {
-    const guides = join(import.meta.dirname, "../../guides");
-    const pages = await guidePages((path) => readFileSync(join(guides, path), "utf8"), "https://github.com/comp-markdown/compmd/blob/main/");
+  it("names each guide page by its book and chapter", () => {
     const named = sitePages("<p>Landing.</p>", "<h2 id=\"a\">A</h2>", pages);
     expect(named.slice(0, 2).map(({ url, page }) => ({ url, page }))).toEqual([
       { url: "", page: "CompMD" },

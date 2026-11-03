@@ -48,10 +48,10 @@ export type FromWorker =
   | { type: "hint"; hint?: PositionalHint }
   | { type: "failed"; message: string }
   /**
-   * Not an answer: packs the document imports came from the registry (`arrived`: the editor opens it again with them),
-   * or some couldn't be had (`problems`).
+   * Not an answer: packs the document imports began being fetched, came from the registry, or couldn't be had
+   * (`problems`); `again`: the editor opens it again, with them pending, with them, or with them F026.
    */
-  | { type: "fetched"; arrived: boolean; problems: string[] }
+  | { type: "fetched"; again: boolean; problems: string[] }
   /**
    * Not an answer: remote URLs the document needs that the worker hasn't reported yet, once typing pauses. The page
    * asks the reader about their origins and fetches them (`loadData`, spec §8.6), never the worker.

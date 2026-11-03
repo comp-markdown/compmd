@@ -56,14 +56,19 @@ function open(page: "frame" | "host", components: HostComponent[], tree: Expande
   return { area, view, sets, observation };
 }
 
+/**
+ * Waits until `check` passes, as long as frames take to load while every package's tests run at once: longer than
+ * `vi.waitFor`'s default second.
+ */
+async function waitFor(check: () => void): Promise<void> {
+  await vi.waitFor(check, { timeout: 8000, interval: 50 });
+}
+
 /** Waits until `done` holds of what `observation` keeps. */
 async function until(observation: Observation, done: (events: readonly ObservedEvent[]) => boolean): Promise<void> {
-  await vi.waitFor(
-    () => {
-      expect(done(observation.events)).toBe(true);
-    },
-    { timeout: 8000, interval: 50 },
-  );
+  await waitFor(() => {
+    expect(done(observation.events)).toBe(true);
+  });
 }
 
 type Method = (this: MessagePort, ...args: unknown[]) => unknown;
@@ -181,7 +186,7 @@ describe("the observer", () => {
       }`,
     );
     const { view, sets } = open("host", [unasked], treeOf([use("chart")], ["chart"]), false);
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(sets.get("chart")).toBe(JSON.stringify("sent"));
     });
     await pause(300);
@@ -231,11 +236,11 @@ describe("the observer", () => {
     );
     const { observation, sets } = open("host", [flood], treeOf([use("chart")], ["chart"]));
     if (!observation) return;
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(sets.get("chart")).toBe(JSON.stringify("flooded"));
     });
     const id = () => frameOf(observation.events, "chart")?.frame ?? "";
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(observation.dropped[id()] ?? 0).toBeGreaterThan(10_000);
     });
     expect(observation.events.filter((event) => event.by === id()).length).toBeLessThanOrEqual(2000);
@@ -269,7 +274,7 @@ describe("the observer", () => {
         },
       );
       const { sets, view } = open("host", nested, nestedTree, observe);
-      await vi.waitFor(() => {
+      await waitFor(() => {
         expect(sets.size).toBe(2);
       });
       await pause(300);

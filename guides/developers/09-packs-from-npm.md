@@ -155,7 +155,17 @@ Neither a document nor a pack can name a registry: imports name packs, and your 
 
 ## Rendering before the packs arrive
 
-The example waits for its packs before showing anything. An editor can't: it processes on every keystroke. Open the document at once with what you have, resolve its packs in the background, and open it again when they arrive. Until then, the uses of a pack the request doesn't hold show their fallbacks (`F026`), and the rest of the page is there. The playground works this way, asking for missing packs once typing pauses, so a name typed letter by letter isn't fetched letter by letter.
+The example waits for its packs before showing anything. An editor can't: it processes on every keystroke. Open the document at once with what you have, with the packs you are getting named in the request's `pending`, resolve them in the background, and open it again when they arrive:
+
+```ts
+const missing = sources(asked).packs.map(({ pack }) => pack);
+const first = new OpenDocument({ ...asked, pending: { packs: missing } });   // their uses show as loading, with no F026
+view.render(first.expanded);
+const resolved = await resolvePacks(asked, { ...registry, timeout: 30_000 });
+const opened = new OpenDocument(resolved.request);                         // drawn; or F026, for what couldn't be had
+```
+
+Until then, each use of a pending pack is its fallback marked as loading (spec §4.5): `@compmd/render` draws it faded, in a box with `aria-busy`, and the diagnostics have nothing to say. The processor never gives up on a pending pack; you do. `resolvePacks` stops waiting for a pack after `timeout` (30 s unless you say), and lists it in `problems`; opened again without it pending, the document says `F026`, as for any pack that can't be had. The playground works this way: a document's packs are pending from its first render, and an import you type is asked for once typing pauses, so a name typed letter by letter isn't fetched letter by letter.
 
 ## What a pack from a registry can do
 

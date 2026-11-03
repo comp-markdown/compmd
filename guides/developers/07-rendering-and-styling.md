@@ -18,6 +18,8 @@ So there are two places to style:
 
 Components in frames of their own, in either mode, get the same: the sandbox gives every frame your stylesheets, the tokens and the scheme.
 
+**What's still loading.** A use of a pack your app is still getting ([chapter 9](09-packs-from-npm.md#rendering-before-the-packs-arrive)) is its fallback in `<div class="compmd-pending" aria-busy="true">`, a `<span>` in a line of text, a little faded. Screen readers say it is busy, and that it changed when the pack arrives. Restyle `.compmd-pending` in your stylesheet to show loading your way, a shimmer, say; the fallback stays readable whatever you do.
+
 ## The example
 
 A document with boxes that use the theme's tokens, and a link:
