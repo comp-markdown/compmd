@@ -101,7 +101,74 @@ describe.each(BROWSERS)("the example in %s", (_name, type, options) => {
     await expect.poll(() => page.locator("main").innerText()).toContain("An old gauge: 40");
     // The denied import, and nothing else.
     expect(await page.locator("#diagnostics li").allInnerTexts()).toEqual(["F026: `@example/old@1.0.0` is denied here: it draws with a library this app no longer serves; the import is dropped"]);
+    // A build leaves the inspector out.
+    expect(await page.locator("#inspector").evaluate((panel) => panel.shadowRoot)).toBeNull();
     expect(errors).toEqual([]);
     await page.close();
   }, 30_000);
+});
+
+describe.each(BROWSERS)("the example's inspector in %s, in development", (_name, type, options) => {
+  let browser: Browser;
+  let dev: Awaited<ReturnType<typeof createServer>>;
+  const port = PORT + 2 + BROWSERS.findIndex(([name]) => name === _name);
+
+  beforeAll(async () => {
+    dev = await createServer({ root: EXAMPLE, configFile: false, logLevel: "warn", plugins: [compmd()], optimizeDeps: { exclude: ["@compmd/devtools"] }, server: { port, strictPort: true } });
+    await dev.listen();
+    browser = await type.launch({ headless: true, ...options });
+  }, 60_000);
+
+  afterAll(async () => {
+    await browser.close();
+    await dev.close();
+  });
+
+  /** The example in `mode`, with its inspector on the tab `tab`. */
+  async function inspect(mode: "host" | "frame", tab: string) {
+    const page = await browser.newPage();
+    const errors: string[] = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await page.goto(`http://localhost:${String(port)}/?page=${mode}`);
+    const inspector = page.locator("#inspector");
+    await inspector.getByRole("tab", { name: tab, exact: true }).click({ timeout: 20_000 });
+    return { page, inspector, errors };
+  }
+
+  it("shows the host's page, the frame it made and what that frame reports, in host mode", async () => {
+    const { page, inspector, errors } = await inspect("host", "Sandbox");
+    const sandbox = inspector.locator(".sandbox");
+    await expect.poll(() => sandbox.innerText(), { timeout: 20_000 }).toMatch(/bar mounted in .* ms\s*reported by 1/);
+    const text = await sandbox.innerText();
+    expect(text).toMatch(/the host's page\s+trusted/);
+    expect(text).toMatch(/stars mounted in [\d.]+ ms(?!\s*reported)/);
+    expect(text).toMatch(/frame 1\s+strict\s+bar/);
+    // The denied pack's import, from the inspector's own processing of the document.
+    await inspector.getByRole("tab", { name: "Console", exact: true }).click();
+    await expect.poll(() => inspector.locator(".console").innerText(), { timeout: 20_000 }).toContain("F026");
+    expect(errors).toEqual([]);
+    await page.close();
+  }, 60_000);
+
+  it("shows the page's frame and what it reports, its fallbacks among them, in frame mode", async () => {
+    const { page, inspector, errors } = await inspect("frame", "Sandbox");
+    const sandbox = inspector.locator(".sandbox");
+    await expect.poll(() => sandbox.innerText(), { timeout: 20_000 }).toMatch(/stars shows its fallback: not-here/);
+    const text = await sandbox.innerText();
+    expect(text).toMatch(/frame 1\s+strict\s+the page/);
+    expect(text).toMatch(/bar mounted in .* ms\s*reported by 1/);
+    await inspector.getByRole("tab", { name: "Messages", exact: true }).click();
+    await expect.poll(() => inspector.locator(".timeline").innerText(), { timeout: 20_000 }).toContain("render");
+    expect(errors).toEqual([]);
+    await page.close();
+  }, 60_000);
+
+  it("follows the document the app processes again, as a star's click sets its input", async () => {
+    const { page, inspector, errors } = await inspect("host", "Data");
+    await expect.poll(() => inspector.locator(".data").innerText(), { timeout: 20_000 }).toMatch(/rating[\s\S]*3/);
+    await page.getByRole("radio", { name: "5 of 5" }).click();
+    await expect.poll(() => inspector.locator(".data").innerText(), { timeout: 20_000 }).toMatch(/rating[\s\S]*5/);
+    expect(errors).toEqual([]);
+    await page.close();
+  }, 60_000);
 });

@@ -367,6 +367,14 @@ textarea::selection {
   color: var(--accent);
 }
 
+/* A place with no text to select it in, the inspector's: shown, not offered. */
+.place.still,
+.place.still:hover {
+  color: var(--ink-secondary);
+  text-decoration: none;
+  cursor: auto;
+}
+
 .fix {
   margin-inline-start: 8px;
   padding: 1px 8px;

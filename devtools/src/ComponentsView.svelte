@@ -4,8 +4,10 @@
 <script lang="ts">
   import type { Components, ListedComponent, Range } from "@compmd/processor";
   import { kindLabel, listsOf, paramText, slotsText, sourceText, usesText } from "./components.ts";
+  import Place from "./Place.svelte";
 
-  let { components, onselect }: { components: Components; onselect: (range: Range) => void } = $props();
+  /** `onselect` selects a place in the text; without it, as in the inspector, places are text. */
+  let { components, onselect }: { components: Components; onselect?: ((range: Range) => void) | undefined } = $props();
 
   const lists = $derived(listsOf(components));
 </script>
@@ -14,7 +16,7 @@
   <span class="uses">
     <span class="count">{usesText(ranges.length)}</span>
     {#each ranges as range (`${String(range.start.line)}:${String(range.start.column)}`)}
-      <button type="button" class="place" title="Select it in the text" onclick={() => onselect(range)}>{range.start.line}</button>
+      <Place {range} title="Select it in the text" {onselect}>{range.start.line}</Place>
     {/each}
   </span>
 {/snippet}
@@ -24,8 +26,7 @@
     <code>{component.name}</code>
     {#if component.definedAs}<span class="defined-as">as <code>{component.definedAs}</code> there</span>{/if}
     {#if component.defined}
-      {@const defined = component.defined}
-      <button type="button" class="place definition" title="Select its definition in the text" onclick={() => onselect(defined)}>line {defined.start.line}</button>
+      <Place range={component.defined} class="place definition" title="Select its definition in the text" {onselect}>line {component.defined.start.line}</Place>
     {/if}
   </th>
 {/snippet}

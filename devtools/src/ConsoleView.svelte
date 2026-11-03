@@ -1,10 +1,13 @@
 <!-- The Console tab: what went wrong, newest last, each line with its time; what a frame reported is marked as its. -->
 <script lang="ts">
   import type { ConsoleEntry } from "./console.ts";
+  import type { Range } from "@compmd/processor";
   import { clockOf, frameName } from "./labels.ts";
+  import Place from "./Place.svelte";
   import Reported from "./Reported.svelte";
 
-  let { entries, onselect }: { entries: readonly ConsoleEntry[]; onselect: (range: { start: { line: number; column: number } }) => void } = $props();
+  /** `onselect` selects a diagnostic's place in the text; without it, as in the inspector, places are text. */
+  let { entries, onselect }: { entries: readonly ConsoleEntry[]; onselect?: ((range: Range) => void) | undefined } = $props();
 </script>
 
 <ol class="console" aria-label="What went wrong, newest last">
@@ -21,7 +24,7 @@
               <li class={d.severity}>
                 <code class="code">{d.code}</code>
                 {#if d.file === undefined}
-                  <button type="button" class="place" title="Select it in the text" onclick={() => onselect(d.range)}>{d.range.start.line}:{d.range.start.column}</button>
+                  <Place range={d.range} title="Select it in the text" {onselect}>{d.range.start.line}:{d.range.start.column}</Place>
                 {:else}
                   {d.file} {d.range.start.line}:{d.range.start.column}
                 {/if}

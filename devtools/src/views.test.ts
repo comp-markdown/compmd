@@ -34,6 +34,11 @@ describe("viewOf", () => {
     expect(viewOf({ request: request(":: chip[x]\n"), view: "plain" })).toEqual({ view: "plain", html: "<p>:: chip[x]</p>\n" });
   });
 
+  it("gives the diagnostics, for the inspector", () => {
+    const view = viewOf({ request: request(":: nope[x]\n"), view: "diagnostics" });
+    expect(view).toMatchObject({ view: "diagnostics", diagnostics: [{ code: "F002" }] });
+  });
+
   it("says why a request can't be processed", () => {
     expect(viewOf({ request: { path: "a", now: "never" }, view: "trees" })).toMatchObject({ view: "trees", failed: expect.any(String) as string });
   });
@@ -70,5 +75,20 @@ describe("ViewsClient", () => {
     worker.answer({ view: "plain", html: "" });
     expect(answers).toHaveLength(2);
     expect(worker.received).toHaveLength(2);
+  });
+
+  it("keeps the diagnostics waiting apart from a tab's view, so neither drops the other", () => {
+    const worker = new FakeWorker();
+    const client = new ViewsClient(worker, () => undefined);
+    client.request(request("a"), "trees");
+    client.request(request("b"), "diagnostics");
+    client.request(request("c"), "plain");
+    worker.answer({ view: "trees", parse: {}, expanded: {} });
+    worker.answer({ view: "diagnostics", diagnostics: [] });
+    expect(worker.received.map(({ request, view }) => [request.files?.["a.comp.md"], view])).toEqual([
+      ["a", "trees"],
+      ["b", "diagnostics"],
+      ["c", "plain"],
+    ]);
   });
 });

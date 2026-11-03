@@ -4,10 +4,10 @@
 // keeps the document open and gives only what changed, so these come from a second worker that processes the
 // document from scratch, and only while a tab shows one.
 
-import { componentsOf, frontmatterOf, plainHtml, process, type Components, type Frontmatter, type Request } from "@compmd/processor";
+import { componentsOf, frontmatterOf, plainHtml, process, type Components, type Diagnostic, type Frontmatter, type Request } from "@compmd/processor";
 
-/** A view the second worker makes. */
-export type ViewKind = "trees" | "plain" | "data" | "components";
+/** A view the second worker makes: a tab's, or the diagnostics, for the inspector, which has no editor's. */
+export type ViewKind = "trees" | "plain" | "data" | "components" | "diagnostics";
 
 /** From the editor to the views' worker: the document as it is now, and the view to make of it. */
 export interface ViewRequest {
@@ -21,6 +21,7 @@ export type View =
   | { view: "plain"; html: string }
   | { view: "data"; frontmatter: Frontmatter }
   | { view: "components"; components: Components }
+  | { view: "diagnostics"; diagnostics: Diagnostic[] }
   | { view: ViewKind; failed: string };
 
 /** What the views' worker does with each request. */
@@ -29,7 +30,8 @@ export function viewOf({ request, view }: ViewRequest): View {
     if (view === "plain") return { view, html: plainHtml(request.files?.[request.path] ?? "") };
     if (view === "data") return { view, frontmatter: frontmatterOf(request) };
     if (view === "components") return { view, components: componentsOf(request) };
-    const { parse, expanded } = process(request);
+    const { parse, expanded, diagnostics } = process(request);
+    if (view === "diagnostics") return { view, diagnostics };
     return { view, parse, expanded };
   } catch (error) {
     return { view, failed: error instanceof Error ? error.message : String(error) };
@@ -57,12 +59,13 @@ export interface ViewsPort {
 
 /**
  * Asks the views' worker for a view, one request at a time: a request made while it is busy waits, and a later one
- * takes its place, since only the latest text and tab matter.
+ * takes its place, since only the latest text and tab matter. The diagnostics wait apart from a tab's view, so asking
+ * for one never drops the other.
  */
 export class ViewsClient {
   readonly #worker: ViewsPort;
   #busy = false;
-  #waiting: ViewRequest | undefined;
+  readonly #waiting = new Map<"tab" | "diagnostics", ViewRequest>();
 
   /** Asks `worker`, and calls `onView` with each answer. */
   constructor(worker: ViewsPort, onView: (view: View) => void) {
@@ -76,14 +79,15 @@ export class ViewsClient {
 
   /** Asks for `view` of `request`'s document. */
   request(request: Request, view: ViewKind): void {
-    this.#waiting = { request, view };
+    this.#waiting.set(view === "diagnostics" ? "diagnostics" : "tab", { request, view });
     if (!this.#busy) this.#send();
   }
 
   #send(): void {
-    const waiting = this.#waiting;
-    if (!waiting) return;
-    this.#waiting = undefined;
+    const [next] = this.#waiting;
+    if (!next) return;
+    const [slot, waiting] = next;
+    this.#waiting.delete(slot);
     this.#busy = true;
     this.#worker.postMessage(waiting);
   }

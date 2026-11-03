@@ -154,7 +154,9 @@ const view = createSandbox({ ...sandbox, page: "host", modules: (place) => resol
 
 ## The example
 
-[`example/`](example) is an app with its own `stars` as a trusted folder pack, a strict pack with a built module installed as a dependency, and a pack its configuration denies. `pnpm --dir example dev` runs it; the tests build it and drive it in Chrome and WebKit.
+[`example/`](example) is an app with its own `stars` as a trusted folder pack, a strict pack with a built module installed as a dependency, and a pack its configuration denies. `pnpm --dir example dev` runs it; the tests build it and drive it in Chrome and WebKit. It renders in host mode, and with `?page=frame` in one strict frame.
+
+On the dev server it opens the [Developer Tools' inspector](../devtools/README.md#the-inspector) under its page, on its view: a build leaves it out, since it is imported only in the dev server's mode. Its config lists `@compmd/devtools` in `optimizeDeps.exclude`, so Vite builds the inspector's workers. The tests check the inspector on the dev server, in Chrome and WebKit, in both page modes.
 
 ## License
 

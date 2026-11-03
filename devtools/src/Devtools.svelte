@@ -8,24 +8,18 @@
   import { createSandbox, type Observation, type ObservedEvent, type SandboxOptions, type View as Page } from "@compmd/sandbox";
   import { tick, untrack } from "svelte";
   import { caretTop } from "./caret.ts";
-  import ComponentsView from "./ComponentsView.svelte";
   import { consoleOf, EditorHistory } from "./console.ts";
-  import ConsoleView from "./ConsoleView.svelte";
-  import DataView from "./DataView.svelte";
   import type { DevtoolsDocument, SupportingFile } from "./document.ts";
   import { offsetOf } from "./edit.ts";
   import { Editor, type EditorState, type Replaced } from "./editor.ts";
   import { directiveFor, findPassage, fragmentOf, parseFragment, type Passage } from "./fragment.ts";
-  import { treeOf } from "./frames.ts";
   import { lineOf } from "./hint.ts";
   import Inputs from "./Inputs.svelte";
-  import JsonTree from "./JsonTree.svelte";
-  import { timelineOf } from "./messages.ts";
-  import MessagesView from "./MessagesView.svelte";
+  import Panes from "./Panes.svelte";
   import type { Registries, RegistryConfig } from "./protocol.ts";
-  import SandboxView from "./SandboxView.svelte";
+  import { onceAFrame } from "./schedule.ts";
   import Split from "./Split.svelte";
-  import { plainPage, ViewsClient, type View, type ViewKind } from "./views.ts";
+  import { TABS } from "./tabs.ts";
 
   interface Props {
     sandbox: SandboxOptions;
@@ -46,65 +40,20 @@
   let textarea: HTMLTextAreaElement | undefined = $state();
   /** The supporting file shown in place of the text, read-only; `undefined` for the document. */
   let file: SupportingFile | undefined = $state.raw();
-  let editor: Editor | undefined;
+  let editor: Editor | undefined = $state.raw();
   let worker: Worker | undefined;
-
-  const TABS = [
-    { id: "page", label: "Page" },
-    { id: "console", label: "Console" },
-    { id: "components", label: "Components" },
-    { id: "sandbox", label: "Sandbox" },
-    { id: "data", label: "Data" },
-    { id: "plain", label: "Plain Markdown" },
-    { id: "messages", label: "Messages" },
-    { id: "parse", label: "Parse tree" },
-    { id: "expanded", label: "Expanded tree" },
-  ] as const;
-  type Tab = (typeof TABS)[number]["id"];
-  /** The tabs the observer fills, which the views' worker doesn't. */
-  type Observed = "console" | "sandbox" | "messages";
-  let tab: Tab = $state("page");
-  let view: View | undefined = $state.raw();
-  let views: ViewsClient | undefined;
-  /** How deep the trees open: two levels at first; "Open all" and "Fold all" set it. */
-  let treeDepth = $state(2);
-
-  const isObserved = (shown: Tab): shown is Observed => shown === "console" || shown === "sandbox" || shown === "messages";
-  /** The view the views' worker makes for `tab`. */
-  const kindOf = (shown: Exclude<Tab, "page" | Observed>): ViewKind => (shown === "parse" || shown === "expanded" ? "trees" : shown);
-
-  /** The view the tab shows, of the document as it is now; the views' worker starts the first time one is asked for. */
-  $effect(() => {
-    if (tab === "page" || isObserved(tab) || shown === undefined) return;
-    void shown.updates;
-    const document = editor?.document;
-    if (!document) return;
-    views ??= new ViewsClient(new Worker(new URL("./views-worker.js", import.meta.url), { type: "module" }), (answer) => {
-      view = answer;
-    });
-    // Without the origins the editor's keys need, which would make the expanded tree three times as long.
-    views.request({ ...document, origins: false }, kindOf(tab));
-  });
 
   /** What the sandbox's observer kept of the page, read again once a frame after it changes. */
   let observation: Observation | undefined;
   let observed: readonly ObservedEvent[] = $state.raw([]);
   let dropped: Readonly<Record<string, number>> = $state.raw({});
-  let reading = false;
-  function readLater(): void {
-    if (reading) return;
-    reading = true;
-    requestAnimationFrame(() => {
-      reading = false;
-      observed = observation?.events ?? [];
-      dropped = observation?.dropped ?? {};
-    });
-  }
+  const readLater = onceAFrame(() => {
+    observed = observation?.events ?? [];
+    dropped = observation?.dropped ?? {};
+  });
   /** What the editor said went wrong, for the console; `noted` counts its changes. */
   let history = new EditorHistory();
   let noted = $state(0);
-  const tree = $derived(treeOf(observed));
-  const timeline = $derived(timelineOf(observed));
   const entries = $derived.by(() => {
     void noted;
     return consoleOf(history.entries, observed);
@@ -230,7 +179,9 @@
     if (registryConfig) worker.postMessage(registryConfig);
     const view = sandbox.open(container, { components: [] });
     observation?.stop();
-    observation = view.observe(readLater);
+    observation = view.observe(() => {
+      readLater();
+    });
     history = new EditorHistory();
     view.styles(stylesheets);
     view.on("link", ({ url }) => {
@@ -373,16 +324,33 @@
 {/snippet}
 
 {#snippet panes()}
-  <div class="sheet views">
-    {#if shown && Object.keys(shown.inputs).length > 0}
-      <Inputs inputs={shown.inputs} onset={(name, value) => editor?.setInput(name, value)} />
-    {/if}
-    <div class="tab-bar">
-      <div class="tabs" role="tablist" aria-label="Views">
-        {#each TABS as { id, label } (id)}
-          <button type="button" role="tab" id="tab-{id}" aria-selected={tab === id} aria-controls="view-{id}" onclick={() => (tab = id)}>{label}</button>
-        {/each}
-      </div>
+  <Panes
+    tabs={TABS.map(({ id }) => id)}
+    document={shown && editor?.document}
+    revision={shown?.updates ?? 0}
+    {observed}
+    {dropped}
+    {entries}
+    onselect={(range) => void select(range)}
+    page={pageFrame}
+    above={inputs}
+    {status}
+  />
+{/snippet}
+
+{#snippet inputs()}
+  {#if shown && Object.keys(shown.inputs).length > 0}
+    <Inputs inputs={shown.inputs} onset={(name, value) => editor?.setInput(name, value)} />
+  {/if}
+{/snippet}
+
+{#snippet pageFrame()}
+  {#key generation}
+    <div class="page-frame" {@attach (container) => untrack(() => start(container))}></div>
+  {/key}
+{/snippet}
+
+{#snippet status()}
       <dl class="status" aria-live="off">
         <div title="The worker's processing of the last change; p95 {ms(shown?.processing.p95)}">
           <dt>Processing</dt>
@@ -393,42 +361,4 @@
           <dd>{ms(shown?.painted.last)}</dd>
         </div>
       </dl>
-    </div>
-    <!-- The page stays mounted under the other tabs, so its components keep their state. -->
-    <div class="view page-view" id="view-page" role="tabpanel" aria-labelledby="tab-page" hidden={tab !== "page"}>
-      {#key generation}
-        <div class="page-frame" {@attach (container) => untrack(() => start(container))}></div>
-      {/key}
-    </div>
-    {#if tab !== "page"}
-      <div class="view" id="view-{tab}" role="tabpanel" aria-labelledby="tab-{tab}">
-        {#if tab === "console"}
-          <ConsoleView {entries} onselect={(range) => void select(range)} />
-        {:else if tab === "sandbox"}
-          <SandboxView {tree} {dropped} />
-        {:else if tab === "messages"}
-          <MessagesView {timeline} />
-        {:else if view === undefined || view.view !== kindOf(tab)}
-          <p class="note">Processing…</p>
-        {:else if "failed" in view}
-          <p class="note error">{view.failed}</p>
-        {:else if "html" in view}
-          <!-- No scripts and an opaque origin: the HTML is markdown-rs's, with raw HTML escaped, but it is the document's. -->
-          <iframe title="What a plain Markdown renderer shows" sandbox="" srcdoc={plainPage(view.html)}></iframe>
-        {:else if "frontmatter" in view}
-          <DataView frontmatter={view.frontmatter} />
-        {:else if "components" in view}
-          <ComponentsView components={view.components} onselect={(range) => void select(range)} />
-        {:else}
-          <div class="tree-tools">
-            <button type="button" onclick={() => (treeDepth = Number.POSITIVE_INFINITY)}>Open all</button>
-            <button type="button" onclick={() => (treeDepth = 1)}>Fold all</button>
-          </div>
-          <div class="tree">
-            <JsonTree value={tab === "parse" ? view.parse : view.expanded} open={treeDepth} />
-          </div>
-        {/if}
-      </div>
-    {/if}
-  </div>
 {/snippet}

@@ -8,7 +8,7 @@
 2. **It renders inside a shadow root**, its styles with it, so a page's CSS can't reach in, and its CSS can't leak out. A page's `iframe { … }` rule already showed what a host's styles do to parts that aren't the host's: it made the sandbox's hidden compile frame visible.
 3. **Two ways to embed it** (Q2):
    - **The editor**: the text, the page and the views of documents the embedding page gives, editable, as the playground is today. The playground, and so the guides' **Try it** links, use it.
-   - **The inspector**: attached to a sandbox view a host app already renders, with its document; no text area, the views and the sandbox's tabs. An app developer opens it in development to see what their documents do.
+   - **The inspector**: attached to a sandbox view a host app already renders, with its document; no text area, the views and the sandbox's tabs. An app developer opens it in development to see what their documents do. The same function takes the view: `mountDevtools(target, { view, document })`, and `open(document)` gives it the document again when the host processes it again. Its views worker processes the document for its views and for the diagnostics the Console lists; it fills the element the host gives it, with no window of its own.
 4. **The playground becomes a page that embeds the editor.** It keeps what is the site's: the header, the menu of documents (`src/documents.ts`, the examples, the guides' documents), the About, the links. The guides' **Try it** links stay `/playground/?doc=guides/<book>/<example>`.
 5. **The sandbox gets an observer, which only the host's page can turn on** (`view.observe(listener)`): never a document, a configuration of packs, or a frame. Off, nothing is copied or recorded, and no frame is asked to report; each window keeps only which of its frames and components are live, so that turning it on shows the tree as it is. It reports what the host's page itself does and receives, and what frames report (decision 6):
    - **frames**, as the host's page makes and removes them: an id, the parent's id, the level, the network a permissive frame was given, what it renders (the page, a use and its component, the compile frame), and why it went (destroyed, stopped when it hung, of another protocol version);
@@ -88,7 +88,7 @@ It is accepted because a lie reaches no decision (O6), and costs little: a paren
 ## In two increments
 
 1. **The editor, on the observer.** `@compmd/devtools` with `mountDevtools` and the editor; the observer in `@compmd/sandbox`, with the frames' reports, the protocol's `observe` and `observed`, and its browser tests; the Console, Sandbox and Messages tabs; the playground on it.
-2. **The inspector.** `mountDevtools` attached to a host's own view (decision 3), with the views and the sandbox's tabs, and an example app that opens it in development.
+2. **The inspector.** `mountDevtools` attached to a host's own view (decision 3), with the views and the sandbox's tabs; `@compmd/vite`'s example opens it in development.
 
 ## What changes
 

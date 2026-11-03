@@ -672,6 +672,9 @@ importers:
 
   vite/example:
     dependencies:
+      '@compmd/devtools':
+        specifier: workspace:*
+        version: link:../../devtools
       '@compmd/processor':
         specifier: workspace:*
         version: link:../../wasm

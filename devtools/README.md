@@ -2,7 +2,7 @@
 
 The CompMD Developer Tools as a part any page embeds ([the design](../docs/devtools.md)): a document's text on the left, its page on the right, updated as you type, with the views of what the processor makes of it and of what its sandbox does. The [playground](../editor/README.md) is a page that embeds it.
 
-**Status: in development;** not published yet. This is the design's first increment, the editor; the inspector, attached to a view a host app already renders, comes next.
+**Status: in development;** not published yet. Two ways to embed it (decision 3): the editor, below, and the inspector, attached to a view a host app already renders (*The inspector*).
 
 ```ts
 import { mountDevtools } from "@compmd/devtools";
@@ -23,6 +23,20 @@ tools.destroy();
 It is written in Svelte and compiled into the package, so a page in any framework embeds it with this function, and needs no Svelte of its own. It renders in a shadow root, with its stylesheet, so the page's styles can't reach in and its own can't leak out.
 
 **Its workers** are files of their own beside it, which it starts with `new Worker(new URL("./worker.js", import.meta.url))`; they import `@compmd/processor`, whose WebAssembly is a file too. A bundler that builds workers (Vite, webpack 5) builds them with the host's page. Vite does so only for a package it doesn't pre-bundle: list `@compmd/devtools` in `optimizeDeps.exclude`.
+
+## The inspector
+
+Given the view a host already renders (`createSandbox(…).open(…)`, `@compmd/sandbox`), with the document it renders, the tools show what that view does: no text and no page of their own, since the page is the host's.
+
+```ts
+import { mountDevtools } from "@compmd/devtools";
+
+const inspector = mountDevtools(panel, { view, document: { request } });
+inspector.open({ request: processedAgain });   // when the host processes the document again
+inspector.destroy();                           // stops observing the view
+```
+
+It has every tab but the page. It observes the view from when it mounts, however long the view has been open: the host's page and each frame report what is live first, so the tree is whole. Its views worker processes the request the host gives for the Components, Data, Plain Markdown and tree tabs, and for the diagnostics the Console lists; a place in the text shows as text, with no text to select it in. It fills the element the host gives it, as the editor does. [`@compmd/vite`'s example](../vite/README.md#the-example) opens it under its page on the dev server.
 
 ## How it works
 
@@ -65,6 +79,8 @@ pnpm build   # dist/ with rolldown: the Svelte compiled in, the workers beside t
 pnpm lint    # eslint, tsc, and svelte-check for the .svelte files
 pnpm test    # edits, the session, the editor's loop, the processing, the views, and the observer tabs, in happy-dom
 ```
+
+The inspector's browser tests are `@compmd/vite`'s, on its example's dev server, in Chrome and WebKit, in both page modes; the editor's are the playground's.
 
 The build is rolldown's, not Vite's: Vite's library build marks a worker's URL to be ignored, which a host's bundler then never builds.
 

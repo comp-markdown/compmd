@@ -10,6 +10,7 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
+    "@compmd/devtools": "workspace:*",
     "@compmd/processor": "workspace:*",
     "@compmd/sandbox": "workspace:*",
     "@compmd/vite": "workspace:*",
