@@ -6,7 +6,8 @@
     <title>@compmd/vite example</title>
   </head>
   <body>
-    <main id="page"></main>
+    <!-- A height of its own, so the inspector under it stays where it is while the page's components render. -->
+    <main id="page" style="height: 24rem; overflow: auto"></main>
     <ul id="diagnostics"></ul>
     <aside id="inspector" aria-label="The Developer Tools' inspector"></aside>
     <script type="module" src="./src/main.ts"></script>

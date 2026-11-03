@@ -7,7 +7,7 @@ import { createRequire } from "node:module";
 import { join } from "node:path";
 import { initSync, process } from "@compmd/processor";
 import { compmd, loadApp } from "@compmd/vite";
-import { chromium, webkit, type Browser, type BrowserType, type LaunchOptions, type Page } from "playwright";
+import { chromium, webkit, type Browser, type BrowserType, type LaunchOptions, type Locator, type Page } from "playwright";
 import { build, createServer, preview, type PreviewServer, type ViteDevServer } from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
@@ -52,6 +52,22 @@ async function opened(browser: Browser, url: string): Promise<{ page: Page; erro
   });
   await page.goto(url);
   return { page, errors };
+}
+
+/** Waits until `locator` stays where it is for a tenth of a second: the frames around it have their heights. */
+async function stillAt(locator: Locator): Promise<void> {
+  let last: number | undefined;
+  await expect
+    .poll(
+      async () => {
+        const top = (await locator.boundingBox())?.y;
+        const still = top !== undefined && top === last;
+        last = top;
+        return still;
+      },
+      { timeout: 20_000, interval: 100 },
+    )
+    .toBe(true);
 }
 
 describe("the app's own components", () => {
@@ -124,6 +140,10 @@ describe("the app's own components", () => {
       const spoiler = page.locator("#page button[aria-expanded]");
       const ending = page.locator("#page").getByText("Estraven is shot at the border");
       await expect.poll(() => spoiler.innerText(), { timeout: 20_000 }).toBe("Show the ending");
+      // `reviews`, above the spoiler, takes its height once its frame has drawn, and moves the spoiler down: the click
+      // waits for the page's layout to settle, as a reader's would.
+      await expect.poll(() => page.frameLocator("#page iframe[title=reviews]").locator("body").innerText(), { timeout: 20_000 }).toContain("12 readers");
+      await stillAt(spoiler);
       expect(await ending.isVisible()).toBe(false);
       await spoiler.click();
       await expect.poll(() => ending.isVisible()).toBe(true);

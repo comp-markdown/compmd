@@ -131,7 +131,11 @@ describe.each(BROWSERS)("the example's inspector in %s, in development", (_name,
     page.on("pageerror", (error) => errors.push(error.message));
     await page.goto(`http://localhost:${String(port)}/?page=${mode}`);
     const inspector = page.locator("#inspector");
-    await inspector.getByRole("tab", { name: tab, exact: true }).click({ timeout: 20_000 });
+    const button = inspector.getByRole("tab", { name: tab, exact: true });
+    await button.click({ timeout: 20_000 });
+    // A click lands only if the inspector stays put while the page's components render, which the page's own height
+    // makes sure of: if it moved, the click would miss and the test say so here.
+    expect(await button.getAttribute("aria-selected")).toBe("true");
     return { page, inspector, errors };
   }
 
