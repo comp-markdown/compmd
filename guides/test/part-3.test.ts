@@ -42,13 +42,20 @@ async function served(name: string, port: number): Promise<PreviewServer> {
   return preview({ ...config, preview: { port, strictPort: true } });
 }
 
-/** Opens `url` in a new page of `browser`, collecting the page's errors and the warnings its code logs. */
+/**
+ * Opens `url` in a new page of `browser`, collecting the page's errors, the warnings its code logs, and every answer
+ * of the server's that failed (a dev server's 504 for a dependency it optimized again, by its URL, which a module that
+ * fails to load doesn't name).
+ */
 async function opened(browser: Browser, url: string): Promise<{ page: Page; errors: string[] }> {
   const page = await browser.newPage();
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   page.on("console", (message) => {
     if (message.type() === "warning") errors.push(message.text());
+  });
+  page.on("response", (response) => {
+    if (response.status() >= 500) errors.push(`${String(response.status())} ${response.statusText()} for ${response.url()}`);
   });
   await page.goto(url);
   return { page, errors };

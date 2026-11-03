@@ -172,5 +172,11 @@ export default defineConfig({
     target: "es2024",
     rolldownOptions: { input: { index: "index.html", spec: "spec/index.html", guides: "guides/index.html" } },
   },
-  server: { fs: { allow: [".."] } },
+  server: {
+    fs: { allow: [".."] },
+    // `guideInDev` watches `guides/` for the books' Markdown. Not what the guides' tests write as they run, nor their
+    // examples: a page or a `tsconfig.json` written there would reload every page, and re-optimize the dependencies
+    // while a page renders.
+    watch: { ignored: ["**/guides/test/**", "**/guides/*/examples/**", "**/guides/node_modules/**"] },
+  },
 });
