@@ -1,8 +1,10 @@
 // The site's pages rendered on the server, for the prerender (`scripts/prerender.ts`).
 import type { ComponentProps } from "svelte";
 import { render } from "svelte/server";
+import type { BookProps } from "../build/book.ts";
 import type { Rendered } from "../build/prerender.ts";
 import App from "./App.svelte";
+import Book from "./Book.svelte";
 import Guide from "./Guide.svelte";
 import Spec from "./Spec.svelte";
 
@@ -21,5 +23,11 @@ export function renderSpecPage(props: ComponentProps<typeof Spec>): Rendered {
 /** A page of the guides, static: nothing hydrates it. */
 export function renderGuidePage(props: ComponentProps<typeof Guide>): Rendered {
   const { head, body } = render(Guide, { props });
+  return { head, body };
+}
+
+/** A book of the guides as one page, for its PDF. */
+export function renderBookPage(props: BookProps): Rendered {
+  const { head, body } = render(Book, { props });
   return { head, body };
 }

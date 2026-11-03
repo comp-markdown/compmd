@@ -6,6 +6,7 @@ import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { renderSpecPage, SPEC } from "../build/companion.ts";
+import { bookPages, type BookProps } from "../build/book.ts";
 import { guidePages } from "../build/guide-pages.ts";
 import { prerendered, relocated, type Rendered } from "../build/prerender.ts";
 import { rootOf, specPages } from "../build/versions.ts";
@@ -21,6 +22,7 @@ const server = (await import(join(import.meta.dirname, "../dist-server/server.js
   renderPage: () => Rendered;
   renderSpecPage: (props: ComponentProps<typeof Spec>) => Rendered;
   renderGuidePage: (props: ComponentProps<typeof Guide>) => Rendered;
+  renderBookPage: (props: BookProps) => Rendered;
 };
 const git = (...args: string[]) => execFileSync("git", args, { cwd: REPO, encoding: "utf8" });
 const stylesheet = (folder: string) => (href: string) => readFileSync(join(DIST, folder, href), "utf8");
@@ -66,4 +68,10 @@ for (const page of guide) {
   mkdirSync(join(DIST, page.folder), { recursive: true });
   writeFileSync(join(DIST, page.folder, "index.html"), prerendered(relocated(guideTemplate, page.root), server.renderGuidePage(page.props), stylesheet(page.folder)));
 }
-console.log(`Prerendered the landing page, ${String(pages.length)} page(s) of the spec (${pages.map((page) => page.folder).join(", ")}) and ${String(guide.length)} of the guides`);
+// Each book as one page, which `scripts/pdf.ts` prints into the book's PDF, then removes.
+const books = await bookPages((path) => readFileSync(join(REPO, "guides", path), "utf8"), `${REPOSITORY}/blob/main/`);
+for (const page of books) {
+  mkdirSync(join(DIST, page.folder), { recursive: true });
+  writeFileSync(join(DIST, page.folder, "index.html"), prerendered(relocated(guideTemplate, page.root), server.renderBookPage(page.props), stylesheet(page.folder)));
+}
+console.log(`Prerendered the landing page, ${String(pages.length)} page(s) of the spec (${pages.map((page) => page.folder).join(", ")}), ${String(guide.length)} of the guides and ${String(books.length)} books to print`);

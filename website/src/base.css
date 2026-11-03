@@ -23,7 +23,8 @@
   --compmd-accent: var(--accent);
 }
 
-@media (prefers-color-scheme: dark) {
+/* On screen only: paper is light. */
+@media screen and (prefers-color-scheme: dark) {
   :root {
     --desk: #101419;
     --sheet: #161b22;

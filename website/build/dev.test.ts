@@ -1,6 +1,7 @@
 // @vitest-environment node
 // The dev server's spec and guide pages, in Chrome and WebKit: each paints styled from its HTML alone, as the build's
-// prerendered pages do, so following a link shows no unstyled page while its script loads.
+// prerendered pages do, so following a link shows no unstyled page while its script loads. And its PDFs, printed when
+// asked for.
 import { join } from "node:path";
 import { chromium, webkit, type Browser, type BrowserType, type LaunchOptions } from "playwright-core";
 import { createServer, type ViteDevServer } from "vite";
@@ -26,6 +27,16 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await server.close();
+});
+
+describe("the dev server's PDFs", () => {
+  // Printed from the working tree when asked for, as the build prints them, not the HTML page a missing file would get.
+  it.each(["guides/authors/compmd-authors-guide.pdf", "guides/developers/compmd-developers-guide.pdf", "spec/compmd-spec-draft.pdf"])("serves /%s as a PDF", async (path) => {
+    const response = await fetch(`http://localhost:${String(PORT)}/${path}`);
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toBe("application/pdf");
+    expect(Buffer.from(await response.arrayBuffer()).subarray(0, 5).toString()).toBe("%PDF-");
+  }, 60_000);
 });
 
 describe.each(BROWSERS)("the dev server's pages in %s", (_name, type, launch) => {

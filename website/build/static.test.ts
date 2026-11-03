@@ -11,6 +11,7 @@ mkdirSync(join(root, "spec"));
 writeFileSync(join(root, "index.html"), "<p>home</p>");
 writeFileSync(join(root, "spec", "index.html"), "<p>spec</p>");
 writeFileSync(join(root, "a.js"), "export {};");
+writeFileSync(join(root, "book.pdf"), "%PDF-1.7");
 
 describe("fileOf", () => {
   it("finds a file, and a folder's index.html", async () => {
@@ -51,6 +52,8 @@ describe("serveFolder", () => {
     expect(response.headers.get("content-type")).toBe("text/javascript; charset=utf-8");
     expect(response.headers.get("access-control-allow-origin")).toBe("*");
     expect(await (await fetch(`${base}/site/spec/`)).text()).toBe("<p>spec</p>");
+    // As GitHub Pages serves a PDF, so the browser shows or saves it as one.
+    expect((await fetch(`${base}/site/book.pdf`)).headers.get("content-type")).toBe("application/pdf");
   });
 
   it("passes on other paths and missing files", async () => {

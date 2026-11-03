@@ -13,6 +13,7 @@
   import type { Heading } from "../build/spec.ts";
   import Footer from "./Footer.svelte";
   import Header from "./Header.svelte";
+  import { specPdf } from "./site.ts";
 
   interface Props {
     /** The spec as HTML, from `renderSpec`. */
@@ -47,6 +48,7 @@
         <strong>Version {version}.</strong> Released, and never changed after.
       {/if}
       <a href={source}>The text on GitHub</a>
+      <a href={specPdf(version)} download>Download as PDF</a>
     </p>
     {#if versions.length > 1}
       <nav aria-label="Versions of the spec">

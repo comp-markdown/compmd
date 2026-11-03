@@ -14,6 +14,7 @@ const TYPES: Record<string, string> = {
   ".png": "image/png",
   ".wasm": "application/wasm",
   ".woff2": "font/woff2",
+  ".pdf": "application/pdf",
 };
 
 /** The file `path` names in `root`: `index.html` for a folder; `undefined` outside `root` or for none. */

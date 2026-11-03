@@ -2,9 +2,13 @@ import { compmd } from "@compmd/vite";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { readFileSync } from "node:fs";
 import { join, relative } from "node:path";
+import { chromium, type Browser } from "playwright-core";
 import { defineConfig, type Plugin } from "vite";
+import { bookPages, type BookPage, type BookProps } from "./build/book.ts";
 import { snapshotsOf } from "./build/plugin.ts";
 import { guidePages, type GuidePage } from "./build/guide-pages.ts";
+import { PRINT, printJobs, printPdf } from "./build/print.ts";
+import { specPages } from "./build/versions.ts";
 import { prerendered, relocated, type Rendered } from "./build/prerender.ts";
 import { COMPANION, renderSpecPage, SPEC } from "./build/companion.ts";
 import { serveFolder } from "./build/static.ts";
@@ -79,6 +83,8 @@ function guideInDev(): Plugin {
     return rendering;
   };
   let pages: Promise<GuidePage[]> | undefined;
+  /** Each book's page to print, made only when one is asked for: the PDFs are. */
+  let books: Promise<BookPage[]> | undefined;
   return {
     name: "compmd-guide-dev",
     apply: "serve",
@@ -91,6 +97,7 @@ function guideInDev(): Plugin {
         if (!/^(?:[^/\\]+[/\\])?[^/\\]+\.md$/.test(relative(guide, file))) return;
         // Rendered again when a page is next asked for, so a burst of changes renders once.
         pages = undefined;
+        books = undefined;
         server.ws.send({ type: "full-reload" });
       });
       server.middlewares.use((request, _response, next) => {
@@ -103,12 +110,56 @@ function guideInDev(): Plugin {
       async handler(html, { filename, server, originalUrl }) {
         if (!server || !filename.endsWith(join("guides", "index.html"))) return html;
         const folder = `guides/${BOOK.exec(originalUrl ?? "")?.[1] ?? ""}`;
-        const { renderGuidePage } = (await server.ssrLoadModule("/src/server.ts")) as { renderGuidePage: (props: GuidePage["props"]) => Rendered };
+        const { renderGuidePage, renderBookPage } = (await server.ssrLoadModule("/src/server.ts")) as {
+          renderGuidePage: (props: GuidePage["props"]) => Rendered;
+          renderBookPage: (props: BookProps) => Rendered;
+        };
         pages ??= render();
         const page = (await pages).find((candidate) => candidate.folder === folder);
-        if (!page) return html;
-        return prerendered(relocated(html, page.root), devStylesheets(renderGuidePage(page.props)), () => "");
+        if (page) return prerendered(relocated(html, page.root), devStylesheets(renderGuidePage(page.props)), () => "");
+        if (!folder.endsWith(`/${PRINT}`)) return html;
+        books ??= bookPages((path) => readFileSync(join(guide, path), "utf8"), "https://github.com/comp-markdown/compmd/blob/main/");
+        const book = (await books).find((candidate) => candidate.folder === folder);
+        return book ? prerendered(relocated(html, book.root), devStylesheets(renderBookPage(book.props)), () => "") : html;
       },
+    },
+  };
+}
+
+/**
+ * In the dev server, a PDF asked for (the books' and the draft spec's), printed from the working tree's page when it is
+ * asked for, as the build prints it (`build/print.ts`): a few seconds, in the installed Chrome.
+ */
+function pdfInDev(): Plugin {
+  let browser: Promise<Browser> | undefined;
+  return {
+    name: "compmd-pdf-dev",
+    apply: "serve",
+    configureServer(server) {
+      const jobs = printJobs(specPages([]));
+      server.middlewares.use((request, response, next) => {
+        const job = jobs.find(({ pdf }) => new URL(request.url ?? "/", "http://localhost").pathname === `/${pdf}`);
+        if (!job) {
+          next();
+          return;
+        }
+        const print = async () => {
+          browser ??= chromium.launch({ channel: "chrome" });
+          const page = await (await browser).newPage({ colorScheme: "light" });
+          try {
+            const origin = server.resolvedUrls?.local[0] ?? `http://localhost:${String(server.config.server.port)}/`;
+            const pdf = await printPdf(page, new URL(job.page, origin).href);
+            response.setHeader("Content-Type", "application/pdf");
+            response.end(pdf);
+          } finally {
+            await page.close();
+          }
+        };
+        print().catch(next);
+      });
+      server.httpServer?.on("close", () => {
+        void browser?.then((launched) => launched.close());
+      });
     },
   };
 }
@@ -116,7 +167,7 @@ function guideInDev(): Plugin {
 export default defineConfig({
   base: "./",
   // `compmd()` gives the site its own pack (`app/`, trusted) and the sandbox's frames, under `compmd/`.
-  plugins: [snapshotsOf(join(import.meta.dirname, "content"), import.meta.dirname), assembled(), specInDev(), guideInDev(), svelte(), compmd()],
+  plugins: [snapshotsOf(join(import.meta.dirname, "content"), import.meta.dirname), assembled(), specInDev(), guideInDev(), pdfInDev(), svelte(), compmd()],
   build: {
     target: "es2024",
     rolldownOptions: { input: { index: "index.html", spec: "spec/index.html", guides: "guides/index.html" } },

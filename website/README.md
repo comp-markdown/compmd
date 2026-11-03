@@ -15,14 +15,16 @@ The landing page, with the playground and the spec, assembled into one static si
 - **Every example is processed by the processor.** The documents in `content/` are processed and rendered when the page is built (`build/snapshots.ts`, served to the page as `virtual:snapshots`), and the page shows those snapshots until the processor loads. Then the hero is live (`src/live.ts`): its text can be edited, and the page follows. The example with an input is live in the same way. The example with a JSX component renders in the playground's sandboxed frame (`src/framed.ts`).
 - **The contents wheel** (`src/SectionWheel.svelte`) shows the section being read, and turns as the page scrolls.
 - **The spec page** is the spec's Markdown as plain GFM HTML (the processor's `plainHtml`), with the code highlighted by [Shiki](https://shiki.style) at build time (`build/highlight.ts`, with grammars of our own for CompMD's syntax and ABNF in `build/grammars.ts`). It has ids on the headings as GitHub gives them, a link to each heading's source, and the requirement words marked (`build/spec.ts`). It is static HTML: `src/spec.ts` only adds the scroll-spy and the phone menu. Each version goes in a folder of its own (`build/versions.ts`).
+- **The PDFs.** Each book of the guides and each version of the spec downloads as a PDF, linked from its pages' status line. Chrome (the installed one, through Playwright) prints them at build time (`scripts/pdf.ts`), with an outline from the headings and page numbers; the dev server prints one from the working tree when it is asked for, in a few seconds (`build/print.ts` for both). A book is printed from a page of its own, its contents and then every chapter (`build/book.ts`, `src/Book.svelte`), which is removed once printed; the spec from its page, companion included. The print styles (`@media print` in `src/spec.css`) leave out the site's header and navigation, start each chapter on a page, wrap code, and print light, so a single page prints well from the browser too.
 - **The snippets** of "Use it in your app" are the files in `snippets/`, which tests run as they are written.
 - **Visits are counted** with [GoatCounter](https://www.goatcounter.com), without cookies (`src/count.ts`). Its script loads once a page has loaded, on the landing page and the spec page, never in the playground's frame. It counts only on the published site: served from this machine, as by `pnpm dev` and `pnpm check`, it doesn't load.
 
 `pnpm build` runs:
 1. `vite build`: the two pages' scripts and styles.
 2. The server build of the pages.
-3. `scripts/prerender.ts`: writes the rendered pages, the landing page and each version of the spec, into `dist/`.
+3. `scripts/prerender.ts`: writes the rendered pages, the landing page, each version of the spec, the guides' pages and each book's page to print, into `dist/`.
 4. `scripts/assemble.ts`: copies the playground and the logo in.
+5. `scripts/pdf.ts`: prints the PDFs, each book's and each version of the spec's, in Chrome.
 
 ## Commands
 
@@ -32,9 +34,9 @@ They need the packages built first: `pnpm -r build` from the root builds them al
 pnpm dev       # the dev server, at http://localhost:5173/; the spec page renders from the working tree, and the playground is editor/'s last build
 pnpm build     # the site, in dist/
 pnpm preview   # dist/ served as GitHub Pages serves it, at http://localhost:4173/
-pnpm check     # the built site checked in Chrome: every page, light and dark, desktop and phone; the live parts; the links; the spec's contents; the playground's documents; the budgets
+pnpm check     # the built site checked in Chrome: every page, light and dark, desktop and phone, styled before its script; the PDFs' outlines and text; the live parts; the links; the spec's contents; the playground's documents; the budgets
 pnpm lint      # eslint, tsc and svelte-check
-pnpm test      # the snapshots, the spec's rendering and highlighting, the versions, the prerender, the snippets
+pnpm test      # the snapshots, the spec's rendering and highlighting, the versions, the prerender, the books to print, the snippets, the dev server's first paint
 ```
 
 ## Budgets

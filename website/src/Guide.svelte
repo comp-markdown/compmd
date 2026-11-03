@@ -21,6 +21,7 @@
   import type { Heading } from "../build/spec.ts";
   import Footer from "./Footer.svelte";
   import Header from "./Header.svelte";
+  import { guidePdf } from "./site.ts";
 
   interface Props {
     /** The page as HTML, from `renderMarkdown`. */
@@ -61,6 +62,7 @@
     <p>
       <strong>{open?.title ?? "The CompMD guides"}.</strong> Written for the <code>@compmd</code> packages at 0.3.0, and following them as they change.
       <a href={source}>This page on GitHub</a>
+      {#if open}<a href="{guides}{open.name}/{guidePdf(open.name)}" download>Download the book as PDF</a>{/if}
     </p>
   </div>
 </div>

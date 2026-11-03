@@ -3,6 +3,7 @@
 //
 // - Every page, light and dark, at a desktop's and a phone's width: no page errors, no failed requests, nothing wider
 //   than the window; and each painted styled before any script runs.
+// - The PDFs: each book's has every chapter in its outline, in order, and in its text; each spec page's, its sections.
 // - The landing page: the hero goes live and follows an edit; the plain toggle switches; the input example follows its
 //   input; the JSX and code renderer examples render in the site's sandbox; the site's own stars mount in the page
 //   and set their input; a section chosen in the contents wheel scrolls into
@@ -14,13 +15,17 @@
 // - The budgets (website/docs/design.md): the page before its live parts at most 100 KB gzipped, and painted within one
 //   second on a mid-range phone over fast 3G. `--no-timing` leaves the paint out, for a shared runner whose timings
 //   vary too much to hold a budget (docs/ci.md).
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { join } from "node:path";
 import { gzipSync } from "node:zlib";
+import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 import { chromium, type Browser, type Page } from "playwright-core";
 import { bookOf, writtenOf } from "../build/guide.ts";
 import { serveFolder } from "../build/static.ts";
+import { specPages } from "../build/versions.ts";
+import { guidePdf } from "../src/site.ts";
 
 const DIST = join(import.meta.dirname, "../dist");
 const PORT = 4191;
@@ -80,6 +85,66 @@ async function firstPaint(browser: Browser): Promise<void> {
     const background = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
     check(background === "rgb(233, 237, 241)", `/${path} paints unstyled before its script runs (its background is ${background})`);
     await page.close();
+  }
+}
+
+/** A PDF's outline, every entry at every depth in order, its text with its white space as single spaces, and its pages. */
+async function readPdf(path: string): Promise<{ outline: string[]; text: string; pages: number }> {
+  const loading = getDocument({ data: new Uint8Array(readFileSync(path)) });
+  const pdf = await loading.promise;
+  const outline: string[] = [];
+  const walk = (items: { title: string; items: unknown[] }[] | null) => {
+    for (const item of items ?? []) {
+      outline.push(item.title.replace(/\s+/g, " ").trim());
+      walk(item.items as typeof items);
+    }
+  };
+  walk(await pdf.getOutline());
+  const texts: string[] = [];
+  for (let number = 1; number <= pdf.numPages; number++) {
+    const content = await (await pdf.getPage(number)).getTextContent();
+    texts.push(content.items.map((item) => ("str" in item ? item.str : "")).join(" "));
+  }
+  const pages = pdf.numPages;
+  await loading.destroy();
+  return { outline, text: texts.join(" ").replace(/\s+/g, " "), pages };
+}
+
+/**
+ * The first of `wanted` that `found` lacks in that order, or `undefined` when it has them all in order. White space
+ * doesn't count: Chrome joins a heading's lines without a space when it wraps, in the outline it writes.
+ */
+function missingInOrder(wanted: readonly string[], found: readonly string[]): string | undefined {
+  const bare = (title: string | undefined) => title?.replace(/\s/g, "");
+  let next = 0;
+  for (const title of found) if (bare(title) === bare(wanted[next])) next++;
+  return wanted[next];
+}
+
+/** Each book's PDF has every chapter in its outline, in the contents' order, and in its text; each spec page's PDF has the page's sections. */
+async function pdfs(browser: Browser): Promise<void> {
+  for (const book of ["authors", "developers"]) {
+    const chapters = writtenOf(bookOf(readFileSync(join(import.meta.dirname, `../../guides/${book}/README.md`), "utf8"))).map(({ number, title }) => `${String(number)}. ${title}`);
+    const { outline, text, pages } = await readPdf(join(DIST, "guides", book, guidePdf(book)));
+    const missing = missingInOrder(chapters, outline);
+    check(missing === undefined, `the ${book} book's PDF lacks "${String(missing)}" in its outline, or has it out of order; its outline starts ${outline.slice(0, 8).join(" | ")}`);
+    // Without white space, as for the outline: pdf.js gives the text in runs, with or without the spaces between them.
+    const bare = text.replace(/\s/g, "");
+    for (const chapter of chapters) check(bare.includes(chapter.replace(/\s/g, "")), `the ${book} book's PDF lacks "${chapter}" in its text`);
+    console.log(`ok: the ${book} book's PDF, ${String(pages)} pages, its ${String(chapters.length)} chapters in its outline`);
+  }
+  const tags = execFileSync("git", ["tag", "--list", "spec-v*"], { cwd: join(import.meta.dirname, "../.."), encoding: "utf8" }).split("\n").filter(Boolean);
+  for (const { folder } of specPages(tags)) {
+    const { page } = await open(browser, folder, VIEWS[0]);
+    const sections = await page.locator("article.spec h2").evaluateAll((headings) =>
+      headings.map((heading) => [...heading.childNodes].filter((node) => !(node instanceof Element && node.matches(".anchor, .source"))).map((node) => node.textContent).join("").replace(/\s+/g, " ").trim()),
+    );
+    const pdf = (await page.locator(".status a[download]").getAttribute("href")) ?? "";
+    await page.close();
+    const { outline, pages } = await readPdf(join(DIST, folder, pdf));
+    const missing = missingInOrder(sections, outline);
+    check(missing === undefined, `/${folder}'s PDF lacks "${String(missing)}" in its outline, or has it out of order`);
+    console.log(`ok: /${folder}'s PDF, ${String(pages)} pages, its ${String(sections.length)} sections in its outline`);
   }
 }
 
@@ -232,6 +297,7 @@ try {
   for (const [name, step] of [
     ["every page", everyPage],
     ["the first paint", firstPaint],
+    ["the PDFs", pdfs],
     ["the landing page", landingPage],
     ["the links", links],
     ["the spec", spec],

@@ -336,9 +336,88 @@
   overflow-x: auto;
 }
 
-@media (prefers-color-scheme: dark) {
+@media screen and (prefers-color-scheme: dark) {
   .spec .shiki,
   .spec .shiki span {
     color: var(--shiki-dark) !important;
+  }
+}
+
+/* On paper, the spec, a chapter, or a whole book for its PDF: the text alone, light, at a size for print, every code
+   line and table cell in full; a book's chapters each start a page, and a heading stays with what follows it. */
+@media print {
+  :root {
+    color-scheme: light;
+  }
+
+  body {
+    background: none;
+    font-size: 10.5pt;
+  }
+
+  header.site,
+  footer.site,
+  .status,
+  .toc,
+  .turn,
+  .spec :is(h2, h3, h4) :is(.anchor, .source) {
+    display: none;
+  }
+
+  .wrap {
+    max-inline-size: none;
+    padding-inline: 0;
+  }
+
+  .reading {
+    display: block;
+    padding-block: 0;
+  }
+
+  .spec {
+    font-size: 1em;
+  }
+
+  .spec h1 {
+    font-size: 2.2em;
+  }
+
+  /* Room for a two-digit number: a book's contents go past chapter 9. */
+  .spec ol {
+    padding-inline-start: 2em;
+  }
+
+  .spec :is(h1, h2, h3, h4) {
+    break-after: avoid;
+  }
+
+  .spec pre {
+    white-space: pre-wrap;
+    overflow: visible;
+  }
+
+  .spec table {
+    display: table;
+    overflow: visible;
+  }
+
+  .spec :is(tr, img, blockquote) {
+    break-inside: avoid;
+  }
+
+  .book-print .edition {
+    color: var(--ink-secondary);
+    font-size: 0.9em;
+  }
+
+  /* Each chapter starts a page. Its heading keeps the look of every section's: Chrome named a chapter's heading twice
+     in the PDF's outline when the print styles gave it a look of its own. */
+  .book-print .chapter {
+    break-before: page;
+  }
+
+  /* The spec's companion, a document of its own, starts a page too. */
+  .spec .companion {
+    break-before: page;
   }
 }
