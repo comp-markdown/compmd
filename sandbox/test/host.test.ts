@@ -5,6 +5,7 @@
 import type { HostComponent } from "@compmd/processor";
 import type { ExpandedCode, ExpandedComponent, Mount } from "@compmd/render";
 import { afterEach, describe, expect, it } from "vitest";
+import type { HostClient } from "../src/host-api.ts";
 import { HostRuntime, type HostEvents } from "../src/host/runtime.ts";
 import { allowed, frames, leaf, probeCode } from "./harness.ts";
 
@@ -90,18 +91,44 @@ export default function Chart({ compmd }) {
     expect(await result).toEqual({ code: "graph LR; A --> B", text: "A, then B", element: "graph LR; A --> B" });
   });
 
-  it("gives `host` only to permissive frames of packs given it", async () => {
-    const { runtime, area, next } = setup({ host: { rating: (product) => ({ product, stars: 4 }) } });
-    const body = `async (target, { host }) => host === undefined ? "none" : await host.call("rating", "p-1")`;
+  it("gives `host` to trusted components and permissive frames of packs given it, alike, and sends them its events (spec §7.4)", async () => {
+    // A trusted component written as the permissive one is: it calls the host, then sets what each event brings.
+    const stars: Mount = (target, { host, set }) => {
+      const client = host as HostClient | undefined;
+      if (!client) {
+        set("result", JSON.stringify("none"));
+        return;
+      }
+      client.on("changed", (data) => {
+        set("result", JSON.stringify(data));
+      });
+      void client.call("rating", "p-1").then((rating) => {
+        set("result", JSON.stringify(rating));
+      });
+    };
+    const { runtime, area, sets, next } = setup({ trusted: { stars }, host: { rating: (product) => ({ product, stars: 4 }) } });
+    const body = `async (target, { host, set }) => {
+      if (host === undefined) return "none";
+      host.on("changed", (data) => set("result", JSON.stringify(data)));
+      return await host.call("rating", "p-1");
+    }`;
     await runtime.set([
+      { name: "stars", language: "js", code: "", trust: { level: "trusted" } },
       plain("summary", { level: "permissive", network: [], host: true }, body),
       plain("map", { level: "permissive", network: [], host: false }, body),
       plain("chart", { level: "strict" }, body),
     ]);
-    const inputs = { summary: { type: "string", value: "" }, map: { type: "string", value: "" }, chart: { type: "string", value: "" } };
-    const results = Promise.all([next("summary"), next("map"), next("chart")]);
-    for (const name of ["summary", "map", "chart"]) runtime.mountUse(area.appendChild(document.createElement("div")), use(name), inputs);
-    expect(await results).toEqual([{ product: "p-1", stars: 4 }, "none", "none"]);
+    const names = ["stars", "summary", "map", "chart"];
+    const inputs = Object.fromEntries(names.map((name) => [name, { type: "string", value: "" }]));
+    const results = Promise.all(names.map((name) => next(name)));
+    for (const name of names) runtime.mountUse(area.appendChild(document.createElement("div")), use(name), inputs);
+    expect(await results).toEqual([{ product: "p-1", stars: 4 }, { product: "p-1", stars: 4 }, "none", "none"]);
+
+    const heard = Promise.all([next("stars"), next("summary")]);
+    runtime.emit("changed", { product: "p-1", stars: 5 });
+    expect(await heard).toEqual([{ product: "p-1", stars: 5 }, { product: "p-1", stars: 5 }]);
+    // Those without `host` heard nothing: each set its input once.
+    expect(sets.filter(([input]) => input === "map" || input === "chart")).toHaveLength(2);
   });
 
   it("shows the fallback of a permissive or trusted use inside a strict container, and says why (Q2)", async () => {

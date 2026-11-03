@@ -56,6 +56,15 @@ export interface View {
   scheme(): void;
   /** The host's stylesheets for the page and its frames, in place of `stylesheets`; served from the frames' origin. */
   styles(urls: readonly string[]): void;
+  /**
+   * Sends the host's event `event` with `data`, which must be copyable, to every component given `host` (spec §7.4):
+   * the trusted ones in the host's page, and those of permissive packs given it, which hear it with `host.on`. Strict
+   * components never do.
+   *
+   * @example
+   * view.emit("ratings-changed", { product: "p-1" });
+   */
+  emit(event: string, data: unknown): void;
   /** Listens for `type`; a listener added as soon as `open` returns hears everything, opening's errors too. */
   on<T extends keyof ViewEvents>(type: T, listener: (event: ViewEvents[T]) => void): void;
   /**
@@ -188,6 +197,9 @@ export function createSandbox(options: SandboxOptions): Sandbox {
           runtime.styles(urls);
           page.styles(urls);
         },
+        emit: (event, data) => {
+          runtime.emit(event, data);
+        },
         on: (type, listener) => {
           listeners[type].push(listener);
         },
@@ -245,6 +257,8 @@ type Emit = <T extends keyof ViewEvents>(type: T, event: ViewEvents[T]) => void;
 function hostPage(container: HTMLElement, runtime: HostRuntime, observer: Observer, emit: Emit): PageEnd {
   const page: Page = createPage(container, {
     components: runtime.mounts,
+    // The trusted components in this page get `host` as the runtime gives it; framed ones get theirs from their frame.
+    ...(runtime.host ? { host: runtime.host } : {}),
     onSet: (input, value) => {
       emit("set", { input, value });
     },

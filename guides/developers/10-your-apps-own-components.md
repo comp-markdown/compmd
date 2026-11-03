@@ -291,6 +291,10 @@ export default function reviews(target: Element, { params, host }: Context) {
 
 What `host` holds is your app's: `createSandbox`'s `host` option, a `HostApi`, an object of functions by name.
 
+**Your trusted components get the same `host`**, in their `compmd` prop (`compmd.host`, or `context.host` for a plain one), answered in your page directly: the same `call`, failing the same way, so a component written for `host` works trusted or permissive. Its type is `HostClient`, from `@compmd/sandbox`.
+
+**Your app can also tell them something changed.** `view.emit(event, data)` sends an event to every component given `host`, trusted or permissive, and each hears it with `host.on(event, listener)`, which returns the function that stops listening: `view.emit("reviews-changed", { book })` after a reader adds a review, so `reviews` asks again. The data crosses by copy too. Strict components never hear it.
+
 ## The page
 
 The page as in the quick start, and `main.ts`, which renders the document in host mode with the app's `host`:
@@ -320,7 +324,7 @@ await init();
 // The app's data, which only the app's page reads: a document can't, and a component asks for it through `host`.
 const summaries = new Map([["The Left Hand of Darkness", { count: 12, average: 4.2 }]]);
 
-// What permissive components of packs given `host` may call. Their arguments come from documents: check them.
+// What trusted components, and permissive ones of packs given `host`, may call. Arguments come from documents: check them.
 const host: HostApi = {
   reviewsOf: (book) => (typeof book === "string" ? (summaries.get(book) ?? null) : null),
 };
@@ -365,6 +369,6 @@ The page shows the heading, *My rating: 3 of 5*, three of five stars filled, in 
 - The processor resolved `stars` and `spoiler` from the ambient pack and `reviews` from the import, checked each use against its signature, and marked each component with its pack's level.
 - In host mode, the sandbox rendered the page in `#page` and mounted `stars` and `spoiler` inline, as any of your code. A click on a star called `set("value", 5)`; the view sent `set` for the input `rating`, and your page opened the document again with it. A click on the button changed only `spoiler`'s own state.
 - For `reviews`, it compiled the source in its hidden compile frame, made a `permissive.html` frame where the use is, and gave it a port for `host`. The component's `host.call("reviewsOf", …)` came to your page's `reviewsOf` over that port, and its answer went back the same way.
-- Only the host's page gives `host`, and only to frames of packs the configuration gives it. A strict component, or a document, can't get it.
+- Only the host's page gives `host`, and only to its trusted components and to frames of packs the configuration gives it. A strict component, or a document, can't get it.
 
 Next: [the sandbox, closer](11-the-sandbox-closer.md), both page modes, the frames and how to serve them.

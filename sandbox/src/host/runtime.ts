@@ -1,11 +1,11 @@
 // The host runtime (docs/running-components-in-the-sandbox.md, Q6, Q7): in the host's page, one per document. It
 // turns the processor's components into what frames run (compiled in the document's compile frame, or built modules
-// by their URL or as files the host holds, with the library packs they import), mounts trusted components inline and frames every other use at its level, gives `host` to permissive
-// frames of packs given it, and stops a frame that stops answering.
+// by their URL or as files the host holds, with the library packs they import), mounts trusted components inline and frames every other use at its level, gives `host` to trusted
+// components and to permissive frames of packs given it, sends them the host's events, and stops a frame that stops answering.
 
 import type { HostComponent, Trust } from "@compmd/processor";
 import { createRegion, type ExpandedInput, type ExpandedUse, type Mount } from "@compmd/render";
-import { serveHost, type HostApi } from "../host-api.ts";
+import { localHost, serveHost, type HostApi, type HostClient } from "../host-api.ts";
 import { codeFor, Mounts } from "../mounts.ts";
 import type { Observer } from "../observer.ts";
 import { connectCompiler, type Compiler } from "../protocol/compiler.ts";
@@ -30,7 +30,7 @@ export interface HostRuntimeOptions {
   base: string;
   /** The host's own components, which run in its page: those the processor marks trusted. */
   trusted?: Readonly<Record<string, Mount>>;
-  /** What permissive components of packs given `host` can call. */
+  /** What trusted components, and permissive components of packs given `host`, can call (spec §7.4). */
   host?: HostApi;
   /** Where each built module is served, or its file; without it, a built module's uses show their fallbacks. */
   modules?: ModuleSource;
@@ -74,11 +74,16 @@ export class HostRuntime {
   #trust = new Map<string, Trust>();
   #compiler: { compiler: Compiler; frame: HTMLIFrameElement; id: string | undefined } | undefined;
   #styles: readonly string[];
+  /** `host` for the trusted components in the host's page, when the host gives one. */
+  readonly #local: ReturnType<typeof localHost> | undefined;
+  /** What sends an event to each permissive frame given `host`, while it is on the page. */
+  readonly #frameEvents = new Set<(event: string, data: unknown) => void>();
 
   constructor(options: HostRuntimeOptions, events: HostEvents) {
     this.#options = options;
     this.#events = events;
     this.#styles = options.stylesheets ?? [];
+    this.#local = options.host ? localHost(options.host) : undefined;
     this.#mounts = new Mounts({
       here: "host",
       inline: options.trusted ?? {},
@@ -98,6 +103,20 @@ export class HostRuntime {
   /** What each frame of the document runs, as `set` last made it. */
   get code(): readonly ComponentCode[] {
     return this.#code;
+  }
+
+  /** `host` for the trusted components in the host's page; `undefined` when the host gives none. */
+  get host(): HostClient | undefined {
+    return this.#local?.client;
+  }
+
+  /**
+   * Sends the host's event `event` with `data`, which must be copyable, to every component given `host`: the trusted
+   * ones in the host's page, and those of permissive frames of packs given it. Strict components never hear it.
+   */
+  emit(event: string, data: unknown): void {
+    this.#local?.emit(event, data);
+    for (const send of this.#frameEvents) send(event, data);
   }
 
   /** The document's components are now `components`: resolves once each is compiled, or has failed. */
@@ -122,7 +141,7 @@ export class HostRuntime {
       onError: (error) => {
         if ("component" in error) this.#fallback(error.component, error.reason, messageOf(error.error ?? ""));
       },
-      ...(this.#options.host ? { host: this.#options.host } : {}),
+      ...(this.#local ? { host: this.#local.client } : {}),
     });
     region.render([node], { inputs: { ...inputs } });
     return {
@@ -245,6 +264,8 @@ export class HostRuntime {
     const trust = this.#trust.get(component.name);
     const permissive = trust?.level === "permissive" ? trust : undefined;
     const api = this.#options.host;
+    /** What sends this frame the host's events, once it has `host`. */
+    const sends = new Set<(event: string, data: unknown) => void>();
     let failed: (message: string) => void = () => undefined;
     const frame = frameUse(target, {
       url: frameUrl(this.#options.base, `${level}.html`),
@@ -257,7 +278,9 @@ export class HostRuntime {
         ? {
             host: () => {
               const { port1, port2 } = new MessageChannel();
-              serveHost(port1, api);
+              const send = serveHost(port1, api);
+              sends.add(send);
+              this.#frameEvents.add(send);
               return port2;
             },
           }
@@ -285,6 +308,7 @@ export class HostRuntime {
         frame.update(next, nextInputs);
       },
       destroy: () => {
+        for (const send of sends) this.#frameEvents.delete(send);
         frame.destroy();
       },
       code: (next: readonly ComponentCode[]) => {

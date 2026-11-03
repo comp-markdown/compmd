@@ -3,8 +3,9 @@
 // input bound to its `result` param to it, when it mounts and on each update.
 
 import type { HostComponent } from "@compmd/processor";
-import type { ExpandedComponent, ExpandedRoot, Splice } from "@compmd/render";
+import type { ExpandedComponent, ExpandedRoot, Mount, Splice } from "@compmd/render";
 import { afterEach, describe, expect, it } from "vitest";
+import type { HostClient } from "../src/host-api.ts";
 import { createSandbox, type SandboxOptions, type View, type ViewEvents } from "../src/index.ts";
 import { frames, pause, probeCode } from "./harness.ts";
 
@@ -257,6 +258,29 @@ describe("components", () => {
     await until(() => events.error.length > 0);
     expect(events.error[0]).toMatchObject({ component: "label", reason: "missing" });
     expect(area.textContent).toContain("label's fallback");
+  });
+});
+
+describe("`host` and its events (host mode)", () => {
+  /** `label` as the host's own, trusted: it calls the host, then sets what each of its events brings. */
+  const own: Mount = (target, { host, set }) => {
+    const client = host as HostClient;
+    client.on("changed", (data) => {
+      set("result", JSON.stringify(data));
+    });
+    void client.call("greeting").then((greeting) => {
+      set("result", JSON.stringify(greeting));
+    });
+  };
+
+  it("gives a trusted component in the page `host`, and `emit` sends it the host's events", async () => {
+    const trusted: HostComponent = { name: "label", language: "js", code: "", trust: { level: "trusted" } };
+    const { view, until, values } = open("host", [trusted], { trusted: { label: own }, host: { greeting: () => "hello" } });
+    view.render(page("one"));
+    await until(() => values().includes("hello"));
+    view.emit("changed", "news");
+    await until(() => values().includes("news"));
+    expect(values()).toEqual(["hello", "news"]);
   });
 });
 

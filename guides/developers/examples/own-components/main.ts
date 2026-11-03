@@ -8,7 +8,7 @@ await init();
 // The app's data, which only the app's page reads: a document can't, and a component asks for it through `host`.
 const summaries = new Map([["The Left Hand of Darkness", { count: 12, average: 4.2 }]]);
 
-// What permissive components of packs given `host` may call. Their arguments come from documents: check them.
+// What trusted components, and permissive ones of packs given `host`, may call. Arguments come from documents: check them.
 const host: HostApi = {
   reviewsOf: (book) => (typeof book === "string" ? (summaries.get(book) ?? null) : null),
 };

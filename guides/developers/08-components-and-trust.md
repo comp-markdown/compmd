@@ -10,7 +10,7 @@ Every component written in code (JavaScript, TypeScript, JSX or Svelte) runs at 
 | --- | --- | --- | --- |
 | **strict** (the default) | a frame with an opaque origin and no network | its params, its slots, its box, and `set` for the inputs bound to it | code from documents, and every pack your configuration doesn't list for more |
 | **permissive** | a frame of its own, one per use | the same, plus the network to the origins you list for its pack, and `host` if you give it | packs you list, such as a map that loads its tiles |
-| **trusted** | your page | what your page's own code can | your app's own components, in a folder of your app, built with it |
+| **trusted** | your page | what your page's own code can, and `host` if you give one | your app's own components, in a folder of your app, built with it |
 
 A level belongs to a pack, never to a component or a use: every component of a pack runs at the pack's level.
 
@@ -37,7 +37,7 @@ Each permissive use gets a frame of its own, so the network one pack is given re
 
 ## Trusted: your own code
 
-A trusted component is your app's: built, reviewed and shipped with it, so a sandbox would only protect your app from itself. It mounts in your page, as any of your code does. Only a folder of your app can be trusted, never a pack from a registry: `@compmd/vite` stops the build if the configuration says otherwise.
+A trusted component is your app's: built, reviewed and shipped with it, so a sandbox would only protect your app from itself. It mounts in your page, as any of your code does, and gets `host` as a permissive one does, when your app gives one: the same calls and events, so a component works at either level ([chapter 10](10-your-apps-own-components.md)). Only a folder of your app can be trusted, never a pack from a registry: `@compmd/vite` stops the build if the configuration says otherwise.
 
 Its params still come from documents, which may be anyone's. A trusted component treats them as untrusted input: no HTML from a param, URLs checked, and nothing done outside the document unless the reader asks for it ([chapter 10](10-your-apps-own-components.md#params-are-untrusted-input)).
 

@@ -56,7 +56,7 @@ const sandbox = createSandbox({
   base: "/sandbox/",                          // where the frame documents are served
   page: "host",                               // or "frame", the default
   trusted: { stars: react(Stars) },           // the host's own components; host mode only
-  host: { rating: (product) => ratings.get(product) },   // what permissive packs given `host` can call
+  host: { rating: (product) => ratings.get(product) },   // what trusted components, and permissive packs given `host`, can call
   modules: (module) => ({ url: `/packs/${module.pack}@${module.version}/${module.path}`, integrity: hashes[module.path] }),
 });
 
@@ -69,8 +69,11 @@ view.components(next.hostComponents);         // when the document's components 
 view.styles(["/sandbox/docs.css"]);           // the host's stylesheets, served from the frames' origin
 view.theme(tokens);
 view.scheme();                                // after the host switches its own theme, with a class
+view.emit("ratings-changed", { product: "p-1" });   // an event to every component given `host`
 view.destroy();
 ```
+
+**`host`** (spec §7.4) is the same for a trusted component in the host's page and a permissive one in its frame, so one component works at either level: `host.call(name, ...args)` calls the host's function of that name and resolves with what it returned (the arguments and the result must be copyable, since a frame's cross a port), and `host.on(event, listener)` hears what `view.emit(event, data)` sends, until the function it returns is called. A name the host doesn't give fails the call. Strict components never get `host`, nor hear its events. `HostClient` is its type, for a component written in TypeScript.
 
 **Light and dark.** Every frame takes the colour scheme of the page around it: the view reads its container's `color-scheme` (and the reader's preference, where it allows both) when it opens, at each render, when the preference changes and when printing starts and ends, and sends it to its frames, which set it on their documents. So frames stay transparent on a dark page, their text in its colours, and every component, framed or inline, gets it as `context.scheme` (spec §7.4), with an update when it changes. A page that switches its scheme itself sets `color-scheme` on the container, or above it, and calls `view.scheme()` (or renders).
 
@@ -81,7 +84,7 @@ view.destroy();
 | The page | one strict frame per document | the host's page |
 | Strict components | in the page's frame, sharing it | a frame per use, its slots inside it |
 | Permissive components | their fallbacks, with an error `not-here` | a frame per use, with `host` if the configuration gives it |
-| Trusted components | their fallbacks, with an error `not-here` | inline, in the host's page |
+| Trusted components | their fallbacks, with an error `not-here` | inline, in the host's page, with `host` when the host gives one |
 | For | hosts of others' documents with strict packs | an app with components of its own, or permissive packs |
 
 **Each component's level** comes from the processor (`HostComponent.trust`, set by the host's configuration, spec §6.4), and so does a built module's place (`module`), which `modules` turns into a URL and the file's hash: the frame loads it with `<script integrity>`, so a file that doesn't match never runs. A host whose page holds the file, already checked, as a resolver of registry packs does, gives it instead: `modules: (module) => ({ code: blob })`. The frames load it as a `blob:` module, sharing the `Blob`'s bytes, and with no network; the module must be one file ([packs from a registry](../docs/packs-from-a-registry.md), R2). The library packs a pack's components import (`HostComponent.libraries`) are asked of `modules` the same way, and must be given as code: each frame loads each library once, as a `blob:` module, and writes the components' imports of it as its URL, so the packs in a frame share one copy ([sharing library packs](../docs/sharing-library-packs.md)). A built module given by its URL can't import them. Source (JSX, TSX, Svelte, TypeScript) is compiled once per document in a hidden compile frame that runs no components.
@@ -127,5 +130,5 @@ use.destroy();
 
 ## Tests
 
-- **Unit tests** next to the code, in Node: the protocol's ends, its schema, the policies, compiling, the components a frame loads, a component's imports of library packs, `host` across a port, the observer, the reports a parent takes and the bound on what it keeps.
+- **Unit tests** next to the code, in Node: the protocol's ends, its schema, the policies, compiling, the components a frame loads, a component's imports of library packs, `host` across a port and in the host's page, alike, the observer, the reports a parent takes and the bound on what it keeps.
 - **[`test/`](test/)**, in Chrome and WebKit, with the frame documents served from a server of their own and probes that record every request: what a strict frame can't reach (T1 to T5), a permissive frame's origins and what it can't nest (T1, T6), a frame that ignores all but its parent (T7), built modules and their hashes (T8), built modules the host's page holds, library packs (one instance per version in a frame), a frame that hangs (T9, Chrome), one document's frames apart from another's (T4), both page modes, a host's page that is itself in a sandboxed frame, and the observer: the whole tree in both modes, a forged report (O6), an unasked one (O4, O7), a flood (O2), and the same messages with and without it (O3).

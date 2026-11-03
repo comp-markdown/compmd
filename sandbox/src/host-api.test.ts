@@ -1,25 +1,37 @@
-// `host` across a frame (spec §7.4): what a permissive component of a pack given `host` can call and hear, each use a
-// test. `serveHost` is the host's page's end; `hostClient` is what the component gets.
+// `host` (spec §7.4): what a component given it can call and hear, each use a test, the same across a frame and in the
+// host's page. `serveHost` is the host's page's end of a permissive frame's `host`, `hostClient` what the component in
+// the frame gets; `localHost` is what a trusted component in the host's page gets.
 
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { hostClient, serveHost } from "./host-api.ts";
+import { hostClient, localHost, serveHost, type HostApi, type HostClient } from "./host-api.ts";
 
 const ports: MessagePort[] = [];
 afterEach(() => {
   for (const port of ports.splice(0)) port.close();
 });
 
-/** The host's `api` served on one end of a channel, and the component's client on the other. */
-function connected(api: Parameters<typeof serveHost>[1]) {
+/** The host's `api` served on one end of a channel, and a permissive component's client on the other. */
+function acrossAFrame(api: HostApi): { emit: (event: string, data: unknown) => void; host: HostClient } {
   const { port1, port2 } = new MessageChannel();
   ports.push(port1, port2);
   return { emit: serveHost(port1, api), host: hostClient(port2) };
 }
 
+/** The host's `api` as a trusted component in the host's page gets it. */
+function inThePage(api: HostApi): { emit: (event: string, data: unknown) => void; host: HostClient } {
+  const { client, emit } = localHost(api);
+  return { emit, host: client };
+}
+
 /** Lets the events posted so far arrive. */
 const settle = () => new Promise((resolve) => setTimeout(resolve, 10));
 
-describe("host.call", () => {
+const WHERE = [
+  ["across a frame", acrossAFrame],
+  ["in the host's page", inThePage],
+] as const;
+
+describe.each(WHERE)("host.call, %s", (_where, connected) => {
   it("calls the host's function by name with the arguments given, and gives what it returns", async () => {
     const { host } = connected({ rating: (product) => ({ product, stars: 4 }) });
     await expect(host.call("rating", "p-1")).resolves.toEqual({ product: "p-1", stars: 4 });
@@ -56,7 +68,7 @@ describe("host.call", () => {
   });
 });
 
-describe("host.on", () => {
+describe.each(WHERE)("host.on, %s", (_where, connected) => {
   it("hears the host's events until it stops listening", async () => {
     const { emit, host } = connected({});
     const heard: unknown[] = [];
