@@ -8,7 +8,8 @@
 //   and set their input; a section chosen in the contents wheel scrolls into
 //   view, and the wheel marks it.
 // - Every link within the site resolves.
-// - The spec: its contents, the section being read marked, the menu on a phone.
+// - The spec: its contents, the section being read marked, the menu on a phone, and its companion, a section of the
+//   page, linked from the spec and back.
 // - The playground opens every document of its menu.
 // - The budgets (website/docs/design.md): the page before its live parts at most 100 KB gzipped, and painted within one
 //   second on a mid-range phone over fast 3G. `--no-timing` leaves the paint out, for a shared runner whose timings
@@ -148,6 +149,16 @@ async function spec(browser: Browser): Promise<void> {
   check(entries >= 60, `the spec's contents have ${String(entries)} entries`);
   await page.locator(".toc a[href='#31-grammar']").click();
   await page.waitForFunction(() => document.querySelector(".toc a[aria-current]")?.getAttribute("href") === "#31-grammar");
+  // The companion, a section of the page: in the contents, and reached from the spec's §6.4 within the page.
+  check((await page.locator(".toc a[href='#registry']").count()) === 1, "the spec's contents don't list its companion");
+  const toCompanion = page.locator("[id='64-packages-and-the-registry'] ~ ul a[href='#registry']").first();
+  check((await toCompanion.count()) === 1, "the spec's §6.4 doesn't link to its companion within the page");
+  await toCompanion.click();
+  await page.waitForFunction(() => location.hash === "#registry" && Math.abs(document.getElementById("registry")?.getBoundingClientRect().top ?? 999) < 200);
+  await page.locator(".toc a[href='#registry-4-who-fetches']").click();
+  await page.waitForFunction(() => document.querySelector(".toc a[aria-current]")?.getAttribute("href") === "#registry-4-who-fetches");
+  const toSpec = page.locator("#registry ~ p a[href='#']").first();
+  check((await toSpec.count()) === 1, "the companion doesn't link back to the spec within the page");
   await page.close();
 
   const phone = await open(browser, "spec/", VIEWS[1]);

@@ -6,10 +6,11 @@ import { defineConfig, type Plugin } from "vite";
 import { snapshotsOf } from "./build/plugin.ts";
 import { guidePages, type GuidePage } from "./build/guide-pages.ts";
 import { prerendered, relocated, type Rendered } from "./build/prerender.ts";
-import { renderMarkdown } from "./build/spec.ts";
+import { COMPANION, renderSpecPage, SPEC } from "./build/companion.ts";
 import { serveFolder } from "./build/static.ts";
 
-const SPEC = join(import.meta.dirname, "../compmd-spec-v1.md");
+const REPO = join(import.meta.dirname, "..");
+const SPEC_FILES = [SPEC, COMPANION].map((file) => join(REPO, file));
 
 /** In the dev server, what the build assembles into the site (`scripts/assemble.ts`): the playground's build and the logo. */
 function assembled(): Plugin {
@@ -22,24 +23,24 @@ function assembled(): Plugin {
   };
 }
 
-/** In the dev server, the spec page rendered from the working tree on each request; the build prerenders it. */
+/** In the dev server, the spec page, with its companion, rendered from the working tree on each request; the build prerenders it. */
 function specInDev(): Plugin {
   return {
     name: "compmd-spec-dev",
     apply: "serve",
     configureServer(server) {
-      server.watcher.add(SPEC);
+      server.watcher.add(SPEC_FILES);
       server.watcher.on("change", (file) => {
-        if (file === SPEC) server.ws.send({ type: "full-reload" });
+        if (SPEC_FILES.includes(file)) server.ws.send({ type: "full-reload" });
       });
     },
     transformIndexHtml: {
       order: "pre",
       async handler(html, { filename, server }) {
         if (!server || !filename.endsWith(join("spec", "index.html"))) return html;
-        const { renderSpecPage } = (await server.ssrLoadModule("/src/server.ts")) as { renderSpecPage: (props: object) => Rendered };
-        const { html: text, toc } = await renderMarkdown(readFileSync(SPEC, "utf8"), { blob: "https://github.com/comp-markdown/compmd/blob/main/", path: "compmd-spec-v1.md" }, { rules: true });
-        const rendered = renderSpecPage({ html: text, toc, root: "../", source: "", versions: [] });
+        const { renderSpecPage: renderPage } = (await server.ssrLoadModule("/src/server.ts")) as { renderSpecPage: (props: object) => Rendered };
+        const { html: text, toc } = await renderSpecPage((path) => readFileSync(join(REPO, path), "utf8"), "https://github.com/comp-markdown/compmd/blob/main/");
+        const rendered = renderPage({ html: text, toc, root: "../", source: "", versions: [] });
         return prerendered(html, rendered, () => "");
       },
     },

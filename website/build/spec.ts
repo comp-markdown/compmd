@@ -85,6 +85,12 @@ export interface RenderOptions {
    * GitHub. Links within the page (`#…`) never reach it.
    */
   link?: (href: string) => string | undefined;
+  /**
+   * The document is a section of another page, with this id: its title is the section's heading, with the id, every
+   * heading is a level lower, and every other id, and every link within the document, is under it (`<id>-<slug>`), so
+   * its ids can't meet the page's own.
+   */
+  section?: string;
 }
 
 /**
@@ -110,12 +116,20 @@ export async function renderMarkdown(markdown: string, source: Source, options: 
   const headings = [...root.querySelectorAll("h1, h2, h3, h4, h5, h6")];
   if (headings.length !== lines.length) throw new Error(`${source.path} has ${String(lines.length)} headings in its text and ${String(headings.length)} rendered`);
   const slug = slugger();
+  const { section } = options;
+  const idOf = (text: string, level: number) => (section === undefined ? slug(text) : level === 1 ? section : `${section}-${slug(text)}`);
   const toc: Heading[] = [];
-  for (const [index, heading] of headings.entries()) {
-    const text = heading.textContent;
-    const id = slug(text);
+  for (const [index, written] of headings.entries()) {
+    const text = written.textContent;
+    const writtenLevel = Number(written.tagName.slice(1));
+    const id = idOf(text, writtenLevel);
+    const level = section === undefined ? writtenLevel : Math.min(6, writtenLevel + 1);
+    const heading = level === writtenLevel ? written : document.createElement(`h${String(level)}`);
+    if (heading !== written) {
+      heading.append(...written.childNodes);
+      written.replaceWith(heading);
+    }
     heading.id = id;
-    const level = Number(heading.tagName.slice(1));
     if (level === 2 || level === 3) toc.push({ level, id, text });
     if (level === 1) continue;
     const self = document.createElement("a");
@@ -132,7 +146,10 @@ export async function renderMarkdown(markdown: string, source: Source, options: 
 
   for (const link of root.querySelectorAll("a[href]")) {
     const href = link.getAttribute("href") ?? "";
-    if (href.startsWith("#")) continue;
+    if (href.startsWith("#")) {
+      if (section !== undefined && !link.classList.contains("anchor")) link.setAttribute("href", `#${section}-${href.slice(1)}`);
+      continue;
+    }
     const kept = /^([a-z][a-z+.-]*:|\/)/i.test(href) ? href : new URL(href, `${source.blob}${source.path}`).href;
     link.setAttribute("href", options.link?.(href) ?? kept);
   }

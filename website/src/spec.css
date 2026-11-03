@@ -241,6 +241,12 @@
   font-size: 1.08rem;
 }
 
+/* The companion, a document of its own after the spec: its title set apart by more room and a heavier rule. */
+.spec .companion > h2:first-child {
+  margin-block-start: 3.6em;
+  border-block-start-width: 3px;
+}
+
 /* A heading's own link and its source, shown when it is pointed at. */
 .spec :is(h2, h3, h4) .anchor,
 .spec :is(h2, h3, h4) .source {
