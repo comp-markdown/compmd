@@ -16,10 +16,42 @@ export type CodeRenderer = (source: string, target: HTMLElement) => void;
 /** Renders TeX math into `target`. */
 export type MathRenderer = (tex: string, options: { display: boolean }, target: HTMLElement) => void;
 
+/**
+ * The mounts of the components a render made, waiting until it has placed their boxes in the document and flushed the
+ * stylesheet: a component then mounts into a box with its styles, its theme tokens and its place. They run in
+ * document order, a component before those in its slots, whose items it places in its own DOM as it mounts.
+ */
+export class PendingMounts {
+  #mounts: { run?: () => void }[] = [];
+
+  /** Keeps a place in the order now, for a mount given later: a component's, before its slots are rendered. */
+  reserve(): (mount: () => void) => void {
+    const place: { run?: () => void } = {};
+    this.#mounts.push(place);
+    return (mount) => {
+      place.run = mount;
+    };
+  }
+
+  /** Keeps `mount` for {@link run}, after those already kept. */
+  readonly later = (mount: () => void): void => {
+    this.reserve()(mount);
+  };
+
+  /** Runs the mounts waiting, in their order. */
+  run(): void {
+    const mounts = this.#mounts;
+    this.#mounts = [];
+    for (const { run } of mounts) run?.();
+  }
+}
+
 /** What every view of one document shares: where it renders, the components, and the caller's callbacks. */
 export interface Surface {
   document: Document;
   stylesheet: Stylesheet;
+  /** The mounts of the components the current render made; the page or region runs them once it has placed them. */
+  pending: PendingMounts;
   /** The colour scheme components are shown in, which the components it gives follow. */
   schemes: Schemes;
   components: Readonly<Record<string, Mount>>;
@@ -406,6 +438,7 @@ class RenderedCodeView implements View {
       host: surface.host,
       stylesheet: surface.stylesheet,
       parent: pass.parent,
+      later: surface.pending.later,
     });
     followScheme(surface, this.#handle, mount);
   }
@@ -615,6 +648,8 @@ class ComponentView implements View {
     this.#ownSlots = nodesMountOf(mount) !== undefined;
     const headingLevel = Math.min(6, pass.heading.level + 1);
     this.#fallbackElement = surface.document.createElement(node.fallback ? "span" : "div");
+    // Its mount comes before those of the components in its slots, which it places as it mounts.
+    const later = surface.pending.reserve();
     const fallback = this.#renderFallback(node, pass);
     const slots = this.#ownSlots ? {} : this.#patchSlots(node, pass);
     // The component layer appends the box to its target; the region places it, so it starts in a fragment.
@@ -635,6 +670,7 @@ class ComponentView implements View {
       host: surface.host,
       stylesheet: surface.stylesheet,
       parent: pass.parent,
+      later,
     });
     followScheme(surface, this.#handle, mount);
   }

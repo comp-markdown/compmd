@@ -31,6 +31,11 @@ export interface ComponentOptions {
   stylesheet: Stylesheet;
   /** How the box's parent lays it out (default `block`). */
   parent?: ParentLayout;
+  /**
+   * Runs the mount later, once the caller has placed the box in the document and flushed the stylesheet, so the
+   * component mounts into a box with its styles, its theme and its place; by default it mounts at once.
+   */
+  later?: (mount: () => void) => void;
 }
 
 /** What changes on an update besides the node: the slots the caller rendered again, and the parent's layout. */
@@ -129,13 +134,22 @@ export function mountComponent(target: ParentNode & Node, node: ExpandedComponen
   };
 
   applyBox(element, current.params, parent, options.stylesheet);
-  if (!options.mount) giveUp("missing");
+  const mount = options.mount;
+  if (!mount) giveUp("missing");
   else {
-    try {
-      mounted = options.mount(element, context) ?? undefined;
-    } catch (error) {
-      giveUp("threw", error);
-    }
+    const run = () => {
+      if (destroyed) return;
+      // An update before a later mount: the component mounts with what it gives.
+      context.params = ownParams(current.params);
+      context.slots = slots;
+      try {
+        mounted = mount(element, context) ?? undefined;
+      } catch (error) {
+        giveUp("threw", error);
+      }
+    };
+    if (options.later) options.later(run);
+    else run();
   }
 
   return {

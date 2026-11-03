@@ -352,6 +352,17 @@ describe("theme and styles", () => {
     });
   }
 
+  it("gives the theme to a use mounted once its code has loaded, in the page's frame (frame mode)", async () => {
+    const { view, until, values } = open("frame", [looking]);
+    view.theme({ "--compmd-accent": "rgb(0, 128, 128)" });
+    view.render(page("one"));
+    await until(() => values().length > 0);
+    // The code is loaded now, so the second use mounts within the render that adds it.
+    view.splice([{ from: 1, to: 1, nodes: [use("two")], lines: 0, offset: 0, inputs: RESULT }]);
+    await until(() => values().length > 1);
+    expect(values()[1]).toEqual({ accent: "rgb(0, 128, 128)", styles: [] });
+  });
+
   it("replaces the frames' stylesheets with those `styles` gives", async () => {
     const watching: HostComponent = {
       ...looking,

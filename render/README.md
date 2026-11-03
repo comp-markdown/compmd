@@ -69,6 +69,8 @@ page.splice([splice], { text, diagnostics });               // a keystroke, with
 
 **Breakpoints** are container queries: each block's params follow the width of the box around it (spec §9.3), so a box is a container when blocks placed in it use breakpoints, and the page always is. The page takes its width from where its caller puts it, so a page root in a flex row needs a width, or it shrinks to nothing.
 
+**When a component mounts.** A page or a region mounts the components a render made once it has placed their boxes in the document and written their styles, so `mount` gets a box with its common params, the page's theme tokens and its place, in document order: a component before those in its slots, which it places in its own DOM as it mounts. `mountComponent` called directly mounts at once, into the target its caller gives; its `later` option delays the mount for a caller that places the box afterwards.
+
 **Regions** follow the nearest container around them, which the caller provides: inside a page, the page or a box in it; elsewhere, the region's target or an element around it with the class `compmd-container` (or `container-type: inline-size`). A region whose blocks use breakpoints with no container around it reports `no-container` once through `onError`, when its target is in the document. Regions side by side give each pane its own container, so each follows its own width:
 
 ```ts

@@ -28,6 +28,25 @@ afterEach(() => {
   root.remove();
 });
 
+describe("mounting", () => {
+  it("mounts each component once its box is in the page, under the page's theme, a slot's components after it", () => {
+    const seen: { name: string; connected: boolean; accent: string | undefined }[] = [];
+    // Each places its default slot's items in its box, as a component does.
+    const recording =
+      (name: string): Mount =>
+      (target, { slots }) => {
+        seen.push({ name, connected: target.isConnected, accent: target.closest<HTMLElement>(".compmd-page")?.style.getPropertyValue("--compmd-accent") });
+        for (const item of (slots.default ?? []) as SlotItem[]) target.append(item.element);
+      };
+    const p = page({ components: { outer: recording("outer"), inner: recording("inner") }, tokens: { "--compmd-accent": "teal" } });
+    p.render(tree(container("outer", [], [leaf("inner")])));
+    expect(seen).toEqual([
+      { name: "outer", connected: true, accent: "teal" },
+      { name: "inner", connected: true, accent: "teal" },
+    ]);
+  });
+});
+
 describe("Markdown", () => {
   it("renders CommonMark and GFM", () => {
     page().render(

@@ -52,7 +52,8 @@ export function createPage(root: HTMLElement, options: PageOptions = {}): Page {
   root.classList.add("compmd-page");
   const stylesheet = new Stylesheet(root.ownerDocument);
   const schemes = new Schemes(root);
-  const blocks = new Blocks(root, surfaceOf(root.ownerDocument, stylesheet, schemes, options));
+  const surface = surfaceOf(root.ownerDocument, stylesheet, schemes, options);
+  const blocks = new Blocks(root, surface);
   /** The text the blocks are of, as the last change gave it. */
   let text: string | undefined;
   let rendered = false;
@@ -63,6 +64,7 @@ export function createPage(root: HTMLElement, options: PageOptions = {}): Page {
     if (rendered && breaksDocument(errors)) return;
     blocks.render(errors, text);
     stylesheet.flush();
+    surface.pending.run();
     rendered = true;
   };
   let tokens: string[] = [];

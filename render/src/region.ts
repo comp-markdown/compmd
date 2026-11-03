@@ -3,7 +3,7 @@
 import type { ComponentError, Mount, RenderError } from "./contract.ts";
 import type { LinkDefinition } from "./document.ts";
 import type { KeyOf } from "./keys.ts";
-import { destroyAll, needsContainer, patch, type CodeRenderer, type MathRenderer, type Surface, type View } from "./render.ts";
+import { destroyAll, needsContainer, patch, PendingMounts, type CodeRenderer, type MathRenderer, type Surface, type View } from "./render.ts";
 import { Schemes } from "./scheme.ts";
 import { Stylesheet, type ParentLayout } from "./styles.ts";
 import type { ExpandedInput, ExpandedNode } from "./tree.ts";
@@ -67,6 +67,7 @@ export function surfaceOf(document: Document, stylesheet: Stylesheet, schemes: S
   return {
     document,
     stylesheet,
+    pending: new PendingMounts(),
     schemes,
     components: options.components ?? {},
     onSet: (input, value) => options.onSet?.(input, value),
@@ -126,6 +127,7 @@ export function createRegion(target: HTMLElement, options: RegionOptions = {}): 
         parent: context.parent ?? "block",
       });
       stylesheet.flush();
+      surface.pending.run();
       if (checked || !needsContainer(nodes)) return;
       if (target.isConnected) checkContainer();
       else document.defaultView?.requestAnimationFrame(checkContainer);
