@@ -19,7 +19,7 @@
    - **Console**: a history of what went wrong, newest last: the diagnostics as each change left them, component fallbacks with why, refused `set`s, frames stopped, packs that couldn't be fetched. The diagnostics stay under the text as they are; the console is their history, with the rest.
    - **Sandbox**: the frame tree, down to the uses in each frame, each frame's level and network, each fallback where it happened, and how long each frame and component took to render and update; what a frame reported is marked so.
    - **Messages**: the protocol on a timeline, a lane per frame, each message expandable as the trees are.
-8. **Tabs, in order** (Q4): **Page**, **Console**, **Components**, **Sandbox**, **Data**, **Plain Markdown**, **Messages**, **Parse tree**, **Expanded tree**. The page first, then why something is wrong, then what the document is made of, then the raw material.
+8. **Tabs, in order** (Q4; revised 2026-11-03, since nine tabs in one row were crowded): the editor has two, **Page** and **CompMD Inspector**. The Inspector holds the views as tabs of its own: **Plain Markdown**, **Parse tree**, **Expanded tree**, **Data**, **Components**, **Sandbox**, **Messages**; and under them, whichever shows, the **Console**, docked as a drawer that hides (Esc) and resizes, as a browser's developer tools have it. The inspector alone, which has no page, shows the Inspector. A layout of panes, as a browser's developer tools have, may later take their place.
 
 ## The observer's threat model
 
@@ -83,7 +83,7 @@ It is accepted because a lie reaches no decision (O6), and costs little: a paren
 
 **Q3. Should frames report their own children?** Settled: yes, so the tools show the whole hierarchy (decision 6), each report marked as its frame's (O6 to O8). Seeing only what the host's page holds would show one frame in frame mode, where every use is inside the page's frame, and nothing under a permissive frame: not much of a use.
 
-**Q4. The tabs' order.** Settled as decision 8. Today's order is Page, Plain Markdown, Data, Components, Parse tree, Expanded tree.
+**Q4. The tabs' order.** Settled as decision 8. Before the tools, the playground's order was Page, Plain Markdown, Data, Components, Parse tree, Expanded tree; the tools' first was Page, Console, Components, Sandbox, Data, Plain Markdown, Messages, Parse tree, Expanded tree.
 
 ## In two increments
 

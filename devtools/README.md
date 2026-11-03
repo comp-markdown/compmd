@@ -36,7 +36,7 @@ inspector.open({ request: processedAgain });   // when the host processes the do
 inspector.destroy();                           // stops observing the view
 ```
 
-It has every tab but the page. It observes the view from when it mounts, however long the view has been open: the host's page and each frame report what is live first, so the tree is whole. Its views worker processes the request the host gives for the Components, Data, Plain Markdown and tree tabs, and for the diagnostics the Console lists; a place in the text shows as text, with no text to select it in. It fills the element the host gives it, as the editor does. [`@compmd/vite`'s example](../vite/README.md#the-example) opens it under its page on the dev server.
+It has the CompMD Inspector's tabs, without the page. It observes the view from when it mounts, however long the view has been open: the host's page and each frame report what is live first, so the tree is whole. Its views worker processes the request the host gives for the Components, Data, Plain Markdown and tree tabs, and for the diagnostics the Console lists; a place in the text shows as text, with no text to select it in. It fills the element the host gives it, as the editor does. [`@compmd/vite`'s example](../vite/README.md#the-example) opens it under its page on the dev server.
 
 ## How it works
 
@@ -53,16 +53,15 @@ It has every tab but the page. It observes the view from when it mounts, however
 
 ## The tabs
 
-In the order of decision 8: the page first, then why something is wrong, then what the document is made of, then the raw material.
+The editor has two tabs (decision 8): **Page**, the document rendered, which stays mounted under the other, with its state; and **CompMD Inspector**, which holds the views as tabs of its own, in this order (`src/tabs.ts`), with the Console docked under them. The inspector alone, with no page, shows the Inspector.
 
-- **Page:** the document rendered, which stays mounted under the other tabs, with its state.
-- **Console:** what went wrong, newest last: each change's diagnostics when they change, what the editor couldn't do (a pack it couldn't fetch), and, from the sandbox's observer, each component that shows its fallback with why (W118, W121, `not-here`), each `set` the sandbox refused, each frame it stopped (`src/console.ts`). Under the list, an input evaluates a CEL expression in the document, as a browser's console evaluates JavaScript (*Evaluating in the Console*, below).
+- **Plain Markdown:** what a plain CommonMark and GFM renderer shows (spec §14), in a frame without scripts.
+- **Parse tree** and **Expanded tree** (spec §12): JSON that folds, two levels open. A second worker makes these views from the current text while one of their tabs is open (`src/views.ts`).
+- **Data:** what the frontmatter gives the render: its fields, each data import with what was loaded, the inputs, the settings.
 - **Components:** those the document defines and those it uses, each line selecting it in the text, and those it could use.
 - **Sandbox:** the page's windows as a tree, from the host's page down to the frames its frames make, each with its level, its network, what it renders and its last render's time, the components mounted in it with how long they took to mount and update, and its fallbacks (`src/frames.ts`).
-- **Data:** what the frontmatter gives the render: its fields, each data import with what was loaded, the inputs, the settings.
-- **Plain Markdown:** what a plain CommonMark and GFM renderer shows (spec §14), in a frame without scripts.
 - **Messages:** the sandbox's protocol on a timeline, a lane per frame, each message's copy opening as the trees do (`src/messages.ts`).
-- **Parse tree** and **Expanded tree** (spec §12): JSON that folds, two levels open. A second worker makes these views from the current text while one of their tabs is open (`src/views.ts`).
+- **Console**, not a tab but a drawer under the Inspector's views, whichever shows, as a browser's developer tools dock theirs: its bar shows or hides it (as Esc does in the Inspector), and its top edge drags, or moves with the arrow keys (`src/drawer.ts`). It lists what went wrong, newest last: each change's diagnostics when they change, what the editor couldn't do (a pack it couldn't fetch), and, from the sandbox's observer, each component that shows its fallback with why (W118, W121, `not-here`), each `set` the sandbox refused, each frame it stopped (`src/console.ts`). Under the list, an input evaluates a CEL expression in the document, as a browser's console evaluates JavaScript (*Evaluating in the Console*, below).
 
 The Console, Sandbox and Messages tabs read [the sandbox's observer](../sandbox/README.md#observing-a-view), which the tools start with each page: frames report what happens in them, so the tabs mark what a frame reported as that frame's, since code of its level could have changed it ([the accepted risk](../docs/devtools.md#the-accepted-risk)), and show everything a frame sends as text, never as markup or a link (O1). A component's time is its mount's and its updates' calls: a React component's mount schedules its render, so the frame's own render time includes the rest.
 

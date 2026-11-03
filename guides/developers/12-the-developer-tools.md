@@ -161,18 +161,17 @@ mountDevtools(document.getElementById("tools") as HTMLElement, {
 
 ## Reading the tabs
 
-In order: the page first, then why something is wrong, then what the document is made of, then the raw material. The inspector has every tab but the page, which is yours.
+The editor has two tabs: **Page**, the document rendered, kept mounted under the other; and **CompMD Inspector**, which holds the views as tabs of its own, with the **Console** docked under them, as a browser's developer tools dock theirs. The inspector has only the Inspector, since the page is yours. In order, then the Console:
 
 | Tab | What it shows |
 | --- | --- |
-| **Page** | the document rendered (the editor only), kept mounted under the other tabs |
-| **Console** | what went wrong, newest last: each change's diagnostics, packs that couldn't be fetched, and from the sandbox each component that shows its fallback with why (W118, W121, `not-here`), each `set` it refused, each frame it stopped; and under them, an input that evaluates an expression in the document (below) |
+| **Plain Markdown** | what a plain CommonMark and GFM renderer shows, in a frame without scripts |
+| **Parse tree**, **Expanded tree** | the processor's trees as JSON that folds |
+| **Data** | what the frontmatter gives the render: its fields, each data import with what was loaded, the inputs, the settings |
 | **Components** | those the document defines and those it uses, and those it could use |
 | **Sandbox** | the windows as a tree, from the host's page down to the frames its frames make: each with its level, its network, what it renders and its last render's time, the components mounted in it with how long they took to mount and update, and its fallbacks |
-| **Data** | what the frontmatter gives the render: its fields, each data import with what was loaded, the inputs, the settings |
-| **Plain Markdown** | what a plain CommonMark and GFM renderer shows, in a frame without scripts |
 | **Messages** | the sandbox's protocol on a timeline, a lane per frame, each message opening as the trees do |
-| **Parse tree**, **Expanded tree** | the processor's trees as JSON that folds |
+| **Console**, under the tabs | whichever tab shows; its bar hides or shows it (Esc does too), and its top edge drags. It lists what went wrong, newest last: each change's diagnostics, packs that couldn't be fetched, and from the sandbox each component that shows its fallback with why (W118, W121, `not-here`), each `set` it refused, each frame it stopped; and under them, an input that evaluates an expression in the document (below) |
 
 In the editor, a bar over the tabs lists the document's inputs, each with a control by its type; changing one there opens the document again with it. In the inspector, the inputs are your page's, and its Data tab shows them.
 

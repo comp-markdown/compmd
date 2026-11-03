@@ -1,32 +1,32 @@
-// The tools' tabs (docs/devtools.md, decision 8): the page first, then why something is wrong, then what the document
-// is made of, then the raw material. The inspector has them all but the page, which is the host's own.
+// The tools' tabs (docs/devtools.md, decision 8): the editor has two, the page and the CompMD Inspector, which holds the
+// views as tabs of its own. The inspector alone has only these, since the page is the host's own. The Console is none of
+// them: it is a drawer under whichever shows, as a browser's developer tools have it.
 
 import type { ViewKind } from "./views.ts";
 
+/** The editor's two tabs: the page, and the CompMD Inspector with the views. */
+export type Section = "page" | "inspector";
+
+/** The Inspector's tabs, in order. */
 export const TABS = [
-  { id: "page", label: "Page" },
-  { id: "console", label: "Console" },
-  { id: "components", label: "Components" },
-  { id: "sandbox", label: "Sandbox" },
-  { id: "data", label: "Data" },
   { id: "plain", label: "Plain Markdown" },
-  { id: "messages", label: "Messages" },
   { id: "parse", label: "Parse tree" },
   { id: "expanded", label: "Expanded tree" },
+  { id: "data", label: "Data" },
+  { id: "components", label: "Components" },
+  { id: "sandbox", label: "Sandbox" },
+  { id: "messages", label: "Messages" },
 ] as const;
 
 export type Tab = (typeof TABS)[number]["id"];
 
 /** The tabs the sandbox's observer fills. */
-export type ObservedTab = "console" | "sandbox" | "messages";
+export type ObservedTab = "sandbox" | "messages";
 
 /** The tabs the views' worker fills, from the document as it is now. */
-export type ViewTab = Exclude<Tab, "page" | ObservedTab>;
+export type ViewTab = Exclude<Tab, ObservedTab>;
 
-export const isViewTab = (tab: Tab): tab is ViewTab => tab !== "page" && tab !== "console" && tab !== "sandbox" && tab !== "messages";
+export const isViewTab = (tab: Tab): tab is ViewTab => tab !== "sandbox" && tab !== "messages";
 
 /** The view the views' worker makes for `tab`. */
 export const kindOf = (tab: ViewTab): ViewKind => (tab === "parse" || tab === "expanded" ? "trees" : tab);
-
-/** The inspector's tabs: all but the page. */
-export const INSPECTOR_TABS: readonly Tab[] = TABS.map(({ id }) => id).filter((id) => id !== "page");

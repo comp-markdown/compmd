@@ -20,7 +20,6 @@
   import type { Registries, RegistryConfig } from "./protocol.ts";
   import { onceAFrame } from "./schedule.ts";
   import Split from "./Split.svelte";
-  import { TABS } from "./tabs.ts";
 
   interface Props {
     sandbox: SandboxOptions;
@@ -346,7 +345,6 @@
 
 {#snippet panes()}
   <Panes
-    tabs={TABS.map(({ id }) => id)}
     document={shown && editor?.document}
     revision={shown?.updates ?? 0}
     {observed}

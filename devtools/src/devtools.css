@@ -530,6 +530,89 @@ textarea::selection {
   overflow: auto;
 }
 
+/* The CompMD Inspector: its own row of tabs, a step quieter than the page's and its own, over the view it shows. */
+.inspector-pane {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.inspector-tabs {
+  background: color-mix(in srgb, var(--ink) 2.5%, var(--sheet));
+}
+
+.inspector-tabs .tabs button {
+  padding: 8px 10px 6px;
+  font-size: 13px;
+}
+
+/* The Console's drawer, docked under the Inspector's views: a bar that shows or hides it, and whose top edge drags. */
+.drawer {
+  display: flex;
+  flex-direction: column;
+  flex: none;
+  border-top: 1px solid var(--rule);
+}
+
+.drawer-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: color-mix(in srgb, var(--ink) 2.5%, var(--sheet));
+}
+
+.drawer-handle {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-start: -4px;
+  height: 8px;
+  cursor: row-resize;
+  touch-action: none;
+}
+
+.drawer-handle:hover,
+.drawer-handle:focus-visible {
+  outline: none;
+  background: linear-gradient(transparent 3px, var(--accent) 3px, var(--accent) 5px, transparent 5px);
+}
+
+.drawer-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border: 0;
+  background: none;
+  color: var(--ink-secondary);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.drawer-toggle:hover {
+  color: var(--ink);
+}
+
+.drawer-toggle svg {
+  width: 9px;
+  height: 9px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 120ms;
+}
+
+.drawer-toggle[aria-expanded="true"] svg {
+  transform: rotate(90deg);
+}
+
+.drawer-body {
+  min-height: 0;
+  border-top: 1px solid var(--rule);
+}
+
 .view[hidden] {
   display: none;
 }
@@ -1186,7 +1269,8 @@ iframe {
 @media (prefers-reduced-motion: reduce) {
   .grip,
   .fold,
-  .toggle svg {
+  .toggle svg,
+  .drawer-toggle svg {
     transition: none;
   }
 }

@@ -147,9 +147,8 @@ describe.each(BROWSERS)("the example's inspector in %s, in development", (_name,
     expect(text).toMatch(/the host's page\s+trusted/);
     expect(text).toMatch(/stars mounted in [\d.]+ ms(?!\s*reported)/);
     expect(text).toMatch(/frame 1\s+strict\s+bar/);
-    // The denied pack's import, from the inspector's own processing of the document.
-    await inspector.getByRole("tab", { name: "Console", exact: true }).click();
-    await expect.poll(() => inspector.locator(".console").innerText(), { timeout: 20_000 }).toContain("F026");
+    // The denied pack's import, from the inspector's own processing of the document, in the Console under the views.
+    await expect.poll(() => inspector.locator(".drawer .console").innerText(), { timeout: 20_000 }).toContain("F026");
     expect(errors).toEqual([]);
     await page.close();
   }, 60_000);
