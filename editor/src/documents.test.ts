@@ -40,9 +40,9 @@ describe("EXAMPLES", () => {
       ...["tour", "definitions", "changelog", "dashboard", "inputs", "kyoto", "complete", "diagrams", "npm", "diagnostics", "notes"],
       ...["a-pack", "breakpoints", "code-blocks", "containers", "data", "definitions", "first-document", "in-code", "inputs", "layout", "lists"].map((name) => `guides/authors/${name}`),
       ...["markdown", "placing", "showing", "signatures", "slots", "template-slots", "values"].map((name) => `guides/authors/${name}`),
-      ...["check-docs", "live-editor", "orders", "other-hosts", "packs-from-npm", "quick-start", "styled-page", "two-modes"].map((name) => `guides/developers/${name}`),
+      ...["check-docs", "devtools", "live-editor", "orders", "other-hosts", "packs-from-npm", "quick-start", "styled-page", "two-modes"].map((name) => `guides/developers/${name}`),
     ]);
-    expect(exampleIndex("guides/developers/quick-start")).toBe(34);
+    expect(exampleIndex("guides/developers/quick-start")).toBe(35);
     expect(exampleIndex("kyoto")).toBe(5);
     expect(exampleIndex("nothing")).toBe(0);
     expect(exampleIndex(null)).toBe(0);

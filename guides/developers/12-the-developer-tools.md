@@ -19,59 +19,130 @@ npm install @compmd/devtools
 
 ## The inspector, in development
 
-[`@compmd/vite`'s example](../../vite/README.md#the-example) opens the inspector under its page on the dev server, on the view it renders. Its `main.ts` does it in a function it calls only in the dev server's mode, so a build leaves the tools out:
+This chapter's example is the quick start's app with the tools added: the same document, which counts the tasks done,
 
-```ts
+````md snippet=devtools/notes.comp.md
+---
+tasks: [Write the outline, Draft the first part, Ask for a review, Publish]
+md:
+  inputs:
+    done: number = 1
+---
+
+# The guide, step by step
+
+::: box {padding=m border=subtle border-radius=m}
+**:value[1 of 4 done]{of=(string(md.input.done) + " of " + string(size(md.doc.tasks)) + " done")}**
+
+:: number-input[Done: 1] {bind=done}
+::: /box
+
+::: each {in=(md.doc.tasks) as=task join=list}
+1. {{task}}
+::: /each
+````
+
+and a page with a panel under the document's for the inspector:
+
+```html snippet=devtools/index.html
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Notes, inspected</title>
+  </head>
+  <body>
+    <main id="page" style="height: 24rem"></main>
+    <section id="inspector" aria-label="The inspector"></section>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>
+```
+
+Its `main.ts` opens the inspector on the view it renders, in a function it calls only in the dev server's mode, so a build leaves the tools out:
+
+```ts snippet=devtools/main.ts
+import { init, OpenDocument, type Request } from "@compmd/processor";
+import { createSandbox } from "@compmd/sandbox";
+import { request, sandbox } from "virtual:compmd";
+import text from "./notes.comp.md?raw";
+
+await init();
+
+let inputs: Record<string, unknown> = {};
+const requestOf = (): Request => ({ ...request, path: "notes.comp.md", files: { "notes.comp.md": text }, now: new Date().toISOString(), inputs });
+let opened = new OpenDocument(requestOf());
+const view = createSandbox(sandbox).open(document.getElementById("page") as HTMLElement, { components: opened.components });
+
 /** In development, the inspector on the page's view, in a panel under it: loaded only then, so a build leaves it out. */
 async function inspect() {
   const { mountDevtools } = await import("@compmd/devtools");
-  const panel = document.getElementById("inspector")!;
+  const panel = document.getElementById("inspector") as HTMLElement;
   panel.style.height = "60vh";
   return mountDevtools(panel, { view, document: { request: requestOf() } });
 }
 // The dev server's mode: `DEV` follows `NODE_ENV`, which a build run by a test runner may set to `test`.
 const inspector = import.meta.env.MODE === "development" ? await inspect() : undefined;
-```
 
-`view` is what `createSandbox(…).open(…)` gave, and `document` the request the app processed, which the inspector processes again in a worker of its own for its tabs. When the app processes the document again, it tells the inspector:
-
-```ts
 view.on("set", ({ input, value }) => {
   inputs = { ...inputs, [input]: value };
-  document_.free();
+  opened.free();
   const processed = requestOf();
-  document_ = new OpenDocument(processed);
-  view.render(document_.expanded);
+  opened = new OpenDocument(processed);
+  view.render(opened.expanded);
   inspector?.open({ request: processed });
 });
+view.render(opened.expanded);
 ```
+
+`view` is what `createSandbox(…).open(…)` gave, and `document` the request the app processed, which the inspector processes again in a worker of its own for its tabs. When the app processes the document again, as a reader sets an input, it tells the inspector, with `open`.
 
 The inspector observes the view from when it mounts, however long the view has been open: the page and each frame report what is live first. `destroy()` removes it and stops observing.
 
-The tools process documents in workers, which are files of their own beside the package's code, with the processor's WebAssembly. Vite builds a package's workers only when it doesn't pre-bundle the package, so list it in `optimizeDeps.exclude`, as the example's `vite.config.ts` does:
+The tools process documents in workers, which are files of their own beside the package's code, with the processor's WebAssembly. Vite builds a package's workers only when it doesn't pre-bundle the package, so list it in `optimizeDeps.exclude`:
 
-```ts
+```ts snippet=devtools/vite.config.ts
+import { join } from "node:path";
 import { compmd } from "@compmd/vite";
 import { defineConfig } from "vite";
 
 export default defineConfig({
   plugins: [compmd()],
-  build: { target: "es2024" },
-  // The inspector's workers are files of their own, which Vite builds only in a package it doesn't pre-bundle.
+  // Two pages: the app's, with the inspector in development, and the editor's.
+  build: { target: "es2024", rolldownOptions: { input: [join(import.meta.dirname, "index.html"), join(import.meta.dirname, "editor.html")] } },
+  // The tools' workers are files of their own, which Vite builds only in a package it doesn't pre-bundle.
   optimizeDeps: { exclude: ["@compmd/devtools"] },
 });
 ```
 
+The dev server, `npx vite`, serves the page with the inspector under it; `npx vite build` builds it without.
+
 ## Embedding the editor
 
-The editor is the playground's: the text with the hint at the caret and the diagnostics under it, the page beside it, updated as you type. Give it where your frames are and a document:
+The editor is the playground's: the text with the hint at the caret and the diagnostics under it, the page beside it, updated as you type. The example's second page is one, which fills the window:
 
-```ts
+```html snippet=devtools/editor.html
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Notes, edited</title>
+  </head>
+  <body style="margin: 0">
+    <main id="tools" style="height: 100vh"></main>
+    <script type="module" src="./editor.ts"></script>
+  </body>
+</html>
+```
+
+Give it where your frames are and a document:
+
+```ts snippet=devtools/editor.ts
 import { mountDevtools } from "@compmd/devtools";
 import { request, sandbox } from "virtual:compmd";
 import text from "./notes.comp.md?raw";
 
-const tools = mountDevtools(document.getElementById("tools") as HTMLElement, {
+mountDevtools(document.getElementById("tools") as HTMLElement, {
   sandbox,
   document: { request: { ...request, path: "notes.comp.md", files: { "notes.comp.md": text }, now: new Date().toISOString() } },
 });
@@ -86,7 +157,7 @@ const tools = mountDevtools(document.getElementById("tools") as HTMLElement, {
 | `select` | a passage of the text to select when the document opens, a text fragment's `text=` value |
 | `shareLink` | given the same value for the selected text, the link that opens it: the tools then offer to copy a link to the selection |
 
-The handle has `open(document)`, which opens another document in a new page; `styles(urls)`; `state`, with the diagnostics, problems and timings; and `destroy()`. Each key press is an edit, processed in a worker that keeps the document open, so only the blocks it touches are processed again, and the page follows as splices.
+`mountDevtools` returns a handle, which has `open(document)`, which opens another document in a new page; `styles(urls)`; `state`, with the diagnostics, problems and timings; and `destroy()`. Each key press is an edit, processed in a worker that keeps the document open, so only the blocks it touches are processed again, and the page follows as splices.
 
 ## Reading the tabs
 

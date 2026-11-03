@@ -348,6 +348,9 @@ importers:
       '@comp-markdown/mermaid':
         specifier: workspace:*
         version: link:../packs/mermaid
+      '@compmd/devtools':
+        specifier: workspace:*
+        version: link:../devtools
       '@compmd/pack':
         specifier: workspace:*
         version: link:../pack

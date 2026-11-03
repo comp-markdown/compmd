@@ -224,7 +224,7 @@ params:
 
 Its component, [`src/mermaid.ts`](../../packs/mermaid/src/mermaid.ts), is written with `draw` ([chapter 15](15-react-svelte-and-libraries.md#drawing-asynchronously)):
 
-- **Mermaid is bundled in**, pinned at 12.2.0, with everything it loads: one module of 7.0 MB minified, under the 10 MB a host takes.
+- **Mermaid is bundled in**, pinned at 12.2.0, with everything it loads: one module of 7.0 MB, its names shortened, under the 10 MB a host takes.
 - **One draw at a time** (`oneAtATime`), since Mermaid's configuration is global: each draw calls `mermaid.initialize` with its theme, then `mermaid.render`.
 - **`theme: auto`** draws with Mermaid's dark theme when `scheme` is `dark` and its default theme otherwise, and again when the scheme changes; another theme a block gives (`{theme=forest}`) is used as given.
 - **Mermaid's own markup is sanitized by it**, with `securityLevel: "strict"`, since `draw` sets the SVG it returns as markup.

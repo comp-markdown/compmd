@@ -10,6 +10,7 @@
   },
   "devDependencies": {
     "@comp-markdown/mermaid": "workspace:*",
+    "@compmd/devtools": "workspace:*",
     "@compmd/pack": "workspace:*",
     "@compmd/processor": "workspace:*",
     "@compmd/registry": "workspace:*",
