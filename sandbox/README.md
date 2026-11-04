@@ -80,7 +80,9 @@ view.emit("ratings-changed", { product: "p-1" });   // an event to every compone
 view.reveal(offset);                          // scroll to what the text at a code-point offset drew, and mark it
 const boxes = await view.rectsAt(offset);     // its boxes, in the host's viewport
 view.on("pointed", ({ source }) => moveCaret(source));   // what the reader clicked came from there; asks for clicks
-view.on("layout", async () => drawGutter(await view.lines()));   // where each line is, from the container's top left
+view.on("layout", async () => {
+  for await (const { line, rects } of view.lines()) place(line, rects);   // where each line is, from the container's top left
+});
 view.destroy();
 ```
 
@@ -112,7 +114,7 @@ view.destroy();
 - **`view.reveal(offset)`** scrolls the page, as little as it takes, to what the text at `offset` drew, and marks it for 1.5 s with the class `compmd-revealed`, an outline in the theme's accent. An editor calls it when the reader moves the caret.
 - **`view.rectsAt(offset)`** resolves with the boxes of what it drew, one per element, in the host's viewport, as `getBoundingClientRect()` gives them, for a host that draws its own marks over the page. In frame mode the frame measures them and the view adds where the frame is.
 - **`pointed`** gives the range of the text that made what the reader clicked (`{start, end}`, in code points, `Source`): an editor moves its caret there. A page reports its reader's clicks only to a host that listens: the first `pointed` listener asks for them. The click goes on as usual, so a link still comes as `link`.
-- **`view.lines()`** (proposed) resolves with each line of the text that draws something and the boxes it shows in, `[{line, rects}]`, each rect `{x, y, width, height}` in CSS pixels from the view's container's top left corner, by `@compmd/render`'s rules ([where each line is](../render/README.md#where-each-line-is)), for a gutter of line numbers. In frame mode the frame measures and the view adds where the frame is in the container. A use in a frame of its own (host mode) is placed as a whole, on its first line. **`layout`** says when to ask again: after a render or splice is painted, when the page or a frame in it changes size, when fonts load.
+- **`view.lines(from?)`** (proposed) is an async generator of each line of the text that draws something, from line `from`, with the boxes it shows in, `{line, rects}`, each rect `{x, y, width, height}` in CSS pixels from the view's container's top left corner, by `@compmd/render`'s rules ([where each line is](../render/README.md#where-each-line-is)), for a gutter of line numbers. Each line is measured as the loop reaches it, so a gutter that stops at the bottom of what shows measures no more; in frame mode the frame measures a batch at a time and the view adds where the frame is in the container. A use in a frame of its own (host mode) is placed as a whole, on its first line. **`layout`** says when to ask again: after a render or splice is painted, when the page or a frame in it changes size, when fonts load.
 
 Offsets are of the text of the last render or splice, and the calls come after the renders and splices sent before them. In frame mode the frame's code may be untrusted: what it sends as a source or a box is checked to be numbers, but a frame's code could still report a click that wasn't, so a host only moves a caret with it. A click inside a use's own frame (a strict or permissive use in host mode, a nested use) isn't seen by the page around it, and gives nothing.
 

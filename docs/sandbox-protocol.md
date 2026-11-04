@@ -39,7 +39,7 @@ When a frame loads, its parent posts `hello` to its window with one end of a new
 | `part {node, inputs}` | the use to render, with its slots as expanded nodes, and the document's inputs; a code block a code renderer renders is its own node, with its `alt` and code, which are its fallback (spec §7.7) | U |
 | `theme {tokens}` | `@compmd/render`'s | P, U |
 | `reveal {offset}`, `rects {id, offset}`, `point {on}` | `@compmd/render`'s: scroll to and mark what the text at `offset` drew, give its boxes, report the source of clicks or stop | P |
-| `lines {id}` | `@compmd/render`'s: give each line's place in the page | P |
+| `lines {id, from, count}` | `@compmd/render`'s: give up to `count` lines' places in the page, from line `from` | P |
 | `styles {urls}` | the host's stylesheets | P, U |
 | `host {port}` | a port for `host`, as calls and events | U frames of permissive packs given `host`, from H only |
 | `ping {n}` | answer, or be stopped | every frame |
@@ -59,7 +59,7 @@ When a frame loads, its parent posts `hello` to its window with one end of a new
 | `link {url}` | a link was clicked; H decides what opens, and shows the reader the URL first (spec §15 rule 4) | P, U |
 | `rendered {ms}` | `@compmd/render`'s | P, U |
 | `rects {id, rects}`, `pointed {source}` | `@compmd/render`'s: the boxes asked for, in P's viewport; the source of what the reader clicked, only after `point {on: true}` | P |
-| `lines {id, lines}`, `layout {}`, `drawn {seen}` | `@compmd/render`'s: each line's place, in P's page; what P shows moved, at most once an animation frame; P's uses have drawn | P |
+| `lines {id, lines, done}`, `layout {}`, `drawn {seen}` | `@compmd/render`'s: a batch of lines' places, in P's page, and whether it was the last; what P shows moved, at most once an animation frame; P's uses have drawn | P |
 | `size {width, height}` | the content's size, for the parent to set on the frame | U |
 | `settled {seen}` (proposed) | the frame has settled after the first `seen` messages that change what it shows (`code`, `render`, `splices`, `part`, `scheme`, `theme`, `styles`): its uses drawn, their `busy` promises settled, its own frames settled and sized, its images and fonts loaded, then a frame with nothing moving ([settled](#settled)) | P, U |
 | `pong {n}` | the answer to `ping` | every frame |
