@@ -8,7 +8,7 @@
 2. **A frame believes its parent only,** by its window (`event.source === window.parent`), never by its origin: the host's page may have an opaque origin itself. Parents are never less trusted than their children ([sandbox, decision 1](running-components-in-the-sandbox.md#proposed-decisions)), and the frame documents' policies make sure of it, so a message from a parent is one the frame may act on.
 3. **The protocol is a layer of its own, with no DOM.** The message types, with their version, and each end's rules as plain state machines over `@compmd/render`'s `Port`: a frame takes `code` only after `level`; a parent gives `host` only to children it was told to; `set` is checked against the use's node. It is tested in Node, apart from the browser, and its messages are published as a JSON Schema (`sandbox/protocol.schema.json`), so a frame runtime or host runtime written elsewhere, a host's own or a sandbox outside a browser, can check itself against it.
 4. **Two runtimes implement it,** the frame runtime (one end in each frame) and the host runtime (the other end, in the host's page and in every frame that has children). The browser's part, making frames, adding the policy, the ping timer, is theirs, not the protocol's.
-5. **`@compmd/render`'s protocol stays as it is,** for a page's tree: `render`, `splices`, `theme`, `ready`, `set`, `error`, `rendered`, and, from its version 3, where the page came from: `reveal`, `rects`, `point`, `pointed`. The sandbox's messages travel on the same port, with their own version, as the playground's do today.
+5. **`@compmd/render`'s protocol stays as it is,** for a page's tree: `render`, `splices`, `theme`, `ready`, `set`, `error`, `rendered`, from its version 3, where the page came from: `reveal`, `rects`, `point`, `pointed`; and from its version 4 (proposed), where each line is: `lines` and `layout`. The sandbox's messages travel on the same port, with their own version, as the playground's do today.
 
 ## The windows
 
@@ -39,6 +39,7 @@ When a frame loads, its parent posts `hello` to its window with one end of a new
 | `part {node, inputs}` | the use to render, with its slots as expanded nodes, and the document's inputs; a code block a code renderer renders is its own node, with its `alt` and code, which are its fallback (spec §7.7) | U |
 | `theme {tokens}` | `@compmd/render`'s | P, U |
 | `reveal {offset}`, `rects {id, offset}`, `point {on}` | `@compmd/render`'s: scroll to and mark what the text at `offset` drew, give its boxes, report the source of clicks or stop | P |
+| `lines {id}` | `@compmd/render`'s: give each line's place in the page | P |
 | `styles {urls}` | the host's stylesheets | P, U |
 | `host {port}` | a port for `host`, as calls and events | U frames of permissive packs given `host`, from H only |
 | `ping {n}` | answer, or be stopped | every frame |
@@ -58,6 +59,7 @@ When a frame loads, its parent posts `hello` to its window with one end of a new
 | `link {url}` | a link was clicked; H decides what opens, and shows the reader the URL first (spec §15 rule 4) | P, U |
 | `rendered {ms}` | `@compmd/render`'s | P, U |
 | `rects {id, rects}`, `pointed {source}` | `@compmd/render`'s: the boxes asked for, in P's viewport; the source of what the reader clicked, only after `point {on: true}` | P |
+| `lines {id, lines}`, `layout {}` | `@compmd/render`'s: each line's place, in P's page; what P shows moved, at most once an animation frame | P |
 | `size {width, height}` | the content's size, for the parent to set on the frame | U |
 | `pong {n}` | the answer to `ping` | every frame |
 | `compiled {name, code, css?}`, `failed {name, message}` | a compile's result | C |
@@ -99,6 +101,7 @@ For developer tools ([the Developer Tools](devtools.md), decisions 5 and 6, and 
 | to get `host` | only H gives `host`, and only to a `permissive.html` frame of a pack given `host` |
 | to have H fetch a URL for it, through `image` | H fetches only the images of the trees and splices it sent P, so a URL code made up, with data in it, is never fetched |
 | to send H a `pointed` or `rects` of its own | H takes from them only a source and boxes that are numbers; a made-up click can move an editor's caret, nothing more |
+| to send H `lines` of its own, or `layout` again and again | H takes only whole line numbers and places that are numbers, and asks for lines at most once an animation frame however often `layout` comes; made-up places move a gutter's numbers, nothing more |
 
 ## The sequences, drawn
 
