@@ -12,6 +12,7 @@ Everything a CompMD pack would otherwise copy into itself: `compmd-pack` builds 
 `npm create @compmd/pack` writes a pack on it ([`@compmd/create-pack`](../create-pack/README.md)). It shares its version with the other `@compmd` packages.
 
 **Versions:**
+- **0.5.0:** `draw` tells the page it is drawing (`context.busy`, spec §7.4) until the drawing shows or a newer one overtakes it, on a renderer that has `busy`; `mountForTest`'s `settled()` waits for what a component gave `busy` too.
 - **0.4.0:** built modules minified in full, without the comments naming the files they were built from, and built for production whatever `NODE_ENV` says, so a TSX component built under a test runner loads in the frames.
 - **0.2.0:** the first version.
 

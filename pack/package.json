@@ -1,6 +1,6 @@
 {
   "name": "@compmd/pack",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Everything a CompMD pack would otherwise copy: compmd-pack builds, checks, tests and serves a pack's test page, with helpers for components that draw asynchronously and a kit to test them.",
   "keywords": [
     "compmd",
