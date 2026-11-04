@@ -110,18 +110,8 @@
 {#if about}
   <section class="about" id="about" aria-label="About the playground">
     <p>
-      Write a <a href="https://github.com/comp-markdown/compmd" target="_blank" rel="noreferrer">CompMD</a> document on the left and see it
-      rendered on the right as you type: components, data, layout and all. The tabs show what went wrong, the components the document can
-      name and where it uses them, the sandbox's frames, what the frontmatter gives the page, what a plain Markdown renderer makes of the
-      same text, the messages between the frames, and the trees the processor builds. Beside the document, try the stylesheets a host might
-      give the page; above the tabs, other values for the document's inputs. Under the text, a line says what is at the caret and what it
-      takes, with its values to click, and the diagnostics point at what's wrong and offer fixes. The document never leaves your browser.
-      When it imports a pack the playground doesn't have, your browser fetches the pack from npm, which then learns your address and the
-      pack's name and version: never the document, or what it shows. When it loads data from a site, the playground asks you first, the
-      first time, and remembers your answer; that site then learns your address and what the document asks it for.
-      {#if __COMMIT__}
-        Built from commit <a href="{REPOSITORY}/commit/{__COMMIT__}" target="_blank" rel="noreferrer"><code>{__COMMIT__.slice(0, 7)}</code></a>.
-      {/if}
+      Edit a <a href="https://github.com/comp-markdown/compmd" target="_blank" rel="noreferrer">CompMD</a> document on the left and see it
+      on the right. The CompMD Inspector tab shows what's happening behind the scenes.
     </p>
     <button type="button" class="close" aria-label="Close" onclick={toggleAbout}>
       <svg viewBox="0 0 12 12" aria-hidden="true"><path d="m3 3 6 6m0-6-6 6" /></svg>

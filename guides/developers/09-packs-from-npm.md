@@ -149,7 +149,7 @@ export default { fetch: registryProxy({ registries: { "*": new NpmRegistry({ url
 
 It caches nothing itself, so put an HTTP cache or a CDN in front of it; [its README](../../registry/README.md) has the same for Node. A private registry's token stays on your server, in its `NpmRegistry`'s `headers`, never in the reader's browser.
 
-An app with no server, such as a static site, can't proxy. With `"fetch": "direct"`, the reader's browser fetches from the registries you name, with no cookies or other credentials, and nothing from the document but the names and versions of its imports. The registry then learns the reader's address and which packs, at which versions, the document imports; never the document. Tell your readers, as the playground does in its About.
+An app with no server, such as a static site, can't proxy. With `"fetch": "direct"`, the reader's browser fetches from the registries you name, with no cookies or other credentials, and nothing from the document but the names and versions of its imports. The registry then learns the reader's address and which packs, at which versions, the document imports; never the document. Tell your readers.
 
 Neither a document nor a pack can name a registry: imports name packs, and your configuration says where packs come from. A pack's own imports go through the same registries and policy as the document's.
 

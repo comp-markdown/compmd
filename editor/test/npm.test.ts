@@ -69,7 +69,6 @@ beforeAll(async () => {
     base: "./",
     logLevel: "warn",
     plugins: [svelte(), compmd({ config: { ...config, registries: { "*": `http://127.0.0.1:${String(REGISTRY_PORT)}/` } } })],
-    define: { __COMMIT__: JSON.stringify("") },
     worker: { format: "es" },
     build: { target: "es2024", outDir: join(OUT, "site"), emptyOutDir: true },
     preview: { port: PLAYGROUND_PORT, strictPort: true, cors: { origin: "*" } },

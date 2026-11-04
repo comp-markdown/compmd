@@ -104,7 +104,7 @@ So you can use a pack nobody you know has checked: the worst it can do is draw b
 
 ## What npm learns
 
-An app with a server of its own fetches packs from there, and npm learns nothing about its readers. An app without one, such as the playground, lets the reader's browser fetch from npm. npm then learns the reader's address and the names and versions of the packs, as a site learns who loads its pictures; never the document, or what it says. Such an app says so: the playground does, in its About.
+An app with a server of its own fetches packs from there, and npm learns nothing about its readers. An app without one, such as the playground, lets the reader's browser fetch from npm. npm then learns the reader's address and the names and versions of the packs, as a site learns who loads its pictures; never the document, or what it says. Such an app says so.
 
 ## Finding packs
 

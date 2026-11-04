@@ -276,7 +276,7 @@ So the two are the same kind of thing, an npm package fetched and checked the sa
 - `@compmd/vite`: `registries`, `fetch` and the size cap in the configuration and its schema; `registry` in `virtual:compmd`; the dev server as a proxy.
 - `@compmd/create-pack`: the keyword, one file per module with no code splitting, `files`; shared libraries as `peerDependencies`, left out of the build; a template for a library pack.
 
-**The playground:** registries with `direct`, said in its *About*, so a document can import any published pack; a document that does.
+**The playground:** registries with `direct`, so a document can import any published pack; a document that does.
 
 **The guides:** the Author's Guide's *Using a pack* says how a document imports a pack from npm; the Developer's Guide gains registries in *Packs from npm* and the conventions in *Testing and publishing*.
 
