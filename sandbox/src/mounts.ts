@@ -22,6 +22,8 @@ export interface Framed extends NodesMounted {
   scheme(scheme: Scheme): void;
   /** Calls `listener` if the frame stops answering, or is of another protocol version. */
   failed(listener: (message: string) => void): void;
+  /** Resolves once the frame has settled after everything sent it, its size applied; or it is gone. */
+  settled(): Promise<void>;
 }
 
 export interface MountsOptions {
@@ -124,6 +126,11 @@ export class Mounts {
   /** Gives every frame on the page the host's stylesheets; those made later get them from `frame`. */
   styles(urls: readonly string[]): void {
     for (const frame of this.#frames) frame.styles(urls);
+  }
+
+  /** The frames on the page now, for a window that waits for them to settle. */
+  frames(): Iterable<Framed> {
+    return this.#frames;
   }
 
   #mountOf(component: ComponentCode): Mount | undefined {

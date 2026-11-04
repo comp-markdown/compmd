@@ -40,6 +40,7 @@ function setup(here: Here, inline: Record<string, Mount> = {}) {
         styles: (urls) => sent.push(`${node.name} styles ${urls.join()}`),
         scheme: (scheme) => sent.push(`${node.name} scheme ${scheme}`),
         failed: (listener) => failures.set(node.name, listener),
+        settled: () => Promise.resolve(),
       };
     },
     report: (component, reason, message) => reports.push([component, reason, message]),

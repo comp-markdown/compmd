@@ -67,6 +67,7 @@ const MESSAGES: (ToFrame | FromFrame)[] = [
     ],
   },
   { type: "image", url: "./logo.png" },
+  { type: "settled", seen: 3 },
 ];
 
 describe("protocol.schema.json", () => {

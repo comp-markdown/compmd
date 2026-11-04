@@ -11,6 +11,7 @@ import { codeFor, Mounts } from "../mounts.ts";
 import { batches, Observer } from "../observer.ts";
 import { serveParent, type FrameEnd } from "../protocol/frame-end.ts";
 import { hasCode, HELLO, SANDBOX_VERSION, type ComponentCode, type ErrorReason, type Level, type Part, type Scheme } from "../protocol/messages.ts";
+import { Settling } from "../settling.ts";
 import { frameUse } from "../use.ts";
 import { compile } from "./compile.ts";
 import { Components } from "./components.ts";
@@ -97,7 +98,7 @@ function forwardLinks(parent: FrameEnd): void {
  * change of its content while it isn't shown would never be reported: a MutationObserver reports those, since
  * measuring the body lays the frame out whether it renders or not.
  */
-function reportSize(parent: FrameEnd): void {
+function reportSize(parent: FrameEnd): () => void {
   const body = document.body;
   let reported = "";
   const report = () => {
@@ -109,6 +110,7 @@ function reportSize(parent: FrameEnd): void {
   };
   new ResizeObserver(report).observe(body);
   new MutationObserver(report).observe(body, { subtree: true, childList: true, attributes: true, characterData: true });
+  return report;
 }
 
 /**
@@ -161,6 +163,25 @@ function start(port: MessagePort): void {
   /** The host's stylesheets, which this frame's nested frames get too. */
   let stylesheets: readonly string[] = [];
   // Every callback below runs on a message, after `parent` is set at the end.
+  /** The components' code loading, which a frame waits for before it has drawn. */
+  let loading: Promise<void> = Promise.resolve();
+  /** The frame's size, reported again before it says it settled. */
+  let sizeNow: () => void = () => undefined;
+  /** When the frame has settled after what its parent sent: then its size, and `settled` with how much it took. */
+  const settling = new Settling(
+    {
+      drawn: () => Promise.all([loading, region?.drawn(), page?.drawn()]),
+      frames: () => mounts.frames(),
+      root: () => document.body,
+    },
+    () => {
+      sizeNow();
+      parent.settled(parent.seen);
+    },
+  );
+  const moved = () => {
+    settling.changed();
+  };
   /** What passes in this frame, reported to the parent in batches once it asks (docs/devtools.md, decision 6). */
   const reports = batches((events) => {
     parent.observed(events);
@@ -231,6 +252,7 @@ function start(port: MessagePort): void {
         failed: (listener) => {
           failed = listener;
         },
+        settled: () => frame.settled(),
       };
     },
     report,
@@ -255,6 +277,7 @@ function start(port: MessagePort): void {
       onRecovered: ({ component, use }) => {
         parent.recovered(component, use);
       },
+      onLayout: moved,
       ...(host ? { host } : {}),
     });
   const parent: FrameEnd = serveParent(port, {
@@ -263,13 +286,14 @@ function start(port: MessagePort): void {
       if (own === "permissive") narrow(network ?? networkPolicy([]));
       // A page frame (frame mode) renders the page through `@compmd/render`'s protocol, on the same port.
       const container = document.getElementById("page");
-      if (container) page = serveFrame(recordingFallbacks(port, observer), { container, components: mounts.mounts, math, highlight, images: imagesFrom(parent) }).page;
+      if (container) page = serveFrame(recordingFallbacks(port, observer), { container, components: mounts.mounts, math, highlight, images: imagesFrom(parent), onLayout: moved }).page;
     },
     code: async (next) => {
       components = next;
-      const loading = loaded.set(next.filter(hasCode).filter((component) => component.level === level));
+      const loadingNow = loaded.set(next.filter(hasCode).filter((component) => component.level === level));
+      loading = loadingNow;
       mounts.set(next);
-      await loading;
+      await loadingNow;
     },
     part: ({ node, inputs }: Part) => {
       const target = document.getElementById("part");
@@ -302,6 +326,7 @@ function start(port: MessagePort): void {
       observer.stop();
       reports.clear();
     },
+    changed: moved,
   });
   // A use frame's theme (a page frame's is `serveFrame`'s): the tokens on its part, and on its own nested frames.
   port.addEventListener("message", ({ data }: MessageEvent<{ type?: unknown; tokens?: Record<string, string> }>) => {
@@ -311,7 +336,7 @@ function start(port: MessagePort): void {
     mounts.theme(data.tokens);
   });
   forwardLinks(parent);
-  reportSize(parent);
+  sizeNow = reportSize(parent);
 }
 
 /** The parent's hello, once: the frame's port, from the window that made it. */

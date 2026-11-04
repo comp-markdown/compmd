@@ -8,7 +8,7 @@
 2. **A frame believes its parent only,** by its window (`event.source === window.parent`), never by its origin: the host's page may have an opaque origin itself. Parents are never less trusted than their children ([sandbox, decision 1](running-components-in-the-sandbox.md#proposed-decisions)), and the frame documents' policies make sure of it, so a message from a parent is one the frame may act on.
 3. **The protocol is a layer of its own, with no DOM.** The message types, with their version, and each end's rules as plain state machines over `@compmd/render`'s `Port`: a frame takes `code` only after `level`; a parent gives `host` only to children it was told to; `set` is checked against the use's node. It is tested in Node, apart from the browser, and its messages are published as a JSON Schema (`sandbox/protocol.schema.json`), so a frame runtime or host runtime written elsewhere, a host's own or a sandbox outside a browser, can check itself against it.
 4. **Two runtimes implement it,** the frame runtime (one end in each frame) and the host runtime (the other end, in the host's page and in every frame that has children). The browser's part, making frames, adding the policy, the ping timer, is theirs, not the protocol's.
-5. **`@compmd/render`'s protocol stays as it is,** for a page's tree: `render`, `splices`, `theme`, `ready`, `set`, `error`, `rendered`, from its version 3, where the page came from: `reveal`, `rects`, `point`, `pointed`; and from its version 4, where each line is: `lines` and `layout`, and, proposed, when the page has drawn: `drawn`. The sandbox's messages travel on the same port, with their own version, as the playground's do today.
+5. **`@compmd/render`'s protocol stays as it is,** for a page's tree: `render`, `splices`, `theme`, `ready`, `set`, `error`, `rendered`, from its version 3, where the page came from: `reveal`, `rects`, `point`, `pointed`; and from its version 4, where each line is and when the page has drawn: `lines`, `layout` and `drawn`. The sandbox's messages travel on the same port, with their own version, as the playground's do today.
 
 ## The windows
 
@@ -61,7 +61,7 @@ When a frame loads, its parent posts `hello` to its window with one end of a new
 | `rects {id, rects}`, `pointed {source}` | `@compmd/render`'s: the boxes asked for, in P's viewport; the source of what the reader clicked, only after `point {on: true}` | P |
 | `lines {id, lines, done}`, `layout {}`, `drawn {seen}` | `@compmd/render`'s: a batch of lines' places, in P's page, and whether it was the last; what P shows moved, at most once an animation frame; P's uses have drawn | P |
 | `size {width, height}` | the content's size, for the parent to set on the frame | U |
-| `settled {seen}` (proposed) | the frame has settled after the first `seen` messages that change what it shows (`code`, `render`, `splices`, `part`, `scheme`, `theme`, `styles`): its uses drawn, their `busy` promises settled, its own frames settled and sized, its images and fonts loaded, then a frame with nothing moving ([settled](#settled)) | P, U |
+| `settled {seen}` | the frame has settled after the first `seen` messages that change what it shows (`code`, `render`, `splices`, `part`, `scheme`, `theme`, `styles`): its uses drawn, their `busy` promises settled, its own frames settled and sized, its images, stylesheets and fonts loaded, then a frame with nothing moving ([settled](#settled)) | P, U |
 | `pong {n}` | the answer to `ping` | every frame |
 | `compiled {name, code, css?}`, `failed {name, message}` | a compile's result | C |
 | `observed {events}` | what the frame recorded since its last report, its own frames' reports in it; only after `observe {on}` | P, U |
@@ -80,12 +80,12 @@ For developer tools ([the Developer Tools](devtools.md), decisions 5 and 6, and 
 
 ## Settled
 
-**Proposed.** For a host that waits until its page stops moving ([sandbox README, *When the page has settled*](../sandbox/README.md)). Each window settles bottom-up, and a parent counts what it asked for:
+For a host that waits until its page stops moving ([sandbox README, *When the page has settled*](../sandbox/README.md)). Each window settles bottom-up, and a parent counts what it asked for:
 
 - **A parent counts** each message it sends a frame that changes what the frame shows: `code`, `render`, `splices`, `part`, `scheme`, `theme`, `styles`. The frame counts what it takes, in the same order, since the port keeps it.
-- **A frame sends `settled {seen}`** each time it settles, with its count: its uses drawn (`@compmd/render`'s `drawn`), its own frames settled for everything it sent them and their sizes applied, its images loaded or failed, its fonts loaded, then an animation frame with nothing moving. It sends its last `size` before it.
-- **A parent takes it** only when `seen` is what it sent: a `settled` for an older render is dropped, and the frame isn't settled until the next. A frame it stopped (W118) counts as settled.
-- **H** is settled when its own page is, by the same rules, and every frame it made is. A frame's code can send `settled` early or never: the page then settles early, or when the frame is stopped, and `layout` still says when it moves. Nothing H shows depends on it.
+- **A frame sends `settled {seen}`** each time it settles, with its count: its code loaded, its uses drawn (`@compmd/render`'s `drawn`), its own frames settled for everything it sent them and their sizes applied, its images and stylesheets loaded or failed, its fonts loaded, then an animation frame with nothing moving. It sends its last `size` before it.
+- **A parent takes it** only when `seen` is what it sent, counting `@compmd/render`'s messages it posts on the port too: a `settled` for an older render is dropped, and the frame isn't settled until the next. A frame it stopped (W118) counts as settled, and so does one that hasn't said it after 10 s.
+- **H** is settled when its own page is, by the same rules, and every frame it made is. A frame's code can send `settled` early or never: the page then settles early, or 10 s later, and `layout` still says when it moves. Nothing H shows depends on it.
 
 ## Sequences
 

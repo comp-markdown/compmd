@@ -1,5 +1,6 @@
 // The region layer: any list of expanded nodes rendered into a target and updated in place by key, with
 // components through the component layer. A page is the region at the root; an editor can put regions in its widgets.
+import { Busy } from "./busy.ts";
 import type { ComponentError, ComponentRecovered, Mount, RenderError } from "./contract.ts";
 import type { LinkDefinition } from "./document.ts";
 import type { ImageSource } from "./images.ts";
@@ -85,6 +86,8 @@ export interface Region {
   elementsAt(offset: number): Element[];
   /** Each line that draws something and where it shows in `target`: as a page's `lines`. */
   lines(from?: number): Generator<Line>;
+  /** Resolves once the components of the last render have mounted and drawn: as a page's `drawn`. */
+  drawn(): Promise<void>;
   destroy(): void;
   readonly stylesheet: Stylesheet;
 }
@@ -107,6 +110,7 @@ export function surfaceOf(document: Document, stylesheet: Stylesheet, schemes: S
     wikiLink: options.wikiLink?.bind(options),
     images: options.images,
     drawn: new Drawn(),
+    busy: new Busy(),
   };
 }
 
@@ -175,6 +179,7 @@ export function createRegion(target: HTMLElement, options: RegionOptions = {}): 
     sourceOf: (node) => sourceIn(placed(), node, target),
     elementsAt: (offset) => elementsIn(placed(), offset),
     lines: (from) => linesIn(placed(), target, from),
+    drawn: () => surface.busy.idle(),
     destroy() {
       layout?.destroy();
       schemes.destroy();

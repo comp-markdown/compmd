@@ -1,7 +1,7 @@
 // The frame's end of the protocol: it believes its port, which its parent gave it, and keeps the order the protocol
 // asks for. The level comes first and once: before it, the frame acts on nothing, since its policy isn't narrowed yet.
 
-import { isMessage, SANDBOX_VERSION, TO_FRAME, type CompileRequest, type ComponentCode, type ErrorReason, type FromFrame, type Level, type Part, type Port, type Scheme, type ToFrame } from "./messages.ts";
+import { isChange, isMessage, SANDBOX_VERSION, TO_FRAME, type CompileRequest, type ComponentCode, type ErrorReason, type FromFrame, type Level, type Part, type Port, type Scheme, type ToFrame } from "./messages.ts";
 import type { Observed } from "./observed.ts";
 
 /** What the frame does with each message; the frame runtime implements it. */
@@ -20,6 +20,11 @@ export interface FrameHandlers {
   compile?(request: CompileRequest): Promise<{ code: string; css?: string }>;
   /** The parent asks the frame to record what passes in it and report it, or to stop. */
   observe?(on: boolean): void;
+  /**
+   * A message that changes what the frame shows came (`CHANGES`), the sandbox's or `@compmd/render`'s, after its own
+   * handler: the frame settles again.
+   */
+  changed?(): void;
 }
 
 /** What the frame tells its parent. */
@@ -36,6 +41,10 @@ export interface FrameEnd {
   observed(events: Observed[]): void;
   /** Asks for an image of the frame's page by its `src`: its file, or `undefined` when the parent gives none. */
   image(url: string): Promise<Blob | undefined>;
+  /** How many messages that change what the frame shows it has taken. */
+  readonly seen: number;
+  /** The frame has settled after the first `seen` of them. */
+  settled(seen: number): void;
   close(): void;
 }
 
@@ -56,7 +65,16 @@ export function serveParent(port: Port, handlers: FrameHandlers): FrameEnd {
   let level: Level | undefined;
   /** The images asked for and not answered yet, by URL. */
   const images = new Map<string, ((image: Blob | undefined) => void)[]>();
-  const listener =({ data, ports }: { data: unknown; ports?: readonly MessagePort[] }) => {
+  let seen = 0;
+  /** Counts a change, `@compmd/render`'s too, which its own listener on the port handles after this one. */
+  const counting = ({ data }: { data: unknown }) => {
+    if (level === undefined || !isChange(data)) return;
+    seen += 1;
+    // After the listeners of this message, `@compmd/render`'s among them, have run.
+    queueMicrotask(() => handlers.changed?.());
+  };
+  const listener = ({ data, ports }: { data: unknown; ports?: readonly MessagePort[] }) => {
+    counting({ data });
     if (!isMessage<ToFrame>(data, TO_FRAME)) return;
     if (data.type === "level") {
       if (level !== undefined) return;
@@ -147,6 +165,12 @@ export function serveParent(port: Port, handlers: FrameHandlers): FrameEnd {
         images.set(url, [resolve]);
         post({ type: "image", url });
       }),
+    get seen() {
+      return seen;
+    },
+    settled: (count) => {
+      post({ type: "settled", seen: count });
+    },
     close: () => {
       port.removeEventListener("message", listener);
     },

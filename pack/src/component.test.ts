@@ -1,5 +1,5 @@
 // `draw`, through the testing kit, as a pack's tests use both.
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { draw } from "./component.ts";
 import { mountForTest } from "./testing.ts";
 
@@ -100,6 +100,26 @@ describe("draw", () => {
     expect(order).toEqual(["start one", "end one", "start two", "end two"]);
     one.destroy();
     two.destroy();
+  });
+
+  it("tells the page it is drawing, until the drawing shows or a newer draw overtakes it (`busy`)", async () => {
+    const slow = later<string>();
+    const busy: Promise<unknown>[] = [];
+    const mount = draw(() => slow.promise);
+    const target = document.createElement("div");
+    const fallback = { text: "", element: document.createElement("span") };
+    const mounted = mount(target, { params: {}, slots: {}, set: () => undefined, fallback, headingLevel: 2, scheme: "light", fail: () => undefined, busy: (work) => busy.push(work) });
+    const ended: number[] = [];
+    void busy[0]?.then(() => ended.push(1));
+    mounted?.update?.({ n: 2 }, {});
+    await Promise.resolve();
+    expect(ended, "overtaken, it is done").toEqual([1]);
+    void busy[1]?.then(() => ended.push(2));
+    slow.resolve("drawn");
+    await vi.waitFor(() => {
+      expect(ended).toEqual([1, 2]);
+    });
+    expect(target.textContent).toBe("drawn");
   });
 
   it("doesn't fail for a draw that was overtaken or a component that went, and empties its box when it goes", async () => {

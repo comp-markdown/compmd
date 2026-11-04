@@ -176,6 +176,11 @@ export class HostRuntime {
     this.#mounts.scheme(scheme);
   }
 
+  /** The document's use frames in the host's page now, each of which says when it has settled. */
+  frames(): Iterable<{ settled(): Promise<void> }> {
+    return this.#mounts.frames();
+  }
+
   destroy(): void {
     this.#compiler?.compiler.close();
     this.#compiler?.frame.remove();
@@ -335,6 +340,7 @@ export class HostRuntime {
       failed: (listener: (message: string) => void) => {
         failed = listener;
       },
+      settled: () => frame.settled(),
     };
   }
 }

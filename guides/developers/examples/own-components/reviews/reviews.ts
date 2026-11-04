@@ -7,6 +7,7 @@ interface Host {
 interface Context {
   params: Record<string, unknown>;
   host?: unknown;
+  busy(work: Promise<unknown>): void;
 }
 
 /** What the app answers for a book it has reviews of. */
@@ -19,7 +20,7 @@ const isSummary = (value: unknown): value is Summary =>
   typeof value === "object" && value !== null && typeof (value as Summary).count === "number" && typeof (value as Summary).average === "number";
 
 // A summary of a book's reviews, which it asks the app for: the reviews are the app's data, never the document's.
-export default function reviews(target: Element, { params, host }: Context) {
+export default function reviews(target: Element, { params, host, busy }: Context) {
   const line = target.ownerDocument.createElement("p");
   target.append(line);
   /** How many times it asked: an answer to an older question is dropped. */
@@ -40,10 +41,11 @@ export default function reviews(target: Element, { params, host }: Context) {
     if (question !== asked) return;
     line.textContent = isSummary(summary) ? `${String(summary.count)} readers gave it ${summary.average.toFixed(1)} of 5 on average.` : "No reviews yet.";
   };
-  void show(params);
+  // It draws once the app answers: `busy` tells the page, which waits for it to settle.
+  busy(show(params));
   return {
     update: (next: Record<string, unknown>) => {
-      void show(next);
+      busy(show(next));
     },
   };
 }

@@ -54,9 +54,9 @@ function open(mode: "frame" | "host", components: HostComponent[] = [label()], o
   areas.push(area);
   const view = createSandbox({ base: frames, page: mode, ...options }).open(area, { components });
   views.push(view);
-  const events: { [T in keyof ViewEvents]: ViewEvents[T][] } = { set: [], link: [], error: [], recovered: [], rendered: [], loaded: [], pointed: [], layout: [] };
+  const events: { [T in keyof ViewEvents]: ViewEvents[T][] } = { set: [], link: [], error: [], recovered: [], rendered: [], loaded: [], pointed: [], layout: [], settled: [] };
   const waiting: (() => void)[] = [];
-  for (const type of ["set", "link", "error", "recovered", "rendered", "loaded", "layout"] as const) {
+  for (const type of ["set", "link", "error", "recovered", "rendered", "loaded", "layout", "settled"] as const) {
     view.on(type, (event) => {
       (events[type] as unknown[]).push(event);
       for (const check of waiting) check();
@@ -507,6 +507,46 @@ describe("where each line is", () => {
   }
 });
 
+describe("when the page has settled", () => {
+  /** `label`, but drawing a 120px block `ms` after it mounts, as a diagram drawn asynchronously does, and saying so with `busy`. */
+  const late = (ms: number): HostComponent => ({
+    name: "label",
+    language: "js",
+    code: `export default function mount(target, { busy }) {
+  busy(new Promise((done) => setTimeout(() => {
+    target.append(Object.assign(document.createElement("div"), { className: "late", style: "height: 120px" }));
+    done();
+  }, ${String(ms)})));
+}`,
+    trust: { level: "strict" },
+  });
+
+  for (const mode of MODES) {
+    it(`settles only once a component that draws late has drawn and its frame is sized, with the container marked (${mode} mode)`, async () => {
+      const { area, view } = open(mode, [late(400)]);
+      const started = performance.now();
+      view.render(page("one"));
+      await view.settled();
+      expect(performance.now() - started).toBeGreaterThanOrEqual(400);
+      expect(area.hasAttribute("data-compmd-settled")).toBe(true);
+      // In frame mode the use is in the page's frame, another origin's, which the test can't look into.
+      if (mode === "host") expect(area.querySelector("iframe")?.getBoundingClientRect().height).toBe(120);
+    });
+  }
+
+  it("settles again after a render, and not before what it drew has drawn (host mode)", async () => {
+    const { area, view, events } = open("host", [late(300)]);
+    view.render(page("one"));
+    await view.settled();
+    const settledBefore = events.settled.length;
+    view.render({ type: "root", children: [use("one"), use("two")], inputs: RESULT });
+    expect(area.hasAttribute("data-compmd-settled"), "a render unsettles it").toBe(false);
+    await view.settled();
+    expect(events.settled.length).toBeGreaterThan(settledBefore);
+    expect([...area.querySelectorAll("iframe")].map((frame) => frame.getBoundingClientRect().height)).toEqual([120, 120]);
+  });
+});
+
 describe("the compile frame", () => {
   it("stays hidden whatever the host's page styles iframes with", async () => {
     const style = document.head.appendChild(Object.assign(document.createElement("style"), { textContent: "iframe { display: block; height: 100%; }" }));
@@ -548,5 +588,14 @@ describe("a page frame that hangs", () => {
     view.render(page("one"));
     await until(() => events.error.some(({ message }) => message === "the page's frame stopped answering"));
     expect(events.error.find(({ message }) => message === "the page's frame stopped answering")).toEqual({ component: "", reason: "threw", code: "W118", message: "the page's frame stopped answering" });
+  });
+
+  it.skipIf(webkit)("doesn't keep the page from settling: stopped, it counts as settled (frame mode)", async () => {
+    const spinner: HostComponent = { name: "label", language: "js", code: "export default function mount() { setTimeout(() => { for (const end = Date.now() + 4000; Date.now() < end; ) {} }, 0); }", trust: { level: "strict" } };
+    const { view, events, until } = open("frame", [spinner], { timeout: 1500 });
+    view.render(page("one"));
+    await until(() => events.error.some(({ message }) => message === "the page's frame stopped answering"));
+    await view.settled();
+    expect(events.settled.length).toBeGreaterThan(0);
   });
 });

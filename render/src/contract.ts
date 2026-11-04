@@ -46,6 +46,11 @@ export interface MountContext {
    * fallback in `target` until the next `update`. Not for a resource that may come back.
    */
   fail: (message: string) => void;
+  /**
+   * The component is still drawing, until `work` settles: a drawing made after `mount` or `update` returned (spec
+   * §7.4). A host that waits for its page to settle (to print, in a test) waits for it; nothing shows differently.
+   */
+  busy: (work: Promise<unknown>) => void;
   /** What the host gives components it trusts; absent otherwise. */
   host?: unknown;
 }

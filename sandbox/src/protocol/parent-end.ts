@@ -1,7 +1,8 @@
 // The parent's end of the protocol, one per frame it made: it waits for the frame's `ready`, gives it its level first,
 // checks what the frame sends against the part it gave it, and stops a frame that stops answering.
 
-import { FROM_FRAME, isMessage, SANDBOX_VERSION, type ComponentCode, type ErrorReason, type FromFrame, type Level, type Part, type Port, type Scheme, type ToFrame } from "./messages.ts";
+import { BUSY_MS } from "@compmd/render";
+import { FROM_FRAME, isChange, isMessage, SANDBOX_VERSION, type ComponentCode, type ErrorReason, type FromFrame, type Level, type Part, type Port, type Scheme, type ToFrame } from "./messages.ts";
 
 export interface ChildOptions {
   level: Level;
@@ -50,8 +51,18 @@ export interface ChildEnd {
   scheme(scheme: Scheme): void;
   /** Sends a message of `@compmd/render`'s protocol, for a page frame, once the frame has its level. */
   send(message: unknown): void;
+  /**
+   * `port`, posting as it does, and counting each change it sends, as `send` does: for `@compmd/render`'s
+   * `connectFrame` on the same port, so `settled` counts its renders and splices too.
+   */
+  counting(port: Port): Port;
   /** Asks the frame to record what passes in it and report it (`observed`), or to stop. */
   observe(on: boolean): void;
+  /**
+   * Resolves once the frame has settled after everything sent it so far (`settled` with that count), once it is
+   * closed or stopped, or after `BUSY_MS`: a frame's code may never say it.
+   */
+  settled(): Promise<void>;
   on<T extends keyof ChildEvents>(type: T, listener: (event: ChildEvents[T]) => void): void;
   close(): void;
 }
@@ -84,9 +95,20 @@ export function connectChild(port: Port, options: ChildOptions): ChildEnd {
     if (waiting) waiting.push(send);
     else send();
   };
+  /** The messages sent that change what the frame shows, and the count the frame last settled after. */
+  let changes = 0;
+  let settledAfter = 0;
+  /** What waits for the frame to settle after the changes sent. */
+  let settling: (() => void)[] = [];
+  const settle = () => {
+    const waiting = settling;
+    settling = [];
+    for (const resolve of waiting) resolve();
+  };
   /** Sends a sandbox message, or one of `@compmd/render`'s, once the frame is ready. */
   const post = (message: unknown) => {
     whenReady(() => {
+      if (isChange(message)) changes += 1;
       port.postMessage(message);
     });
   };
@@ -179,6 +201,13 @@ export function connectChild(port: Port, options: ChildOptions): ChildEnd {
           });
         break;
       }
+      case "settled":
+        // For an older change, the frame isn't settled yet: it will say so again for the latest.
+        if (data.seen === changes) {
+          settledAfter = changes;
+          settle();
+        }
+        break;
       case "compiled":
       case "failed":
         // The compile frame's; its own parent end reads them (`connectCompiler`).
@@ -192,6 +221,8 @@ export function connectChild(port: Port, options: ChildOptions): ChildEnd {
     closed = true;
     if (pings !== undefined) clearInterval(pings);
     port.removeEventListener("message", listener);
+    // A frame that went, or was stopped, holds nothing up.
+    settle();
   }
 
   return {
@@ -210,10 +241,34 @@ export function connectChild(port: Port, options: ChildOptions): ChildEnd {
     send: (message) => {
       post(message);
     },
+    counting: (through) => ({
+      postMessage: (message, transfer) => {
+        if (isChange(message)) changes += 1;
+        through.postMessage(message, transfer);
+      },
+      addEventListener: (type, listener) => {
+        through.addEventListener(type, listener);
+      },
+      removeEventListener: (type, listener) => {
+        through.removeEventListener(type, listener);
+      },
+      start: () => through.start?.(),
+    }),
     observe: (on) => {
       if (on === observing) return;
       observing = on;
       post({ type: "observe", on } satisfies ToFrame);
+    },
+    settled: () => {
+      // Messages waiting for `ready` count once sent: until then the frame isn't settled.
+      if (closed || (!waiting && settledAfter === changes)) return Promise.resolve();
+      return new Promise<void>((resolve) => {
+        const timer = setTimeout(resolve, BUSY_MS);
+        settling.push(() => {
+          clearTimeout(timer);
+          resolve();
+        });
+      });
     },
     on: (type, listener) => {
       listeners[type].push(listener);

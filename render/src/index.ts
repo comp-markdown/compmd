@@ -8,6 +8,7 @@ export { schemeOf } from "./scheme.ts";
 export { Keys, codePointOffset, utf16Offset, type EditRange, type KeyOf, type Keyed } from "./keys.ts";
 export { reveal, REVEALED_MS, type Source } from "./source.ts";
 export type { Line, Rect } from "./lines.ts";
+export { BUSY_MS } from "./busy.ts";
 export type { Change, Diagnostic } from "./stable.ts";
 export { footnotesOf, definitionsOf, plainText, type Footnotes, type LinkDefinition } from "./document.ts";
 export type { CodeHighlighter, CodeRenderer, MathRenderer } from "./render.ts";

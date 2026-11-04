@@ -104,6 +104,19 @@ export function draw<P = Params>(render: (params: P, context: DrawContext) => Dr
       settled = attempt.catch((error: unknown) => {
         if (!own.signal.aborted) context.fail(messageOf(error));
       });
+      // The page waits for the drawing when it waits to settle (spec §7.4), until it shows or is overtaken: an
+      // overtaken draw will never show. A renderer before `busy` has none.
+      const done = new Promise<void>((resolve) => {
+        own.signal.addEventListener(
+          "abort",
+          () => {
+            resolve();
+          },
+          { once: true },
+        );
+        void settled.then(resolve);
+      });
+      (context as Partial<MountContext>).busy?.(done);
     };
     run(context.params);
     return {

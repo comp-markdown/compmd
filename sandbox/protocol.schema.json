@@ -35,7 +35,8 @@
         { "$ref": "#/$defs/compiled" },
         { "$ref": "#/$defs/failed" },
         { "$ref": "#/$defs/observed" },
-        { "$ref": "#/$defs/image" }
+        { "$ref": "#/$defs/image" },
+        { "$ref": "#/$defs/settled" }
       ]
     },
     "componentLevel": { "description": "A component's trust level.", "enum": ["strict", "permissive", "trusted"] },
@@ -288,6 +289,13 @@
       "type": "object",
       "properties": { "type": { "const": "image" }, "url": { "type": "string" } },
       "required": ["type", "url"],
+      "additionalProperties": false
+    },
+    "settled": {
+      "description": "The frame has settled after the first `seen` messages that change what it shows (code, part, styles, scheme, and render's render, splices and theme): its uses drawn, their busy drawings settled, its own frames settled and sized, its images and fonts loaded, then an animation frame with nothing moving. Its parent takes it only when `seen` is what it sent.",
+      "type": "object",
+      "properties": { "type": { "const": "settled" }, "seen": { "type": "integer", "minimum": 0 } },
+      "required": ["type", "seen"],
       "additionalProperties": false
     },
     "fetched": {

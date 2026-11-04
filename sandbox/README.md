@@ -118,7 +118,7 @@ view.destroy();
 
 Offsets are of the text of the last render or splice, and the calls come after the renders and splices sent before them. In frame mode the frame's code may be untrusted: what it sends as a source or a box is checked to be numbers, but a frame's code could still report a click that wasn't, so a host only moves a caret with it. A click inside a use's own frame (a strict or permissive use in host mode, a nested use) isn't seen by the page around it, and gives nothing.
 
-**When the page has settled** (proposed). A view's page keeps moving after `render()` returns: each frame takes its height once it has drawn and reported it, its own frames later still, and components that draw late (a diagram, data through `host`) later again. Tests, printing and scrolling to a link's target wait for it to stop:
+**When the page has settled.** A view's page keeps moving after `render()` returns: each frame takes its height once it has drawn and reported it, its own frames later still, and components that draw late (a diagram, data through `host`) later again. Tests, printing and scrolling to a link's target wait for it to stop:
 
 ```ts
 view.render(processed.expanded);
@@ -126,9 +126,9 @@ await view.settled();                          // every use drawn, every frame s
 view.on("settled", () => print());             // each time it settles again, after a render or a late drawing
 ```
 
-- **Settled** is, after the latest render or splice: every use in the host's page and in every frame, at any depth, mounted or showing its fallback; every promise a component gave `busy` settled (spec §7.4); every frame's own frames settled and every frame's last reported size applied; the page's images loaded or failed, and its fonts loaded; then one animation frame in which nothing moved (`@compmd/render`'s `layout`, [where each line is](../render/README.md#where-each-line-is)).
+- **Settled** is, after the latest render or splice: every use in the host's page and in every frame, at any depth, mounted or showing its fallback; every promise a component gave `busy` settled (spec §7.4); every frame's own frames settled and every frame's last reported size applied; the page's images and stylesheets loaded or failed, and its fonts loaded; then one animation frame in which nothing moved (`@compmd/render`'s `layout`, [where each line is](../render/README.md#where-each-line-is)).
 - **`view.settled()`** resolves the next time that holds, at once if it does; a render or splice after it makes it wait for that one. **`settled`** comes each time the view settles again. The container has the attribute `data-compmd-settled` while it is settled, so a browser test waits for it without reaching into the app: `await page.locator("#page[data-compmd-settled]").waitFor()`.
-- **What can't hold it forever:** a frame that hangs is stopped (W118) and counts as settled; a `busy` promise counts after 10 s; a frame that reports settled early, or never reports a size, moves the page later, which `layout` says. A frame's code can only make `settled` come early or late, never change what the page shows.
+- **What can't hold it forever:** a frame that hangs is stopped (W118) and counts as settled; a `busy` promise, a frame that never loads, and a frame that never says it settled count after 10 s (`BUSY_MS`); a frame that reports settled early, or never reports a size, moves the page later, which `layout` says. A frame's code can only make `settled` come early or late, never change what the page shows.
 - **Not for drawing a gutter:** what moves the page comes as `layout`, which a gutter follows; `settled` is for waiting until it stops.
 
 **Frames only go down in trust.** The host's page holds permissive and strict frames; a permissive frame holds strict ones; a strict frame holds none. A permissive or trusted component in a strict container's slot shows its fallback, with `not-here` naming why; write such a container in CompMD, or make it the host's own.

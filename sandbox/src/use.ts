@@ -2,7 +2,7 @@
 // gives it, and the frame's size set from what it reports. The host's page frames strict and permissive uses this way,
 // and a permissive frame its strict ones (docs/running-components-in-the-sandbox.md, decision 1).
 
-import type { ExpandedInput, ExpandedUse } from "@compmd/render";
+import { BUSY_MS, type ExpandedInput, type ExpandedUse } from "@compmd/render";
 import { networkPolicy } from "./frame/narrow.ts";
 import type { Observer } from "./observer.ts";
 import { boundInputs } from "./protocol/inputs.ts";
@@ -37,6 +37,8 @@ export interface UseFrame {
   styles(urls: readonly string[]): void;
   /** The page's colour scheme, which the frame's document takes. */
   scheme(scheme: Scheme): void;
+  /** Resolves once the frame has settled after everything sent it, its size applied; or it is gone. */
+  settled(): Promise<void>;
   destroy(): void;
 }
 
@@ -69,6 +71,11 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
   let tokens: Readonly<Record<string, string>> | undefined;
   let scheme: Scheme | undefined;
   let child: ChildEnd | undefined;
+  /** Resolves once the frame has connected the first time, or is gone before it did. */
+  let connected: () => void = () => undefined;
+  const first = new Promise<void>((resolve) => {
+    connected = resolve;
+  });
   const key = `f${String(nextFrame++)}`;
   const { observer } = options;
   const id = observer?.frame(options.level, { kind: "use", component: iframe.title }, options.network);
@@ -116,6 +123,7 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
     if (tokens) end.send({ type: "theme", tokens: { ...tokens } });
     end.part({ node, inputs: { ...inputs } });
     child = end;
+    connected();
   };
   iframe.addEventListener("load", connect);
   iframe.src = options.url;
@@ -144,8 +152,16 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
       scheme = next;
       child?.scheme(next);
     },
+    settled: async () => {
+      // A frame that never loads holds nothing up for longer than a drawing could.
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      await Promise.race([first, new Promise((resolve) => (timer = setTimeout(resolve, BUSY_MS)))]);
+      clearTimeout(timer);
+      await child?.settled();
+    },
     destroy: () => {
       iframe.removeEventListener("load", connect);
+      connected();
       child?.close();
       iframe.remove();
       if (id !== undefined) observer?.gone(id, "removed");

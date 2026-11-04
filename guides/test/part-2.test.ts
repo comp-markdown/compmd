@@ -180,8 +180,8 @@ describe("rendering and styling: the styled page", () => {
     },
     "shows a link's address before it opens": async (page) => {
       await expect.poll(() => textOf(page), { timeout: 20_000 }).toContain("Welcome aboard");
-      // Once the app's stylesheet applies, the page's layout is final, and the link stays where the click goes.
-      await expect.poll(() => frame(page).locator("h1").evaluate((element) => getComputedStyle(element).color), { timeout: 20_000 }).toBe("rgb(11, 114, 133)");
+      // Once the page has settled, its stylesheet applied among the rest, the link stays where the click goes.
+      await page.locator("#page[data-compmd-settled]").waitFor({ timeout: 20_000 });
       await frame(page).locator("a", { hasText: "the spec" }).click();
       // The click crosses from the frame to the page as a message, which a busy machine delivers late.
       await expect.poll(() => page.locator("#link output").innerText(), { timeout: 10_000 }).toBe("https://compmd.hakanserce.com/spec/");

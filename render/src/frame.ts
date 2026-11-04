@@ -63,7 +63,9 @@ export type FrameMessage =
   /** The answer to `lines` of the same `id`, in the frame's page: the lines from its `from`, and whether they were the last. */
   | { type: "lines"; id: number; lines: Line[]; done: boolean }
   /** What the frame's page shows may have moved, so its lines may have: as a page's `onLayout`. */
-  | { type: "layout" };
+  | { type: "layout" }
+  /** The page has drawn (`Page.drawn`) after the first `seen` renders and splices the frame took. */
+  | { type: "drawn"; seen: number };
 
 export interface FrameOptions extends Omit<PageOptions, "onSet" | "onError" | "onRecovered"> {
   /** Where the page renders, inside the frame. */
@@ -106,7 +108,8 @@ function linesFrom(page: Page, from: number, count: number): { lines: Line[]; do
  * Runs the frame's end: renders what the host sends into `options.container`, and tells the host about `set` calls,
  * components that show their fallback, and each render once it is painted. It scrolls to and marks what a source
  * offset drew (`reveal`), gives its boxes (`rects`), and, once asked (`point`), the source of what the reader clicks.
- * It gives each line's place (`lines`, a batch at a time), and says when they may have moved (`layout`).
+ * It gives each line's place (`lines`, a batch at a time), says when they may have moved (`layout`), and when the
+ * page has drawn after the renders and splices it took (`drawn`).
  *
  * @example
  * // inside the frame
@@ -129,11 +132,20 @@ export function serveFrame(port: Port, options: FrameOptions): { page: Page; clo
       post({ type: "recovered", component, use });
     },
     onLayout: () => {
+      options.onLayout?.();
       post({ type: "layout" });
     },
   });
   const view = options.container.ownerDocument.defaultView;
   let pointing = false;
+  /** The renders and splices taken so far: `drawn` says for how many the page has drawn. */
+  let seen = 0;
+  const drawn = () => {
+    const after = seen;
+    void page.drawn().then(() => {
+      if (after === seen) post({ type: "drawn", seen });
+    });
+  };
   // Captured, so a component that stops a click's propagation still has it reported.
   const pointed = (event: Event) => {
     // A click's target is the node clicked, inside the container.
@@ -163,9 +175,13 @@ export function serveFrame(port: Port, options: FrameOptions): { page: Page; clo
         return;
       case "render":
         page.render(message.tree, message.change);
+        seen += 1;
+        drawn();
         break;
       case "splices":
         applySplices(page, message);
+        seen += 1;
+        drawn();
         break;
       default:
         // A host may share the port with messages of its own, such as an editor's components to compile.
@@ -281,7 +297,7 @@ type Answer = Extract<FrameMessage, { type: "lines" }>;
  * frame.render(tree);
  */
 export function connectFrame(port: Port): FrameConnection {
-  const listeners: Listeners = { ready: [], set: [], error: [], recovered: [], rendered: [], rects: [], pointed: [], lines: [], layout: [] };
+  const listeners: Listeners = { ready: [], set: [], error: [], recovered: [], rendered: [], rects: [], pointed: [], lines: [], layout: [], drawn: [] };
   let waiting: HostMessage[] | undefined = [];
   const send = (message: HostMessage) => {
     if (waiting) waiting.push(message);
@@ -312,6 +328,10 @@ export function connectFrame(port: Port): FrameConnection {
     if (message.type === "pointed") {
       const source = sourceOf(message.source);
       if (source) notify({ type: "pointed", source });
+      return;
+    }
+    if (message.type === "drawn") {
+      if (Number.isInteger(message.seen)) notify({ type: "drawn", seen: message.seen });
       return;
     }
     if (message.type === "lines") {

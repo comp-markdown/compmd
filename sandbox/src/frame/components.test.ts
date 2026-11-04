@@ -34,7 +34,7 @@ function setup() {
 function context(n: number): MountContext {
   const fallback = document.createElement("span");
   fallback.textContent = "fallback";
-  return { params: { n }, slots: {}, set: () => undefined, fallback: { text: "fallback", element: fallback }, headingLevel: 1, scheme: "light", fail: () => undefined };
+  return { params: { n }, slots: {}, set: () => undefined, fallback: { text: "fallback", element: fallback }, headingLevel: 1, scheme: "light", fail: () => undefined, busy: () => undefined };
 }
 
 describe("Components", () => {

@@ -1,6 +1,7 @@
 // Expanded nodes as DOM, kept up to date: every node has a view, and a new list of nodes is matched to the old views,
 // by key where nodes have one (keys come from origins, `keys.ts`) and by place among nodes of the same shape where they
 // don't. A matched view updates in place, so components keep their instances and the DOM keeps focus and selection.
+import type { Busy } from "./busy.ts";
 import { mountComponent, type ComponentHandle } from "./component.ts";
 import type { ComponentError, ComponentRecovered, Fallback, Mount, SlotInstance, SlotItem, Slots } from "./contract.ts";
 import { applyBox } from "./box.ts";
@@ -77,6 +78,8 @@ export interface Surface {
   images?: ImageSource | undefined;
   /** The views drawn for each node with an origin. */
   drawn: Drawn;
+  /** What the components are still drawing (`context.busy`). */
+  busy: Busy;
 }
 
 /** What one render carries in document order. */
@@ -585,6 +588,9 @@ class RenderedCodeView implements View {
       onSet: surface.onSet,
       ...(surface.onError ? { onError: surface.onError } : {}),
       ...(surface.onRecovered ? { onRecovered: surface.onRecovered } : {}),
+      onBusy: (work) => {
+        surface.busy.add(work);
+      },
       host: surface.host,
       stylesheet: surface.stylesheet,
       parent: pass.parent,
@@ -818,6 +824,9 @@ class ComponentView implements View {
       },
       hideFallback: () => {
         this.#hideFallback();
+      },
+      onBusy: (work) => {
+        surface.busy.add(work);
       },
       host: surface.host,
       stylesheet: surface.stylesheet,

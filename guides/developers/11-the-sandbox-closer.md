@@ -179,6 +179,17 @@ view.on("error", ({ component, reason, code, message }) => {
 
 In frame mode the pinged frame is the page's: when it stops answering, the error's `component` is empty, and its message says *the page's frame stopped answering*. In WebKit, a frame that spins freezes your page with it, since WebKit runs these frames in the page's process; Chrome keeps the page going and stops the frame ([chapter 8](08-components-and-trust.md#the-threat-model-in-plain-words)).
 
+## When the page has settled
+
+A page keeps moving after `render()` returns: each frame takes its height once it has drawn and reported it, its own frames later still, and a component that draws late, as `reviews` does once your app answers ([chapter 10](10-your-apps-own-components.md)), later again. To print, to scroll to a link's target, or to click something in a test, wait for it to stop:
+
+```ts
+view.render(opened.expanded);
+await view.settled();
+```
+
+`settled()` resolves once, after the latest render or splice, every use in your page and in every frame has drawn (a component that draws late says so with `busy`, spec §7.4), every frame has its last height, the page's images and fonts have loaded, and nothing moved for an animation frame; at once when that holds already. The view's `settled` event comes each time it settles again, and the container has the attribute `data-compmd-settled` while it is settled, so a browser test waits for it without reaching into your app: `await page.locator("#page[data-compmd-settled]").waitFor()`. A frame that hangs is stopped and counts as settled; a drawing or a frame that never says it is done holds it up for 10 s at most.
+
 ## Editors that render block by block
 
 An editor that shows a document's blocks in its own widgets, as CodeMirror's are, renders block by block rather than as a page. It uses the layer under `createSandbox`, the **host runtime**, one per document, and mounts each use in its widget:
@@ -219,6 +230,6 @@ The windows talk over `MessageChannel` ports, one per frame, to its parent:
 | a use frame, strict or permissive | the host's page; a permissive frame, for a strict use in its slots | one use and its slots |
 | the compile frame | the host's page | the compilers, no components |
 
-A parent sends `hello` with the port, then `level` (and a permissive frame's second policy), `code`, and the part to render; it pings, and sends `host` to permissive frames of packs given it. A frame sends `ready`, `loaded`, `set`, `link`, `error`, `rendered`, its `size`, and `pong`. A parent checks each `set` against the use it rendered, so a frame can only set the inputs its own use binds, and passes what concerns the windows above it up. [The protocol's design](../../docs/sandbox-protocol.md) has every message and sequence; `@compmd/sandbox/protocol` is the protocol alone, with no DOM, and `protocol.schema.json` describes its messages, for an implementation elsewhere ([the sandbox's README](../../sandbox/README.md#the-protocol)).
+A parent sends `hello` with the port, then `level` (and a permissive frame's second policy), `code`, and the part to render; it pings, and sends `host` to permissive frames of packs given it. A frame sends `ready`, `loaded`, `set`, `link`, `error`, `rendered`, its `size`, `settled` once it has, and `pong`. A parent checks each `set` against the use it rendered, so a frame can only set the inputs its own use binds, and passes what concerns the windows above it up. [The protocol's design](../../docs/sandbox-protocol.md) has every message and sequence; `@compmd/sandbox/protocol` is the protocol alone, with no DOM, and `protocol.schema.json` describes its messages, for an implementation elsewhere ([the sandbox's README](../../sandbox/README.md#the-protocol)).
 
 Next: [the Developer Tools](12-the-developer-tools.md), which show all of this as it happens.

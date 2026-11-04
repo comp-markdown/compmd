@@ -49,6 +49,29 @@ describe("the parent's end (connectChild)", () => {
     expect(types(got)).toEqual(["level", "code"]);
   });
 
+  it("counts the frame settled only after everything it sent, render's messages too, and when it is closed", async () => {
+    const { parent, frame } = parentChannel();
+    const child = connectChild(parent, { level: "strict", binds: () => false });
+    frame.postMessage({ type: "ready", sandbox: SANDBOX_VERSION });
+    await settle();
+    child.code([]);
+    child.part({ node: chart, inputs: {} });
+    child.counting(parent).postMessage({ type: "render", tree: { type: "root", children: [] } });
+    let settled = false;
+    void child.settled().then(() => (settled = true));
+    // A report for the first two, older than the render.
+    frame.postMessage({ type: "settled", seen: 2 });
+    await settle();
+    expect(settled).toBe(false);
+    frame.postMessage({ type: "settled", seen: 3 });
+    await settle();
+    expect(settled).toBe(true);
+    child.part({ node: chart, inputs: {} });
+    const closing = child.settled();
+    child.close();
+    await expect(closing).resolves.toBeUndefined();
+  });
+
   it("gives its level once, however often the frame says it is ready", async () => {
     const { parent, frame, got } = parentChannel();
     connectChild(parent, { level: "strict", binds: () => false });

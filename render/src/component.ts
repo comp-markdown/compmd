@@ -21,6 +21,8 @@ export interface ComponentOptions {
   onError?(error: ComponentError): void;
   /** The component draws again after a failure that didn't last, with the `use` its `onError` named. */
   onRecovered?(recovered: ComponentRecovered): void;
+  /** The component is still drawing, until `work` settles (`context.busy`); without it, its work is waited for by no one. */
+  onBusy?(work: Promise<unknown>): void;
   /**
    * Shows the fallback in the box when the component can't run; by default `fallback.element` is placed there. It
    * `lasts` when the component never mounted; otherwise the next update takes the box back, after `hideFallback`.
@@ -123,6 +125,9 @@ export function mountComponent(target: ParentNode & Node, node: ExpandedComponen
     scheme: options.scheme ?? "light",
     fail: (message) => {
       fallBack(new Error(message));
+    },
+    busy: (work) => {
+      if (!destroyed) options.onBusy?.(work);
     },
     ...(options.host === undefined ? {} : { host: options.host }),
   };

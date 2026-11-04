@@ -123,11 +123,25 @@ export type FromFrame =
   /** What the frame's observer recorded since its last report, once its parent asked: `Observed` events, unchecked. */
   | { type: "observed"; events: unknown[] }
   /** A page frame asks for an image of its page, by its `src`: it has no network. */
-  | { type: "image"; url: string };
+  | { type: "image"; url: string }
+  /**
+   * The frame has settled after the first `seen` messages that change what it shows (`CHANGES`): its uses drawn, its
+   * own frames settled and sized, its images and fonts loaded, then a frame with nothing moving.
+   */
+  | { type: "settled"; seen: number };
 
 /** Every message type, each way: what the schema (`protocol.schema.json`) has too. */
 export const TO_FRAME: readonly ToFrame["type"][] = ["level", "code", "part", "styles", "scheme", "host", "ping", "compile", "observe", "fetched"];
-export const FROM_FRAME: readonly FromFrame["type"][] = ["ready", "loaded", "set", "error", "recovered", "link", "rendered", "size", "pong", "compiled", "failed", "observed", "image"];
+export const FROM_FRAME: readonly FromFrame["type"][] = ["ready", "loaded", "set", "error", "recovered", "link", "rendered", "size", "pong", "compiled", "failed", "observed", "image", "settled"];
+
+/**
+ * The messages that change what a frame shows, the sandbox's and `@compmd/render`'s: a parent counts those it sends, and
+ * a frame those it takes, in the order the port keeps, so `settled` says for which it settled.
+ */
+export const CHANGES: readonly string[] = ["code", "part", "styles", "scheme", "render", "splices", "theme"];
+
+/** Whether `data` is a message that changes what a frame shows. */
+export const isChange = (data: unknown): boolean => typeof data === "object" && data !== null && CHANGES.includes(String((data as { type?: unknown }).type));
 
 /** What the protocol needs of a port: a `MessagePort` is one. It is `@compmd/render`'s, with transfers and ports. */
 export interface Port {

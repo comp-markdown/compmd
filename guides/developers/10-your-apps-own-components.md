@@ -245,6 +245,7 @@ interface Host {
 interface Context {
   params: Record<string, unknown>;
   host?: unknown;
+  busy(work: Promise<unknown>): void;
 }
 
 /** What the app answers for a book it has reviews of. */
@@ -257,7 +258,7 @@ const isSummary = (value: unknown): value is Summary =>
   typeof value === "object" && value !== null && typeof (value as Summary).count === "number" && typeof (value as Summary).average === "number";
 
 // A summary of a book's reviews, which it asks the app for: the reviews are the app's data, never the document's.
-export default function reviews(target: Element, { params, host }: Context) {
+export default function reviews(target: Element, { params, host, busy }: Context) {
   const line = target.ownerDocument.createElement("p");
   target.append(line);
   /** How many times it asked: an answer to an older question is dropped. */
@@ -278,16 +279,19 @@ export default function reviews(target: Element, { params, host }: Context) {
     if (question !== asked) return;
     line.textContent = isSummary(summary) ? `${String(summary.count)} readers gave it ${summary.average.toFixed(1)} of 5 on average.` : "No reviews yet.";
   };
-  void show(params);
+  // It draws once the app answers: `busy` tells the page, which waits for it to settle.
+  busy(show(params));
   return {
     update: (next: Record<string, unknown>) => {
-      void show(next);
+      busy(show(next));
     },
   };
 }
 ```
 
 `host.call(name, ...args)` sends the call to your page over the frame's port, and resolves with what your function returned. Arguments and results cross by copy, so they must be copyable (no functions, no DOM). A name your app doesn't offer, or a function that throws, rejects the call with a message. A component without `host`, in an app that doesn't give it, gets `undefined`, and should say so rather than fail.
+
+`busy(work)` says the component is still drawing until `work` settles, here until the answer is shown ([spec §7.4](https://compmd.hakanserce.com/spec/#74-the-host-contract)). Nothing shows differently meanwhile, but a page that waits to settle, to print, to scroll to a link's target, or in a test, waits for it: the view's `settled()` ([chapter 11](11-the-sandbox-closer.md)).
 
 What `host` holds is your app's: `createSandbox`'s `host` option, a `HostApi`, an object of functions by name.
 

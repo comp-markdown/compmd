@@ -85,6 +85,16 @@ export interface Page {
    * }
    */
   lines(from?: number): Generator<Line>;
+  /**
+   * Resolves once the components of the last render and splice have mounted and every drawing they gave
+   * `context.busy` has settled, fulfilled or rejected, or after `BUSY_MS` for one that never does; a render after it
+   * makes it wait for that one's too. Nothing shows differently meanwhile.
+   *
+   * @example
+   * page.render(tree);
+   * await page.drawn();   // a diagram that draws asynchronously has drawn
+   */
+  drawn(): Promise<void>;
 }
 
 /**
@@ -146,6 +156,8 @@ export function createPage(root: HTMLElement, options: PageOptions = {}): Page {
     sourceOf: (node) => sourceIn(blocks.placed(), node, root),
     elementsAt: (offset) => elementsIn(blocks.placed(), offset),
     lines: (from) => linesIn(blocks.placed(), root, from),
+    // Mounts run in the render itself, so what is left is what the components said they were drawing.
+    drawn: () => surface.busy.idle(),
     destroy() {
       layout?.destroy();
       schemes.destroy();

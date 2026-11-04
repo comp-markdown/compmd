@@ -15,6 +15,7 @@ import { Log, reportedBy, type Observation, type ObservedEvent } from "./observa
 import { Observer } from "./observer.ts";
 import { diagnosticOf, HELLO, SANDBOX_VERSION, type ErrorReason, type SandboxDiagnostic, type Scheme } from "./protocol/messages.ts";
 import { connectChild, type ChildEnd } from "./protocol/parent-end.ts";
+import { Settling } from "./settling.ts";
 
 export interface SandboxOptions extends HostRuntimeOptions {
   /** Where the page renders: in a strict frame per document (the default), or in the host's page. */
@@ -44,6 +45,8 @@ export interface ViewEvents {
   pointed: { source: Source };
   /** What the page shows may have moved, so its `lines()` may have: as `@compmd/render`'s `onLayout`. */
   layout: Record<string, never>;
+  /** The page has settled again (`View.settled`), after a render, a splice, or something that moved it. */
+  settled: Record<string, never>;
 }
 
 /** How a host sends splices. */
@@ -119,6 +122,19 @@ export interface View {
    */
   lines(from?: number): AsyncGenerator<Line>;
   /**
+   * Resolves the next time the page has settled, at once when it has: after the latest render or splice, every use in
+   * the host's page and in every frame at any depth mounted or showing its fallback, every drawing a component gave
+   * `busy` settled (spec §7.4), every frame settled with its last size applied, the page's images loaded or failed and
+   * its fonts loaded, then an animation frame in which nothing moved. The container has `data-compmd-settled` while it
+   * is settled, and `settled` comes each time it settles again. A frame that hangs is stopped and counts as settled; a
+   * drawing or a frame that never says it is done holds it up for `BUSY_MS` at most.
+   *
+   * @example
+   * view.render(processed.expanded);
+   * await view.settled();   // safe to click, print, or scroll to a link's target
+   */
+  settled(): Promise<void>;
+  /**
    * Listens for `type`; a listener added as soon as `open` returns hears everything, opening's errors too. The first
    * listener for `pointed` asks the page to report clicks.
    */
@@ -166,8 +182,11 @@ const shapeOf = (components: readonly HostComponent[]): string =>
 export function createSandbox(options: SandboxOptions): Sandbox {
   return {
     open(container, { components }) {
-      const listeners: Listeners = { set: [], link: [], error: [], recovered: [], rendered: [], loaded: [], pointed: [], layout: [] };
+      const listeners: Listeners = { set: [], link: [], error: [], recovered: [], rendered: [], loaded: [], pointed: [], layout: [], settled: [] };
+      /** What the page shows changed or moved: it isn't settled until it settles again. */
+      let changed: () => void = () => undefined;
       const emit = <T extends keyof ViewEvents>(type: T, event: ViewEvents[T]) => {
+        if (type === "layout") changed();
         for (const listener of listeners[type]) listener(event);
       };
       const observations = new Set<{ log: Log; listener: (events: readonly ObservedEvent[]) => void }>();
@@ -222,19 +241,37 @@ export function createSandbox(options: SandboxOptions): Sandbox {
           page.code();
         });
       let shape = shapeOf(components);
+      const settling = new Settling(
+        {
+          drawn: () => ready.then(() => page.drawn()),
+          frames: () => page.frames(),
+          root: () => container,
+        },
+        () => {
+          container.dataset.compmdSettled = "";
+          emit("settled", {});
+        },
+      );
+      changed = () => {
+        delete container.dataset.compmdSettled;
+        settling.changed();
+      };
       return {
         render: (tree, change) => {
           followScheme();
+          changed();
           void ready.then(() => {
             page.render(tree, change);
           });
         },
         splice: (splices, change, spliceOptions) => {
+          changed();
           void ready.then(() => {
             page.splice(splices, change, spliceOptions);
           });
         },
         components: (next) => {
+          changed();
           const loading = ready.then(async () => {
             await runtime.set(next);
             page.code();
@@ -245,14 +282,17 @@ export function createSandbox(options: SandboxOptions): Sandbox {
           return loading;
         },
         theme: (tokens) => {
+          changed();
           runtime.theme(tokens);
           page.theme(tokens);
         },
         scheme: () => {
+          changed();
           followScheme();
           page.reread();
         },
         styles: (urls) => {
+          changed();
           runtime.styles(urls);
           page.styles(urls);
         },
@@ -269,6 +309,7 @@ export function createSandbox(options: SandboxOptions): Sandbox {
           await ready;
           yield* page.lines(from);
         },
+        settled: () => settling.whenSettled(),
         on: (type, listener) => {
           if (type === "pointed" && listeners.pointed.length === 0) page.point();
           listeners[type].push(listener);
@@ -324,6 +365,10 @@ interface PageEnd {
   point(): void;
   /** Each line's place, from the container's content's top left corner: at once in the host's page, from a frame later. */
   lines(from?: number): Iterable<Line> | AsyncIterable<Line>;
+  /** What renders in the host's page has drawn: its components mounted, their `busy` drawings settled. */
+  drawn(): Promise<void>;
+  /** The frames the host's page made for the page, each of which says when it has settled. */
+  frames(): Iterable<{ settled(): Promise<void> }>;
   destroy(): void;
 }
 
@@ -401,6 +446,8 @@ function hostPage(container: HTMLElement, runtime: HostRuntime, observer: Observ
     },
     // The page's root is the container: its lines are where they should be.
     lines: (from) => page.lines(from),
+    drawn: () => page.drawn(),
+    frames: () => runtime.frames(),
     destroy: () => {
       container.removeEventListener("click", pointed, { capture: true });
       page.destroy();
@@ -433,7 +480,7 @@ function framePage(container: HTMLElement, runtime: HostRuntime, options: Sandbo
     observer.refused(id, input);
   });
   // `@compmd/render`'s protocol on the same port: its messages wait for the page's renderer, which starts after the level.
-  const frame: FrameConnection = connectFrame(port);
+  const frame: FrameConnection = connectFrame(child.counting(port));
   child.on("set", (event) => {
     emit("set", event);
   });
@@ -514,6 +561,9 @@ function framePage(container: HTMLElement, runtime: HostRuntime, options: Sandbo
         yield { line, rects: rects.map((rect) => ({ ...rect, x: rect.x + dx, y: rect.y + dy })) };
       }
     },
+    // Nothing renders here: the page's frame settles after all the host sent it, its own frames with it.
+    drawn: () => Promise.resolve(),
+    frames: () => [child],
     destroy: () => {
       frame.close();
       child.close();
