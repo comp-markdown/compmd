@@ -8,7 +8,7 @@
 2. **A frame believes its parent only,** by its window (`event.source === window.parent`), never by its origin: the host's page may have an opaque origin itself. Parents are never less trusted than their children ([sandbox, decision 1](running-components-in-the-sandbox.md#proposed-decisions)), and the frame documents' policies make sure of it, so a message from a parent is one the frame may act on.
 3. **The protocol is a layer of its own, with no DOM.** The message types, with their version, and each end's rules as plain state machines over `@compmd/render`'s `Port`: a frame takes `code` only after `level`; a parent gives `host` only to children it was told to; `set` is checked against the use's node. It is tested in Node, apart from the browser, and its messages are published as a JSON Schema (`sandbox/protocol.schema.json`), so a frame runtime or host runtime written elsewhere, a host's own or a sandbox outside a browser, can check itself against it.
 4. **Two runtimes implement it,** the frame runtime (one end in each frame) and the host runtime (the other end, in the host's page and in every frame that has children). The browser's part, making frames, adding the policy, the ping timer, is theirs, not the protocol's.
-5. **`@compmd/render`'s protocol stays as it is,** for a page's tree: `render`, `splices`, `theme`, `ready`, `set`, `error`, `rendered`, from its version 3, where the page came from: `reveal`, `rects`, `point`, `pointed`; and from its version 4 (proposed), where each line is: `lines` and `layout`. The sandbox's messages travel on the same port, with their own version, as the playground's do today.
+5. **`@compmd/render`'s protocol stays as it is,** for a page's tree: `render`, `splices`, `theme`, `ready`, `set`, `error`, `rendered`, from its version 3, where the page came from: `reveal`, `rects`, `point`, `pointed`; and from its version 4 (proposed), where each line is and when the page has drawn: `lines`, `layout` and `drawn`. The sandbox's messages travel on the same port, with their own version, as the playground's do today.
 
 ## The windows
 
@@ -59,8 +59,9 @@ When a frame loads, its parent posts `hello` to its window with one end of a new
 | `link {url}` | a link was clicked; H decides what opens, and shows the reader the URL first (spec §15 rule 4) | P, U |
 | `rendered {ms}` | `@compmd/render`'s | P, U |
 | `rects {id, rects}`, `pointed {source}` | `@compmd/render`'s: the boxes asked for, in P's viewport; the source of what the reader clicked, only after `point {on: true}` | P |
-| `lines {id, lines}`, `layout {}` | `@compmd/render`'s: each line's place, in P's page; what P shows moved, at most once an animation frame | P |
+| `lines {id, lines}`, `layout {}`, `drawn {seen}` | `@compmd/render`'s: each line's place, in P's page; what P shows moved, at most once an animation frame; P's uses have drawn | P |
 | `size {width, height}` | the content's size, for the parent to set on the frame | U |
+| `settled {seen}` (proposed) | the frame has settled after the first `seen` messages that change what it shows (`code`, `render`, `splices`, `part`, `scheme`, `theme`, `styles`): its uses drawn, their `busy` promises settled, its own frames settled and sized, its images and fonts loaded, then a frame with nothing moving ([settled](#settled)) | P, U |
 | `pong {n}` | the answer to `ping` | every frame |
 | `compiled {name, code, css?}`, `failed {name, message}` | a compile's result | C |
 | `observed {events}` | what the frame recorded since its last report, its own frames' reports in it; only after `observe {on}` | P, U |
@@ -77,6 +78,14 @@ For developer tools ([the Developer Tools](devtools.md), decisions 5 and 6, and 
 - **A frame starts** when it gets `observe {on: true}`: it reports its live frames and components first, asks its frames, and sends `observed` every 100 ms with at most 2,000 events, counting what it drops. `observe {on: false}` stops it and its frames, and drops what waits.
 - **A parent takes `observed` only while it asked,** at most 2,000 events of one, checks each event against the schema's `observedEvent`, rebuilt from its own fields, drops what isn't one, and nests the rest under the frame's id. It acts on none of it: levels, `set`, `host` and which frames to stop come from the checks above, never from a report. H keeps the last 2,000 events of each source, itself and each of its frames, and marks what a frame reported as that frame's.
 
+## Settled
+
+**Proposed.** For a host that waits until its page stops moving ([sandbox README, *When the page has settled*](../sandbox/README.md)). Each window settles bottom-up, and a parent counts what it asked for:
+
+- **A parent counts** each message it sends a frame that changes what the frame shows: `code`, `render`, `splices`, `part`, `scheme`, `theme`, `styles`. The frame counts what it takes, in the same order, since the port keeps it.
+- **A frame sends `settled {seen}`** each time it settles, with its count: its uses drawn (`@compmd/render`'s `drawn`), its own frames settled for everything it sent them and their sizes applied, its images loaded or failed, its fonts loaded, then an animation frame with nothing moving. It sends its last `size` before it.
+- **A parent takes it** only when `seen` is what it sent: a `settled` for an older render is dropped, and the frame isn't settled until the next. A frame it stopped (W118) counts as settled.
+- **H** is settled when its own page is, by the same rules, and every frame it made is. A frame's code can send `settled` early or never: the page then settles early, or when the frame is stopped, and `layout` still says when it moves. Nothing H shows depends on it.
 
 ## Sequences
 
@@ -101,7 +110,7 @@ For developer tools ([the Developer Tools](devtools.md), decisions 5 and 6, and 
 | to get `host` | only H gives `host`, and only to a `permissive.html` frame of a pack given `host` |
 | to have H fetch a URL for it, through `image` | H fetches only the images of the trees and splices it sent P, so a URL code made up, with data in it, is never fetched |
 | to send H a `pointed` or `rects` of its own | H takes from them only a source and boxes that are numbers; a made-up click can move an editor's caret, nothing more |
-| to send H `lines` of its own, or `layout` again and again | H takes only whole line numbers and places that are numbers, and asks for lines at most once an animation frame however often `layout` comes; made-up places move a gutter's numbers, nothing more |
+| to send H `lines` of its own, or `layout` again and again | H takes only whole line numbers and rects that are numbers, and asks for lines at most once an animation frame however often `layout` comes; made-up places move a gutter's numbers, nothing more |
 
 ## The sequences, drawn
 

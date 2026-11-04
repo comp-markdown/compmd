@@ -571,6 +571,7 @@ mount(target: Element, context: {
   headingLevel: number,                   // the level the component's top heading should have (section 7.2)
   scheme: "light" | "dark",               // the colour scheme the component is shown in (below)
   fail(message: string): void,            // the component can't draw what it was given (below)
+  busy(work: Promise<unknown>): void,     // the component is still drawing, until `work` settles (below)
   host?: unknown,                         // what the processor gives components of permissive and trusted packs (below); absent otherwise
 }): { update?(params, slots): void; destroy?(): void }
 
@@ -586,6 +587,7 @@ type SlotInstance = { value: unknown; items: SlotItem[] }   // a template slot: 
 - **Updates, not remounts.** When params or slots change (an input or data changes, section 8.5), the processor calls `update`; the component keeps its state. `destroy` is called before `target` is removed.
 - **The colour scheme.** `scheme` is the colour scheme the processor shows the component in: `"dark"` when the box it renders into is dark (in HTML, its `color-scheme`, and the reader's preference where it allows both), `"light"` otherwise. When it changes (the reader's preference, the host's own theme switch, printing), the processor sets `scheme` and calls `update` with the same params and slots. A component that takes its colours at render, such as a diagram or a canvas chart, reads `scheme`, not the reader's preference, which may differ from the page's. A component styled with CSS needs neither.
 - **A component that fails.** A component that finds it can't draw what it was given after `mount` or `update` returned (an asynchronous parse, a module loaded late) calls `fail(message)`. The processor reports W118 with `message`, and shows the fallback in `target`; until the next `update`, `target` is the processor's. Before that `update`, the processor empties `target` again, so a failure lasts until the params, the slots or the scheme change. `fail` is for input the component can't draw, not for a resource that may come back: a map whose tiles stop loading shows its own state and retries, rather than replacing a usable map with its fallback.
+- **A component still drawing.** A component that draws after `mount` or `update` returned (a diagram drawn asynchronously, data it gets through `host`) calls `busy(work)` with a promise of that drawing, once for each. A processor that waits for its page to settle, to print it, to scroll to a link's target, or in a test, waits until every such promise has settled, fulfilled or rejected, or as long as it chooses. It shows nothing differently while a component is busy. A component that never calls `busy` has drawn when `mount` or `update` returns.
 - **A component that throws** while mounting renders its fallback, with W118, and is never mounted. One that throws while updating is treated as if it called `fail`: it is still mounted, and is updated again at the next change.
 - **What a host gives permissive and trusted components.** A processor MAY give components from packs its configuration makes permissive or trusted (section 15) more than this contract, in `host`: an API to the host's data, events to the host. What `host` holds is the processor's, and it is the same at both levels, so a component written against it works whichever of the two its pack is given; a trusted component reaches what the processor's own code reaches anyway, so `host` gives it nothing more than a way to be written once for both. The trust level comes from the processor's configuration, never from a document. A document that uses such components works only in that host, as with names from ambient packs (section 6.3). Section 15 says what such components may do with it.
 - **Accessible text.** A component that renders non-text content (a chart, a map, a canvas) SHOULD use `fallback.text` as its text alternative, for example `<svg role="img" aria-label="…">`, since the leaf's fallback is the sentence plain renderers show in its place. Only the component knows the role of its content, so the processor doesn't label `target`.
@@ -631,10 +633,10 @@ To repeat a component once per record in order, no template slot is needed: put 
 
 A binding maps the host contract to one framework.
 
-| Binding | Language, `runtime` | Default slot | Named slots | Items, instances, `set`, `fallback`, `headingLevel`, `scheme`, `fail`, `host` |
+| Binding | Language, `runtime` | Default slot | Named slots | Items, instances, `set`, `fallback`, `headingLevel`, `scheme`, `fail`, `busy`, `host` |
 | --- | --- | --- | --- | --- |
-| React | `jsx`, `tsx`; `react@19`, `preact@10` | `children`, a node that places the slot's elements | a prop of the same name, the same kind of node | a `compmd` prop: `{slots, set, fallback, headingLevel, scheme, fail, host}` |
-| Svelte | `svelte`; `svelte@5` | the `children` snippet | a snippet prop of the same name | a `compmd` prop: `{slots, set, fallback, headingLevel, scheme, fail, host}` |
+| React | `jsx`, `tsx`; `react@19`, `preact@10` | `children`, a node that places the slot's elements | a prop of the same name, the same kind of node | a `compmd` prop: `{slots, set, fallback, headingLevel, scheme, fail, busy, host}` |
+| Svelte | `svelte`; `svelte@5` | the `children` snippet | a snippet prop of the same name | a `compmd` prop: `{slots, set, fallback, headingLevel, scheme, fail, busy, host}` |
 | Plain | `js`, `ts`; none | `slots.default` | `slots.<name>` | the context, as in section 7.4 |
 
 In the React and Svelte bindings, params are props of the same name (a param with `-` in its name becomes camelCase: `align-items` is `alignItems`; so does a named slot's prop: the slot `side-panel` is `sidePanel`), and the binding implements `mount`, `update` and `destroy` with the framework's own mounting. In the plain binding the default export *is* `mount`, with the context of section 7.4, and params keep their names:

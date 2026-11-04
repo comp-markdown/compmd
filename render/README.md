@@ -91,6 +91,8 @@ for (const [pane, nodes] of [[left, before], [right, after]]) {
 
 **A component that fails.** `context.fail(message)` is for a component that finds, after `mount` or `update` returned, that it can't draw what it was given: it reports `threw` through `onError` with `message` (W118), and shows the fallback until its next `update`, when the box is emptied and given back. A throw in `update` does the same; a throw in `mount` shows the fallback for good. Each error names its use, `use`, an id unique in the window, and when the use draws again after such a failure, `onRecovered({component, use})` says so, so a host that lists failures takes that one off; a frame posts it as `recovered`.
 
+**A component still drawing** (proposed). `context.busy(work)` is for a component that draws after `mount` or `update` returned: `work` is a promise of the drawing (spec §7.4). `page.drawn()` (and `region.drawn()`) resolves once the components of the last render and splice have mounted and every promise they gave `busy` has settled, fulfilled or rejected, or after `BUSY_MS` (10 s) for one that never does; a later render waits for its own. Nothing shows differently meanwhile. A frame's end tells its host the same (`drawn`, *In a frame*), which a sandbox builds its `settled` on.
+
 ## Where the page came from
 
 An app that embeds the page often needs the link between what the page shows and the text that made it. An editor moves its caret to what the reader clicked, or scrolls the preview to the caret; a review tool marks the passage a comment is on. The page and a region keep it, from the tree's origins (spec §12.3: request them with `origins: true`), and give it both ways:
@@ -145,7 +147,7 @@ textarea.addEventListener("selectionchange", () => reveal(page.elementsAt(codePo
 
 | Call | Gives |
 |---|---|
-| `page.lines()` | `[{line, top, bottom, left}]`, one for each line of the current text that draws something, in line order: where its first character shows, in CSS pixels from the page root's top left corner |
+| `page.lines()` | `[{line, rects}]`, one for each line of the current text that draws something, in line order: `rects` are the boxes its text shows in, `{x, y, width, height}`, one per visual line it covers, in CSS pixels from the page root's top left corner |
 | `onLayout()`, an option of `createPage` and `createRegion` | called when what the page shows moved, at most once an animation frame |
 
 ```ts
@@ -154,16 +156,16 @@ import { createPage } from "@compmd/render";
 const page = createPage(preview, { components, onLayout: () => drawGutter(page.lines()) });
 page.render(tree, { text });                    // a tree processed with `origins: true`
 
-function drawGutter(lines: { line: number; top: number }[]) {
-  gutter.replaceChildren(...lines.map(({ line, top }) => number(line, top)));   // the gutter scrolls with the page
+function drawGutter(lines: { line: number; rects: { y: number }[] }[]) {
+  gutter.replaceChildren(...lines.map(({ line, rects: [first] }) => number(line, first.y)));   // the gutter scrolls with the page
 }
 ```
 
-**A line's place** is where the first character drawn from it shows, the rule by which `page.lines()` finds it:
+**A line's place** is where what is drawn from it shows, from its first character to its last, by these rules:
 
-| What the line holds | Its place |
+| What the line holds | Its rects |
 |---|---|
-| Text, in a paragraph, a heading, a list item, a quote, a table's row, a footnote's definition | its first character's line box: `top` and `bottom` the line box's, `left` where the character starts. A paragraph's later lines too, each where its text shows |
+| Text, in a paragraph, a heading, a list item, a quote, a table's row, a footnote's definition | the boxes of its text, one per visual line it covers, each as tall as that line box: a line that wraps has several. A paragraph's later lines too, each where its text shows |
 | A code block's line | that line in the block's `<pre>`, highlighted or not |
 | A use of a component, a code block a component draws, math, an image, a thematic break, an alert's first line: what has no text of its own on the page | the box of what its range drew, on the line where its range starts; the lines after it, inside it, draw nothing of their own |
 | Only what draws nothing: blank lines, frontmatter, a definition, a link definition, a container's closing line, a table's delimiter row, a code block's fences | left out, for the gutter to leave blank |
@@ -171,7 +173,7 @@ function drawGutter(lines: { line: number; top: number }[]) {
 **Finding a later line of a paragraph.** A text node holds its text as the processor gave it, a soft line break as `\n`, so the text of a node's third line follows its second `\n`, whatever escapes, entities or markup the line has. A text node whose `\n`s don't match its lines, such as an interpolation whose value has line breaks, places only the line it starts on. Where a line starts inside inline markup (`**bold** text`), its first character is the first one the markup draws.
 
 **What a gutter sees.**
-- **Lines can share a visual line:** a soft line break shows as a space, so a paragraph's lines 3 and 4 are often on one line of the page, at the same `top`, with 4's `left` further on. A gutter shows the first, or both.
+- **Lines can share a visual line:** a soft line break shows as a space, so a paragraph's lines 3 and 4 are often on one line of the page: 3's last rect and 4's first at the same `y`, 4's starting where 3's ends. A gutter shows the first, or both; a tool that marks a line marks its rects.
 - **A place is the first that shows:** of the iterations of an `each`, which draw the same lines, the first; a line whose text is hidden (a closed `<details>`, a breakpoint's `hide`, a component's fallback that doesn't show) has no place, unless another drawing of it shows.
 - **Places follow the page, not the text:** a footnote's definition is placed at the end of the page, with its list. Content scrolled inside a box of its own (a code block wider than the page) is placed where it is, which may be outside the box's visible part.
 
@@ -204,9 +206,9 @@ frame.on("layout", async () => drawGutter(await frame.lines()));   // where each
 addEventListener("message", ({ ports: [port] }) => serveFrame(port, { container: document.body, components }));
 ```
 
-Host to frame: `render {tree, change?}`, `splices {splices, change?, replace?}`, `theme {tokens}`, `reveal {offset}`, `rects {id, offset}`, `point {on}`, `lines {id}`. A splice can be the JSON text a processor gives (`@compmd/processor`'s `OpenDocumentJson`), which a host passes on unread: posted text is copied in one piece, and the frame parses it once. `replace` says the first splice is of an empty tree, as after opening a document again. The frame ignores any other message, so a host can send its own on the same port, as an editor does with the components to compile. Frame to host: `ready {version}`, `set {input, value}`, `error {reason, component?, use?, message}`, `recovered {component, use}`, `rendered {ms}` (after the render is painted), `rects {id, rects}` (the answer to `rects` of the same `id`, each `{x, y, width, height}` in the frame's viewport), and, after `point {on: true}`, `pointed {source}` for each click in the page; `lines {id, lines}` (the answer to `lines`, each `{line, top, bottom, left}` in the frame's page) and `layout {}` (as `onLayout`). The host's messages wait for `ready` with this protocol's version (4, with `lines` and `layout`), since a host page and its frame may be deployed apart. Component code stays in the frame: modules can't be posted.
+Host to frame: `render {tree, change?}`, `splices {splices, change?, replace?}`, `theme {tokens}`, `reveal {offset}`, `rects {id, offset}`, `point {on}`, `lines {id}`. A splice can be the JSON text a processor gives (`@compmd/processor`'s `OpenDocumentJson`), which a host passes on unread: posted text is copied in one piece, and the frame parses it once. `replace` says the first splice is of an empty tree, as after opening a document again. The frame ignores any other message, so a host can send its own on the same port, as an editor does with the components to compile. Frame to host: `ready {version}`, `set {input, value}`, `error {reason, component?, use?, message}`, `recovered {component, use}`, `rendered {ms}` (after the render is painted), `rects {id, rects}` (the answer to `rects` of the same `id`, each `{x, y, width, height}` in the frame's viewport), and, after `point {on: true}`, `pointed {source}` for each click in the page; `lines {id, lines}` (the answer to `lines`, each `{line, rects}` in the frame's page), `layout {}` (as `onLayout`) and `drawn {seen}` (as `page.drawn()` resolves, for the first `seen` renders and splices the frame took). The host's messages wait for `ready` with this protocol's version (4, with `lines`, `layout` and `drawn`), since a host page and its frame may be deployed apart. Component code stays in the frame: modules can't be posted.
 
-**Where the page came from, through the frame.** The host can't reach the frame's elements, so the frame's end does what `elementsAt` and `sourceOf` would: `reveal(offset)` scrolls the frame's page and marks what the text there drew, `rectsAt(offset)` resolves with its boxes (none once the connection closes), and `point(true)` has the frame report the source of each click, as `pointed`. `lines()` resolves with each line's place in the frame's page (none once the connection closes), and `layout` says when to ask again. A frame's code may be untrusted, so `connectFrame` passes on only a well-formed `source`, the boxes that are numbers, and lines that are whole numbers from 1 with places that are numbers.
+**Where the page came from, through the frame.** The host can't reach the frame's elements, so the frame's end does what `elementsAt` and `sourceOf` would: `reveal(offset)` scrolls the frame's page and marks what the text there drew, `rectsAt(offset)` resolves with its boxes (none once the connection closes), and `point(true)` has the frame report the source of each click, as `pointed`. `lines()` resolves with each line's place in the frame's page (none once the connection closes), and `layout` says when to ask again. A frame's code may be untrusted, so `connectFrame` passes on only a well-formed `source`, the boxes that are numbers, and lines that are whole numbers from 1 with rects that are numbers.
 
 **A component that renders its slots itself.** `rendersSlots(mount)` makes a component for `components` whose slots the renderer doesn't render: `mount` gets the use's node, with its slots as expanded nodes, and the document's inputs, and its `update` gets them again. A sandbox uses it to render a use and its slots inside the use's own frame ([`@compmd/sandbox`](../sandbox/README.md)); a code block's renderer gets its leaf, with the block's text as `code`.
 
