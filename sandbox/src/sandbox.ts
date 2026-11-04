@@ -6,10 +6,9 @@
 import type { HostComponent } from "@compmd/processor";
 import { createPage, reveal, schemeOf, type Change, type ExpandedInput, type ExpandedRoot, type Line, type Page, type Source, type Splice } from "@compmd/render";
 import { connectFrame, type FrameConnection, type SpliceOptions } from "@compmd/render/frame";
-import { shikiHighlight } from "./highlight/highlight.ts";
+import { framesHighlight, framesMath } from "./from-frames.ts";
 import { frameUrl, HostRuntime, type HostRuntimeOptions } from "./host/runtime.ts";
 import { PageImages } from "./images.ts";
-import { temmlMath } from "./math.ts";
 import { codeFor } from "./mounts.ts";
 import { Log, reportedBy, type Observation, type ObservedEvent } from "./observation.ts";
 import { Observer } from "./observer.ts";
@@ -214,7 +213,7 @@ export function createSandbox(options: SandboxOptions): Sandbox {
           },
         },
       );
-      const page = options.page === "host" ? hostPage(container, runtime, observer, emit) : framePage(container, runtime, options, observer, emit);
+      const page = options.page === "host" ? hostPage(container, runtime, options, observer, emit) : framePage(container, runtime, options, observer, emit);
       // The frames take the page's colour scheme: when the view opens, when the reader's preference changes, when
       // printing starts and ends, at each render, and when the host says it switched its own.
       let scheme: Scheme | undefined;
@@ -375,12 +374,13 @@ interface PageEnd {
 type Emit = <T extends keyof ViewEvents>(type: T, event: ViewEvents[T]) => void;
 
 /** Host mode: the page in the host's page, with the runtime's components. */
-function hostPage(container: HTMLElement, runtime: HostRuntime, observer: Observer, emit: Emit): PageEnd {
+function hostPage(container: HTMLElement, runtime: HostRuntime, options: SandboxOptions, observer: Observer, emit: Emit): PageEnd {
   const page: Page = createPage(container, {
     components: runtime.mounts,
-    // As the page's frame does in frame mode, so math and code look the same in both modes.
-    math: temmlMath(),
-    highlight: shikiHighlight(),
+    // The frames' own Temml and Shiki, from their files, so math and code look the same in both modes, and the app
+    // ships one copy of each, which this page and its frames share.
+    math: framesMath(options.base),
+    highlight: framesHighlight(options.base),
     // The trusted components in this page get `host` as the runtime gives it; framed ones get theirs from their frame.
     ...(runtime.host ? { host: runtime.host } : {}),
     onSet: (input, value) => {

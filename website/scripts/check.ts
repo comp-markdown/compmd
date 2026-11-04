@@ -14,11 +14,12 @@
 // - Search finds sections of the spec and the guides, and opens them with the words found marked; on a phone, its
 //   dialog fits.
 // - The playground opens every document of its menu.
+// - Shiki and Temml once in each app, the site's and the playground's: in the frames' files, not in its own bundle.
 // - The budgets (website/docs/design.md): the page before its live parts at most 100 KB gzipped, and painted within one
 //   second on a mid-range phone over fast 3G. `--no-timing` leaves the paint out, for a shared runner whose timings
 //   vary too much to hold a budget (docs/ci.md).
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { join } from "node:path";
 import { gzipSync } from "node:zlib";
@@ -288,6 +289,18 @@ function weight(): number {
   return [Buffer.from(html), ...assets].reduce((sum, bytes) => sum + gzipSync(bytes).length, 0) / 1024;
 }
 
+/**
+ * Each app of the site, the site and the playground, has Shiki's grammars and Temml once, in the frames' files: a
+ * host-mode page loads them from there (`compmd/highlight.js`, `compmd/math.js`), so its own bundle has none.
+ */
+function oneCopy(): void {
+  for (const app of ["", "playground/"]) {
+    check(existsSync(join(DIST, app, "compmd/highlight.js")) && existsSync(join(DIST, app, "compmd/math.js")), `/${app}compmd/ has no highlight.js or math.js`);
+    const bundled = readdirSync(join(DIST, app, "assets")).filter((name) => /^(cpp|javascript|typescript|temml)-/.test(name));
+    check(bundled.length === 0, `/${app}assets/ has its own copy of Shiki or Temml: ${bundled.join(", ")}`);
+  }
+}
+
 async function paint(browser: Browser): Promise<number> {
   const runs: number[] = [];
   for (let run = 0; run < 5; run++) {
@@ -336,6 +349,8 @@ try {
     await step(browser);
     console.log(`ok: ${name}`);
   }
+  oneCopy();
+  console.log("ok: Shiki and Temml once each, in the frames' files");
   const kb = weight();
   check(kb <= BUDGET_KB, `the page before its live parts is ${kb.toFixed(1)} KB gzipped, over ${String(BUDGET_KB)} KB`);
   console.log(`ok: the page before its live parts is ${kb.toFixed(1)} KB gzipped (budget ${String(BUDGET_KB)} KB)`);

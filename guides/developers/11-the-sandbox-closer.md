@@ -137,6 +137,7 @@ The cost is a frame, and a copy of its runtime, per use. It is right for an app 
 | `strict.html` | the strict frame: a fixed content security policy with no network and no nested frames, then the import map, then the frame runtime |
 | `permissive.html` | the same, without the network directives; its parent sends the pack's origins, which the frame adds as a second policy before any component loads, and it may nest `strict.html` only |
 | `runtime.js` and its files | the frame runtime: the sandbox's end of the protocol, the renderer, the bindings |
+| `highlight.js`, `math.js` | Shiki and Temml, which highlight code blocks and typeset math: the frames load them through the runtime, and in host mode your page loads them from here, so your app ships each once |
 | `libs/` | the runtimes every frame shares through the import map, React 19, React DOM and Svelte 5, and the libraries your configuration offers |
 | `library-definition.json` | those runtimes and libraries with their versions, which the processor checks components against |
 | `packs/<name>@<version>/…` | each installed pack's built modules |

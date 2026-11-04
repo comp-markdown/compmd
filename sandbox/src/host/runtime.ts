@@ -55,8 +55,11 @@ export interface HostEvents {
 
 const messageOf = (error: unknown): string => (error instanceof Error ? error.message : String(error));
 
-/** The frame document `name` where the host serves the frame documents, `base`, full or relative to the page. */
-export const frameUrl = (base: string, name: "strict.html" | "permissive.html"): string => new URL(name, new URL(base, location.href)).href;
+/**
+ * The file `name` where the host serves the frame documents, `base`, full or relative to the page: a frame document,
+ * or a module a host-mode page loads from there.
+ */
+export const frameUrl = (base: string, name: "strict.html" | "permissive.html" | "highlight.js" | "math.js"): string => new URL(name, new URL(base, location.href)).href;
 
 /** A level as a frame has it; a trusted component never runs in one. */
 const levelOf = (trust: Trust): Level | "trusted" => trust.level;

@@ -2,7 +2,7 @@
 // mounts in its page and sets its input, the strict pack's built module runs in a frame, checked against its hash, and
 // the denied pack's use shows its fallback, with the reason.
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { chromium, webkit, type Browser, type BrowserType, type LaunchOptions } from "playwright";
 import { build, createServer, preview, type PreviewServer } from "vite";
@@ -42,6 +42,15 @@ describe("the example's build", () => {
     expect(bundle).toMatch(new RegExp(`runtimes:\\[\\{name:["'\`]react["'\`],version:["'\`]${version}["'\`]\\}`));
     // The denied pack's code is nowhere: it is never served, and its uses fall back.
     expect(existsSync(join(OUT, "compmd/packs/@example/old@1.0.0"))).toBe(false);
+  });
+
+  it("has Shiki and Temml once, in the frames' files, which the page loads too", () => {
+    expect(existsSync(join(OUT, "compmd/highlight.js"))).toBe(true);
+    expect(existsSync(join(OUT, "compmd/math.js"))).toBe(true);
+    const chunks = readdirSync(join(OUT, "compmd/chunks"));
+    expect(chunks.some((name) => name.startsWith("cpp-")) && chunks.some((name) => name.startsWith("temml-"))).toBe(true);
+    // The app's own bundle: no grammar, no Temml.
+    expect(readdirSync(join(OUT, "assets")).filter((name) => /^(cpp|javascript|typescript|temml)-/.test(name))).toEqual([]);
   });
 });
 
