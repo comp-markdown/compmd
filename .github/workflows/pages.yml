@@ -11,6 +11,7 @@ on:
       - website/**
       - editor/**
       - render/**
+      - guides/**
       - wasm/**
       - processor/**
       - markdown-rs
