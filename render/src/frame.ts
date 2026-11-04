@@ -2,13 +2,19 @@
 // iframe, and a port carries trees in and `set` calls out. Both ends take a port their caller made, so a host with its
 // own channel to the frame (a sandbox's bootstrap) hands one over, and any bridge fits behind a small adapter.
 import type { Mount, RenderError } from "./contract.ts";
+import type { Line, Rect } from "./lines.ts";
 import { createPage, type Page, type PageOptions } from "./page.ts";
 import { reveal, type Source } from "./source.ts";
 import type { Change } from "./stable.ts";
 import type { ExpandedRoot, Point, Splice } from "./tree.ts";
 
+export type { Line, Rect };
+
 /** The protocol's version, sent in `ready`; a host checks it, since a host page and its frame may be deployed apart. */
-export const PROTOCOL_VERSION = 3;
+export const PROTOCOL_VERSION = 4;
+
+/** How many lines a frame measures for one `lines` message. */
+export const LINES_BATCH = 200;
 
 /** What the protocol needs of a port: a `MessagePort` is one. */
 export interface Port {
@@ -32,15 +38,9 @@ export type HostMessage =
   /** Which boxes what the source at `offset` drew has: the frame answers with `rects` and the same `id`. */
   | { type: "rects"; id: number; offset: number }
   /** Report the source of what the reader clicks (`pointed`), or stop. */
-  | { type: "point"; on: boolean };
-
-/** A box in the frame's viewport, in CSS pixels, as an element's `getBoundingClientRect()` gives it. */
-export interface Rect {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
+  | { type: "point"; on: boolean }
+  /** Up to `count` lines' places, from line `from`: the frame answers with `lines` and the same `id`. */
+  | { type: "lines"; id: number; from: number; count: number };
 
 /** How a host sends splices. */
 export interface SpliceOptions {
@@ -59,7 +59,11 @@ export type FrameMessage =
   /** The answer to `rects` of the same `id`: one box per element, none when nothing came from there. */
   | { type: "rects"; id: number; rects: Rect[] }
   /** The reader clicked what came from `source`, while the host asked with `point`. */
-  | { type: "pointed"; source: Source };
+  | { type: "pointed"; source: Source }
+  /** The answer to `lines` of the same `id`, in the frame's page: the lines from its `from`, and whether they were the last. */
+  | { type: "lines"; id: number; lines: Line[]; done: boolean }
+  /** What the frame's page shows may have moved, so its lines may have: as a page's `onLayout`. */
+  | { type: "layout" };
 
 export interface FrameOptions extends Omit<PageOptions, "onSet" | "onError" | "onRecovered"> {
   /** Where the page renders, inside the frame. */
@@ -87,10 +91,22 @@ const rectOf = (element: Element): Rect => {
   return { x, y, width, height };
 };
 
+/** Up to `count` of `page`'s lines from line `from`, and whether there are no more. */
+function linesFrom(page: Page, from: number, count: number): { lines: Line[]; done: boolean } {
+  const lines: Line[] = [];
+  const all = page.lines(from);
+  for (let next = all.next(); !next.done; next = all.next()) {
+    if (lines.length === count) return { lines, done: false };
+    lines.push(next.value);
+  }
+  return { lines, done: true };
+}
+
 /**
  * Runs the frame's end: renders what the host sends into `options.container`, and tells the host about `set` calls,
  * components that show their fallback, and each render once it is painted. It scrolls to and marks what a source
  * offset drew (`reveal`), gives its boxes (`rects`), and, once asked (`point`), the source of what the reader clicks.
+ * It gives each line's place (`lines`, a batch at a time), and says when they may have moved (`layout`).
  *
  * @example
  * // inside the frame
@@ -111,6 +127,9 @@ export function serveFrame(port: Port, options: FrameOptions): { page: Page; clo
     },
     onRecovered: ({ component, use }) => {
       post({ type: "recovered", component, use });
+    },
+    onLayout: () => {
+      post({ type: "layout" });
     },
   });
   const view = options.container.ownerDocument.defaultView;
@@ -138,6 +157,9 @@ export function serveFrame(port: Port, options: FrameOptions): { page: Page; clo
         return;
       case "point":
         pointing = message.on;
+        return;
+      case "lines":
+        post({ type: "lines", id: message.id, ...linesFrom(page, message.from, Math.min(message.count, LINES_BATCH)) });
         return;
       case "render":
         page.render(message.tree, message.change);
@@ -189,8 +211,20 @@ export interface FrameConnection {
   /** Asks the frame to report the source of what the reader clicks, as `pointed`, or to stop. */
   point(on: boolean): void;
   /**
+   * Each line of the frame's page that draws something, from line `from`, with its boxes in the frame's page, as a
+   * page's `lines`: the frame measures a batch at a time, as the loop asks for them, and none once the loop stops or
+   * the connection is closed. `on("layout")` says when to ask again.
+   *
+   * @example
+   * frame.on("layout", async () => {
+   *   for await (const { line, rects } of frame.lines()) place(line, rects);
+   * });
+   */
+  lines(from?: number): AsyncGenerator<Line>;
+  /**
    * Listens for the frame's messages. A frame's code may be untrusted: `pointed` carries only a well-formed source,
-   * and other messages are as the frame sent them.
+   * `rects` and `lines` only boxes that are numbers and lines that are whole numbers from 1, and other messages are as
+   * the frame sent them.
    */
   on<T extends FrameMessage["type"]>(type: T, listener: (message: Extract<FrameMessage, { type: T }>) => void): void;
   close(): void;
@@ -223,6 +257,18 @@ function rectsOf(value: unknown): Rect[] {
   });
 }
 
+/** The lines of a `lines` answer that are lines: a whole number from 1, with its boxes. */
+function linesOf(value: unknown): Line[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((line: unknown) => {
+    if (typeof line !== "object" || line === null) return [];
+    const { line: number, rects } = line as Record<string, unknown>;
+    return Number.isInteger(number) && (number as number) >= 1 ? [{ line: number as number, rects: rectsOf(rects) }] : [];
+  });
+}
+
+type Answer = Extract<FrameMessage, { type: "lines" }>;
+
 /**
  * Runs the host's end. Messages wait until the frame says it is ready, with this protocol's version; a frame with
  * another version gets nothing, and `on("ready")` tells the host which version it has.
@@ -235,7 +281,7 @@ function rectsOf(value: unknown): Rect[] {
  * frame.render(tree);
  */
 export function connectFrame(port: Port): FrameConnection {
-  const listeners: Listeners = { ready: [], set: [], error: [], recovered: [], rendered: [], rects: [], pointed: [] };
+  const listeners: Listeners = { ready: [], set: [], error: [], recovered: [], rendered: [], rects: [], pointed: [], lines: [], layout: [] };
   let waiting: HostMessage[] | undefined = [];
   const send = (message: HostMessage) => {
     if (waiting) waiting.push(message);
@@ -243,6 +289,8 @@ export function connectFrame(port: Port): FrameConnection {
   };
   /** The `rects` asked for and not answered yet, by id. */
   const asked = new Map<number, (rects: Rect[]) => void>();
+  /** The `lines` asked for and not answered yet, by id. */
+  const askedLines = new Map<number, (answer: Answer) => void>();
   let lastAsked = 0;
   const notify = (message: FrameMessage) => {
     for (const listen of listeners[message.type] as ((message: FrameMessage) => void)[] | undefined ?? []) listen(message);
@@ -266,7 +314,24 @@ export function connectFrame(port: Port): FrameConnection {
       if (source) notify({ type: "pointed", source });
       return;
     }
+    if (message.type === "lines") {
+      // Anything but `false` ends the loop, so a frame that leaves it out can't keep it going.
+      const done: unknown = message.done;
+      const answer: Answer = { type: "lines", id: message.id, lines: linesOf(message.lines), done: done !== false };
+      askedLines.get(message.id)?.(answer);
+      askedLines.delete(message.id);
+      notify(answer);
+      return;
+    }
     notify(message);
+  };
+  /** Asks the frame for a batch of lines from `from`; an empty last batch once the connection is closed. */
+  const batch = (from: number): Promise<Answer> => {
+    const id = ++lastAsked;
+    return new Promise((resolve) => {
+      askedLines.set(id, resolve);
+      send({ type: "lines", id, from, count: LINES_BATCH });
+    });
   };
   port.addEventListener("message", listener);
   port.start?.();
@@ -284,6 +349,17 @@ export function connectFrame(port: Port): FrameConnection {
     point(on) {
       send({ type: "point", on });
     },
+    async *lines(from = 1) {
+      for (let next = from; ; ) {
+        const { lines, done } = await batch(next);
+        // Only lines after those given: a frame's code could send the same again, and keep the loop going.
+        const after = lines.filter(({ line }) => line >= next);
+        yield* after;
+        const last = after.at(-1);
+        if (done || !last) return;
+        next = last.line + 1;
+      }
+    },
     render(tree, change) {
       send({ type: "render", tree, ...(change ? { change } : {}) });
     },
@@ -300,6 +376,8 @@ export function connectFrame(port: Port): FrameConnection {
       port.removeEventListener("message", listener);
       for (const answer of asked.values()) answer([]);
       asked.clear();
+      for (const [id, answer] of askedLines) answer({ type: "lines", id, lines: [], done: true });
+      askedLines.clear();
     },
   };
 }

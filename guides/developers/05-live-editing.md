@@ -223,10 +223,22 @@ The page knows which text made each thing it shows, from the origins (`origins: 
 - **`view.on("pointed", ({ source }) => …)`**: the reader clicked on the page, on what came from `source`, a range of the text: `start` and `end`, each with its `line`, `column` and `offset`. The page reports clicks only once you listen. The click goes on as usual, so a link still comes as `link`.
 - **`view.reveal(offset)`** scrolls the page to what the text at `offset` drew, as little as it takes, and outlines it for a moment in the theme's accent (the class `compmd-revealed`).
 - **`view.rectsAt(offset)`** resolves with the boxes of what it drew, in the page's coordinates, for an editor that draws its own marks beside or over the page.
+- **`view.lines(from)`** gives each line of the text that draws something, with the boxes it shows in, from the container's top left corner: a paragraph's later lines where their text wraps in, each line of a code block, a component on the line that uses it. It is an async generator that measures each line as your loop reaches it, so a gutter of line numbers beside the page stops at the bottom of what shows; `view.on("layout", …)` says when to draw it again, after a render or when something on the page changed size.
+
+  ```ts
+  view.on("layout", async () => {
+    const numbers = [];
+    for await (const { line, rects: [first] } of view.lines()) {
+      if (first.y > page.scrollTop + page.clientHeight) break;
+      numbers.push(Object.assign(document.createElement("span"), { textContent: String(line), style: `position: absolute; top: ${first.y}px` }));
+    }
+    gutter.replaceChildren(...numbers);
+  });
+  ```
 
 Offsets count code points, as the processor's do, and a text area's count UTF-16 units: an emoji is one code point and two units. `codePointOffset(text, utf16)` and `utf16Offset(text, codePoint)`, from `@compmd/render`, convert one to the other in the text the page shows (`shown` here).
 
-What a click gives follows the origins: a word in `*em*` gives the emphasis, text a `value` made the node holding it, anything a `compmd` component's body drew the line that uses the component, and a host-language component's own drawing the component. An offset gives the innermost thing that came from there, all of them for an `each`, whose items share their template's text. [`@compmd/render`'s README](../../render/README.md#where-the-page-came-from) has the whole table, and `page.sourceOf(node)` and `page.elementsAt(offset)`, the same for a page you render yourself.
+What a click gives follows the origins: a word in `*em*` gives the emphasis, text a `value` made the node holding it, anything a `compmd` component's body drew the line that uses the component, and a host-language component's own drawing the component. An offset gives the innermost thing that came from there, all of them for an `each`, whose items share their template's text. [`@compmd/render`'s README](../../render/README.md#where-the-page-came-from) has the whole table, and `page.sourceOf(node)` and `page.elementsAt(offset)`, the same for a page you render yourself; [where each line is](../../render/README.md#where-each-line-is) has the rules for lines, and `page.lines()` with `onLayout`.
 
 The example reveals on a click in the text only. The playground reveals on every move of the caret the reader makes, by keys too, but not while they type, where the outline would follow every key press.
 

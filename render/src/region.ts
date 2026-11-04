@@ -4,6 +4,8 @@ import type { ComponentError, ComponentRecovered, Mount, RenderError } from "./c
 import type { LinkDefinition } from "./document.ts";
 import type { ImageSource } from "./images.ts";
 import type { KeyOf } from "./keys.ts";
+import { Layout } from "./layout.ts";
+import { linesIn, type Line } from "./lines.ts";
 import { destroyAll, needsContainer, patch, PendingMounts, type CodeHighlighter, type CodeRenderer, type MathRenderer, type Surface, type View } from "./render.ts";
 import { Schemes } from "./scheme.ts";
 import { Drawn, elementsIn, placedOf, sourceIn, type Source } from "./source.ts";
@@ -38,6 +40,11 @@ export interface SurfaceOptions {
   wikiLink?(target: string): string | undefined;
   /** Where images come from, for a page that can't load them itself; without it, each loads from its `src`. */
   images?: ImageSource;
+  /**
+   * What the page or region shows may have moved, so its `lines()` may have: after a render or splice is painted, when
+   * its root or a block in it changes size, when fonts finish loading. At most once an animation frame.
+   */
+  onLayout?(): void;
 }
 
 export interface RegionOptions extends SurfaceOptions {
@@ -76,6 +83,8 @@ export interface Region {
   sourceOf(node: Node): Source | undefined;
   /** The elements that the source at `offset` drew, a code-point offset: as a page's `elementsAt`. */
   elementsAt(offset: number): Element[];
+  /** Each line that draws something and where it shows in `target`: as a page's `lines`. */
+  lines(from?: number): Generator<Line>;
   destroy(): void;
   readonly stylesheet: Stylesheet;
 }
@@ -129,6 +138,8 @@ export function createRegion(target: HTMLElement, options: RegionOptions = {}): 
   let views: View[] = [];
   let rendered: readonly ExpandedNode[] = [];
   const placed = () => placedOf(rendered, surface.drawn, target, ({ start, end }) => ({ start, end }));
+  const onLayout = options.onLayout?.bind(options);
+  const layout = onLayout ? new Layout(target, onLayout) : undefined;
   let checked = false;
   // Checked once the target is in the document: an editor's widget is rendered before it is attached.
   const checkContainer = () => {
@@ -153,6 +164,7 @@ export function createRegion(target: HTMLElement, options: RegionOptions = {}): 
       });
       stylesheet.flush();
       surface.pending.run();
+      layout?.rendered();
       if (checked || !needsContainer(nodes)) return;
       if (target.isConnected) checkContainer();
       else document.defaultView?.requestAnimationFrame(checkContainer);
@@ -162,7 +174,9 @@ export function createRegion(target: HTMLElement, options: RegionOptions = {}): 
     },
     sourceOf: (node) => sourceIn(placed(), node, target),
     elementsAt: (offset) => elementsIn(placed(), offset),
+    lines: (from) => linesIn(placed(), target, from),
     destroy() {
+      layout?.destroy();
       schemes.destroy();
       destroyAll(views);
       views = [];

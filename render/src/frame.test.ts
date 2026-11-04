@@ -161,6 +161,62 @@ describe("the host and frame protocol", () => {
     expect(await unanswered).toEqual([]);
   });
 
+  it("gives the frame's lines a batch at a time, as the loop asks, and says when they may have moved", async () => {
+    const boxes = vi.spyOn(Range.prototype, "getClientRects").mockReturnValue([{ x: 0, y: 0, width: 10, height: 18 }] as unknown as DOMRectList);
+    const [host, frame] = channel();
+    const container = document.body.appendChild(document.createElement("main"));
+    const served = serveFrame(frame, { container });
+    const connection = connectFrame(host);
+    const asked: number[] = [];
+    frame.addEventListener("message", ({ data }) => {
+      const { type, from } = data as { type: string; from?: number };
+      if (type === "lines" && from !== undefined) asked.push(from);
+    });
+    let layouts = 0;
+    connection.on("layout", () => (layouts += 1));
+    // A paragraph on each of the lines 1 to 250.
+    const paragraph = (line: number) => {
+      const origin = { start: { line, column: 1, offset: line * 10 }, end: { line, column: 5, offset: line * 10 + 4 }, occurrence: 0 };
+      return { type: "paragraph", origin, children: [{ type: "text", value: "Line", origin }] };
+    };
+    connection.render({ type: "root", children: Array.from({ length: 250 }, (_, i) => paragraph(i + 1)) });
+    const lines: number[] = [];
+    for await (const { line } of connection.lines()) lines.push(line);
+    expect(lines).toEqual(Array.from({ length: 250 }, (_, i) => i + 1));
+    expect(asked).toEqual([1, 201]);
+    await vi.waitFor(() => {
+      expect(layouts).toBeGreaterThan(0);
+    });
+
+    asked.length = 0;
+    for await (const { line } of connection.lines(10)) if (line === 12) break;
+    expect(asked, "a loop that stops asks for no more").toEqual([10]);
+    served.close();
+    container.remove();
+    boxes.mockRestore();
+  });
+
+  it("passes on only lines that are whole numbers from 1, after those given, whatever the frame sent", async () => {
+    const [host, frame] = channel();
+    const connection = connectFrame(host);
+    const rect = { x: 1, y: 2, width: 3, height: 4 };
+    frame.addEventListener("message", ({ data }) => {
+      const { type, id, from } = data as { type: string; id?: number; from?: number };
+      if (type !== "lines") return;
+      // The same line again and again, which would keep a loop that believed it going.
+      if (from === 1) frame.postMessage({ type: "lines", id, lines: [{ line: 1, rects: [rect, { x: "1" }] }, { line: 0, rects: [] }, { line: 2.5, rects: [] }, null], done: false });
+      else frame.postMessage({ type: "lines", id, lines: [{ line: 1, rects: [rect] }], done: false });
+    });
+    frame.postMessage({ type: "ready", version: PROTOCOL_VERSION });
+    const lines = [];
+    for await (const line of connection.lines()) lines.push(line);
+    expect(lines).toEqual([{ line: 1, rects: [rect] }]);
+
+    const unanswered = connection.lines(5).next();
+    connection.close();
+    expect(await unanswered).toEqual({ done: true, value: undefined });
+  });
+
   it("applies theme tokens sent by the host", async () => {
     const [host, frame] = channel();
     const container = document.body.appendChild(document.createElement("main"));

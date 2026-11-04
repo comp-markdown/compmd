@@ -42,18 +42,21 @@ export class Drawn {
 export interface Placed {
   dom: Node;
   source: Source;
+  node: ExpandedNode;
+  /** Its block's last good render, kept while its text is invalid: an older text's, so its lines draw nothing. */
+  kept: boolean;
 }
 
 /**
  * What `nodes` drew that is in `root` now, each with its range: what `sourceOf` makes of its node's origin. A node
  * without an origin has nothing of its own: its DOM belongs to the nearest node around it that has one.
  */
-export function placedOf(nodes: readonly ExpandedNode[], drawn: Drawn, root: Node, sourceOf: (origin: Origin) => Source): Placed[] {
+export function placedOf(nodes: readonly ExpandedNode[], drawn: Drawn, root: Node, sourceOf: (origin: Origin) => Source, kept = false): Placed[] {
   const placed: Placed[] = [];
   walk(nodes, (node) => {
     if (!node.origin) return;
     const source = sourceOf(node.origin);
-    for (const dom of drawn.of(node, root)) placed.push({ dom, source });
+    for (const dom of drawn.of(node, root)) placed.push({ dom, source, node, kept });
   });
   return placed;
 }

@@ -4,7 +4,7 @@
 // trees and gets `set`, links and errors, and never writes a frame or a policy itself.
 
 import type { HostComponent } from "@compmd/processor";
-import { createPage, reveal, schemeOf, type Change, type ExpandedInput, type ExpandedRoot, type Page, type Source, type Splice } from "@compmd/render";
+import { createPage, reveal, schemeOf, type Change, type ExpandedInput, type ExpandedRoot, type Line, type Page, type Source, type Splice } from "@compmd/render";
 import { connectFrame, type FrameConnection, type SpliceOptions } from "@compmd/render/frame";
 import { shikiHighlight } from "./highlight/highlight.ts";
 import { frameUrl, HostRuntime, type HostRuntimeOptions } from "./host/runtime.ts";
@@ -42,6 +42,8 @@ export interface ViewEvents {
    * report its reader's clicks unasked. The click itself goes on as usual, a link to `link`.
    */
   pointed: { source: Source };
+  /** What the page shows may have moved, so its `lines()` may have: as `@compmd/render`'s `onLayout`. */
+  layout: Record<string, never>;
 }
 
 /** How a host sends splices. */
@@ -103,6 +105,20 @@ export interface View {
    */
   rectsAt(offset: number): Promise<DOMRect[]>;
   /**
+   * Each line of the text of the last render or splice that draws something, from line `from` (1 without it), with the
+   * boxes it shows in, one per visual line it covers, in CSS pixels from the top left corner of the container's
+   * content, by `@compmd/render`'s rules (its `Page.lines`): for a gutter of line numbers. Each line is measured as
+   * the loop reaches it; in frame mode the frame measures a batch at a time, of its page as if it weren't scrolled,
+   * and where the frame is in the container is added. A use in a frame of its own is placed as a whole, on its first
+   * line. `layout` says when to ask again.
+   *
+   * @example
+   * view.on("layout", async () => {
+   *   for await (const { line, rects } of view.lines()) place(line, rects);
+   * });
+   */
+  lines(from?: number): AsyncGenerator<Line>;
+  /**
    * Listens for `type`; a listener added as soon as `open` returns hears everything, opening's errors too. The first
    * listener for `pointed` asks the page to report clicks.
    */
@@ -150,7 +166,7 @@ const shapeOf = (components: readonly HostComponent[]): string =>
 export function createSandbox(options: SandboxOptions): Sandbox {
   return {
     open(container, { components }) {
-      const listeners: Listeners = { set: [], link: [], error: [], recovered: [], rendered: [], loaded: [], pointed: [] };
+      const listeners: Listeners = { set: [], link: [], error: [], recovered: [], rendered: [], loaded: [], pointed: [], layout: [] };
       const emit = <T extends keyof ViewEvents>(type: T, event: ViewEvents[T]) => {
         for (const listener of listeners[type]) listener(event);
       };
@@ -249,6 +265,10 @@ export function createSandbox(options: SandboxOptions): Sandbox {
           });
         },
         rectsAt: (offset) => ready.then(() => page.rectsAt(offset)),
+        lines: async function* (from) {
+          await ready;
+          yield* page.lines(from);
+        },
         on: (type, listener) => {
           if (type === "pointed" && listeners.pointed.length === 0) page.point();
           listeners[type].push(listener);
@@ -302,6 +322,8 @@ interface PageEnd {
   rectsAt(offset: number): Promise<DOMRect[]>;
   /** Reports the source of what the reader clicks, as `pointed`, from now on. */
   point(): void;
+  /** Each line's place, from the container's content's top left corner: at once in the host's page, from a frame later. */
+  lines(from?: number): Iterable<Line> | AsyncIterable<Line>;
   destroy(): void;
 }
 
@@ -327,6 +349,9 @@ function hostPage(container: HTMLElement, runtime: HostRuntime, observer: Observ
     },
     onRecovered: (recovered) => {
       emit("recovered", recovered);
+    },
+    onLayout: () => {
+      emit("layout", {});
     },
   });
   // Captured, so a component that stops a click's propagation still has it reported, as in a page's frame.
@@ -374,6 +399,8 @@ function hostPage(container: HTMLElement, runtime: HostRuntime, observer: Observ
     point: () => {
       container.addEventListener("click", pointed, { capture: true });
     },
+    // The page's root is the container: its lines are where they should be.
+    lines: (from) => page.lines(from),
     destroy: () => {
       container.removeEventListener("click", pointed, { capture: true });
       page.destroy();
@@ -428,6 +455,9 @@ function framePage(container: HTMLElement, runtime: HostRuntime, options: Sandbo
   frame.on("pointed", ({ source }) => {
     emit("pointed", { source });
   });
+  frame.on("layout", () => {
+    emit("layout", {});
+  });
   child.on("failed", (failure) => {
     observer.gone(id, failure.reason);
     emit("error", errorEvent("", "threw", failure.reason === "hung" ? "the page's frame stopped answering" : `the page's frame is of protocol version ${String(failure.version)}`));
@@ -473,6 +503,16 @@ function framePage(container: HTMLElement, runtime: HostRuntime, options: Sandbo
     },
     point: () => {
       frame.point(true);
+    },
+    // The frame's lines are in its page: where the frame's content starts in the container's is added.
+    lines: async function* (from) {
+      for await (const { line, rects } of frame.lines(from)) {
+        const at = iframe.getBoundingClientRect();
+        const around = container.getBoundingClientRect();
+        const dx = at.x - around.x + iframe.clientLeft + container.scrollLeft;
+        const dy = at.y - around.y + iframe.clientTop + container.scrollTop;
+        yield { line, rects: rects.map((rect) => ({ ...rect, x: rect.x + dx, y: rect.y + dy })) };
+      }
     },
     destroy: () => {
       frame.close();

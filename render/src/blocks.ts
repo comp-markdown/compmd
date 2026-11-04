@@ -210,7 +210,7 @@ export class Blocks {
       const { nodes, kept } = shown(block);
       const at = ({ start, end }: Origin): Source => ({ start: moved(start, block.lines, block.shift), end: moved(end, block.lines, block.shift) });
       const own = block.node.origin;
-      return placedOf(nodes, this.#surface.drawn, this.#root, kept && own ? () => at(own) : at);
+      return placedOf(nodes, this.#surface.drawn, this.#root, kept && own ? () => at(own) : at, kept);
     });
   }
 

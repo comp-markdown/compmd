@@ -4,6 +4,8 @@
 // whole tree; keys follow its edit, and invalid text keeps the last good render (`stable.ts`).
 import { Blocks } from "./blocks.ts";
 import { diff, editOf, type Edit } from "./keys.ts";
+import { Layout } from "./layout.ts";
+import { linesIn, type Line } from "./lines.ts";
 import { surfaceOf, type SurfaceOptions } from "./region.ts";
 import { Schemes } from "./scheme.ts";
 import { elementsIn, sourceIn, type Source } from "./source.ts";
@@ -67,6 +69,22 @@ export interface Page {
    * editor.onCaret((caret) => page.elementsAt(codePointOffset(text, caret))[0]?.scrollIntoView({ block: "nearest" }));
    */
   elementsAt(offset: number): Element[];
+  /**
+   * Each line of the current text that draws something, in line order from line `from`, with the boxes it shows in,
+   * one per visual line it covers, in CSS pixels from the top left corner of the root's content: where its text shows,
+   * a code block's line in its `<pre>`, or, for a line with no text of its own (a component's, an image's), the box of
+   * what its range drew. Lines that draw nothing (blank lines, frontmatter, a closing line) are left out. Each line is
+   * measured when the generator reaches it; `onLayout` says when to ask again.
+   *
+   * @param from - The first line to give, 1-based; 1 without it.
+   *
+   * @example
+   * for (const { line, rects: [first] } of page.lines(firstShown)) {
+   *   if (first.y > root.scrollTop + root.clientHeight) break;   // past what shows: the rest isn't measured
+   *   gutter.append(number(line, first.y));
+   * }
+   */
+  lines(from?: number): Generator<Line>;
 }
 
 /**
@@ -85,6 +103,8 @@ export function createPage(root: HTMLElement, options: PageOptions = {}): Page {
   const schemes = new Schemes(root);
   const surface = surfaceOf(root.ownerDocument, stylesheet, schemes, options);
   const blocks = new Blocks(root, surface);
+  const onLayout = options.onLayout?.bind(options);
+  const layout = onLayout ? new Layout(root, onLayout) : undefined;
   /** The text the blocks are of, as the last change gave it. */
   let text: string | undefined;
   let rendered = false;
@@ -97,6 +117,7 @@ export function createPage(root: HTMLElement, options: PageOptions = {}): Page {
     stylesheet.flush();
     surface.pending.run();
     rendered = true;
+    layout?.rendered();
   };
   let tokens: string[] = [];
   const theme = (next: Record<string, string>) => {
@@ -124,7 +145,9 @@ export function createPage(root: HTMLElement, options: PageOptions = {}): Page {
     },
     sourceOf: (node) => sourceIn(blocks.placed(), node, root),
     elementsAt: (offset) => elementsIn(blocks.placed(), offset),
+    lines: (from) => linesIn(blocks.placed(), root, from),
     destroy() {
+      layout?.destroy();
       schemes.destroy();
       blocks.destroy();
       stylesheet.remove();

@@ -54,9 +54,9 @@ function open(mode: "frame" | "host", components: HostComponent[] = [label()], o
   areas.push(area);
   const view = createSandbox({ base: frames, page: mode, ...options }).open(area, { components });
   views.push(view);
-  const events: { [T in keyof ViewEvents]: ViewEvents[T][] } = { set: [], link: [], error: [], recovered: [], rendered: [], loaded: [], pointed: [] };
+  const events: { [T in keyof ViewEvents]: ViewEvents[T][] } = { set: [], link: [], error: [], recovered: [], rendered: [], loaded: [], pointed: [], layout: [] };
   const waiting: (() => void)[] = [];
-  for (const type of ["set", "link", "error", "recovered", "rendered", "loaded"] as const) {
+  for (const type of ["set", "link", "error", "recovered", "rendered", "loaded", "layout"] as const) {
     view.on(type, (event) => {
       (events[type] as unknown[]).push(event);
       for (const check of waiting) check();
@@ -475,6 +475,36 @@ describe("where the page came from", () => {
     view.render({ type: "root", children: [...intro.children, { type: "componentLeaf", name: "clicker", params: [], fallback: [] }] });
     await expect.poll(() => pointed, { timeout: 5000 }).toEqual([{ source: { start: origin.start, end: origin.end } }]);
   });
+});
+
+describe("where each line is", () => {
+  /** `"# Title\n\nOne\ntwo\n\n```js\nlet a;\nlet b;\n```"`: the heading on line 1, the paragraph on 3 and 4, the code on 7 and 8. */
+  const point = (line: number, offset: number) => ({ line, column: 1, offset });
+  const range = (from: [number, number], to: [number, number]) => ({ start: point(...from), end: point(...to), occurrence: 0 });
+  const lined: ExpandedRoot = {
+    type: "root",
+    children: [
+      { type: "heading", depth: 1, origin: range([1, 0], [1, 7]), children: [{ type: "text", value: "Title", origin: range([1, 2], [1, 7]) }] },
+      { type: "paragraph", origin: range([3, 9], [4, 16]), children: [{ type: "text", value: "One\ntwo", origin: range([3, 9], [4, 16]) }] },
+      { type: "code", lang: "js", meta: null, value: "let a;\nlet b;", origin: range([6, 18], [9, 42]) },
+    ],
+  };
+
+  for (const mode of MODES) {
+    it(`gives each line that draws something its boxes in the container, in line order, once the page says it moved (${mode} mode)`, async () => {
+      const { area, view, events, until } = open(mode, []);
+      view.render(lined);
+      await until(() => events.layout.length > 0);
+      const lines = [];
+      for await (const line of view.lines()) lines.push(line);
+      expect(lines.map(({ line }) => line)).toEqual([1, 3, 4, 7, 8]);
+      const tops = lines.map(({ rects: [first] }) => first?.y ?? -1);
+      // Lines 3 and 4 may share a visual line: a soft line break shows as a space.
+      expect(tops.every((top, i) => top >= 0 && top <= area.clientHeight && (i === 0 || top >= (tops[i - 1] ?? 0)))).toBe(true);
+      expect(tops[3]).toBeGreaterThan(tops[2] ?? 0);
+      expect(lines.every(({ rects }) => rects.every(({ width, height }) => width > 0 && height > 0))).toBe(true);
+    });
+  }
 });
 
 describe("the compile frame", () => {

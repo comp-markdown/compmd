@@ -143,7 +143,7 @@ textarea.addEventListener("selectionchange", () => reveal(page.elementsAt(codePo
 
 ## Where each line is
 
-**Proposed, not implemented yet.** A viewer that shows the text's line numbers in a gutter beside the page, or marks a line a comment is on, needs each line of the text where the page shows it. The page and a region give that from the same origins, as boxes, and say when they moved:
+A viewer that shows the text's line numbers in a gutter beside the page, or marks a line a comment is on, needs each line of the text where the page shows it. The page and a region give that from the same origins, as boxes, and say when they moved:
 
 | Call | Gives |
 |---|---|
