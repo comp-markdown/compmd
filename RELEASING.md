@@ -67,7 +67,9 @@ Once the npm packages are staged, the workflow's second job, `crates`, waits in 
 1. `compmd-markdown`, only when its version (`markdown-rs/Cargo.toml`) isn't on crates.io yet, since `compmd` depends on it;
 2. `compmd`, at the release's version.
 
-A version crates.io already has is skipped, so a release that failed halfway can run again. Check: `cargo search compmd` gives the new version. docs.rs builds the documentation a few minutes later.
+A version crates.io already has is skipped, so a release that failed halfway can run again. The job runs `.github/scripts/publish-crates.sh`, which reads each crate's version with `cargo metadata --no-deps`, since the fork's checkout has no `Cargo.lock`, and stops before publishing anything when it can't read one. Try it before a release, from the repository: `.github/scripts/publish-crates.sh --dry-run` says what it would publish, and publishes nothing; in a fresh clone (`git clone --recurse-submodules`), the fork has no lock file, as on the runner. Check: `cargo search compmd` gives the new version. docs.rs builds the documentation a few minutes later.
+
+`0.4.0`'s job read the fork's version with `cargo pkgid`, which needs a lock file, got none, and stopped at `compmd-markdown` without publishing; `compmd` 0.4.0 was published by hand from the tag, as 0.3.0 was.
 
 **Once, before the first release that publishes a crate this way** (each step the author's):
 - On crates.io, each crate's **Settings** → **Trusted Publishing** → **GitHub**: the owner `comp-markdown`, the repository `compmd`, the workflow `release.yml`, the environment `crates-io`. For both `compmd` and `compmd-markdown`: `compmd-markdown`'s code is the fork's, but it is published from this repository's workflow.
@@ -76,12 +78,15 @@ A version crates.io already has is skipped, so a release that failed halfway can
 **By hand**, when the workflow can't (a crate's first version, which trusted publishing needs to exist): dry-run first, from the tag's commit, with `cargo login` once (a token with the `publish-new` and `publish-update` scopes, kept by the author):
 
 ```sh
-git worktree add ../compmd-v0.3.0 v0.3.0 && git -C ../compmd-v0.3.0 submodule update --init
-cargo publish --dry-run -p compmd --manifest-path ../compmd-v0.3.0/Cargo.toml
-cargo publish -p compmd --manifest-path ../compmd-v0.3.0/Cargo.toml
+git worktree add ../compmd-v0.4.0 v0.4.0 && git -C ../compmd-v0.4.0 submodule update --init
+cargo publish --dry-run -p compmd --manifest-path ../compmd-v0.4.0/Cargo.toml
+cargo publish -p compmd --manifest-path ../compmd-v0.4.0/Cargo.toml
+rm -rf ../compmd-v0.4.0 && git worktree prune
 ```
 
-`compmd` 0.3.0 was published so, on 2026-11-03, after its npm release: from the tag, so the crate is the same code as the packages.
+Run them from this repository's root, where its tags are. Git won't remove a worktree with a submodule, even deinitialized (`git worktree remove` says *working trees containing submodules cannot be moved or removed*), so the last line deletes its folder and has git forget it.
+
+`compmd` 0.3.0 was published so, on 2026-11-03, after its npm release, and 0.4.0 the same day: from the tag, so the crate is the same code as the packages.
 
 ## The Mermaid pack
 
