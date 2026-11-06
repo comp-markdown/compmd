@@ -23,6 +23,16 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
+      # Temporary: the fonts the runner image has, as the Pages job's Chrome finds them, before WebKit's dependencies
+      # add their own, for docker/Dockerfile to match (docs/ci.md, decision 12). Removed in the next commit.
+      - name: The runner's fonts
+        run: |
+          fc-match sans-serif
+          fc-match serif
+          fc-match monospace
+          fc-match system-ui
+          fc-list : family | sort
+          dpkg-query -W -f '${db:Status-Abbrev} ${Package}\n' 'fonts-*' | sort
       - uses: ./.github/actions/setup
       - run: pnpm install --frozen-lockfile
       # The sandbox's, the Vite plugin's and create-pack's browser tests run in the runner's Chrome and in Playwright's WebKit.
