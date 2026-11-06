@@ -100,6 +100,8 @@ pnpm install
 cargo make ci
 ```
 
+Some failures show only on CI's Linux runner, such as a page laid out a pixel wider with its fonts. `cargo make linux` runs the checks on a commit in a container like the runner, with Docker: `cargo make linux` all of them, `cargo make linux site` the site's build and check, `cargo make linux --ref <commit> …` another commit ([how](docs/ci.md)).
+
 ## License
 
 Copyright © 2026 Hakan Serce.

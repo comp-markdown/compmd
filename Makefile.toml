@@ -55,6 +55,21 @@ clear = true
 # Only the build needs the packages' order; once each package is built, lint and tests don't depend on it.
 script = ["pnpm -r --if-present build", "pnpm -r --no-sort --if-present lint", "pnpm -r --no-sort --if-present test"]
 
+[tasks.linux]
+description = "Run a check on Linux, in a container like CI's runner (docker/Dockerfile), on a commit of this repository: `cargo make linux` runs `cargo make ci` on HEAD; `cargo make linux site` the site's build and check, as the Pages workflow runs them; `cargo make linux <command>` any command; `cargo make linux --ref <commit> …` another commit. Needs Docker; x86-64 runs emulated on an Arm Mac."
+clear = true
+# The repository's git folder, also when the checkout is a submodule or a worktree, so the container checks out its
+# commits and tags; the caches in named volumes, so a later run reuses the build.
+script = '''
+docker build --platform linux/amd64 --tag compmd-linux docker
+docker run --rm --platform linux/amd64 \
+  --volume "$(git rev-parse --path-format=absolute --git-common-dir):/git:ro" \
+  --volume compmd-linux-target:/work/target \
+  --volume compmd-linux-cargo:/usr/local/cargo/registry \
+  --volume compmd-linux-cache:/cache \
+  compmd-linux ${@}
+'''
+
 [tasks.ci]
 description = "Every check CI runs; coverage runs the tests, the conformance set's among them, so `test` isn't run again"
 clear = true

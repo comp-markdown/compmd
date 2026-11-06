@@ -28,6 +28,7 @@ A release publishes only packages that npm and this repository's workflow alread
 - Each package's README says what changed, until the implementation has a changelog of its own.
 - The version, in one commit: `render/package.json`, `wasm/package.json`, `sandbox/package.json`, `registry/package.json`, `devtools/package.json`, `vite/package.json`, `pack/package.json`, `create-pack/package.json` and `processor/Cargo.toml`.
 - If the fork changed since its last release: its version in `markdown-rs/Cargo.toml` (on its `compmd` branch), and the same version in the `compmd-markdown` dependency of `processor/Cargo.toml` and `markdown-rs/mdast_util_to_markdown/Cargo.toml`.
+- On Linux, once the version is committed: `cargo make linux` and `cargo make linux site` pass, so neither the release's checks nor its site deploy fail on the runner alone ([CI](docs/ci.md), decision 12).
 - Push: the fork first, then this repository.
 
 ### 2. Tag, the workflow stages on npm, and the author approves
