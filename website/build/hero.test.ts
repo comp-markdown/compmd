@@ -17,7 +17,8 @@ let server: ViteDevServer;
 
 beforeAll(async () => {
   const root = join(import.meta.dirname, "..");
-  server = await createServer({ root, configFile: join(root, "vite.config.ts"), logLevel: "warn", server: { port: PORT, strictPort: true } });
+  // Its own cache, where the sandbox's frames are built: `dev.test.ts` starts a dev server of the site at the same time.
+  server = await createServer({ root, configFile: join(root, "vite.config.ts"), cacheDir: join(root, "node_modules/.vite-hero"), logLevel: "warn", server: { port: PORT, strictPort: true } });
   await server.listen();
 }, 60_000);
 

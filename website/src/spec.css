@@ -125,6 +125,25 @@
   color: var(--accent);
 }
 
+/* The page a wrong address gets: a heading, a line and the places to go from. */
+.not-found {
+  padding-block: clamp(48px, 8vw, 96px);
+  max-inline-size: 48rem;
+}
+
+.not-found h1 {
+  margin: 0 0 0.4em;
+  font-size: clamp(2.2rem, 5vw, 3.2rem);
+}
+
+.not-found p {
+  color: var(--ink-secondary);
+}
+
+.not-found li + li {
+  margin-block-start: 0.4em;
+}
+
 /* The guides' shelf: no contents beside it, its books as cards across the page. */
 .reading.shelf {
   grid-template-columns: minmax(0, 1fr);

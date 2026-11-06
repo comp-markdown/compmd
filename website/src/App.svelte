@@ -1,11 +1,12 @@
 <!-- The landing page: one column of sections, each one idea with something to look at (website/docs/design.md). -->
 <script lang="ts">
-  import snapshots from "virtual:snapshots";
+  import snapshots, { facts } from "virtual:snapshots";
   import Degrade from "./Degrade.svelte";
   import Example from "./Example.svelte";
   import Footer from "./Footer.svelte";
   import Header from "./Header.svelte";
   import Hero from "./Hero.svelte";
+  import Meta from "./Meta.svelte";
   import SectionWheel from "./SectionWheel.svelte";
   import { REPOSITORY } from "./site.ts";
   import Snippets from "./Snippets.svelte";
@@ -85,7 +86,7 @@
     { href: "spec/", title: "The spec", text: "Version 1, a draft: the syntax, the components, expressions, data and security." },
     { href: "guides/", title: "The guides", text: "The Author's Guide, for writing documents, and the Developer's Guide, for building CompMD into your app." },
     { href: "playground/", title: "The playground", text: "Write CompMD and watch the page, with a tour, examples and the diagnostics." },
-    { href: `${REPOSITORY}/tree/main/conformance`, title: "The conformance set", text: "188 cases any implementation can run, with their expected trees." },
+    { href: `${REPOSITORY}/tree/main/conformance`, title: "The conformance set", text: `${String(facts.cases)} cases any implementation can run, with their expected trees.` },
     { href: REPOSITORY, title: "GitHub", text: "The spec, the processor in Rust, the packages and this site." },
     { href: "https://www.npmjs.com/org/compmd", title: "The packages", text: "The processor, the renderer, the sandbox, the Vite plugin and the pack template on npm, and the compmd crate." },
   ];
@@ -94,6 +95,8 @@
 <svelte:head>
   {@html `<style>${css}</style>`}
 </svelte:head>
+
+<Meta title="CompMD: Markdown with components" description="CompMD is Markdown with components, data, inputs and layout, readable as text in any Markdown renderer." />
 
 <Header />
 
@@ -176,7 +179,13 @@
       <h2>Use it in your app</h2>
       <p class="lede">A Vite plugin and a line of configuration. Your documents get components of your own and from packs, each run at the trust you give it.</p>
       <pre class="install"><code>npm install @compmd/vite @compmd/processor @compmd/sandbox</code></pre>
-      <p class="note">Versions <code>0.x</code> while the spec is a draft. On npm: <a href="https://www.npmjs.com/package/@compmd/processor">@compmd/processor</a> and <a href="https://www.npmjs.com/package/@compmd/render">@compmd/render</a>, with <code>@compmd/sandbox</code> and <code>@compmd/vite</code> to follow. In Rust, the processor is the crate <a href="https://crates.io/crates/compmd">compmd</a>.</p>
+      <p class="note">
+        <strong>An early stage:</strong> versions are <code>0.x</code> while the spec is a draft, and until version 1 a release can break documents and code written for the one before.
+        On npm: <a href="https://www.npmjs.com/package/@compmd/vite">@compmd/vite</a>, <a href="https://www.npmjs.com/package/@compmd/processor">@compmd/processor</a>,
+        <a href="https://www.npmjs.com/package/@compmd/sandbox">@compmd/sandbox</a> and <a href="https://www.npmjs.com/package/@compmd/render">@compmd/render</a>; in Rust, the crate
+        <a href="https://crates.io/crates/compmd">compmd</a>. What each release changed: <a href="{REPOSITORY}/releases">the releases</a> and
+        <a href="{REPOSITORY}/blob/main/CHANGELOG.md">the spec's changelog</a>, and GitHub's <em>Watch → Releases</em> to hear of the next.
+      </p>
       <Snippets />
       <div class="feature">
         <div class="about">
@@ -226,7 +235,7 @@
       <dl class="points">
         <div>
           <dt>A processor in Rust, run as WebAssembly</dt>
-          <dd>The same processor runs natively and in the browser, where it is 808 KB gzipped. <a href="{REPOSITORY}/tree/main/processor">The processor</a></dd>
+          <dd>The same processor runs natively and in the browser, where it is {facts.wasmKb} KB gzipped. <a href="{REPOSITORY}/tree/main/processor">The processor</a></dd>
         </div>
         <div>
           <dt>Incremental</dt>
@@ -242,7 +251,7 @@
         </div>
         <div>
           <dt>A conformance set</dt>
-          <dd>188 cases, with every diagnostic code, that any implementation can run against its own processor. <a href="{REPOSITORY}/tree/main/conformance">The cases</a></dd>
+          <dd>{facts.cases} cases, with every diagnostic code, that any implementation can run against its own processor. <a href="{REPOSITORY}/tree/main/conformance">The cases</a></dd>
         </div>
       </dl>
     </div>

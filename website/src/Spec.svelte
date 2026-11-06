@@ -13,6 +13,7 @@
   import type { Heading } from "../build/spec.ts";
   import Footer from "./Footer.svelte";
   import Header from "./Header.svelte";
+  import Meta from "./Meta.svelte";
   import { specPdf } from "./site.ts";
 
   interface Props {
@@ -44,6 +45,8 @@
 <svelte:head>
   <title>{title}</title>
 </svelte:head>
+
+<Meta {title} description="The CompMD specification: Markdown with components, data, inputs and layout, readable as text in any Markdown renderer." />
 
 <Header {root} current="spec" />
 

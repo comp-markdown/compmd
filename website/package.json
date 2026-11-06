@@ -7,7 +7,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && vite build --ssr src/server.ts --outDir dist-server && node scripts/prerender.ts && node scripts/assemble.ts && node scripts/pdf.ts",
+    "build": "vite build && vite build --ssr src/server.ts --outDir dist-server && node scripts/prerender.ts && node scripts/assemble.ts && node scripts/pdf.ts && node scripts/card.ts",
     "preview": "node scripts/serve.ts",
     "lint": "eslint . && tsc --noEmit && svelte-check --tsconfig ./tsconfig.json --fail-on-warnings --output machine",
     "test": "vitest run",

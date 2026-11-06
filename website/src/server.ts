@@ -6,6 +6,7 @@ import type { Rendered } from "../build/prerender.ts";
 import App from "./App.svelte";
 import Book from "./Book.svelte";
 import Guide from "./Guide.svelte";
+import NotFound from "./NotFound.svelte";
 import Spec from "./Spec.svelte";
 
 /** The landing page, which the client hydrates. */
@@ -23,6 +24,12 @@ export function renderSpecPage(props: ComponentProps<typeof Spec>): Rendered {
 /** A page of the guides, static: nothing hydrates it. */
 export function renderGuidePage(props: ComponentProps<typeof Guide>): Rendered {
   const { head, body } = render(Guide, { props });
+  return { head, body };
+}
+
+/** The page a wrong address gets, static. */
+export function renderNotFoundPage(): Rendered {
+  const { head, body } = render(NotFound);
   return { head, body };
 }
 

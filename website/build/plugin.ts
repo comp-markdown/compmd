@@ -1,10 +1,12 @@
-// The Vite plugin that gives the page its snapshots, as `import snapshots, { files } from "virtual:snapshots"`, made
-// from the documents in `content/` when the page is built, and again when one of them changes. `files` are the other
-// files there, which the documents read, for the live parts.
+// The Vite plugin that gives the page its snapshots, as `import snapshots, { files, facts } from "virtual:snapshots"`,
+// made from the documents in `content/` when the page is built, and again when one of them changes. `files` are the
+// other files there, which the documents read, for the live parts; `facts`, what the page says of the repository,
+// counted (`facts.ts`).
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { loadApp } from "@compmd/vite";
 import type { Plugin } from "vite";
+import { factsOf } from "./facts.ts";
 import { EXTENSION, snapshots } from "./snapshots.ts";
 
 const ID = "virtual:snapshots";
@@ -24,7 +26,8 @@ export function snapshotsOf(folder: string, root: string): Plugin {
       for (const name of names) this.addWatchFile(join(folder, name));
       const files = Object.fromEntries(names.filter((name) => !name.endsWith(EXTENSION)).map((name) => [name, readFileSync(join(folder, name), "utf8")]));
       const { request } = await loadApp(root);
-      return `export default ${JSON.stringify(snapshots(folder, new Date().toISOString(), request))};\nexport const files = ${JSON.stringify(files)};`;
+      const facts = factsOf(join(root, ".."));
+      return `export default ${JSON.stringify(snapshots(folder, new Date().toISOString(), request))};\nexport const files = ${JSON.stringify(files)};\nexport const facts = ${JSON.stringify(facts)};`;
     },
   };
 }

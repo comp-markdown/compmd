@@ -1,7 +1,8 @@
 // Writes the server-rendered pages into the client build, `dist/`: the landing page, each version of the spec with its
 // companion (`build/versions.ts`, `build/companion.ts`), the draft from the working tree and each release from its tag,
-// and the guides' pages; and the search index of them, `search.json` (`build/search.ts`). Runs
-// after `vite build` and the server build.
+// the guides' pages and the page a wrong address gets, `404.html`; the search index of them, `search.json`
+// (`build/search.ts`); and `sitemap.xml` and `robots.txt` (`build/sitemap.ts`). Runs after `vite build` and the server
+// build.
 import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -10,6 +11,7 @@ import { bookPages, type BookProps } from "../build/book.ts";
 import { guidePages } from "../build/guide-pages.ts";
 import { prerendered, relocated, type Rendered } from "../build/prerender.ts";
 import { sectionsOf, sitePages } from "../build/search.ts";
+import { ROBOTS, sitemapOf } from "../build/sitemap.ts";
 import { rootOf, specPages } from "../build/versions.ts";
 import type { ComponentProps } from "svelte";
 import type Guide from "../src/Guide.svelte";
@@ -24,6 +26,7 @@ const server = (await import(join(import.meta.dirname, "../dist-server/server.js
   renderSpecPage: (props: ComponentProps<typeof Spec>) => Rendered;
   renderGuidePage: (props: ComponentProps<typeof Guide>) => Rendered;
   renderBookPage: (props: BookProps) => Rendered;
+  renderNotFoundPage: () => Rendered;
 };
 const git = (...args: string[]) => execFileSync("git", args, { cwd: REPO, encoding: "utf8" });
 const stylesheet = (folder: string) => (href: string) => readFileSync(join(DIST, folder, href), "utf8");
@@ -80,4 +83,9 @@ for (const page of books) {
   mkdirSync(join(DIST, page.folder), { recursive: true });
   writeFileSync(join(DIST, page.folder, "index.html"), prerendered(relocated(guideTemplate, page.root), server.renderBookPage(page.props), stylesheet(page.folder)));
 }
+// The page a wrong address gets, at any depth: the guides' page, with its links and stylesheets from the site's root.
+writeFileSync(join(DIST, "404.html"), prerendered(relocated(guideTemplate, "/"), server.renderNotFoundPage(), stylesheet("")));
+// What the site tells search engines: every page made above, and the playground.
+writeFileSync(join(DIST, "sitemap.xml"), sitemapOf(["", ...versions.map((page) => page.folder), ...guide.map((page) => page.folder), "playground/"]));
+writeFileSync(join(DIST, "robots.txt"), ROBOTS);
 console.log(`Prerendered the landing page, ${String(pages.length)} page(s) of the spec (${pages.map((page) => page.folder).join(", ")}), ${String(guide.length)} of the guides and ${String(books.length)} books to print`);

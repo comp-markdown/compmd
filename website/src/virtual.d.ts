@@ -7,4 +7,7 @@ declare module "virtual:snapshots" {
 
   /** The other files in `content/`, by name, which the documents read. */
   export const files: Record<string, string>;
+
+  /** What the page says of the repository, counted when the site is built. */
+  export const facts: import("../build/facts.ts").Facts;
 }

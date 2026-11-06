@@ -21,6 +21,7 @@
   import type { Heading } from "../build/spec.ts";
   import Footer from "./Footer.svelte";
   import Header from "./Header.svelte";
+  import Meta from "./Meta.svelte";
   import { guidePdf } from "./site.ts";
 
   interface Props {
@@ -44,9 +45,11 @@
     title: string;
     /** The version of the `@compmd` packages the guides are written for: the packages' own, as built. */
     version: string;
+    /** What the page is about, for its head: its first paragraph. */
+    description: string;
   }
 
-  let { html, toc, root, books, book, parts, current, previous, next, title, version }: Props = $props();
+  let { html, toc, root, books, book, parts, current, previous, next, title, version, description }: Props = $props();
   const guides = $derived(`${root}guides/`);
   const open = $derived(books.find((shelved) => shelved.name === book));
   /** The page's sections, for "On this page"; the shelf has none, its books are its page. */
@@ -56,6 +59,8 @@
 <svelte:head>
   <title>{current === undefined || open === undefined ? title : `${title} · ${open.title}`}</title>
 </svelte:head>
+
+<Meta title={current === undefined || open === undefined ? title : `${title} · ${open.title}`} {description} />
 
 <Header {root} current="guides" />
 

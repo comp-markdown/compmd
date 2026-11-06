@@ -29,6 +29,32 @@ export interface GuidePage {
 /** A document's title: its first heading. */
 const titleOf = (markdown: string): string => /^# (.+)$/m.exec(markdown)?.[1] ?? "";
 
+/** The longest description, about what a search result shows. */
+const DESCRIBED = 200;
+
+/**
+ * A page's description, for its head: its first paragraph of prose, as plain text, cut at a word to about
+ * {@link DESCRIBED} characters. Headings, lists, tables, quotes, code and HTML are passed over.
+ *
+ * @example
+ * descriptionOf("# Quick start\n\nRender a **document** in [a page](./page.md).\n");
+ * // "Render a document in a page."
+ */
+export function descriptionOf(markdown: string): string {
+  const paragraph = markdown
+    .split(/\n\s*\n/)
+    .map((block) => block.trim())
+    .find((block) => block !== "" && !/^(#|[-*+] |\d+\. |\||>|```|~~~|<|:::)/.test(block));
+  const text = (paragraph ?? "")
+    .replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/[*_`]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (text.length <= DESCRIBED) return text;
+  const cut = text.lastIndexOf(" ", DESCRIBED);
+  return `${text.slice(0, cut > 0 ? cut : DESCRIBED)}…`;
+}
+
 /**
  * The guides' pages, from their files: `read` gives a file of `guides/` by its path there (`developers/README.md`).
  * `blob` is the repository's file URL, ending in `/`.
@@ -47,7 +73,7 @@ export async function guidePages(read: (path: string) => string, blob: string): 
     const markdown = read(path);
     const link = (href: string) => (href.startsWith(SITE) ? `${root}${href.slice(SITE.length)}` : guideLink(href, up));
     const { html, toc } = await renderMarkdown(markdown, { blob: `${blob}guides/`, path }, { rules: false, sources: false, link });
-    return { html, toc, root, books: shelf, title: titleOf(markdown), version: VERSION };
+    return { html, toc, root, books: shelf, title: titleOf(markdown), description: descriptionOf(markdown), version: VERSION };
   };
   const shelfPage = await page("README.md", undefined, "../");
   const pages: GuidePage[] = [{ folder: "guides/", root: "../", props: { ...shelfPage, parts: [] }, search: { url: "guides/", page: "The guides", html: shelfPage.html } }];

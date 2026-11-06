@@ -9,7 +9,7 @@ CompMD (Component Markdown) is a Markdown flavor that adds components, container
 
 **[The website](https://compmd.hakanserce.com/)** shows CompMD live, with [the playground](https://compmd.hakanserce.com/playground/) and [the spec](https://compmd.hakanserce.com/spec/) as a page.
 
-**Status: draft.** Version 1 isn't published yet, and a change can still break documents written against the draft; the [changelog](CHANGELOG.md) says when one does.
+**Status: early draft.** CompMD is at an early stage. Until version 1 is released, the spec and the packages will change in ways that break documents and code written for an earlier draft; the [changelog](CHANGELOG.md) says when one does.
 
 | File | What it holds |
 |---|---|
