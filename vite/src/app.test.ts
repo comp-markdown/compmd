@@ -98,7 +98,7 @@ params:
   place: string
 \`\`\`
 `,
-  "pnpm-lock.yaml": "lockfileVersion: '9.0'\npackages:\n  '@acme/charts@2.1.0':\n    resolution: {integrity: sha512-charts}\n",
+  "pnpm-lock.yaml": "lockfileVersion: '9.0'\npackages:\n  '@acme/charts@2.1.0':\n    resolution: {integrity: sha512-charts}\n  '@acme/maps@3.0.0':\n    resolution: {integrity: sha512-maps}\n",
 };
 
 beforeEach(async () => {
@@ -179,6 +179,15 @@ describe("loadApp", () => {
     expect(charts!.files["bar.jsx"]).toBe("export default () => null;");
     expect(app.request.packs["@acme/app"]![0]!.files["Stars.tsx"]).toBe("");
     expect(app.warnings).toEqual([]);
+  });
+
+  it("warns of an installed pack its lock file has no integrity for, and of none without a lock file", async () => {
+    await write({ "pnpm-lock.yaml": "lockfileVersion: '9.0'\npackages:\n  '@acme/charts@2.1.0':\n    resolution: {integrity: sha512-charts}\n" });
+    const app = await loadApp(root);
+    expect(app.request.packs["@acme/maps"]![0]!.integrity).toBeNull();
+    expect(app.warnings).toEqual(["@acme/maps@3.0.0 has no integrity in pnpm-lock.yaml, so a document that pins its `integrity` won't load it (F035)"]);
+    await rm(join(root, "pnpm-lock.yaml"));
+    expect((await loadApp(root)).warnings).toEqual([]);
   });
 
   it("serves each built module, with its file's hash, and mounts the trusted components", async () => {

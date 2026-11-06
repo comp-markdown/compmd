@@ -5,12 +5,12 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
-import { join, posix } from "node:path";
+import { join, posix, relative, sep } from "node:path";
 import { initSync, process as processDocument, type Diagnostic, type PackRelease } from "@compmd/processor";
 import semver from "semver";
 import { parse as parseYaml } from "yaml";
 import { isFolder, policyOf, readConfig, type ReadConfig, type Translated } from "./config.ts";
-import { findPacks, integrities, releaseOf, type ComponentFile, type Pack } from "./packs.ts";
+import { findPacks, integrities, lockFileOf, releaseOf, type ComponentFile, type Pack } from "./packs.ts";
 
 /** A trusted component, which the app's own build compiles and the sandbox mounts in the page. */
 export interface TrustedComponent {
@@ -128,6 +128,12 @@ export function trustedComponents(pack: Pack): TrustedComponent[] {
   });
 }
 
+/**
+ * Whether `pack` was installed from a registry, so the lock file holds its integrity: its real folder is in a
+ * `node_modules`, unlike a folder pack or a workspace package linked into `node_modules`.
+ */
+const isInstalled = (pack: Pack): boolean => pack.folder === undefined && pack.dir.split(sep).includes("node_modules");
+
 /** `sha384-…` of the file at `file`, as a script's `integrity` takes it. */
 const integrityOf = (file: string): string => `sha384-${createHash("sha384").update(readFileSync(file)).digest("base64")}`;
 
@@ -180,11 +186,14 @@ export async function loadApp(root: string, given?: unknown): Promise<App> {
     if (!existsSync(join(root, "node_modules", ...library.name.split("/"), "package.json"))) problems.push(`the library ${library.name} isn't installed: \`npm install ${library.name}\``);
   }
   if (problems.length > 0) throw new AppError(problems.join("\n"));
+  const lockFile = lockFileOf(root);
   const locked = await integrities(root);
   const refused: Record<string, string> = {};
+  const unlocked: string[] = [];
   for (const pack of packs) {
     const integrity = locked.get(`${pack.name}@${pack.version}`);
     if (integrity) pack.integrity = integrity;
+    else if (lockFile !== undefined && isInstalled(pack)) unlocked.push(`${pack.name}@${pack.version}`);
     if (config.maxPackSize !== undefined && pack.size > config.maxPackSize) refused[pack.name] = `its files are ${String(pack.size)} bytes, more than the ${String(config.maxPackSize)} this app serves`;
   }
   const translated = policyOf(config, (key) => byKey(key)?.name ?? key, refused);
@@ -206,5 +215,8 @@ export async function loadApp(root: string, given?: unknown): Promise<App> {
   const listed = packs.filter((pack) => [...config.packs.keys()].some((key) => byKey(key) === pack) && !(pack.name in refused));
   check(listed, request, warnings);
   for (const [name, why] of Object.entries(refused)) warnings.push(`${name} is left out: ${why}`);
+  // docs/vite.md, V1: the lock file holds every package installed from a registry, so a pack it lacks is a sign the
+  // plugin didn't read it right, which would otherwise show only as documents that pin the pack failing to load it.
+  for (const pack of unlocked) warnings.push(`${pack} has no integrity in ${relative(root, lockFile ?? root)}, so a document that pins its \`integrity\` won't load it (F035)`);
   return { config, packs, request, trusted: trustedPacks.flatMap(trustedComponents), modules, served, warnings };
 }

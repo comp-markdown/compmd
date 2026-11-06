@@ -111,6 +111,19 @@ fn an_import_pinned_to_another_integrity_is_f035_and_loads_nothing() {
 }
 
 #[test]
+fn an_import_pinned_to_an_integrity_a_release_has_none_of_is_f035_and_loads_nothing() {
+    // As when a host can't find the release's integrity in its lock file: nothing to match is no match.
+    let mut kit = release("@acme/kit", "1.2.0", &card_pack("A card."), json!({}));
+    kit.release.integrity = None;
+    let host = Host::default().with("@acme/kit", kit);
+    let text = "---\nmd:\n  import:\n    - from: \"@acme/kit@1.2.0\"\n      integrity: sha512-@acme/kit@1.2.0\n      names: [card]\n---\n\n:: card[Card]\n";
+    assert_eq!(
+        diagnostics(&host.process(text))[0],
+        "F035 `@acme/kit@1.2.0` doesn't match this `integrity`; the import is dropped"
+    );
+}
+
+#[test]
 fn a_release_the_host_found_broken_is_f035_with_its_reason() {
     let mut broken = release("@acme/kit", "1.2.0", &card_pack("A card."), json!({}));
     broken.release.broken = Some("its tarball doesn't match `dist.integrity`".into());

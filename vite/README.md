@@ -131,7 +131,7 @@ At build start, and when the configuration, `package.json` or a pack's files cha
 - that each listed pack is installed, at the version the configuration asks, and each library;
 - each listed pack's documents, through the processor: an error stops the build, a warning is Vite's.
 
-Installed packs come from `node_modules`. Each one's `integrity` comes from the app's lock file (`pnpm-lock.yaml` or `package-lock.json`), for documents that pin one. Without `registries`, a document that imports a pack the app doesn't install gets F026.
+Installed packs come from `node_modules`. Each one's `integrity` comes from the app's lock file (`pnpm-lock.yaml`, every one of its documents, or `package-lock.json`), for documents that pin one; a pack installed from a registry that the lock file has no integrity for is a warning, since documents that pin its `integrity` won't load it (F035). Without `registries`, a document that imports a pack the app doesn't install gets F026.
 
 ## Packs from a registry
 

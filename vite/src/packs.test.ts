@@ -126,6 +126,35 @@ describe("integrities", () => {
     expect(found.has("@acme/local@1.0.0")).toBe(false);
   });
 
+  it("reads the project's packages after pnpm's environment lock, which a toolchain pinned in devEngines adds", async () => {
+    await write({
+      "pnpm-lock.yaml": [
+        "---",
+        "lockfileVersion: '9.0'",
+        "importers:",
+        "  .:",
+        "    configDependencies: {}",
+        "    packageManagerDependencies:",
+        "      pnpm:",
+        "        specifier: 12.14.0",
+        "        version: 12.14.0",
+        "packages:",
+        "  pnpm@12.14.0:",
+        "    resolution: {integrity: sha512-pnpm}",
+        "",
+        "---",
+        "lockfileVersion: '9.0'",
+        "packages:",
+        "  '@acme/charts@2.1.0':",
+        "    resolution: {integrity: sha512-charts}",
+        "",
+      ].join("\n"),
+    });
+    const found = await integrities(root);
+    expect(found.get("@acme/charts@2.1.0")).toBe("sha512-charts");
+    expect(found.get("pnpm@12.14.0")).toBe("sha512-pnpm");
+  });
+
   it("reads npm's lock file", async () => {
     await write({
       "package-lock.json": {

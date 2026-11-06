@@ -147,8 +147,8 @@ export async function findPacks(root: string, folders: readonly string[]): Promi
   return packs;
 }
 
-/** The lock file nearest above `root`: a workspace keeps one for all its packages. */
-function lockFileOf(root: string): string | undefined {
+/** The lock file nearest above `root`, `pnpm-lock.yaml` or `package-lock.json`: a workspace keeps one for all its packages. */
+export function lockFileOf(root: string): string | undefined {
   for (let dir = resolve(root); ; dir = dirname(dir)) {
     for (const name of ["pnpm-lock.yaml", "package-lock.json"]) if (existsSync(join(dir, name))) return join(dir, name);
     if (dirname(dir) === dir) return undefined;
@@ -165,12 +165,12 @@ export async function integrities(root: string): Promise<Map<string, string>> {
   if (!file) return found;
   const text = await readFile(file, "utf8");
   if (file.endsWith(".yaml")) {
-    // pnpm writes its settings as a document of their own before the lock itself.
+    // pnpm may write documents of their own before the project's lock: its settings, or, for a project that pins its
+    // toolchain with `devEngines`, an environment lock with packages of its own (pnpm, Node). Each document's packages
+    // count; the environment's are never packs.
     type Lock = { packages?: Record<string, { resolution?: { integrity?: string } }> } | null;
-    const lock = parseAllDocuments(text)
-      .map((document) => document.toJS() as Lock)
-      .find((document) => document?.packages !== undefined);
-    for (const [key, entry] of Object.entries(lock?.packages ?? {})) {
+    const packages = parseAllDocuments(text).flatMap((document) => Object.entries((document.toJS() as Lock)?.packages ?? {}));
+    for (const [key, entry] of packages) {
       // `@kit/mermaid@1.0.0`, or `/@kit/mermaid@1.0.0` in older lock files; a peer suffix `(react@19.0.0)` follows.
       const id = key.replace(/^\//, "").replace(/\(.*$/, "");
       const integrity = entry.resolution?.integrity;
