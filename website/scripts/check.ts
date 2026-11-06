@@ -4,9 +4,11 @@
 // - Every page, light and dark, at a desktop's and a phone's width: no page errors, no failed requests, nothing wider
 //   than the window; and each painted styled before any script runs.
 // - The PDFs: each book's has every chapter in its outline, in order, and in its text; each spec page's, its sections.
-// - The landing page: the hero goes live and follows an edit; the plain toggle switches; the input example follows its
-//   input; the JSX, code renderer and table cell examples render in the site's sandbox; the site's own stars mount in
-//   the page and set their input; a section chosen in the contents wheel scrolls into view, and the wheel marks it.
+// - The landing page: the hero goes live, its shelf picks the book clicked, again and again, with every title fitting
+//   its cover, and the page under it follows, stars from the data among it; the hero follows an edit; the plain toggle
+//   switches; the input example follows its input; the JSX, code renderer and table cell examples render in the site's
+//   sandbox; the site's own stars mount in the page and set their input; a section chosen in the contents wheel
+//   scrolls into view, and the wheel marks it.
 // - Every link within the site resolves.
 // - The spec: its contents and "On this page", the section and the subsection being read marked, the menu on a phone,
 //   and its companion, a section of the page, linked from the spec and back.
@@ -153,6 +155,36 @@ async function pdfs(browser: Browser): Promise<void> {
 async function landingPage(browser: Browser): Promise<void> {
   const { page, problems } = await open(browser, "", VIEWS[0]);
   await page.waitForSelector(".hero .proof.ready", { timeout: 15000 });
+
+  // The book club's shelf, `content/shelf.js` in its frame: a click on a cover picks its book, again and again, and the
+  // page under it follows.
+  const shelf = page.frameLocator(".hero iframe");
+  const rendered = page.locator(".hero .sandboxed");
+  const picked = shelf.locator("[role=radio][aria-checked=true]");
+  await picked.waitFor({ timeout: 15000 });
+  check((await picked.getAttribute("aria-label"))?.startsWith("Klara and the Sun") === true, `the shelf starts at ${String(await picked.getAttribute("aria-label"))}, not Klara and the Sun`);
+  // Every line of every title fits its cover: 92 units wide, the title starting at 14, with 8 to spare at the end;
+  // within half a unit, since a title shrunk to fit exactly measures a hair over by rounding.
+  const widest = await shelf.locator("svg text tspan").evaluateAll((spans) => Math.max(...spans.map((span) => (span as SVGTextContentElement).getComputedTextLength())));
+  check(widest <= 70.5, `a title's line on the shelf is ${widest.toFixed(1)} units wide, more than its cover has room for`);
+  // Still being read: no rating yet.
+  await rendered.getByText("Not rated yet.").waitFor();
+  const hailMary = shelf.getByRole("radio", { name: /^Project Hail Mary/ });
+  // Low on the cover, where a neighbour's pattern could reach if it weren't kept to its own cover.
+  const box = await hailMary.boundingBox();
+  await hailMary.click({ position: { x: 8, y: (box?.height ?? 100) - 30 } });
+  await shelf.locator("[role=radio][aria-checked=true][aria-label^='Project Hail Mary']").waitFor();
+  await rendered.getByText("Andy Weir").waitFor();
+  await hailMary.click();
+  // Given time to go wrong: a second click would have been answered by now.
+  await page.waitForTimeout(1500);
+  check((await picked.getAttribute("aria-label"))?.startsWith("Project Hail Mary") === true, "a second click on the picked cover picked another book");
+  await shelf.getByRole("radio", { name: /^Piranesi/ }).click();
+  // Read, and rated: its stars, from the club's data.
+  const stars = rendered.getByRole("img", { name: "Rated 5 of 5" });
+  await stars.waitFor();
+  check((await stars.textContent()) === "★★★★★", `Piranesi's rating shows "${String(await stars.textContent())}", not five stars`);
+
   const text = page.locator(".hero textarea");
   await text.fill((await text.inputValue()).replace("# Thursday Book Club", "# Friday Book Club"));
   await page.waitForFunction(() => document.querySelector(".hero .sandboxed h1")?.textContent === "Friday Book Club");
