@@ -42,11 +42,15 @@
     next?: ChapterLink | undefined;
     /** The title of the page: the chapter's, the book's or the shelf's. */
     title: string;
+    /** The version of the `@compmd` packages the guides are written for: the packages' own, as built. */
+    version: string;
   }
 
-  let { html, toc, root, books, book, parts, current, previous, next, title }: Props = $props();
+  let { html, toc, root, books, book, parts, current, previous, next, title, version }: Props = $props();
   const guides = $derived(`${root}guides/`);
   const open = $derived(books.find((shelved) => shelved.name === book));
+  /** The page's sections, for "On this page"; the shelf has none, its books are its page. */
+  const sections = $derived(book === undefined ? [] : toc.filter((heading) => heading.level === 2));
 </script>
 
 <svelte:head>
@@ -58,14 +62,16 @@
 <div class="status">
   <div class="wrap">
     <p>
-      <strong>{open?.title ?? "The CompMD guides"}.</strong> Written for the <code>@compmd</code> packages at 0.3.0, and following them as they change.
+      <strong>{open?.title ?? "The CompMD guides"}.</strong> Written for the <code>@compmd</code> packages at {version}, and following them as they change.
       {#if open}<a href="{guides}{open.name}/{guidePdf(open.name)}" download>Download the book as PDF</a>{/if}
     </p>
   </div>
 </div>
 
-<div class="wrap reading">
-  <nav class="toc book" aria-label="The guides">
+<div class={["wrap", "reading", book === undefined && "shelf"]}>
+  {#if book !== undefined}
+    <!-- The shelf has no list beside it: its books are the page. -->
+    <nav class="toc book" aria-label="The guides">
     <button type="button" class="toc-toggle" aria-expanded="false" aria-controls="toc-list" hidden>Contents</button>
     <ol id="toc-list">
       <li class="level-2"><a href={guides} aria-current={book === undefined ? "page" : undefined}>The guides</a></li>
@@ -97,7 +103,8 @@
       {/each}
     </ol>
   </nav>
-  <div>
+  {/if}
+  <div class="text">
     <article class="spec guide">
       {@html html}
     </article>
@@ -108,6 +115,16 @@
       </nav>
     {/if}
   </div>
+  {#if sections.length > 0}
+    <nav class="onpage" aria-label="On this page">
+      <p>On this page</p>
+      <ol>
+        {#each sections as heading (heading.id)}
+          <li><a href="#{heading.id}">{heading.text}</a></li>
+        {/each}
+      </ol>
+    </nav>
+  {/if}
 </div>
 
 <Footer />

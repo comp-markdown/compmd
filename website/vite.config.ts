@@ -26,16 +26,21 @@ const devStylesheets = (rendered: Rendered): Rendered => ({
   head: `${rendered.head}${["/src/base.css", "/src/spec.css"].map((href) => `<link rel="stylesheet" href="${href}" data-dev>`).join("")}`,
 });
 
-/** In the dev server, what the build assembles into the site (`scripts/assemble.ts`): the playground's build and the logo. */
+/**
+ * In the dev server, what the build assembles into the site (`scripts/assemble.ts`): the logo, and the playground, from
+ * its own dev server (`pnpm --dir editor dev`, at `PLAYGROUND`), so it changes as its source does.
+ */
 function assembled(): Plugin {
   return {
     name: "compmd-assembled",
     configureServer(server) {
-      server.middlewares.use(serveFolder("/playground/", join(import.meta.dirname, "../editor/dist")));
       server.middlewares.use(serveFolder("/logo/", join(import.meta.dirname, "../logo")));
     },
   };
 }
+
+/** Where the playground's dev server runs, under the site's `playground/`. */
+const PLAYGROUND = "http://localhost:5174";
 
 /**
  * In the dev server, the spec page, with its companion, rendered from the working tree, again after either changes; the
@@ -200,6 +205,7 @@ export default defineConfig({
   },
   server: {
     fs: { allow: [".."] },
+    proxy: { "/playground/": { target: PLAYGROUND, ws: true } },
     // `guideInDev` watches `guides/` for the books' Markdown. Not what the guides' tests write as they run, nor their
     // examples: a page or a `tsconfig.json` written there would reload every page, and re-optimize the dependencies
     // while a page renders.

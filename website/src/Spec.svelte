@@ -29,6 +29,16 @@
 
   let { html, toc, root, version, versions }: Props = $props();
   const title = $derived(version === undefined ? "CompMD specification, version 1 (draft)" : `CompMD specification, version ${version}`);
+
+  /** Each section with its subsections, for "On this page": `spec.ts` shows the one being read. */
+  const sections = $derived(
+    toc.flatMap((heading, i) => {
+      if (heading.level !== 2) return [];
+      const after = toc.slice(i + 1);
+      const end = after.findIndex((next) => next.level === 2);
+      return [{ id: heading.id, subsections: end === -1 ? after : after.slice(0, end) }];
+    }),
+  );
 </script>
 
 <svelte:head>
@@ -66,9 +76,23 @@
       {/each}
     </ol>
   </nav>
-  <article class="spec">
-    {@html html}
-  </article>
+  <div class="text">
+    <article class="spec">
+      {@html html}
+    </article>
+  </div>
+  <nav class="onpage" aria-label="On this page">
+    <p>On this page</p>
+    {#each sections as section, i (section.id)}
+      {#if section.subsections.length > 0}
+        <ol data-section={section.id} hidden={i !== 0}>
+          {#each section.subsections as heading (heading.id)}
+            <li><a href="#{heading.id}">{heading.text}</a></li>
+          {/each}
+        </ol>
+      {/if}
+    {/each}
+  </nav>
 </div>
 
 <Footer />

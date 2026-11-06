@@ -1,46 +1,17 @@
-/* The playground's look around the Developer Tools, which have their own: the same desk, cool paper and blue-black
-   ink, an editor's blue pencil as the one accent. Every font is the system's, so the page loads nothing to show itself. */
+/* The playground's look around the Developer Tools, which have their own: the site's (`base.css`), with its header and
+   footer, and under the header a toolbar of the playground's own. The tools take the window between them. */
 
-:root {
-  color-scheme: light dark;
-  --desk: #e9edf1;
-  --sheet: #fbfcfd;
-  --ink: #1b2430;
-  --ink-secondary: #5b6776;
-  --rule: #d3dae2;
-  --accent: #3557c4;
-  --accent-wash: color-mix(in srgb, var(--accent) 9%, transparent);
-  --serif: "Iowan Old Style", Charter, "Bitstream Charter", "Sitka Text", Cambria, serif;
-  --sans: "Avenir Next", "Segoe UI Variable Text", "Segoe UI", Seravek, "Helvetica Neue", system-ui, sans-serif;
-  --radius: 6px;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --desk: #101419;
-    --sheet: #161b22;
-    --ink: #e4e9ef;
-    --ink-secondary: #97a3b1;
-    --rule: #29313c;
-    --accent: #8da6ee;
-  }
-}
-
-* {
-  box-sizing: border-box;
-}
+@import "../../website/src/base.css";
 
 html,
 body {
   height: 100%;
-  margin: 0;
 }
 
+/* The tools are dense: their text is smaller than the site's pages, the header and footer keep the site's. */
 body {
-  background: var(--desk);
-  color: var(--ink);
-  font: 14px/1.45 var(--sans);
-  -webkit-font-smoothing: antialiased;
+  font-size: 14px;
+  line-height: 1.45;
 }
 
 #app {
@@ -49,9 +20,9 @@ body {
   height: 100%;
 }
 
-:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+header.site {
+  font-size: 17px;
+  line-height: 1.55;
 }
 
 button,
@@ -60,33 +31,21 @@ select {
   color: inherit;
 }
 
-/* The header: the name, the document and the host's stylesheet, and the links. */
+/* The toolbar: the page's name and what it is for, the document and the host's stylesheet. */
 
-header {
+.toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px 28px;
-  padding: 12px 20px 10px;
+  gap: 8px 20px;
+  /* Lined up with the header's logo. */
+  padding: 10px var(--gutter);
 }
 
-h1 {
+.toolbar h1 {
   margin: 0;
-  font: 600 19px/1 var(--serif);
-  letter-spacing: 0.005em;
-}
-
-/* The logo and the name, a link home to the website: laid out as they were, without a link's look. */
-.home {
-  display: flex;
-  align-items: center;
-  gap: inherit;
-  color: inherit;
-  text-decoration: none;
-}
-
-.home:hover h1 {
-  color: var(--accent);
+  font-size: 19px;
+  line-height: 1;
 }
 
 .document {
@@ -111,100 +70,17 @@ h1 {
   border-color: color-mix(in srgb, var(--accent) 45%, var(--rule));
 }
 
-/* The header's links to the spec and the repository, its About, and the paragraph About opens. */
-
-.links {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-inline-start: auto;
-}
-
-.links a,
-.about-toggle {
-  padding: 4px 10px;
-  border: 1px solid var(--rule);
-  border-radius: 999px;
-  background: var(--sheet);
-  color: var(--ink-secondary);
-  text-decoration: none;
-  cursor: pointer;
-}
-
+/* The page's name, and what it is for in one line beside it. */
 .title {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
 }
 
-.logo img {
-  display: block;
-}
-
-/* About, as an "i" in a circle beside the name. */
-.title .about-toggle {
-  display: grid;
-  place-items: center;
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  font: italic 600 13px/1 var(--serif);
-}
-
-.links a:hover,
-.about-toggle:hover,
-.about-toggle[aria-expanded="true"] {
-  border-color: color-mix(in srgb, var(--accent) 45%, var(--rule));
-  color: var(--ink);
-}
-
-.about {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  margin: 0 12px 10px;
-  padding: 12px 14px 12px 18px;
-  border: 1px solid color-mix(in srgb, var(--accent) 25%, var(--rule));
-  border-radius: var(--radius);
-  background: color-mix(in srgb, var(--accent) 5%, var(--sheet));
-}
-
-.about p {
-  flex: 1;
-  max-width: 78ch;
+.tagline {
   margin: 0;
-  line-height: 1.55;
-}
-
-.about a {
-  color: var(--accent);
-}
-
-.close {
-  margin-inline-start: auto;
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  border: 0;
-  border-radius: 4px;
-  background: none;
   color: var(--ink-secondary);
-  cursor: pointer;
-}
-
-.close:hover {
-  background: var(--accent-wash);
-  color: var(--accent);
-}
-
-.close svg {
-  width: 10px;
-  height: 10px;
-  stroke: currentColor;
-  stroke-width: 1.6;
-  stroke-linecap: round;
 }
 
 /* The desk, which the tools fill. */
@@ -219,38 +95,15 @@ main {
   height: 100%;
 }
 
-/* The status bar, pinned under the desk. */
-
-.statusbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 12px;
-  padding: 6px 20px 8px;
-  border-top: 1px solid var(--rule);
-  color: var(--ink-secondary);
+/* The footer, thin under the tools. */
+footer.site {
+  padding-block: 8px 10px;
   font-size: 12px;
 }
 
-.statusbar a {
-  color: inherit;
-  text-underline-offset: 2px;
-}
-
-.statusbar a:hover {
-  color: var(--accent);
-}
-
-/* A narrow screen: the header's parts wrap. */
+/* A narrow screen: the toolbar's parts wrap. */
 
 @media (max-width: 800px) {
-  header {
-    padding-inline: 16px;
-  }
-
-  .links {
-    margin-inline-start: 0;
-  }
-
   main {
     padding: 0 8px 8px;
   }

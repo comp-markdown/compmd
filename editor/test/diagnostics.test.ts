@@ -26,10 +26,12 @@ beforeAll(async () => {
     configFile: false,
     root: EDITOR,
     base: "./",
+    // Its own cache, where the sandbox's frames are built: the other tests build the playground at the same time.
+    cacheDir: join(OUT, ".vite"),
     logLevel: "warn",
     plugins: [svelte(), compmd({ config })],
     worker: { format: "es" },
-    build: { target: "es2024", outDir: OUT, emptyOutDir: true },
+    build: { target: "es2024", outDir: join(OUT, "site"), emptyOutDir: true },
     preview: { port: PORT, strictPort: true, cors: { origin: "*" } },
   };
   await build(site);

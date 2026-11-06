@@ -106,6 +106,13 @@ header.site {
   border-block-end: 1px solid var(--rule);
 }
 
+/* The header and the footer span the window on every page, so the logo and the places stay put from page to page,
+   whatever the page's own width: the playground fills the window, the others centre their content. */
+header.site .wrap,
+footer.site .wrap {
+  max-inline-size: none;
+}
+
 header.site .wrap {
   display: flex;
   align-items: center;
@@ -155,8 +162,9 @@ header.site nav {
   align-items: center;
 }
 
-/* Search: a button in the header, which opens a dialog (`search.ts`). */
-header.site .search {
+/* Search, a button that opens a dialog (`search.ts`), and GitHub, a link out of the site: two quiet squares. */
+header.site .search,
+header.site .github {
   display: grid;
   place-items: center;
   inline-size: 2rem;
@@ -169,8 +177,19 @@ header.site .search {
   cursor: pointer;
 }
 
-header.site .search:hover {
+header.site .search:hover,
+header.site .github:hover {
   color: var(--accent);
+}
+
+header.site .github {
+  color: var(--ink-secondary);
+}
+
+header.site .github svg {
+  inline-size: 1rem;
+  block-size: 1rem;
+  fill: currentcolor;
 }
 
 header.site .search svg {
@@ -278,15 +297,11 @@ dialog.search input:focus-visible {
   font-weight: 600;
 }
 
-/* On a phone, three places and search fit: GitHub is a card of "Where next". */
+/* On a phone, the three places, search and GitHub fit closer together. */
 @media (width < 30rem) {
   header.site nav {
     gap: 12px;
     font-size: 0.94rem;
-  }
-
-  header.site nav .github {
-    display: none;
   }
 }
 

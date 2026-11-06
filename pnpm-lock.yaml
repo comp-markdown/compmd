@@ -281,6 +281,9 @@ importers:
       d3:
         specifier: 7.9.0
         version: 7.9.0
+      minisearch:
+        specifier: 7.1.2
+        version: 7.1.2
       svelte:
         specifier: 5.57.2
         version: 5.57.2(@typescript-eslint/types@8.72.0)

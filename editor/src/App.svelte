@@ -9,8 +9,9 @@
   import { EXAMPLES, exampleIndex } from "./documents.ts";
   import { keep, recall } from "./stored.ts";
   import { HOST_STYLES, stylesheetOf, type HostStyle } from "./styles.ts";
-  import markDark from "../../logo/mark-dark.svg";
-  import markLight from "../../logo/mark-light.svg";
+  // The site's own header and footer, so the playground is one of its pages.
+  import Footer from "../../website/src/Footer.svelte";
+  import Header from "../../website/src/Header.svelte";
 
   let chosen = $state(exampleIndex(new URLSearchParams(location.search).get("doc")));
   const example = $derived(EXAMPLES[chosen]);
@@ -53,32 +54,16 @@
     tools?.styles(stylesheetOf(hostStyle));
   });
 
-  /** What the page is for: open on the first visit, until it is closed. */
-  const ABOUT_KEY = "compmd-editor-about";
-  let about = $state(recall(ABOUT_KEY) !== "closed");
-  function toggleAbout(): void {
-    about = !about;
-    keep(ABOUT_KEY, about ? "open" : "closed");
-  }
-
-  /**
-   * The CompMD website, which the playground is part of, at `playground/`: relative, so the links work wherever the
-   * site is published. The repository.
-   */
+  /** The CompMD website, which the playground is part of, at `playground/`: relative, so the links work wherever the site is published. */
   const SITE = "../";
-  const REPOSITORY = "https://github.com/comp-markdown/compmd";
 </script>
 
-<header>
+<Header root={SITE} current="playground" />
+
+<div class="toolbar">
   <div class="title">
-    <a class="home" href={SITE} title="The CompMD website">
-      <picture class="logo">
-        <source media="(prefers-color-scheme: dark)" srcset={markDark} />
-        <img src={markLight} alt="" width="40" height="26" />
-      </picture>
-      <h1>CompMD Playground</h1>
-    </a>
-    <button type="button" class="about-toggle" aria-label="About" title="About" aria-expanded={about} aria-controls="about" onclick={toggleAbout}>i</button>
+    <h1>Playground</h1>
+    <p class="tagline">Write CompMD on the left, see the page on the right.</p>
   </div>
   <label class="document">
     <span>Document</span>
@@ -101,29 +86,10 @@
       {/each}
     </select>
   </label>
-  <nav class="links" aria-label="CompMD">
-    <a href="{SITE}spec/">Spec</a>
-    <a href={REPOSITORY} target="_blank" rel="noreferrer">GitHub</a>
-  </nav>
-</header>
-
-{#if about}
-  <section class="about" id="about" aria-label="About the playground">
-    <p>
-      Edit a <a href="https://github.com/comp-markdown/compmd" target="_blank" rel="noreferrer">CompMD</a> document on the left and see it
-      on the right. The CompMD Inspector tab shows what's happening behind the scenes.
-    </p>
-    <button type="button" class="close" aria-label="Close" onclick={toggleAbout}>
-      <svg viewBox="0 0 12 12" aria-hidden="true"><path d="m3 3 6 6m0-6-6 6" /></svg>
-    </button>
-  </section>
-{/if}
+</div>
 
 <main>
   <div class="tools" {@attach (element) => untrack(() => attach(element))}></div>
 </main>
 
-<footer class="statusbar">
-  <span>Copyright © 2026 Hakan Serce.</span>
-  <span>The editor is <a href="https://github.com/comp-markdown/compmd/blob/main/LICENSE-CODE" target="_blank" rel="noreferrer">MIT licensed</a>.</span>
-</footer>
+<Footer />

@@ -7,6 +7,10 @@ import { bookOf, guideLink, writtenOf } from "./guide.ts";
 import type { IndexedPage } from "./search.ts";
 import { renderMarkdown } from "./spec.ts";
 import { SITE } from "../src/site.ts";
+import processor from "../../wasm/package.json" with { type: "json" };
+
+/** The version of the `@compmd` packages, released together: the guides say which they are written for. */
+const VERSION = processor.version;
 
 /** The books, in the order the site lists them: their folders in `guides/`. */
 export const BOOKS = ["authors", "developers"] as const;
@@ -43,7 +47,7 @@ export async function guidePages(read: (path: string) => string, blob: string): 
     const markdown = read(path);
     const link = (href: string) => (href.startsWith(SITE) ? `${root}${href.slice(SITE.length)}` : guideLink(href, up));
     const { html, toc } = await renderMarkdown(markdown, { blob: `${blob}guides/`, path }, { rules: false, sources: false, link });
-    return { html, toc, root, books: shelf, title: titleOf(markdown) };
+    return { html, toc, root, books: shelf, title: titleOf(markdown), version: VERSION };
   };
   const shelfPage = await page("README.md", undefined, "../");
   const pages: GuidePage[] = [{ folder: "guides/", root: "../", props: { ...shelfPage, parts: [] }, search: { url: "guides/", page: "The guides", html: shelfPage.html } }];

@@ -67,6 +67,8 @@ beforeAll(async () => {
     configFile: false,
     root: EDITOR,
     base: "./",
+    // Its own cache, where the sandbox's frames are built: the other tests build the playground at the same time.
+    cacheDir: join(OUT, ".vite"),
     logLevel: "warn",
     plugins: [svelte(), compmd({ config: { ...config, registries: { "*": `http://127.0.0.1:${String(REGISTRY_PORT)}/` } } })],
     worker: { format: "es" },
