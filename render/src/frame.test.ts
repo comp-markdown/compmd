@@ -93,7 +93,10 @@ describe("the host and frame protocol", () => {
     connection.splice([JSON.stringify({ from: 0, to: 0, nodes: tree("again").children, lines: 0, offset: 0 }), { ...second, nodes: tree("more").children }], { text: "again\n\nmore\n" }, { replace: true });
     await settle();
     expect(container.textContent).toBe("againmore");
-    expect(rendered).toHaveLength(3);
+    // Each render reports once its frame has painted, which may come after 20 ms while other tests run.
+    await vi.waitFor(() => {
+      expect(rendered).toHaveLength(3);
+    });
     served.close();
     container.remove();
   });
