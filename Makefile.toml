@@ -52,8 +52,7 @@ args = ["llvm-cov", "--workspace", "--ignore-filename-regex", "markdown-rs/|wasm
 [tasks.packages]
 description = "Build, lint (eslint, the type check, svelte-check; after the build, since packages check against each other's built output) and test the TypeScript packages: the renderer, the processor as WebAssembly, the sandbox (its browser tests in Chrome and WebKit), the registry (against a local registry, and in Chrome and WebKit), the Vite plugin (its example app in Chrome and WebKit), `@compmd/pack`, create-pack (a written pack, on `@compmd/pack`, in Chrome and WebKit), the Developer Tools, and the editor (its document of a pack from npm, against a local registry, in Chrome); the renderer's tests check it against the processor's `conformance/params.json`"
 clear = true
-# Only the build needs the packages' order; once each package is built, lint and tests don't depend on it.
-script = ["pnpm -r --if-present build", "pnpm -r --no-sort --if-present lint", "pnpm -r --no-sort --if-present test"]
+script = ["pnpm -r --if-present build", "pnpm -r --if-present lint", "pnpm -r --if-present test"]
 
 [tasks.linux]
 description = "Run a check on Linux, in a container like CI's runner (docker/Dockerfile), on a commit of this repository: `cargo make linux` runs `cargo make ci` on HEAD; `cargo make linux site` the site's build and check, as the Pages workflow runs them; `cargo make linux <command>` any command; `cargo make linux --ref <commit> …` another commit. Needs Docker; x86-64 runs emulated on an Arm Mac."
