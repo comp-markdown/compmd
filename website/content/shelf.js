@@ -46,7 +46,7 @@ function pattern(cover, seed, clip) {
 
 /** The title's size, which a title too wide for its cover shrinks from, and how far it may. */
 const TITLE = 14;
-const SMALLEST = 10;
+const SMALLEST = 9;
 /** The room for a title's line: the cover, less the margin at its start and a little at its end. */
 const ROOM = WIDTH - 14 - 8;
 

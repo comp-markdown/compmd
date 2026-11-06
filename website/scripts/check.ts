@@ -5,12 +5,11 @@
 //   than the window; and each painted styled before any script runs.
 // - The PDFs: each book's has every chapter in its outline, in order, and in its text; each spec page's, its sections.
 // - The landing page: the hero goes live and follows an edit; the plain toggle switches; the input example follows its
-//   input; the JSX and code renderer examples render in the site's sandbox; the site's own stars mount in the page
-//   and set their input; a section chosen in the contents wheel scrolls into
-//   view, and the wheel marks it.
+//   input; the JSX, code renderer and table cell examples render in the site's sandbox; the site's own stars mount in
+//   the page and set their input; a section chosen in the contents wheel scrolls into view, and the wheel marks it.
 // - Every link within the site resolves.
-// - The spec: its contents, the section being read marked, the menu on a phone, and its companion, a section of the
-//   page, linked from the spec and back.
+// - The spec: its contents and "On this page", the section and the subsection being read marked, the menu on a phone,
+//   and its companion, a section of the page, linked from the spec and back.
 // - Search finds sections of the spec and the guides, and opens them with the words found marked; on a phone, its
 //   dialog fits.
 // - The playground opens every document of its menu.
@@ -155,18 +154,18 @@ async function landingPage(browser: Browser): Promise<void> {
   const { page, problems } = await open(browser, "", VIEWS[0]);
   await page.waitForSelector(".hero .proof.ready", { timeout: 15000 });
   const text = page.locator(".hero textarea");
-  await text.fill((await text.inputValue()).replace("title: Launch week", "title: Ship it"));
-  await page.waitForFunction(() => document.querySelector(".hero .proof h1")?.textContent === "Ship it");
+  await text.fill((await text.inputValue()).replace("# Thursday Book Club", "# Friday Book Club"));
+  await page.waitForFunction(() => document.querySelector(".hero .sandboxed h1")?.textContent === "Friday Book Club");
 
   await page.getByRole("button", { name: "A plain Markdown renderer" }).click();
-  check((await page.locator("#plain .proof").innerText()).includes(":value[14 bugs fixed]"), "the plain view doesn't show the document's syntax as text");
+  check((await page.locator("#plain .proof").innerText()).includes("::: grid {min=12rem gap=m}"), "the plain view doesn't show the document's syntax as text");
 
   const since = page.locator("#what input[type=number]");
   await since.scrollIntoViewIfNeeded();
   await page.waitForSelector("#what .proof.live.ready");
   check((await since.inputValue()) === "1970", `the input example starts at ${await since.inputValue()}, not 1970`);
-  await since.fill("2000");
-  await page.waitForFunction(() => !document.querySelector("#what .feature:nth-of-type(3) .proof")?.textContent.includes("Dispossessed"));
+  await since.fill("2020");
+  await page.waitForFunction(() => !document.querySelector("#what .feature:nth-of-type(3) .proof")?.textContent.includes("Gentleman"));
 
   const framed = async (title: string) => {
     const proof = page.locator(".feature", { has: page.getByRole("heading", { name: title }) }).locator(".proof");
@@ -178,6 +177,8 @@ async function landingPage(browser: Browser): Promise<void> {
   check(meter === "72", `the JSX example rendered ${String(meter)} in the sandbox, not 72`);
   const steps = await (await framed("Code renderers")).locator('svg[aria-label="Draft, then review, then published"] text').allTextContents();
   check(steps.join(" ") === "Draft Review Published", `the code renderer example drew "${steps.join(", ")}" in the sandbox`);
+  const weeks = await (await framed("Components in a table cell")).locator("svg[role=img] path").count();
+  check(weeks === 3, `the table drew ${String(weeks)} cities' weeks in the sandbox, not 3`);
 
   // The site's own stars, trusted, in this page: a click sets the document's input.
   const rating = page.locator(".feature", { has: page.getByRole("heading", { name: "Your own components, live" }) }).locator(".proof");
@@ -218,16 +219,21 @@ async function spec(browser: Browser): Promise<void> {
   const { page } = await open(browser, "spec/", VIEWS[0]);
   const entries = await page.locator(".toc li").count();
   check(entries >= 60, `the spec's contents have ${String(entries)} entries`);
-  await page.locator(".toc a[href='#31-grammar']").click();
-  await page.waitForFunction(() => document.querySelector(".toc a[aria-current]")?.getAttribute("href") === "#31-grammar");
+  // On a desktop's width, the contents list the sections and mark the one read; "On this page", its subsections and the
+  // one read.
+  const marked = (where: string, href: string) => page.waitForFunction(({ list, link }) => document.querySelector(`${list} a[aria-current]`)?.getAttribute("href") === link, { list: where, link: href });
+  await page.locator(".toc li.level-2 a[href^='#3-']").click();
+  await page.locator(".onpage a[href='#31-grammar']").click();
+  await marked(".onpage", "#31-grammar");
+  check((await page.locator(".toc a[aria-current]").getAttribute("href"))?.startsWith("#3-") === true, "the spec's contents don't mark §3 while 3.1 is read");
   // The companion, a section of the page: in the contents, and reached from the spec's §6.4 within the page.
   check((await page.locator(".toc a[href='#registry']").count()) === 1, "the spec's contents don't list its companion");
   const toCompanion = page.locator("[id='64-packages-and-the-registry'] ~ ul a[href='#registry']").first();
   check((await toCompanion.count()) === 1, "the spec's §6.4 doesn't link to its companion within the page");
   await toCompanion.click();
   await page.waitForFunction(() => location.hash === "#registry" && Math.abs(document.getElementById("registry")?.getBoundingClientRect().top ?? 999) < 200);
-  await page.locator(".toc a[href='#registry-4-who-fetches']").click();
-  await page.waitForFunction(() => document.querySelector(".toc a[aria-current]")?.getAttribute("href") === "#registry-4-who-fetches");
+  await page.locator(".onpage a[href='#registry-4-who-fetches']").click();
+  await marked(".onpage", "#registry-4-who-fetches");
   const toSpec = page.locator("#registry ~ p a[href='#']").first();
   check((await toSpec.count()) === 1, "the companion doesn't link back to the spec within the page");
   await page.close();
