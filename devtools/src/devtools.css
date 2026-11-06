@@ -310,9 +310,10 @@ textarea::selection {
   accent-color: var(--accent);
 }
 
-/* Diagnostics: one line each, marked on the start edge by how serious it is. */
+/* Diagnostics under the text: one line each, marked on the start edge by how serious it is. Only that list: a Console
+   entry of diagnostics has the class too, its kind, and is one entry of a list that scrolls as one. */
 
-.diagnostics {
+.text > .diagnostics {
   max-height: 32%;
   overflow: auto;
   margin: 0;
@@ -321,17 +322,17 @@ textarea::selection {
   border-top: 1px solid var(--rule);
 }
 
-.diagnostics li {
+.text > .diagnostics li {
   padding: 5px 22px 5px 19px;
   border-inline-start: 3px solid transparent;
 }
 
-.diagnostics li.error,
+.text > .diagnostics li.error,
 .console li.error {
   border-inline-start-color: var(--error);
 }
 
-.diagnostics li.warning,
+.text > .diagnostics li.warning,
 .console li.warning {
   border-inline-start-color: var(--warning);
 }
@@ -342,7 +343,7 @@ textarea::selection {
 }
 
 .error .code,
-.diagnostics .problem,
+.text > .diagnostics .problem,
 .fallback .code {
   color: var(--error);
 }

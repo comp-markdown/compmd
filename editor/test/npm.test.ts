@@ -16,7 +16,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 const EDITOR = join(import.meta.dirname, "..");
 const MERMAID = join(EDITOR, "../packs/mermaid");
-const OUT = join(import.meta.dirname, ".out");
+const OUT = join(import.meta.dirname, ".out", "npm");
 const REGISTRY_PORT = 4241;
 const PLAYGROUND_PORT = 4242;
 const NAME = "@comp-markdown/mermaid";
