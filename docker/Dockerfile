@@ -14,14 +14,15 @@ ARG WASM_BINDGEN=0.2.129
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# The build tools; then Chrome and the packages of the runner image that bring fonts (fonts-noto-color-emoji, xvfb), with
-# their recommended packages, as the runner installs them: fontconfig's DejaVu is what a page's sans-serif falls back to.
+# The build tools, Chrome, and the runner image's fonts, the packages `dpkg-query -W 'fonts-*'` lists on it (2026-11-06):
+# its sans-serif, serif, monospace and system-ui are DejaVu, which a page's fonts fall back to.
 RUN apt-get update \
  && apt-get install -y --no-install-recommends build-essential ca-certificates curl git gnupg pkg-config unzip xz-utils \
+      fonts-dejavu fonts-dejavu-core fonts-dejavu-extra fonts-dejavu-mono fonts-lato fonts-liberation fonts-noto-color-emoji fonts-ubuntu-console \
  && curl -fsSL https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg \
  && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] https://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
  && apt-get update \
- && apt-get install -y google-chrome-stable fonts-noto-color-emoji xvfb \
+ && apt-get install -y --no-install-recommends google-chrome-stable \
  && rm -rf /var/lib/apt/lists/*
 
 RUN curl -fsSL "https://nodejs.org/dist/v${NODE}/node-v${NODE}-linux-x64.tar.xz" | tar -xJ -C /usr/local --strip-components=1 \
