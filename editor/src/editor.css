@@ -25,12 +25,6 @@ header.site {
   line-height: 1.55;
 }
 
-button,
-select {
-  font: inherit;
-  color: inherit;
-}
-
 /* The toolbar: the page's name and what it is for, the document and the host's stylesheet. */
 
 .toolbar {
@@ -55,19 +49,10 @@ select {
   color: var(--ink-secondary);
 }
 
-/* As wide as a short name: a longer one is cut, and the open list shows it whole. */
+/* As wide as a short name: a longer one is cut, and the open list shows it whole. Its look is the site's (`base.css`). */
 .document select {
   max-width: 15rem;
-  min-height: 30px;
-  padding: 3px 8px;
-  border: 1px solid var(--rule);
-  border-radius: var(--radius);
-  background: var(--sheet);
   text-overflow: ellipsis;
-}
-
-.document select:hover {
-  border-color: color-mix(in srgb, var(--accent) 45%, var(--rule));
 }
 
 /* The page's name, and what it is for in one line beside it. */

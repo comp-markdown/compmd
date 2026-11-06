@@ -48,13 +48,13 @@ const diagnosticsOf = (example: Example, text = textOf(example)) =>
 describe("EXAMPLES", () => {
   it("go from the syntax to the diagnostics, each with an id of its own", () => {
     expect(EXAMPLES.map((example) => example.id)).toEqual([
-      ...["tour", "definitions", "changelog", "dashboard", "inputs", "kyoto", "complete", "diagrams", "npm", "remote", "diagnostics", "notes"],
+      ...["tour", "book-club", "definitions", "changelog", "dashboard", "inputs", "kyoto", "complete", "diagrams", "npm", "remote", "diagnostics", "notes"],
       ...["a-pack", "breakpoints", "code-blocks", "containers", "data", "definitions", "first-document", "in-code", "inputs", "layout", "lists"].map((name) => `guides/authors/${name}`),
       ...["markdown", "placing", "showing", "signatures", "slots", "template-slots", "values"].map((name) => `guides/authors/${name}`),
       ...["check-docs", "devtools", "live-editor", "orders", "other-hosts", "packs-from-npm", "quick-start", "styled-page", "two-modes"].map((name) => `guides/developers/${name}`),
     ]);
-    expect(exampleIndex("guides/developers/quick-start")).toBe(36);
-    expect(exampleIndex("kyoto")).toBe(5);
+    expect(exampleIndex("guides/developers/quick-start")).toBe(37);
+    expect(exampleIndex("kyoto")).toBe(6);
     expect(exampleIndex("nothing")).toBe(0);
     expect(exampleIndex(null)).toBe(0);
   });
@@ -121,11 +121,12 @@ describe("EXAMPLES", () => {
     }
   });
 
-  it("gives every document the playground's packs from its configuration, the charts ambient", () => {
+  it("gives every document the playground's packs from its configuration, the charts and the website's stars ambient", () => {
     for (const example of EXAMPLES) {
-      expect(example.request.ambient, example.id).toEqual(["@preview/charts"]);
-      expect(Object.keys(example.request.packs ?? {}), example.id).toEqual(expect.arrayContaining(["@preview/charts", "@preview/minimermaid"]));
-      expect(example.request.policy?.packs, example.id).toEqual({ "@preview/charts": { level: "strict" }, "@preview/minimermaid": { level: "strict" } });
+      expect(example.request.ambient, example.id).toEqual(["@preview/charts", "@site/app"]);
+      expect(Object.keys(example.request.packs ?? {}), example.id).toEqual(expect.arrayContaining(["@preview/charts", "@preview/minimermaid", "@site/app"]));
+      // The website trusts its own pack; in the playground it is sandboxed, as every pack there is.
+      expect(example.request.policy?.packs, example.id).toEqual({ "@preview/charts": { level: "strict" }, "@preview/minimermaid": { level: "strict" }, "@site/app": { level: "strict" } });
     }
     const files = Object.keys(byId("dashboard").request.packs?.["@preview/charts"]?.[0]?.files ?? {});
     expect(files.sort()).toEqual(["area-chart.jsx", "bar-chart.jsx", "data-table.svelte", "index.comp.md", "package.json", "pie-chart.svelte", "timeline.jsx"]);

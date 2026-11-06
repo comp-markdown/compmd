@@ -1,7 +1,7 @@
 <!-- The Developer Tools' editor (docs/devtools.md): the document's text on the left, with the hint at the caret and the
-     diagnostics under it; on the right, the document's inputs over tabs with the rendered page in its sandbox, what went
-     wrong, the components the document can name, the sandbox's frames, what the frontmatter gives the render, what a
-     plain Markdown renderer shows, the messages between the frames, and the trees. Each document opens with a worker
+     diagnostics under it; on the right, tabs with the rendered page in its sandbox, the trees, what the frontmatter gives
+     the render, the components the document can name, the sandbox's frames, the messages between the frames, the text
+     and what a plain Markdown renderer shows; under them, what went wrong and the document's inputs. Each document opens with a worker
      and a page of its own; the sandbox's observer watches the page from its start. -->
 <script lang="ts">
   import type { Range } from "@compmd/processor";
@@ -15,7 +15,6 @@
   import { Editor, type EditorState, type Replaced } from "./editor.ts";
   import { directiveFor, findPassage, fragmentOf, parseFragment, type Passage } from "./fragment.ts";
   import { lineOf } from "./hint.ts";
-  import Inputs from "./Inputs.svelte";
   import Panes from "./Panes.svelte";
   import type { Registries, RegistryConfig } from "./protocol.ts";
   import { onceAFrame } from "./schedule.ts";
@@ -352,15 +351,11 @@
     {entries}
     onselect={(range) => void select(range)}
     page={pageFrame}
-    above={inputs}
     {status}
+    {text}
+    inputs={shown?.inputs}
+    onset={(name, value) => editor?.setInput(name, value)}
   />
-{/snippet}
-
-{#snippet inputs()}
-  {#if shown && Object.keys(shown.inputs).length > 0}
-    <Inputs inputs={shown.inputs} onset={(name, value) => editor?.setInput(name, value)} />
-  {/if}
 {/snippet}
 
 {#snippet pageFrame()}

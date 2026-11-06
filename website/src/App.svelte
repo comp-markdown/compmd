@@ -71,6 +71,14 @@
       live: "frame" as const,
       height: "18rem",
     },
+    {
+      title: "Components in a table cell",
+      text: "An inline component goes wherever text goes, a table cell too: each city's week drawn by a component in a file beside the document.",
+      name: "weather.comp.md",
+      snapshot: snapshots.weather,
+      live: "frame" as const,
+      height: "9.5rem",
+    },
   ];
 
   const PLACES = [
@@ -97,7 +105,7 @@
       <h1>Markdown with components.</h1>
       <p class="lede">Readable as text, rendered as a page. Boxes, grids, values from data and inputs the reader changes, written in lines that still read as Markdown.</p>
       <p class="actions">
-        <a class="button primary" href="playground/">Open the playground</a>
+        <a class="button primary" href="playground/?doc=book-club">Open it in the playground</a>
         <a class="button" href="spec/">Read the spec</a>
       </p>
       <Hero />

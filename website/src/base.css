@@ -79,6 +79,22 @@ textarea {
   background: var(--accent-wash);
 }
 
+/* Controls, on every page: a thin rule on the sheet, its border taking the accent under the pointer. The playground's
+   pickers, a page's toggles and tabs (`site.css`), the header's search and GitHub. */
+select {
+  min-block-size: 30px;
+  padding: 3px 8px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--sheet);
+  color: var(--ink);
+  font: inherit;
+}
+
+:is(select, .toggle button, .tabs button, header.site .search, header.site .github):hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--rule));
+}
+
 .wrap {
   max-inline-size: 76rem;
   margin-inline: auto;

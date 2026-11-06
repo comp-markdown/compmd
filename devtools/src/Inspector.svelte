@@ -54,5 +54,5 @@
 </script>
 
 <div class="devtools inspector">
-  <Panes document={current.request} {revision} {observed} {dropped} {entries} ondiagnostics={diagnosed} />
+  <Panes document={current.request} {revision} {observed} {dropped} {entries} ondiagnostics={diagnosed} text={current.request.files?.[current.request.path]} />
 </div>

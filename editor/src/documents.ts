@@ -22,6 +22,7 @@ const COMPLETE = "../../conformance/examples/complete-example-expanded/";
 const CHANGELOG = "../../wasm/bench/fixtures/changelog/";
 const NOTES = "../../wasm/bench/fixtures/notes/";
 const EXAMPLES_DIR = "../examples/";
+const SITE_CONTENT = "../../website/content/";
 
 const bundled = {
   complete: import.meta.glob("../../conformance/examples/complete-example-expanded/**/*", { query: "?raw", import: "default", eager: true }),
@@ -30,6 +31,9 @@ const bundled = {
   notes: import.meta.glob("../../wasm/bench/fixtures/notes/notes.comp.md", { query: "?raw", import: "default", eager: true }),
   // The charts are a pack of the configuration, which `virtual:compmd` brings.
   examples: import.meta.glob(["../examples/**/*", "!../examples/charts/**"], { query: "?raw", import: "default", eager: true }),
+  // The website's hero, the book club, with the files beside it; its `stars` are the site's pack, which the
+  // configuration brings too.
+  club: import.meta.glob(["../../website/content/hero.comp.md", "../../website/content/club.csv", "../../website/content/shelf.js"], { query: "?raw", import: "default", eager: true }),
   // The guides' documents, which their **Try it** links open (`?doc=guides/<book>/<example>`); but a pack's own
   // document, `index.comp.md`, which imports its built module and renders only where the pack is built, and the
   // document of an app's own components, which only that app has.
@@ -144,9 +148,16 @@ function example(id: string, name: string, request: Request, shows: readonly str
 
 const NOW = "2026-10-29T09:00:00Z";
 
+/** The website's book club, as its landing page shows it: the document under the name the page gives it. */
+function bookClub(): Request {
+  const { "hero.comp.md": text = "", ...beside } = filesIn(bundled.club, SITE_CONTENT);
+  return { path: "club.comp.md", files: { ...beside, "club.comp.md": text }, now: NOW };
+}
+
 /** The menu, from the syntax to the diagnostics, each document showing one side of CompMD. */
 export const EXAMPLES: Example[] = [
   example("tour", "Learn CompMD: a tutorial in fifteen lessons", { path: "tour.comp.md", files: own("tour"), now: NOW }),
+  example("book-club", "Components in files: the website's book club", bookClub()),
   example("definitions", "Definitions and slots", { path: "definitions.comp.md", files: own("definitions"), now: NOW }),
   example("changelog", "Expressions: a changelog (12 releases, 128 changes)", { path: "changelog.comp.md", files: filesIn(bundled.changelog, CHANGELOG), now: "2026-10-22T09:00:00Z" }),
   example("dashboard", "Data: a sales dashboard", { path: "dashboard.comp.md", files: own("dashboard"), now: NOW }, [CHARTS_PACK]),

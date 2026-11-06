@@ -10,4 +10,4 @@ md:
 - *{{b.title}}*, {{b.author}} ({{b.year}})
 ::: /each
 
-:value[863 pages]{of=(md.number(md.sum(md.data.books.map(b, b.pages)), 0) + " pages")} in all.
+:value[1,945 pages]{of=(md.number(md.sum(md.data.books.map(b, b.pages)), 0) + " pages")} in all.

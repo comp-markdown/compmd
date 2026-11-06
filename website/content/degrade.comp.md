@@ -1,17 +1,19 @@
----
-title: Release notes
-fixed: 14
----
+# Team offsite
 
-# {{md.doc.title}}
+We meet in **Lisbon on 12–13 June**. Flights are booked,
+and the hotel is a short walk from the venue.
 
-::: box {padding=m background=subtle border-radius=m}
-:value[14 bugs fixed]{of=(string(md.doc.fixed) + " bugs fixed")} since the last release.
+::: grid {min=12rem gap=m}
+**Thursday.** Arrive by noon, then the roadmap
+in the afternoon.
+
+**Friday.** Workshops in the morning, and the
+afternoon is yours.
+::: /grid
+
+::: box {background=accent padding=m border-radius=m}
+Bring your laptop charger: the venue has none to lend.
 ::: /box
 
-::: if {when=(md.doc.fixed > 10)}
-A big one: read it before you upgrade.
-
-:: #else
-A small one.
-::: /if
+> [!NOTE]
+> Questions go to Maya.

@@ -5,6 +5,7 @@
 import { init, OpenDocument } from "@compmd/processor";
 import { createSandbox } from "@compmd/sandbox";
 import { request, sandbox } from "virtual:compmd";
+import { changed, type Live } from "./live.ts";
 
 /** The playground's host stylesheets, from this page. */
 const PLAYGROUND = new URL("playground/", location.href).href;
@@ -15,6 +16,17 @@ const PLAYGROUND = new URL("playground/", location.href).href;
  * it renders: until then its places would show empty. Gives what closes it.
  */
 export async function renderInFrame(container: HTMLElement, path: string, text: string, files: Record<string, string>, onShown: () => void, page: "frame" | "host" = "frame"): Promise<() => void> {
+  const kept = await keepInSandbox(container, path, text, files, onShown, page);
+  return () => {
+    kept.destroy();
+  };
+}
+
+/**
+ * As {@link renderInFrame}, and kept open for edits, as the hero is: each edit of the text renders what it changed, and
+ * gives the document's diagnostics.
+ */
+export async function keepInSandbox(container: HTMLElement, path: string, text: string, files: Record<string, string>, onShown: () => void, page: "frame" | "host" = "host"): Promise<Live> {
   await init();
   let inputs: Record<string, unknown> = {};
   const open = () => new OpenDocument({ ...request, path, files: { ...files, [path]: text }, now: new Date().toISOString(), inputs });
@@ -42,8 +54,18 @@ export async function renderInFrame(container: HTMLElement, path: string, text: 
     view.render(document.expanded);
   });
   view.render(document.expanded);
-  return () => {
-    view.destroy();
-    document.free();
+  return {
+    edit(next) {
+      const [start, end, inserted] = changed(text, next);
+      text = next;
+      const { splice, diagnostics, components } = document.edit(start, end, inserted);
+      if (components) void view.components(components);
+      view.splice([splice]);
+      return diagnostics;
+    },
+    destroy() {
+      view.destroy();
+      document.free();
+    },
   };
 }

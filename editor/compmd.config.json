@@ -2,7 +2,8 @@
   "$schema": "../vite/compmd.config.schema.json",
   "packs": {
     "./examples/charts": { "ambient": true },
-    "./packs/minimermaid": {}
+    "./packs/minimermaid": {},
+    "../website/app": { "ambient": true }
   },
   "libraries": ["d3"],
   "registries": { "*": "https://registry.npmjs.org/" },

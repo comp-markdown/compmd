@@ -4,7 +4,7 @@
      them, the Console, in a drawer that hides and resizes. The views' worker makes the document's views, from the document as it is now, while their tab is open,
      and evaluates the Console's expressions in it; the observer's tabs read what the sandbox's observer kept. -->
 <script lang="ts">
-  import type { Diagnostic, Range, Request } from "@compmd/processor";
+  import type { Diagnostic, ExpandedInput, Range, Request } from "@compmd/processor";
   import type { ObservedEvent } from "@compmd/sandbox";
   import { untrack, type Snippet } from "svelte";
   import ComponentsView from "./ComponentsView.svelte";
@@ -13,6 +13,7 @@
   import ConsoleView from "./ConsoleView.svelte";
   import DataView from "./DataView.svelte";
   import { treeOf } from "./frames.ts";
+  import Inputs from "./Inputs.svelte";
   import JsonTree from "./JsonTree.svelte";
   import { timelineOf } from "./messages.ts";
   import MessagesView from "./MessagesView.svelte";
@@ -33,13 +34,26 @@
     ondiagnostics?: (diagnostics: Diagnostic[]) => void;
     /** The page tab's content; given, the tabs are the page and the CompMD Inspector. */
     page?: Snippet;
-    /** Over the tabs: the document's inputs. */
-    above?: Snippet;
     /** Beside the tabs: how fast the last change reached the page. */
     status?: Snippet;
+    /** The document's text as written, for Plain Text. */
+    text?: string | undefined;
+    /** The document's inputs, for the drawer's Inputs, with what sets one; without `onset`, there is no Inputs. */
+    inputs?: Readonly<Record<string, ExpandedInput>> | undefined;
+    onset?: ((name: string, value: unknown) => void) | undefined;
   }
 
-  let { document, revision, observed, dropped, entries, onselect, ondiagnostics, page, above, status }: Props = $props();
+  let { document, revision, observed, dropped, entries, onselect, ondiagnostics, page, status, text, inputs, onset }: Props = $props();
+
+  /** The drawer's tab: the Console, or the document's inputs when the tools can set any. */
+  let drawerTab = $state<"console" | "inputs">("console");
+  const settable = $derived(onset !== undefined && inputs !== undefined && Object.keys(inputs).length > 0);
+  const shownDrawer = $derived(settable ? drawerTab : "console");
+  /** Shows the drawer, open, at `chosen`. */
+  function openDrawer(chosen: "console" | "inputs"): void {
+    drawerTab = chosen;
+    consoleOpen = true;
+  }
 
   /** The editor's tab, the page first; the inspector alone has the Inspector only. */
   let section: Section = $state(untrack(() => (page ? "page" : "inspector")));
@@ -128,7 +142,6 @@
 </script>
 
 <div class="sheet views">
-  {@render above?.()}
   {#if page}
     <div class="tab-bar">
       <div class="tabs" role="tablist" aria-label="The page and the CompMD Inspector">
@@ -158,6 +171,8 @@
           <SandboxView {tree} {dropped} />
         {:else if tab === "messages"}
           <MessagesView {timeline} />
+        {:else if tab === "text"}
+          <pre class="plain-text" aria-label="The document's text, as written">{text ?? ""}</pre>
         {:else if view === undefined || view.view !== kindOf(tab)}
           <p class="note">Processing…</p>
         {:else if "failed" in view}
@@ -179,7 +194,7 @@
           </div>
         {/if}
       </div>
-      <section class="drawer" aria-label="Console">
+      <section class="drawer" aria-label="The drawer">
         <div class="drawer-bar">
           <!-- A window splitter, as the text's and the views' is. -->
           <!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
@@ -187,21 +202,38 @@
             class="drawer-handle"
             role="separator"
             aria-orientation="horizontal"
-            aria-label="The Console's height: drag, or the arrow keys"
+            aria-label="The drawer's height: drag, or the arrow keys"
             aria-valuenow={drawer}
             tabindex="0"
             hidden={!consoleOpen}
             onpointerdown={resize}
             onkeydown={resizeByKey}
           ></div>
-          <button type="button" class="drawer-toggle" aria-expanded={consoleOpen} aria-controls="console-body" title="Show or hide the Console (Esc)" onclick={() => (consoleOpen = !consoleOpen)}>
+          <button
+            type="button"
+            class="drawer-toggle"
+            aria-expanded={consoleOpen}
+            aria-controls="drawer-body"
+            aria-label="Show or hide the drawer"
+            title="Show or hide the drawer (Esc)"
+            onclick={() => (consoleOpen = !consoleOpen)}
+          >
             <svg viewBox="0 0 10 10" aria-hidden="true"><path d="m3 2 4 3-4 3" /></svg>
-            Console
           </button>
+          <div class="tabs drawer-tabs" role="tablist" aria-label="The drawer">
+            <button type="button" role="tab" id="drawer-console" aria-selected={shownDrawer === "console"} aria-controls="drawer-body" onclick={() => openDrawer("console")}>Console</button>
+            {#if settable}
+              <button type="button" role="tab" id="drawer-inputs" aria-selected={shownDrawer === "inputs"} aria-controls="drawer-body" onclick={() => openDrawer("inputs")}>Inputs</button>
+            {/if}
+          </div>
         </div>
         {#if consoleOpen}
-          <div class="drawer-body" id="console-body" style:height="{drawer}px">
-            <ConsoleView {entries} {evaluations} onevaluate={document ? evaluate : undefined} {onselect} />
+          <div class="drawer-body" id="drawer-body" role="tabpanel" aria-labelledby="drawer-{shownDrawer}" style:height="{drawer}px">
+            {#if shownDrawer === "inputs" && inputs && onset}
+              <Inputs {inputs} {onset} />
+            {:else}
+              <ConsoleView {entries} {evaluations} onevaluate={document ? evaluate : undefined} {onselect} />
+            {/if}
           </div>
         {/if}
       </section>

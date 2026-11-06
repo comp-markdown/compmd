@@ -12,7 +12,7 @@
 </div>
 <div class="pair">
   <figure class="manuscript">
-    <figcaption>release.comp.md</figcaption>
+    <figcaption>offsite.comp.md</figcaption>
     <pre>{text}</pre>
   </figure>
   <div class={["proof", plain && "plain"]}>

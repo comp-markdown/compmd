@@ -1,23 +1,33 @@
 ---
-title: Launch week
 md:
-  data: [{from: ./tasks.yaml, as: tasks}]
-  inputs: {open: boolean = false}
+  import:
+    - from: ./shelf.js
+      names: [shelf]
+  data: [{from: ./club.csv, as: books}]
+  inputs:
+    book: string = "Klara and the Sun"
 ---
 
-# {{md.doc.title}}
+# Thursday Book Club
 
-::: grid {min=9rem gap=s}
-::: box {padding=m background=subtle border-radius=m}
-**:value[2]{of=(string(size(md.data.tasks.filter(t, t.done))))} of 3** done
-::: /box
-::: box {padding=m background=accent border-radius=m}
-**:value[13]{of=(md.number(md.sum(md.data.tasks.filter(t, t.done).map(t, t.points)), 0))}** points shipped
-::: /box
-::: /grid
+We meet on the last Thursday of the month, at Ana's.
+Pick a cover to see what we made of it.
 
-:: toggle-input[Only what's open] {bind=open}
+:: shelf[] {books=(md.data.books) picked=book}
 
-::: each {in=(md.data.tasks.filter(t, !md.input.open || !t.done)) as=t join=list}
-- {{t.name}}
+::: each {in=(md.data.books.filter(b, b.title == md.input.book)) as=b}
+**{{b.title}}**, {{b.author}}. {{b.verdict}}
+
+::: if {when=(b.status == "read")}
+The club gave it :rating[4 of 5]{value=(b.rating)}
+
+:: #else
+Not rated yet.
+::: /if
 ::: /each
+
+```compmd component=shelf signature
+params:
+  books: array
+  picked: input<string>
+```

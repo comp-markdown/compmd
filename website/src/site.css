@@ -9,9 +9,10 @@
   display: none;
 }
 
+/* Wide enough for the longest label at its largest, the section being read: its fading mask hides what overflows. */
 @media (width >= 1100px) {
   main .wrap {
-    padding-inline-end: calc(var(--gutter) + 12rem);
+    padding-inline-end: calc(var(--gutter) + 15rem);
   }
 
   .wheel {
@@ -20,7 +21,7 @@
     inset-block: calc(var(--header) + 2rem) 2rem;
     inset-inline-end: var(--gutter);
     z-index: 1;
-    inline-size: 11rem;
+    inline-size: 14rem;
     mask-image: linear-gradient(transparent, #000 30%, #000 70%, transparent);
   }
 }
@@ -141,14 +142,46 @@ main > section.hero {
   align-items: start;
 }
 
-/* The hero's text is as tall as its page, and scrolls for the rest. */
+/* The hero's text is as tall as its page, and scrolls for the rest; an arrow between them says the one renders as the
+   other, where a reader first meets the pair. */
 .hero-pair {
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: clamp(8px, 1.4vw, 16px);
   align-items: stretch;
+}
+
+/* The arrow between them: the document renders as the page. */
+.renders {
+  display: grid;
+  place-items: center;
+  align-self: center;
+  inline-size: 2rem;
+  block-size: 2rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  box-shadow: var(--shadow);
+}
+
+.renders svg {
+  inline-size: 1.1rem;
+  block-size: 1.1rem;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 @media (width < 760px) {
   .pair {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Stacked, the page comes under its document: the arrow points down. */
+  .renders {
+    justify-self: center;
+    rotate: 90deg;
   }
 }
 

@@ -275,31 +275,34 @@ textarea::selection {
   tab-size: 2;
 }
 
-/* Over the tabs: the inputs. */
+/* The drawer's Inputs: one input a row, its name beside its control, however many the document declares. */
 
 .inputs {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 18rem);
   align-items: center;
-  gap: 6px 18px;
+  gap: 8px 16px;
   margin: 0;
-  padding: 7px 16px;
+  padding: 12px 16px;
   border: 0;
-  border-bottom: 1px solid var(--rule);
-  background: color-mix(in srgb, var(--accent) 4%, var(--sheet));
 }
 
+/* The tab names them already; the legend is for a screen reader. */
 .inputs legend {
-  float: left;
-  margin-inline-end: 4px;
-  padding: 0;
-  color: var(--ink-secondary);
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .inputs label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  display: contents;
+}
+
+.inputs label > :not(code) {
+  justify-self: start;
 }
 
 .inputs code {
@@ -611,7 +614,24 @@ textarea::selection {
 
 .drawer-body {
   min-height: 0;
+  overflow: auto;
   border-top: 1px solid var(--rule);
+}
+
+/* The drawer's tabs, beside its toggle: as quiet as the Inspector's. */
+.drawer-tabs button {
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+/* The document's text as written, as a text editor shows it. */
+.plain-text {
+  margin: 0;
+  padding: 18px 22px;
+  font: 13px/1.6 var(--mono);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  tab-size: 2;
 }
 
 .view[hidden] {
