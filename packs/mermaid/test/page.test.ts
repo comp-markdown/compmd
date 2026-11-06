@@ -54,6 +54,10 @@ const drawing = (label: string) => `[role="img"][aria-label="${label}"] svg`;
 
 describe.each(BROWSERS)("the test page in %s", (_name, type, options) => {
   let browser: Browser;
+  // The page in light, opened by the first test that needs it and kept: no test changes it, and opening it waits for
+  // Mermaid to draw every diagram. Inside a test, since waiting for the diagrams polls.
+  let lightOnce: Promise<{ page: Page; problems: string[] }> | undefined;
+  const lightPage = () => (lightOnce ??= open("light"));
 
   beforeAll(async () => {
     browser = await type.launch({ headless: true, ...options });
@@ -77,26 +81,24 @@ describe.each(BROWSERS)("the test page in %s", (_name, type, options) => {
   }
 
   it("draws every diagram, as a block and as a leaf, with nothing refused", async () => {
-    const { page, problems } = await open("light");
+    const { page, problems } = await lightPage();
     const svgOf = async (label: string) => (await frameWith(page, drawing(label))).locator(drawing(label)).innerHTML();
     expect(await svgOf(LABELS[1] ?? "")).toContain("Open the page");
     expect(await svgOf(LABELS[2] ?? "")).toContain("Published");
     expect(problems).toEqual([]);
-    await page.close();
   }, 60_000);
 
   // That each frame is its content's height is `@compmd/sandbox`'s test, and create-pack's for the test page.
   it("shows the code of a diagram Mermaid can't read, and reports what Mermaid found as W118", async () => {
-    const { page } = await open("light");
+    const { page } = await lightPage();
     const frame = await frameWith(page, "pre >> text=A -->");
     expect(await frame.locator("pre", { hasText: "A -->" }).count()).toBe(1);
     await expect.poll(() => page.locator("#diagnostics li").allInnerTexts(), { timeout: 30_000 }).toEqual([expect.stringMatching(/^W118: mermaid: Mermaid couldn't read this diagram: /)]);
-    await page.close();
   }, 60_000);
 
   it("draws with Mermaid's dark theme, in a frame that takes the page's dark scheme, and back when switched", async () => {
     const fill = async (page: Page) => (await frameWith(page, drawing(LABELS[0] ?? ""))).locator(".node rect, .node path").first().evaluate((step) => getComputedStyle(step).fill);
-    const light = await open("light");
+    const light = await lightPage();
     const dark = await open("dark");
     const darkFill = await fill(dark.page);
     expect(darkFill).not.toBe(await fill(light.page));
@@ -109,7 +111,6 @@ describe.each(BROWSERS)("the test page in %s", (_name, type, options) => {
     await dark.page.selectOption("#scheme", "dark");
     await expect.poll(() => fill(dark.page), { timeout: 30_000 }).toBe(darkFill);
     expect(await dark.page.locator("#diagnostics li").allInnerTexts()).toEqual([expect.stringMatching(/^W118: mermaid: /)]);
-    await light.page.close();
     await dark.page.close();
   }, 60_000);
 });

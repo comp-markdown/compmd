@@ -22,6 +22,12 @@ clear = true
 command = "cargo"
 args = ["test", "--workspace"]
 
+[tasks.doctest]
+description = "Run the documentation examples, which coverage's run leaves out"
+clear = true
+command = "cargo"
+args = ["test", "--workspace", "--doc"]
+
 [tasks.wasm]
 description = "Build the processor as WebAssembly, size-optimized; `pnpm wasm` in `wasm/` adds wasm-bindgen's JavaScript"
 clear = true
@@ -46,9 +52,10 @@ args = ["llvm-cov", "--workspace", "--ignore-filename-regex", "markdown-rs/|wasm
 [tasks.packages]
 description = "Build, lint (eslint, the type check, svelte-check; after the build, since packages check against each other's built output) and test the TypeScript packages: the renderer, the processor as WebAssembly, the sandbox (its browser tests in Chrome and WebKit), the registry (against a local registry, and in Chrome and WebKit), the Vite plugin (its example app in Chrome and WebKit), `@compmd/pack`, create-pack (a written pack, on `@compmd/pack`, in Chrome and WebKit), the Developer Tools, and the editor (its document of a pack from npm, against a local registry, in Chrome); the renderer's tests check it against the processor's `conformance/params.json`"
 clear = true
-script = ["pnpm -r --if-present build", "pnpm -r --if-present lint", "pnpm -r --if-present test"]
+# Only the build needs the packages' order; once each package is built, lint and tests don't depend on it.
+script = ["pnpm -r --if-present build", "pnpm -r --no-sort --if-present lint", "pnpm -r --no-sort --if-present test"]
 
 [tasks.ci]
-description = "Every check CI runs"
+description = "Every check CI runs; coverage runs the tests, the conformance set's among them, so `test` isn't run again"
 clear = true
-dependencies = ["fmt", "clippy", "test", "wasm", "deny", "coverage", "packages"]
+dependencies = ["fmt", "clippy", "coverage", "doctest", "wasm", "deny", "packages"]

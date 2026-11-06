@@ -9,7 +9,7 @@ import { mkdir, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readPack, servePack } from "@compmd/pack";
-import { chromium, webkit, type Browser, type BrowserType, type LaunchOptions } from "playwright";
+import { chromium, webkit, type Browser, type BrowserType, type LaunchOptions, type Page } from "playwright";
 import type { ViteDevServer } from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createPack } from "../src/create.ts";
@@ -89,6 +89,20 @@ describe.each(PACKS)("a pack of $variant", ({ folder: name, port, shows, ...opti
 
   describe.each(BROWSERS)("its test page in %s", (_browser, type, launch) => {
     let browser: Browser;
+    // The test page, opened by the first test that needs it and kept: opening it waits for the component to draw.
+    // Inside a test, since that wait polls. The last test switches the scheme, and switches it back.
+    let opened: Promise<{ page: Page; errors: string[] }> | undefined;
+    const testPage = () => (opened ??= open());
+
+    async function open(): Promise<{ page: Page; errors: string[] }> {
+      const page = await browser.newPage();
+      const errors: string[] = [];
+      page.on("pageerror", (error) => errors.push(error.message));
+      await page.goto(`http://localhost:${String(port)}/`);
+      // Host mode: each use in a frame of its own; the demo's first use is the one checked.
+      await expect.poll(() => page.locator("iframe").first().contentFrame().locator(`[aria-label="${shows.label}"]`).count(), { timeout: 20_000 }).toBe(1);
+      return { page, errors };
+    }
 
     beforeAll(async () => {
       browser = await type.launch({ headless: true, ...launch });
@@ -99,23 +113,15 @@ describe.each(PACKS)("a pack of $variant", ({ folder: name, port, shows, ...opti
     });
 
     it("renders the component in the strict sandbox, with no diagnostics", async () => {
-      const page = await browser.newPage();
-      const errors: string[] = [];
-      page.on("pageerror", (error) => errors.push(error.message));
-      await page.goto(`http://localhost:${String(port)}/`);
-      // Host mode: each use in a frame of its own; the demo's first use is the one checked.
+      const { page, errors } = await testPage();
       const drawn = page.locator("iframe").first().contentFrame().locator(`[aria-label="${shows.label}"]`);
-      await expect.poll(() => drawn.count(), { timeout: 20_000 }).toBe(1);
       expect(await drawn.innerText()).toContain(shows.text);
       expect(await page.locator("#diagnostics li").allInnerTexts()).toEqual([]);
       expect(errors).toEqual([]);
-      await page.close();
     });
 
     it("makes each use's frame as tall as what it shows: neither cut short nor taller", async () => {
-      const page = await browser.newPage();
-      await page.goto(`http://localhost:${String(port)}/`);
-      await expect.poll(() => page.locator("iframe").first().contentFrame().locator(`[aria-label="${shows.label}"]`).count(), { timeout: 20_000 }).toBe(1);
+      const { page } = await testPage();
       const frames = page.locator("iframe");
       for (let i = 0; i < (await frames.count()); i += 1) {
         const frame = frames.nth(i);
@@ -128,20 +134,16 @@ describe.each(PACKS)("a pack of $variant", ({ folder: name, port, shows, ...opti
         };
         await expect.poll(off, { timeout: 10_000 }).toBe(0);
       }
-      await page.close();
     });
 
     it("switches the page between light and dark, and the frame follows", async () => {
-      const page = await browser.newPage();
-      await page.goto(`http://localhost:${String(port)}/`);
+      const { page } = await testPage();
       const frame = page.locator("iframe").first().contentFrame();
-      await expect.poll(() => frame.locator(`[aria-label="${shows.label}"]`).count(), { timeout: 20_000 }).toBe(1);
       const scheme = () => frame.locator(":root").evaluate((root) => getComputedStyle(root).colorScheme);
       await page.selectOption("#scheme", "dark");
       await expect.poll(scheme).toBe("dark");
       await page.selectOption("#scheme", "light");
       await expect.poll(scheme).toBe("light");
-      await page.close();
     });
   });
 });

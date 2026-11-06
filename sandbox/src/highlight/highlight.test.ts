@@ -8,8 +8,15 @@ const codeOf = (text: string) => Object.assign(document.createElement("code"), {
 /** The texts of `target`'s tokens. */
 const tokens = (target: HTMLElement) => [...target.querySelectorAll("span")].map((span) => span.textContent);
 
+/**
+ * How long to wait for Shiki and a grammar to load: well under a second alone, but many seconds while every package's
+ * tests run at once; and the test's own limit above it.
+ */
+const LOADED = { timeout: 10_000 };
+const TEST = { timeout: 15_000 };
+
 describe("shikiHighlight", () => {
-  it("draws a block's tokens, its text as it was, loading Shiki once", async () => {
+  it("draws a block's tokens, its text as it was, loading Shiki once", TEST, async () => {
     const highlight = shikiHighlight();
     const [first, second] = [codeOf("const a = 1;"), codeOf("print('hi')")];
     highlight("const a = 1;", "js", first);
@@ -18,12 +25,12 @@ describe("shikiHighlight", () => {
     await vi.waitFor(() => {
       expect(tokens(first)).toContain("const");
       expect(tokens(second)).toContain("print");
-    });
+    }, LOADED);
     expect(first.textContent).toBe("const a = 1;");
     expect(second.textContent).toBe("print('hi')");
   });
 
-  it("shows CompMD's syntax in Markdown, its frontmatter as YAML, and a definition's signature as YAML", async () => {
+  it("shows CompMD's syntax in Markdown, its frontmatter as YAML, and a definition's signature as YAML", TEST, async () => {
     const highlight = shikiHighlight();
     const markdown = '---\nheading: A\n---\n::: card {title="Setup" gap=m}\n- {{md.doc.heading}}\n::: /card';
     const definition = "params:\n  a: string\n---\n::: box {gap=s}\n{{a}}\n::: /box";
@@ -33,7 +40,7 @@ describe("shikiHighlight", () => {
     await vi.waitFor(() => {
       expect(tokens(md)).toEqual(expect.arrayContaining(["heading", "card", "gap", "{{md.doc.heading}}"]));
       expect(tokens(compmd)).toEqual(expect.arrayContaining(["params", "box"]));
-    });
+    }, LOADED);
     expect(md.textContent).toBe(markdown);
     expect(compmd.textContent).toBe(definition);
   });
@@ -62,7 +69,7 @@ describe("shikiHighlight", () => {
 });
 
 describe("highlightWith", () => {
-  it("draws only a block's newest text, whichever tokens come first", async () => {
+  it("draws only a block's newest text, whichever tokens come first", TEST, async () => {
     const highlight = shikiHighlight();
     const target = codeOf("let older = 1;");
     // TypeScript's grammar loads after JavaScript's, so the older block's tokens could come last.
@@ -71,7 +78,7 @@ describe("highlightWith", () => {
     highlight("let newer = 2;", "js", target);
     await vi.waitFor(() => {
       expect(tokens(target).some((token) => token.includes("newer"))).toBe(true);
-    });
+    }, LOADED);
     await new Promise((resolve) => setTimeout(resolve, 200));
     expect(target.textContent).toBe("let newer = 2;");
   });

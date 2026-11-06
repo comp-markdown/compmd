@@ -581,18 +581,21 @@ describe("destroy", () => {
 // WebKit runs these frames in the page's own process, so a frame that spins freezes the test page too.
 const webkit = !navigator.userAgent.includes("Chrome");
 
+/** How long the view waits for a frame to answer, in these tests: the frame spins for well over it. */
+const HANG_TIMEOUT = 600;
+
 describe("a page frame that hangs", () => {
   it.skipIf(webkit)("is reported as code that threw (W118), once it hasn't answered within `timeout` (frame mode)", async () => {
-    const spinner: HostComponent = { name: "label", language: "js", code: probeCode("async () => { setTimeout(() => { for (const end = Date.now() + 4000; Date.now() < end; ) {} }, 200); return 'started'; }"), trust: { level: "strict" } };
-    const { view, events, until } = open("frame", [spinner], { timeout: 1500 });
+    const spinner: HostComponent = { name: "label", language: "js", code: probeCode("async () => { setTimeout(() => { for (const end = Date.now() + 2500; Date.now() < end; ) {} }, 200); return 'started'; }"), trust: { level: "strict" } };
+    const { view, events, until } = open("frame", [spinner], { timeout: HANG_TIMEOUT });
     view.render(page("one"));
     await until(() => events.error.some(({ message }) => message === "the page's frame stopped answering"));
     expect(events.error.find(({ message }) => message === "the page's frame stopped answering")).toEqual({ component: "", reason: "threw", code: "W118", message: "the page's frame stopped answering" });
   });
 
   it.skipIf(webkit)("doesn't keep the page from settling: stopped, it counts as settled (frame mode)", async () => {
-    const spinner: HostComponent = { name: "label", language: "js", code: "export default function mount() { setTimeout(() => { for (const end = Date.now() + 4000; Date.now() < end; ) {} }, 0); }", trust: { level: "strict" } };
-    const { view, events, until } = open("frame", [spinner], { timeout: 1500 });
+    const spinner: HostComponent = { name: "label", language: "js", code: "export default function mount() { setTimeout(() => { for (const end = Date.now() + 2500; Date.now() < end; ) {} }, 0); }", trust: { level: "strict" } };
+    const { view, events, until } = open("frame", [spinner], { timeout: HANG_TIMEOUT });
     view.render(page("one"));
     await until(() => events.error.some(({ message }) => message === "the page's frame stopped answering"));
     await view.settled();
