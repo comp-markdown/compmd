@@ -54,6 +54,11 @@ description = "Build, lint (eslint, the type check, svelte-check; after the buil
 clear = true
 script = ["pnpm -r --if-present build", "pnpm -r --if-present lint", "pnpm -r --if-present test"]
 
+[tasks.site]
+description = "Build the site and check it, as the Pages workflow does before it deploys (docs/ci.md, decision 11): every package's build, the site's last, which assembles them, then the built site's check in Chrome, without the paint timing a shared runner can't hold. Not part of `ci`: a change to the site, the guides or the spec runs it before a push"
+clear = true
+script = ["pnpm -r build", "pnpm --dir website check --no-timing"]
+
 [tasks.linux]
 description = "Run a check on Linux, in a container like CI's runner (docker/Dockerfile), on a commit of this repository: `cargo make linux` runs `cargo make ci` on HEAD; `cargo make linux site` the site's build and check, as the Pages workflow runs them; `cargo make linux <command>` any command; `cargo make linux --ref <commit> …` another commit. Needs Docker; x86-64 runs emulated on an Arm Mac."
 clear = true

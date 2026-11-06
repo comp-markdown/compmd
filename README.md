@@ -100,6 +100,8 @@ pnpm install
 cargo make ci
 ```
 
+The site's check isn't part of `cargo make ci`: the Pages workflow builds the site and checks it in Chrome before it deploys. After a change to `website/`, `guides/` or the spec, `cargo make site` runs that build and check too.
+
 Some failures show only on CI's Linux runner, such as a page laid out a pixel wider with its fonts. `cargo make linux` runs the checks on a commit in a container like the runner, with Docker: `cargo make linux` all of them, `cargo make linux site` the site's build and check, `cargo make linux --ref <commit> …` another commit ([how](docs/ci.md)).
 
 ## License
