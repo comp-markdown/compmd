@@ -7,7 +7,7 @@ use super::origins;
 use crate::cel::Value;
 use crate::diagnostic::{Code, Location};
 use crate::expanded::{self, Content};
-use crate::tree::{self, Image, Interpolation, Link, Node, StringPart};
+use crate::tree::{self, Image, Interpolation, Link, Node, StringPart, start_of};
 use std::fmt::Write as _;
 
 /// The schemes an interpolated URL may have (spec §8.1).
@@ -190,9 +190,7 @@ impl<'r> Expander<'r> {
         let interpolated_start = matches!(parts, Some([StringPart::Interpolation(_), ..]));
         let scheme = scheme(&url);
         if interpolated_start && scheme.is_some_and(|scheme| !SCHEMES.contains(&scheme.as_str())) {
-            let at = node
-                .position()
-                .map_or(Location::new(1, 1), |p| p.start.into());
+            let at = start_of(node.position());
             self.report(
                 Code::W109,
                 env,

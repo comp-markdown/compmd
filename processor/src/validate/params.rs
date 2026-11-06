@@ -17,7 +17,7 @@ use crate::reserved::{self, Keyword};
 use crate::resolve::{Binding, Component};
 use crate::tree::{
     Container, Declaration, DeclaredType, Node, Param, ParamValue, Point, Position, Signature,
-    SlotDeclaration, StringPart, TypeName,
+    SlotDeclaration, StringPart, TypeName, start_of,
 };
 use crate::values::Kind;
 use std::collections::{HashMap, HashSet};
@@ -84,9 +84,7 @@ fn value_fix(param: &Param, text: &str) -> Option<Fix> {
 }
 
 fn param_at(param: &Param) -> Location {
-    param
-        .position
-        .map_or(Location::new(1, 1), |position| position.start.into())
+    start_of(param.position)
 }
 
 /// Where a param's key is: past its breakpoint.

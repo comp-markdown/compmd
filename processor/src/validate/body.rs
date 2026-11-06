@@ -10,7 +10,7 @@ use crate::reserved::Keyword;
 use crate::resolve::{Binding, Body, Renderer};
 use crate::tree::{
     Code as CodeBlock, Container, Definition, Interpolation, Node, Param, ParamValue, Position,
-    StringPart,
+    StringPart, start_of,
 };
 use crate::values::forms::area_names;
 use std::rc::Rc;
@@ -102,9 +102,7 @@ impl<'r> Checker<'r, '_> {
         let Some(renderer) = renderers.get(language) else {
             return;
         };
-        let at = code
-            .position
-            .map_or(Location::new(1, 1), |position| position.start.into());
+        let at = start_of(code.position);
         match renderer {
             Renderer::Ambiguous(names) => {
                 self.report(

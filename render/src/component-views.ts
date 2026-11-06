@@ -1,7 +1,7 @@
 // The views of components (spec §7.4, §7.7, §8.7, §9): `box` with its layout, the input components, host-language
 // components with their slots, and code blocks a code renderer draws.
 import { applyBox } from "./box.ts";
-import { mountComponent, type ComponentHandle } from "./component.ts";
+import { mountComponent, type ComponentHandle, type ComponentOptions } from "./component.ts";
 import type { Fallback, Mount, SlotInstance, SlotItem, Slots } from "./contract.ts";
 import { plainText } from "./document.ts";
 import { withHtml } from "./html.ts";
@@ -38,19 +38,11 @@ export class RenderedCodeView implements View {
     const mount = surface.components[renderer.name];
     // The component layer appends the box to its target; the region places it, so it starts in a fragment.
     this.#handle = mountComponent(surface.document.createDocumentFragment(), renderer, {
+      ...fromSurface(surface),
       mount: runnable(mount, () => this.#current),
       slots: {},
       fallback: { text: textOf((node as ExpandedCode).alt), element: fallback },
       headingLevel: Math.min(6, pass.heading.level + 1),
-      scheme: surface.schemes.current,
-      onSet: surface.onSet,
-      ...(surface.onError ? { onError: surface.onError } : {}),
-      ...(surface.onRecovered ? { onRecovered: surface.onRecovered } : {}),
-      onBusy: (work) => {
-        surface.busy.add(work);
-      },
-      host: surface.host,
-      stylesheet: surface.stylesheet,
       parent: pass.parent,
       later: surface.pending.later,
     });
@@ -74,6 +66,21 @@ export class RenderedCodeView implements View {
     this.#handle.destroy();
     this.#code.destroy();
   }
+}
+
+/** What every component of the surface is mounted with: its scheme, the caller's callbacks, `host` and the stylesheet. */
+function fromSurface(surface: Surface): Pick<ComponentOptions, "scheme" | "onSet" | "onError" | "onRecovered" | "onBusy" | "host" | "stylesheet"> {
+  return {
+    scheme: surface.schemes.current,
+    onSet: surface.onSet,
+    ...(surface.onError ? { onError: surface.onError } : {}),
+    ...(surface.onRecovered ? { onRecovered: surface.onRecovered } : {}),
+    onBusy: (work) => {
+      surface.busy.add(work);
+    },
+    host: surface.host,
+    stylesheet: surface.stylesheet,
+  };
 }
 
 /**
@@ -269,25 +276,17 @@ export class ComponentView implements View {
     const slots = this.#ownSlots ? {} : this.#patchSlots(node, pass);
     // The component layer appends the box to its target; the region places it, so it starts in a fragment.
     this.#handle = mountComponent(surface.document.createDocumentFragment(), node, {
+      ...fromSurface(surface),
       mount: runnable(mount, () => ({ node: this.#node, inputs: this.#inputs })),
       slots,
       fallback,
       headingLevel,
-      scheme: surface.schemes.current,
-      onSet: surface.onSet,
-      ...(surface.onError ? { onError: surface.onError } : {}),
-      ...(surface.onRecovered ? { onRecovered: surface.onRecovered } : {}),
       showFallback: (box, lasts) => {
         this.#showFallback(box, lasts, pass);
       },
       hideFallback: () => {
         this.#hideFallback();
       },
-      onBusy: (work) => {
-        surface.busy.add(work);
-      },
-      host: surface.host,
-      stylesheet: surface.stylesheet,
       parent: pass.parent,
       later,
     });

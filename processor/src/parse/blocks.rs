@@ -12,7 +12,7 @@ use crate::diagnostic::{Code, Diagnostic, Location};
 use crate::tree::{
     Alert, Align, Blockquote, Code as CodeBlock, Container, FootnoteDefinition, Heading, Info,
     Interpolation, Leaf, LinkDefinition, List as ListNode, ListItem, Literal, Math, Node, Param,
-    ParamValue, Parent, Point, Position, StringPart, Table, Void, Yaml,
+    ParamValue, Parent, Point, Position, StringPart, Table, Void, Yaml, start_of,
 };
 use markdown::mdast;
 use std::collections::HashSet;
@@ -22,9 +22,7 @@ const ALT: &str = "alt";
 
 /// Where a param starts.
 fn param_start(param: &Param) -> Location {
-    param
-        .position
-        .map_or(Location::new(1, 1), |position| position.start.into())
+    start_of(param.position)
 }
 
 /// A container open around a nested parent, as that parent sees it.

@@ -14,7 +14,7 @@ pub use definitions::{
 };
 pub(crate) use shift::{Move, Moved, Shift};
 
-use crate::diagnostic::Diagnostic;
+use crate::diagnostic::{Diagnostic, Location};
 use serde::Serialize;
 use serde_json::Value;
 
@@ -37,6 +37,11 @@ pub struct Position {
     pub start: Point,
     /// The place just past the node.
     pub end: Point,
+}
+
+/// Where a node at `position` starts, as diagnostics name places; the document's start when it has no position.
+pub(crate) fn start_of(position: Option<Position>) -> Location {
+    position.map_or(Location::new(1, 1), |position| position.start.into())
 }
 
 /// The root of a document tree.

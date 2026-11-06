@@ -21,7 +21,7 @@ use crate::parse::{ParseOptions, Parsed, parse};
 use crate::policy::Policy;
 use crate::reserved;
 use crate::settings::{self, Import};
-use crate::tree::Position;
+use crate::tree::start_of as location;
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 /// Why an import loads nothing: the diagnostic it gets, where, and what it says. Its names are dropped.
@@ -506,9 +506,4 @@ fn renderers(names: &Names, components: &[Component]) -> BTreeMap<String, Render
             (language.to_string(), renderer)
         })
         .collect()
-}
-
-/// Where a node starts.
-fn location(position: Option<Position>) -> Location {
-    position.map_or(Location::new(1, 1), |position| position.start.into())
 }

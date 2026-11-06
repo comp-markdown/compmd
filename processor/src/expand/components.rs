@@ -80,9 +80,7 @@ impl<'r> Invocation<'r> {
 
     /// Where it starts.
     pub(super) fn at(&self) -> Location {
-        self.node
-            .position()
-            .map_or(Location::new(1, 1), |position| position.start.into())
+        tree::start_of(self.node.position())
     }
 
     /// Its default slot.
