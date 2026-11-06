@@ -1,0 +1,44 @@
+# Playwright's WebKit and the system libraries it needs, for the browser tests of the CI and release workflows
+# (docs/ci.md, decision 6). Both are cached by the runner image and Playwright's version: on a hit, the libraries are
+# installed from their saved packages and nothing is downloaded; on a miss, Playwright installs them with apt, whose
+# downloads are then saved.
+name: WebKit
+description: Playwright's WebKit and its system libraries, cached.
+runs:
+  using: composite
+  steps:
+    # The runner image's name and version, which the runner sets as environment variables (a new image may ship newer
+    # versions of the libraries, so its packages are saved again), and Playwright's version.
+    - name: The cache's key
+      id: key
+      shell: bash
+      run: |
+        version="$(pnpm --dir sandbox exec playwright --version)"
+        echo "key=webkit-$ImageOS-$ImageVersion-${version##* }" >> "$GITHUB_OUTPUT"
+    - name: Cache
+      id: cache
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: |
+          ~/.cache/ms-playwright
+          ~/.cache/webkit-debs
+        key: ${{ steps.key.outputs.key }}
+    - name: The system libraries, from the cache
+      if: steps.cache.outputs.cache-hit == 'true'
+      shell: bash
+      # None when the image had every library already.
+      run: |
+        shopt -s nullglob
+        debs=(~/.cache/webkit-debs/*.deb)
+        if [ "${#debs[@]}" -gt 0 ]; then sudo dpkg --install --skip-same-version "${debs[@]}"; fi
+    - name: The system libraries and WebKit, downloaded
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        # Keep the downloads, for the cache; and retry a mirror that stops answering, as one did for over 15 minutes.
+        printf '%s\n' 'APT::Keep-Downloaded-Packages "true";' 'Acquire::Retries "3";' 'Acquire::http::Timeout "30";' 'Acquire::https::Timeout "30";' \
+          | sudo tee /etc/apt/apt.conf.d/99webkit > /dev/null
+        sudo rm -f /var/cache/apt/archives/*.deb
+        pnpm --dir sandbox exec playwright install --with-deps webkit
+        mkdir -p ~/.cache/webkit-debs
+        find /var/cache/apt/archives -maxdepth 1 -name '*.deb' -exec cp -t ~/.cache/webkit-debs/ {} +

@@ -25,6 +25,8 @@ jobs:
           submodules: recursive
       - uses: ./.github/actions/setup
       - run: pnpm install --frozen-lockfile
-      # The sandbox's, the Vite plugin's and create-pack's browser tests run in the runner's Chrome and in Playwright's WebKit.
-      - run: pnpm --dir sandbox exec playwright install --with-deps webkit
+      # The sandbox's, the Vite plugin's and create-pack's browser tests run in the runner's Chrome and in Playwright's
+      # WebKit. A download that hangs fails the run instead of holding it (it once took 15 minutes and more).
+      - uses: ./.github/actions/webkit
+        timeout-minutes: 10
       - run: cargo make ci

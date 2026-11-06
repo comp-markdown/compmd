@@ -31,7 +31,8 @@ jobs:
       - uses: ./.github/actions/setup
       - run: pnpm install --frozen-lockfile
       # The sandbox's, the registry's, the Vite plugin's and create-pack's browser tests run in the runner's Chrome and in Playwright's WebKit.
-      - run: pnpm --dir sandbox exec playwright install --with-deps webkit
+      - uses: ./.github/actions/webkit
+        timeout-minutes: 10
       - name: The tag is every package's version
         run: |
           version="${GITHUB_REF_NAME#v}"
