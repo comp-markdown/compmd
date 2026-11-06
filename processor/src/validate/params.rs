@@ -2,6 +2,9 @@
 //! grammar (F009), missing required params (F010), the types of expressions (F024), bound inputs (F030), and names
 //! that can't be bound (F013). Then the invocation's slots (F006, F018), and W102, W103 and W120.
 
+mod fence;
+mod slots;
+
 use super::Checker;
 use super::scope::Scope;
 use super::universal::Universal;
@@ -11,7 +14,7 @@ use crate::diagnostic::{Code, Fix, Location, Range};
 use crate::md::Signatures;
 use crate::nearest::nearest;
 use crate::reserved::{self, Keyword};
-use crate::resolve::{Binding, Body, Component};
+use crate::resolve::{Binding, Component};
 use crate::tree::{
     Container, Declaration, DeclaredType, Node, Param, ParamValue, Point, Position, Signature,
     SlotDeclaration, StringPart, TypeName,
@@ -580,151 +583,6 @@ impl<'r> Checker<'r, '_> {
         for (path, at) in paths.into_iter().zip(self.lines.paths_from(start)) {
             self.path(path, at, scope);
         }
-    }
-
-    /// F018 for a body given to a component without slots; F006 for an undeclared slot, and for content before the
-    /// first slot line of a component without a default slot.
-    fn slots(&mut self, name: &str, container: &Container, signature: &Signature, start: Point) {
-        let Some(slots) = &signature.slots else {
-            if !container.children.is_empty() || !container.slots.is_empty() {
-                self.report(
-                    Code::F018,
-                    start.into(),
-                    format!("`{name}` declares no slots, so it takes no body; the body follows it as normal content"),
-                );
-            }
-            return;
-        };
-        if !signature.declares_slot("default") {
-            self.no_default_slot(name, container, start);
-        }
-        let declared: Vec<&str> = slots.iter().map(SlotDeclaration::name).collect();
-        for slot in container
-            .slots
-            .iter()
-            .filter(|slot| !signature.declares_slot(&slot.name))
-        {
-            let near = nearest(&slot.name, declared.iter().copied());
-            let hint = near.map_or_else(String::new, |near| format!("; did you mean `{near}`?"));
-            let at = slot
-                .position
-                .map_or(start.into(), |position| position.start.into());
-            // The slot's name follows the `#` that `name_at` finds past the colons.
-            let fix = near.zip(slot.position).map(|(near, position)| {
-                let hash = self.lines.name_at(position.start);
-                Fix::replacing(Location::new(hash.line, hash.column + 1), &slot.name, near)
-            });
-            self.report_fixed(
-                Code::F006,
-                at,
-                format!(
-                    "`{name}` has no slot `{}`, so its content joins the default slot{hint}",
-                    slot.name
-                ),
-                fix,
-            );
-        }
-    }
-
-    /// F006 at the content before the first slot line of a component that declares no default slot: the spec doesn't
-    /// say what becomes of it, so this processor shows it after the component, as normal content
-    /// (`processor/README.md`).
-    fn no_default_slot(&mut self, name: &str, container: &Container, start: Point) {
-        let Some(first) = container.children.first() else {
-            return;
-        };
-        let at = first
-            .position()
-            .map_or(start.into(), |position| position.start.into());
-        self.report(
-            Code::F006,
-            at,
-            format!("`{name}` has no default slot, so the content before its first slot line follows it as normal content"),
-        );
-    }
-
-    /// A definition fence's params (spec §7, §9.2): the universal params, and on a `compmd` fence `box`'s own;
-    /// `display=contents` bare, and then nothing for a box (W120).
-    pub(super) fn fence(&mut self, component: &'r Component, scope: &Scope<'r>) {
-        let compmd = matches!(component.body, Body::Compmd(_));
-        let contents = component.is_contents();
-        let resolved = self.resolved;
-        let layout = match resolved.document(self.id).names.get("box") {
-            Some(Binding::Component(id, _)) if compmd => {
-                let layout = resolved.component(*id);
-                layout.signature.as_ref().map(|signature| Target {
-                    component: layout,
-                    signature,
-                    contents: false,
-                })
-            }
-            _ => None,
-        };
-        for param in &component.fence {
-            if !self.fence_param(param, compmd, contents, layout.as_ref(), scope) {
-                self.refuse_param(param);
-            }
-        }
-    }
-
-    /// One param of a definition fence; whether it is accepted.
-    fn fence_param(
-        &mut self,
-        param: &'r Param,
-        compmd: bool,
-        contents: bool,
-        layout: Option<&Target<'r>>,
-        scope: &Scope<'r>,
-    ) -> bool {
-        if param.is_display_contents() {
-            if param.breakpoint.is_some() {
-                self.report(
-                    Code::F009,
-                    value_at(param),
-                    "`display=contents` is written bare, with no breakpoint: a component has a box or not",
-                );
-                return false;
-            }
-            if compmd {
-                return true;
-            }
-        }
-        if contents {
-            self.no_box(param);
-            return false;
-        }
-        if matches!(param.value, ParamValue::Class(_) | ParamValue::Id(_)) {
-            return true;
-        }
-        let key = param.key.as_deref().unwrap_or("");
-        if let Some(universal) = Universal::from_name(key) {
-            return self.universal(universal, param, scope);
-        }
-        let own = layout.and_then(|layout| {
-            let declared = layout
-                .signature
-                .params
-                .iter()
-                .find(|declared| declared.name == key)?;
-            Some((layout, declared))
-        });
-        if let Some((layout, declared)) = own {
-            return matches!(
-                self.declared(layout, declared, param, scope),
-                Verdict::Declared(_)
-            );
-        }
-        let takes = if compmd {
-            "the common params, `class`, `id`, `lang`, `dir` and `box`'s params"
-        } else {
-            "the common params, `class`, `id`, `lang` and `dir`"
-        };
-        self.report(
-            Code::F008,
-            param_at(param),
-            format!("this fence takes {takes}, not `{key}`; ignored"),
-        );
-        false
     }
 }
 

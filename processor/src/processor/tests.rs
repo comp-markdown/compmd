@@ -1,5 +1,6 @@
 use super::*;
 use crate::host::NeededPack;
+use crate::parse::TextEdit;
 use serde_json::{Map, json};
 use std::collections::HashMap;
 

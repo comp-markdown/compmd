@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Mount, SlotInstance, SlotItem } from "./contract.ts";
 import { createPage, type PageOptions } from "./page.ts";
-import { inputLabel } from "./render.ts";
+import { inputLabel } from "./component-views.ts";
 import type { ExpandedComponent, ExpandedNode, ExpandedParam, ExpandedRoot } from "./tree.ts";
 
 const text = (value: string): ExpandedNode => ({ type: "text", value });

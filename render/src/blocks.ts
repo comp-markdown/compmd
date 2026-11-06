@@ -6,7 +6,8 @@
 import { footnotesFrom, linksFrom, notesOf, type Footnotes, type LinkDefinition, type Notes } from "./document.ts";
 import { stillOpen, tagsOf, withHtml, type Tag } from "./html.ts";
 import { Keys, type Edit, type KeyOf, type Keyed } from "./keys.ts";
-import { destroyAll, discard, Matcher, placedIn, viewsFor, type Pass, type Surface, type View } from "./render.ts";
+import { placedIn } from "./component-views.ts";
+import { destroyAll, discard, Matcher, viewsFor, type Pass, type Surface, type View } from "./render.ts";
 import { moved, placedOf, type DrawnFor, type Placed, type Source } from "./source.ts";
 import { shownOf, type Diagnostic, type Good, type Rules, type ShownNodes } from "./stable.ts";
 import { fills, usesBreakpoints } from "./styles.ts";
