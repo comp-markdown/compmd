@@ -32,7 +32,8 @@ function slotNode(slot: Slots[string] | undefined): ReactNode {
 /**
  * Runs a React component through the host contract: params are props of the same name in camelCase, the default slot
  * is `children`, a named slot is a prop of its name, and the rest is the `compmd` prop. Rendering is synchronous, and
- * `update` renders into the same root, so the component keeps its state.
+ * `update` renders into the same root, so the component keeps its state. What it throws while rendering is thrown from
+ * `mount` or `update`, and after it fails or throws, the next update renders it into a new root (spec §7.4).
  *
  * @example
  * function Card({ title, children }) { return <section><h3>{title}</h3>{children}</section>; }
@@ -40,17 +41,53 @@ function slotNode(slot: Slots[string] | undefined): ReactNode {
  */
 export function react(Component: ComponentType<Record<string, unknown>>): Mount {
   return (target, context) => {
-    const root = createRoot(target);
+    // What the component threw while rendering: React reports it rather than throwing, and the renderer needs the throw.
+    let thrown: { error: unknown } | undefined;
+    const takeThrown = () => {
+      const taken = thrown;
+      thrown = undefined;
+      return taken;
+    };
+    const newRoot = () =>
+      createRoot(target, {
+        onUncaughtError: (error) => {
+          thrown = { error };
+        },
+      });
+    let root = newRoot();
+    // The component failed or threw, so the renderer showed the fallback in `target` and empties it before the next
+    // update: it renders into a new root then, since what it drew is gone.
+    let broken = false;
+    const fail = (message: string) => {
+      broken = true;
+      context.fail(message);
+    };
     const render = (params: Params, slots: Slots) => {
+      if (broken) {
+        root.unmount();
+        root = newRoot();
+        broken = false;
+      }
       const props: Record<string, unknown> = { ...propsOf(params), children: slotNode(slots.default) };
       for (const name of namedSlots(slots)) props[camelCase(name)] = slotNode(slots[name]);
       // `scheme` is read at each render: the renderer sets it before the update a change of scheme brings.
-      const compmd: CompmdProp = { slots, set: context.set, fallback: context.fallback, headingLevel: context.headingLevel, scheme: context.scheme, fail: context.fail, busy: context.busy, host: context.host };
+      const compmd: CompmdProp = { slots, set: context.set, fallback: context.fallback, headingLevel: context.headingLevel, scheme: context.scheme, fail, busy: context.busy, host: context.host };
+      takeThrown();
       flushSync(() => {
         root.render(createElement(Component, { ...props, compmd }));
       });
+      const failure = takeThrown();
+      if (failure) {
+        broken = true;
+        throw failure.error;
+      }
     };
-    render(context.params, context.slots);
+    try {
+      render(context.params, context.slots);
+    } catch (error) {
+      root.unmount();
+      throw error;
+    }
     return {
       update: render,
       destroy: () => {

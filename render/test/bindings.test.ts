@@ -10,6 +10,8 @@ import type { Mount } from "../src/contract.ts";
 import { createPage } from "../src/page.ts";
 import type { ExpandedRoot } from "../src/tree.ts";
 import Card from "./Card.svelte";
+import Plots from "./Plots.svelte";
+import { seen, type Seen } from "./seen.ts";
 
 function ReactCard({ title, fontSize, children, sideNote, compmd }: { title: string; fontSize: string; children: ReactNode; sideNote: ReactNode; compmd: { headingLevel: number } }) {
   const [clicks, setClicks] = useState(0);
@@ -77,6 +79,49 @@ describe.each([
     expect(root.querySelector("h3")?.textContent).toBe("Two");
     expect(root.querySelector("button")?.textContent).toBe("1");
     expect(document.activeElement).toBe(area);
+    page.destroy();
+  });
+});
+
+const reactSeen: Seen = {};
+
+function ReactPlots({ plots, compmd }: { plots: ({ number: number } | null)[]; compmd: { fail(message: string): void } }): ReactNode {
+  reactSeen.compmd = compmd;
+  return createElement("ol", null, ...plots.map((plot, i) => createElement("li", { key: i }, String(plot!.number))));
+}
+
+const plots = (...list: ({ number: number } | null)[]): ExpandedRoot => ({
+  type: "root",
+  children: [{ type: "componentLeaf", name: "plots", params: [{ key: "plots", breakpoint: null, value: list }], fallback: [{ type: "text", value: "The plots" }] }],
+});
+
+describe.each([
+  ["React", react(ReactPlots as never), reactSeen],
+  ["Svelte", svelte(Plots as never), seen],
+])("the %s binding, after its component failed", (_name, mount, latest) => {
+  it("draws again at the next change after a throw while updating (spec §7.4)", () => {
+    root = document.body.appendChild(document.createElement("main"));
+    const page = createPage(root, { components: { plots: mount } });
+    page.render(plots({ number: 1 }, { number: 2 }));
+    expect(root.querySelector("ol")?.textContent).toBe("12");
+
+    page.render(plots(null, { number: 2 }));
+    expect(root.textContent).toBe("The plots");
+
+    page.render(plots({ number: 3 }, { number: 2 }));
+    expect(root.querySelector("ol")?.textContent).toBe("32");
+    page.destroy();
+  });
+
+  it("draws again at the next change after it called fail", () => {
+    root = document.body.appendChild(document.createElement("main"));
+    const page = createPage(root, { components: { plots: mount } });
+    page.render(plots({ number: 1 }));
+    latest.compmd?.fail("can't draw these");
+    expect(root.textContent).toBe("The plots");
+
+    page.render(plots({ number: 4 }));
+    expect(root.querySelector("ol")?.textContent).toBe("4");
     page.destroy();
   });
 });
