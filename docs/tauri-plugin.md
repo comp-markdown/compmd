@@ -1,6 +1,6 @@
 # The Tauri plugin
 
-**Status: proposed (2026-11-09).** How a [Tauri](https://tauri.app) app shows CompMD documents: `tauri-plugin-compmd`, a plugin that serves the sandbox's frame documents from a scheme of the app's own, and an example app in this repository that uses it and checks itself in a real webview, as a guide for hosts and as a test CI runs before every release. It builds what [running components in the sandbox](running-components-in-the-sandbox.md) asks of a host ("the host serves the frame documents") for a desktop or mobile app, where there is no web server.
+**Status: accepted (2026-11-09).** How a [Tauri](https://tauri.app) app shows CompMD documents: `tauri-plugin-compmd`, a plugin that serves the sandbox's frame documents from a scheme of the app's own, and an example app in this repository that uses it and checks itself in a real webview, as a guide for hosts and as a test CI runs before every release. It builds what [running components in the sandbox](running-components-in-the-sandbox.md) asks of a host ("the host serves the frame documents") for a desktop or mobile app, where there is no web server.
 
 ## Why a plugin
 
