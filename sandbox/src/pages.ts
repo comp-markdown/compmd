@@ -10,7 +10,7 @@ import { codeFor } from "./mounts.ts";
 import type { Observer } from "./observer.ts";
 import { diagnosticOf, HELLO, SANDBOX_VERSION, type ErrorReason, type Scheme } from "./protocol/messages.ts";
 import { connectChild, failureText, type ChildEnd } from "./protocol/parent-end.ts";
-import type { SandboxOptions, ViewEvents, ViewSpliceOptions } from "./sandbox.ts";
+import type { FoundOptions, ViewEvents, ViewSpliceOptions } from "./sandbox.ts";
 
 /** The `error` event for `component`, with its diagnostic, and its use when it has one. */
 export const errorEvent = (component: string, reason: ErrorReason, message: string, use?: string): ViewEvents["error"] => {
@@ -47,7 +47,7 @@ export interface PageEnd {
 export type Emit = <T extends keyof ViewEvents>(type: T, event: ViewEvents[T]) => void;
 
 /** Host mode: the page in the host's page, with the runtime's components. */
-export function hostPage(container: HTMLElement, runtime: HostRuntime, options: SandboxOptions, observer: Observer, emit: Emit): PageEnd {
+export function hostPage(container: HTMLElement, runtime: HostRuntime, options: FoundOptions, observer: Observer, emit: Emit): PageEnd {
   const page: Page = createPage(container, {
     components: runtime.mounts,
     // The frames' own Temml and Shiki, from their files, so math and code look the same in both modes, and the app
@@ -129,7 +129,7 @@ export function hostPage(container: HTMLElement, runtime: HostRuntime, options: 
 }
 
 /** Frame mode: the page in one strict frame, which renders it through `@compmd/render`'s frame protocol. */
-export function framePage(container: HTMLElement, runtime: HostRuntime, options: SandboxOptions, observer: Observer, emit: Emit): PageEnd {
+export function framePage(container: HTMLElement, runtime: HostRuntime, options: FoundOptions, observer: Observer, emit: Emit): PageEnd {
   const iframe = document.createElement("iframe");
   iframe.setAttribute("sandbox", "allow-scripts");
   iframe.setAttribute("allow", "");

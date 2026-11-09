@@ -1,10 +1,13 @@
-//! The build of the frames the app bundles (docs/tauri-plugin.md, decision 2): the folder `frames.json` names, read
-//! once when the app starts.
+//! The build of the frames the app serves (docs/tauri-plugin.md, decisions 2 and 3): the one the crate embeds, or the
+//! app's own, the folder its `frames.json` names, read once when the app starts.
 
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use serde::Deserialize;
+
+use crate::embedded;
+use crate::files::Files;
 
 /// The file beside the builds that names the current one, as `buildHashedFrames` writes it.
 pub const FRAMES_JSON: &str = "frames.json";
@@ -18,22 +21,36 @@ struct Named {
     hash: String,
 }
 
-/// The build the app serves: its folder and its hash, or none when the app was built without its frames.
+/// The build the app serves, or none when there is none.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Frames(Option<Build>);
 
-/// A build of the frames: the folder named by its hash.
+/// A build of the frames: its hash, which its paths name, and its files.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Build {
-    /// The folder holding the frame documents and their files.
-    pub folder: PathBuf,
     /// The hash naming it, 16 lowercase hex digits.
     pub hash: String,
+    /// Its frame documents and their files.
+    pub files: Files,
 }
 
 impl Frames {
-    /// The build `frames.json` in `folder` names; none when it is missing, can't be read, or names something that
-    /// isn't a build's hash.
+    /// The build the crate embeds; none when it was built without one (`cargo make tauri-frames` writes it).
+    #[must_use]
+    pub fn embedded() -> Self {
+        Self::embedded_as(embedded::HASH, embedded::FILES)
+    }
+
+    /// The build embedded as `hash` and `files`, if there is one.
+    fn embedded_as(hash: Option<&str>, files: &'static [(&'static str, &'static [u8])]) -> Self {
+        Self(hash.map(|hash| Build {
+            hash: hash.to_owned(),
+            files: Files::Embedded(files),
+        }))
+    }
+
+    /// The build `frames.json` in `folder` names, an app's own; none when it is missing, can't be read, or names
+    /// something that isn't a build's hash.
     #[must_use]
     pub fn read(folder: &Path) -> Self {
         let named = fs::read_to_string(folder.join(FRAMES_JSON))
@@ -43,7 +60,7 @@ impl Frames {
             named
                 .filter(|named| is_hash(&named.hash))
                 .map(|named| Build {
-                    folder: folder.join(&named.hash),
+                    files: Files::Folder(folder.join(&named.hash)),
                     hash: named.hash,
                 }),
         )

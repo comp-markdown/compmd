@@ -1,5 +1,7 @@
 use std::sync::atomic::{AtomicU32, Ordering};
 
+use std::path::PathBuf;
+
 use super::*;
 
 pub const HASH: &str = "1df336e75685de8c";
@@ -40,8 +42,8 @@ fn the_build_is_the_folder_frames_json_names() {
     assert_eq!(
         frames.build(),
         Some(&Build {
-            folder: folder.0.join(HASH),
             hash: HASH.to_owned(),
+            files: Files::Folder(folder.0.join(HASH)),
         })
     );
     let custom = format!("compmd://localhost/frames/{HASH}/");
@@ -51,6 +53,23 @@ fn the_build_is_the_folder_frames_json_names() {
     assert_eq!(
         frames.base("compmd"),
         Some(if OVER_HTTP { http } else { custom })
+    );
+}
+
+#[test]
+fn the_embedded_build_is_the_one_the_crate_was_built_with() {
+    const FILES: &[(&str, &[u8])] = &[("strict.html", b"<!doctype html>")];
+    assert_eq!(
+        Frames::embedded_as(Some(HASH), FILES).build(),
+        Some(&Build {
+            hash: HASH.to_owned(),
+            files: Files::Embedded(FILES),
+        })
+    );
+    assert_eq!(Frames::embedded_as(None, &[]), Frames::none());
+    assert_eq!(
+        Frames::embedded(),
+        Frames::embedded_as(embedded::HASH, embedded::FILES)
     );
 }
 

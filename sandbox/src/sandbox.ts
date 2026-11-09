@@ -6,6 +6,7 @@
 import type { HostComponent } from "@compmd/processor";
 import { schemeOf, type Change, type ExpandedInput, type ExpandedRoot, type Line, type Source, type Splice } from "@compmd/render";
 import type { SpliceOptions } from "@compmd/render/frame";
+import { givenBase } from "./given-base.ts";
 import { HostRuntime, type HostRuntimeOptions } from "./host/runtime.ts";
 import { Log, reportedBy, type Observation, type ObservedEvent } from "./observation.ts";
 import { Observer } from "./observer.ts";
@@ -13,10 +14,19 @@ import { errorEvent, framePage, hostPage } from "./pages.ts";
 import type { ErrorReason, SandboxDiagnostic, Scheme } from "./protocol/messages.ts";
 import { Settling } from "./settling.ts";
 
-export interface SandboxOptions extends HostRuntimeOptions {
+export interface SandboxOptions extends Omit<HostRuntimeOptions, "base"> {
+  /**
+   * Where the host serves the frame documents (`buildFrames`), ending in `/`: a full URL, or one relative to the
+   * page. Without it, the one the host's app gave the page (`globalThis.__COMPMD__.base`, as `tauri-plugin-compmd`
+   * sets it).
+   */
+  base?: string;
   /** Where the page renders: in a strict frame per document (the default), or in the host's page. */
   page?: "frame" | "host";
 }
+
+/** `SandboxOptions` with the frames' `base` found. */
+export type FoundOptions = SandboxOptions & { base: string };
 
 export interface ViewEvents {
   set: { input: string; value: unknown };
@@ -169,7 +179,10 @@ const shapeOf = (components: readonly HostComponent[]): string =>
  * view.render(processed.expanded);
  * view.on("set", ({ input, value }) => rerender({ [input]: value }));
  */
-export function createSandbox(options: SandboxOptions): Sandbox {
+export function createSandbox(given: SandboxOptions): Sandbox {
+  const base = given.base ?? givenBase();
+  if (base === undefined) throw new Error("createSandbox needs the frames' `base`: give it, or open the page in an app that gives it, as tauri-plugin-compmd does");
+  const options: FoundOptions = { ...given, base };
   return {
     open(container, { components }) {
       const listeners: Listeners = { set: [], link: [], error: [], recovered: [], rendered: [], loaded: [], pointed: [], layout: [], settled: [] };

@@ -2,52 +2,72 @@
 //! (docs/tauri-plugin.md).
 //!
 //! The sandbox (`@compmd/sandbox`) runs a document's components in frames, which need an origin apart from the app's
-//! page. The plugin registers a scheme for them, serves the build `buildHashedFrames` wrote into the app's resources,
-//! and gives the page the frames' `base`:
+//! page. The plugin brings the frames, serves them on a scheme of their own, and tells the page where they are. An app
+//! adds it in one call:
 //!
 //! ```
-//! let app = tauri::Builder::<tauri::Wry>::default().plugin(tauri_plugin_compmd::Builder::new().build());
+//! let app = tauri::Builder::<tauri::Wry>::default().plugin(tauri_plugin_compmd::init());
 //! // then, as every Tauri app: app.run(tauri::generate_context!())
 //! # drop(app);
 //! ```
 //!
-//! The page then asks for `base` (the capability of its window lists `compmd:default`):
+//! and its page opens a sandbox with no `base`, which the plugin gave it:
 //!
 //! ```js
-//! const base = await invoke("plugin:compmd|base");
-//! const sandbox = createSandbox({ base, page: "host" });
+//! const view = createSandbox({ page: "host" }).open(container, { components: processed.hostComponents });
 //! ```
+//!
+//! [`Builder`] customizes it: another scheme's name, or the app's own build of the frames.
 
 mod command;
 mod content_type;
+mod embedded;
+mod files;
 mod frames;
 mod respond;
+mod scheme;
 mod served;
 
 use std::path::{Path, PathBuf};
 
+pub use files::Files;
 pub use frames::{Build, FRAMES_JSON, Frames};
 pub use served::Served;
 use tauri::plugin::{Builder as PluginBuilder, TauriPlugin};
 use tauri::{Manager, Runtime};
 
-/// The scheme's name when the app gives none.
+/// The scheme's name when the app gives none, the one the embedded frames are built for.
 pub const SCHEME: &str = "compmd";
 
-/// The resource folder holding `frames.json` and the build, when the app gives none.
-pub const FRAMES: &str = "compmd";
-
-/// The plugin, as an app sets it up.
+/// The plugin as it comes: the embedded frames on the scheme `compmd`, their `base` given to the app's pages.
 ///
 /// # Example
 ///
-/// ```no_run
-/// let plugin = tauri_plugin_compmd::Builder::new().scheme("myframes").frames("sandbox").build::<tauri::Wry>();
+/// ```
+/// let app = tauri::Builder::<tauri::Wry>::default().plugin(tauri_plugin_compmd::init());
+/// # drop(app);
+/// ```
+#[must_use]
+pub fn init<R: Runtime>() -> TauriPlugin<R> {
+    Builder::new().build()
+}
+
+/// The plugin, set up by further calls.
+///
+/// # Example
+///
+/// ```
+/// // Frames the app built itself, with libraries it offers, on a scheme of its own name.
+/// let plugin = tauri_plugin_compmd::Builder::new()
+///     .scheme("myframes")
+///     .frames_dir("sandbox")
+///     .build::<tauri::Wry>();
+/// # drop(plugin);
 /// ```
 #[derive(Clone, Debug)]
 pub struct Builder {
     scheme: String,
-    frames: PathBuf,
+    frames_dir: Option<PathBuf>,
 }
 
 impl Default for Builder {
@@ -57,53 +77,65 @@ impl Default for Builder {
 }
 
 impl Builder {
-    /// The plugin with the scheme `compmd` and the frames in the resource folder `compmd`.
+    /// The plugin with the embedded frames on the scheme `compmd`, as [`init`] gives it.
     #[must_use]
     pub fn new() -> Self {
         Self {
             scheme: SCHEME.to_owned(),
-            frames: PathBuf::from(FRAMES),
+            frames_dir: None,
         }
     }
 
     /// The scheme the frames are served on: a name of the app's choosing, lowercase letters, digits, `+`, `-` and
-    /// `.`, starting with a letter.
+    /// `.`, starting with a letter. A scheme other than `compmd` needs the app's own build (`frames_dir`), built with
+    /// its `source`, since the embedded frames name `compmd://`.
     #[must_use]
     pub fn scheme(mut self, scheme: impl Into<String>) -> Self {
         self.scheme = scheme.into();
         self
     }
 
-    /// The folder holding `frames.json` and the build: relative to the app's resources, or absolute.
+    /// The app's own build of the frames (`buildHashedFrames`) in place of the embedded one: the folder holding its
+    /// `frames.json`, relative to the app's resources, or absolute. Its page then asks for `base` with the command
+    /// `plugin:compmd|base`, which `compmd:default` grants, since its hash is known only when the app starts.
     #[must_use]
-    pub fn frames(mut self, frames: impl Into<PathBuf>) -> Self {
-        self.frames = frames.into();
+    pub fn frames_dir(mut self, folder: impl Into<PathBuf>) -> Self {
+        self.frames_dir = Some(folder.into());
         self
     }
 
-    /// The plugin, named `compmd`: its scheme, the `base` command, and the frames read when the app starts.
+    /// The plugin, named `compmd`: its scheme, the `base` command, the frames, and, for the embedded frames, the
+    /// script that gives the app's pages their `base`.
     ///
     /// # Panics
     ///
-    /// When the scheme's name isn't one (`Builder::scheme`): a mistake in the app's code.
+    /// When the scheme's name isn't one, or isn't `compmd` with the embedded frames: mistakes in the app's code.
     #[must_use]
     pub fn build<R: Runtime>(self) -> TauriPlugin<R> {
+        let Self { scheme, frames_dir } = self;
+        assert!(is_scheme(&scheme), "`{scheme}` isn't a scheme's name");
         assert!(
-            is_scheme(&self.scheme),
-            "`{}` isn't a scheme's name",
-            self.scheme
+            frames_dir.is_some() || scheme == SCHEME,
+            "the embedded frames are built for the scheme `{SCHEME}`: the scheme `{scheme}` needs the app's own build (`frames_dir`)"
         );
-        let Self { scheme, frames } = self;
+        let embedded = frames_dir.is_none().then(Frames::embedded);
+        let mut plugin =
+            PluginBuilder::new("compmd").invoke_handler(tauri::generate_handler![command::base]);
+        if let Some(base) = embedded.as_ref().and_then(|frames| frames.base(&scheme)) {
+            plugin = plugin.js_init_script(init_script(&base));
+        }
         let served_scheme = scheme.clone();
-        PluginBuilder::new("compmd")
-            .invoke_handler(tauri::generate_handler![command::base])
-            .register_uri_scheme_protocol(served_scheme, |context, request| {
-                answer(context.app_handle(), &request)
-            })
+        plugin
+            .register_uri_scheme_protocol(served_scheme, scheme::serve)
             .setup(move |app, _api| {
-                let folder = folder_of(&frames, app.path().resource_dir().ok());
+                let frames = embedded.clone().unwrap_or_else(|| {
+                    let folder = frames_dir
+                        .as_deref()
+                        .and_then(|dir| folder_of(dir, app.path().resource_dir().ok()));
+                    folder.map_or_else(Frames::none, |folder| Frames::read(&folder))
+                });
                 app.manage(Served {
-                    frames: folder.map_or_else(Frames::none, |folder| Frames::read(&folder)),
+                    frames,
                     scheme: scheme.clone(),
                 });
                 Ok(())
@@ -112,22 +144,20 @@ impl Builder {
     }
 }
 
-/// Where the frames are: `frames` itself when it is absolute, else under the app's `resources`; none when those can't
-/// be found, so the app starts with no frames, and gives no `base`.
+/// The script that gives the app's pages the frames' `base`, as `createSandbox` reads it.
+fn init_script(base: &str) -> String {
+    let base = serde_json::to_string(base).expect("a string serializes");
+    format!("globalThis.__COMPMD__ = Object.freeze({{ base: {base} }});")
+}
+
+/// Where the app's own frames are: `frames` itself when it is absolute, else under the app's `resources`; none when
+/// those can't be found, so the app starts with no frames, and gives no `base`.
 fn folder_of(frames: &Path, resources: Option<PathBuf>) -> Option<PathBuf> {
     if frames.is_absolute() {
         Some(frames.to_path_buf())
     } else {
         resources.map(|resources| resources.join(frames))
     }
-}
-
-/// What the scheme answers `request` with: the frames the app serves (`Frames::respond`).
-fn answer<R: Runtime>(
-    app: &tauri::AppHandle<R>,
-    request: &tauri::http::Request<Vec<u8>>,
-) -> tauri::http::Response<Vec<u8>> {
-    app.compmd().frames.respond(request)
 }
 
 /// Whether `name` is a scheme's name (RFC 3986): a letter, then letters, digits, `+`, `-` or `.`; lowercase, as

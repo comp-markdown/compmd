@@ -1,48 +1,60 @@
 # tauri-plugin-compmd
 
-Serves CompMD's sandbox frames to a [Tauri](https://tauri.app) app from a scheme of its own, so the app can show CompMD documents with their components running in `@compmd/sandbox`. The design, and why each rule is there, is [docs/tauri-plugin.md](../docs/tauri-plugin.md).
+Shows CompMD documents in a [Tauri](https://tauri.app) app: the plugin brings `@compmd/sandbox`'s frames, serves them from a scheme of their own, and tells the page where they are. The design, and why each rule is there, is [docs/tauri-plugin.md](../docs/tauri-plugin.md).
 
 ## Use
 
-1. **Build the frames** with the app, before `tauri build` and `tauri dev`, into a folder the app bundles as a resource:
+```rust
+tauri::Builder::default()
+    .plugin(tauri_plugin_compmd::init())
+```
 
-   ```js
-   import { buildHashedFrames } from "@compmd/sandbox/build";
-   await buildHashedFrames({ out: "src-tauri/compmd", source: "compmd://localhost/frames/" });
-   ```
+```js
+import { createSandbox } from "@compmd/sandbox";
 
-   ```json
-   "bundle": { "resources": { "compmd/": "compmd/" } }
-   ```
+const view = createSandbox({ page: "host" }).open(container, { components: processed.hostComponents });
+view.render(processed.expanded);
+```
 
-2. **Add the plugin**, and grant its `base` to the windows that render documents:
+That's all: no build step, nothing to bundle, no permission to grant. Use the `@compmd/sandbox` of the crate's version: they are released together, and a page of another version gets an `error` naming both.
 
-   ```rust
-   tauri::Builder::default().plugin(tauri_plugin_compmd::Builder::new().build())
-   ```
+**If the app sets a content security policy** (`app.security.csp` in `tauri.conf.json`; Tauri's template sets none), it adds:
 
-   ```json
-   "permissions": ["compmd:default"]
-   ```
+```
+frame-src compmd: http://compmd.localhost;
+script-src 'self' compmd://localhost/frames/ http://compmd.localhost/frames/;
+connect-src 'self' ipc: http://ipc.localhost compmd://localhost/frames/ http://compmd.localhost/frames/;
+frame-ancestors 'none'
+```
 
-3. **Give the page's policy what the frames need**, in `tauri.conf.json`'s `app.security.csp`:
+## Customizing
 
-   ```
-   frame-src compmd: http://compmd.localhost;
-   script-src 'self' compmd://localhost/frames/ http://compmd.localhost/frames/;
-   connect-src 'self' ipc: http://ipc.localhost compmd://localhost/frames/ http://compmd.localhost/frames/;
-   frame-ancestors 'none'
-   ```
+```rust
+tauri_plugin_compmd::Builder::new()
+    .scheme("myframes")      // another scheme's name
+    .frames_dir("sandbox")   // the app's own build of the frames
+    .build()
+```
 
-4. **Ask for `base`** in the page, and render:
+An app builds its own frames to offer libraries beyond the runtimes (`buildLibraries`), or to use another scheme. It builds them before `tauri build` and `tauri dev`, into a folder it bundles as a resource, with its scheme as their source:
 
-   ```js
-   const base = await invoke("plugin:compmd|base");
-   const view = createSandbox({ base, page: "host" }).open(container, { components: processed.hostComponents });
-   view.render(processed.expanded);
-   ```
+```js
+import { buildHashedFrames } from "@compmd/sandbox/build";
+await buildHashedFrames({ out: "src-tauri/sandbox", source: "myframes://localhost/frames/" });
+```
 
-The scheme (`compmd`) and the resource folder (`compmd`) are the defaults; `Builder::scheme` and `Builder::frames` change them. Never list the scheme in a capability: no frame may reach a command.
+and its page asks for `base`, which the plugin's `compmd:default` permission grants:
+
+```js
+const base = await invoke("plugin:compmd|base");
+const view = createSandbox({ base, page: "host" }).open(container, { components });
+```
+
+Never list the scheme in a capability: no frame may reach a command.
+
+## Building it from this repository
+
+The crate embeds the frames, which `cargo make tauri-frames` builds into `tauri/frames/` from `@compmd/sandbox`; `cargo make tauri-plugin` builds them, lints and tests the crate. A crate built without them warns, and serves none.
 
 ## Status
 

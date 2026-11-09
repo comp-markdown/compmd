@@ -74,6 +74,24 @@ docker run --rm --platform linux/amd64 \
   compmd-linux ${@}
 '''
 
+[tasks.tauri-frames]
+description = "Build the frames `tauri-plugin-compmd` embeds into `tauri/frames/` (docs/tauri-plugin.md, decision 2): the sandbox's build, then `buildHashedFrames` for the scheme `compmd`. Before the crate is built, tested or published"
+clear = true
+script = ["pnpm --filter @compmd/sandbox... build", "node tauri/scripts/frames.mts"]
+
+[tasks.tauri-plugin]
+description = "Lint and test `tauri-plugin-compmd`, with its frames, and measure its coverage; fails below 99%. Outside the workspace and `ci`, since it builds Tauri: the Tauri check runs it (docs/tauri-plugin.md, decision 10)"
+clear = true
+dependencies = ["tauri-frames"]
+script = [
+  "cargo fmt --manifest-path tauri/Cargo.toml -- --check",
+  "cargo clippy --manifest-path tauri/Cargo.toml --all-targets -- -D warnings",
+  # A webview's requests come in through `scheme.rs` alone, which only a webview calls: the example app's check
+  # covers it.
+  "cargo llvm-cov --manifest-path tauri/Cargo.toml --ignore-filename-regex 'tauri/src/scheme\\.rs' --fail-under-lines 99",
+  "cargo test --manifest-path tauri/Cargo.toml --doc",
+]
+
 [tasks.ci]
 description = "Every check CI runs; coverage runs the tests, the conformance set's among them, so `test` isn't run again"
 clear = true

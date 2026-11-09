@@ -1,8 +1,7 @@
 //! The scheme's handler (docs/tauri-plugin.md, decision 4): the build's files with the headers that sandbox them, and
 //! a refusal, saying why, for anything else.
 
-use std::fs;
-use std::path::{Component, Path, PathBuf};
+use std::path::{Component, Path};
 
 use tauri::http::header::{self, HeaderValue};
 use tauri::http::{Method, Request, Response, StatusCode};
@@ -34,38 +33,34 @@ impl Frames {
         if request.method() != Method::GET {
             return refused(StatusCode::METHOD_NOT_ALLOWED, ONLY_GET);
         }
-        self.file(request.uri().path())
-            .and_then(|path| Some((fs::read(&path).ok()?, path)))
-            .map_or_else(
-                || refused(StatusCode::NOT_FOUND, NOT_FRAMES),
-                |(body, path)| served(&path, body),
-            )
+        let path = request.uri().path();
+        self.file(path).map_or_else(
+            || refused(StatusCode::NOT_FOUND, NOT_FRAMES),
+            |body| served(Path::new(path), body),
+        )
     }
 
-    /// The file `path` names in the build, when it names one: `/frames/<hash>/<parts>`, with no empty, `.` or `..`
-    /// part.
-    fn file(&self, path: &str) -> Option<PathBuf> {
+    /// The bytes of the file `path` names in the build, when it names one: `/frames/<hash>/<parts>`, with no empty,
+    /// `.` or `..` part.
+    fn file(&self, path: &str) -> Option<Vec<u8>> {
         let build = self.build()?;
         let rest = path
             .strip_prefix(PREFIX)?
             .strip_prefix(build.hash.as_str())?
             .strip_prefix('/')?;
         let parts: Vec<&str> = rest.split('/').collect();
-        if parts
+        let plain = parts
             .iter()
-            .any(|part| part.is_empty() || *part == "." || *part == "..")
-        {
-            return None;
+            .all(|part| !part.is_empty() && *part != "." && *part != "..")
+            // A part that is a path of its own (`C:` on Windows) would leave the folder.
+            && Path::new(rest)
+                .components()
+                .all(|component| matches!(component, Component::Normal(_)));
+        if plain {
+            build.files.read(&parts)
+        } else {
+            None
         }
-        let file = parts
-            .iter()
-            .fold(build.folder.clone(), |path, part| path.join(part));
-        // A part that is a path of its own (`C:` on Windows) would leave the folder.
-        Path::new(rest)
-            .components()
-            .all(|component| matches!(component, Component::Normal(_)))
-            .then_some(file)
-            .filter(|file| file.is_file())
     }
 }
 

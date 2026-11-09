@@ -1,0 +1,3 @@
+# The frames the crate embeds: built by `cargo make tauri-frames`, published with the crate.
+/frames/
+/target/
