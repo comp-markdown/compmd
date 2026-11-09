@@ -65,6 +65,9 @@ fn random_edit(text: &str, random: &mut Random) -> TextEdit {
     TextEdit { start, end, text }
 }
 
+/// Folders of what is installed or built, not written: an example app's packages and its build.
+const SKIPPED: [&str; 3] = ["node_modules", "target", "dist"];
+
 /// The documents of the conformance set and the examples.
 fn documents() -> Vec<(String, String)> {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
@@ -75,7 +78,9 @@ fn documents() -> Vec<(String, String)> {
         for entry in entries.flatten() {
             let path = entry.path();
             if path.is_dir() {
-                folders.push(path);
+                if !SKIPPED.iter().any(|skipped| entry.file_name() == *skipped) {
+                    folders.push(path);
+                }
             } else if path.to_string_lossy().ends_with(".comp.md") {
                 let text = std::fs::read_to_string(&path).expect("a document");
                 found.push((path.display().to_string(), text));
