@@ -51,6 +51,14 @@ elif [ "$1" = tauri ]; then
   apt-get install -y -o Acquire::Retries=3 --no-install-recommends \
     libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev libssl-dev xvfb xauth
   export WEBKIT_DISABLE_DMABUF_RENDERER=1
-  set -- xvfb-run --auto-servernum cargo make tauri-check
+  # Not xvfb-run, as the workflow: emulated on an Arm Mac, the signal Xvfb sends once it is ready never reaches
+  # xvfb-run, which waits for it forever. The display is ready once its socket is there.
+  Xvfb :99 -screen 0 1280x1024x24 -nolisten tcp &
+  for _ in $(seq 100); do
+    [ -S /tmp/.X11-unix/X99 ] && break
+    sleep 0.1
+  done
+  export DISPLAY=:99
+  set -- cargo make tauri-check
 fi
 exec "$@"
