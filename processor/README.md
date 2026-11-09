@@ -7,6 +7,7 @@ The CompMD processor, in Rust: it parses, validates and expands documents writte
 **Status: in development.** The processor implements stages 1 to 4b of the spec (§11) and its CEL profile (§8.2), does no I/O of its own, and passes every case of the [conformance set](https://github.com/comp-markdown/compmd/tree/main/conformance) that needs no host language: it is a "compmd/1 processor with remote data and origins" (§13.1). Running host-language components is a renderer's job; the processor expands their invocations to nodes for it.
 
 **Versions:**
+- **0.6.0:** `HostComponent`, `Module` and `LibraryModule` serialize to the JSON `@compmd/sandbox` reads, so a host passes them to its page as they are.
 - **0.5.0:** the same processor as 0.4.0, released with the other packages; the first crate the release workflow publishes itself.
 - **0.4.0:** the spec's draft as of 2026-11-03 ([its changelog](https://github.com/comp-markdown/compmd/blob/main/CHANGELOG.md)): pending packs and data (`componentPending`, with no F026), strict and lenient mode, `cache_keys`, `evaluate`, slots named with `-`, and the diagnostics 0.3.0 missed.
 - **0.3.0:** the first version on crates.io.

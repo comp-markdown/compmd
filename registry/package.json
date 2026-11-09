@@ -1,6 +1,6 @@
 {
   "name": "@compmd/registry",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Packs for CompMD documents from an npm registry: resolved as the processor asks, the host's policy applied before anything is downloaded, each tarball checked against its integrity, and cached.",
   "keywords": [
     "compmd",

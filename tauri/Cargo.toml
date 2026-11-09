@@ -1,6 +1,6 @@
 [package]
 name = "tauri-plugin-compmd"
-version = "0.5.0"
+version = "0.6.0"
 description = "Serves CompMD's sandbox frames to a Tauri app from a scheme of its own, as the sandbox needs them. In development."
 readme = "README.md"
 homepage = "https://compmd.hakanserce.com/"

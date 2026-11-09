@@ -2,6 +2,11 @@
 
 Shows CompMD documents in a [Tauri](https://tauri.app) app: the plugin brings `@compmd/sandbox`'s frames, serves them from a scheme of their own, and tells the page where they are. The design, and why each rule is there, is [docs/tauri-plugin.md](../docs/tauri-plugin.md).
 
+It shares its version with the `@compmd` packages, and embeds the frames of `@compmd/sandbox` at that version, so a page uses the sandbox of the same version.
+
+**Versions:**
+- **0.6.0:** the first version: `init()`, which serves the embedded frames on `compmd://` and gives the page their base; `Builder` for another scheme or an app's own build of the frames; the `base` command. (`0.0.0` is a placeholder with no code.)
+
 ## Use
 
 ```rust

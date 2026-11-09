@@ -1,6 +1,6 @@
 {
   "name": "@compmd/create-pack",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Writes a CompMD pack: a component as one built module, its signature, a test page in the sandbox, and the steps to publish it. npm create @compmd/pack <folder>",
   "keywords": [
     "compmd",

@@ -350,7 +350,7 @@ dependencies = [
 
 [[package]]
 name = "compmd"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "compmd-markdown",
  "csv",
@@ -3628,7 +3628,7 @@ dependencies = [
 
 [[package]]
 name = "tauri-plugin-compmd"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "serde",
  "serde_json",
