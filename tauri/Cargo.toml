@@ -1,0 +1,36 @@
+[package]
+name = "tauri-plugin-compmd"
+version = "0.5.0"
+description = "Serves CompMD's sandbox frames to a Tauri app from a scheme of its own, as the sandbox needs them. In development."
+readme = "README.md"
+homepage = "https://compmd.hakanserce.com/"
+keywords = ["tauri", "tauri-plugin", "compmd", "markdown", "sandbox"]
+categories = ["gui", "web-programming"]
+edition = "2024"
+license = "MIT"
+repository = "https://github.com/comp-markdown/compmd"
+# The plugin's permissions, which Tauri reads from the package.
+links = "tauri-plugin-compmd"
+
+# Outside the repository's workspace, so its CI doesn't build Tauri; the Tauri check builds and tests it
+# (docs/tauri-plugin.md, decisions 1 and 10).
+[workspace]
+
+[dependencies]
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.145"
+tauri = "2.12"
+
+[dev-dependencies]
+tauri = { version = "2.12", features = ["test"] }
+
+[build-dependencies]
+tauri-plugin = { version = "2.7", features = ["build"] }
+
+[lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }

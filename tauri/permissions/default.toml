@@ -1,0 +1,5 @@
+"$schema" = "schemas/schema.json"
+
+[default]
+description = "What a window that renders CompMD documents needs: the frames' base. The scheme the frames are served from is never in a capability, so no frame reaches a command."
+permissions = ["allow-base"]
