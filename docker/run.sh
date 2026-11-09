@@ -3,9 +3,10 @@
 # markdown-rs submodule, installs the packages, and runs a command there, `cargo make ci` by default (docs/ci.md,
 # decision 12).
 #
-# Usage: compmd-linux [--ref <commit>] [site | command...]
+# Usage: compmd-linux [--ref <commit>] [site | tauri | command...]
 #   --ref <commit>  the commit to check out: a hash, tag or branch of the mounted repository; HEAD by default
 #   site            the site's build and check, as the Pages workflow runs them
+#   tauri           the Tauri check, with WebKitGTK under a virtual display, as the Tauri workflow runs it
 set -euo pipefail
 
 ref=HEAD
@@ -44,5 +45,12 @@ elif [ "$1" = site ]; then
   # .github/workflows/pages.yml: the timing is measured on a contributor's machine.
   pnpm -r build
   set -- pnpm --dir website check --no-timing
+elif [ "$1" = tauri ]; then
+  # .github/workflows/tauri.yml: Tauri's prerequisites and a virtual display, then the check.
+  apt-get update -o Acquire::Retries=3
+  apt-get install -y -o Acquire::Retries=3 --no-install-recommends \
+    libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev libssl-dev xvfb xauth
+  export WEBKIT_DISABLE_DMABUF_RENDERER=1
+  set -- xvfb-run --auto-servernum cargo make tauri-check
 fi
 exec "$@"
