@@ -2,7 +2,7 @@
 # @compmd/render, @compmd/processor, @compmd/sandbox, @compmd/registry, @compmd/devtools, @compmd/vite, @compmd/pack and
 # @compmd/create-pack on npm with trusted publishing, for the author to approve: GitHub proves to npm which repository
 # and workflow publishes, so no npm token is stored, and each version carries its provenance. Then, once the author
-# approves it, it publishes the crates compmd-markdown and compmd on crates.io the same way. The Tauri check runs first,
+# approves it, it publishes the crates compmd-markdown, compmd and tauri-plugin-compmd on crates.io the same way. The Tauri check runs first,
 # and nothing is published unless it passes (docs/tauri-plugin.md, decision 10).
 name: Release
 
@@ -54,8 +54,21 @@ jobs:
             echo "::error::processor/Cargo.toml is $written, the tag $GITHUB_REF_NAME"
             exit 1
           fi
+          written="$(cargo metadata --no-deps --format-version 1 --manifest-path tauri/Cargo.toml | jq -r '.packages[0].version')"
+          if [ "$written" != "$version" ]; then
+            echo "::error::tauri/Cargo.toml is $written, the tag $GITHUB_REF_NAME"
+            exit 1
+          fi
       # Every check, and every package built.
       - run: cargo make ci
+      # The frames tauri-plugin-compmd embeds, built from the packages just checked, for the crates job to publish it with.
+      - run: cargo make tauri-frames
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: tauri-frames
+          path: tauri/frames
+          if-no-files-found: error
+          retention-days: 7
       # pnpm writes the version `workspace:*` stands for into the packages' dependencies on each other.
       - name: Pack
         run: |
@@ -112,11 +125,17 @@ jobs:
           submodules: recursive
       - name: Rust toolchain (rust-toolchain.toml)
         run: rustup toolchain install
+      # The frames the release job built, which tauri-plugin-compmd's package holds.
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: tauri-frames
+          path: tauri/frames
       # A token for this job alone, which the action revokes when the job ends.
       - uses: rust-lang/crates-io-auth-action@3268eb413133e2960fa4ae0e963ca76380c54cd9 # v1.0.6
         id: auth
-      # compmd-markdown first, since compmd depends on it by version, each skipped when crates.io has its version; a
-      # version that can't be read stops the job before anything is published. Run with `--dry-run` to try it.
+      # compmd-markdown first, since compmd depends on it by version, then compmd, then tauri-plugin-compmd, each skipped
+      # when crates.io has its version; a version that can't be read stops the job before anything is published. Run
+      # with `--dry-run` to try it.
       - name: Publish
         env:
           CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}

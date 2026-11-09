@@ -66,14 +66,15 @@ Each gives the new version as `latest`.
 Once the npm packages are staged, the workflow's second job, `crates`, waits in the GitHub environment `crates-io` for the author's approval: on the run's page on GitHub, **Review deployments**, then approve. crates.io has no staging, and a published crate version can't be deleted, only yanked, so this approval is the last look. The job then publishes with crates.io's trusted publishing (no token is stored; `rust-lang/crates-io-auth-action` gets one for the job and revokes it after):
 
 1. `compmd-markdown`, only when its version (`markdown-rs/Cargo.toml`) isn't on crates.io yet, since `compmd` depends on it;
-2. `compmd`, at the release's version.
+2. `compmd`, at the release's version;
+3. `tauri-plugin-compmd`, at the release's version, with the frames it embeds: the release job builds them (`cargo make tauri-frames`) from the packages it just checked and hands them to this job as an artifact, and the script stops before publishing anything without them. It is published without `cargo publish`'s build, which on Linux would need WebKitGTK: the Tauri check built and tested the same commit before the release went on.
 
 A version crates.io already has is skipped, so a release that failed halfway can run again. The job runs `.github/scripts/publish-crates.sh`, which reads each crate's version with `cargo metadata --no-deps`, since the fork's checkout has no `Cargo.lock`, and stops before publishing anything when it can't read one. Try it before a release, from the repository: `.github/scripts/publish-crates.sh --dry-run` says what it would publish, and publishes nothing; in a fresh clone (`git clone --recurse-submodules`), the fork has no lock file, as on the runner. Check: `cargo search compmd` gives the new version. docs.rs builds the documentation a few minutes later.
 
 `0.4.0`'s job read the fork's version with `cargo pkgid`, which needs a lock file, got none, and stopped at `compmd-markdown` without publishing; `compmd` 0.4.0 was published by hand from the tag, as 0.3.0 was.
 
 **Once, before the first release that publishes a crate this way** (each step the author's):
-- On crates.io, each crate's **Settings** → **Trusted Publishing** → **GitHub**: the owner `comp-markdown`, the repository `compmd`, the workflow `release.yml`, the environment `crates-io`. For both `compmd` and `compmd-markdown`: `compmd-markdown`'s code is the fork's, but it is published from this repository's workflow.
+- On crates.io, each crate's **Settings** → **Trusted Publishing** → **GitHub**: the owner `comp-markdown`, the repository `compmd`, the workflow `release.yml`, the environment `crates-io`. For `compmd`, `compmd-markdown` and `tauri-plugin-compmd`: `compmd-markdown`'s code is the fork's, but it is published from this repository's workflow.
 - On GitHub, the repository's **Settings** → **Environments** → `crates-io`: the author as its required reviewer, and only `v*` tags allowed to deploy to it.
 
 **By hand**, when the workflow can't (a crate's first version, which trusted publishing needs to exist): dry-run first, from the tag's commit, with `cargo login` once (a token with the `publish-new` and `publish-update` scopes, kept by the author):
@@ -88,6 +89,8 @@ rm -rf ../compmd-v0.4.0 && git worktree prune
 Run them from this repository's root, where its tags are. Git won't remove a worktree with a submodule, even deinitialized (`git worktree remove` says *working trees containing submodules cannot be moved or removed*), so the last line deletes its folder and has git forget it.
 
 `compmd` 0.3.0 was published so, on 2026-11-03, after its npm release, and 0.4.0 the same day: from the tag, so the crate is the same code as the packages.
+
+**A placeholder first**, for a crate whose first version needs the release's packages, as `tauri-plugin-compmd` needs the sandbox's frames of the same version: a `0.0.0` with no code, published by hand from outside the repository (a `Cargo.toml` that says so, an empty `lib.rs`, a README pointing to the real versions, and the MIT `LICENSE`; `cargo publish --allow-dirty` outside git). That creates the crate, so its trusted publisher can be set up, and the release workflow publishes its first real version. `tauri-plugin-compmd` 0.0.0 was published so on 2026-11-09, before 0.6.0. Yank the placeholder once the real version is out: `cargo yank --version 0.0.0 tauri-plugin-compmd`.
 
 ## The Mermaid pack
 
