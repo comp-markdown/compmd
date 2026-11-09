@@ -6,12 +6,11 @@
 use crate::request::{self, Error};
 use crate::text::Text;
 use compmd::host::{Fetched, Time, WithPending};
-use compmd::policy::Trust;
-use compmd::processor::{Expanded, HostComponent, LibraryModule};
+use compmd::processor::{Expanded, HostComponent};
 use compmd::{Processor, TextEdit, context::RenderContext, expanded};
 use serde::{Deserialize, Serialize};
 use serde_json::Value as Json;
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
 /// The processor of an open document, its text, the render context its loads use, its host-language components,
@@ -25,76 +24,6 @@ pub(crate) struct Document {
     components_changed: bool,
     /// The last change's edit, in code points; none after opening or a reload.
     edit: Option<TextEdit>,
-}
-
-/// A host-language component, for the renderer to run (`compmd::processor::HostComponent`).
-#[derive(Serialize)]
-struct Component<'a> {
-    name: &'a str,
-    language: &'static str,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    runtime: Option<&'a str>,
-    code: &'a str,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    module: Option<Module<'a>>,
-    trust: &'a Trust,
-    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
-    libraries: BTreeMap<&'a str, Library<'a>>,
-}
-
-/// A library pack's module, chosen for the document (`compmd::processor::LibraryModule`).
-#[derive(Serialize)]
-struct Library<'a> {
-    pack: &'a str,
-    version: String,
-    path: &'a str,
-    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
-    libraries: BTreeMap<&'a str, Library<'a>>,
-}
-
-/// `libraries` by name, as JSON gives them.
-fn libraries_of(libraries: &BTreeMap<String, LibraryModule>) -> BTreeMap<&str, Library<'_>> {
-    libraries
-        .iter()
-        .map(|(name, module)| {
-            let library = Library {
-                pack: &module.pack,
-                version: module.version.to_string(),
-                path: &module.path,
-                libraries: libraries_of(&module.libraries),
-            };
-            (name.as_str(), library)
-        })
-        .collect()
-}
-
-/// Where a built module is in its pack (`compmd::processor::Module`).
-#[derive(Serialize)]
-struct Module<'a> {
-    pack: &'a str,
-    version: String,
-    path: &'a str,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    integrity: Option<&'a str>,
-}
-
-impl<'a> From<&'a HostComponent> for Component<'a> {
-    fn from(component: &'a HostComponent) -> Self {
-        Self {
-            name: &component.name,
-            language: component.language.name(),
-            runtime: component.runtime.as_deref(),
-            code: &component.code,
-            module: component.module.as_ref().map(|module| Module {
-                pack: &module.pack,
-                version: module.version.to_string(),
-                path: &module.path,
-                integrity: module.integrity.as_deref(),
-            }),
-            trust: &component.trust,
-            libraries: libraries_of(&component.libraries),
-        }
-    }
 }
 
 /// The processed document's top-level expanded nodes `from..to` became `nodes`; every node after them moved by
@@ -194,10 +123,7 @@ impl Document {
     /// The host-language components, when the last change changed them (and after opening).
     pub(crate) fn components(&self) -> Result<Option<String>, Error> {
         self.components_changed
-            .then(|| {
-                let components: Vec<_> = self.components.iter().map(Component::from).collect();
-                serde_json::to_string(&components)
-            })
+            .then(|| serde_json::to_string(&self.components))
             .transpose()
             .map_err(Error::from)
     }

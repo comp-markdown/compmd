@@ -104,6 +104,18 @@ fn a_packs_built_module_comes_by_its_place_and_components_have_their_packs_trust
         (&None, &Trust::Strict),
         "the document's own"
     );
+    assert_eq!(
+        serde_json::to_value([map, own]).expect("serializes"),
+        json!([
+            {
+                "name": "map", "language": "js", "code": "",
+                "module": { "pack": "@acme/maps", "version": "1.2.0", "path": "map.js", "integrity": "sha512-KIT" },
+                "trust": { "level": "permissive", "network": ["https://tiles.example.com"], "host": true },
+            },
+            { "name": "own", "language": "jsx", "code": "export default () => null;", "trust": { "level": "strict" } },
+        ]),
+        "the JSON a renderer reads, leaving out what is empty"
+    );
 }
 
 #[test]

@@ -28,6 +28,7 @@ use crate::policy::{Policy, Trust};
 use crate::reserved::Keyword;
 use crate::settings::Settings;
 use crate::tree::{Move, Node, Param, Point, Position, Root, Shift, Signature};
+use serde::Serialize;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::rc::Rc;
 
@@ -195,30 +196,34 @@ pub(crate) struct Component {
 }
 
 /// A host-language component, with what a renderer needs to run it (spec §7.4): the name the expanded tree gives it,
-/// its language and runtime, and its code.
-#[derive(Clone, Debug, PartialEq, Eq)]
+/// its language and runtime, and its code. It serializes to the JSON `@compmd/sandbox` and `@compmd/render` read
+/// (`HostComponent` there), leaving out what is empty.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct HostComponent {
     /// The name a document gives it, as its nodes in the expanded tree have it.
     pub name: String,
     /// The language: the definition fence's first word, or the component file's extension.
     pub language: Language,
     /// The fence's `runtime=`; `None` for the binding's default.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub runtime: Option<String>,
     /// The code: the fence's content, or the component file's text; empty for a built module, which loads from
     /// `module`.
     pub code: String,
     /// For a built module, a `.js` file in a pack (spec §6.4), where it is: the renderer loads it from the pack's
     /// files instead of passing its text.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub module: Option<Module>,
     /// How far its code is trusted: its pack's level in the host's policy (spec §15).
     pub trust: Trust,
     /// For a component of a pack, the library packs its pack names in `peerDependencies`, by the name its code
     /// imports, with the module chosen for the document (the companion, section 5); empty for any other.
+    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
     pub libraries: BTreeMap<String, LibraryModule>,
 }
 
 /// A library pack's module, chosen for a document, and the libraries it imports in turn, by name.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct LibraryModule {
     /// The library pack.
     pub pack: String,
@@ -227,11 +232,12 @@ pub struct LibraryModule {
     /// The module's path in it, as its `compmd` field names it.
     pub path: String,
     /// The libraries it imports, by name.
+    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
     pub libraries: BTreeMap<String, LibraryModule>,
 }
 
 /// Where a built module is in its pack (spec §6.4).
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct Module {
     /// The pack.
     pub pack: String,
@@ -240,6 +246,7 @@ pub struct Module {
     /// The file's path in the pack.
     pub path: String,
     /// The integrity the registry publishes for the pack, which the files it is loaded from are checked against.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub integrity: Option<String>,
 }
 

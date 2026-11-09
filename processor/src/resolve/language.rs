@@ -49,6 +49,13 @@ impl Language {
     }
 }
 
+/// By its name, as a fence writes it.
+impl serde::Serialize for Language {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_str(self.name())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -65,5 +72,11 @@ mod tests {
         assert_eq!(Language::Tsx.runtime(Some("preact@10")), Some("preact@10"));
         assert_eq!(Language::Js.runtime(None), None);
         assert_eq!(Language::from_name("vue"), None);
+    }
+
+    #[test]
+    fn a_language_serializes_as_its_name() {
+        let json = serde_json::to_value(Language::Svelte).expect("serializes");
+        assert_eq!(json, "svelte");
     }
 }
