@@ -17,15 +17,15 @@ What this repository releases, how each is versioned, and what a release does. T
 
 ## A release, step by step
 
-1. The changelog's entries for the release are written, and `cargo make ci` is green on `main`.
-2. The version is set in every package's `package.json` and in `processor/Cargo.toml`, in one commit.
+1. The changelog's entries for the release are written, and `cargo make ci` is green on `main`, and so is the Tauri check (`tauri.yml`); `cargo make tauri-check` on a Mac checks it in WKWebView, which CI doesn't run ([CI](ci.md), decision 13).
+2. The version is set in every package's `package.json`, in `processor/Cargo.toml` and in `tauri/Cargo.toml`, in one commit.
 3. The tag `v<version>` is pushed; the release workflow publishes, and the website deploys with the new install line.
 
 A release of the spec is a tag `spec-v<version>` on a commit whose changelog says what the version holds; the website deploys with its new address.
 
 ## The release workflow
 
-`.github/workflows/release.yml` runs on a tag `v*`. It checks the tag is the version in both `package.json` files, runs `cargo make ci`, packs both packages with pnpm (which writes the renderer's version into the processor's dependency), and publishes them with npm 11.6.2 by trusted publishing, the renderer first.
+`.github/workflows/release.yml` runs on a tag `v*`. It runs the Tauri check first (`tauri.yml`, called as a job), and publishes nothing unless it passes. It checks the tag is the version in both `package.json` files, runs `cargo make ci`, packs both packages with pnpm (which writes the renderer's version into the processor's dependency), and publishes them with npm 11.6.2 by trusted publishing, the renderer first.
 
 It needs both packages to exist on npm, and each set up once on npmjs.com (the package's settings, **Trusted publisher**, GitHub Actions): the organization `comp-markdown`, the repository `compmd`, the workflow `release.yml`, no environment.
 

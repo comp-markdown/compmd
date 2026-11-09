@@ -2,7 +2,8 @@
 # @compmd/render, @compmd/processor, @compmd/sandbox, @compmd/registry, @compmd/devtools, @compmd/vite, @compmd/pack and
 # @compmd/create-pack on npm with trusted publishing, for the author to approve: GitHub proves to npm which repository
 # and workflow publishes, so no npm token is stored, and each version carries its provenance. Then, once the author
-# approves it, it publishes the crates compmd-markdown and compmd on crates.io the same way.
+# approves it, it publishes the crates compmd-markdown and compmd on crates.io the same way. The Tauri check runs first,
+# and nothing is published unless it passes (docs/tauri-plugin.md, decision 10).
 name: Release
 
 on:
@@ -18,7 +19,12 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # The Tauri check, on Linux, before anything is published (docs/tauri-plugin.md, decision 10).
+  tauri:
+    uses: ./.github/workflows/tauri.yml
+
   release:
+    needs: tauri
     runs-on: ubuntu-24.04
     permissions:
       contents: read

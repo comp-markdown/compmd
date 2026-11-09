@@ -1,0 +1,72 @@
+# The Tauri check (docs/tauri-plugin.md, decisions 9 and 10; docs/ci.md, decision 13): `cargo make tauri-check` on
+# Linux, with WebKitGTK under a virtual display. It builds tauri-plugin-compmd with its frames and the example app, and
+# runs the app in a real webview, which serves the sandbox's frames from a scheme of its own: what WebKit does there
+# (its `'self'`, its cache) no browser test can show. It runs when what it covers changes, and before every release,
+# which calls it (release.yml).
+name: Tauri
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "sandbox/**"
+      - "render/**"
+      - "processor/**"
+      - "packs/mermaid/**"
+      - "tauri/**"
+      - "examples/tauri/**"
+      - "Makefile.toml"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/tauri.yml"
+  # The same paths as for a push.
+  pull_request:
+    branches: [main]
+    paths:
+      - "sandbox/**"
+      - "render/**"
+      - "processor/**"
+      - "packs/mermaid/**"
+      - "tauri/**"
+      - "examples/tauri/**"
+      - "Makefile.toml"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/tauri.yml"
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tauri-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+jobs:
+  tauri:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      # WebKitGTK's DMA-BUF renderer draws nothing under a virtual display without a GPU.
+      WEBKIT_DISABLE_DMABUF_RENDERER: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+      - uses: ./.github/actions/setup
+      # The plugin and the example are Cargo projects of their own, each with its target folder.
+      - name: Tauri build cache
+        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          key: tauri
+          workspaces: |
+            tauri -> target
+            examples/tauri/src-tauri -> target
+      # What Tauri needs on Ubuntu (its prerequisites), and a virtual display for the app's window.
+      - name: WebKitGTK, GTK and a virtual display
+        timeout-minutes: 10
+        run: |
+          sudo apt-get update -o Acquire::Retries=3
+          sudo apt-get install -y -o Acquire::Retries=3 --no-install-recommends \
+            libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev libssl-dev xvfb
+      - run: pnpm install --frozen-lockfile
+      - run: xvfb-run --auto-servernum cargo make tauri-check

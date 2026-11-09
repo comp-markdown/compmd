@@ -23,6 +23,8 @@ Every check of this repository runs only on a contributor's machine: `cargo make
     - **What it runs**: `cargo make ci` (with WebKit installed, as CI does), `site` (the site's build and check, as `pages.yml` runs them), or any command given.
     - **Caches**: the Rust build, cargo's registry, pnpm's store and Playwright's browsers in named volumes (`compmd-linux-*`), so a second run reuses them.
 
+13. **The Tauri check is a workflow of its own** (`tauri.yml`, added 2026-11-09; [the Tauri plugin](tauri-plugin.md), decisions 9 and 10): `cargo make tauri-check` on `ubuntu-24.04`, with WebKitGTK and GTK from apt and the app under `xvfb-run`. It builds `tauri-plugin-compmd` with its frames and the example app (`examples/tauri/`), and runs the app with `--check` and `--check-broken` in a real webview, which serves the sandbox's frames from a scheme of the app's own: WebKit's `'self'` and its cache there are what no browser test shows. It runs on a push or a pull request that changes what it covers (the sandbox, the renderer, the processor, the Mermaid pack, the plugin or the example), by hand, and before every release, which calls it (`workflow_call`) and waits for it. It isn't part of `cargo make ci`, whose minutes every change would pay for Tauri's build. Its Cargo projects are cached on their own (`Swatinem/rust-cache`, two workspaces). macOS's WKWebView is checked by hand before a release, with the same command: a macOS runner costs about ten times the minutes.
+
 ## The workflow
 
 ```yaml
