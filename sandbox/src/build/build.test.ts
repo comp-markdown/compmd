@@ -43,6 +43,19 @@ describe("buildFrames", () => {
     expect(strict.indexOf("Content-Security-Policy"), "the policy before any script").toBeLessThan(strict.indexOf("<script"));
     expect(permissive).toContain(`content="${permissivePolicy(map).replaceAll('"', "&quot;")}"`);
     expect(await readFile(join(out, "runtime.js"), "utf8")).toBe("// the frame runtime\n");
+    expect(strict, "no source of its own unless the host names one").not.toContain("data-compmd-source");
+  });
+
+  it("names where the host serves the frames in both policies, and on each document for a permissive frame's second", async () => {
+    const out = await folder();
+    const source = "app://localhost/frames/";
+    await buildFrames({ out, from: await builtFrames(), source });
+    const map = JSON.stringify({ imports: { react: "./libs/react@19.3.0/index.js" } });
+    const strict = await readFile(join(out, "strict.html"), "utf8");
+    const permissive = await readFile(join(out, "permissive.html"), "utf8");
+    expect(strict).toContain(`content="${strictPolicy(map, source).replaceAll('"', "&quot;")}"`);
+    expect(permissive).toContain(`content="${permissivePolicy(map, source).replaceAll('"', "&quot;")}"`);
+    for (const document of [strict, permissive]) expect(document).toContain(`data-compmd-source="${source}"`);
   });
 
   it("adds the libraries a host offers to the import map, and to the library definition it gives and writes", async () => {

@@ -35,4 +35,22 @@ describe("the frame documents' policies", () => {
       expect(policy.some((directive) => directive.startsWith(network))).toBe(false);
     }
   });
+
+  it("names the frames' source beside each 'self' when the host serves them on a scheme of its own", () => {
+    const source = "app://localhost/frames/";
+    expect(strictPolicy(map, source).split("; ")).toEqual([
+      "default-src 'none'",
+      `script-src 'self' ${source} blob: 'sha256-${hash}'`,
+      `style-src 'self' ${source} 'unsafe-inline'`,
+      "object-src 'none'",
+      "base-uri 'none'",
+      "form-action 'none'",
+      "worker-src 'none'",
+      "img-src data: blob:",
+      `font-src 'self' ${source}`,
+      "frame-src 'none'",
+    ]);
+    expect(permissivePolicy(map, source)).toContain(`script-src 'self' ${source} blob:`);
+    expect(() => strictPolicy(map, "app:")).toThrow("isn't a source");
+  });
 });

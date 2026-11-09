@@ -21,16 +21,25 @@ export interface FramesOptions {
   libraries?: readonly BuiltLibrary[];
   /** The package's built frame files; by default its own `dist/frames/`. */
   from?: string;
+  /**
+   * Where the host serves the frames, when it serves them on a scheme other than http and https, such as a desktop
+   * app's own scheme: a scheme, a host and a path, `app://localhost/frames/`. WebKit's `'self'` matches nothing in a
+   * sandboxed frame on such a scheme, so the frames' policies name this too wherever they say `'self'`. A path keeps
+   * them to the frames' own files on that scheme.
+   */
+  source?: string;
 }
 
 /**
  * A frame document of `level`: its policy first, then the import map, then the frame runtime. Its body holds its
  * children's margins (`flow-root`), so the size it reports is all of its content and its frame needs no scrollbar.
+ * The frames' `source`, when there is one, is on the document too, for the policy a permissive frame adds.
  */
-function frameDocument(level: Level, policy: string, importMap: string): string {
+function frameDocument(level: Level, policy: string, importMap: string, source: string | undefined): string {
   const escape = (text: string) => text.replaceAll("&", "&amp;").replaceAll('"', "&quot;");
+  const own = source === undefined ? "" : ` data-compmd-source="${escape(source)}"`;
   return `<!doctype html>
-<html lang="en" data-compmd-frame="${level}">
+<html lang="en" data-compmd-frame="${level}"${own}>
   <head>
     <meta charset="utf-8" />
     <meta http-equiv="Content-Security-Policy" content="${escape(policy)}" />
@@ -61,8 +70,9 @@ export async function buildFrames(options: FramesOptions): Promise<LibraryDefini
   await cp(from, options.out, { recursive: true });
   const shared = JSON.parse(await readFile(join(from, "libs/importmap.json"), "utf8")) as { imports: Record<string, string> };
   const importMap = JSON.stringify({ imports: { ...shared.imports, ...options.imports } });
-  await writeFile(join(options.out, "strict.html"), frameDocument("strict", strictPolicy(importMap), importMap));
-  await writeFile(join(options.out, "permissive.html"), frameDocument("permissive", permissivePolicy(importMap), importMap));
+  const { source } = options;
+  await writeFile(join(options.out, "strict.html"), frameDocument("strict", strictPolicy(importMap, source), importMap, source));
+  await writeFile(join(options.out, "permissive.html"), frameDocument("permissive", permissivePolicy(importMap, source), importMap, source));
   const definition: LibraryDefinition = { runtimes: await readLibraries(join(from, "libs")), libraries: [...(options.libraries ?? [])] };
   await writeFile(join(options.out, DEFINITION), `${JSON.stringify(definition, null, 2)}\n`);
   return definition;

@@ -19,6 +19,7 @@ import { load } from "./load.ts";
 import { shikiHighlight } from "../highlight/highlight.ts";
 import { temmlMath } from "../math.ts";
 import { narrowed, networkPolicy } from "./narrow.ts";
+import { withSource } from "./source.ts";
 
 /** The level this document is for, from its root: a strict document stays strict whatever its parent says. */
 const own: Level = document.documentElement.dataset.compmdFrame === "permissive" ? "permissive" : "strict";
@@ -52,12 +53,16 @@ function adopt(component: string, css: string | undefined): void {
   document.adoptedStyleSheets = next;
 }
 
-/** Adds the second policy to the document's head, after the first, with `strict.html` next to this document. */
+/**
+ * Adds the second policy to the document's head, after the first, with `strict.html` next to this document, and the
+ * frames' own source, when the host named one, beside the network's `'self'`.
+ */
 function narrow(network: string): void {
   const first = document.querySelector<HTMLMetaElement>('meta[http-equiv="Content-Security-Policy"]')?.content ?? "";
   const meta = document.createElement("meta");
   meta.httpEquiv = "Content-Security-Policy";
-  meta.content = narrowed(first, network, new URL("strict.html", location.href).href);
+  const own = withSource(network, document.documentElement.dataset.compmdSource);
+  meta.content = narrowed(first, own, new URL("strict.html", location.href).href);
   document.head.append(meta);
 }
 

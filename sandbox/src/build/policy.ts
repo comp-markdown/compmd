@@ -4,6 +4,7 @@
 // component loads; a browser enforces both, so the second only narrows.
 
 import { createHash } from "node:crypto";
+import { withSource } from "../frame/source.ts";
 
 /** The directives both documents start with: scripts from the frames' origin and the import map, styles, no objects. */
 function common(importMap: string): string[] {
@@ -13,16 +14,18 @@ function common(importMap: string): string[] {
 
 /**
  * `strict.html`'s policy, with `importMap` allowed by its hash: no requests anywhere, images only as `data:` and
- * `blob:`, fonts from the frames' origin, and no nested frames.
+ * `blob:`, fonts from the frames' origin, and no nested frames. With `source`, where the host serves the frames
+ * (`frameSource`), it is named beside each `'self'`.
  */
-export function strictPolicy(importMap: string): string {
-  return ["default-src 'none'", ...common(importMap), "img-src data: blob:", "font-src 'self'", "frame-src 'none'"].join("; ");
+export function strictPolicy(importMap: string, source?: string): string {
+  const policy = ["default-src 'none'", ...common(importMap), "img-src data: blob:", "font-src 'self'", "frame-src 'none'"].join("; ");
+  return withSource(policy, source);
 }
 
 /**
  * `permissive.html`'s first policy: as a strict frame's, without the network directives and nested frames, which the
  * frame's second policy gives.
  */
-export function permissivePolicy(importMap: string): string {
-  return common(importMap).join("; ");
+export function permissivePolicy(importMap: string, source?: string): string {
+  return withSource(common(importMap).join("; "), source);
 }
