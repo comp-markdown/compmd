@@ -1,0 +1,19 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "CompMD in Tauri",
+  "version": "0.0.0",
+  "identifier": "com.compmd.tauri-example",
+  "build": {
+    "devUrl": "http://localhost:1420",
+    "frontendDist": "../dist",
+    "beforeDevCommand": "pnpm dev",
+    "beforeBuildCommand": "pnpm build"
+  },
+  "app": {
+    "windows": [{ "label": "main", "title": "CompMD in Tauri", "width": 900, "height": 760 }],
+    "security": {
+      "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; frame-src compmd: http://compmd.localhost; script-src 'self' compmd://localhost/frames/ http://compmd.localhost/frames/; connect-src 'self' ipc: http://ipc.localhost compmd://localhost/frames/ http://compmd.localhost/frames/; frame-ancestors 'none'; object-src 'none'; base-uri 'self'"
+    }
+  },
+  "bundle": { "active": false }
+}

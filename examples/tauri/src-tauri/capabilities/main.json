@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "main",
+  "description": "The main window's own pages: the app's commands, and the frames' base for a build of the app's own (--check-broken). The frames' scheme is never listed: no frame reaches a command.",
+  "windows": ["main"],
+  "permissions": ["core:default", "compmd:default", "allow-mode", "allow-document", "allow-report"]
+}

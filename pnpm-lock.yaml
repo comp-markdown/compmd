@@ -346,6 +346,28 @@ importers:
         specifier: 5.0.5
         version: 5.0.5(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
 
+  examples/tauri:
+    dependencies:
+      '@comp-markdown/mermaid':
+        specifier: workspace:*
+        version: link:../../packs/mermaid
+      '@compmd/sandbox':
+        specifier: workspace:*
+        version: link:../../sandbox
+      '@tauri-apps/api':
+        specifier: 2.12.4
+        version: 2.12.4
+    devDependencies:
+      '@types/node':
+        specifier: 26.6.5
+        version: 26.6.5
+      typescript:
+        specifier: 6.0.3
+        version: 6.0.3
+      vite:
+        specifier: 8.3.4
+        version: 8.3.4(@types/node@26.6.5)(yaml@2.9.1)
+
   guides:
     devDependencies:
       '@comp-markdown/mermaid':
@@ -1205,6 +1227,9 @@ packages:
     peerDependencies:
       svelte: ^5.46.4
       vite: ^8.0.0-beta.7 || ^8.0.0
+
+  '@tauri-apps/api@2.12.4':
+    resolution: {integrity: sha512-pVmfis+4zT8H0Qhp3xPZx9Ju7kpzvA6rr/PSJPyuwfvucTQ8sVt61NYU9KMkK703UFlYadFmjKA4HhybOtN0gg==}
 
   '@types/chai@5.2.3':
     resolution: {integrity: sha512-Mw558oeA9fFbv65/y4mHtXDs9bPnFMZAL/jxdPFUpOHHIXX91mcgEHbS5Lahr+pwZFR8A7GQleRWeI6cGFC2UA==}
@@ -2962,6 +2987,8 @@ snapshots:
       svelte: 5.57.2(@typescript-eslint/types@8.72.0)
       vite: 8.3.4(@types/node@26.6.5)(yaml@2.9.1)
       vitefu: 1.1.3(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
+
+  '@tauri-apps/api@2.12.4': {}
 
   '@types/chai@5.2.3':
     dependencies:

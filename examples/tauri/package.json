@@ -1,0 +1,22 @@
+{
+  "name": "@compmd/tauri-example",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The smallest Tauri app showing a CompMD document with tauri-plugin-compmd, which checks itself in a real webview.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && node scripts/broken.mts",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@comp-markdown/mermaid": "workspace:*",
+    "@compmd/sandbox": "workspace:*",
+    "@tauri-apps/api": "2.12.4"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.5",
+    "typescript": "6.0.3",
+    "vite": "8.3.4"
+  }
+}

@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CompMD in Tauri</title>
+    <style>
+      :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
+      body { max-width: 46rem; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+      #status:empty { display: none; }
+      #status { padding: 0.5rem 0.75rem; border-radius: 6px; background: color-mix(in srgb, currentColor 8%, transparent); }
+    </style>
+    <script type="module" src="/src/main.ts"></script>
+  </head>
+  <body>
+    <main id="document"></main>
+    <p id="status" role="status"></p>
+  </body>
+</html>

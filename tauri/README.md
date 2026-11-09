@@ -50,7 +50,7 @@ const base = await invoke("plugin:compmd|base");
 const view = createSandbox({ base, page: "host" }).open(container, { components });
 ```
 
-Never list the scheme in a capability: no frame may reach a command.
+**Keeping frames from the app's commands:** a frame's code can't call a command, since Tauri gives its invoke key to the app's own page only. A capability doesn't do it: Tauri counts a page on a scheme the app registers as one of its own. Declare the app's commands (`tauri_build::AppManifest`) and grant them in the capability, as the example app does.
 
 ## Building it from this repository
 

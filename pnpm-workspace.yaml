@@ -12,4 +12,5 @@ packages:
   - editor
   - editor/packs/minimermaid
   - packs/mermaid
+  - examples/tauri
   - website

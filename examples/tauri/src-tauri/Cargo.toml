@@ -1,0 +1,39 @@
+[package]
+name = "compmd-tauri-example"
+version = "0.0.0"
+description = "The smallest Tauri app showing a CompMD document with tauri-plugin-compmd, which checks itself in a real webview."
+edition = "2024"
+license = "MIT"
+publish = false
+
+# Its own project, outside the repository's workspace (docs/tauri-plugin.md, decision 9).
+[workspace]
+
+[[bin]]
+name = "compmd-tauri-example"
+path = "src/main.rs"
+
+[features]
+# The page from `dist/`, built in, as a release does; without it, from Vite's dev server.
+custom-protocol = ["tauri/custom-protocol"]
+
+[build-dependencies]
+tauri-build = { version = "2.7", features = [] }
+
+[dependencies]
+compmd = { path = "../../../processor" }
+semver = "1.0.28"
+serde_json = "1.0.145"
+tauri = { version = "2.12", features = [] }
+tauri-plugin-compmd = { path = "../../../tauri" }
+
+[dev-dependencies]
+tauri = { version = "2.12", features = ["test"] }
+
+[lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }

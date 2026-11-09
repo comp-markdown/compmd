@@ -92,6 +92,20 @@ script = [
   "cargo test --manifest-path tauri/Cargo.toml --doc",
 ]
 
+[tasks.tauri-check]
+description = "The Tauri check (docs/tauri-plugin.md, decisions 9 and 10): the plugin's checks, then the example app's tests and build, and the app run in a real webview with `--check` and `--check-broken`, each exiting 0 only when it drew what it should. On Linux, run it under `xvfb-run`; CI does"
+clear = true
+dependencies = ["tauri-plugin"]
+script = [
+  "pnpm --filter @compmd/tauri-example... build",
+  "cargo fmt --manifest-path examples/tauri/src-tauri/Cargo.toml -- --check",
+  "cargo clippy --manifest-path examples/tauri/src-tauri/Cargo.toml --all-targets -- -D warnings",
+  "cargo test --manifest-path examples/tauri/src-tauri/Cargo.toml",
+  "cargo build --manifest-path examples/tauri/src-tauri/Cargo.toml --features custom-protocol",
+  "examples/tauri/src-tauri/target/debug/compmd-tauri-example --check",
+  "examples/tauri/src-tauri/target/debug/compmd-tauri-example --check-broken",
+]
+
 [tasks.ci]
 description = "Every check CI runs; coverage runs the tests, the conformance set's among them, so `test` isn't run again"
 clear = true
