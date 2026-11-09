@@ -10,6 +10,7 @@ import { hostClient, type HostClient } from "../host-api.ts";
 import { codeFor, Mounts } from "../mounts.ts";
 import { batches, Observer } from "../observer.ts";
 import { serveParent, type FrameEnd } from "../protocol/frame-end.ts";
+import { failureText } from "../protocol/parent-end.ts";
 import { hasCode, HELLO, SANDBOX_VERSION, type ComponentCode, type ErrorReason, type Level, type Part, type Scheme } from "../protocol/messages.ts";
 import { Settling } from "../settling.ts";
 import { frameUse } from "../use.ts";
@@ -207,7 +208,7 @@ function start(port: MessagePort): void {
     here: own,
     inline: loaded.mounts,
     frame: (target, node, inputs, component) => {
-      let failed: (message: string) => void = () => undefined;
+      let failed: (message: string, reason: "threw" | "failed") => void = () => undefined;
       const frame = frameUse(target, {
         url: strictUrl,
         level: "strict",
@@ -231,7 +232,7 @@ function start(port: MessagePort): void {
             parent.recovered(name, use);
           },
           failed: (failure) => {
-            failed(failure.reason === "hung" ? "its frame stopped answering" : `its frame is of protocol version ${String(failure.version)}`);
+            failed(`its frame ${failureText(failure, strictUrl)}`, failure.reason === "unloaded" ? "failed" : "threw");
           },
         },
       });

@@ -13,6 +13,10 @@ declare module "vitest" {
   interface ProvidedContext {
     /** Where the frame documents are served, a folder of their server, ending in `/`. */
     frames: string;
+    /** Frame documents whose runtime isn't there: each frame of theirs never says it is ready. */
+    missing: string;
+    /** Frame documents whose policy refuses their own runtime, as WebKit's `'self'` on a custom scheme did. */
+    refused: string;
     /** A probe a permissive pack may be given. */
     allowed: string;
     /** A probe no frame may reach. */
@@ -75,6 +79,15 @@ export default async function setup(project: TestProject): Promise<() => Promise
   const SANDBOX = join(OUT, "sandbox");
   await buildFrames({ out: SANDBOX, from: join(ROOT, "dist/frames") });
   await mkdir(join(SANDBOX, "packs"), { recursive: true });
+  // Frames that never load their runtime: one without it, one whose policy refuses it.
+  await buildFrames({ out: join(OUT, "missing"), from: join(ROOT, "dist/frames") });
+  await rm(join(OUT, "missing/runtime.js"));
+  const REFUSED = join(OUT, "refused");
+  await buildFrames({ out: REFUSED, from: join(ROOT, "dist/frames") });
+  for (const document of ["strict.html", "permissive.html"]) {
+    const text = await readFile(join(REFUSED, document), "utf8");
+    await writeFile(join(REFUSED, document), text.replace("script-src 'self'", "script-src"));
+  }
   // A host's page in a sandboxed frame of its own, from the frames' server, beside the frame documents.
   const { build } = await import("vite");
   await build({
@@ -94,6 +107,8 @@ export default async function setup(project: TestProject): Promise<() => Promise
   // A pack's built module, which sets the input `result` when it mounts.
   await writeFile(join(SANDBOX, "packs/built.js"), 'export default function mount(target, { set }) { target.textContent = "built"; set("result", JSON.stringify("built module")); }\n');
   project.provide("frames", `${base}sandbox/`);
+  project.provide("missing", `${base}missing/`);
+  project.provide("refused", `${base}refused/`);
   project.provide("allowed", allowed ?? "");
   project.provide("denied", denied ?? "");
   return async () => {

@@ -2,6 +2,6 @@
 export * from "./messages.ts";
 export { copyOf, observedOf, within, type FrameId, type Gone, type Observed, type Renders } from "./observed.ts";
 export { serveParent, type FrameEnd, type FrameHandlers } from "./frame-end.ts";
-export { connectChild, type ChildEnd, type ChildEvents, type ChildFailure, type ChildOptions } from "./parent-end.ts";
+export { connectChild, failureText, LOAD_MS, type ChildEnd, type ChildEvents, type ChildFailure, type ChildOptions } from "./parent-end.ts";
 export { connectCompiler, type Compiler } from "./compiler.ts";
 export { boundInputs } from "./inputs.ts";

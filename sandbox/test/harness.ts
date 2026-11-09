@@ -7,6 +7,8 @@ import type { ComponentCode, Level } from "../src/protocol/messages.ts";
 import { frameUse, type UseFrame, type UseFrameOptions } from "../src/use.ts";
 
 export const frames = inject("frames");
+export const missing = inject("missing");
+export const refused = inject("refused");
 export const allowed = inject("allowed");
 export const denied = inject("denied");
 

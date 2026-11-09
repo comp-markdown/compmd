@@ -7,7 +7,7 @@ import type { ExpandedCode, ExpandedComponent, Mount } from "@compmd/render";
 import { afterEach, describe, expect, it } from "vitest";
 import type { HostClient } from "../src/host-api.ts";
 import { HostRuntime, type HostEvents } from "../src/host/runtime.ts";
-import { allowed, frames, leaf, probeCode } from "./harness.ts";
+import { allowed, frames, leaf, missing, probeCode, refused } from "./harness.ts";
 
 const runtimes: HostRuntime[] = [];
 const areas: HTMLElement[] = [];
@@ -191,6 +191,17 @@ export default function Chart({ compmd }) {
     expect(ticks).toBeGreaterThan(5);
     expect(area.querySelector("iframe")).toBeNull();
     expect(area.textContent).toBe("spinner's fallback");
+  });
+
+  it("says so when its frames never load their runtime, missing or refused by their policy, and shows the fallback", { timeout: 30_000 }, async () => {
+    for (const base of [missing, refused]) {
+      const { runtime, area, errors } = setup({ base });
+      // The compile frame is the first to need its runtime: the component's code never comes.
+      await runtime.set([plain("chart", { level: "strict" }, "async () => 'drawn'")]);
+      expect(errors, base).toEqual([["chart", "failed", expect.stringContaining(`the compile frame didn't load its runtime from ${base}strict.html`)]]);
+      runtime.mountUse(area, use("chart"), { chart: { type: "string", value: "" } });
+      expect(area.textContent).toBe("chart's fallback");
+    }
   });
 
   it("keeps one document's frames from reading another's (T4)", async () => {

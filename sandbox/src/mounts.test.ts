@@ -28,7 +28,7 @@ function setup(here: Here, inline: Record<string, Mount> = {}) {
   const framed: string[] = [];
   const sent: string[] = [];
   const reports: [string, string, string][] = [];
-  const failures = new Map<string, (message: string) => void>();
+  const failures = new Map<string, (message: string, reason: "threw" | "failed") => void>();
   const mounts = new Mounts({
     here,
     inline,
@@ -144,12 +144,18 @@ describe("Mounts: its frames", () => {
     expect(sent).toEqual(["chart scheme dark", "map scheme dark"]);
   });
 
-  it("shows a use's fallback when its frame fails (it stopped answering), and says it threw", () => {
+  it("shows a use's fallback when its frame fails, and says why: it threw (stopped answering), or failed (never loaded)", () => {
     const { mounts, reports, failures } = setup("host");
-    mounts.set([strict]);
-    const target = use(mounts, "chart");
-    failures.get("chart")?.("its frame stopped answering");
-    expect(target.textContent).toBe("chart's fallback");
-    expect(reports).toEqual([["chart", "threw", "its frame stopped answering"]]);
+    mounts.set([strict, permissive]);
+    const chart = use(mounts, "chart");
+    failures.get("chart")?.("its frame stopped answering", "threw");
+    expect(chart.textContent).toBe("chart's fallback");
+    const map = use(mounts, "map");
+    failures.get("map")?.("its frame didn't load its runtime", "failed");
+    expect(map.textContent).toBe("map's fallback");
+    expect(reports).toEqual([
+      ["chart", "threw", "its frame stopped answering"],
+      ["map", "failed", "its frame didn't load its runtime"],
+    ]);
   });
 });

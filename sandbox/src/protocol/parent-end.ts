@@ -12,7 +12,10 @@ export interface ChildOptions {
   binds(input: string): boolean;
   /** The port for `host`, for a permissive frame of a pack given `host`. */
   host?: MessagePort;
-  /** How often to ping the frame, and how long it may not answer before it is stopped, in ms. */
+  /**
+   * How often to ping the frame, and how long it may not answer before it is stopped, in ms. A frame that hasn't said
+   * `ready` that long after it connected, and at least `LOAD_MS`, never loaded its runtime, and is stopped too.
+   */
   ping?: { every: number; timeout: number };
   /**
    * The file of an image a page frame asks for by its `src`, or `undefined` for none. Strict code may have asked, so
@@ -21,8 +24,35 @@ export interface ChildOptions {
   image?(url: string): Promise<Blob | undefined>;
 }
 
-/** Why the parent stopped listening to a frame. */
-export type ChildFailure = { reason: "version"; version: number } | { reason: "hung" };
+/**
+ * How long a frame may take to load its runtime and say `ready` at least, in ms, whatever its `timeout` for answering:
+ * loading takes longer than answering a ping, on a slow device most of all.
+ */
+export const LOAD_MS = 5000;
+
+/**
+ * Why the parent stopped listening to a frame: it is of another protocol version, it stopped answering, or it never
+ * said `ready`, since its runtime didn't load (refused by its policy, not found, or the network failed).
+ */
+export type ChildFailure = { reason: "version"; version: number } | { reason: "hung" } | { reason: "unloaded" };
+
+/**
+ * What happened to a frame of the document at `url`, after "its frame" or "the page's frame", for an `error`'s
+ * message.
+ *
+ * @example
+ * `its frame ${failureText({ reason: "unloaded" }, url)}`; // "its frame didn't load its runtime from app://localhost/frames/strict.html"
+ */
+export function failureText(failure: ChildFailure, url: string): string {
+  switch (failure.reason) {
+    case "hung":
+      return "stopped answering";
+    case "version":
+      return `is of protocol version ${String(failure.version)}`;
+    case "unloaded":
+      return `didn't load its runtime from ${url}: is the frame document served there, and does its policy allow the files next to it?`;
+  }
+}
 
 export interface ChildEvents {
   set: { input: string; value: unknown };
@@ -33,7 +63,10 @@ export interface ChildEvents {
   loaded: Record<string, never>;
   rendered: { ms: number };
   size: { width: number; height: number };
-  /** The frame is of another version, or stopped answering: the parent removes it, and its use shows its fallback. */
+  /**
+   * The frame is of another version, stopped answering or never loaded its runtime: the parent removes it, and its
+   * use shows its fallback.
+   */
   failed: ChildFailure;
   /** What the frame's observer reports, unchecked (`observedOf` checks each event); only while the parent asks. */
   observed: { events: unknown[] };
@@ -121,6 +154,12 @@ export function connectChild(port: Port, options: ChildOptions): ChildEnd {
     close();
     emit("failed", failure);
   };
+  // A frame whose runtime never loads says nothing at all: without this, its use would wait for it forever.
+  const unloaded = options.ping
+    ? setTimeout(() => {
+        if (waiting) stop({ reason: "unloaded" });
+      }, Math.max(options.ping.timeout, LOAD_MS))
+    : undefined;
   const startPings = ({ every, timeout }: { every: number; timeout: number }) => {
     lastAnswer = Date.now();
     pings = setInterval(() => {
@@ -145,6 +184,7 @@ export function connectChild(port: Port, options: ChildOptions): ChildEnd {
       if (options.host) port.postMessage({ type: "host" } satisfies ToFrame, [options.host]);
       const queued = waiting;
       waiting = undefined;
+      clearTimeout(unloaded);
       for (const send of queued) send();
       if (options.ping) startPings(options.ping);
       return;
@@ -219,6 +259,7 @@ export function connectChild(port: Port, options: ChildOptions): ChildEnd {
 
   function close() {
     closed = true;
+    clearTimeout(unloaded);
     if (pings !== undefined) clearInterval(pings);
     port.removeEventListener("message", listener);
     // A frame that went, or was stopped, holds nothing up.

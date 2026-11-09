@@ -9,7 +9,7 @@ import { PageImages } from "./images.ts";
 import { codeFor } from "./mounts.ts";
 import type { Observer } from "./observer.ts";
 import { diagnosticOf, HELLO, SANDBOX_VERSION, type ErrorReason, type Scheme } from "./protocol/messages.ts";
-import { connectChild, type ChildEnd } from "./protocol/parent-end.ts";
+import { connectChild, failureText, type ChildEnd } from "./protocol/parent-end.ts";
 import type { SandboxOptions, ViewEvents, ViewSpliceOptions } from "./sandbox.ts";
 
 /** The `error` event for `component`, with its diagnostic, and its use when it has one. */
@@ -178,13 +178,17 @@ export function framePage(container: HTMLElement, runtime: HostRuntime, options:
   frame.on("layout", () => {
     emit("layout", {});
   });
+  const url = frameUrl(options.base, "strict.html");
   child.on("failed", (failure) => {
     observer.gone(id, failure.reason);
-    emit("error", errorEvent("", "threw", failure.reason === "hung" ? "the page's frame stopped answering" : `the page's frame is of protocol version ${String(failure.version)}`));
+    const message = `the page's frame ${failureText(failure, url)}`;
+    // The host's page says why too: a frame that never loaded has nothing of its own in the console.
+    if (failure.reason === "unloaded") console.error(`CompMD: ${message}`);
+    emit("error", errorEvent("", failure.reason === "unloaded" ? "failed" : "threw", message));
   });
   if (options.stylesheets?.length) child.styles([...options.stylesheets]);
   iframe.addEventListener("load", () => iframe.contentWindow?.postMessage({ type: HELLO, version: SANDBOX_VERSION }, "*", [port2]), { once: true });
-  iframe.src = frameUrl(options.base, "strict.html");
+  iframe.src = url;
   container.append(iframe);
   return {
     render: (tree, change) => {

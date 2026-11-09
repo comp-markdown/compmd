@@ -12,7 +12,7 @@ export type ConsoleEntry =
   | { kind: "problem"; at: number; message: string }
   | { kind: "fallback"; at: number; frame: FrameId; component: string; reason: string; code?: SandboxDiagnostic; message: string; by?: FrameId }
   | { kind: "refused"; at: number; frame: FrameId; input: string; by?: FrameId }
-  | { kind: "stopped"; at: number; frame: FrameId; why: "hung" | "version"; by?: FrameId };
+  | { kind: "stopped"; at: number; frame: FrameId; why: "hung" | "version" | "unloaded"; by?: FrameId };
 
 /** The time of something that happens now, as the observer's events have it. */
 export const now = (): number => performance.timeOrigin + performance.now();

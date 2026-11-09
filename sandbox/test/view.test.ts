@@ -7,7 +7,7 @@ import type { ExpandedComponent, ExpandedRoot, Mount, Splice } from "@compmd/ren
 import { afterEach, describe, expect, it } from "vitest";
 import type { HostClient } from "../src/host-api.ts";
 import { createSandbox, type SandboxOptions, type View, type ViewEvents } from "../src/index.ts";
-import { frames, pause, probeCode } from "./harness.ts";
+import { frames, missing, pause, probeCode, refused } from "./harness.ts";
 
 const views: View[] = [];
 const areas: HTMLElement[] = [];
@@ -91,6 +91,20 @@ describe("render and splice", () => {
       expect(values()).toEqual(["one", "two", "three"]);
     });
   }
+
+  it("says so once when the page's frame never loads its runtime, missing or refused by its policy", { timeout: 30_000 }, async () => {
+    for (const base of [missing, refused]) {
+      const { view, events, until } = open("frame", [label()], { base });
+      const pageFrame = () => events.error.filter(({ message }) => message.startsWith("the page's frame"));
+      view.render(page("one"));
+      await until(() => pageFrame().length > 0);
+      const [error] = pageFrame();
+      expect(error && { component: error.component, reason: error.reason, code: error.code }, base).toEqual({ component: "", reason: "failed", code: "W121" });
+      expect(error?.message).toContain(`the page's frame didn't load its runtime from ${base}strict.html`);
+      await view.settled();
+      expect(pageFrame(), "once").toHaveLength(1);
+    }
+  });
 
   it("says when the page is painted, and when its components are loaded", async () => {
     const { view, events, until } = open("frame");

@@ -3,7 +3,7 @@
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { chart, settle, types } from "./channels.testing.ts";
-import { boundInputs, connectChild, SANDBOX_VERSION, type Port } from "./index.ts";
+import { boundInputs, connectChild, failureText, LOAD_MS, SANDBOX_VERSION, type Port } from "./index.ts";
 
 /** A parent's port, and the frame's end of it, which records every message the parent sends, with its ports. */
 function parentChannel() {
@@ -193,6 +193,47 @@ describe("the parent's end (connectChild)", () => {
     answering = false;
     await seconds(5);
     expect(failed).toEqual([{ reason: "hung" }]);
+  });
+
+  it("stops a frame that never says it is ready, since its runtime didn't load, and keeps one that does", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval", "Date"] });
+    const silent = parentChannel();
+    const never = connectChild(silent.parent, { level: "strict", binds: () => false, ping: { every: 1000, timeout: 3000 } });
+    const failed: unknown[] = [];
+    never.on("failed", (failure) => failed.push(failure));
+    let settledAll = false;
+    void never.settled().then(() => (settledAll = true));
+    // At least LOAD_MS, though the frame's timeout for answering is shorter.
+    vi.advanceTimersByTime(LOAD_MS - 1);
+    await settle();
+    expect(failed).toEqual([]);
+    vi.advanceTimersByTime(1);
+    await settle();
+    expect(failed, "once").toEqual([{ reason: "unloaded" }]);
+    expect(settledAll, "a frame that never loaded holds nothing up").toBe(true);
+
+    const loaded = parentChannel();
+    const ready = connectChild(loaded.parent, { level: "strict", binds: () => false, ping: { every: 1000, timeout: 3000 } });
+    const none: unknown[] = [];
+    ready.on("failed", (failure) => none.push(failure));
+    loaded.frame.postMessage({ type: "ready", sandbox: SANDBOX_VERSION });
+    await settle();
+    loaded.frame.addEventListener("message", ({ data }) => {
+      const message = data as { type: string; n: number };
+      if (message.type === "ping") loaded.frame.postMessage({ type: "pong", n: message.n });
+    });
+    for (let second = 0; second < 5; second += 1) {
+      vi.advanceTimersByTime(1000);
+      await settle();
+    }
+    expect(none).toEqual([]);
+  });
+
+  it("words each way a frame fails for the error its use shows", () => {
+    const url = "app://localhost/frames/strict.html";
+    expect(failureText({ reason: "hung" }, url)).toBe("stopped answering");
+    expect(failureText({ reason: "version", version: 2 }, url)).toBe("is of protocol version 2");
+    expect(failureText({ reason: "unloaded" }, url)).toContain(`didn't load its runtime from ${url}`);
   });
 
   it("pings no frame it wasn't asked to", async () => {

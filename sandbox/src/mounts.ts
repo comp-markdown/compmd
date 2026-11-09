@@ -20,8 +20,11 @@ export interface Framed extends NodesMounted {
   styles(urls: readonly string[]): void;
   /** The page's colour scheme, which a frame's document doesn't inherit either. */
   scheme(scheme: Scheme): void;
-  /** Calls `listener` if the frame stops answering, or is of another protocol version. */
-  failed(listener: (message: string) => void): void;
+  /**
+   * Calls `listener` if the frame stops answering or is of another protocol version (`threw`), or never loaded its
+   * runtime (`failed`).
+   */
+  failed(listener: (message: string, reason: "threw" | "failed") => void): void;
   /** Resolves once the frame has settled after everything sent it, its size applied; or it is gone. */
   settled(): Promise<void>;
 }
@@ -32,7 +35,10 @@ export interface MountsOptions {
   inline: Readonly<Record<string, Mount>>;
   /** Frames a use of a lower level in `target`. */
   frame(target: Element, node: ExpandedUse, inputs: Readonly<Record<string, ExpandedInput>>, component: ComponentCode): Framed;
-  /** A component shows its fallback: it can't run here (`not-here`), or its frame stopped answering (`threw`). */
+  /**
+   * A component shows its fallback: it can't run here (`not-here`), its frame stopped answering (`threw`), or its frame
+   * never loaded its runtime (`failed`).
+   */
   report(component: string, reason: ErrorReason, message: string): void;
   /** The window's observer, which records each component mounted here, with how long it took to mount and update. */
   observer?: Observer;
@@ -158,11 +164,11 @@ export class Mounts {
       this.#frames.add(frame);
       if (Object.keys(this.#tokens).length > 0) frame.theme(this.#tokens);
       if (this.#scheme) frame.scheme(this.#scheme);
-      frame.failed((message) => {
+      frame.failed((message, reason) => {
         this.#frames.delete(frame);
         frame.destroy?.();
         target.replaceChildren(fallback.element);
-        this.#options.report(component.name, "threw", message);
+        this.#options.report(component.name, reason, message);
       });
       return {
         update: (next, nextInputs) => frame.update?.(next, nextInputs),

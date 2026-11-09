@@ -28,6 +28,13 @@
     "CEL itself, by example: https://celbyexample.com/",
   ].join("\n\n");
 
+  /** Why the sandbox stopped a frame, as the line says it. */
+  const STOPPED = {
+    hung: "it stopped answering",
+    version: "it is of another protocol version",
+    unloaded: "its runtime never loaded",
+  } as const;
+
   const lines = $derived(withEvaluations(entries, evaluations));
   const history = new ExpressionHistory();
   let written = $state("");
@@ -106,7 +113,7 @@
           <span>A <code>set</code> of <code>{line.input}</code> from {frameName(line.frame)} was refused: none of its uses binds it.</span>
           <Reported by={line.by} />
         {:else}
-          <span>{frameName(line.frame)} was stopped: {line.why === "hung" ? "it stopped answering" : "it is of another protocol version"}.</span>
+          <span>{frameName(line.frame)} was stopped: {STOPPED[line.why]}.</span>
           <Reported by={line.by} />
         {/if}
       </li>

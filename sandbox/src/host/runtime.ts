@@ -9,6 +9,7 @@ import { localHost, serveHost, type HostApi, type HostClient } from "../host-api
 import { codeFor, Mounts } from "../mounts.ts";
 import type { Observer } from "../observer.ts";
 import { connectCompiler, type Compiler } from "../protocol/compiler.ts";
+import { failureText } from "../protocol/parent-end.ts";
 import { bindingOf, HELLO, SANDBOX_VERSION, type ComponentCode, type ErrorReason, type Level, type Libraries, type LibraryCode, type Scheme } from "../protocol/messages.ts";
 import { frameUse } from "../use.ts";
 
@@ -263,12 +264,14 @@ export class HostRuntime {
     frame.style.display = "none";
     frame.title = "compile";
     const { port1, port2 } = new MessageChannel();
+    const url = frameUrl(this.#options.base, "strict.html");
     frame.addEventListener("load", () => frame.contentWindow?.postMessage({ type: HELLO, version: SANDBOX_VERSION }, "*", [port2]), { once: true });
-    frame.src = frameUrl(this.#options.base, "strict.html");
+    frame.src = url;
     document.body.append(frame);
     const { observer } = this.#options;
     const id = observer?.frame("strict", { kind: "compile" });
-    const compiler = connectCompiler(observer && id !== undefined ? observer.port(id, port1) : port1);
+    const ready = { timeout: this.#options.timeout ?? 5000, url };
+    const compiler = connectCompiler(observer && id !== undefined ? observer.port(id, port1) : port1, { ready });
     this.#compiler = { compiler, frame, id };
     return compiler;
   }
@@ -280,9 +283,10 @@ export class HostRuntime {
     const api = this.#options.host;
     /** What sends this frame the host's events, once it has `host`. */
     const sends = new Set<(event: string, data: unknown) => void>();
-    let failed: (message: string) => void = () => undefined;
+    let failed: (message: string, reason: "threw" | "failed") => void = () => undefined;
+    const url = frameUrl(this.#options.base, `${level}.html`);
     const frame = frameUse(target, {
-      url: frameUrl(this.#options.base, `${level}.html`),
+      url,
       level,
       code: codeFor(this.#code, level),
       node,
@@ -316,7 +320,10 @@ export class HostRuntime {
           this.#events.recovered?.(name, use);
         },
         failed: (failure) => {
-          failed(failure.reason === "hung" ? "its frame stopped answering" : `its frame is of protocol version ${String(failure.version)}`);
+          const message = `its frame ${failureText(failure, url)}`;
+          // The host's page says why too: a frame that never loaded has nothing of its own in the console.
+          if (failure.reason === "unloaded") console.error(`CompMD: ${component.name}: ${message}`);
+          failed(message, failure.reason === "unloaded" ? "failed" : "threw");
         },
       },
     });
@@ -340,7 +347,7 @@ export class HostRuntime {
       scheme: (scheme: Scheme) => {
         frame.scheme(scheme);
       },
-      failed: (listener: (message: string) => void) => {
+      failed: (listener: (message: string, reason: "threw" | "failed") => void) => {
         failed = listener;
       },
       settled: () => frame.settled(),
