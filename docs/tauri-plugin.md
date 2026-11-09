@@ -10,6 +10,8 @@ A Tauri app's pages come from its own scheme (`tauri://localhost` on macOS and L
 - WebKit caches a custom scheme's responses, so a frame document replaced at the same path can keep running its old version after the app is upgraded, and the frames and the page then speak different protocol versions;
 - the frames must be served with the headers that sandbox them, and nothing else on that scheme may be served.
 
+Each of these, and whatever a platform or Tauri changes later, is then found and fixed in one place, for every app that uses the plugin.
+
 ## Decisions
 
 1. **A crate, `tauri-plugin-compmd`, in `tauri/` of this repository**, released with the implementation's version, by the same release workflow as `compmd` ([releases](releases.md), decision 5). It depends on `tauri` only, not on the processor: an app that processes documents in its page, with `@compmd/processor`, uses the plugin as well as one that processes them in Rust. It is outside the main Cargo workspace (its own `Cargo.toml` and lock file), so `cargo make ci` doesn't build Tauri; its tests run in the Tauri check (decision 9).
@@ -48,5 +50,5 @@ A Tauri app's pages come from its own scheme (`tauri://localhost` on macOS and L
 
 ## Risks
 
-- **Tauri's own changes to custom schemes**: Tauri may add headers of its own, or change how a scheme is served on a platform. The example's check shows the headers a frame arrives with, so a change shows in CI.
+- **Tauri's own changes to custom schemes**: Tauri may add headers of its own, or change how a scheme is served on a platform. The example's check shows the headers a frame arrives with, so a change shows in CI, and it is fixed once, in the plugin, for every app that uses it, rather than in each app's own handler.
 - **Mobile** (iOS, Android) isn't tested in CI; the plugin targets them, and its README says so.
