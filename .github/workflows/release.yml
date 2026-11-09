@@ -69,6 +69,9 @@ jobs:
           path: tauri/frames
           if-no-files-found: error
           retention-days: 7
+      # The crates packaged as the crates job will publish them, so a package cargo refuses stops the release before
+      # anything is published.
+      - run: .github/scripts/publish-crates.sh --dry-run
       # pnpm writes the version `workspace:*` stands for into the packages' dependencies on each other.
       - name: Pack
         run: |

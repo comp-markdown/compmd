@@ -4,7 +4,7 @@
 # changes, and a release that failed halfway can run again.
 #
 #   .github/scripts/publish-crates.sh            # publishes, with CARGO_REGISTRY_TOKEN set
-#   .github/scripts/publish-crates.sh --dry-run  # says what it would publish, and publishes nothing
+#   .github/scripts/publish-crates.sh --dry-run  # packages what it would publish, and publishes nothing
 set -euo pipefail
 # The repository's root, wherever it is run from.
 cd "$(dirname "${BASH_SOURCE[0]}")/../.."
@@ -36,6 +36,9 @@ publish() {
   if curl -sf -A "comp-markdown/compmd release workflow" "https://crates.io/api/v1/crates/$1/$version" > /dev/null; then
     echo "$1@$version is on crates.io already"
   elif [ "$dry_run" = true ]; then
+    # Packaging checks what publishing would, before anything is published: that every file the package holds is
+    # committed, or allowed not to be.
+    cargo package --manifest-path "$2" -p "$1" --list "${@:3}" > /dev/null
     echo "$1@$version would be published"
   else
     cargo publish --manifest-path "$2" -p "$1" "${@:3}"
@@ -45,5 +48,6 @@ publish() {
 publish compmd-markdown markdown-rs/Cargo.toml
 publish compmd Cargo.toml
 # Not built again here: building Tauri on Linux needs WebKitGTK, and the Tauri check built and tested this commit
-# before the release went on (release.yml).
-publish tauri-plugin-compmd tauri/Cargo.toml --no-verify
+# before the release went on (release.yml). Its frames are the build's, ignored by git, so cargo counts them as
+# uncommitted: `--allow-dirty` lets them in.
+publish tauri-plugin-compmd tauri/Cargo.toml --no-verify --allow-dirty
