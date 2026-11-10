@@ -108,6 +108,25 @@ The plugin and the packages change together, in 0.7.0, with [hosting](hosting.md
 - **The example app** uses CompMD as [use](#use) shows: `@compmd/vite` with the Mermaid pack installed, the plugin's two calls, and `app.compmd().packs()` in place of `packs/mermaid/` read from disk and the `?raw` import.
 - **The docs:** the plugin's README, the example's README, and the guides' chapter on hosting.
 
+## Appendix: cases that challenge each decision
+
+| Decision | Case | What happens |
+|---|---|---|
+| 2 | An app wants its own handler for one extra path on the scheme | It registers a scheme of its own for it; the frames' scheme serves the contract and nothing else, or a frame could load what the app put there. |
+| 3 | `cargo test` in a fresh clone, with no JavaScript build | The build warns, the binary has no bundle, and the tests make theirs with `Bundle::from_files`. |
+| 3 | A manifest written by a newer `@compmd/vite` | `build::bundle` stops the build with the format it found and the plugin version that reads it. |
+| 3 | The UI rebuilds the bundle in `tauri dev` | The manifest changed, so Cargo builds again and the app restarts with it. |
+| 4 | WebKit needs one more header | Added to `respond`, released; every adapter gets it. |
+| 5 | The page renders before the initialization script ran | It can't: Tauri runs initialization scripts before the page's own. |
+| 5 | A frame reads `__COMPMD__` | The script runs in the main frame only; a frame has no such global, and nothing in it is secret anyway. |
+| 6 | The app registers `compmd` but the bundle was built for `myframes` | Impossible: the scheme comes from the manifest. |
+| 6 | Two apps on one machine both use the scheme `compmd` | Each app's webview has its own schemes; they don't meet. |
+| 7 | The app's CSP lacks `<origin>/frames/` | Code blocks and math show as text in host mode, and the check fails on highlighting. |
+| 8 | A strict frame's code calls `fetch("ipc://localhost/…")` with a guessed key | Refused by Tauri: the key is checked; and the frame's policy has no network anyway. |
+| 9 | The example app passes on Linux but a header differs on macOS | macOS is checked by hand before each release with the same command (decision 10). |
+| 11 | The app is offline when a document imports a registry pack it never fetched | Pending, then F026 when the app gives up (spec §6.4); a pack fetched before loads from the store. |
+| 11 | The user clears the app's data folder | The store is empty; packs are fetched again when documents need them. The bundle, in the binary, is untouched. |
+
 ## Alternatives
 
 - **The crate brings its frames** (0.6.0's decision 2): one call and no build step. But a page imports `@compmd/sandbox` from npm anyway, so its frames came from a second place, at a version that had to match the page's, checked only when a page loaded them; an app with its own libraries or packs needed its own build too, and then carried both; and the crate was published with built files that git doesn't keep.

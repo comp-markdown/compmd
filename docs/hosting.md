@@ -96,7 +96,7 @@ Two hosts built so far (a Vite web app and a Tauri app) did the same work twice,
 
 ## What changes
 
-- **`@compmd/vite`:** the layout of decision 3 (`frames/<hash>/`, `packs/<place>`, `manifest.json`); packs' sources compiled at build; `buildBundle` for hosts without Vite; `cspFor`; paths in `virtual:compmd` relative to the origin.
+- **`@compmd/vite`:** the layout of decision 3 (`frames/<hash>/`, `packs/<place>`, `manifest.json`); packs' sources compiled at build; `buildBundle` for hosts without Vite; `cspFor`; a headers file (`_headers`) for static hosts that read one (H2); paths in `virtual:compmd` relative to the origin.
 - **`@compmd/sandbox`:** `createSandbox` takes the origin from `__COMPMD__` and the rest from `virtual:compmd`; `CompiledCache`; stored registry packs by URL (decision 5); the check page.
 - **`@compmd/registry`:** `PackCache` keeps the place a release belongs to; a folder-backed cache for Node and desktop adapters.
 - **`@compmd/host`** (new, JavaScript): `respond` over the Fetch API, with the dev server, workers and Node using it.
@@ -107,11 +107,66 @@ Two hosts built so far (a Vite web app and a Tauri app) did the same work twice,
 
 ## Questions, with proposed answers
 
-**H1. A registry client in Rust.** A host that processes in Rust fetches registry packs there. Proposed: `compmd-host` gains `NpmRegistry` and the resolver's loop, ported from `@compmd/registry` with its rules (ranges as the processor matches them, the policy before any download, the tarball checked against `dist.integrity`), and its tests run against the same fixtures. Until then, such a host offers bundled packs and its own registries only.
+**H1. A registry client in Rust.** A host that processes in Rust (decision 7) must get registry packs there, since the processor's `Packs` is synchronous and reads what the host already holds.
+- *What it is:* the resolver's loop (ask the processor's `sources` for what's missing, resolve each range, fetch, add, until nothing is), `NpmRegistry` (a pack's metadata with the short `Accept`, its tarball), the policy before any download (deny, `imports: listed`, the size cap against the metadata's unpacked size), the tarball checked against `dist.integrity` (sha512) and against an import's pinned `integrity`, and the tar reader: [resolving registry packs](resolving-registry-packs.md), decisions 2 to 7 and 11, which `@compmd/registry` builds today.
+- *Options:* (a) port it to `compmd-host`, about the size of `@compmd/registry` (a few hundred lines and its tests), with an HTTP client the host gives (a trait, so the crate brings none); (b) run `@compmd/registry` in the host's page and hand the checked files to Rust through the adapter, so one implementation exists, but processing waits on the page, and a host with no page (a server, a CLI) can't fetch; (c) compile `@compmd/registry`'s logic from Rust to WebAssembly and use it from JavaScript, the other way round, which `@compmd/processor` already does for the processor.
+- *Proposed:* (a) now, then (c), so one implementation serves both languages, as the processor is. The two share their fixtures (a local registry with packs, broken tarballs, ranges at the edges) until (c) replaces the JavaScript one.
+- *Until then:* a Rust host offers bundled packs and its own `Registry` implementations only (decision 4); an import of any other pack is F026, *not offered by this host*.
 
-**H2. A web app on one origin.** A static host has no second origin (decision 8). Proposed: allowed, as today, since the frames' `sandbox` makes them opaque; the check (decision 11) runs there the same way. A host that can have a second origin should, so that a frame document opened on its own never shares the page's origin.
+**H2. A web app on one origin.** A static host (a site on a static file host, the playground) has no second origin to serve the bundle from (decision 8).
+- *What it costs:* a frame document opened on its own, as a top-level page, has the app's origin, since `sandbox` applies only inside the frame's `iframe`, and the frame document's own `Content-Security-Policy: sandbox allow-scripts` header (decision 8) is what still makes it opaque then. A static host that can't set headers loses that too.
+- *Options:* (a) allowed, with the header where the host can set it (`_headers` and the like, which the bundle's build writes, decision 3), and the check (decision 11) reporting a host that doesn't send it; (b) refused: a host must have a second origin.
+- *Proposed:* (a), since it is what `@compmd/vite` hosts do today, safely inside frames; the check says when the header is missing, and the hosting guide recommends a second origin wherever there can be one.
 
-**H3. A live pack's code across views.** A host's live pack changes, so it has no place. Proposed: given as code, compiled once per source (decision 6), so an unchanged live pack isn't compiled again; it gets a place only when the host publishes a version of it.
+**H3. A live pack's code across views.** A host's live pack (one its users edit, unpublished) changes, so it has no place to be cached by.
+- *Options:* (a) as code, its source compiled once per content and kept by its source's hash (decision 6), so an unchanged live pack isn't compiled again in another view; (b) a pseudo-version per content (`0.0.0-live.<hash>`), served at a place like a published one, which caches the same but makes up versions a registry never published, which spec §6.4's integrity rules don't expect.
+- *Proposed:* (a). It gets a place only when the host publishes a version of it.
+
+**H4. The bundle's layout changes for `@compmd/vite` hosts.** Today a Vite host's output has `compmd/strict.html` at a fixed path; decision 3 moves the frames under `frames/<hash>/`.
+- *What breaks:* nothing a host wrote, if it uses `virtual:compmd` (its `sandbox` gives the paths) and `cspFor` (decision 10); a host that wrote `compmd/` paths into its own CSP or server rules updates them.
+- *Proposed:* 0.7.0's release notes say so, with the CSP change; there is no compatibility layout, since the old one is what lets a cache serve a stale frame.
+
+**H5. Built modules that import a library pack.** A frame writes a library pack's import as that library's URL in the module's code before it runs it ([sharing library packs](sharing-library-packs.md), decisions 6 and 8), which it can't do to a module it loads by URL.
+- *Options:* (a) such a module reaches its frame as code, from the same stored file, as decision 5 says; (b) the bundle's build writes the import as the library's place for bundled packs, which works only when the build knows the version the processor will choose per document, which it doesn't.
+- *Proposed:* (a). The cost is that such a module isn't cached by the browser across views; the store still keeps it once, and the frame's `blob:` URL is made from it each time.
+
+**H6. Where this design's contract is written.** The serving contract, the bundle's layout and the page's configuration are what CompMD's own packages agree on, not what any processor must do: the spec leaves how a sandbox is built to implementations (§15), and a host that doesn't use `@compmd/sandbox` has no frames to serve.
+- *Proposed:* a design here, not a companion of the spec. If hosts appear that build their own frames and want to share packs' stores with CompMD's, the contract can move into a companion then, as the registry's did once a second host needed it.
+
+## Appendix: cases that challenge each decision
+
+| Decision | Case | What happens |
+|---|---|---|
+| 1 | An Electron app shows documents | It writes `@compmd/electron`'s few lines: `protocol.handle` on a privileged scheme passing requests to `respond`, a preload setting `__COMPMD__`, a store folder; everything else is shared. |
+| 1 | A host has its own frames and compiler | It uses the protocol, the frame runtime and the host runtime ([running components](running-components-in-the-sandbox.md), decision 6) and none of the bundle; this design doesn't apply to it. |
+| 2 | A desktop app wants a pack permissive, with the network to its tiles | `compmd.config.json` says so, as a web app's does; the adapter has no setting for it. |
+| 2 | A host's configuration lists a pack the app doesn't install and names no registry | The build stops: the configuration names what can't be had ([vite](vite.md), decision 7). |
+| 3 | The page's `@compmd/sandbox` is upgraded and the frames aren't rebuilt | Impossible with the bundle: it is built from that package in the same build. |
+| 3 | Two builds with the same frames | The same hash, so the same paths: caches keep what they have. |
+| 3 | A pack in the bundle has a `.svelte` component | Compiled at build time into a built module beside it; no reader compiles it. |
+| 3 | A Tauri app on Windows and macOS | One bundle: the `source` names the custom scheme, which on Windows (served over http) matches nothing and is harmless. |
+| 4 | A document imports `@acme/charts@^1`, installed at 1.4.0 with 1.5.0 on the registry | Bundled first (configuration order): 1.4.0, which matches; the registry isn't asked. |
+| 4 | A document pins `@acme/charts@1.5.0` with its `integrity` | Not bundled at that version: fetched from the registry by scope, checked against the pin, kept in the store. |
+| 4 | A host's marketplace pack already on the device | Its `Registry` reads the host's store; nothing is fetched or copied. |
+| 4 | An installed pack configured `trusted` | Refused at build: only a folder pack of the app may be trusted ([vite](vite.md), decision 4). |
+| 4 | A host's live pack that a user edits | Given as code; each edit is a new source, compiled once (decision 6). |
+| 5 | The same pack version, bundled and also fetched | One address: `respond` serves the bundle's copy; the store keeps none. |
+| 5 | A stored file whose bytes no longer match | The frame checks the `sha384` before it runs anything, and fails with the sandbox's error; the store drops the release. |
+| 5 | A pack module imports the library pack `@kit/three` | Given as code from the stored file, so the frame can write the import (H5). |
+| 6 | The same JSX fence in two documents | One compile: the second finds it by its source's hash. |
+| 6 | The compiler is upgraded | Its version is in the key, so nothing compiled by the old one is used. |
+| 6 | Cached compiled code is tampered with on disk | It runs where its source would, in its frame, at its trust: nothing more than the source could do. |
+| 7 | A host processes in the page, another in Rust, on one bundle | Both read `manifest.json` and the same stored files: what the processor checks is what the frames run. |
+| 8 | A `POST` to the origin | `405`, with why. |
+| 8 | `GET /manifest.json` | `404`: the manifest is the host's, not the frames'. |
+| 8 | `GET /packs/@acme/charts@1.4.0/../../secret` | `404`: no `..` part. |
+| 8 | A pack not held at all | `404`, with why; the frame reports that its module didn't load. |
+| 9 | A site deploys the same build at two user-content domains | The build is the same; each server writes its own `<meta name="compmd-origin">`. |
+| 9 | A Tauri app on Android | The initialization script gives `http://<scheme>.localhost`; the page's bundle is unchanged. |
+| 10 | A host adds `<origin>/` to its page's `script-src` "to be safe" | The check fails it: a pack's code could then run in the host's page. |
+| 11 | WebKit starts sending a header the contract doesn't name | The check, which compares headers exactly, fails in CI before a release. |
+| 11 | An adapter forgets to keep the invoke key (or a preload API) out of frames | The check's frame looks for the host API it names and fails. |
+| 12 | A document pins the integrity of a pack the host installed | The same integrity as the registry's (from the lock file), so the pin holds; installing doesn't make a different pack. |
 
 ## Alternatives
 
