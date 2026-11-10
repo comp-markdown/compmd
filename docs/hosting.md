@@ -1,0 +1,121 @@
+# Hosting CompMD
+
+**Status: proposed (2026-11-10).** What every host does to show CompMD documents with components, split into layers, so that a host on any platform (a desktop app, a web app, a site that shows documents others wrote, a product's app framework) writes only the part its platform needs, and none of the parts that decide safety. It builds on [components from apps and packs](components-from-apps-and-packs.md) (where component code comes from, at what trust), [packs from a registry](packs-from-a-registry.md), [the configuration and `@compmd/vite`](vite.md) and [running components in the sandbox](running-components-in-the-sandbox.md), and is the parent of [the Tauri plugin](tauri-plugin.md) and of `@compmd/vite`'s output.
+
+## Why
+
+Two hosts built so far (a Vite web app and a Tauri app) did the same work twice, a little differently each time: where the frames come from and at which version, how they are served and with which headers, how the page learns where they are, where a pack's code is stored and how it reaches a frame, and how the host checks it all in a real browser. Each of these matters for safety or for speed, and each was found the hard way once (WebKit's `'self'` on a custom scheme, its cache of custom-scheme responses, a second copy of Shiki in an app's bundle). The next host (an Electron app, a site that renders documents people push, a wiki that lets pages embed CompMD) would find them again. This design names the work once, and says which of it is shared code and which is the platform's.
+
+## The work
+
+| # | Layer | What it does | Platform? |
+|---|---|---|---|
+| 1 | **Configuration** | which packs documents get, at what trust, from which registries | no |
+| 2 | **The bundle** | everything built before anyone reads: the frames, the runtimes and libraries, the packs the host installs, and a manifest | no |
+| 3 | **The pack store** | every pack a document may import, from wherever it comes, checked, kept once, by its place | no, but its storage is |
+| 4 | **Serving** | the bundle and the store from an origin of their own, under one contract | **yes**: the adapter |
+| 5 | **The page's configuration** | where the frames are, which packs the page has, how they load | **yes**, the origin only |
+| 6 | **The check** | the host proves it all in its real browser or webview | no, but it runs there |
+
+## Decisions
+
+1. **Four layers are shared code; a host writes an adapter for the other two.** The shared layers ship as CompMD's packages, in JavaScript and, where a host processes documents in Rust, in Rust:
+
+   | Layer | JavaScript | Rust |
+   |---|---|---|
+   | configuration | `@compmd/vite/config` (`readConfig`, `policyOf`, the schema; [vite](vite.md), V5) | `compmd-host` reads the manifest, which carries the policy (decision 3) |
+   | bundle | `@compmd/vite` (the plugin), and `buildBundle` for a host without Vite | `compmd-host`: the manifest and the bundle's files |
+   | store | `@compmd/registry` (`Registry`, `resolvePacks`, `PackCache`) | `compmd-host`: `compmd::host::Packs` over the bundle and the cache |
+   | serving contract | `respond(request)` over the Fetch API, in `@compmd/host` | `respond(request)` over `http` types, in `compmd-host` |
+
+   An adapter is the platform's few lines: where the origin is, how a request reaches `respond`, how the page gets the origin, and where the store keeps what it fetches. `tauri-plugin-compmd` is the Tauri adapter; an Electron or a web adapter is the same size. A host never writes a policy, a header, a path rule or an import map.
+
+2. **One configuration, `compmd.config.json`, for every host** ([vite](vite.md), decision 1): the packs that get more than the strict sandbox or are ambient, `imports`, `deny`, `maxPackSize`, `libraries`, and `registries` by scope with `fetch`. A desktop app reads the same file as a web app; nothing about packs is configured in an adapter.
+
+3. **The bundle is built once, before anyone reads, from the packages the host's page imports.** The page imports `@compmd/sandbox` from npm, so the frames are built from that same package: the page and its frames speak one frame protocol by construction, one version is pinned (in the app's `package.json`), and nothing ships twice. `@compmd/vite` builds it, and `buildBundle({ config, out })` for a host without Vite; both write:
+
+   ```
+   compmd/
+     manifest.json
+     frames/<hash>/              strict.html, permissive.html, runtime.js, highlight.js, math.js, chunks/, libs/
+     packs/<name>@<version>/     each installed and folder pack's files, as published
+   ```
+
+   - **The frames' policies name where they are served** when the origin is a custom scheme, whose `'self'` WebKit reads as nothing in a sandboxed frame: the bundle is built with that scheme's form as `source` (`compmd({ source: "compmd://localhost/" })`), which the manifest records, so an adapter serves the scheme it was built for. On http and https origins no source is needed.
+   - **The frames under a content hash** (the first 16 hex digits of a SHA-256 over each file's path and bytes): a new build is a new path, so no cache (WebKit's of custom schemes, a CDN's, a browser's) serves an old frame, and every response is cached for good. The runtimes, Shiki and Temml are in there once, for the frames and for a host-mode page ([libraries in the sandbox](libraries-in-the-sandbox.md)), with the libraries the configuration offers (`buildLibraries`).
+   - **Packs by their place** (spec §6.4: the pack, its version and the file's path), not under the build's hash: a published version never changes, so a pack keeps its URL across builds and across sources (decision 5).
+   - **Compiled at build time**: a pack's source components (`.jsx`, `.tsx`, `.svelte`) are compiled once, here, into built modules beside them, so no reader compiles them (decision 6).
+   - **`manifest.json`** is the bundle's one description, which every layer and both languages read: `format`; the frames' `hash`; each pack's `name`, `version`, registry `integrity` (from the app's lock file, [vite](vite.md) V1), its built modules with their `sha384`, its trust and whether it is ambient; the libraries with their versions; and the processor's `policy` and `ambient` (`policyOf`). `virtual:compmd` is made from it.
+
+4. **A document's components come from five sources; the pack store holds the three that are packs.**
+
+   | Source | Example | Where it is | How a frame gets its code |
+   |---|---|---|---|
+   | **the document's own code** | a `component=` fence, `./chart.jsx` (spec §6.1, §7.1) | the document, its files | as code, compiled in the compile frame (decision 6) |
+   | **the host's live packs** | a host's own pack that its users edit (unpublished, changing) | the host's own storage | as code, like the document's, since it changes; never by a place |
+   | **bundled packs** | `@comp-markdown/mermaid` installed with the app, the app's folder packs | the bundle | by URL, from `packs/<place>` |
+   | **registry packs** | any pack a document imports from npm, a private registry, a mirror | fetched when a document needs it, checked, kept in the store | by URL, from `packs/<place>` (decision 5) |
+   | **the host's published packs** | a host's marketplace whose published versions its service already keeps | the host's own store of published versions | by URL, from `packs/<place>` |
+
+   - **A host's published packs are a registry.** A host whose service keeps published pack versions (frozen, with their integrity), and may already bring them to the reader's device, implements `Registry` over that store: one more registry, by scope, in the configuration's `registries`. The store reads its files there, so a version is kept once, where the host keeps it, and a pack already on the device needs no network. A host that runs an npm-compatible registry for its marketplace names its URL instead, and the store fetches and caches it like any other.
+   - **Order is the configuration's**: bundled and folder packs first, then `registries` by scope, as `.npmrc` (spec §6.4); a document never names a registry.
+   - **Trust doesn't depend on the source.** A pack the app installed, or the host's marketplace serves, is a registry pack all the same: strict unless the configuration gives it more, never trusted, which only a folder pack built with the app may be ([vite](vite.md), decision 4; spec §15).
+
+5. **One address per pack file, whatever its source: `packs/<name>@<version>/<path>` on the host's origin.** `respond` serves it from the bundle when the bundle has that version, and from the store's cache otherwise; the store's `PackCache` keeps a release's files by its integrity and, when it keeps one, the place it belongs to, so `respond` can find it. A built module then loads by URL with its `sha384` (sandbox, decision 7), cached for good like a frame, for every document and every reader of the host:
+   - this replaces giving a registry pack's module as code (`{ code: Blob }`, [packs from a registry](packs-from-a-registry.md) R2) wherever the host serves its store, which every adapter does; `{ code }` stays for a host with no origin to serve from;
+   - **except a module that imports a library pack**, which a frame must write before it runs ([sharing library packs](sharing-library-packs.md), decision 8): it is given as code, from the same stored file.
+
+6. **Code is compiled once, and the result kept by what was compiled.** Source a reader's frames must compile (the document's own, a live pack's) is compiled in the compile frame, as today, and kept in a `CompiledCache` by a key: SHA-256 over the language, the runtime, the compiler's version and the source. The same component, in another document or another view, isn't compiled again. Compiled output is still code from a sandbox, never trusted for being cached: it runs where its source would. The cache's storage is the adapter's (decision 1): Cache Storage on the web, the app's data folder on the desktop. A pack's source is compiled at build time instead (decision 3).
+
+7. **Processing is where the host wants it, over the same store.** A host processes in the page (`@compmd/processor`, with `resolvePacks`) or in Rust (`compmd`, with `compmd-host`'s `Packs` over the manifest, the bundle and the cache); both read the same manifest and the same stored files, so what the processor checks is what the frames run. A host that processes in Rust and fetches registry packs needs a registry client in Rust (H1).
+
+8. **The serving contract, once, as a function.** `respond(request)` answers:
+   - only `GET`; any other method is `405`, with why in plain text;
+   - only `frames/<hash>/<path>` of the bundle's hash, and `packs/<name>@<version>/<path>` of a pack the bundle or the store holds, with no empty, `.` or `..` part; anything else, the manifest included, is `404`, with why; every refusal with `Access-Control-Allow-Origin: *`, so a page reads why;
+   - each file with `Content-Security-Policy: sandbox allow-scripts`, `Access-Control-Allow-Origin: *` (frames are opaque origins), `Access-Control-Expose-Headers: *` (a host's check reads them), `X-Content-Type-Options: nosniff`, its type by extension, and `Cache-Control: max-age=31536000, immutable`.
+
+   **The origin is apart from the page's** wherever the platform gives one: a custom scheme in a desktop app, a user-content domain on a site that shows others' documents. A static web host with no second origin serves the bundle from its own (`compmd/` under the app, as `@compmd/vite` does), since the frames' `sandbox` attribute gives them an opaque origin there too. The registry proxy for `fetch: "host"` (`registryProxy`) is mounted on the same origin, at `registry/`.
+
+9. **The page's configuration is the bundle's, plus the origin from the adapter.** What the bundle knows is fixed at build time and reaches the page in its own bundle (`virtual:compmd`: the request's packs and policy, the sandbox's paths and modules, all relative to the origin). The origin is the one thing only the running host knows (a scheme's form differs by platform, a site's user-content domain by deployment), so the adapter gives it: `globalThis.__COMPMD__ = { origin }`, set by a Tauri initialization script, an Electron preload, or a `<meta name="compmd-origin">` a server writes. `createSandbox` reads it; the page passes nothing.
+
+10. **The page's content security policy comes from the bundle too.** `cspFor(origin)` gives the sources a host's page adds: `frame-src` the origin, `script-src` and `connect-src` `<origin>/frames/` (a host-mode page loads Shiki and Temml from there), `connect-src` `<origin>/registry/` with `fetch: "host"`, and `frame-ancestors 'none'`. Never `<origin>/packs/` and never the whole origin: a pack's code runs in frames only. A host whose policy is compiled from a file (`tauri.conf.json`) pastes it; a server sets it from the function.
+
+11. **Every host runs one check, in its real browser.** `@compmd/sandbox/check` is a page and a document that exercise the host: a strict frame loads from the origin; in it the origin is opaque, there is no host API (the adapter names what to look for: `__TAURI_INTERNALS__`, Electron's `ipcRenderer`), and `fetch` is refused; a code block is highlighted; a bundled pack's module and a stored one load by URL and draw; files arrive with exactly the contract's headers; a path outside the contract is `404`. It reports passed or failed with what failed, for the adapter to turn into an exit code (the Tauri example's `--check`) or a test. An adapter's CI runs it in the webview or browser that matters (WebKit first, which has the hard cases).
+
+12. **The spec stays as it is, but for one clarification.** It already says what a sandbox guarantees and not how it is built (§15), and lets a processor load a built module by its place, checked, and cache it by that place (§6.4). It gains, in §6.4: a pack an application installs, or a host serves from its own store, is a registry pack all the same: it keeps its integrity and its trust is the configuration's; caching by place holds however the processor got the pack.
+
+## Hosts
+
+| Host | Processes | Origin | Adapter | Registry packs | Store's storage |
+|---|---|---|---|---|---|
+| **A Tauri app** | in Rust or the page | a custom scheme (`<scheme>://localhost`, `http://<scheme>.localhost` on Windows and Android) | `tauri-plugin-compmd`: the bundle compiled in, `respond` on the scheme, the origin in an initialization script | fetched by the app | the app's data folder |
+| **An Electron app** | in the main process or the page | a privileged scheme (`protocol.handle`) | `@compmd/electron` (later): `respond` on the scheme, the origin in a preload | fetched by the main process | the app's data folder |
+| **A web app built with Vite** | in the page | its own origin, `compmd/` | `@compmd/vite`: the bundle in the output, the dev server's `respond` | through its proxy (`fetch: "host"`) or the browser (`direct`) | Cache Storage |
+| **A site that shows documents others wrote** (a code host's README, a wiki page) | on its servers, in Rust or Node | a user-content domain | `respond` in a worker or the server, the origin in a `<meta>` | by its servers, cached for every reader (spec §15, privacy) | its object storage or CDN |
+| **A product's app framework** (a wiki's or an issue tracker's apps) | in the app's page or its backend | the framework's static resources for apps, when they can carry the contract's headers; else its own origin | the framework's adapter over `respond` | by its backend | its storage |
+
+## What changes
+
+- **`@compmd/vite`:** the layout of decision 3 (`frames/<hash>/`, `packs/<place>`, `manifest.json`); packs' sources compiled at build; `buildBundle` for hosts without Vite; `cspFor`; paths in `virtual:compmd` relative to the origin.
+- **`@compmd/sandbox`:** `createSandbox` takes the origin from `__COMPMD__` and the rest from `virtual:compmd`; `CompiledCache`; stored registry packs by URL (decision 5); the check page.
+- **`@compmd/registry`:** `PackCache` keeps the place a release belongs to; a folder-backed cache for Node and desktop adapters.
+- **`@compmd/host`** (new, JavaScript): `respond` over the Fetch API, with the dev server, workers and Node using it.
+- **`compmd-host`** (new crate): the manifest, the bundle's files, the cache, `respond`, and `compmd::host::Packs` over them.
+- **`tauri-plugin-compmd`:** the Tauri adapter ([its design](tauri-plugin.md)).
+- **The spec:** decision 12's clarification of §6.4.
+- **The guides:** a chapter on hosting, from the hosts above, with each adapter's page.
+
+## Questions, with proposed answers
+
+**H1. A registry client in Rust.** A host that processes in Rust fetches registry packs there. Proposed: `compmd-host` gains `NpmRegistry` and the resolver's loop, ported from `@compmd/registry` with its rules (ranges as the processor matches them, the policy before any download, the tarball checked against `dist.integrity`), and its tests run against the same fixtures. Until then, such a host offers bundled packs and its own registries only.
+
+**H2. A web app on one origin.** A static host has no second origin (decision 8). Proposed: allowed, as today, since the frames' `sandbox` makes them opaque; the check (decision 11) runs there the same way. A host that can have a second origin should, so that a frame document opened on its own never shares the page's origin.
+
+**H3. A live pack's code across views.** A host's live pack changes, so it has no place. Proposed: given as code, compiled once per source (decision 6), so an unchanged live pack isn't compiled again; it gets a place only when the host publishes a version of it.
+
+## Alternatives
+
+- **Each platform's package does all of it** (0.6.0's Tauri plugin, which brought its own frames; `@compmd/vite`, which wrote its own layout). Each was right for its host, and they differed: one served fixed paths, the other hashed ones; one took the frames from npm, the other from the crate.
+- **The frames from the crate or package of each adapter.** No build step on the host, but a second place for the frames' version, checked only when a page loads them, and a host with libraries or packs builds a bundle anyway.
+- **Registry packs always as code** (R2 as it is). No serving, but every reader's page holds each module in memory, uncached across views, and a desktop app keeps its packs only for a session.
+- **The spec defines hosting.** It would say how a browser's sandbox is built, which §15 leaves to implementations on purpose: a server's sandbox, or a native one, looks nothing like a frame.

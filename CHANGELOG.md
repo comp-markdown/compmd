@@ -4,6 +4,10 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
 
 ## Version 1 (draft)
 
+### 2026-11-10
+
+- **A registry pack however it was got (§6.4).** A pack a host installed with an application, keeps in its own store of published versions, or fetched while a reader views the document is a registry pack all the same: checked against its integrity, at the trust its configuration gives it and never trusted, and cacheable by its place. Before, the spec said this only of packs fetched from a registry, and a host could read an installed or marketplace pack as its own. Not breaking.
+
 ### 2026-11-03
 
 - **A component still drawing (§7.4, §7.6).** The context gains `busy(work)`, which a component calls with a promise of a drawing it makes after `mount` or `update` returned, and the React and Svelte bindings pass it in the `compmd` prop. A processor that waits for its page to settle (to print, to scroll to a link's target, in a test) waits until those promises have settled, or as long as it chooses; nothing shows differently meanwhile. Before, a processor had no way to know when such a component had drawn. Not breaking: a component that never calls it has drawn when `mount` or `update` returns.
