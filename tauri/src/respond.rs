@@ -10,15 +10,20 @@ use crate::content_type::content_type;
 use crate::frames::{Frames, PREFIX};
 
 /// The headers every file of the frames is served with.
-const HEADERS: [(&str, &str); 4] = [
+const HEADERS: [(&str, &str); 5] = [
     // Sandboxed even when a frame document is opened outside a frame.
     ("content-security-policy", "sandbox allow-scripts"),
     // A frame's module scripts come from an opaque origin, so they are cross-origin requests.
-    ("access-control-allow-origin", "*"),
+    (ALLOW_ORIGIN, "*"),
+    // A page that checks how its frames are served (an app's self-check) reads these headers.
+    ("access-control-expose-headers", "*"),
     ("x-content-type-options", "nosniff"),
     // A path names its build, so what it serves never changes.
     ("cache-control", "max-age=31536000, immutable"),
 ];
+
+/// Readable from any origin: a file, and a refusal, so a page reads why.
+const ALLOW_ORIGIN: &str = "access-control-allow-origin";
 
 /// Why a request that isn't for a file of the build is refused.
 const NOT_FRAMES: &str = "not a file of the sandbox's frames this app was built with";
@@ -74,9 +79,13 @@ fn served(path: &Path, body: Vec<u8>) -> Response<Vec<u8>> {
     response
 }
 
-/// A refusal with `status`, saying `why` in plain text.
+/// A refusal with `status`, saying `why` in plain text, to any origin.
 fn refused(status: StatusCode, why: &str) -> Response<Vec<u8>> {
-    with_type(status, "text/plain; charset=utf-8", why.as_bytes().to_vec())
+    let mut response = with_type(status, "text/plain; charset=utf-8", why.as_bytes().to_vec());
+    response
+        .headers_mut()
+        .insert(ALLOW_ORIGIN, HeaderValue::from_static("*"));
+    response
 }
 
 /// `body` with `status` and the content type `kind`.

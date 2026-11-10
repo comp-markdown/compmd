@@ -30,6 +30,7 @@ fn a_file_of_the_build_is_served_sandboxed_with_its_type() {
         "sandbox allow-scripts"
     );
     assert_eq!(header(&page, "access-control-allow-origin"), "*");
+    assert_eq!(header(&page, "access-control-expose-headers"), "*");
     assert_eq!(header(&page, "x-content-type-options"), "nosniff");
     assert_eq!(
         header(&page, "cache-control"),
@@ -72,6 +73,7 @@ fn nothing_outside_the_build_is_served_and_the_refusal_says_why() {
             header(&refused, "content-type"),
             "text/plain; charset=utf-8"
         );
+        assert_eq!(header(&refused, "access-control-allow-origin"), "*");
     }
 }
 
@@ -88,6 +90,7 @@ fn only_get_is_answered() {
         refused.body(),
         b"the sandbox's frames are only read, with GET"
     );
+    assert_eq!(header(&refused, "access-control-allow-origin"), "*");
 }
 
 #[test]

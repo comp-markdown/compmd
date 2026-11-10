@@ -6,6 +6,7 @@ It shares its version with the `@compmd` packages, and embeds the frames of `@co
 
 **Versions:**
 - **0.6.0:** the first version: `init()`, which serves the embedded frames on `compmd://` and gives the page their base; `Builder` for another scheme or an app's own build of the frames; the `base` command. (`0.0.0` is a placeholder with no code.)
+- **Next:** a refusal is readable from any origin, so a page reads why; files come with `Access-Control-Expose-Headers: *`, so a page can check their headers.
 
 ## Use
 
