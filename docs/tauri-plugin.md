@@ -122,7 +122,8 @@ The plugin and the packages change together, in 0.7.0, with [hosting](hosting.md
 | 6 | The app registers `compmd` but the bundle was built for `myframes` | Impossible: the scheme comes from the manifest. |
 | 6 | Two apps on one machine both use the scheme `compmd` | Each app's webview has its own schemes; they don't meet. |
 | 7 | The app's CSP lacks `<origin>/frames/` | Code blocks and math show as text in host mode, and the check fails on highlighting. |
-| 8 | A strict frame's code calls `fetch("ipc://localhost/…")` with a guessed key | Refused by Tauri: the key is checked; and the frame's policy has no network anyway. |
+| 8 | A strict frame's code calls `fetch("ipc://localhost/…")` with a guessed key | Blocked twice: the frame's policy allows no fetch, and Tauri checks the key. |
+| 8 | A strict frame's code posts to `window.webkit.messageHandlers.ipc` | What the check's probe finds (Risks, layer 3); if the handler is there, only the key refuses it, and the check fails the release until that's closed. |
 | 9 | The example app passes on Linux but a header differs on macOS | macOS is checked by hand before each release with the same command (decision 10). |
 | 11 | The app is offline when a document imports a registry pack it never fetched | Pending, then F026 when the app gives up (spec §6.4); a pack fetched before loads from the store. |
 | 11 | The user clears the app's data folder | The store is empty; packs are fetched again when documents need them. The bundle, in the binary, is untouched. |
@@ -138,7 +139,13 @@ The plugin and the packages change together, in 0.7.0, with [hosting](hosting.md
 
 ## Risks
 
-- **The invoke key is the one barrier between a frame and the app's commands** (decision 8). A change in how Tauri injects it (into every frame, say) would let frame code call commands the main window's capability grants; the example's check, which looks for Tauri in a strict frame, would catch it.
+- **What keeps a frame from the app's commands, layer by layer** (decision 8). Tauri's capabilities don't, since they count the frames' scheme as the app's own. What does:
+  1. **No invoke key in a frame:** Tauri gives it to the main frame only, and a call without it is refused (the tests show both).
+  2. **No network in a strict frame:** its policy loads and fetches nothing, so it can't reach Tauri's IPC endpoint (`ipc://localhost`, `http://ipc.localhost`) with or without a key. A permissive frame may reach only its pack's listed `https:` origins.
+  3. **To check: the WebKit message handler.** Tauri's IPC also has a path through a WebKit script message handler (`window.webkit.messageHandlers`, used when the fetch path isn't available), which a content security policy doesn't govern. If WebKit exposes it to sub-frames, layer 2 doesn't cover it, and the key is all that stands there. The example's check gains a probe for it: a strict component reports whether `window.webkit?.messageHandlers?.ipc` exists in its frame, and the check fails if it does, before a release.
+  4. **Asked of Tauri:** a capability that can leave out a scheme the app registers, so a frame's call is refused by the ACL whatever it carries. Until then an app can't add this check itself: a command's `InvokeMessage` doesn't give the URL of the frame that called it (Tauri's API reference).
+
+  A change in how Tauri hands out the key (into every frame, say) would remove layer 1; the check, which looks for Tauri in a strict frame, would catch it.
 - **Tauri's own changes to custom schemes**: Tauri may add headers of its own, or change how a scheme is served on a platform. The check shows the headers a frame arrives with, so a change shows in CI, and it is fixed once, in `respond`, for every host.
 - **Mobile** (iOS, Android) isn't tested in CI; the plugin targets them, and its README says so.
 - **The order of the two builds in development.** `tauri dev` starts the app's `beforeDevCommand` without waiting for it (Tauri's configuration reference: `wait` defaults to `false`), so the Rust may compile before Vite has written the bundle. Then the binary has no bundle, or the last one, and the page says so; `build::bundle` makes Cargo build again when the manifest changes. To check when it's built (the example's `--check` under `tauri dev`): whether `tauri dev` compiles only once the dev server answers, which comes after the plugin's `buildStart`; if not, the README says to run `vite build` once before `tauri dev`.
