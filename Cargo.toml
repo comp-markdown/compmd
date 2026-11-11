@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["processor", "wasm"]
+members = ["processor", "wasm", "host"]
 # The markdown-rs fork, a submodule with its own workspace.
 exclude = ["markdown-rs"]
 
