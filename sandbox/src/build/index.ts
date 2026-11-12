@@ -4,3 +4,5 @@ export { buildHashedFrames, FRAMES_JSON, hashOf, type HashedFrames } from "./has
 export { buildLibraries, readLibraries, RUNTIMES, type BuiltLibrary, type LibrariesOptions, type Library, type LibraryDefinition } from "./libraries.ts";
 export { permissivePolicy, strictPolicy } from "./policy.ts";
 export { frameSource } from "../frame/source.ts";
+export { compile, type Compiled } from "../frame/compile.ts";
+export type { CompileRequest } from "../protocol/messages.ts";

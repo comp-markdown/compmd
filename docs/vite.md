@@ -9,7 +9,7 @@
 3. **Every installed pack is available, strict by default.** The plugin gives the processor every dependency of the app that is a pack (its `package.json` has a `compmd` field, or the package has `index.comp.md`), so `npm install` is enough for a document to import it (P2). Listing a pack is only to give it more, or to make it ambient.
 4. **Trusted only for a folder in the app.** `"trust": "trusted"` is allowed only on a path (`./components`), never on a registry name: the plugin stops the build otherwise. A trusted pack's components are imported by the app's own build, compiled by the app's Vite plugins (React, Svelte), and mounted inline.
 5. **One virtual module gives the app everything.** `import { request, sandbox } from "virtual:compmd"`: `request` holds `packs`, `ambient` and `policy` for the processor; `sandbox` holds `base`, `trusted` and `modules` for `createSandbox`. The app spreads them in; it writes no policy, path or import map.
-6. **Everything is served under one folder of the app, `compmd/`**: the frame documents and their libraries (`buildFrames`), and each pack's files at `compmd/packs/<name>@<version>/<path>`. The dev server serves them with `Access-Control-Allow-Origin: *`, since the frames have an opaque origin; the build writes them into the output.
+6. **The plugin writes the bundle** ([hosting](hosting.md), decision 3): the frame documents and their libraries under their content hash, `frames/<hash>/`, each pack's files at `packs/<name>@<version>/<path>`, and `manifest.json`. A web app serves it under one folder of the app, `compmd/`: the dev server with the serving contract's headers (hosting, decision 8), the build in the output, with a `_headers` file for a static host that reads one, and without the manifest, which is the host's. With `out`, it goes into that folder instead, for an adapter to embed or serve, and the dev server serves none (hosting, decision 2).
 7. **What's wrong in the configuration or a pack stops the build or warns, at build time.** The plugin processes each listed pack's document once: errors (F) stop the build, warnings (W104, W117) are Vite warnings.
 8. **Packs the app doesn't install come from the registries the configuration names** ([packs from a registry](packs-from-a-registry.md), R5), when it names any. `registries` names the registries themselves; `fetch` says who reaches them: the app's own proxy, under `compmd/registry/` (`host`, the default), or the reader's browser (`direct`). `virtual:compmd` gives `registry`, the options `resolvePacks` takes, and the dev and preview servers are the proxy.
 
@@ -70,7 +70,7 @@
 3. For each pack, reads `package.json`, its document and the files it imports, as the processor's `PackRelease`: version from `package.json`, integrity from the app's lock file (below), and its files, except built modules (`.js` files a pack document imports), which the processor names by place and the frames load by URL.
 4. Packs larger than `maxPackSize` become `refused`, with the reason.
 5. Processes each listed pack's document alone, and reports its diagnostics (decision 7).
-6. Writes the frame documents with `buildFrames`, and the `libraries` with `buildLibraries`, into `compmd/` (the dev server serves them from a cache folder).
+6. Writes the bundle (decision 6) into a cache folder, or into `out`: the frames with `buildFrames` and the `libraries` with `buildLibraries` once; the packs' files, their source components compiled beside them (not a trusted pack's, which the app's bundler compiles; [hosting](hosting.md), decision 3), and the manifest each time. A component that doesn't compile stops the build.
 
 **`virtual:compmd`**, for the app:
 
@@ -85,9 +85,16 @@ view.render(document.expanded);
 ```
 
 - `request.packs` holds each pack's documents and source files as text (small: signatures, CompMD, JSX), so the app needs no fetch to process a document.
-- `sandbox.modules` maps a built module's place to `compmd/packs/<name>@<version>/<path>` and the file's `sha384`, which the plugin computes from the installed file.
+- Its paths are relative to the bundle's origin: the adapter's, `globalThis.__COMPMD__.origin`, or else the app's `compmd/` folder (hosting, decision 9). `sandbox.base` is `frames/<hash>/` there.
+- `sandbox.modules` maps a built module's place to `packs/<name>@<version>/<path>` on the origin and the file's `sha384`, which the plugin computes from the installed file; a source component's place maps to its compiled module, `<path>.js`, with a Svelte component's `css`.
 - `sandbox.trusted` imports each trusted pack's component files and wraps them in their binding (`react(Stars)`, `svelte(Rating)`, a plain mount as it is), by the file's extension: a component file runs with its binding's default runtime, and an import has no `runtime` of its own (spec §6.1).
 - `registry` holds what `resolvePacks` takes from the configuration (below), or is `undefined` when it names no registry.
+
+## Hosts other than a web app
+
+- **A desktop app built with Vite:** `compmd({ out: "src-tauri/compmd", source: "compmd://localhost/" })`. `out` is relative to Vite's root, and in it the plugin owns only `frames/`, `packs/`, `manifest.json` and `_headers`. `source` is the custom scheme's form, which the frames' policies name (`compmd://localhost/frames/`) and the manifest records, so the adapter serves the scheme it was built for.
+- **A host built without Vite:** `buildBundle({ out, root, config, source })` writes the same bundle, with `_headers`, and gives the manifest and the checks' warnings; `root` is the working directory by default.
+- **The page's content security policy:** `cspFor(origin, config)`, from `@compmd/vite` or `@compmd/vite/config`, gives the directives a host's page adds (hosting, decision 10), as `tauri.conf.json`'s `security.csp` takes them.
 
 ## Packs from a registry
 
@@ -127,7 +134,7 @@ const view = createSandbox({ ...sandbox, page: "host", modules: (place) => resol
 - **`vite/example/`:** a small Vite app with `components/` as its app pack (`stars` in React, trusted and ambient), a document that uses `stars` and a code block of a strict pack from a folder installed as a dependency, rendered in host mode.
 - **Unit tests (Node):** reading and translating the configuration, with every error; finding packs; reading integrity from both lock files; the size limit.
 - **Registry tests:** an app with registries on the dev server and in a build under `vite preview`, against a local registry: with `host`, the proxy passes metadata and tarballs on and the page's registries are the proxy; with `direct`, they are the registries named, and there is no proxy; without registries, `registry` is `undefined`.
-- **Build tests:** the example built with the plugin; the output has `compmd/strict.html`, the pack files at their paths with the hashes `modules` gives, and the virtual module's contents.
+- **Build tests:** the example built with the plugin; the output has the frames under their hash (`compmd/frames/<hash>/strict.html`), the pack files at their places with the hashes `modules` gives, `_headers`, no manifest, and the virtual module's contents; `buildBundle` writes the layout and the manifest `compmd-host` reads.
 - **Browser tests (Vitest browser, Chrome and WebKit):** the example's page: `stars` mounts in the page and sets its input; the strict pack's component runs in a frame; a denied pack's use shows its fallback with its reason.
 - **Published** with the other packages (`RELEASING.md`, the release workflow).
 

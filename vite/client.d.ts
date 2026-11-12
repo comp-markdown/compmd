@@ -8,7 +8,10 @@ declare module "virtual:compmd" {
   /** What the processor takes from the app: its packs, the ambient ones and the policy. Spread it into a request. */
   export const request: Required<Pick<Request, "packs" | "ambient" | "policy">>;
 
-  /** What the sandbox takes from the app: where its frames are, its trusted components, where built modules are. */
+  /**
+   * What the sandbox takes from the app: where its frames are, its trusted components, where built modules are, each
+   * under the bundle's origin: the adapter's `globalThis.__COMPMD__.origin`, or the app's `compmd/` folder.
+   */
   export const sandbox: Required<Pick<SandboxOptions, "base" | "trusted" | "modules">>;
 
   /**

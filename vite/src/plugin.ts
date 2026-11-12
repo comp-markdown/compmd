@@ -1,76 +1,80 @@
-// The Vite plugin (docs/vite.md): reads the configuration and the packs at build start, gives the app `virtual:compmd`,
-// builds the sandbox's frame documents and libraries, serves them and the packs' built modules under `compmd/` in dev,
-// and writes them into the build. With registries the host fetches from, the dev and preview servers are its proxy.
+// The Vite plugin (docs/vite.md): reads the configuration and the packs at build start, writes the bundle
+// (docs/hosting.md, decision 3) and gives the app `virtual:compmd`. Without `out`, the dev server serves the bundle under
+// `compmd/` and the build writes it into the output; with `out`, it is written there, for an adapter to embed or serve.
+// With registries the host fetches from, the dev and preview servers are its proxy.
 
 import { existsSync } from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { readdir, readFile, rm } from "node:fs/promises";
-import { extname, join, relative, sep } from "node:path";
+import { readdir, readFile } from "node:fs/promises";
+import { extname, join, relative, resolve, sep } from "node:path";
 import { NpmRegistry, registryProxy } from "@compmd/registry";
 import { toNodeListener } from "@compmd/registry/node";
-import { buildFrames, buildLibraries, readLibraries, RUNTIMES, type LibraryDefinition } from "@compmd/sandbox/build";
 import type { Connect, Plugin, ResolvedConfig } from "vite";
-import { configOf, loadApp, type App } from "./app.ts";
+import { configOf, loadApp, requestWith, type App, type ServedModule } from "./app.ts";
+import { servedModules, writeFrames, writePacks, type BundledFrames } from "./bundle.ts";
 import type { ReadConfig } from "./config.ts";
+import { CONTRACT_HEADERS, headersFile, SERVED } from "./headers.ts";
 
 /** The plugin's options. */
 export interface CompmdOptions {
-  /** The folder of the app, under its base, where the sandbox and the packs' files are served; `compmd/` by default. */
+  /** The folder of the app, under its base, where the bundle is served; `compmd/` by default. Not with `out`. */
   folder?: string;
   /**
    * The configuration, in place of `compmd.config.json`: for a tool that serves a page of its own, such as a pack's
    * test page. Folder packs in it are relative to Vite's root, as in the file.
    */
   config?: unknown;
+  /**
+   * The folder, relative to Vite's root, an adapter embeds or serves the bundle from, in place of the web output
+   * (`src-tauri/compmd`): the dev server then serves no bundle, since the adapter does, and the page takes its origin
+   * from the adapter (`globalThis.__COMPMD__`).
+   */
+  out?: string;
+  /** The custom scheme's form the bundle is served at, `compmd://localhost/`, which the frames' policies name. */
+  source?: string;
 }
 
 const VIRTUAL = "virtual:compmd";
 const RESOLVED = `\0${VIRTUAL}`;
-const TYPES: Record<string, string> = { ".html": "text/html", ".js": "text/javascript", ".json": "application/json", ".css": "text/css", ".map": "application/json" };
+const TYPES: Record<string, string> = { ".html": "text/html", ".js": "text/javascript", ".json": "application/json", ".css": "text/css", ".map": "application/json", ".md": "text/markdown" };
 
 /**
- * The app's request with the frames' runtimes and libraries in its policy (spec §7.6), so the processor reports a
- * runtime they don't have (W102) and a pack's `peerDependencies` they can't meet (W121).
- */
-export function requestWith(app: App, definition: LibraryDefinition | undefined): App["request"] {
-  if (!definition) return app.request;
-  const named = ({ name, version }: { name: string; version: string }) => ({ name, version });
-  return { ...app.request, policy: { ...app.request.policy, runtimes: definition.runtimes.map(named), libraries: definition.libraries.map(named) } };
-}
-
-/**
- * The code of `virtual:compmd`'s `registry`, after `base`: what `resolvePacks` takes from the configuration. With
- * `fetch: "host"`, every scope's registry is the app's proxy, under `base`; without registries, `undefined`.
+ * The code of `virtual:compmd`'s `registry`, after `origin`: what `resolvePacks` takes from the configuration. With
+ * `fetch: "host"`, every scope's registry is the host's proxy, at `registry/` on the origin; without registries,
+ * `undefined`.
  */
 function registryCode({ registries, fetch, maxPackSize }: ReadConfig): string[] {
   const scopes = Object.entries(registries);
   if (scopes.length === 0) return ["export const registry = undefined;"];
   const entries = scopes.map(([scope, url]) => `${JSON.stringify(scope)}: ${fetch === "host" ? "proxy" : `new NpmRegistry({ url: ${JSON.stringify(url)} })`}`);
   const options = [`registries: { ${entries.join(", ")} }`, `fetch: ${JSON.stringify(fetch)}`, ...(maxPackSize === undefined ? [] : [`maxPackSize: ${String(maxPackSize)}`])];
-  return [...(fetch === "host" ? ['const proxy = new NpmRegistry({ url: base + "registry/" });'] : []), `export const registry = { ${options.join(", ")} };`];
+  return [...(fetch === "host" ? ['const proxy = new NpmRegistry({ url: origin + "registry/" });'] : []), `export const registry = { ${options.join(", ")} };`];
 }
 
 /**
  * The code of `virtual:compmd`: the processor's request, the sandbox's options with the trusted components the app's
- * own build compiles, and the registries' options; with the frames' `definition`, the request's policy says what they
- * provide.
+ * own build compiles, and the registries' options. Its paths are relative to the bundle's origin: the adapter's
+ * (`globalThis.__COMPMD__.origin`), or else the app's `folder` (docs/hosting.md, decision 9).
  */
-export function moduleCode(app: App, folder: string, definition?: LibraryDefinition): string {
+export function moduleCode(app: App, folder: string, frames: BundledFrames, modules: Record<string, ServedModule>): string {
   const bindings = new Set(app.trusted.map(({ binding }) => binding));
   const lines = [...bindings].filter((binding) => binding !== "plain").map((binding) => `import { ${binding} } from "@compmd/vite/${binding}";`);
   if (Object.keys(app.config.registries).length > 0) lines.push('import { NpmRegistry } from "@compmd/registry";');
   app.trusted.forEach(({ file }, i) => lines.push(`import c${String(i)} from ${JSON.stringify(file)};`));
   const trusted = app.trusted.map(({ name, binding }, i) => `${JSON.stringify(name)}: ${binding === "plain" ? `c${String(i)}` : `${binding}(c${String(i)})`}`);
   lines.push(
-    `export const request = ${JSON.stringify(requestWith(app, definition))};`,
-    `const MODULES = ${JSON.stringify(app.modules)};`,
-    `const base = import.meta.env.BASE_URL + ${JSON.stringify(folder)};`,
+    `export const request = ${JSON.stringify(requestWith(app, frames.definition))};`,
+    `const FRAMES = ${JSON.stringify(`frames/${frames.hash}/`)};`,
+    `const MODULES = ${JSON.stringify(modules)};`,
+    "const given = globalThis.__COMPMD__?.origin;",
+    `const origin = given === undefined ? import.meta.env.BASE_URL + ${JSON.stringify(folder)} : given.replace(/\\/*$/, "/");`,
     "export const sandbox = {",
-    "  base,",
+    "  base: origin + FRAMES,",
     `  trusted: { ${trusted.join(", ")} },`,
     "  modules: (module) => {",
     "    const found = MODULES[`${module.pack}@${module.version}/${module.path}`];",
-    "    return found && { url: new URL(found.path, new URL(base, location.href)).href, integrity: found.integrity };",
+    "    const url = (path) => new URL(origin + path, location.href).href;",
+    "    return found && { url: url(found.path), integrity: found.integrity, ...(found.css && { css: { url: url(found.css.path), integrity: found.css.integrity } }) };",
     "  },",
     "};",
     ...registryCode(app.config),
@@ -101,29 +105,19 @@ function proxying(path: string, proxy: () => Listener | undefined): Connect.Next
   };
 }
 
-/**
- * The headers of a file under the folder: the frames have an opaque origin, so their files load cross-origin; their
- * documents are sandboxed even when opened alone (docs/running-components-in-the-sandbox.md, Q3).
- */
-function headersFor(path: string, response: ServerResponse): void {
-  response.setHeader("Access-Control-Allow-Origin", "*");
-  if (path.endsWith(".html")) response.setHeader("Content-Security-Policy", "sandbox allow-scripts");
+/** Whether `path`, under the bundle's origin, is one the serving contract serves: in `frames/` or `packs/`. */
+const isServed = (path: string): boolean => SERVED.some((folder) => path.startsWith(folder)) && !path.split("/").some((part) => part === "" || part === "." || part === "..");
+
+/** Sets the serving contract's headers (docs/hosting.md, decision 8). */
+function setContractHeaders(response: ServerResponse): void {
+  for (const [name, value] of Object.entries(CONTRACT_HEADERS)) response.setHeader(name, value);
 }
 
-/** Every file under `dir`, by its `/`-separated path there. */
+/** Every file under `dir`, by its `/`-separated path there; none when there is no `dir`. */
 async function filesUnder(dir: string): Promise<string[]> {
+  if (!existsSync(dir)) return [];
   const entries = await readdir(dir, { recursive: true, withFileTypes: true });
   return entries.filter((entry) => entry.isFile()).map((entry) => relative(dir, join(entry.parentPath, entry.name)).split(sep).join("/"));
-}
-
-/** Builds the frame documents into `out`, with the libraries the configuration offers; gives their library definition. */
-async function buildSandbox(app: App, root: string, out: string): Promise<LibraryDefinition> {
-  await rm(out, { recursive: true, force: true });
-  // The libraries first: the frame documents' files go over them, with the runtimes' import map.
-  const offers = app.config.libraries.length > 0;
-  const imports = offers ? await buildLibraries(app.config.libraries, { root, out: join(out, "libs"), shared: RUNTIMES }) : {};
-  const libraries = offers ? await readLibraries(join(out, "libs")) : [];
-  return buildFrames({ out, imports, libraries });
 }
 
 /**
@@ -133,39 +127,46 @@ async function buildSandbox(app: App, root: string, out: string): Promise<Librar
  * // vite.config.ts
  * import { compmd } from "@compmd/vite";
  * export default defineConfig({ plugins: [react(), compmd()] });
+ * // a Tauri app's: the bundle in `src-tauri/compmd`, which the plugin embeds
+ * export default defineConfig({ plugins: [react(), compmd({ out: "src-tauri/compmd", source: "compmd://localhost/" })] });
  */
 export function compmd(options: CompmdOptions = {}): Plugin {
   const folder = (options.folder ?? "compmd/").replace(/^\/+/, "").replace(/\/*$/, "/");
   let config: ResolvedConfig;
   let app: App | undefined;
-  let frames = "";
+  /** Where the bundle is written: `out`, or Vite's cache, whence the servers serve it and the build copies it. */
+  let bundle = "";
   /** The URL path of `folder`, `/compmd/`, which the servers serve. */
   let prefix = "";
   let proxy: Listener | undefined;
-  let built: Promise<LibraryDefinition> | undefined;
-  let definition: LibraryDefinition | undefined;
+  let built: Promise<BundledFrames> | undefined;
+  let frames: BundledFrames | undefined;
+  /** The built modules the frames load, from the bundle's manifest. */
+  let modules: Record<string, ServedModule> = {};
+  const source = options.source === undefined ? {} : { source: options.source };
 
-  /** Reads the app again, and its sandbox once its libraries are known. */
+  /** Reads the app again and writes its packs, after its frames, which are built once. */
   const load = async (): Promise<App> => {
-    app = await loadApp(config.root, options.config);
-    proxy = proxyOf(app.config, `${prefix}registry/`);
-    built ??= buildSandbox(app, config.root, frames);
-    definition = await built;
-    return app;
+    const loaded = await loadApp(config.root, options.config);
+    proxy = proxyOf(loaded.config, `${prefix}registry/`);
+    built ??= writeFrames(loaded, { root: config.root, out: bundle, ...source });
+    frames = await built;
+    modules = servedModules(loaded, await writePacks(loaded, bundle, frames, options.source));
+    app = loaded;
+    return loaded;
   };
 
-  /** The file on disk a path under `folder` names, or `undefined` for none. */
+  /** The file of the bundle `path` names, or `undefined` for none the contract serves. */
   const fileOf = (path: string): string | undefined => {
-    if (path.startsWith("packs/")) return app?.served.get(path);
-    const file = join(frames, ...path.split("/"));
-    return !path.split("/").includes("..") && existsSync(file) ? file : undefined;
+    const file = join(bundle, ...path.split("/"));
+    return isServed(path) && existsSync(file) ? file : undefined;
   };
 
   return {
     name: "compmd",
     configResolved(resolved) {
       config = resolved;
-      frames = join(resolved.cacheDir, "compmd-frames");
+      bundle = options.out === undefined ? join(resolved.cacheDir, "compmd-bundle") : resolve(resolved.root, options.out);
       prefix = `${resolved.base.replace(/\/*$/, "/")}${folder}`.replace(/^\.\//, "/");
     },
     async buildStart() {
@@ -181,7 +182,8 @@ export function compmd(options: CompmdOptions = {}): Plugin {
     },
     async load(id) {
       if (id !== RESOLVED) return undefined;
-      return moduleCode(app ?? (await load()), folder, definition);
+      const loaded = app ?? (await load());
+      return moduleCode(loaded, folder, frames ?? (await (built as Promise<BundledFrames>)), modules);
     },
     configureServer(server) {
       const watched = [join(config.root, "compmd.config.json"), join(config.root, "package.json")];
@@ -201,15 +203,13 @@ export function compmd(options: CompmdOptions = {}): Plugin {
         );
       });
       server.middlewares.use(proxying(`${prefix}registry/`, () => proxy));
+      // With `out`, the adapter serves the bundle.
+      if (options.out !== undefined) return;
       server.middlewares.use((request, response, next) => {
         const url = new URL(request.url ?? "/", "http://localhost");
-        if (!url.pathname.startsWith(prefix)) {
-          next();
-          return;
-        }
         let file: string | undefined;
         try {
-          file = fileOf(decodeURIComponent(url.pathname.slice(prefix.length)));
+          file = url.pathname.startsWith(prefix) ? fileOf(decodeURIComponent(url.pathname.slice(prefix.length))) : undefined;
         } catch {
           // A malformed escape names no file.
         }
@@ -218,7 +218,7 @@ export function compmd(options: CompmdOptions = {}): Plugin {
           return;
         }
         void readFile(file).then((body) => {
-          headersFor(file, response);
+          setContractHeaders(response);
           response.setHeader("Content-Type", TYPES[extname(file)] ?? "application/octet-stream");
           response.end(body);
         }, next);
@@ -230,15 +230,18 @@ export function compmd(options: CompmdOptions = {}): Plugin {
       server.middlewares.use(proxying(`${prefix}registry/`, () => previewed));
       server.middlewares.use((request, response, next) => {
         const path = new URL(request.url ?? "/", "http://localhost").pathname;
-        if (path.startsWith(prefix)) headersFor(path, response);
+        if (path.startsWith(prefix) && isServed(path.slice(prefix.length))) setContractHeaders(response);
         next();
       });
     },
     async generateBundle() {
-      // A server build, such as a prerender's, has no page for frames.
-      if (!app || this.environment.config.consumer === "server") return;
-      for (const path of await filesUnder(frames)) this.emitFile({ type: "asset", fileName: `${folder}${path}`, source: await readFile(join(frames, path)) });
-      for (const [path, file] of app.served) this.emitFile({ type: "asset", fileName: `${folder}${path}`, source: await readFile(file) });
+      // A server build, such as a prerender's, has no page for frames; with `out`, the bundle is there already.
+      if (!app || options.out !== undefined || this.environment.config.consumer === "server") return;
+      for (const served of SERVED) {
+        for (const path of await filesUnder(join(bundle, served))) this.emitFile({ type: "asset", fileName: `${folder}${served}${path}`, source: await readFile(join(bundle, served, path)) });
+      }
+      if (config.publicDir !== "" && existsSync(join(config.publicDir, "_headers"))) this.warn(`the app has its own _headers: add the bundle's to it, for a static host:\n${headersFile(prefix)}`);
+      else this.emitFile({ type: "asset", fileName: "_headers", source: headersFile(prefix) });
     },
   };
 }

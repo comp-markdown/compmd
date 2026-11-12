@@ -5,6 +5,8 @@
 import type { Policy } from "@compmd/processor";
 import semver from "semver";
 
+export { cspFor, type Csp } from "./csp.ts";
+
 /** How far a pack's code is trusted, as the configuration writes it. */
 export type TrustLevel = "strict" | "permissive" | "trusted";
 

@@ -199,7 +199,7 @@ describe("loadApp", () => {
       },
     });
     // An installed pack is read where its folder really is, behind `node_modules`' links.
-    expect(app.served.get("packs/@acme/charts@2.1.0/dist/line.js")).toBe(join(await realpath(root), "node_modules", "@acme", "charts", "dist", "line.js"));
+    expect(app.packs.find(({ name }) => name === "@acme/charts")?.dir).toBe(join(await realpath(root), "node_modules", "@acme", "charts"));
     expect(app.trusted.map(({ name, binding }) => `${name}:${binding}`)).toEqual(["stars:react", "rating-summary:svelte"]);
   });
 

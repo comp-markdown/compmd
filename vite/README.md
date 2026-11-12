@@ -115,13 +115,19 @@ Listed as `trusted`, its components are compiled by the app's own build, with it
 
 ## What it serves
 
-Under the app's base, in `compmd/` (the `folder` option changes it):
+The plugin writes the bundle ([hosting](../docs/hosting.md), decision 3), which a web app serves under its base, in `compmd/` (the `folder` option changes it):
 
-- `strict.html`, `permissive.html` and their files, the sandbox's frame documents (`buildFrames`), with the libraries the configuration offers;
-- `packs/<name>@<version>/<path>`, each installed pack's built modules (the `.js` files its documents import), which the frames load checked against the hash `sandbox.modules` gives;
+- `frames/<hash>/`, the sandbox's frame documents and their files (`buildFrames`), with the libraries the configuration offers, under a hash of their files: a new build is a new path, so no cache serves an old frame;
+- `packs/<name>@<version>/<path>`, each installed and folder pack's files, as published (a denied pack's none); the frames load its built modules checked against the hash `sandbox.modules` gives;
 - `registry/`, with registries and `fetch: "host"`, the proxy (below), on the dev server and `vite preview` only.
 
-The dev server serves them; the build writes them into the output. The frames have an opaque origin, so a host must serve this folder with `Access-Control-Allow-Origin: *`, and the frame documents with `Content-Security-Policy: sandbox allow-scripts`, as the dev server and `vite preview` do.
+The dev server serves them; the build writes them into the output, with a `_headers` file for a static host that reads one. Every file is served with the serving contract's headers (`Content-Security-Policy: sandbox allow-scripts`, `Access-Control-Allow-Origin: *`, `Access-Control-Expose-Headers: *`, `X-Content-Type-Options: nosniff`, `Cache-Control: max-age=31536000, immutable`), as the dev server and `vite preview` do: the frames have an opaque origin, and a frame document is sandboxed even when opened on its own. `cspFor(origin, config)` gives what the app's page adds to its own content security policy.
+
+**Since 0.7.0** the frames are under `frames/<hash>/`, no longer at `compmd/strict.html`: an app that uses `virtual:compmd` and `cspFor` changes nothing; one that wrote `compmd/` paths into its own policy or server rules updates them.
+
+### For a desktop app, or a host without Vite
+
+`compmd({ out: "src-tauri/compmd", source: "compmd://localhost/" })` writes the bundle, with its `manifest.json`, into `out` for an adapter to embed or serve; the dev server then serves none, and the page takes the origin from the adapter (`globalThis.__COMPMD__`). `source` is the custom scheme the bundle is served at, which the frames' policies name. A host built without Vite calls `buildBundle({ out, source })` from its build instead.
 
 ## What it checks
 

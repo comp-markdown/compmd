@@ -7,6 +7,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join, posix, relative, sep } from "node:path";
 import { initSync, process as processDocument, type Diagnostic, type PackRelease } from "@compmd/processor";
+import type { LibraryDefinition } from "@compmd/sandbox/build";
 import semver from "semver";
 import { parse as parseYaml } from "yaml";
 import { isFolder, policyOf, readConfig, type ReadConfig, type Translated } from "./config.ts";
@@ -24,10 +25,12 @@ export interface TrustedComponent {
 
 /** A built module, as the sandbox loads it. */
 export interface ServedModule {
-  /** Its URL path under `compmd/`: `packs/<name>@<version>/<path>`. */
+  /** Its URL path under the bundle's origin: `packs/<name>@<version>/<path>`. */
   path: string;
   /** Its file's hash, `sha384-…`, which the frame's script checks. */
   integrity: string;
+  /** A compiled Svelte component's styles, beside it, which the frame adopts once checked. */
+  css?: { path: string; integrity: string };
 }
 
 /** Everything the plugin gives the app. */
@@ -39,8 +42,6 @@ export interface App {
   trusted: TrustedComponent[];
   /** Each built module by its place, `<pack>@<version>/<path>`, as the processor's `HostComponent.module` names it. */
   modules: Record<string, ServedModule>;
-  /** Each file served under `compmd/packs/`, by its path there, with where it is on disk. */
-  served: Map<string, string>;
   /** What the checks found that doesn't stop the build. */
   warnings: string[];
 }
@@ -134,8 +135,11 @@ export function trustedComponents(pack: Pack): TrustedComponent[] {
  */
 const isInstalled = (pack: Pack): boolean => pack.folder === undefined && pack.dir.split(sep).includes("node_modules");
 
-/** `sha384-…` of the file at `file`, as a script's `integrity` takes it. */
-const integrityOf = (file: string): string => `sha384-${createHash("sha384").update(readFileSync(file)).digest("base64")}`;
+/** `sha384-…` of `bytes`, as a script's `integrity` takes it. */
+export const sha384Of = (bytes: string | Uint8Array): string => `sha384-${createHash("sha384").update(bytes).digest("base64")}`;
+
+/** `sha384-…` of the file at `file`. */
+const integrityOf = (file: string): string => sha384Of(readFileSync(file));
 
 let processorLoaded = false;
 
@@ -202,13 +206,10 @@ export async function loadApp(root: string, given?: unknown): Promise<App> {
   for (const pack of packs.filter((pack) => !(pack.name in refused))) (releases[pack.name] ??= []).push(releaseOf(pack, { trusted: trustedPacks.includes(pack) }));
   const request = { ...translated, packs: releases };
   const modules: Record<string, ServedModule> = {};
-  const served = new Map<string, string>();
   for (const pack of packs.filter((pack) => !trustedPacks.includes(pack) && !(pack.name in refused))) {
     for (const component of pack.components.filter(({ language }) => language === "js")) {
-      const file = join(pack.dir, ...component.path.split("/"));
-      const path = `packs/${pack.name}@${pack.version}/${component.path}`;
-      modules[`${pack.name}@${pack.version}/${component.path}`] = { path, integrity: integrityOf(file) };
-      served.set(path, file);
+      const place = `${pack.name}@${pack.version}/${component.path}`;
+      modules[place] = { path: `packs/${place}`, integrity: integrityOf(join(pack.dir, ...component.path.split("/"))) };
     }
   }
   const warnings: string[] = [];
@@ -218,5 +219,15 @@ export async function loadApp(root: string, given?: unknown): Promise<App> {
   // docs/vite.md, V1: the lock file holds every package installed from a registry, so a pack it lacks is a sign the
   // plugin didn't read it right, which would otherwise show only as documents that pin the pack failing to load it.
   for (const pack of unlocked) warnings.push(`${pack} has no integrity in ${relative(root, lockFile ?? root)}, so a document that pins its \`integrity\` won't load it (F035)`);
-  return { config, packs, request, trusted: trustedPacks.flatMap(trustedComponents), modules, served, warnings };
+  return { config, packs, request, trusted: trustedPacks.flatMap(trustedComponents), modules, warnings };
+}
+
+/**
+ * The app's request with the frames' runtimes and libraries in its policy (spec §7.6), so the processor reports a
+ * runtime they don't have (W102) and a pack's `peerDependencies` they can't meet (W121).
+ */
+export function requestWith(app: App, definition: LibraryDefinition | undefined): App["request"] {
+  if (!definition) return app.request;
+  const named = ({ name, version }: { name: string; version: string }) => ({ name, version });
+  return { ...app.request, policy: { ...app.request.policy, runtimes: definition.runtimes.map(named), libraries: definition.libraries.map(named) } };
 }

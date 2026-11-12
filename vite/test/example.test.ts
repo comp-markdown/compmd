@@ -6,8 +6,13 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { chromium, webkit, type Browser, type BrowserType, type LaunchOptions } from "playwright";
 import { build, createServer, preview, type PreviewServer } from "vite";
+import { hashOf } from "@compmd/sandbox/build";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { CONTRACT_HEADERS } from "../src/headers.ts";
 import { compmd } from "../src/plugin.ts";
+
+/** The serving contract's headers, by their names as `fetch` gives them. */
+const LOWER_CONTRACT = Object.fromEntries(Object.entries(CONTRACT_HEADERS).map(([name, value]) => [name.toLowerCase(), value]));
 
 const EXAMPLE = join(import.meta.dirname, "../example");
 const OUT = join(import.meta.dirname, ".out/example");
@@ -26,16 +31,33 @@ afterAll(async () => {
   await server.close();
 });
 
+/** The frames' folder in the build, `compmd/frames/<hash>/`: the build's only one. */
+const framesDir = (): string => {
+  const builds = readdirSync(join(OUT, "compmd/frames"));
+  expect(builds).toHaveLength(1);
+  return join(OUT, "compmd/frames", builds[0] ?? "");
+};
+
 describe("the example's build", () => {
-  it("has the frame documents and the built module, with the hash the app gives", () => {
-    expect(existsSync(join(OUT, "compmd/strict.html"))).toBe(true);
-    expect(existsSync(join(OUT, "compmd/permissive.html"))).toBe(true);
+  it("has the frame documents under their hash, and the packs' files by their place", async () => {
+    const frames = framesDir();
+    expect(await hashOf(frames)).toBe(frames.split("/").at(-1));
+    expect(existsSync(join(frames, "strict.html")) && existsSync(join(frames, "permissive.html"))).toBe(true);
+    // Each pack's files as published, the trusted folder pack's too, whose document a host processing in Rust reads.
+    expect(existsSync(join(OUT, "compmd/packs/@example/charts@1.0.0/charts.comp.md"))).toBe(true);
+    expect(existsSync(join(OUT, "compmd/packs/@example/app@1.0.0/index.comp.md"))).toBe(true);
+    // The manifest is the host's, not the page's.
+    expect(existsSync(join(OUT, "compmd/manifest.json"))).toBe(false);
+    expect(readFileSync(join(OUT, "_headers"), "utf8")).toContain("/compmd/frames/*\n  Content-Security-Policy: sandbox allow-scripts\n");
+  });
+
+  it("has the built module, with the hash the app gives", () => {
     const module = readFileSync(join(OUT, "compmd/packs/@example/charts@1.0.0/dist/bar.js"));
     const hash = `sha384-${createHash("sha384").update(module).digest("base64")}`;
     const bundle = readFileSync(join(OUT, "assets", readFileSync(join(OUT, "index.html"), "utf8").match(/assets\/(index-[^"]+\.js)/)?.[1] ?? ""), "utf8");
     expect(bundle).toContain(hash);
     // The frames' runtimes, in the request's policy too, so the processor checks against them (spec §7.6).
-    const definition = JSON.parse(readFileSync(join(OUT, "compmd/library-definition.json"), "utf8")) as { runtimes: { name: string; version: string }[] };
+    const definition = JSON.parse(readFileSync(join(framesDir(), "library-definition.json"), "utf8")) as { runtimes: { name: string; version: string }[] };
     expect(definition.runtimes.map(({ name }) => name)).toEqual(["react", "react-dom", "svelte"]);
     const version = (definition.runtimes[0]?.version ?? "").replaceAll(".", "\\.");
     // Minified, the request's JSON is an object literal: `runtimes:[{name:"react",version:"19.3.0"}`, in any quotes.
@@ -45,9 +67,9 @@ describe("the example's build", () => {
   });
 
   it("has Shiki and Temml once, in the frames' files, which the page loads too", () => {
-    expect(existsSync(join(OUT, "compmd/highlight.js"))).toBe(true);
-    expect(existsSync(join(OUT, "compmd/math.js"))).toBe(true);
-    const chunks = readdirSync(join(OUT, "compmd/chunks"));
+    const frames = framesDir();
+    expect(existsSync(join(frames, "highlight.js")) && existsSync(join(frames, "math.js"))).toBe(true);
+    const chunks = readdirSync(join(frames, "chunks"));
     expect(chunks.some((name) => name.startsWith("cpp-")) && chunks.some((name) => name.startsWith("temml-"))).toBe(true);
     // The app's own bundle: no grammar, no Temml.
     expect(readdirSync(join(OUT, "assets")).filter((name) => /^(cpp|javascript|typescript|temml)-/.test(name))).toEqual([]);
@@ -65,10 +87,12 @@ describe("the example on the dev server", () => {
       await expect.poll(() => page.getByRole("radiogroup", { name: "3 of 5" }).count(), { timeout: 15_000 }).toBe(1);
       const bars = page.frameLocator("iframe").locator('svg[aria-label="Pages read each day: 30, 52, 18, 41"] rect');
       await expect.poll(() => bars.count(), { timeout: 15_000 }).toBe(4);
-      const response = await fetch(`http://localhost:${String(PORT + 1)}/compmd/strict.html`);
-      expect(response.headers.get("access-control-allow-origin")).toBe("*");
-      expect(response.headers.get("content-security-policy")).toBe("sandbox allow-scripts");
-      expect((await fetch(`http://localhost:${String(PORT + 1)}/compmd/packs/@example/old@1.0.0/index.comp.md`)).headers.get("access-control-allow-origin")).toBeNull();
+      const { sandbox } = (await dev.ssrLoadModule("virtual:compmd")) as { sandbox: { base: string } };
+      expect(sandbox.base).toMatch(/^\/compmd\/frames\/[0-9a-f]{16}\/$/);
+      const response = await fetch(`http://localhost:${String(PORT + 1)}${sandbox.base}strict.html`);
+      expect(Object.fromEntries([...response.headers].filter(([name]) => name in LOWER_CONTRACT))).toEqual(LOWER_CONTRACT);
+      const unserved = ["packs/@example/old@1.0.0/index.comp.md", "manifest.json", `${sandbox.base.slice("/compmd/".length)}../frames.json`];
+      for (const path of unserved) expect((await fetch(`http://localhost:${String(PORT + 1)}/compmd/${path}`)).headers.get("access-control-allow-origin"), path).toBeNull();
     } finally {
       await browser.close();
       await dev.close();
