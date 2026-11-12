@@ -48,15 +48,17 @@ function registryCode({ registries, fetch, maxPackSize }: ReadConfig): string[] 
   if (scopes.length === 0) return ["export const registry = undefined;"];
   const entries = scopes.map(([scope, url]) => `${JSON.stringify(scope)}: ${fetch === "host" ? "proxy" : `new NpmRegistry({ url: ${JSON.stringify(url)} })`}`);
   const options = [`registries: { ${entries.join(", ")} }`, `fetch: ${JSON.stringify(fetch)}`, ...(maxPackSize === undefined ? [] : [`maxPackSize: ${String(maxPackSize)}`])];
-  return [...(fetch === "host" ? ['const proxy = new NpmRegistry({ url: origin + "registry/" });'] : []), `export const registry = { ${options.join(", ")} };`];
+  const proxy = 'const proxy = new NpmRegistry({ url: (origin ?? "").replace(/\\/*$/, "/") + "registry/" });';
+  return [...(fetch === "host" ? [proxy] : []), `export const registry = { ${options.join(", ")} };`];
 }
 
 /**
  * The code of `virtual:compmd`: the processor's request, the sandbox's options with the trusted components the app's
- * own build compiles, and the registries' options. Its paths are relative to the bundle's origin: the adapter's
- * (`globalThis.__COMPMD__.origin`), or else the app's `folder` (docs/hosting.md, decision 9).
+ * own build compiles, and the registries' options. Its paths are relative to the bundle's origin (docs/hosting.md,
+ * decision 9), which the sandbox puts them under: the app's `folder` for a web app, or, with no folder (`out`), the
+ * one the host's adapter gives (`globalThis.__COMPMD__.origin`).
  */
-export function moduleCode(app: App, folder: string, frames: BundledFrames, modules: Record<string, ServedModule>): string {
+export function moduleCode(app: App, folder: string | undefined, frames: BundledFrames, modules: Record<string, ServedModule>): string {
   const bindings = new Set(app.trusted.map(({ binding }) => binding));
   const lines = [...bindings].filter((binding) => binding !== "plain").map((binding) => `import { ${binding} } from "@compmd/vite/${binding}";`);
   if (Object.keys(app.config.registries).length > 0) lines.push('import { NpmRegistry } from "@compmd/registry";');
@@ -64,17 +66,13 @@ export function moduleCode(app: App, folder: string, frames: BundledFrames, modu
   const trusted = app.trusted.map(({ name, binding }, i) => `${JSON.stringify(name)}: ${binding === "plain" ? `c${String(i)}` : `${binding}(c${String(i)})`}`);
   lines.push(
     `export const request = ${JSON.stringify(requestWith(app, frames.definition))};`,
-    `const FRAMES = ${JSON.stringify(`frames/${frames.hash}/`)};`,
     `const MODULES = ${JSON.stringify(modules)};`,
-    "const given = globalThis.__COMPMD__?.origin;",
-    `const origin = given === undefined ? import.meta.env.BASE_URL + ${JSON.stringify(folder)} : given.replace(/\\/*$/, "/");`,
+    `const origin = ${folder === undefined ? "globalThis.__COMPMD__?.origin" : `import.meta.env.BASE_URL + ${JSON.stringify(folder)}`};`,
     "export const sandbox = {",
-    "  base: origin + FRAMES,",
+    ...(folder === undefined ? [] : ["  origin,"]),
+    `  frames: ${JSON.stringify(`frames/${frames.hash}/`)},`,
     `  trusted: { ${trusted.join(", ")} },`,
-    "  modules: (module) => {",
-    "    const found = MODULES[`${module.pack}@${module.version}/${module.path}`];",
-    "    return found && { url: new URL(origin + found.path, location.href).href, integrity: found.integrity };",
-    "  },",
+    "  modules: (module) => MODULES[`${module.pack}@${module.version}/${module.path}`],",
     "};",
     ...registryCode(app.config),
     "",
@@ -182,7 +180,7 @@ export function compmd(options: CompmdOptions = {}): Plugin {
     async load(id) {
       if (id !== RESOLVED) return undefined;
       const loaded = app ?? (await load());
-      return moduleCode(loaded, folder, frames ?? (await (built as Promise<BundledFrames>)), modules);
+      return moduleCode(loaded, options.out === undefined ? folder : undefined, frames ?? (await (built as Promise<BundledFrames>)), modules);
     },
     configureServer(server) {
       const watched = [join(config.root, "compmd.config.json"), join(config.root, "package.json")];

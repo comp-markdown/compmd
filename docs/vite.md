@@ -85,7 +85,7 @@ view.render(document.expanded);
 ```
 
 - `request.packs` holds each pack's documents and source files as text (small: signatures, CompMD, JSX), so the app needs no fetch to process a document.
-- Its paths are relative to the bundle's origin: the adapter's, `globalThis.__COMPMD__.origin`, or else the app's `compmd/` folder (hosting, decision 9). `sandbox.base` is `frames/<hash>/` there.
+- Its paths are relative to the bundle's origin (hosting, decision 9), which the sandbox puts them under: `sandbox.origin`, the app's `compmd/` folder, or, with `out`, none, so the sandbox reads the adapter's `globalThis.__COMPMD__.origin`. `sandbox.frames` is `frames/<hash>/` there.
 - `sandbox.modules` maps a built module's place to `packs/<name>@<version>/<path>` on the origin and the file's `sha384`, which the plugin computes from the installed file; a source component's place (the processor's `place`) maps to its compiled module, `<path>.js`.
 - `sandbox.trusted` imports each trusted pack's component files and wraps them in their binding (`react(Stars)`, `svelte(Rating)`, a plain mount as it is), by the file's extension: a component file runs with its binding's default runtime, and an import has no `runtime` of its own (spec §6.1).
 - `registry` holds what `resolvePacks` takes from the configuration (below), or is `undefined` when it names no registry.

@@ -16,6 +16,7 @@ npm install @compmd/sandbox @compmd/render @compmd/processor
 It implements the draft of the [CompMD specification](https://compmd.hakanserce.com/spec/), version 1, and shares its version with `@compmd/render` and `@compmd/processor` ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
 
 **Versions:**
+- **Next (0.7.0):** on the hosting bundle ([hosting](../docs/hosting.md)): `createSandbox` takes the bundle's `frames` and `modules`, paths `@compmd/vite` gives in `virtual:compmd`, under the origin the host's adapter gives (`globalThis.__COMPMD__.origin`), so a page passes nothing; `modules` may answer a module's path under that origin; a pack's source component compiled ahead loads by its place; `buildFrames({ source, packs })` names where the packs are served beside the frames, so a frame on a host's own scheme loads their modules; `compile`, for a host's build. Breaking: the page is given an origin, no longer a `base` (`__COMPMD__.base` is gone), and the frames are served under a hash of their files.
 - **0.6.0:** frames served on a scheme of the host's own load in WebKit (`buildFrames({ source })`, which each `'self'` of their policies names too); `buildHashedFrames`, which builds them at a path named by their content and writes `frames.json`; `base` may be left out where the page was given one (`tauri-plugin-compmd` gives it); a frame that never loads its runtime says so: the page, a use and the compile frame each fail after a bound (`unloaded`), with an error naming the frame document, and the use shows its fallback.
 - **0.5.0:** where each line is (`view.lines()`, and the `layout` event); when the page has settled (`view.settled()`, the `settled` event, `data-compmd-settled` on the container), each frame reporting up the tree; Shiki and Temml shipped once, a host-mode page loading the frames' `highlight.js` and `math.js`, so the app's own bundle has neither. Breaking: the frames speak `@compmd/render`'s frame protocol version 4, so a host's page and the frame documents it serves are upgraded together.
 - **0.4.0:** code blocks that show as code highlighted by Shiki, in light and dark (`shikiHighlight`, and CompMD's own grammar as `@compmd/sandbox/grammar`); where the page came from, through the view (`view.reveal`, `view.rectsAt`, `pointed`); a document's own images in frame mode, fetched by the host's page; the reader asked before data from a new origin, and the answer remembered (`loadData`); math typeset in host mode too; `host` for trusted components, as permissive ones get it, and `view.emit`; each failure naming its use, and `recovered`. Breaking: the frames speak `@compmd/render`'s frame protocol version 3, so a host's page and the frame documents it serves are upgraded together.
@@ -36,7 +37,18 @@ The browser tests drive the installed Chrome and Playwright's WebKit (`pnpm exec
 
 ## Serving the frame documents
 
-The frames load the sandbox's own documents, which the host serves, from its origin or another:
+**A host on the bundle** ([hosting](../docs/hosting.md)), which `@compmd/vite` builds from this package (or `buildBundle` for a host without Vite), gives its page the bundle's paths and the origin it is served at, and names nothing else:
+
+```ts
+import { createSandbox } from "@compmd/sandbox";
+import { sandbox } from "virtual:compmd"; // { frames: "frames/<hash>/", trusted, modules }, and `origin` for a web app
+
+const view = createSandbox({ ...sandbox, page: "host" }).open(container, { components: processed.hostComponents });
+```
+
+The origin is the app's `compmd/` folder for a web app, which `virtual:compmd` gives; a desktop app's adapter gives its own scheme's on the page instead, `globalThis.__COMPMD__ = { origin: "compmd://localhost" }`, and so does a server that writes it. `modules` answers a module's path under the origin, `{ path: "packs/<place>", integrity }`, which the sandbox makes a URL. Without the bundle's `frames` and an origin, and without a `base` (below), `createSandbox` throws, saying so.
+
+**A host that builds the frames itself** serves the sandbox's own documents, from its origin or another, and gives `createSandbox` their `base`:
 
 ```ts
 // at build time, in Node
@@ -54,7 +66,7 @@ request.policy = { ...request.policy, runtimes: definition.runtimes.map(named), 
 
 `buildFrames` writes `strict.html` and `permissive.html`, each with its policy and the import map, next to the frame runtime and the runtimes of the spec's bindings (React 19, React DOM, Svelte 5). `buildLibraries` adds libraries the host offers its documents' components; without it they have the runtimes alone. What component code may import is spec §7.6: these runtimes and libraries, and nothing else. `buildFrames` gives the frames' **library definition**, each runtime and library with its version and import names, whose names and versions are the processor's `policy.runtimes` and `policy.libraries`. It writes it to `library-definition.json` there too, which `libraryDefinition` reads, for a host that builds its frames ahead and makes requests later. A pack's build leaves out `RUNTIMES`' import names. The documents work wherever they are served. A host SHOULD serve them with the header `Content-Security-Policy: sandbox allow-scripts`, so they are sandboxed even when opened outside a frame.
 
-**On a scheme of the host's own** (a desktop app's, such as Tauri's custom URI schemes), a host names where it serves the frames: `buildFrames({ out, source: "app://localhost/frames/" })`. A frame is sandboxed, so its origin is opaque, and WebKit (Safari, macOS and Linux webviews) reads `'self'` in it as the frame document's origin only over http and https: on any other scheme `'self'` matches nothing, and the frame can't load its own runtime. With `source`, the frames' policies name it beside each `'self'` (scripts, styles and fonts), and a permissive frame's second policy does too. It is a scheme, a host and a path, never a bare scheme, so the frames load nothing else the host serves on that scheme; `frameSource` checks one. Over http and https it isn't needed.
+**On a scheme of the host's own** (a desktop app's, such as Tauri's custom URI schemes), a host names where it serves the frames: `buildFrames({ out, source: "app://localhost/frames/" })`. A frame is sandboxed, so its origin is opaque, and WebKit (Safari, macOS and Linux webviews) reads `'self'` in it as the frame document's origin only over http and https: on any other scheme `'self'` matches nothing, and the frame can't load its own runtime. With `source`, the frames' policies name it beside each `'self'` (scripts, styles and fonts), and a permissive frame's second policy does too. A host that serves packs' built modules on the same scheme names where too, `packs: "app://localhost/packs/"`, beside `source`, so a frame loads them by their URL; the bundle's build names both. It is a scheme, a host and a path, never a bare scheme, so the frames load nothing else the host serves on that scheme; `frameSource` checks one. Over http and https it isn't needed.
 
 ## A document's page
 

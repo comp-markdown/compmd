@@ -106,13 +106,13 @@ describe("render and splice", () => {
     }
   });
 
-  it("finds the frames from the base the host's app gave the page, when it names none", async () => {
+  it("finds the bundle's frames under the origin the host's adapter gave the page, when it names none", async () => {
     const page_ = globalThis as { __COMPMD__?: unknown };
-    page_.__COMPMD__ = { base: frames };
+    page_.__COMPMD__ = { origin: new URL("..", frames).href };
     try {
       const area = document.body.appendChild(document.createElement("div"));
       areas.push(area);
-      const view = createSandbox({ page: "host" }).open(area, { components: [label()] });
+      const view = createSandbox({ frames: "sandbox/", page: "host" }).open(area, { components: [label()] });
       views.push(view);
       const set: unknown[] = [];
       view.on("set", ({ value }) => set.push(JSON.parse(value as string)));

@@ -28,6 +28,11 @@ export interface FramesOptions {
    * them to the frames' own files on that scheme.
    */
   source?: string;
+  /**
+   * Where the host serves the packs' files on that scheme, `app://localhost/packs/`, which a frame loads built modules
+   * from by their URL (docs/hosting.md, decision 5): named beside `source`. Only with `source`.
+   */
+  packs?: string;
 }
 
 /**
@@ -70,9 +75,11 @@ export async function buildFrames(options: FramesOptions): Promise<LibraryDefini
   await cp(from, options.out, { recursive: true });
   const shared = JSON.parse(await readFile(join(from, "libs/importmap.json"), "utf8")) as { imports: Record<string, string> };
   const importMap = JSON.stringify({ imports: { ...shared.imports, ...options.imports } });
-  const { source } = options;
-  await writeFile(join(options.out, "strict.html"), frameDocument("strict", strictPolicy(importMap, source), importMap, source));
-  await writeFile(join(options.out, "permissive.html"), frameDocument("permissive", permissivePolicy(importMap, source), importMap, source));
+  const { source, packs } = options;
+  if (packs !== undefined && source === undefined) throw new Error("`packs` names where packs are served on the frames' own scheme, so it needs `source`");
+  const sources = [source, packs].filter((named) => named !== undefined);
+  await writeFile(join(options.out, "strict.html"), frameDocument("strict", strictPolicy(importMap, sources), importMap, source));
+  await writeFile(join(options.out, "permissive.html"), frameDocument("permissive", permissivePolicy(importMap, sources), importMap, source));
   const definition: LibraryDefinition = { runtimes: await readLibraries(join(from, "libs")), libraries: [...(options.libraries ?? [])] };
   await writeFile(join(options.out, DEFINITION), `${JSON.stringify(definition, null, 2)}\n`);
   return definition;

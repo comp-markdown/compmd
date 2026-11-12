@@ -156,7 +156,7 @@ The folder of the app, under Vite's `base`, where the frame documents, their lib
 compmd({ folder: "sandbox/" });
 ```
 
-Leading slashes are dropped and a trailing one added: `"/sandbox"` is `sandbox/`. `virtual:compmd`'s `sandbox.base` and `registry` follow it.
+Leading slashes are dropped and a trailing one added: `"/sandbox"` is `sandbox/`. `virtual:compmd`'s `sandbox.origin` and `registry` follow it.
 
 ### `config`
 

@@ -15,9 +15,9 @@ function common(importMap: string): string[] {
 /**
  * `strict.html`'s policy, with `importMap` allowed by its hash: no requests anywhere, images only as `data:` and
  * `blob:`, fonts from the frames' origin, and no nested frames. With `source`, where the host serves the frames
- * (`frameSource`), it is named beside each `'self'`.
+ * and the packs (`frameSource`), each is named beside each `'self'`.
  */
-export function strictPolicy(importMap: string, source?: string): string {
+export function strictPolicy(importMap: string, source?: string | readonly string[]): string {
   const policy = ["default-src 'none'", ...common(importMap), "img-src data: blob:", "font-src 'self'", "frame-src 'none'"].join("; ");
   return withSource(policy, source);
 }
@@ -26,6 +26,6 @@ export function strictPolicy(importMap: string, source?: string): string {
  * `permissive.html`'s first policy: as a strict frame's, without the network directives and nested frames, which the
  * frame's second policy gives.
  */
-export function permissivePolicy(importMap: string, source?: string): string {
+export function permissivePolicy(importMap: string, source?: string | readonly string[]): string {
   return withSource(common(importMap).join("; "), source);
 }

@@ -18,13 +18,14 @@ export function frameSource(source: string): string {
 }
 
 /**
- * `policy` with `source` after each `'self'`, so the frames' own files load wherever they are served; `policy` as it
- * is without a source.
+ * `policy` with `source` after each `'self'`, so the frames' own files load wherever they are served: one source, or
+ * several (the frames' and the packs', which a frame loads built modules from); `policy` as it is without any.
  *
  * @example
  * withSource("script-src 'self' blob:", "app://localhost/frames/"); // "script-src 'self' app://localhost/frames/ blob:"
  */
-export function withSource(policy: string, source: string | undefined): string {
-  if (source === undefined) return policy;
-  return policy.replaceAll("'self'", `'self' ${frameSource(source)}`);
+export function withSource(policy: string, source: string | readonly string[] | undefined): string {
+  const sources = source === undefined ? [] : typeof source === "string" ? [source] : source;
+  if (sources.length === 0) return policy;
+  return policy.replaceAll("'self'", ["'self'", ...sources.map(frameSource)].join(" "));
 }

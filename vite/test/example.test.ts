@@ -79,6 +79,23 @@ describe("the example's build", () => {
   });
 });
 
+describe("the example with `out`, as a desktop app builds it", () => {
+  it("writes the bundle there with its manifest, and leaves the origin to the adapter", async () => {
+    const out = join(import.meta.dirname, ".out/example-bundle");
+    const dev = await createServer({ root: EXAMPLE, configFile: false, logLevel: "warn", plugins: [compmd({ out, source: "compmd://localhost/" })], server: { port: PORT + 4, strictPort: true } });
+    try {
+      const { sandbox } = (await dev.ssrLoadModule("virtual:compmd")) as { sandbox: { origin?: string; frames: string } };
+      expect(sandbox.origin).toBeUndefined();
+      const manifest = JSON.parse(readFileSync(join(out, "manifest.json"), "utf8")) as { source: string; frames: { hash: string } };
+      expect(manifest.source).toBe("compmd://localhost/");
+      expect(sandbox.frames).toBe(`frames/${manifest.frames.hash}/`);
+      expect(readFileSync(join(out, sandbox.frames, "strict.html"), "utf8")).toContain("compmd://localhost/frames/ compmd://localhost/packs/");
+    } finally {
+      await dev.close();
+    }
+  }, 60_000);
+});
+
 describe("the example on the dev server", () => {
   it("serves the frames and the built module, and gives the page its packs", async () => {
     const dev = await createServer({ root: EXAMPLE, configFile: false, logLevel: "warn", plugins: [compmd()], server: { port: PORT + 1, strictPort: true } });
@@ -90,11 +107,13 @@ describe("the example on the dev server", () => {
       await expect.poll(() => page.getByRole("radiogroup", { name: "3 of 5" }).count(), { timeout: 15_000 }).toBe(1);
       const bars = page.frameLocator("iframe >> nth=0").locator('svg[aria-label="Pages read each day: 30, 52, 18, 41"] rect');
       await expect.poll(() => bars.count(), { timeout: 15_000 }).toBe(4);
-      const { sandbox } = (await dev.ssrLoadModule("virtual:compmd")) as { sandbox: { base: string } };
-      expect(sandbox.base).toMatch(/^\/compmd\/frames\/[0-9a-f]{16}\/$/);
-      const response = await fetch(`http://localhost:${String(PORT + 1)}${sandbox.base}strict.html`);
+      // The bundle's paths, under the app's folder as the origin.
+      const { sandbox } = (await dev.ssrLoadModule("virtual:compmd")) as { sandbox: { origin: string; frames: string } };
+      expect(sandbox.origin).toBe("/compmd/");
+      expect(sandbox.frames).toMatch(/^frames\/[0-9a-f]{16}\/$/);
+      const response = await fetch(`http://localhost:${String(PORT + 1)}${sandbox.origin}${sandbox.frames}strict.html`);
       expect(Object.fromEntries([...response.headers].filter(([name]) => name in LOWER_CONTRACT))).toEqual(LOWER_CONTRACT);
-      const unserved = ["packs/@example/old@1.0.0/index.comp.md", "manifest.json", `${sandbox.base.slice("/compmd/".length)}../frames.json`];
+      const unserved = ["packs/@example/old@1.0.0/index.comp.md", "manifest.json", `${sandbox.frames}../frames.json`];
       for (const path of unserved) expect((await fetch(`http://localhost:${String(PORT + 1)}/compmd/${path}`)).headers.get("access-control-allow-origin"), path).toBeNull();
     } finally {
       await browser.close();

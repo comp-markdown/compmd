@@ -6,27 +6,26 @@
 import type { HostComponent } from "@compmd/processor";
 import { schemeOf, type Change, type ExpandedInput, type ExpandedRoot, type Line, type Source, type Splice } from "@compmd/render";
 import type { SpliceOptions } from "@compmd/render/frame";
-import { givenBase } from "./given-base.ts";
-import { HostRuntime, type HostRuntimeOptions } from "./host/runtime.ts";
+import { found, type Where } from "./found.ts";
+import { HostRuntime, type HostRuntimeOptions, type ModuleSource } from "./host/runtime.ts";
 import { Log, reportedBy, type Observation, type ObservedEvent } from "./observation.ts";
 import { Observer } from "./observer.ts";
 import { errorEvent, framePage, hostPage } from "./pages.ts";
 import type { ErrorReason, SandboxDiagnostic, Scheme } from "./protocol/messages.ts";
 import { Settling } from "./settling.ts";
 
-export interface SandboxOptions extends Omit<HostRuntimeOptions, "base"> {
-  /**
-   * Where the host serves the frame documents (`buildFrames`), ending in `/`: a full URL, or one relative to the
-   * page. Without it, the one the host's app gave the page (`globalThis.__COMPMD__.base`, as `tauri-plugin-compmd`
-   * sets it).
-   */
-  base?: string;
+/**
+ * A sandbox's options. Where its frames and built modules are comes from the page's own build (`virtual:compmd`'s
+ * `sandbox`: the bundle's `frames` and `modules`), under the origin the host's adapter gives (`__COMPMD__`); a host
+ * that serves frames it built itself gives their `base` instead.
+ */
+export interface SandboxOptions extends Omit<HostRuntimeOptions, "base" | "modules">, Where {
   /** Where the page renders: in a strict frame per document (the default), or in the host's page. */
   page?: "frame" | "host";
 }
 
-/** `SandboxOptions` with the frames' `base` found. */
-export type FoundOptions = SandboxOptions & { base: string };
+/** `SandboxOptions` with the frames' `base` found, and each module's URL. */
+export type FoundOptions = Omit<SandboxOptions, "modules"> & { base: string; modules?: ModuleSource };
 
 export interface ViewEvents {
   set: { input: string; value: unknown };
@@ -174,15 +173,14 @@ const shapeOf = (components: readonly HostComponent[]): string =>
  * A sandbox for a host's documents.
  *
  * @example
- * const sandbox = createSandbox({ base: "/compmd/", page: "host", trusted: { stars: react(Stars) } });
- * const view = sandbox.open(container, { components: processed.hostComponents });
+ * import { sandbox } from "virtual:compmd";
+ * const view = createSandbox({ ...sandbox, page: "host" }).open(container, { components: processed.hostComponents });
  * view.render(processed.expanded);
  * view.on("set", ({ input, value }) => rerender({ [input]: value }));
+ * @throws Error when neither the bundle's frames with an origin nor a `base` say where the frames are.
  */
 export function createSandbox(given: SandboxOptions): Sandbox {
-  const base = given.base ?? givenBase();
-  if (base === undefined) throw new Error("createSandbox needs the frames' `base`: give it, or open the page in an app that gives it, as tauri-plugin-compmd does");
-  const options: FoundOptions = { ...given, base };
+  const options: FoundOptions = found(given);
   return {
     open(container, { components }) {
       const listeners: Listeners = { set: [], link: [], error: [], recovered: [], rendered: [], loaded: [], pointed: [], layout: [], settled: [] };

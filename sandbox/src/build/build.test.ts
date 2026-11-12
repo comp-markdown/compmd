@@ -36,6 +36,16 @@ describe("buildFrames", () => {
     for (const document of [strict, permissive]) expect(document).toContain(`data-compmd-source="${source}"`);
   });
 
+  it("names where the host serves the packs beside the frames, so a frame on its scheme loads their modules", async () => {
+    const out = await folder();
+    const [source, packs] = ["app://localhost/frames/", "app://localhost/packs/"];
+    await buildFrames({ out, from: await builtFrames(), source, packs });
+    const strict = await readFile(join(out, "strict.html"), "utf8");
+    expect(strict).toContain("script-src 'self' app://localhost/frames/ app://localhost/packs/ blob:");
+    expect(strict, "the frame's own source alone, for a permissive frame's second policy").toContain(`data-compmd-source="${source}"`);
+    await expect(buildFrames({ out, from: await builtFrames(), packs })).rejects.toThrow("needs `source`");
+  });
+
   it("adds the libraries a host offers to the import map, and to the library definition it gives and writes", async () => {
     const out = await folder();
     const d3 = { name: "d3", version: "7.9.0", imports: ["d3"] };

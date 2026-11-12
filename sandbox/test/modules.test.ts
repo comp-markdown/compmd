@@ -102,6 +102,36 @@ describe("a built module the host's page holds", () => {
   });
 });
 
+describe("the bundle under the origin the host's adapter gives (docs/hosting.md, decisions 5 and 9)", () => {
+  afterEach(() => {
+    delete (globalThis as { __COMPMD__?: unknown }).__COMPMD__;
+  });
+
+  it("finds its frames and a stored pack's module by their paths under `__COMPMD__.origin`, in both page modes", async () => {
+    // The frames' server as the origin: its `sandbox/` holds the frames, and the packs beside them.
+    const origin = new URL("..", frames).href;
+    (globalThis as { __COMPMD__?: unknown }).__COMPMD__ = { origin };
+    const path = "sandbox/packs/built.js";
+    const integrity = await integrityOf(new URL(path, origin).href);
+    const component: HostComponent = { name: "probe", language: "js", code: "", trust: { level: "strict" }, module: { pack: "@kit/stored", version: "1.0.0", path: "dist/index.js" } };
+    for (const page of ["frame", "host"] as const) {
+      const area = document.body.appendChild(document.createElement("div"));
+      const view = createSandbox({ frames: "sandbox/", page, modules: () => ({ path, integrity }) }).open(area, { components: [component] });
+      views.push(view);
+      const set = new Promise((resolve) => {
+        view.on("set", ({ value }) => {
+          resolve(JSON.parse(value as string));
+        });
+      });
+      view.render({ type: "root", children: [leaf("probe")], inputs: { result: { type: "string", value: "" } } });
+      expect(await set, page).toBe("built module");
+      // The page's frame, or the use's: a strict frame, from the origin's frames, either way.
+      expect(area.querySelector("iframe")?.getAttribute("src"), page).toBe(`${origin}sandbox/strict.html`);
+      area.remove();
+    }
+  });
+});
+
 describe("a pack's source component the host compiled ahead (docs/hosting.md, decision 3)", () => {
   /** A source component of `@kit/ahead` at `path`, in `language`, with `code`, as the processor gives it. */
   const source = (language: "jsx" | "svelte", path: string, code: string): HostComponent => ({ name: "probe", language, code, trust: { level: "strict" }, place: { pack: "@kit/ahead", version: "1.0.0", path } });

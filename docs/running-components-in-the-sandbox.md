@@ -230,7 +230,7 @@ So the cost is a permissive or trusted component in the slot of a host-language 
 
 ## Q3. The frame documents and their policies
 
-Two static documents, which the package builds and the host serves where it likes (`base`); the host's page makes frames of them, never anyone else's:
+Two static documents, which the package builds and the host serves where it likes: in the bundle, `frames/<hash>/` under its origin ([hosting](hosting.md), decisions 3 and 9), or at a `base` of its own; the host's page makes frames of them, never anyone else's:
 
 | | `strict.html` | `permissive.html` |
 |---|---|---|
@@ -324,7 +324,8 @@ Four layers (decision 6):
 import { createSandbox } from "@compmd/sandbox";
 
 const sandbox = createSandbox({
-  base: "/compmd/sandbox/",               // where the host serves the built frame documents
+  ...bundle,                              // the bundle's `frames` and `modules` (`virtual:compmd`), under its origin
+  // base: "/compmd/sandbox/",            // or, for frames a host built itself, where it serves them
   page: "host",                           // or "frame", the default
   trusted: { stars: react(Stars) },       // trusted components by name; host mode only
   host: appApi,                           // what permissive components given `host` get

@@ -70,7 +70,8 @@ export async function writeFrames(app: App, { root, out, source }: { root: strin
   const imports = offers ? await buildLibraries(app.config.libraries, { root, out: join(staging, "libs"), shared: RUNTIMES }) : {};
   const libraries = offers ? await readLibraries(join(staging, "libs")) : [];
   // The frames' path, not their hash's: the hash is of the files the policies are in.
-  const definition = await buildFrames({ out: staging, imports, libraries, ...(source === undefined ? {} : { source: `${sourceOf(source)}frames/` }) });
+  const named = source === undefined ? {} : { source: `${sourceOf(source)}frames/`, packs: `${sourceOf(source)}packs/` };
+  const definition = await buildFrames({ out: staging, imports, libraries, ...named });
   const hash = await hashOf(staging);
   await mkdir(join(out, "frames"), { recursive: true });
   await rename(staging, join(out, "frames", hash));

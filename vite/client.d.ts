@@ -9,10 +9,11 @@ declare module "virtual:compmd" {
   export const request: Required<Pick<Request, "packs" | "ambient" | "policy">>;
 
   /**
-   * What the sandbox takes from the app: where its frames are, its trusted components, where built modules are, each
-   * under the bundle's origin: the adapter's `globalThis.__COMPMD__.origin`, or the app's `compmd/` folder.
+   * What the sandbox takes from the app: the bundle's frames, its trusted components and where built modules are, each
+   * a path under the bundle's origin: the app's `compmd/` folder (`origin`), or, for a bundle written to `out`, the
+   * adapter's `globalThis.__COMPMD__.origin`, which the sandbox reads.
    */
-  export const sandbox: Required<Pick<SandboxOptions, "base" | "trusted" | "modules">>;
+  export const sandbox: Required<Pick<SandboxOptions, "frames" | "trusted" | "modules">> & Pick<SandboxOptions, "origin">;
 
   /**
    * What `resolvePacks` takes from the app: its registries (the app's proxy, with `fetch: "host"`), who fetches, and
