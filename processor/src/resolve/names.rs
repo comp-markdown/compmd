@@ -2,6 +2,7 @@
 //! imports, then wildcard imports and `@compmd/core` at one level, then ambient packs.
 
 use super::ComponentId;
+use compmd_pack::PackName;
 use std::collections::BTreeMap;
 
 /// Where a name comes from, highest priority first.
@@ -30,7 +31,7 @@ pub enum Binding {
     Dropped,
     /// A name from an import of a pack the host is still getting, this one (spec §6.4): its uses render their
     /// fallbacks marked as pending, without a diagnostic.
-    Pending(String),
+    Pending(PackName),
 }
 
 /// The component names of a document.
@@ -144,9 +145,9 @@ impl Builder {
     }
 
     /// Notes that a wildcard import of `pack` is pending; the first such pack is the one its unknown names wait for.
-    pub(crate) fn pending(&mut self, pack: &str) {
+    pub(crate) fn pending(&mut self, pack: &PackName) {
         self.pending
-            .get_or_insert_with(|| Binding::Pending(pack.to_string()));
+            .get_or_insert_with(|| Binding::Pending(pack.clone()));
     }
 
     /// The names, each with what the highest level gives it.
@@ -233,13 +234,11 @@ mod tests {
         let mut names = Builder::default();
         names.declare("card", Binding::Component(ComponentId(0), Level::Local));
         names.incomplete();
-        names.pending("@kit/charts");
-        names.pending("@kit/maps");
+        let charts: PackName = "@kit/charts".parse().expect("a name");
+        names.pending(&charts);
+        names.pending(&"@kit/maps".parse().expect("a name"));
         let names = names.build();
-        assert_eq!(
-            names.get("chart"),
-            Some(&Binding::Pending("@kit/charts".into()))
-        );
+        assert_eq!(names.get("chart"), Some(&Binding::Pending(charts)));
         assert_eq!(
             names.get("card"),
             Some(&Binding::Component(ComponentId(0), Level::Local))

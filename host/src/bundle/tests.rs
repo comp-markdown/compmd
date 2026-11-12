@@ -1,7 +1,5 @@
 use std::fs;
 
-use semver::Version;
-
 use super::*;
 
 pub const HASH: &str = "1df336e75685de8c";
@@ -10,7 +8,7 @@ pub const HASH: &str = "1df336e75685de8c";
 pub fn manifest() -> Vec<u8> {
     format!(
         r#"{{"format": 1, "frames": {{"hash": "{HASH}"}}, "source": "compmd://localhost/",
-            "packs": [{{"name": "@kit/mermaid", "version": "1.2.0", "integrity": "sha512-abc"}}]}}"#
+            "packs": [{{"pack": "@kit/mermaid", "version": "1.2.0", "integrity": "sha512-abc"}}]}}"#
     )
     .into_bytes()
 }
@@ -45,39 +43,37 @@ pub fn bundle() -> Bundle {
     .expect("a bundle")
 }
 
-fn mermaid(path: &str) -> Place {
-    Place {
-        pack: "@kit/mermaid".to_owned(),
-        version: Version::new(1, 2, 0),
-        path: path.to_owned(),
-    }
+pub fn path(text: &str) -> FilePath {
+    text.parse().expect("a path")
+}
+
+pub fn place(text: &str) -> Place {
+    text.parse().expect("a place")
 }
 
 #[test]
 fn a_bundle_gives_its_frames_and_its_packs_files() {
     let bundle = bundle();
-    assert_eq!(bundle.manifest().frames.hash, HASH);
+    assert_eq!(bundle.manifest().frames.hash.as_str(), HASH);
     assert_eq!(
-        bundle.frame_file("strict.html"),
+        bundle.frame_file(&path("strict.html")),
         Some(b"<!doctype html>".to_vec())
     );
     assert_eq!(
-        bundle.frame_file("chunks/runtime.js"),
+        bundle.frame_file(&path("chunks/runtime.js")),
         Some(b"export {}".to_vec())
     );
-    assert_eq!(bundle.frame_file("missing.js"), None);
+    assert_eq!(bundle.frame_file(&path("missing.js")), None);
     assert_eq!(
-        bundle.pack_file(&mermaid("dist/mermaid.js")),
+        bundle.pack_file(&place("@kit/mermaid@1.2.0/dist/mermaid.js")),
         Some(b"export default 1".to_vec())
     );
-    assert_eq!(bundle.pack_file(&mermaid("missing.js")), None);
-    let other = Place {
-        pack: "@kit/other".to_owned(),
-        version: Version::new(1, 0, 0),
-        path: "index.js".to_owned(),
-    };
     assert_eq!(
-        bundle.pack_file(&other),
+        bundle.pack_file(&place("@kit/mermaid@1.2.0/missing.js")),
+        None
+    );
+    assert_eq!(
+        bundle.pack_file(&place("@kit/other@1.0.0/index.js")),
         None,
         "a pack the manifest doesn't name"
     );
@@ -106,7 +102,7 @@ fn an_embedded_bundle_and_one_in_a_folder() {
     ];
     let embedded = Bundle::embedded(FILES).expect("a bundle");
     assert_eq!(
-        embedded.frame_file("strict.html"),
+        embedded.frame_file(&path("strict.html")),
         Some(b"<!doctype html>".to_vec())
     );
 
@@ -120,7 +116,7 @@ fn an_embedded_bundle_and_one_in_a_folder() {
     .expect("written");
     let read = Bundle::read(&folder).expect("a bundle");
     assert_eq!(
-        read.frame_file("strict.html"),
+        read.frame_file(&path("strict.html")),
         Some(b"<!doctype html>".to_vec())
     );
     drop(fs::remove_dir_all(folder));

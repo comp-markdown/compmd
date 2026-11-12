@@ -46,6 +46,8 @@ pub mod tree;
 mod validate;
 pub mod values;
 
+/// The names packs and their files are known by: `PackName`, `ReleaseId`, `FilePath`, `Place`, `Integrity`.
+pub use compmd_pack as pack;
 pub use parse::{ParseOptions, TextEdit};
 pub use processor::Processor;
 pub use resolve::{Ambient, Language};

@@ -172,7 +172,7 @@ fn measured(
 fn edits(c: &mut Criterion) {
     let packs = Rc::new(packs());
     let ambient = Ambient {
-        packs: vec!["@preview/charts".into()],
+        packs: vec!["@preview/charts".parse().expect("a pack's name")],
         report: false,
     };
     let context = RenderContext {

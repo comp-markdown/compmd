@@ -353,6 +353,7 @@ name = "compmd"
 version = "0.6.0"
 dependencies = [
  "compmd-markdown",
+ "compmd-pack",
  "csv",
  "fixed_decimal",
  "icu",
@@ -370,6 +371,15 @@ name = "compmd-markdown"
 version = "0.1.0"
 dependencies = [
  "unicode-id",
+]
+
+[[package]]
+name = "compmd-pack"
+version = "0.6.0"
+dependencies = [
+ "semver",
+ "serde",
+ "thiserror 2.0.21",
 ]
 
 [[package]]

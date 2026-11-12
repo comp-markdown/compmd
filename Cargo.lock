@@ -325,6 +325,7 @@ version = "0.6.0"
 dependencies = [
  "cel",
  "compmd-markdown",
+ "compmd-pack",
  "criterion",
  "csv",
  "fixed_decimal",
@@ -344,6 +345,7 @@ name = "compmd-host"
 version = "0.6.0"
 dependencies = [
  "compmd",
+ "compmd-pack",
  "http",
  "semver",
  "serde",
@@ -356,6 +358,16 @@ name = "compmd-markdown"
 version = "0.1.0"
 dependencies = [
  "unicode-id",
+]
+
+[[package]]
+name = "compmd-pack"
+version = "0.6.0"
+dependencies = [
+ "semver",
+ "serde",
+ "serde_json",
+ "thiserror",
 ]
 
 [[package]]

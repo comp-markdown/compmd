@@ -1,0 +1,22 @@
+[package]
+name = "compmd-pack"
+version = "0.6.0"
+description = "The names CompMD packs and their files are known by: a pack's name, a release, a file's path and place, an integrity. In development."
+readme = "README.md"
+homepage = "https://compmd.hakanserce.com/"
+keywords = ["compmd", "markdown", "packs"]
+categories = ["data-structures"]
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+semver = { version = "1.0.28", features = ["serde"] }
+serde = { version = "1.0.228", features = ["derive"] }
+thiserror = "2.0.18"
+
+[dev-dependencies]
+serde_json = "1.0.145"
+
+[lints]
+workspace = true

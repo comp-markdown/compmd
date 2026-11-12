@@ -3,7 +3,7 @@
 /// What is wrong with a `manifest.json`.
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
 pub enum ManifestError {
-    /// It isn't the manifest's JSON.
+    /// It isn't the manifest's JSON, or a name, path or integrity in it isn't one.
     #[error("the bundle's manifest can't be read: {0}")]
     Json(String),
     /// It was written by a version of `@compmd/vite` this crate doesn't know.
@@ -19,7 +19,4 @@ pub enum ManifestError {
     /// The frames' hash isn't 16 lowercase hex digits, so it could name another folder.
     #[error("the frames' hash `{0}` isn't 16 lowercase hex digits")]
     Hash(String),
-    /// A pack's name isn't a pack's name, so it could name another folder.
-    #[error("`{0}` isn't a pack's name")]
-    PackName(String),
 }

@@ -6,6 +6,7 @@ use crate::parse::params::string_parts;
 use crate::resolve::{DocumentId, Origin, Resolved};
 use crate::settings::DataImport;
 use crate::tree::StringPart;
+use compmd_pack::{FilePath, Place};
 use std::fmt::Write as _;
 use std::rc::Rc;
 
@@ -74,19 +75,18 @@ fn pack_file(resolved: &Resolved, from: &str) -> Result<Target, String> {
         segments.next().unwrap_or_default()
     );
     let path = segments.next().unwrap_or_default();
-    resolved
+    let release = resolved
         .documents
         .iter()
         .find_map(|document| match &document.origin {
-            Origin::Pack { name, version, .. } if *name == pack => Some(Origin::Pack {
-                name: name.clone(),
-                version: version.clone(),
-                path: path.to_string(),
-            }),
+            Origin::Pack(place) if place.release.pack == pack.as_str() => {
+                Some(place.release.clone())
+            }
             _ => None,
         })
-        .map(Target::File)
-        .ok_or_else(|| format!("`{pack}` isn't imported, so `{from}` can't be loaded"))
+        .ok_or_else(|| format!("`{pack}` isn't imported, so `{from}` can't be loaded"))?;
+    let path = FilePath::new(path).map_err(|_| format!("`{from}` leaves its pack"))?;
+    Ok(Target::File(Origin::Pack(Place::new(release, path))))
 }
 
 /// The value of a `md.doc` or `md.input` path; `null` for anything else, which validating refuses.

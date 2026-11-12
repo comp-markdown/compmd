@@ -249,7 +249,7 @@ impl<'r> Expander<'r> {
     fn pending(
         &mut self,
         invocation: &Invocation<'r>,
-        pack: &str,
+        pack: &compmd_pack::PackName,
         env: &Env<'r>,
         out: &mut Vec<expanded::Node>,
     ) {
@@ -257,7 +257,7 @@ impl<'r> Expander<'r> {
         self.fallback(invocation, env, &mut children);
         let content = Content::ComponentPending(expanded::Pending {
             name: invocation.name.to_string(),
-            pack: pack.to_string(),
+            pack: pack.clone(),
             children,
         });
         let made = self.made(content, origins::of(invocation.node, env));

@@ -26,7 +26,7 @@ fn a_missing_pack_is_listed_for_the_host_to_get_and_the_document_processed_again
     assert_eq!(
         needed,
         [NeededPack {
-            pack: "@acme/kit".into(),
+            pack: "@acme/kit".parse().expect("a name"),
             range: "^1.1".into(),
             integrity: None,
             library: false
@@ -52,7 +52,12 @@ fn a_pack_on_its_way_renders_its_uses_pending_then_draws_them_when_it_arrives() 
     host.pending.insert("@acme/kit".into());
     let waiting = host.process(&text);
     assert_eq!(diagnostics(&waiting), Vec::<String>::new());
-    assert_eq!(waiting.pending().packs, ["@acme/kit"]);
+    assert_eq!(
+        waiting.pending().packs,
+        ["@acme/kit"
+            .parse::<compmd::pack::PackName>()
+            .expect("a name")]
+    );
     // Still listed, for the host that is getting it.
     assert_eq!(waiting.sources().packs.len(), 1);
     let tree = serde_json::to_value(waiting.expanded()).expect("a tree");
@@ -64,7 +69,7 @@ fn a_pack_on_its_way_renders_its_uses_pending_then_draws_them_when_it_arrives() 
         release("@acme/kit", "1.2.0", &card_pack("A card."), json!({})),
     );
     let drawn = arrived.process(&text);
-    assert_eq!(drawn.pending().packs, Vec::<String>::new());
+    assert!(drawn.pending().packs.is_empty(), "nothing pending");
     assert_eq!(shown(&drawn), "A card.");
 }
 
@@ -93,7 +98,7 @@ fn an_import_pinned_to_the_releases_integrity_loads() {
         "@acme/kit",
         release("@acme/kit", "1.2.0", &card_pack("A card."), json!({})),
     );
-    let text = "---\nmd:\n  import:\n    - from: \"@acme/kit@1.2.0\"\n      integrity: sha512-@acme/kit@1.2.0\n      names: [card]\n---\n\n:: card[Card]\n";
+    let text = "---\nmd:\n  import:\n    - from: \"@acme/kit@1.2.0\"\n      integrity: sha512-acme/kit120\n      names: [card]\n---\n\n:: card[Card]\n";
     assert_eq!(diagnostics(&host.process(text)), Vec::<String>::new());
 }
 
@@ -116,7 +121,7 @@ fn an_import_pinned_to_an_integrity_a_release_has_none_of_is_f035_and_loads_noth
     let mut kit = release("@acme/kit", "1.2.0", &card_pack("A card."), json!({}));
     kit.release.integrity = None;
     let host = Host::default().with("@acme/kit", kit);
-    let text = "---\nmd:\n  import:\n    - from: \"@acme/kit@1.2.0\"\n      integrity: sha512-@acme/kit@1.2.0\n      names: [card]\n---\n\n:: card[Card]\n";
+    let text = "---\nmd:\n  import:\n    - from: \"@acme/kit@1.2.0\"\n      integrity: sha512-acme/kit120\n      names: [card]\n---\n\n:: card[Card]\n";
     assert_eq!(
         diagnostics(&host.process(text))[0],
         "F035 `@acme/kit@1.2.0` doesn't match this `integrity`; the import is dropped"
@@ -148,7 +153,7 @@ fn a_library_pack_a_pack_names_is_listed_then_given_to_its_components() {
     assert_eq!(
         first.sources(&host.context).packs,
         [NeededPack {
-            pack: "@kit/d3".into(),
+            pack: "@kit/d3".parse().expect("a name"),
             range: "^7".into(),
             integrity: None,
             library: true
@@ -169,9 +174,7 @@ fn a_library_pack_a_pack_names_is_listed_then_given_to_its_components() {
     assert_eq!(diagnostics(&again), Vec::<String>::new());
     let [bars] = again.host_components().try_into().expect("one component");
     let module = LibraryModule {
-        pack: "@kit/d3".into(),
-        version: Version::new(7, 9, 0),
-        path: "dist/d3.js".into(),
+        place: "@kit/d3@7.9.0/dist/d3.js".parse().expect("a place"),
         libraries: BTreeMap::new(),
     };
     assert_eq!(

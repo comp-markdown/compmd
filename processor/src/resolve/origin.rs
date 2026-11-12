@@ -1,39 +1,30 @@
 //! Where a document comes from: a file of the root folder, or a file of a pack. The origin names the document in
 //! diagnostics (spec §10.4) and decides where its relative paths lead (spec §8.6).
 
+use compmd_pack::{FilePath, PackName, Place, ReleaseId};
 use semver::Version;
 use std::fmt;
 
 /// The pack the processor builds in (spec §9).
 pub(crate) const CORE: &str = "@compmd/core";
-/// The scope of `@compmd/core`, reserved by the spec: never fetched from a registry (spec §6.4).
-pub(crate) const RESERVED_SCOPE: &str = "@compmd/";
 
 /// Where a document comes from.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub(crate) enum Origin {
     /// A file of the document's root folder, by its `/`-separated path from it.
     File(String),
-    /// A file of a pack, by its path in the package: one the host's `Packs` serve, imported or ambient, or
-    /// `@compmd/core`, which the processor builds in.
-    Pack {
-        /// The pack's name, `@scope/name`.
-        name: String,
-        /// The release.
-        version: Version,
-        /// The file's path in the package.
-        path: String,
-    },
+    /// A file of a pack, by its place: one the host's `Packs` serve, imported or ambient, or `@compmd/core`, which
+    /// the processor builds in.
+    Pack(Place),
 }
 
 impl Origin {
     /// `@compmd/core`'s document, at the version it exports.
     pub(crate) fn core() -> Self {
-        Self::Pack {
-            name: CORE.to_string(),
-            version: Version::new(1, 0, 0),
-            path: "index.comp.md".to_string(),
-        }
+        Self::Pack(Place::new(
+            ReleaseId::new(core_name(), Version::new(1, 0, 0)),
+            FilePath::new("index.comp.md").unwrap_or_else(|_| unreachable!("a plain path")),
+        ))
     }
 
     /// Whether this is `@compmd/core`'s document.
@@ -46,24 +37,22 @@ impl Origin {
     pub(crate) fn join(&self, relative: &str) -> Option<Self> {
         match self {
             Self::File(path) => joined(path, relative).map(Self::File),
-            Self::Pack {
-                name,
-                version,
-                path,
-            } => joined(path, relative).map(|path| Self::Pack {
-                name: name.clone(),
-                version: version.clone(),
-                path,
-            }),
+            Self::Pack(place) => place.join(relative).map(Self::Pack),
         }
     }
 
     /// The file's path in its root folder or its pack.
     pub(crate) fn path(&self) -> &str {
         match self {
-            Self::File(path) | Self::Pack { path, .. } => path,
+            Self::File(path) => path,
+            Self::Pack(place) => place.path.as_str(),
         }
     }
+}
+
+/// `@compmd/core`, the name.
+pub(crate) fn core_name() -> PackName {
+    PackName::new(CORE).unwrap_or_else(|_| unreachable!("a pack's name"))
 }
 
 /// How diagnostics name the document: `ui.comp.md`, `@myorg/ui@1.2.0/card.comp.md` (spec §10.4).
@@ -71,11 +60,7 @@ impl fmt::Display for Origin {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::File(path) => f.write_str(path),
-            Self::Pack {
-                name,
-                version,
-                path,
-            } => write!(f, "{name}@{version}/{path}"),
+            Self::Pack(place) => place.fmt(f),
         }
     }
 }
@@ -104,6 +89,10 @@ mod tests {
         Origin::File(path.to_string())
     }
 
+    fn pack(place: &str) -> Origin {
+        Origin::Pack(place.parse().expect("a place"))
+    }
+
     #[test]
     fn relative_paths_resolve_against_the_documents_folder() {
         assert_eq!(
@@ -124,11 +113,7 @@ mod tests {
 
     #[test]
     fn a_pack_keeps_its_paths_inside_the_package() {
-        let kit = Origin::Pack {
-            name: "@acme/kit".into(),
-            version: Version::new(1, 4, 2),
-            path: "kit.comp.md".into(),
-        };
+        let kit = pack("@acme/kit@1.4.2/kit.comp.md");
         assert_eq!(kit.to_string(), "@acme/kit@1.4.2/kit.comp.md");
         assert_eq!(
             kit.join("./parts/chip.comp.md")
@@ -136,22 +121,16 @@ mod tests {
             Some("@acme/kit@1.4.2/parts/chip.comp.md".into())
         );
         assert_eq!(kit.join("../x.comp.md"), None);
+        assert_eq!(kit.path(), "kit.comp.md");
         assert_eq!(file("a.comp.md").to_string(), "a.comp.md");
     }
 
     #[test]
     fn core_is_a_pack() {
         let core = Origin::core();
-        assert!(core.is_core() && !kit_file().is_core());
+        assert!(core.is_core() && !pack("@acme/kit@1.0.0/index.comp.md").is_core());
         assert_eq!(core.to_string(), "@compmd/core@1.0.0/index.comp.md");
         assert_eq!(core.path(), "index.comp.md");
-    }
-
-    fn kit_file() -> Origin {
-        Origin::Pack {
-            name: "@acme/kit".into(),
-            version: Version::new(1, 0, 0),
-            path: "index.comp.md".into(),
-        }
+        assert!(core_name().is_reserved());
     }
 }

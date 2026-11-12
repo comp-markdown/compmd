@@ -1,5 +1,7 @@
 use std::sync::atomic::{AtomicU32, Ordering};
 
+use semver::Version;
+
 use super::*;
 
 /// A folder of its own under the system's temporary folder, removed when dropped.
@@ -16,71 +18,77 @@ impl Temp {
 impl Drop for Temp {
     fn drop(&mut self) {
         drop(fs::remove_dir_all(&self.0));
+        drop(fs::remove_file(&self.0));
     }
+}
+
+fn release(text: &str) -> ReleaseId {
+    text.parse().expect("a release")
+}
+
+fn integrity(text: &str) -> Integrity {
+    text.parse().expect("an integrity")
+}
+
+fn place(text: &str) -> Place {
+    text.parse().expect("a place")
+}
+
+fn files(paths: &[(&str, &[u8])]) -> Vec<(FilePath, Vec<u8>)> {
+    paths
+        .iter()
+        .map(|(path, bytes)| (path.parse().expect("a path"), bytes.to_vec()))
+        .collect()
 }
 
 #[test]
 fn a_kept_release_is_read_back() {
     let temp = Temp::new();
     let store = FolderStore::new(&temp.0);
-    let version = Version::new(1, 2, 0);
+    let mermaid = release("@kit/mermaid@1.2.0");
     store
         .keep(
-            "@kit/mermaid",
-            &version,
-            "sha512-abc",
-            [
-                ("package.json", b"{}".to_vec()),
-                ("dist/mermaid.js", b"export {}".to_vec()),
-            ],
+            &mermaid,
+            &integrity("sha512-abc"),
+            files(&[("package.json", b"{}"), ("dist/mermaid.js", b"export {}")]),
         )
         .expect("kept");
     assert_eq!(
-        store.releases("@kit/mermaid"),
+        store.releases(&mermaid.pack),
         [StoredRelease {
-            version: version.clone(),
-            integrity: "sha512-abc".to_owned()
+            release: mermaid.clone(),
+            integrity: integrity("sha512-abc")
         }]
     );
     assert_eq!(
-        store.file("@kit/mermaid", &version, "dist/mermaid.js"),
+        store.file(&place("@kit/mermaid@1.2.0/dist/mermaid.js")),
         Some(b"export {}".to_vec())
     );
-    assert_eq!(store.file("@kit/mermaid", &version, "dist"), None);
-    assert_eq!(store.file("@kit/mermaid", &version, "missing.js"), None);
-    assert_eq!(
-        store.file("@kit/mermaid", &Version::new(1, 3, 0), "package.json"),
-        None
-    );
+    assert_eq!(store.file(&place("@kit/mermaid@1.2.0/dist")), None);
+    assert_eq!(store.file(&place("@kit/mermaid@1.2.0/missing.js")), None);
+    assert_eq!(store.file(&place("@kit/mermaid@1.3.0/package.json")), None);
 }
 
 #[test]
 fn keeping_again_replaces_the_release() {
     let temp = Temp::new();
     let store = FolderStore::new(&temp.0);
-    let version = Version::new(1, 0, 0);
+    let x = release("@kit/x@1.0.0");
     store
-        .keep(
-            "@kit/x",
-            &version,
-            "sha512-one",
-            [("old.js", b"1".to_vec())],
-        )
+        .keep(&x, &integrity("sha512-one"), files(&[("old.js", b"1")]))
         .expect("kept");
     store
-        .keep(
-            "@kit/x",
-            &version,
-            "sha512-two",
-            [("new.js", b"2".to_vec())],
-        )
+        .keep(&x, &integrity("sha512-two"), files(&[("new.js", b"2")]))
         .expect("kept");
-    assert_eq!(store.file("@kit/x", &version, "old.js"), None);
+    assert_eq!(store.file(&place("@kit/x@1.0.0/old.js")), None);
     assert_eq!(
-        store.file("@kit/x", &version, "new.js"),
+        store.file(&place("@kit/x@1.0.0/new.js")),
         Some(b"2".to_vec())
     );
-    assert_eq!(store.releases("@kit/x")[0].integrity, "sha512-two");
+    assert_eq!(
+        store.releases(&x.pack)[0].integrity,
+        integrity("sha512-two")
+    );
 }
 
 #[test]
@@ -89,58 +97,42 @@ fn only_its_own_releases_are_listed() {
     let store = FolderStore::new(&temp.0);
     store
         .keep(
-            "@kit/x",
-            &Version::new(1, 0, 0),
-            "sha512-a",
-            [("a.js", b"1".to_vec())],
+            &release("@kit/x@1.0.0"),
+            &integrity("sha512-a"),
+            files(&[("a.js", b"1")]),
         )
         .expect("kept");
     store
         .keep(
-            "@kit/xy",
-            &Version::new(2, 0, 0),
-            "sha512-b",
-            [("a.js", b"1".to_vec())],
+            &release("@kit/xy@2.0.0"),
+            &integrity("sha512-b"),
+            files(&[("a.js", b"1")]),
         )
         .expect("kept");
     fs::create_dir_all(temp.0.join("@kit").join("x@not-a-version")).expect("made");
     fs::create_dir_all(temp.0.join("@kit").join("x@3.0.0")).expect("made, without release.json");
+    let x: PackName = "@kit/x".parse().expect("a name");
     let versions: Vec<Version> = store
-        .releases("@kit/x")
+        .releases(&x)
         .into_iter()
-        .map(|release| release.version)
+        .map(|kept| kept.release.version)
         .collect();
     assert_eq!(versions, [Version::new(1, 0, 0)]);
-    assert_eq!(store.releases("@kit/none"), []);
-    assert_eq!(store.releases("@other/x"), []);
+    assert_eq!(store.releases(&"@kit/none".parse().expect("a name")), []);
+    assert_eq!(store.releases(&"@other/x".parse().expect("a name")), []);
 }
 
 #[test]
-fn nothing_outside_a_release_is_kept_or_read() {
+fn a_store_that_cant_be_written_says_so() {
     let temp = Temp::new();
-    let store = FolderStore::new(&temp.0);
-    let version = Version::new(1, 0, 0);
-    for path in [
-        "../escape.js",
-        "a/../../escape.js",
-        "./a.js",
-        "a//b.js",
-        "",
-        "/abs.js",
-    ] {
-        let error = store
-            .keep("@kit/x", &version, "sha512-a", [(path, b"1".to_vec())])
-            .expect_err(path);
-        assert_eq!(error.kind(), io::ErrorKind::InvalidInput, "{path}");
-    }
+    fs::write(&temp.0, "a file, not a folder").expect("written");
+    let store = FolderStore::new(temp.0.join("store"));
     let error = store
-        .keep("../x", &version, "sha512-a", [("a.js", b"1".to_vec())])
-        .expect_err("a bad name");
-    assert_eq!(error.kind(), io::ErrorKind::InvalidInput);
-    store
-        .keep("@kit/x", &version, "sha512-a", [("a.js", b"1".to_vec())])
-        .expect("kept");
-    assert_eq!(store.file("@kit/x", &version, "../release.json"), None);
-    assert_eq!(store.file("../x", &version, "a.js"), None);
-    assert_eq!(store.releases("../x"), []);
+        .keep(
+            &release("@kit/x@1.0.0"),
+            &integrity("sha512-a"),
+            files(&[("a.js", b"1")]),
+        )
+        .expect_err("a file is in the way");
+    assert_ne!(error.kind(), io::ErrorKind::InvalidInput);
 }

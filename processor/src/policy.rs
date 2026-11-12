@@ -14,9 +14,11 @@
 //!     "libraries": [{ "name": "d3", "version": "7.9.0" }]
 //! }"#).unwrap();
 //! assert_eq!(policy.imports, Imports::Listed);
-//! assert_eq!(policy.trust("@acme/charts"), Trust::Strict);
+//! assert_eq!(policy.trust(&"@acme/charts".parse()?), Trust::Strict);
+//! # Ok::<(), compmd::pack::Invalid>(())
 //! ```
 
+use compmd_pack::PackName;
 use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -59,8 +61,8 @@ pub enum Imports {
 /// A pack the host denies, as its own policy: all its versions, or those in `version`.
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
 pub struct Deny {
-    /// The pack's name.
-    pub pack: String,
+    /// The pack.
+    pub pack: PackName,
     /// The versions denied; all when absent.
     #[serde(default)]
     pub version: Option<VersionReq>,
@@ -82,7 +84,7 @@ pub struct Library {
 pub struct Policy {
     /// The packs the configuration lists, each with its trust level; any other is strict.
     #[serde(default)]
-    pub packs: BTreeMap<String, Trust>,
+    pub packs: BTreeMap<PackName, Trust>,
     /// Which packs a document may import.
     #[serde(default)]
     pub imports: Imports,
@@ -91,7 +93,7 @@ pub struct Policy {
     pub deny: Vec<Deny>,
     /// The packs the host left out, each with why, such as being larger than it serves.
     #[serde(default)]
-    pub refused: BTreeMap<String, String>,
+    pub refused: BTreeMap<PackName, String>,
     /// The runtimes the host runs, by the framework's npm name (`react`, `react-dom`, `svelte`) and version. When
     /// absent, every runtime of the spec's bindings is assumed, at any version.
     #[serde(default)]
@@ -105,17 +107,17 @@ pub struct Policy {
 impl Policy {
     /// How far the code of `pack` is trusted.
     #[must_use]
-    pub fn trust(&self, pack: &str) -> Trust {
+    pub fn trust(&self, pack: &PackName) -> Trust {
         self.packs.get(pack).cloned().unwrap_or_default()
     }
 
     /// Why a document may not import `pack`, if it may not, before a release is chosen: the host left it out, or
     /// imports are listed and it isn't, nor among `ambient`.
-    pub(crate) fn refusal(&self, pack: &str, ambient: &[String]) -> Option<String> {
+    pub(crate) fn refusal(&self, pack: &PackName, ambient: &[PackName]) -> Option<String> {
         if let Some(reason) = self.refused.get(pack) {
             return Some(format!("`{pack}` isn't available here: {reason}"));
         }
-        let listed = self.packs.contains_key(pack) || ambient.iter().any(|known| known == pack);
+        let listed = self.packs.contains_key(pack) || ambient.contains(pack);
         (self.imports == Imports::Listed && !listed).then(|| {
             format!(
                 "this host allows only the packs its configuration lists, and `{pack}` isn't one"
@@ -171,11 +173,11 @@ impl Policy {
     }
 
     /// Why `pack` at `version` is denied, if it is.
-    pub(crate) fn denial(&self, pack: &str, version: &Version) -> Option<String> {
+    pub(crate) fn denial(&self, pack: &PackName, version: &Version) -> Option<String> {
         self.deny
             .iter()
             .find(|deny| {
-                deny.pack == pack
+                deny.pack == *pack
                     && deny
                         .version
                         .as_ref()
@@ -194,6 +196,10 @@ mod tests {
         serde_json::from_value(value).expect("a policy")
     }
 
+    fn name(text: &str) -> PackName {
+        text.parse().expect("a pack's name")
+    }
+
     #[test]
     fn listed_packs_have_their_trust_and_others_are_strict() {
         let policy = policy(json!({ "packs": {
@@ -201,22 +207,22 @@ mod tests {
             "@acme/maps": { "level": "permissive", "network": ["https://tiles.example.com"] },
             "@acme/charts": { "level": "permissive", "host": true }
         } }));
-        assert_eq!(policy.trust("@acme/app"), Trust::Trusted);
+        assert_eq!(policy.trust(&name("@acme/app")), Trust::Trusted);
         assert_eq!(
-            policy.trust("@acme/maps"),
+            policy.trust(&name("@acme/maps")),
             Trust::Permissive {
                 network: vec!["https://tiles.example.com".into()],
                 host: false,
             }
         );
         assert_eq!(
-            policy.trust("@acme/charts"),
+            policy.trust(&name("@acme/charts")),
             Trust::Permissive {
                 network: Vec::new(),
                 host: true,
             }
         );
-        assert_eq!(policy.trust("@other/kit"), Trust::Strict);
+        assert_eq!(policy.trust(&name("@other/kit")), Trust::Strict);
         assert_eq!(
             serde_json::to_value(Trust::Strict).expect("JSON"),
             json!({ "level": "strict" })
@@ -227,20 +233,20 @@ mod tests {
     fn a_pack_is_refused_when_left_out_or_unlisted() {
         let any = policy(json!({ "refused": { "@huge/pack": "larger than 5 MB" } }));
         assert_eq!(
-            any.refusal("@huge/pack", &[]).as_deref(),
+            any.refusal(&name("@huge/pack"), &[]).as_deref(),
             Some("`@huge/pack` isn't available here: larger than 5 MB")
         );
-        assert_eq!(any.refusal("@acme/kit", &[]), None);
+        assert_eq!(any.refusal(&name("@acme/kit"), &[]), None);
         let listed = policy(
             json!({ "imports": "listed", "packs": { "@acme/maps": { "level": "strict" } } }),
         );
-        assert_eq!(listed.refusal("@acme/maps", &[]), None);
+        assert_eq!(listed.refusal(&name("@acme/maps"), &[]), None);
         assert_eq!(
-            listed.refusal("@host/c", &["@host/c".into()]),
+            listed.refusal(&name("@host/c"), &[name("@host/c")]),
             None,
             "ambient"
         );
-        assert!(listed.refusal("@acme/kit", &[]).is_some());
+        assert!(listed.refusal(&name("@acme/kit"), &[]).is_some());
     }
 
     #[test]
@@ -305,11 +311,20 @@ mod tests {
         ] }));
         let version = |text: &str| Version::parse(text).expect("a version");
         assert_eq!(
-            policy.denial("@bad/pack", &version("3.0.0")).as_deref(),
+            policy
+                .denial(&name("@bad/pack"), &version("3.0.0"))
+                .as_deref(),
             Some("`@bad/pack@3.0.0` is denied here: misuse")
         );
-        assert!(policy.denial("@acme/kit", &version("1.4.2")).is_some());
-        assert_eq!(policy.denial("@acme/kit", &version("2.0.0")), None);
-        assert_eq!(policy.denial("@acme/charts", &version("1.0.0")), None);
+        assert!(
+            policy
+                .denial(&name("@acme/kit"), &version("1.4.2"))
+                .is_some()
+        );
+        assert_eq!(policy.denial(&name("@acme/kit"), &version("2.0.0")), None);
+        assert_eq!(
+            policy.denial(&name("@acme/charts"), &version("1.0.0")),
+            None
+        );
     }
 }

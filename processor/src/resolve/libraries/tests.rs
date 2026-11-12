@@ -70,7 +70,7 @@ fn chosen(processed: &Processed) -> Value {
         libraries
             .iter()
             .flat_map(|(name, module)| {
-                let own = format!("{name}: {}@{}/{}", module.pack, module.version, module.path);
+                let own = format!("{name}: {}", module.place);
                 std::iter::once(own.clone()).chain(
                     named(&module.libraries)
                         .into_iter()
@@ -238,7 +238,7 @@ fn a_library_the_host_hasnt_is_listed_for_it_to_fetch() {
         ]
     );
     let needed = |pack: &str, range: &str| NeededPack {
-        pack: pack.into(),
+        pack: pack.parse().expect("a pack's name"),
         range: range.into(),
         integrity: None,
         library: true,

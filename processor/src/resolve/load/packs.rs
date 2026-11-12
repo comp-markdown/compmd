@@ -8,7 +8,8 @@ use crate::resolve::libraries::Ask;
 use crate::resolve::source::PackSpec;
 use crate::resolve::{DocumentId, Origin};
 use crate::settings::Import;
-use semver::{Version, VersionReq};
+use compmd_pack::{FilePath, PackName, Place, ReleaseId};
+use semver::VersionReq;
 use serde_json::Value;
 
 impl Loader<'_, '_> {
@@ -56,7 +57,13 @@ impl Loader<'_, '_> {
                     integrity.at,
                     "`integrity` needs an exact version, such as `@1.4.2`, since a range takes whichever release is newest; ignored",
                 );
-            } else if release.integrity.as_deref() != Some(integrity.value.as_str()) {
+            } else if release
+                .integrity
+                .as_ref()
+                .map(ToString::to_string)
+                .as_deref()
+                != Some(integrity.value.as_str())
+            {
                 return Err(Refusal::new(
                     Code::F035,
                     integrity.at,
@@ -77,9 +84,9 @@ impl Loader<'_, '_> {
                 ),
             ));
         }
-        let version = release.version.clone();
-        let document = self.package(&spec.name, release.version, from.at, false)?;
-        self.check_needs(id, &spec.name, &version, from.at);
+        let release = ReleaseId::new(spec.name.clone(), release.version);
+        let document = self.package(&release, from.at, false)?;
+        self.check_needs(id, &release, from.at);
         Ok(document)
     }
 
@@ -107,7 +114,7 @@ impl Loader<'_, '_> {
                 .integrity
                 .as_ref()
                 .filter(|_| spec.exact)
-                .map(|integrity| integrity.value.clone()),
+                .and_then(|integrity| integrity.value.parse().ok()),
             library: false,
         };
         if !self.missing.contains(&needed) {
@@ -115,12 +122,12 @@ impl Loader<'_, '_> {
         }
     }
 
-    /// W121: what the pack `name` at `version` needs from the host, its `peerDependencies` (spec §6.4), that the
-    /// host's policy can't meet, reported on the import at `at`; the library packs it names are asked for, and
-    /// chosen once the document is loaded. A range this crate can't read isn't checked.
-    fn check_needs(&mut self, id: DocumentId, name: &str, version: &Version, at: Location) {
+    /// W121: what the pack's `release` needs from the host, its `peerDependencies` (spec §6.4), that the host's
+    /// policy can't meet, reported on the import at `at`; the library packs it names are asked for, and chosen once
+    /// the document is loaded. A range this crate can't read isn't checked.
+    fn check_needs(&mut self, id: DocumentId, release: &ReleaseId, at: Location) {
         let needs = self
-            .manifest(name, version)
+            .manifest(release)
             .and_then(|manifest| manifest.get("peerDependencies")?.as_object().cloned())
             .unwrap_or_default();
         let mut unmet = Vec::new();
@@ -131,23 +138,22 @@ impl Loader<'_, '_> {
             if self.policy.provides(need) {
                 let range = VersionReq::parse(range).ok();
                 unmet.extend(range.and_then(|range| self.policy.unmet(need, &range)));
-            } else if let Some(ask) =
-                Ask::new((name.to_string(), version.clone()), need, range, (id, at))
+            } else if let Some(ask) = Ask::new(release.clone(), need, range, (id, at))
                 && !self.asks.contains(&ask)
             {
                 self.asks.push(ask);
             }
         }
         for missing in unmet {
-            self.unmet(id, (name, version), at, &missing);
+            self.unmet(id, release, at, &missing);
         }
     }
 
-    /// W121 on the import at `at`: the pack or library `name` at `version` needs `missing`.
+    /// W121 on the import at `at`: the pack's or library's `release` needs `missing`.
     pub(super) fn unmet(
         &mut self,
         id: DocumentId,
-        (name, version): (&str, &Version),
+        release: &ReleaseId,
         at: Location,
         missing: &str,
     ) {
@@ -155,56 +161,47 @@ impl Loader<'_, '_> {
             id,
             Code::W121,
             at,
-            format!("`{name}@{version}` needs {missing}, so its components that use it render their fallbacks"),
+            format!(
+                "`{release}` needs {missing}, so its components that use it render their fallbacks"
+            ),
         );
     }
 
-    /// The `package.json` of the pack `name` at `version`, when there is one and it is JSON.
-    fn manifest(&self, name: &str, version: &Version) -> Option<Value> {
-        let text = self.store.read(&Origin::Pack {
-            name: name.to_string(),
-            version: version.clone(),
-            path: "package.json".to_string(),
-        })?;
+    /// The `package.json` of `release`, when there is one and it is JSON.
+    fn manifest(&self, release: &ReleaseId) -> Option<Value> {
+        let path = FilePath::new("package.json").ok()?;
+        let text = self
+            .store
+            .read(&Origin::Pack(Place::new(release.clone(), path)))?;
         serde_json::from_str(&text).ok()
     }
 
     /// The newest release of the ambient pack `name`.
-    pub(super) fn ambient_pack(&mut self, name: &str) -> Option<DocumentId> {
+    pub(super) fn ambient_pack(&mut self, name: &PackName) -> Option<DocumentId> {
         let release = self
             .store
             .releases(name)
             .into_iter()
             .max_by(|a, b| a.version.cmp(&b.version))?;
-        self.package(name, release.version, Location::new(1, 1), true)
-            .ok()
+        let release = ReleaseId::new(name.clone(), release.version);
+        self.package(&release, Location::new(1, 1), true).ok()
     }
 
-    /// The document of a pack's release, named by its `package.json` (spec §6.4), checked against it (F022).
+    /// The document of a pack's `release`, named by its `package.json` (spec §6.4), checked against it (F022).
     fn package(
         &mut self,
-        name: &str,
-        version: Version,
+        release: &ReleaseId,
         at: Location,
         provided: bool,
     ) -> Result<DocumentId, Refusal> {
-        let unloadable = || {
-            Refusal::new(
-                Code::F026,
-                at,
-                format!("`{name}@{version}` can't be loaded"),
-            )
-        };
-        let manifest = self.manifest(name, &version).ok_or_else(unloadable)?;
+        let unloadable = || Refusal::new(Code::F026, at, format!("`{release}` can't be loaded"));
+        let manifest = self.manifest(release).ok_or_else(unloadable)?;
         let path = manifest
             .get("compmd")
             .and_then(Value::as_str)
             .map_or("index.comp.md", |path| path.trim_start_matches("./"));
-        let origin = Origin::Pack {
-            name: name.to_string(),
-            path: path.to_string(),
-            version,
-        };
+        let path = FilePath::new(path).map_err(|_| unloadable())?;
+        let origin = Origin::Pack(Place::new(release.clone(), path));
         let fresh = !self.loaded.contains_key(&origin);
         let id = self.document_at(origin, at, provided)?;
         if fresh {

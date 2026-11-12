@@ -11,6 +11,8 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+# The names packs and their files are known by, shared with hosts (re-exported as `compmd::pack`).
+compmd-pack = { path = "../pack-types", version = "0.6.0" }
 # CSV and TSV data (spec §8.6), as RFC 4180 reads it.
 csv = "1.3.1"
 fixed_decimal = { version = "0.7.3", features = ["ryu"] }

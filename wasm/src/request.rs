@@ -28,7 +28,7 @@ struct Request {
     packs: HashMap<String, Vec<LoadedRelease>>,
     /// Packs every document imports, at the lowest priority (spec §6.3).
     #[serde(default)]
-    ambient: Vec<String>,
+    ambient: Vec<compmd::pack::PackName>,
     /// Whether to report each use of a name from an ambient pack (W113).
     #[serde(default)]
     report_ambient: bool,

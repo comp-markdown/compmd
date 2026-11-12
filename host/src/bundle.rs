@@ -5,10 +5,11 @@
 use std::collections::BTreeMap;
 use std::path::Path;
 
+use compmd_pack::{FilePath, Place};
+
 use crate::bundle_error::BundleError;
 use crate::files::Files;
 use crate::manifest::Manifest;
-use crate::place::{Place, release_folder};
 
 /// The manifest's path in a bundle.
 pub const MANIFEST: &str = "manifest.json";
@@ -68,20 +69,16 @@ impl Bundle {
 
     /// The bytes of the frames' file at `path`, inside `frames/<hash>/`.
     #[must_use]
-    pub fn frame_file(&self, path: &str) -> Option<Vec<u8>> {
+    pub fn frame_file(&self, path: &FilePath) -> Option<Vec<u8>> {
         self.files
             .read(&format!("frames/{}/{path}", self.manifest.frames.hash))
     }
 
-    /// The bytes of the pack file at `place`, when the bundle holds that pack's version.
+    /// The bytes of the pack file at `place`, `packs/<place>`, when the bundle holds that release.
     #[must_use]
     pub fn pack_file(&self, place: &Place) -> Option<Vec<u8>> {
-        self.manifest.pack(&place.pack, &place.version)?;
-        self.files.read(&format!(
-            "packs/{}/{}",
-            release_folder(&place.pack, &place.version),
-            place.path
-        ))
+        self.manifest.pack(&place.release)?;
+        self.files.read(&format!("packs/{place}"))
     }
 
     /// The frames' `base` on `origin` (`compmd://localhost`, `https://frames.example`), as `@compmd/sandbox` takes it.

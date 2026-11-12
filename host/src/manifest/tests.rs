@@ -2,6 +2,10 @@ use super::*;
 
 const HASH: &str = "1df336e75685de8c";
 
+fn release(text: &str) -> ReleaseId {
+    text.parse().expect("a release")
+}
+
 #[test]
 fn a_manifest_with_everything() {
     let text = format!(
@@ -10,7 +14,7 @@ fn a_manifest_with_everything() {
           "frames": {{"hash": "{HASH}"}},
           "source": "compmd://localhost/",
           "packs": [{{
-            "name": "@kit/mermaid",
+            "pack": "@kit/mermaid",
             "version": "1.2.0",
             "integrity": "sha512-abc",
             "trust": "permissive",
@@ -22,17 +26,24 @@ fn a_manifest_with_everything() {
         }}"#
     );
     let manifest = Manifest::parse(&text).expect("a manifest");
-    assert_eq!(manifest.frames.hash, HASH);
+    assert_eq!(manifest.frames.hash.as_str(), HASH);
     assert_eq!(manifest.scheme(), Some("compmd"));
     let pack = manifest
-        .pack("@kit/mermaid", &Version::new(1, 2, 0))
+        .pack(&release("@kit/mermaid@1.2.0"))
         .expect("the pack");
-    assert_eq!(pack.integrity.as_deref(), Some("sha512-abc"));
+    assert_eq!(
+        pack.integrity,
+        Some("sha512-abc".parse().expect("an integrity"))
+    );
     assert_eq!(pack.trust, Trust::Permissive);
-    assert_eq!(pack.modules["dist/mermaid.js"], "sha384-def");
-    assert_eq!(manifest.pack("@kit/mermaid", &Version::new(1, 3, 0)), None);
-    assert_eq!(manifest.libraries[0].name, "d3");
-    assert_eq!(manifest.ambient, ["@app/components"]);
+    let module: FilePath = "dist/mermaid.js".parse().expect("a path");
+    assert_eq!(pack.modules[&module].to_string(), "sha384-def");
+    assert_eq!(manifest.pack(&release("@kit/mermaid@1.3.0")), None);
+    assert_eq!(manifest.libraries[0].version, Version::new(7, 9, 0));
+    assert_eq!(
+        manifest.ambient,
+        ["@app/components".parse::<PackName>().expect("a name")]
+    );
     assert!(manifest.policy.is_some());
     let written = serde_json::to_string(&manifest).expect("written");
     assert_eq!(Manifest::parse(&written), Ok(manifest));
@@ -47,7 +58,7 @@ fn the_least_a_manifest_says() {
     assert_eq!(manifest.packs, []);
     assert_eq!(manifest.scheme(), None);
     let pack: BundledPack =
-        serde_json::from_str(r#"{"name": "@kit/x", "version": "1.0.0"}"#).expect("a pack");
+        serde_json::from_str(r#"{"pack": "@kit/x", "version": "1.0.0"}"#).expect("a pack");
     assert_eq!(pack.trust, Trust::Strict);
 }
 
@@ -71,39 +82,46 @@ fn an_http_source_names_no_scheme() {
 
 #[test]
 fn a_manifest_that_cant_be_used_says_why() {
+    let read = |text: String| Manifest::parse(&text);
     assert!(matches!(
-        Manifest::parse("not json"),
+        read("not json".to_owned()),
         Err(ManifestError::Json(_))
     ));
     assert_eq!(
-        Manifest::parse(r#"{"format": 2, "frames": {"hash": "x"}}"#),
+        read(r#"{"format": 2, "frames": {"hash": "x"}}"#.to_owned()),
         Err(ManifestError::UnknownFormat {
             found: 2,
             known: FORMAT
         })
     );
     assert!(matches!(
-        Manifest::parse(r#"{"format": 1}"#),
+        read(r#"{"format": 1}"#.to_owned()),
         Err(ManifestError::Json(_))
     ));
-    assert_eq!(
-        Manifest::parse(r#"{"format": 1, "frames": {"hash": "../secret"}}"#),
-        Err(ManifestError::Hash("../secret".to_owned()))
-    );
-    for hash in ["1DF336E75685DE8C", "1df336e7", "1df336e75685de8g"] {
-        assert!(matches!(
-            Manifest::parse(&format!(
-                r#"{{"format": 1, "frames": {{"hash": "{hash}"}}}}"#
-            )),
-            Err(ManifestError::Hash(_))
-        ));
+    for (what, packs) in [
+        ("a hash", r#""frames": {"hash": "../secret"}"#.to_owned()),
+        (
+            "a name",
+            format!(
+                r#""frames": {{"hash": "{HASH}"}}, "packs": [{{"pack": "../x", "version": "1.0.0"}}]"#
+            ),
+        ),
+        (
+            "a path",
+            format!(
+                r#""frames": {{"hash": "{HASH}"}}, "packs": [{{"pack": "@kit/x", "version": "1.0.0", "modules": {{"../a.js": "sha384-a"}}}}]"#
+            ),
+        ),
+        (
+            "an integrity",
+            format!(
+                r#""frames": {{"hash": "{HASH}"}}, "packs": [{{"pack": "@kit/x", "version": "1.0.0", "integrity": "md5-a"}}]"#
+            ),
+        ),
+    ] {
+        let manifest = read(format!(r#"{{"format": 1, {packs}}}"#));
+        assert!(matches!(manifest, Err(ManifestError::Json(_))), "{what}");
     }
-    assert_eq!(
-        Manifest::parse(&format!(
-            r#"{{"format": 1, "frames": {{"hash": "{HASH}"}}, "packs": [{{"name": "../x", "version": "1.0.0"}}]}}"#
-        )),
-        Err(ManifestError::PackName("../x".to_owned()))
-    );
 }
 
 #[test]
@@ -119,10 +137,5 @@ fn every_error_says_what_to_do() {
         ManifestError::Hash("x".to_owned())
             .to_string()
             .contains("16 lowercase hex")
-    );
-    assert!(
-        ManifestError::PackName("x".to_owned())
-            .to_string()
-            .contains("pack's name")
     );
 }

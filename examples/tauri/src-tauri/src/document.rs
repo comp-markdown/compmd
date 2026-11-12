@@ -8,6 +8,7 @@ use std::rc::Rc;
 use compmd::context::RenderContext;
 use compmd::expand::Options;
 use compmd::host::{Packs, Release};
+use compmd::pack::{PackName, Place};
 use compmd::{Ambient, ParseOptions, Processor};
 use semver::Version;
 use serde_json::{Value, json};
@@ -36,24 +37,27 @@ impl Mermaid {
 }
 
 impl Packs for Mermaid {
-    fn releases(&self, pack: &str) -> Vec<Release> {
+    fn releases(&self, pack: &PackName) -> Vec<Release> {
         let release = Self::version().map(|version| Release {
             version,
             integrity: None,
             broken: None,
         });
-        if pack == MERMAID {
+        if *pack == MERMAID {
             release.into_iter().collect()
         } else {
             Vec::new()
         }
     }
 
-    fn pack_file(&self, pack: &str, version: &Version, path: &str) -> Option<String> {
-        let ours =
-            pack == MERMAID && Self::version().as_ref() == Some(version) && !path.contains("..");
-        ours.then(|| fs::read_to_string(Self::folder().join(path)).ok())
-            .flatten()
+    fn pack_file(&self, place: &Place) -> Option<String> {
+        let ours = place.release.pack == MERMAID
+            && Self::version().as_ref() == Some(&place.release.version);
+        let file = place
+            .path
+            .parts()
+            .fold(Self::folder(), |file, part| file.join(part));
+        ours.then(|| fs::read_to_string(file).ok()).flatten()
     }
 }
 

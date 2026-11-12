@@ -2,6 +2,7 @@
 //! registry with a version or range.
 
 use super::language::Language;
+use compmd_pack::PackName;
 use semver::{Version, VersionReq};
 use thiserror::Error;
 
@@ -23,7 +24,7 @@ pub(crate) enum Source<'a> {
 /// A pack and the releases an import takes.
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct PackSpec {
-    pub(crate) name: String,
+    pub(crate) name: PackName,
     /// The releases it takes: every release without a version.
     pub(crate) range: VersionReq,
     /// Whether it names one exact version, as `integrity` requires.
@@ -41,6 +42,8 @@ pub(crate) enum Unloadable {
     Unscoped(String),
     #[error("`@compmd/` is reserved: processors build `@compmd/core` in, and it is never imported")]
     Reserved,
+    #[error("{0}")]
+    Name(compmd_pack::Invalid),
     #[error("`{0}` isn't a version or a version range")]
     Version(String),
     #[error(
@@ -73,12 +76,13 @@ impl<'a> Source<'a> {
         if parts[0] == "compmd" {
             return Err(Unloadable::Reserved);
         }
+        let name = PackName::new(format!("@{name}")).map_err(Unloadable::Name)?;
         let (range, exact) = match version {
             None => (VersionReq::STAR, false),
             Some(text) => range(text).ok_or_else(|| Unloadable::Version(text.to_string()))?,
         };
         Ok(Self::Pack(PackSpec {
-            name: format!("@{name}"),
+            name,
             range,
             exact,
             written: version.unwrap_or("*").to_string(),
@@ -182,6 +186,15 @@ mod tests {
             Err(Unloadable::Unscoped(_))
         ));
         assert_eq!(Source::parse("@compmd/extras"), Err(Unloadable::Reserved));
+        let named = Source::parse("@Acme/Kit");
+        assert!(matches!(named, Err(Unloadable::Name(_))));
+        assert!(
+            named
+                .map(|_| ())
+                .unwrap_err()
+                .to_string()
+                .contains("`@Acme/Kit` isn't a pack's name")
+        );
         assert!(matches!(
             Source::parse("@a/b@soon"),
             Err(Unloadable::Version(_))

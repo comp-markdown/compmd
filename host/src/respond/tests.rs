@@ -1,5 +1,5 @@
+use compmd_pack::PackName;
 use http::{Request, Response, StatusCode};
-use semver::Version;
 
 use super::*;
 use crate::bundle::tests::{HASH, bundle};
@@ -9,14 +9,18 @@ use crate::store::{NoStore, StoredRelease};
 struct Charts;
 
 impl Store for Charts {
-    fn releases(&self, _pack: &str) -> Vec<StoredRelease> {
+    fn releases(&self, _pack: &PackName) -> Vec<StoredRelease> {
         Vec::new()
     }
 
-    fn file(&self, pack: &str, version: &Version, path: &str) -> Option<Vec<u8>> {
-        (pack == "@kit/charts" && *version == Version::new(2, 0, 0) && path == "index.js")
-            .then(|| b"export default 2".to_vec())
+    fn file(&self, place: &Place) -> Option<Vec<u8>> {
+        (place.to_string() == "@kit/charts@2.0.0/index.js").then(|| b"export default 2".to_vec())
     }
+}
+
+#[test]
+fn the_store_in_these_tests_lists_nothing() {
+    assert_eq!(Charts.releases(&"@kit/charts".parse().expect("a name")), []);
 }
 
 fn get(path: &str) -> Request<()> {

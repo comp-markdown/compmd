@@ -384,7 +384,8 @@ impl Processor<Validated> {
     ///     .resolve((), (), &Ambient::default())
     ///     .validate(&[]);
     /// let needed = validated.sources(&context);
-    /// assert_eq!(needed.packs, [NeededPack { pack: "@kit/mermaid".into(), range: "1".into(), integrity: None, library: false }]);
+    /// assert_eq!(needed.packs, [NeededPack { pack: "@kit/mermaid".parse()?, range: "1".into(), integrity: None, library: false }]);
+    /// # Ok::<(), compmd::pack::Invalid>(())
     /// ```
     #[must_use]
     pub fn sources(&self, context: &RenderContext) -> Needed {

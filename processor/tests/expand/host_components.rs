@@ -44,7 +44,7 @@ fn a_packs_built_module_comes_by_its_place_and_components_have_their_packs_trust
     let kit = LoadedRelease {
         release: Release {
             version: Version::new(1, 2, 0),
-            integrity: Some("sha512-KIT".into()),
+            integrity: Some("sha512-KIT".parse().expect("an integrity")),
             broken: None,
         },
         files: HashMap::from([
@@ -88,10 +88,8 @@ fn a_packs_built_module_comes_by_its_place_and_components_have_their_packs_trust
     assert_eq!(
         map.module,
         Some(Module {
-            pack: "@acme/maps".into(),
-            version: Version::new(1, 2, 0),
-            path: "map.js".into(),
-            integrity: Some("sha512-KIT".into()),
+            place: "@acme/maps@1.2.0/map.js".parse().expect("a place"),
+            integrity: Some("sha512-KIT".parse().expect("an integrity")),
         })
     );
     assert_eq!(

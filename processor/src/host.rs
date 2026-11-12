@@ -7,24 +7,26 @@
 //!
 //! ```
 //! use compmd::host::{Packs, Release};
+//! use compmd::pack::{PackName, Place};
 //! use semver::Version;
 //!
 //! /// One pack, `@acme/kit@1.0.0`, with its manifest alone.
 //! struct Kit;
 //!
 //! impl Packs for Kit {
-//!     fn releases(&self, pack: &str) -> Vec<Release> {
+//!     fn releases(&self, pack: &PackName) -> Vec<Release> {
 //!         let kit = Release { version: Version::new(1, 0, 0), integrity: None, broken: None };
-//!         if pack == "@acme/kit" { vec![kit] } else { Vec::new() }
+//!         if *pack == "@acme/kit" { vec![kit] } else { Vec::new() }
 //!     }
 //!
-//!     fn pack_file(&self, pack: &str, version: &Version, path: &str) -> Option<String> {
-//!         let found = pack == "@acme/kit" && *version == Version::new(1, 0, 0) && path == "package.json";
+//!     fn pack_file(&self, place: &Place) -> Option<String> {
+//!         let found = place.to_string() == "@acme/kit@1.0.0/package.json";
 //!         found.then(|| r#"{"name": "@acme/kit", "version": "1.0.0"}"#.to_string())
 //!     }
 //! }
 //! ```
 
+use compmd_pack::{Integrity, PackName, Place};
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use serde_json::Value as Json;
@@ -42,14 +44,14 @@ pub trait Files {
 /// The packs a document can import (spec §6.4): npm packages with a `package.json` and a CompMD document.
 pub trait Packs {
     /// Every release of `pack`, in any order.
-    fn releases(&self, pack: &str) -> Vec<Release>;
+    fn releases(&self, pack: &PackName) -> Vec<Release>;
 
-    /// The file at `path` in a release of `pack`: `package.json`, the pack's document, or a file it imports.
-    fn pack_file(&self, pack: &str, version: &Version, path: &str) -> Option<String>;
+    /// The file at `place`, in a release of a pack: `package.json`, the pack's document, or a file it imports.
+    fn pack_file(&self, place: &Place) -> Option<String>;
 
     /// Whether the host is still getting `pack` (spec §6.4): an import of it that no release matches is pending, not
     /// F026, and its names' uses render their fallbacks marked as pending. None is, by default.
-    fn pending(&self, _pack: &str) -> bool {
+    fn pending(&self, _pack: &PackName) -> bool {
         false
     }
 }
@@ -93,7 +95,7 @@ pub struct Release {
     pub version: Version,
     /// The integrity hash the registry publishes for it (`sha512-…`), which an import's `integrity` must equal.
     #[serde(default)]
-    pub integrity: Option<String>,
+    pub integrity: Option<Integrity>,
     /// Why its files can't be used, when the host found they don't match its integrity: an import that resolves to
     /// it is F035 with this reason.
     #[serde(default)]
@@ -134,8 +136,8 @@ pub struct Needed {
 /// for a host's UI ("loading 1 pack"). Each once, in the order they are first written.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize)]
 pub struct Pending {
-    /// The packs, by name.
-    pub packs: Vec<String>,
+    /// The packs.
+    pub packs: Vec<PackName>,
     /// The `https:` URLs, their values filled in.
     pub remote: Vec<String>,
     /// The `host:` sources, without `host:`.
@@ -158,13 +160,13 @@ pub struct CacheKey {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct NeededPack {
     /// The pack, `@acme/kit`.
-    pub pack: String,
+    pub pack: PackName,
     /// The version or range after the name, as written (`1`, `^1.4.2`, `1.4.2`); `*` when none is. For a library,
     /// the range in `peerDependencies`.
     pub range: String,
     /// The import's `integrity`, when it pins one with an exact version: the release's tarball must have this hash.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub integrity: Option<String>,
+    pub integrity: Option<Integrity>,
     /// Whether it is a library pack a pack names, of which the processor takes the newest release that matches every
     /// range asked for it: a host that fetches one fetches that version when the registry has it.
     #[serde(skip_serializing_if = "std::ops::Not::not")]
@@ -220,31 +222,31 @@ impl<S: BuildHasher> Files for HashMap<String, String, S> {
 
 /// No packs.
 impl Packs for () {
-    fn releases(&self, _pack: &str) -> Vec<Release> {
+    fn releases(&self, _pack: &PackName) -> Vec<Release> {
         Vec::new()
     }
 
-    fn pack_file(&self, _pack: &str, _version: &Version, _path: &str) -> Option<String> {
+    fn pack_file(&self, _place: &Place) -> Option<String> {
         None
     }
 }
 
 /// Packs held in memory, by name.
 impl<S: BuildHasher> Packs for HashMap<String, Vec<LoadedRelease>, S> {
-    fn releases(&self, pack: &str) -> Vec<Release> {
-        self.get(pack)
+    fn releases(&self, pack: &PackName) -> Vec<Release> {
+        self.get(pack.as_str())
             .into_iter()
             .flatten()
             .map(|loaded| loaded.release.clone())
             .collect()
     }
 
-    fn pack_file(&self, pack: &str, version: &Version, path: &str) -> Option<String> {
-        self.get(pack)?
+    fn pack_file(&self, place: &Place) -> Option<String> {
+        self.get(place.release.pack.as_str())?
             .iter()
-            .find(|loaded| loaded.release.version == *version)?
+            .find(|loaded| loaded.release.version == place.release.version)?
             .files
-            .get(path)
+            .get(place.path.as_str())
             .cloned()
     }
 }
@@ -286,15 +288,15 @@ impl<T: Files + ?Sized> Files for Rc<T> {
 
 /// Packs a host shares with the processor.
 impl<T: Packs + ?Sized> Packs for Rc<T> {
-    fn releases(&self, pack: &str) -> Vec<Release> {
+    fn releases(&self, pack: &PackName) -> Vec<Release> {
         (**self).releases(pack)
     }
 
-    fn pack_file(&self, pack: &str, version: &Version, path: &str) -> Option<String> {
-        (**self).pack_file(pack, version, path)
+    fn pack_file(&self, place: &Place) -> Option<String> {
+        (**self).pack_file(place)
     }
 
-    fn pending(&self, pack: &str) -> bool {
+    fn pending(&self, pack: &PackName) -> bool {
         (**self).pending(pack)
     }
 }
@@ -329,8 +331,9 @@ impl<T: Data + ?Sized> Data for Rc<T> {
 /// use std::collections::HashSet;
 ///
 /// let packs = WithPending { held: (), pending: HashSet::from(["@kit/mermaid".to_string()]) };
-/// assert!(packs.pending("@kit/mermaid"));
-/// assert!(!packs.pending("@kit/charts"));
+/// assert!(packs.pending(&"@kit/mermaid".parse()?));
+/// assert!(!packs.pending(&"@kit/charts".parse()?));
+/// # Ok::<(), compmd::pack::Invalid>(())
 /// ```
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct WithPending<T> {
@@ -341,16 +344,16 @@ pub struct WithPending<T> {
 }
 
 impl<T: Packs> Packs for WithPending<T> {
-    fn releases(&self, pack: &str) -> Vec<Release> {
+    fn releases(&self, pack: &PackName) -> Vec<Release> {
         self.held.releases(pack)
     }
 
-    fn pack_file(&self, pack: &str, version: &Version, path: &str) -> Option<String> {
-        self.held.pack_file(pack, version, path)
+    fn pack_file(&self, place: &Place) -> Option<String> {
+        self.held.pack_file(place)
     }
 
-    fn pending(&self, pack: &str) -> bool {
-        self.pending.contains(pack)
+    fn pending(&self, pack: &PackName) -> bool {
+        self.pending.contains(pack.as_str())
     }
 }
 
@@ -386,11 +389,19 @@ mod tests {
     use super::*;
     use serde_json::json;
 
+    fn name(text: &str) -> PackName {
+        text.parse().expect("a pack's name")
+    }
+
+    fn place(text: &str) -> Place {
+        text.parse().expect("a place")
+    }
+
     #[test]
     fn the_unit_host_has_nothing_but_utc() {
         assert_eq!(().file("a.comp.md"), None);
-        assert_eq!(().releases("@acme/kit"), Vec::new());
-        assert_eq!(().pack_file("@acme/kit", &Version::new(1, 0, 0), "a"), None);
+        assert_eq!(().releases(&name("@acme/kit")), Vec::new());
+        assert_eq!(().pack_file(&place("@acme/kit@1.0.0/a")), None);
         assert_eq!(().fetch("https://a.org/x.json"), None);
         assert_eq!(().data("tasks"), None);
         assert_eq!(().offset("UTC", 0), Some(0));
@@ -406,19 +417,22 @@ mod tests {
             ]
         }))
         .expect("packs");
-        let releases = packs.releases("@acme/charts");
+        let releases = packs.releases(&name("@acme/charts"));
         assert_eq!(releases.len(), 2);
-        assert_eq!(releases[0].integrity.as_deref(), Some("sha512-x"));
-        let version = Version::new(1, 4, 2);
         assert_eq!(
-            packs.pack_file("@acme/charts", &version, "package.json"),
+            releases[0]
+                .integrity
+                .as_ref()
+                .map(ToString::to_string)
+                .as_deref(),
+            Some("sha512-x")
+        );
+        assert_eq!(
+            packs.pack_file(&place("@acme/charts@1.4.2/package.json")),
             Some("{}".to_string())
         );
-        assert_eq!(
-            packs.pack_file("@acme/charts", &Version::new(2, 0, 0), "a"),
-            None
-        );
-        assert_eq!(packs.releases("@acme/maps"), Vec::new());
+        assert_eq!(packs.pack_file(&place("@acme/charts@2.0.0/a")), None);
+        assert_eq!(packs.releases(&name("@acme/maps")), Vec::new());
     }
 
     #[test]
@@ -454,11 +468,8 @@ mod tests {
         let files = Rc::new(HashMap::from([("a".to_string(), "A".to_string())]));
         assert_eq!(files.file("a"), Some("A".to_string()));
         let none = Rc::new(());
-        assert_eq!(none.releases("@acme/kit"), Vec::new());
-        assert_eq!(
-            none.pack_file("@acme/kit", &Version::new(1, 0, 0), "a"),
-            None
-        );
+        assert_eq!(none.releases(&name("@acme/kit")), Vec::new());
+        assert_eq!(none.pack_file(&place("@acme/kit@1.0.0/a")), None);
         assert_eq!(none.fetch("https://a.org/x.json"), None);
         assert_eq!(none.data("tasks"), None);
     }

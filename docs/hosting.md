@@ -103,6 +103,7 @@ Two hosts built so far (a Vite web app and a Tauri app) did the same work twice,
 - **`@compmd/sandbox`:** `createSandbox` takes the origin from `__COMPMD__` and the rest from `virtual:compmd`; `CompiledCache`; stored registry packs by URL (decision 5); the check page.
 - **`@compmd/registry`:** its rules from `compmd-host`'s WebAssembly build (H1), its API unchanged; `PackCache` keeps the place a release belongs to; a folder-backed cache for Node and desktop adapters.
 - **`@compmd/host`** (new, JavaScript): `respond` over the Fetch API, with the dev server, workers and Node using it.
+- **`compmd-pack`** (new crate): the names packs and their files are known by (`PackName`, `ReleaseId`, `FilePath`, `Place`, `Integrity`), each checked once, when it is made; the processor uses them in its host API (`Packs`, `Release`, `Module`, `LibraryModule`, `NeededPack`, `Ambient`, the policy) and re-exports them as `compmd::pack`, and `compmd-host` uses the same, so a pack's name or a file's place means one thing in every crate. The processor's JSON is unchanged.
 - **`compmd-host`** (new crate): the manifest, the bundle's files, the cache, `respond`, `compmd::host::Packs` over them, and the registry rules (H1), with its WebAssembly build.
 - **`tauri-plugin-compmd`:** the Tauri adapter ([its design](tauri-plugin.md)).
 - **The spec:** decision 12's clarification of §6.4.

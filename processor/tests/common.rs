@@ -211,7 +211,7 @@ impl Setup {
                     .as_object()
                     .into_iter()
                     .flat_map(Map::keys)
-                    .cloned()
+                    .map(|name| name.parse().expect("an ambient pack's name"))
                     .collect(),
                 report: context["reportAmbient"] == json!(true),
             },

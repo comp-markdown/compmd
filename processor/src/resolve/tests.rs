@@ -18,7 +18,10 @@ fn resolved(files: &[(&str, &str)], packs: Value, ambient: &[&str]) -> Resolved 
     let packs = packs_of(packs);
     let text = &files["input.comp.md"];
     let ambient = Ambient {
-        packs: ambient.iter().map(|pack| (*pack).to_string()).collect(),
+        packs: ambient
+            .iter()
+            .map(|pack| pack.parse().expect("a pack's name"))
+            .collect(),
         report: false,
     };
     let parsed = parse(text, &ParseOptions::default());
@@ -107,11 +110,7 @@ fn core_is_built_in_even_when_the_host_has_a_pack_of_its_name() {
         files: &(),
         packs: &packs,
     };
-    let manifest = Origin::Pack {
-        name: "@compmd/core".into(),
-        version: semver::Version::new(1, 0, 0),
-        path: "package.json".into(),
-    };
+    let manifest = Origin::Pack("@compmd/core@1.0.0/package.json".parse().expect("a place"));
     assert_eq!(store.read(&manifest), None, "the host isn't asked");
     let resolved = resolved(
         &[("input.comp.md", ":: box[B]\n")],

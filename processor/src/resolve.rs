@@ -16,7 +16,6 @@ pub use language::Language;
 use libraries::Libraries;
 pub(crate) use names::{Binding, Names, Renderer};
 pub(crate) use origin::Origin;
-use origin::RESERVED_SCOPE;
 pub(crate) use source::range;
 pub(crate) use uses::{code_blocks, invocations};
 
@@ -28,6 +27,7 @@ use crate::policy::{Policy, Trust};
 use crate::reserved::Keyword;
 use crate::settings::Settings;
 use crate::tree::{Move, Node, Param, Point, Position, Root, Shift, Signature};
+use compmd_pack::{Integrity, PackName, Place};
 use serde::Serialize;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::rc::Rc;
@@ -40,12 +40,13 @@ pub(crate) const CORE_TEXT: &str = include_str!("core.comp.md");
 /// ```
 /// use compmd::Ambient;
 ///
-/// let ambient = Ambient { packs: vec!["@acme/kit".into()], report: true };
+/// let ambient = Ambient { packs: vec!["@acme/kit".parse()?], report: true };
+/// # Ok::<(), compmd::pack::Invalid>(())
 /// ```
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Ambient {
-    /// The packs, by name. Their newest release is used.
-    pub packs: Vec<String>,
+    /// The packs. Their newest release is used.
+    pub packs: Vec<PackName>,
     /// Whether to report each use of a name from them (W113).
     pub report: bool,
 }
@@ -64,18 +65,14 @@ impl Store<'_> {
         match origin {
             Origin::File(path) => self.files.file(path),
             _ if origin.is_core() => Some(CORE_TEXT.to_string()),
-            Origin::Pack { name, .. } if name.starts_with(RESERVED_SCOPE) => None,
-            Origin::Pack {
-                name,
-                version,
-                path,
-            } => self.packs.pack_file(name, version, path),
+            Origin::Pack(place) if place.release.pack.is_reserved() => None,
+            Origin::Pack(place) => self.packs.pack_file(place),
         }
     }
 
     /// Every release of the host's `pack`; none of `@compmd/`.
-    pub(crate) fn releases(&self, pack: &str) -> Vec<Release> {
-        if pack.starts_with(RESERVED_SCOPE) {
+    pub(crate) fn releases(&self, pack: &PackName) -> Vec<Release> {
+        if pack.is_reserved() {
             Vec::new()
         } else {
             self.packs.releases(pack)
@@ -83,8 +80,8 @@ impl Store<'_> {
     }
 
     /// Whether the host is still getting `pack`; never one of `@compmd/`.
-    pub(crate) fn pending(&self, pack: &str) -> bool {
-        !pack.starts_with(RESERVED_SCOPE) && self.packs.pending(pack)
+    pub(crate) fn pending(&self, pack: &PackName) -> bool {
+        !pack.is_reserved() && self.packs.pending(pack)
     }
 }
 
@@ -222,32 +219,27 @@ pub struct HostComponent {
     pub libraries: BTreeMap<String, LibraryModule>,
 }
 
-/// A library pack's module, chosen for a document, and the libraries it imports in turn, by name.
+/// A library pack's module, chosen for a document, and the libraries it imports in turn, by name. In JSON its place
+/// is flat: `{pack, version, path, libraries}`.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct LibraryModule {
-    /// The library pack.
-    pub pack: String,
-    /// The version chosen.
-    pub version: semver::Version,
-    /// The module's path in it, as its `compmd` field names it.
-    pub path: String,
+    /// The module's place: the library pack, the version chosen, and the path its `compmd` field names.
+    #[serde(flatten)]
+    pub place: Place,
     /// The libraries it imports, by name.
     #[serde(skip_serializing_if = "BTreeMap::is_empty")]
     pub libraries: BTreeMap<String, LibraryModule>,
 }
 
-/// Where a built module is in its pack (spec §6.4).
+/// Where a built module is in its pack (spec §6.4). In JSON its place is flat: `{pack, version, path, integrity}`.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct Module {
-    /// The pack.
-    pub pack: String,
-    /// Its version.
-    pub version: semver::Version,
-    /// The file's path in the pack.
-    pub path: String,
+    /// The file's place.
+    #[serde(flatten)]
+    pub place: Place,
     /// The integrity the registry publishes for the pack, which the files it is loaded from are checked against.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub integrity: Option<String>,
+    pub integrity: Option<Integrity>,
 }
 
 impl Component {
@@ -275,23 +267,16 @@ impl Component {
                 None,
             ),
             Body::File {
-                origin:
-                    Origin::Pack {
-                        name: pack,
-                        version,
-                        path,
-                    },
+                origin: Origin::Pack(place),
                 language: Language::Js,
             } => {
                 let integrity = store
-                    .releases(pack)
+                    .releases(&place.release.pack)
                     .into_iter()
-                    .find(|release| release.version == *version)
+                    .find(|release| release.version == place.release.version)
                     .and_then(|release| release.integrity);
                 let module = Module {
-                    pack: pack.clone(),
-                    version: version.clone(),
-                    path: path.clone(),
+                    place: place.clone(),
                     integrity,
                 };
                 (Language::Js, None, String::new(), Some(module))
@@ -353,7 +338,7 @@ pub(crate) struct Resolved {
     /// packs the packs name that it has none of.
     pub(crate) missing: Vec<NeededPack>,
     /// The pack imports that are pending (spec §6.4), by pack, each once, in the order they were loaded.
-    pub(crate) pending: Vec<String>,
+    pub(crate) pending: Vec<PackName>,
     /// The library packs chosen for the document.
     pub(crate) libraries: Libraries,
     /// The diagnostics of stage 2, and of stage 1 for the documents it imports.
@@ -419,11 +404,10 @@ impl Resolved {
                 }
                 let component = self.component(component);
                 let (trust, libraries) = match &self.document(component.document).origin {
-                    Origin::Pack {
-                        name: pack,
-                        version,
-                        ..
-                    } => (self.policy.trust(pack), self.libraries.of(pack, version)),
+                    Origin::Pack(place) => (
+                        self.policy.trust(&place.release.pack),
+                        self.libraries.of(&place.release),
+                    ),
                     Origin::File(_) => (Trust::Strict, BTreeMap::new()),
                 };
                 if let Some(host) = component.host_code(name, store, &self.policy, trust, libraries)

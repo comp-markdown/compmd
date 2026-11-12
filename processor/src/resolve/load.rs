@@ -22,6 +22,7 @@ use crate::policy::Policy;
 use crate::reserved;
 use crate::settings::{self, Import};
 use crate::tree::start_of as location;
+use compmd_pack::PackName;
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 /// Why an import loads nothing: the diagnostic it gets, where, and what it says. Its names are dropped.
@@ -56,14 +57,14 @@ pub(super) struct Loader<'h, 'p> {
     loaded: HashMap<Origin, DocumentId>,
     core: Option<DocumentId>,
     ambient: Vec<DocumentId>,
-    /// The ambient packs, by name.
-    ambient_names: Vec<String>,
+    /// The ambient packs.
+    ambient_names: Vec<PackName>,
     /// The host's policy, which may refuse a pack.
     policy: &'h Policy,
     /// The pack imports the host has no release for, in the order they are loaded.
     missing: Vec<NeededPack>,
     /// The pack imports that are pending, by pack, in the order they are loaded.
-    pending: Vec<String>,
+    pending: Vec<PackName>,
     /// The library packs the loaded packs name, in the order they are loaded.
     asks: Vec<Ask>,
     /// Where each component file import is written, its `names` entry: it has no definition fence to report at.
@@ -112,8 +113,7 @@ impl<'h, 'p> Loader<'h, 'p> {
         let chosen = libraries::choose(self.store, self.policy, &self.ambient_names, &self.asks);
         for unmet in &chosen.unmet {
             let (id, at) = unmet.at;
-            let (name, version) = &unmet.asker;
-            self.unmet(id, (name, version), at, &unmet.missing);
+            self.unmet(id, &unmet.asker, at, &unmet.missing);
         }
         for needed in chosen.needed {
             if !self.missing.contains(&needed) {
@@ -456,13 +456,13 @@ fn drop_names(listed: &settings::Names, names: &mut Builder) {
 
 /// The names of an import of `pack`, which is pending: listed ones stand for pending components; a wildcard import
 /// may hold any name.
-fn pend_names(listed: &settings::Names, pack: &str, names: &mut Builder) {
+fn pend_names(listed: &settings::Names, pack: &PackName, names: &mut Builder) {
     match listed {
         settings::Names::All(_) => names.pending(pack),
         settings::Names::Listed(entries) => {
             for entry in entries {
                 if !names.is_declared(&entry.renamed) {
-                    names.declare(&entry.renamed, Binding::Pending(pack.to_string()));
+                    names.declare(&entry.renamed, Binding::Pending(pack.clone()));
                 }
             }
         }

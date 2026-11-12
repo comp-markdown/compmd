@@ -133,9 +133,9 @@ fn sources_list_the_packs_imported_that_the_host_has_no_release_of() {
         .resolve_with((), packs, &Ambient::default(), &policy)
         .validate(&[]);
     let needed = |pack: &str, range: &str, integrity: Option<&str>| NeededPack {
-        pack: pack.into(),
+        pack: pack.parse().expect("a pack's name"),
         range: range.into(),
-        integrity: integrity.map(Into::into),
+        integrity: integrity.map(|integrity| integrity.parse().expect("an integrity")),
         library: false,
     };
     let expected = [

@@ -352,12 +352,12 @@ pub struct Leaf {
 }
 
 /// A use of a component whose pack is pending (spec §4.5, §12.3).
-#[derive(Clone, Debug, Default, PartialEq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct Pending {
     /// The component's name, as the document gives it.
     pub name: String,
     /// The pending pack, as the import names it.
-    pub pack: String,
+    pub pack: compmd_pack::PackName,
     /// The fallback the use renders until the pack arrives, expanded.
     pub children: Vec<Node>,
 }

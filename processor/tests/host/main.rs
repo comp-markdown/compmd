@@ -110,16 +110,20 @@ impl Time for Zones {
 }
 
 /// A release of the pack `name` at `version` whose document is `document`, with `manifest` added to its
-/// `package.json`, and an integrity of its own.
+/// `package.json`, and an integrity of its own: `@acme/kit` 1.2.0's is `sha512-acme/kit120`.
 fn release(name: &str, version: &str, document: &str, manifest: Value) -> LoadedRelease {
     let mut package = json!({ "name": name, "version": version });
     if let (Some(package), Value::Object(more)) = (package.as_object_mut(), manifest) {
         package.extend(more);
     }
+    let digest: String = format!("{name}{version}")
+        .chars()
+        .filter(|c| c.is_ascii_alphanumeric() || *c == '/')
+        .collect();
     LoadedRelease {
         release: Release {
             version: Version::parse(version).expect("a version"),
-            integrity: Some(format!("sha512-{name}@{version}")),
+            integrity: Some(format!("sha512-{digest}").parse().expect("an integrity")),
             broken: None,
         },
         files: HashMap::from([

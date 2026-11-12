@@ -5,11 +5,12 @@
 
 use std::collections::BTreeMap;
 
+use compmd_pack::{FilePath, Integrity, PackName, ReleaseId};
 use semver::Version;
 use serde::{Deserialize, Serialize};
 
+use crate::frames_hash::FramesHash;
 use crate::manifest_error::ManifestError;
-use crate::place::is_pack_name;
 
 /// The manifest's format this crate reads; a bundle of another is refused, with what to upgrade.
 pub const FORMAT: u32 = 1;
@@ -35,35 +36,34 @@ pub struct Manifest {
     /// the processor.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub policy: Option<serde_json::Value>,
-    /// The packs every document gets without importing them, by name.
+    /// The packs every document gets without importing them.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub ambient: Vec<String>,
+    pub ambient: Vec<PackName>,
 }
 
 /// The frames' build: its folder, `frames/<hash>/`.
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub struct Frames {
-    /// The first 16 hex digits of a SHA-256 over each file's path and bytes.
-    pub hash: String,
+    /// The build's hash.
+    pub hash: FramesHash,
 }
 
-/// A pack the bundle holds.
+/// A pack the bundle holds. In JSON its release is flat: `{"pack", "version", "integrity", "trust", "modules"}`.
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub struct BundledPack {
-    /// Its name, `@scope/name`.
-    pub name: String,
-    /// Its version.
-    pub version: Version,
+    /// The release.
+    #[serde(flatten)]
+    pub release: ReleaseId,
     /// The integrity the registry publishes for it (`sha512-…`), from the app's lock file; none when the lock file
     /// gave none.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub integrity: Option<String>,
+    pub integrity: Option<Integrity>,
     /// The trust the configuration gives it.
     #[serde(default)]
     pub trust: Trust,
     /// Its built modules, by their path in the pack, with their integrity (`sha384-…`), which a frame checks.
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
-    pub modules: BTreeMap<String, String>,
+    pub modules: BTreeMap<FilePath, Integrity>,
 }
 
 /// The trust a configuration gives a pack (spec §15).
@@ -79,13 +79,13 @@ pub enum Trust {
     Trusted,
 }
 
-/// A library the frames offer, by its npm name.
+/// A library the frames offer: an npm package the app installs, which needn't be scoped (`d3`).
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub struct Library {
     /// Its npm name.
     pub name: String,
     /// The version the bundle holds.
-    pub version: String,
+    pub version: Version,
 }
 
 impl Manifest {
@@ -93,30 +93,22 @@ impl Manifest {
     ///
     /// # Errors
     ///
-    /// [`ManifestError`] when it isn't a manifest, is of another format, or names a frames' hash or a pack that
-    /// could name another folder.
+    /// [`ManifestError`] when it isn't a manifest, is of another format, or names a frames' hash, a pack, a path or
+    /// an integrity that isn't one.
     pub fn parse(text: &str) -> Result<Self, ManifestError> {
         #[derive(Deserialize)]
         struct Format {
             format: u32,
         }
-        let format: Format =
-            serde_json::from_str(text).map_err(|error| ManifestError::Json(error.to_string()))?;
+        let json = |error: serde_json::Error| ManifestError::Json(error.to_string());
+        let format: Format = serde_json::from_str(text).map_err(json)?;
         if format.format != FORMAT {
             return Err(ManifestError::UnknownFormat {
                 found: format.format,
                 known: FORMAT,
             });
         }
-        let manifest: Self =
-            serde_json::from_str(text).map_err(|error| ManifestError::Json(error.to_string()))?;
-        if !is_hash(&manifest.frames.hash) {
-            return Err(ManifestError::Hash(manifest.frames.hash));
-        }
-        if let Some(pack) = manifest.packs.iter().find(|pack| !is_pack_name(&pack.name)) {
-            return Err(ManifestError::PackName(pack.name.clone()));
-        }
-        Ok(manifest)
+        serde_json::from_str(text).map_err(json)
     }
 
     /// The custom scheme the bundle was built for, from its `source` (`compmd://localhost/` is `compmd`); none when
@@ -127,21 +119,11 @@ impl Manifest {
         (scheme != "http" && scheme != "https").then_some(scheme)
     }
 
-    /// The pack named `name` at `version`, when the bundle holds it.
+    /// The pack at `release`, when the bundle holds it.
     #[must_use]
-    pub fn pack(&self, name: &str, version: &Version) -> Option<&BundledPack> {
-        self.packs
-            .iter()
-            .find(|pack| pack.name == name && &pack.version == version)
+    pub fn pack(&self, release: &ReleaseId) -> Option<&BundledPack> {
+        self.packs.iter().find(|pack| pack.release == *release)
     }
-}
-
-/// Whether `text` is a build's hash: 16 lowercase hex digits, so it can't name another folder.
-fn is_hash(text: &str) -> bool {
-    text.len() == 16
-        && text
-            .bytes()
-            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
 }
 
 #[cfg(test)]

@@ -20,19 +20,24 @@
 //! ```
 //!
 //! With the `processor` feature, [`HostPacks`] gives the processor (`compmd`) the same packs the frames load.
+//! Packs, releases, places and integrities are `compmd-pack`'s types, re-exported here as [`pack`], the same the
+//! processor uses.
 //!
 //! [hosting]: https://github.com/comp-markdown/compmd/blob/main/docs/hosting.md
+
+/// The names packs and their files are known by.
+pub use compmd_pack as pack;
 
 mod bundle;
 mod bundle_error;
 mod content_type;
 mod files;
 mod folder_store;
+mod frames_hash;
 mod manifest;
 mod manifest_error;
 #[cfg(feature = "processor")]
 mod packs;
-mod place;
 mod respond;
 mod store;
 
@@ -41,10 +46,10 @@ pub use bundle_error::BundleError;
 pub use content_type::content_type;
 pub use files::Files;
 pub use folder_store::FolderStore;
+pub use frames_hash::FramesHash;
 pub use manifest::{BundledPack, FORMAT, Frames, Library, Manifest, Trust};
 pub use manifest_error::ManifestError;
 #[cfg(feature = "processor")]
 pub use packs::HostPacks;
-pub use place::Place;
 pub use respond::respond;
 pub use store::{NoStore, Store, StoredRelease};

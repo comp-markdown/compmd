@@ -3,14 +3,12 @@
 //!
 //! [hosting]: https://github.com/comp-markdown/compmd/blob/main/docs/hosting.md
 
-use std::path::{Component, Path};
-
+use compmd_pack::{FilePath, Place};
 use http::header::{self, HeaderValue};
 use http::{Method, Request, Response, StatusCode};
 
 use crate::bundle::Bundle;
 use crate::content_type::content_type;
-use crate::place::Place;
 use crate::store::Store;
 
 /// The headers every served file has.
@@ -38,8 +36,8 @@ const ONLY_GET: &str = "the frames and packs are only read, with GET";
 /// The answer to `request`: the frames' file or pack file it names, from the bundle or, for a pack the bundle doesn't
 /// hold, from `store`; a `405` for another method than `GET`; a `404` for anything else. Each refusal says why.
 ///
-/// The paths it answers are `/frames/<hash>/<path>`, with the bundle's hash, and `/packs/<name>@<version>/<path>`,
-/// with no empty, `.` or `..` part.
+/// The paths it answers are `/frames/<hash>/<path>`, with the bundle's hash, and `/packs/<place>`, where a path is a
+/// [`FilePath`], which can't leave its folder.
 pub fn respond<B>(bundle: &Bundle, store: &dyn Store, request: &Request<B>) -> Response<Vec<u8>> {
     if request.method() != Method::GET {
         return refused(StatusCode::METHOD_NOT_ALLOWED, ONLY_GET);
@@ -47,43 +45,30 @@ pub fn respond<B>(bundle: &Bundle, store: &dyn Store, request: &Request<B>) -> R
     let path = request.uri().path();
     file(bundle, store, path).map_or_else(
         || refused(StatusCode::NOT_FOUND, NOT_SERVED),
-        |(body, name)| served(&name, body),
+        |(body, path)| served(&path, body),
     )
 }
 
-/// The bytes of the file `path` names, with the name its type comes from.
-fn file(bundle: &Bundle, store: &dyn Store, path: &str) -> Option<(Vec<u8>, String)> {
-    let rest = path.strip_prefix('/')?;
-    let plain = rest.split('/').all(|part| !part.is_empty() && part != "." && part != "..")
-        // A part that is a path of its own (`C:` on Windows) would leave the folder.
-        && Path::new(rest)
-            .components()
-            .all(|component| matches!(component, Component::Normal(_)));
-    if !plain {
-        return None;
-    }
-    let parts: Vec<&str> = rest.split('/').collect();
+/// The bytes of the file `path` names, with the path its type comes from.
+fn file(bundle: &Bundle, store: &dyn Store, path: &str) -> Option<(Vec<u8>, FilePath)> {
+    let parts: Vec<&str> = path.strip_prefix('/')?.split('/').collect();
     match parts.as_slice() {
-        ["frames", hash, file @ ..]
-            if *hash == bundle.manifest().frames.hash && !file.is_empty() =>
-        {
-            let name = file.join("/");
-            Some((bundle.frame_file(&name)?, name))
+        ["frames", hash, file @ ..] if *hash == bundle.manifest().frames.hash.as_str() => {
+            let path = FilePath::new(file.join("/")).ok()?;
+            Some((bundle.frame_file(&path)?, path))
         }
         ["packs", place @ ..] => {
             let place = Place::from_parts(place)?;
-            let body = bundle
-                .pack_file(&place)
-                .or_else(|| store.file(&place.pack, &place.version, &place.path))?;
+            let body = bundle.pack_file(&place).or_else(|| store.file(&place))?;
             Some((body, place.path))
         }
         _ => None,
     }
 }
 
-/// `body`, the file `name`, with its type and the headers.
-fn served(name: &str, body: Vec<u8>) -> Response<Vec<u8>> {
-    let mut response = with_type(StatusCode::OK, content_type(name), body);
+/// `body`, the file at `path`, with its type and the headers.
+fn served(path: &FilePath, body: Vec<u8>) -> Response<Vec<u8>> {
+    let mut response = with_type(StatusCode::OK, content_type(path.as_str()), body);
     let headers = response.headers_mut();
     for (name, value) in HEADERS {
         headers.insert(name, HeaderValue::from_static(value));

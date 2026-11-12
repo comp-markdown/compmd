@@ -46,7 +46,10 @@ fn run(files: &[(&str, &str)], packs: &Packs, ambient: &[&str]) -> Found {
         .collect();
     let text = files["input.comp.md"].clone();
     let ambient = Ambient {
-        packs: ambient.iter().map(|pack| (*pack).to_string()).collect(),
+        packs: ambient
+            .iter()
+            .map(|pack| pack.parse().expect("a pack's name"))
+            .collect(),
         report: false,
     };
     let validated = Processor::new("input.comp.md", text)
@@ -391,7 +394,7 @@ fn a_pack_without_exports_exports_nothing() {
 #[test]
 fn an_empty_registry_has_no_packs() {
     let ambient = Ambient {
-        packs: vec!["@host/c".into()],
+        packs: vec!["@host/c".parse().expect("a pack's name")],
         report: true,
     };
     let text = "---\nmd:\n  import:\n    - from: \"@acme/kit@1\"\n      names: [chip]\n---\n";

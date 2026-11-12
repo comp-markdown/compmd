@@ -103,7 +103,7 @@ fn a_name_from_an_ambient_pack_is_used_silently_unless_the_host_asks_for_w113() 
     let ambient = release("@host/c", "1.0.0", &card_pack("A card."), json!({}));
     let host = |report: bool| Host {
         ambient: Ambient {
-            packs: vec!["@host/c".into()],
+            packs: vec!["@host/c".parse().expect("a name")],
             report,
         },
         ..Host::default().with("@host/c", ambient.clone())
