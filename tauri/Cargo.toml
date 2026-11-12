@@ -1,6 +1,6 @@
 [package]
 name = "tauri-plugin-compmd"
-version = "0.6.0"
+version = "0.7.0"
 description = "The Tauri adapter of CompMD's hosting: embeds the bundle @compmd/vite writes, serves it on a scheme of the app's own, and gives the page its origin. In development."
 readme = "README.md"
 homepage = "https://compmd.hakanserce.com/"
@@ -23,7 +23,7 @@ build = []
 processor = ["compmd-host/processor"]
 
 [dependencies]
-compmd-host = { path = "../host", version = "0.6.0" }
+compmd-host = { path = "../host", version = "0.7.0" }
 serde_json = "1.0.145"
 tauri = "2.12"
 thiserror = "2.0.18"

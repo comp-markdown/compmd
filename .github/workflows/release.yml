@@ -49,11 +49,13 @@ jobs:
               exit 1
             fi
           done
-          written="$(cargo pkgid -p compmd | sed 's/.*@//')"
-          if [ "$written" != "$version" ]; then
-            echo "::error::processor/Cargo.toml is $written, the tag $GITHUB_REF_NAME"
-            exit 1
-          fi
+          for crate in compmd compmd-pack compmd-host; do
+            written="$(cargo pkgid -p "$crate" | sed 's/.*@//')"
+            if [ "$written" != "$version" ]; then
+              echo "::error::$crate is $written, the tag $GITHUB_REF_NAME"
+              exit 1
+            fi
+          done
           written="$(cargo metadata --no-deps --format-version 1 --manifest-path tauri/Cargo.toml | jq -r '.packages[0].version')"
           if [ "$written" != "$version" ]; then
             echo "::error::tauri/Cargo.toml is $written, the tag $GITHUB_REF_NAME"

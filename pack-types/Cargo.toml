@@ -1,6 +1,6 @@
 [package]
 name = "compmd-pack"
-version = "0.6.0"
+version = "0.7.0"
 description = "The names CompMD packs and their files are known by: a pack's name, a release, a file's path and place, an integrity. In development."
 readme = "README.md"
 homepage = "https://compmd.hakanserce.com/"

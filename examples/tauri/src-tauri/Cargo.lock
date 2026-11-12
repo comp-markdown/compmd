@@ -350,7 +350,7 @@ dependencies = [
 
 [[package]]
 name = "compmd"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "compmd-markdown",
  "compmd-pack",
@@ -368,7 +368,7 @@ dependencies = [
 
 [[package]]
 name = "compmd-host"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "compmd",
  "compmd-pack",
@@ -388,7 +388,7 @@ dependencies = [
 
 [[package]]
 name = "compmd-pack"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "semver",
  "serde",
@@ -3634,7 +3634,7 @@ dependencies = [
 
 [[package]]
 name = "tauri-plugin-compmd"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "compmd-host",
  "serde_json",

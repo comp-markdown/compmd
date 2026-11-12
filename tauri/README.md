@@ -6,7 +6,7 @@ It shares its version with the `@compmd` packages: use `@compmd/vite` and `@comp
 
 **Versions:**
 - **0.6.0:** the first version: `init()`, which served frames the crate embedded on `compmd://` and gave the page their base; `Builder` for another scheme or an app's own build of the frames; the `base` command. (`0.0.0` is a placeholder with no code.)
-- **Next (0.7.0):** the hosting adapter. The app embeds the bundle its own page's build writes (`build::bundle`, `include_bundle!`, `init(bundle)` in place of `init()` and `Builder`); the scheme is the one the bundle was built for; the page gets the origin, `__COMPMD__ = { origin }`; the scheme serves `compmd-host`'s contract, frames under their hash and packs at `packs/<place>`. The crate's own frames, `frames_dir`, the `base` command and the permissions are gone.
+- **0.7.0:** the hosting adapter. The app embeds the bundle its own page's build writes (`build::bundle`, `include_bundle!`, `init(bundle)` in place of `init()` and `Builder`); the scheme is the one the bundle was built for; the page gets the origin, `__COMPMD__ = { origin }`; the scheme serves `compmd-host`'s contract, frames under their hash and packs at `packs/<place>`. The crate's own frames, `frames_dir`, the `base` command and the permissions are gone.
 
 ## Use
 

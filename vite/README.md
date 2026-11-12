@@ -15,6 +15,9 @@ npm install @compmd/vite @compmd/processor @compmd/sandbox
 
 It implements the draft of the [CompMD specification](https://compmd.hakanserce.com/spec/), version 1, and shares its version with `@compmd/render`, `@compmd/processor` and `@compmd/sandbox` ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)). It needs Vite 8 or later.
 
+**Versions:**
+- **0.7.0:** the bundle ([hosting](../docs/hosting.md)): the frames under a hash of their files, `frames/<hash>/`, each pack's files by its place with its source components compiled ahead, and `manifest.json`; `out` and `source` for a desktop app's adapter; `buildBundle` for a host without Vite; `cspFor`; a `_headers` file; every file served with the serving contract's headers; `virtual:compmd`'s paths relative to the bundle's origin. Breaking: the frames move from `compmd/strict.html` to `compmd/frames/<hash>/`, and `virtual:compmd`'s `sandbox` gives `frames` and an `origin`, no longer a `base`. An app that uses `virtual:compmd` and `cspFor` changes nothing; one that wrote `compmd/` paths into its own policy or server rules updates them.
+
 ## Commands
 
 ```sh
