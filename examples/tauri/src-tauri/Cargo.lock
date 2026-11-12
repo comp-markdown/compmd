@@ -367,6 +367,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "compmd-host"
+version = "0.6.0"
+dependencies = [
+ "compmd",
+ "compmd-pack",
+ "http",
+ "semver",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "compmd-markdown"
 version = "0.1.0"
 dependencies = [
@@ -387,7 +400,6 @@ name = "compmd-tauri-example"
 version = "0.0.0"
 dependencies = [
  "compmd",
- "semver",
  "serde_json",
  "tauri",
  "tauri-build",
@@ -3621,29 +3633,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "tauri-plugin"
-version = "2.7.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "67fb21a77e8f94e8beb3325e583102488659365af0a3948b7ea244c5b779c291"
-dependencies = [
- "anyhow",
- "glob",
- "plist",
- "schemars 0.8.22",
- "serde",
- "serde_json",
- "tauri-utils",
- "walkdir",
-]
-
-[[package]]
 name = "tauri-plugin-compmd"
 version = "0.6.0"
 dependencies = [
- "serde",
+ "compmd-host",
  "serde_json",
  "tauri",
- "tauri-plugin",
+ "thiserror 2.0.21",
 ]
 
 [[package]]

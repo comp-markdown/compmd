@@ -4,7 +4,7 @@
     "lib": ["es2024", "dom", "dom.iterable"],
     "module": "esnext",
     "moduleResolution": "bundler",
-    "types": ["node", "vite/client"],
+    "types": ["node", "vite/client", "@compmd/vite/client"],
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "verbatimModuleSyntax": true,

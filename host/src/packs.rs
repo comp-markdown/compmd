@@ -3,37 +3,42 @@
 //!
 //! [hosting]: https://github.com/comp-markdown/compmd/blob/main/docs/hosting.md
 
+use std::sync::Arc;
+
 use compmd::host::{Packs, Release};
 use compmd_pack::{PackName, Place};
 
 use crate::bundle::Bundle;
 use crate::store::Store;
 
-/// The bundle's packs, then the store's, as `compmd::host::Packs`.
+/// The bundle's packs, then the store's, as `compmd::host::Packs`. It shares the bundle and the store, which the host
+/// keeps, so the processor, which keeps its packs while it processes, can be given it.
 ///
 /// ```
+/// # use std::sync::Arc;
+/// # use compmd::{Ambient, ParseOptions, Processor};
 /// # use compmd_host::{Bundle, HostPacks, NoStore};
 /// # let bundle = Bundle::from_files([("manifest.json", br#"{"format": 1, "frames": {"hash": "1df336e75685de8c"}}"#.to_vec())])?;
-/// let packs = HostPacks::new(&bundle, &NoStore);
-/// // where the host processes: `.resolve((), packs, &ambient)`
-/// # drop(packs);
+/// let packs = HostPacks::new(Arc::new(bundle), Arc::new(NoStore));
+/// let resolved = Processor::new("a.comp.md", "# A\n").parse(&ParseOptions::default()).resolve((), packs, &Ambient::default());
+/// # drop(resolved);
 /// # Ok::<(), compmd_host::BundleError>(())
 /// ```
-#[derive(Clone, Copy)]
-pub struct HostPacks<'a> {
-    bundle: &'a Bundle,
-    store: &'a dyn Store,
+#[derive(Clone)]
+pub struct HostPacks {
+    bundle: Arc<Bundle>,
+    store: Arc<dyn Store>,
 }
 
-impl<'a> HostPacks<'a> {
+impl HostPacks {
     /// The packs of `bundle`, then of `store`.
     #[must_use]
-    pub const fn new(bundle: &'a Bundle, store: &'a dyn Store) -> Self {
+    pub fn new(bundle: Arc<Bundle>, store: Arc<dyn Store>) -> Self {
         Self { bundle, store }
     }
 }
 
-impl Packs for HostPacks<'_> {
+impl Packs for HostPacks {
     fn releases(&self, pack: &PackName) -> Vec<Release> {
         let bundled = self
             .bundle
@@ -109,8 +114,7 @@ mod tests {
 
     #[test]
     fn the_bundles_release_comes_first_and_the_stores_others_after() {
-        let bundle = bundle();
-        let packs = HostPacks::new(&bundle, &Kept);
+        let packs = HostPacks::new(Arc::new(bundle()), Arc::new(Kept));
         let releases = packs.releases(&"@kit/mermaid".parse().expect("a name"));
         let versions: Vec<String> = releases
             .iter()
@@ -129,8 +133,8 @@ mod tests {
 
     #[test]
     fn a_file_is_read_from_the_bundle_or_the_store_as_text() {
-        let bundle = bundle();
-        let packs = HostPacks::new(&bundle, &Kept);
+        let bundle = Arc::new(bundle());
+        let packs = HostPacks::new(Arc::clone(&bundle), Arc::new(Kept));
         assert_eq!(
             packs
                 .pack_file(&place("@kit/mermaid@1.2.0/package.json"))
@@ -149,7 +153,8 @@ mod tests {
             "not text"
         );
         assert_eq!(
-            HostPacks::new(&bundle, &NoStore).pack_file(&place("@kit/mermaid@1.3.0/package.json")),
+            HostPacks::new(bundle, Arc::new(NoStore))
+                .pack_file(&place("@kit/mermaid@1.3.0/package.json")),
             None
         );
     }

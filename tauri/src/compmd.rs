@@ -1,13 +1,16 @@
 //! What the plugin keeps for the app: the bundle, its origin and the pack store.
 
+use std::sync::Arc;
+
 use compmd_host::{Bundle, Store, respond};
 use tauri::http::{Request, Response, StatusCode};
 
-/// The bundle the app serves, where, and the store of the packs it fetches, as the app's state (`app.compmd()`).
+/// The bundle the app serves, where, and the store of the packs it fetches, as the app's state (`app.compmd()`). The
+/// bundle and the store are shared, so the processor can keep them as its packs (`packs`).
 pub struct Compmd {
-    bundle: Option<Bundle>,
+    bundle: Option<Arc<Bundle>>,
     origin: Option<String>,
-    store: Box<dyn Store>,
+    store: Arc<dyn Store>,
 }
 
 /// Why the scheme serves nothing without a bundle.
@@ -18,10 +21,10 @@ impl Compmd {
     pub(crate) fn new(
         bundle: Option<Bundle>,
         origin: Option<String>,
-        store: Box<dyn Store>,
+        store: Arc<dyn Store>,
     ) -> Self {
         Self {
-            bundle,
+            bundle: bundle.map(Arc::new),
             origin,
             store,
         }
@@ -29,8 +32,8 @@ impl Compmd {
 
     /// The bundle, when the app's build embedded one.
     #[must_use]
-    pub const fn bundle(&self) -> Option<&Bundle> {
-        self.bundle.as_ref()
+    pub fn bundle(&self) -> Option<&Bundle> {
+        self.bundle.as_deref()
     }
 
     /// Where the bundle is served, as the page has it in `__COMPMD__`: `compmd://localhost`, or
@@ -61,12 +64,15 @@ impl Compmd {
     }
 
     /// The processor's packs: the bundle's, then the store's, the same files the frames load; none without a bundle.
+    ///
+    /// ```ignore
+    /// let packs = app.compmd().packs().expect("a bundle");
+    /// let processor = Processor::new(path, text).parse(&ParseOptions::default()).resolve((), packs, &ambient);
+    /// ```
     #[cfg(feature = "processor")]
     #[must_use]
-    pub fn packs(&self) -> Option<compmd_host::HostPacks<'_>> {
-        Some(compmd_host::HostPacks::new(
-            self.bundle.as_ref()?,
-            self.store(),
-        ))
+    pub fn packs(&self) -> Option<compmd_host::HostPacks> {
+        let bundle = Arc::clone(self.bundle.as_ref()?);
+        Some(compmd_host::HostPacks::new(bundle, Arc::clone(&self.store)))
     }
 }

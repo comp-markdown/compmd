@@ -358,6 +358,9 @@ importers:
         specifier: 2.12.4
         version: 2.12.4
     devDependencies:
+      '@compmd/vite':
+        specifier: workspace:*
+        version: link:../../vite
       '@types/node':
         specifier: 26.6.5
         version: 26.6.5

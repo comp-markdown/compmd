@@ -15,6 +15,7 @@
     "@tauri-apps/api": "2.12.4"
   },
   "devDependencies": {
+    "@compmd/vite": "workspace:*",
     "@types/node": "26.6.5",
     "typescript": "6.0.3",
     "vite": "8.3.4"

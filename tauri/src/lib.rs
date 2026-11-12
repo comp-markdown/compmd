@@ -35,6 +35,7 @@ mod origin;
 mod scheme;
 
 use std::path::PathBuf;
+use std::sync::Arc;
 
 pub use compmd::Compmd;
 /// The shared layers of hosting: the bundle, the store and the serving contract.
@@ -116,10 +117,10 @@ pub fn init<R: Runtime>(bundle: impl Into<Option<Bundle>>) -> TauriPlugin<R> {
 
 /// The pack store in the app's data folder, `compmd/packs/` there (docs/tauri-plugin.md, decision 11); none when the
 /// platform gives the app no data folder.
-fn store_in(data: Option<PathBuf>) -> Box<dyn Store> {
+fn store_in(data: Option<PathBuf>) -> Arc<dyn Store> {
     data.map_or_else(
-        || Box::new(NoStore) as Box<dyn Store>,
-        |data| Box::new(FolderStore::new(data.join("compmd").join("packs"))),
+        || Arc::new(NoStore) as Arc<dyn Store>,
+        |data| Arc::new(FolderStore::new(data.join("compmd").join("packs"))),
     )
 }
 

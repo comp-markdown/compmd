@@ -1,11 +1,12 @@
-//! The app's wiring on Tauri's mock runtime, with its own capabilities: the app's page reaches its commands and the
-//! plugin's `base`, and a page on the frames' scheme reaches none (docs/tauri-plugin.md, decision 8).
+//! The app's wiring on Tauri's mock runtime, with its own capabilities: the app's page reaches its commands, and a
+//! page on the frames' scheme reaches none (docs/tauri-plugin.md, decision 8); the plugin serves the bundle.
 
 use serde_json::{Value, json};
 use tauri::ipc::{CallbackFn, InvokeBody};
 use tauri::test::{INVOKE_KEY, MockRuntime, get_ipc_response};
 use tauri::webview::InvokeRequest;
 use tauri::{WebviewUrl, WebviewWindow, WebviewWindowBuilder};
+use tauri_plugin_compmd::CompmdExt;
 
 use super::*;
 
@@ -51,22 +52,47 @@ fn invoke_with(
 }
 
 #[test]
-fn the_apps_page_reaches_its_commands_and_the_frames_base() {
-    let (_app, window) = window(Mode::Check);
+fn the_apps_page_reaches_its_commands_and_the_document_its_packs() {
+    let (app, window) = window(Mode::Check);
     assert_eq!(
         invoke(&window, "tauri://localhost", "mode", json!({})),
         Ok(json!("check"))
     );
+    // Processed over the packs of the bundle the build embedded, as the frames load them.
     let processed = invoke(&window, "tauri://localhost", "document", json!({})).expect("processed");
-    assert_eq!(processed["diagnostics"], json!([]));
-    let base = invoke(
-        &window,
-        "tauri://localhost",
-        "plugin:compmd|base",
-        json!({}),
-    )
-    .expect("answered");
-    assert!(base.is_string() || base.is_null(), "{base}");
+    assert_eq!(
+        processed["diagnostics"],
+        json!([]),
+        "{}",
+        processed["diagnostics"]
+    );
+    let compmd = app.compmd();
+    assert!(
+        compmd.bundle().is_some(),
+        "the build embedded no bundle: build the page first (`pnpm build`)"
+    );
+    assert!(
+        compmd
+            .origin()
+            .is_some_and(|origin| origin.contains("compmd"))
+    );
+}
+
+#[test]
+fn the_broken_mode_serves_the_broken_bundle() {
+    let (app, _window) = window(Mode::CheckBroken);
+    let bundle = app
+        .compmd()
+        .bundle()
+        .expect("the broken bundle: build the page first (`pnpm build`)");
+    let runtime = format!("/frames/{}/runtime.js", bundle.manifest().frames.hash);
+    let request = tauri::http::Request::get(runtime)
+        .body(Vec::<u8>::new())
+        .expect("a request");
+    assert_eq!(
+        app.compmd().respond(&request).status(),
+        tauri::http::StatusCode::NOT_FOUND
+    );
 }
 
 #[test]
@@ -79,7 +105,7 @@ fn a_frame_without_the_invoke_key_reaches_no_command() {
         "http://compmd.localhost/frames/1df336e75685de8c/strict.html",
         "tauri://localhost",
     ] {
-        for command in ["mode", "document", "report", "plugin:compmd|base"] {
+        for command in ["mode", "document", "report"] {
             for key in ["", "a guess"] {
                 // Tauri drops a call with the wrong key without answering it, which the mock's helper takes as a
                 // panic: either way, the command didn't run.

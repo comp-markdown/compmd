@@ -9,7 +9,7 @@ md:
 
 # CompMD in a Tauri app
 
-This page is a CompMD document, processed by the app in Rust and rendered by `@compmd/sandbox`. Its components run in frames that `tauri-plugin-compmd` serves from a scheme of their own.
+This page is a CompMD document, processed by the app in Rust and rendered by `@compmd/sandbox`. Its components run in frames that `tauri-plugin-compmd` serves from a scheme of their own, from the bundle the page's build wrote.
 
 A diagram, drawn by the Mermaid pack in a strict frame:
 
@@ -33,8 +33,8 @@ A component the document defines itself, in a strict frame of its own, which say
 ```jsx component=probe runtime=react@19
 import { useEffect } from "react";
 
-/** What the frame's code can see: its origin, and whether Tauri's IPC is there for it to call the app. */
-const seen = () => ({ origin: self.origin, tauri: "__TAURI_INTERNALS__" in self || "__TAURI__" in self });
+/** What the frame's code can see: its origin, and whether Tauri's IPC, or WebKit's handler for it, is there to call the app. */
+const seen = () => ({ origin: self.origin, tauri: "__TAURI_INTERNALS__" in self || "__TAURI__" in self, ipc: Boolean(self.webkit?.messageHandlers?.ipc) });
 
 export default function Probe({ compmd }) {
   useEffect(() => compmd.set("result", JSON.stringify(seen())), []);

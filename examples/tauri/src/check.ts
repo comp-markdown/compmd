@@ -1,8 +1,14 @@
-// The self-check (docs/tauri-plugin.md, decision 9): what the page drew in a real webview, after it has settled. The
-// strict frames' insides are another origin's, which the page can't read, so the sandbox's observer says what mounted
-// in them, and the component sets an input to its frame's origin.
+// The self-check (docs/tauri-plugin.md, decision 9): what the page drew in a real webview, after it has settled, then
+// the hosting check every host runs (`@compmd/sandbox/check`, docs/hosting.md, decision 11), with Tauri's API as what a
+// frame must not see. The strict frames' insides are another origin's, which the page can't read, so the sandbox's
+// observer says what mounted in them, and the component sets an input to its frame's origin.
 
 import type { Observation, View, ViewEvents } from "@compmd/sandbox";
+import { runCheck } from "@compmd/sandbox/check";
+import { sandbox } from "virtual:compmd";
+
+/** Tauri's globals: what a frame's code would call the app with, and must not see. */
+const TAURI = ["__TAURI_INTERNALS__", "__TAURI__"];
 
 /** How the app runs: showing the document, checking it, or checking that broken frames say so. */
 export type Mode = "show" | "check" | "check-broken";
@@ -11,6 +17,10 @@ export type Mode = "show" | "check" | "check-broken";
 export interface Drawn {
   view: View;
   container: HTMLElement;
+  /** Where the hosting check draws its own document. */
+  hosting: HTMLElement;
+  /** The document's host components, among them the Mermaid pack's, whose module the hosting check loads by URL. */
+  components: readonly { name: string; module?: { pack: string; version: string; path: string } }[];
   observation: Observation;
   errors: readonly ViewEvents["error"][];
   sets: readonly ViewEvents["set"][];
@@ -37,9 +47,9 @@ const mounted = (observation: Observation, name: string) =>
   observation.events.some((event) => event.type === "mounted" && event.component === name && event.frame !== "");
 
 /** What the component reported its frame sees, from the value of its `set`. */
-function seenBy(value: unknown): { origin?: unknown; tauri?: unknown } | undefined {
+function seenBy(value: unknown): { origin?: unknown; tauri?: unknown; ipc?: unknown } | undefined {
   try {
-    return JSON.parse(String(value)) as { origin?: unknown; tauri?: unknown };
+    return JSON.parse(String(value)) as { origin?: unknown; tauri?: unknown; ipc?: unknown };
   } catch {
     return undefined;
   }
@@ -69,7 +79,16 @@ export async function check(mode: Exclude<Mode, "show">, drawn: Drawn): Promise<
   const seen = seenBy(origin()?.value);
   if (seen?.origin !== "null") failed.push(`the component's frame isn't sandboxed: it sees ${JSON.stringify(seen)}`);
   if (seen?.tauri !== false) failed.push(`the component's frame can reach Tauri: it sees ${JSON.stringify(seen)}`);
+  if (seen?.ipc !== false) failed.push(`the component's frame has WebKit's \`ipc\` message handler: it sees ${JSON.stringify(seen)}`);
   const fallbacks = observation.events.filter((event) => event.type === "fallback");
   if (fallbacks.length > 0) failed.push(`fallbacks: ${JSON.stringify(fallbacks)}`);
-  return failed.length === 0 ? { ok: true, message: "the diagram, the highlighted code and the component in its strict frame drew" } : { ok: false, message: failed.join("; ") };
+  // The hosting check, on the bundled Mermaid pack's module.
+  const mermaid = drawn.components.find(({ name }) => name === "mermaid")?.module;
+  const packs = mermaid ? [{ place: mermaid, params: { code: "graph LR; A --> B", theme: "auto" } }] : [];
+  if (!mermaid) failed.push("the Mermaid component has no built module, which the hosting check loads by URL");
+  const hosting = await runCheck({ container: drawn.hosting, frames: sandbox.frames, modules: sandbox.modules, hostApi: TAURI, packs });
+  failed.push(...hosting.failed.map((failure) => `the hosting check: ${failure}`));
+  return failed.length === 0
+    ? { ok: true, message: `the diagram, the highlighted code and the component in its strict frame drew; the hosting check passed (${String(hosting.passed.length)} checks)` }
+    : { ok: false, message: failed.join("; ") };
 }

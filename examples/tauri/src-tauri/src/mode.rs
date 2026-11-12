@@ -2,6 +2,8 @@
 
 use std::path::PathBuf;
 
+use tauri_plugin_compmd::compmd_host::Bundle;
+
 /// How the app runs, from its arguments.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Mode {
@@ -44,20 +46,20 @@ impl Mode {
         !matches!(self, Self::Show)
     }
 
-    /// The plugin for this mode: the embedded frames, as an app adds it in one call; or, for `CheckBroken`, a build
-    /// of the app's own whose runtime is missing (`pnpm build` writes it).
+    /// The plugin for this mode: the bundle the build embedded, as an app adds it; or, for `CheckBroken`, a copy of
+    /// it whose frames' runtime is missing, read from its folder (`pnpm build` writes it).
     #[must_use]
     pub fn plugin<R: tauri::Runtime>(self) -> tauri::plugin::TauriPlugin<R> {
         match self {
-            Self::CheckBroken => tauri_plugin_compmd::Builder::new()
-                .frames_dir(broken())
-                .build(),
-            Self::Show | Self::Check => tauri_plugin_compmd::init(),
+            Self::CheckBroken => tauri_plugin_compmd::init(Bundle::read(&broken()).ok()),
+            Self::Show | Self::Check => {
+                tauri_plugin_compmd::init(tauri_plugin_compmd::include_bundle!())
+            }
         }
     }
 }
 
-/// Where `scripts/broken.mts` writes the broken frames.
+/// Where `scripts/broken.mts` writes the broken bundle.
 fn broken() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("broken")
 }
