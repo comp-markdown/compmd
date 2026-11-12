@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Publishes the crates of a release (RELEASING.md, section 3): compmd-markdown first, since compmd depends on it by
-# version, then compmd, then tauri-plugin-compmd. A version crates.io has already is left as it is: the fork's version moves only when its code
-# changes, and a release that failed halfway can run again.
+# Publishes the crates of a release (RELEASING.md, section 3), each after those it depends on by version:
+# compmd-markdown and compmd-pack, then compmd, compmd-host and tauri-plugin-compmd. A version crates.io has already is
+# left as it is: the fork's version moves only when its code changes, and a release that failed halfway can run again.
 #
 #   .github/scripts/publish-crates.sh            # publishes, with CARGO_REGISTRY_TOKEN set
 #   .github/scripts/publish-crates.sh --dry-run  # packages what it would publish, and publishes nothing
@@ -11,13 +11,6 @@ cd "$(dirname "${BASH_SOURCE[0]}")/../.."
 
 dry_run=false
 [ "${1:-}" = "--dry-run" ] && dry_run=true
-
-# tauri-plugin-compmd's package holds the frames it embeds, which the release job builds (`cargo make tauri-frames`):
-# without them, nothing is published.
-if [ ! -f tauri/frames/frames.json ]; then
-  echo "::error::tauri/frames/ has no build: run cargo make tauri-frames first"
-  exit 1
-fi
 
 # The version of the package `$1` in the manifest `$2`, read without a lock file: the fork, `markdown-rs/`, is a
 # workspace of its own, whose checkout has none, and `cargo pkgid` needs one.
@@ -46,8 +39,9 @@ publish() {
 }
 
 publish compmd-markdown markdown-rs/Cargo.toml
+publish compmd-pack Cargo.toml
 publish compmd Cargo.toml
+publish compmd-host Cargo.toml
 # Not built again here: building Tauri on Linux needs WebKitGTK, and the Tauri check built and tested this commit
-# before the release went on (release.yml). Its frames are the build's, ignored by git, so cargo counts them as
-# uncommitted: `--allow-dirty` lets them in.
-publish tauri-plugin-compmd tauri/Cargo.toml --no-verify --allow-dirty
+# before the release went on (release.yml).
+publish tauri-plugin-compmd tauri/Cargo.toml --no-verify

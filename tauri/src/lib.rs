@@ -1,184 +1,140 @@
-//! `tauri-plugin-compmd`: CompMD's sandbox frames for a Tauri app, served from a scheme of the app's own
-//! (docs/tauri-plugin.md).
+//! `tauri-plugin-compmd`: the Tauri adapter of CompMD's hosting (docs/tauri-plugin.md, docs/hosting.md).
 //!
-//! The sandbox (`@compmd/sandbox`) runs a document's components in frames, which need an origin apart from the app's
-//! page. The plugin brings the frames, serves them on a scheme of their own, and tells the page where they are. An app
-//! adds it in one call:
+//! What every host does is shared: the configuration, the bundle `@compmd/vite` builds from the page's own
+//! `@compmd/sandbox`, the pack store and the serving contract (`compmd-host`). The plugin does the four things only
+//! Tauri can: it embeds the bundle in the app, serves it on the scheme the bundle was built for, gives the page the
+//! origin, and gives the store a folder.
 //!
+//! The bundle is written by `@compmd/vite` (`compmd({ out: "src-tauri/compmd", source: "compmd://localhost/" })`);
+//! the app's `build.rs` embeds it, with the `build` feature:
+//!
+//! ```no_run
+//! # #[cfg(feature = "build")]
+//! tauri_plugin_compmd::build::bundle("compmd");
 //! ```
-//! let app = tauri::Builder::<tauri::Wry>::default().plugin(tauri_plugin_compmd::init());
-//! // then, as every Tauri app: app.run(tauri::generate_context!())
-//! # drop(app);
+//!
+//! and its `main` passes it to the plugin:
+//!
+//! ```ignore
+//! tauri::Builder::default().plugin(tauri_plugin_compmd::init(tauri_plugin_compmd::include_bundle!()))
 //! ```
 //!
-//! and its page opens a sandbox with no `base`, which the plugin gave it:
+//! The page then takes everything from its own bundle and the origin from the plugin, and passes nothing:
 //!
 //! ```js
-//! const view = createSandbox({ page: "host" }).open(container, { components: processed.hostComponents });
+//! import { sandbox } from "virtual:compmd";
+//! const view = createSandbox({ ...sandbox, page: "host" }).open(container, { components });
 //! ```
-//!
-//! [`Builder`] customizes it: another scheme's name, or the app's own build of the frames.
 
-mod command;
-mod content_type;
-mod embedded;
-mod files;
-mod frames;
-mod respond;
+#[cfg(feature = "build")]
+pub mod build;
+#[cfg(feature = "build")]
+mod build_error;
+mod compmd;
+mod origin;
 mod scheme;
-mod served;
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
-pub use files::Files;
-pub use frames::{Build, FRAMES_JSON, Frames};
-pub use served::Served;
-use tauri::plugin::{Builder as PluginBuilder, TauriPlugin};
+pub use compmd::Compmd;
+/// The shared layers of hosting: the bundle, the store and the serving contract.
+pub use compmd_host;
+use compmd_host::{Bundle, FolderStore, NoStore, Store};
+use tauri::plugin::{Builder, TauriPlugin};
 use tauri::{Manager, Runtime};
 
-/// The scheme's name when the app gives none, the one the embedded frames are built for.
-pub const SCHEME: &str = "compmd";
+#[cfg(feature = "build")]
+pub use build_error::BuildError;
 
-/// The plugin as it comes: the embedded frames on the scheme `compmd`, their `base` given to the app's pages.
+/// The bundle `build::bundle` embedded in the app, or `None` when the build found none (with a warning then): the
+/// plugin then serves nothing, and the page reports that its frames didn't load.
+///
+/// ```ignore
+/// tauri::Builder::default().plugin(tauri_plugin_compmd::init(tauri_plugin_compmd::include_bundle!()))
+/// ```
+#[macro_export]
+macro_rules! include_bundle {
+    () => {
+        $crate::embedded(include!(concat!(env!("OUT_DIR"), "/compmd_bundle.rs")))
+    };
+}
+
+/// The bundle of the files `build::bundle` embedded, for [`include_bundle!`]; none when there are none.
+#[doc(hidden)]
+#[must_use]
+pub fn embedded(files: Option<&'static [(&'static str, &'static [u8])]>) -> Option<Bundle> {
+    files.and_then(|files| Bundle::embedded(files).ok())
+}
+
+/// The plugin, serving `bundle` on the scheme its manifest names (`compmd`), with the origin given to the app's pages
+/// and the pack store in the app's data folder.
+///
+/// # Panics
+///
+/// When the bundle's scheme isn't a scheme's name, or it was built without one (`source`): mistakes in the app's
+/// build, which `build::bundle` refuses already.
 ///
 /// # Example
 ///
 /// ```
-/// let app = tauri::Builder::<tauri::Wry>::default().plugin(tauri_plugin_compmd::init());
+/// # use compmd_host::Bundle;
+/// let bundle = Bundle::from_files([(
+///     "manifest.json",
+///     br#"{"format": 1, "frames": {"hash": "1df336e75685de8c"}, "source": "compmd://localhost/"}"#.to_vec(),
+/// )])?;
+/// let app = tauri::Builder::<tauri::Wry>::default().plugin(tauri_plugin_compmd::init(bundle));
 /// # drop(app);
+/// # Ok::<(), compmd_host::BundleError>(())
 /// ```
 #[must_use]
-pub fn init<R: Runtime>() -> TauriPlugin<R> {
-    Builder::new().build()
-}
-
-/// The plugin, set up by further calls.
-///
-/// # Example
-///
-/// ```
-/// // Frames the app built itself, with libraries it offers, on a scheme of its own name.
-/// let plugin = tauri_plugin_compmd::Builder::new()
-///     .scheme("myframes")
-///     .frames_dir("sandbox")
-///     .build::<tauri::Wry>();
-/// # drop(plugin);
-/// ```
-#[derive(Clone, Debug)]
-pub struct Builder {
-    scheme: String,
-    frames_dir: Option<PathBuf>,
-}
-
-impl Default for Builder {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl Builder {
-    /// The plugin with the embedded frames on the scheme `compmd`, as [`init`] gives it.
-    #[must_use]
-    pub fn new() -> Self {
-        Self {
-            scheme: SCHEME.to_owned(),
-            frames_dir: None,
-        }
-    }
-
-    /// The scheme the frames are served on: a name of the app's choosing, lowercase letters, digits, `+`, `-` and
-    /// `.`, starting with a letter. A scheme other than `compmd` needs the app's own build (`frames_dir`), built with
-    /// its `source`, since the embedded frames name `compmd://`.
-    #[must_use]
-    pub fn scheme(mut self, scheme: impl Into<String>) -> Self {
-        self.scheme = scheme.into();
-        self
-    }
-
-    /// The app's own build of the frames (`buildHashedFrames`) in place of the embedded one: the folder holding its
-    /// `frames.json`, relative to the app's resources, or absolute. Its page then asks for `base` with the command
-    /// `plugin:compmd|base`, which `compmd:default` grants, since its hash is known only when the app starts.
-    #[must_use]
-    pub fn frames_dir(mut self, folder: impl Into<PathBuf>) -> Self {
-        self.frames_dir = Some(folder.into());
-        self
-    }
-
-    /// The plugin, named `compmd`: its scheme, the `base` command, the frames, and, for the embedded frames, the
-    /// script that gives the app's pages their `base`.
-    ///
-    /// # Panics
-    ///
-    /// When the scheme's name isn't one, or isn't `compmd` with the embedded frames: mistakes in the app's code.
-    #[must_use]
-    pub fn build<R: Runtime>(self) -> TauriPlugin<R> {
-        let Self { scheme, frames_dir } = self;
-        assert!(is_scheme(&scheme), "`{scheme}` isn't a scheme's name");
+pub fn init<R: Runtime>(bundle: impl Into<Option<Bundle>>) -> TauriPlugin<R> {
+    let bundle = bundle.into();
+    let scheme = bundle.as_ref().map(|bundle| {
+        let scheme = bundle.manifest().scheme();
+        let scheme = scheme.unwrap_or_else(|| panic!("{}", BUILT_WITHOUT_SOURCE));
         assert!(
-            frames_dir.is_some() || scheme == SCHEME,
-            "the embedded frames are built for the scheme `{SCHEME}`: the scheme `{scheme}` needs the app's own build (`frames_dir`)"
+            origin::is_scheme(scheme),
+            "`{scheme}` isn't a scheme's name"
         );
-        let embedded = frames_dir.is_none().then(Frames::embedded);
-        let mut plugin =
-            PluginBuilder::new("compmd").invoke_handler(tauri::generate_handler![command::base]);
-        if let Some(base) = embedded.as_ref().and_then(|frames| frames.base(&scheme)) {
-            plugin = plugin.js_init_script(init_script(&base));
-        }
-        let served_scheme = scheme.clone();
-        plugin
-            .register_uri_scheme_protocol(served_scheme, scheme::serve)
-            .setup(move |app, _api| {
-                let frames = embedded.clone().unwrap_or_else(|| {
-                    let folder = frames_dir
-                        .as_deref()
-                        .and_then(|dir| folder_of(dir, app.path().resource_dir().ok()));
-                    folder.map_or_else(Frames::none, |folder| Frames::read(&folder))
-                });
-                app.manage(Served {
-                    frames,
-                    scheme: scheme.clone(),
-                });
-                Ok(())
-            })
-            .build()
+        scheme.to_owned()
+    });
+    let origin = scheme.as_deref().map(origin::origin_of);
+    let mut plugin = Builder::new("compmd");
+    if let (Some(scheme), Some(origin)) = (&scheme, &origin) {
+        plugin = plugin
+            .js_init_script(origin::init_script(origin))
+            .register_uri_scheme_protocol(scheme.clone(), scheme::serve);
     }
-}
-
-/// The script that gives the app's pages the frames' `base`, as `createSandbox` reads it.
-fn init_script(base: &str) -> String {
-    let base = serde_json::to_string(base).expect("a string serializes");
-    format!("globalThis.__COMPMD__ = Object.freeze({{ base: {base} }});")
-}
-
-/// Where the app's own frames are: `frames` itself when it is absolute, else under the app's `resources`; none when
-/// those can't be found, so the app starts with no frames, and gives no `base`.
-fn folder_of(frames: &Path, resources: Option<PathBuf>) -> Option<PathBuf> {
-    if frames.is_absolute() {
-        Some(frames.to_path_buf())
-    } else {
-        resources.map(|resources| resources.join(frames))
-    }
-}
-
-/// Whether `name` is a scheme's name (RFC 3986): a letter, then letters, digits, `+`, `-` or `.`; lowercase, as
-/// webviews compare them.
-fn is_scheme(name: &str) -> bool {
-    let mut bytes = name.bytes();
-    bytes.next().is_some_and(|first| first.is_ascii_lowercase())
-        && bytes.all(|byte| {
-            byte.is_ascii_lowercase() || byte.is_ascii_digit() || matches!(byte, b'+' | b'-' | b'.')
+    plugin
+        .setup(move |app, _api| {
+            let store = store_in(app.path().app_data_dir().ok());
+            app.manage(Compmd::new(bundle, origin, store));
+            Ok(())
         })
+        .build()
 }
+
+/// The pack store in the app's data folder, `compmd/packs/` there (docs/tauri-plugin.md, decision 11); none when the
+/// platform gives the app no data folder.
+fn store_in(data: Option<PathBuf>) -> Box<dyn Store> {
+    data.map_or_else(
+        || Box::new(NoStore) as Box<dyn Store>,
+        |data| Box::new(FolderStore::new(data.join("compmd").join("packs"))),
+    )
+}
+
+/// Why a bundle built for an http origin can't be served on a scheme.
+pub(crate) const BUILT_WITHOUT_SOURCE: &str = "the bundle was built without a `source`, so it names no scheme: build it with the scheme it is served on, `compmd({ out, source: \"compmd://localhost/\" })`";
 
 /// What the plugin gives Rust code of the app.
 pub trait CompmdExt<R: Runtime> {
-    /// The frames the app serves, and their scheme.
-    fn compmd(&self) -> &Served;
+    /// The bundle the app serves, its origin and the pack store.
+    fn compmd(&self) -> &Compmd;
 }
 
 impl<R: Runtime, T: Manager<R>> CompmdExt<R> for T {
-    fn compmd(&self) -> &Served {
-        self.state::<Served>().inner()
+    fn compmd(&self) -> &Compmd {
+        self.state::<Compmd>().inner()
     }
 }
 
