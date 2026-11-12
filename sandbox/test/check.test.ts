@@ -77,6 +77,12 @@ describe("the hosting check", () => {
     expect(report.failed).toContain("a strict frame has no `postMessage`: `postMessage` is there: a frame's code could reach the host");
   }, 30_000);
 
+  it("leaves WebKit's `ipc` handler to a host that guards it", async () => {
+    const report = await checked("good", { webkitIpc: "guarded" });
+    expect(report.ok).toBe(true);
+    expect(report.passed).toContain("a strict frame's WebKit `ipc` message handler, if any, is the host's to guard");
+  }, 30_000);
+
   it("fails a pack the host gives as code, or not at all", async () => {
     const asCode = await checked("good", { modules: () => ({ code: new Blob(['export default function mount(target) { target.textContent = "drawn"; }\n']) }) });
     expect(asCode.failed).toContain("`@kit/drawn@1.0.0/dist/drawn.js` loads by its URL and draws: the host has no URL for it");

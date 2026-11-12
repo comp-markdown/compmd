@@ -47,9 +47,9 @@ const mounted = (observation: Observation, name: string) =>
   observation.events.some((event) => event.type === "mounted" && event.component === name && event.frame !== "");
 
 /** What the component reported its frame sees, from the value of its `set`. */
-function seenBy(value: unknown): { origin?: unknown; tauri?: unknown; ipc?: unknown } | undefined {
+function seenBy(value: unknown): { origin?: unknown; tauri?: unknown; ipc?: unknown; posted?: unknown } | undefined {
   try {
-    return JSON.parse(String(value)) as { origin?: unknown; tauri?: unknown; ipc?: unknown };
+    return JSON.parse(String(value)) as { origin?: unknown; tauri?: unknown; ipc?: unknown; posted?: unknown };
   } catch {
     return undefined;
   }
@@ -79,16 +79,20 @@ export async function check(mode: Exclude<Mode, "show">, drawn: Drawn): Promise<
   const seen = seenBy(origin()?.value);
   if (seen?.origin !== "null") failed.push(`the component's frame isn't sandboxed: it sees ${JSON.stringify(seen)}`);
   if (seen?.tauri !== false) failed.push(`the component's frame can reach Tauri: it sees ${JSON.stringify(seen)}`);
-  if (seen?.ipc !== false) failed.push(`the component's frame has WebKit's \`ipc\` message handler: it sees ${JSON.stringify(seen)}`);
+  // Where WebKit gives the frame Tauri's message handler, the probe posted a call to `report` through it, without the
+  // key, which would have ended the app with its own message by now; it must have run nothing (Risks, layer 3).
+  if (seen?.ipc === true && seen.posted !== true) failed.push(`the probe found WebKit's \`ipc\` handler but didn't post through it: it sees ${JSON.stringify(seen)}`);
+  const guarded = seen?.ipc === true ? "; a strict frame's call through WebKit's ipc handler ran nothing" : "";
   const fallbacks = observation.events.filter((event) => event.type === "fallback");
   if (fallbacks.length > 0) failed.push(`fallbacks: ${JSON.stringify(fallbacks)}`);
   // The hosting check, on the bundled Mermaid pack's module.
   const mermaid = drawn.components.find(({ name }) => name === "mermaid")?.module;
   const packs = mermaid ? [{ place: mermaid, params: { code: "graph LR; A --> B", theme: "auto" } }] : [];
   if (!mermaid) failed.push("the Mermaid component has no built module, which the hosting check loads by URL");
-  const hosting = await runCheck({ container: drawn.hosting, frames: sandbox.frames, modules: sandbox.modules, hostApi: TAURI, packs });
+  // Tauri's invoke key guards WebKit's handler, which the probe's call above shows (docs/tauri-plugin.md, decision 8).
+  const hosting = await runCheck({ container: drawn.hosting, frames: sandbox.frames, modules: sandbox.modules, hostApi: TAURI, webkitIpc: "guarded", packs });
   failed.push(...hosting.failed.map((failure) => `the hosting check: ${failure}`));
   return failed.length === 0
-    ? { ok: true, message: `the diagram, the highlighted code and the component in its strict frame drew; the hosting check passed (${String(hosting.passed.length)} checks)` }
+    ? { ok: true, message: `the diagram, the highlighted code and the component in its strict frame drew${guarded}; the hosting check passed (${String(hosting.passed.length)} checks)` }
     : { ok: false, message: failed.join("; ") };
 }

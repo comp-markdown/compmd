@@ -29,6 +29,12 @@ export interface CheckOptions {
   modules?: BundleModuleSource;
   /** The host's API, the globals a frame must not see: `__TAURI_INTERNALS__`, Electron's `ipcRenderer`. */
   hostApi?: readonly string[];
+  /**
+   * WebKit's `ipc` script message handler in a frame: `absent` (the default), as a host without one has it; or
+   * `guarded`, for a host whose WebKit gives it to every frame and which refuses a frame's messages itself (Tauri, by
+   * its invoke key), which the adapter's own check proves by posting a call that must run nothing.
+   */
+  webkitIpc?: "absent" | "guarded";
   /** Packs' modules that must load by their URL and draw: a bundled pack's, and one from the host's store. */
   packs?: readonly CheckedPack[];
   /** How long the check waits for what it looks at, in ms (30 000 unless given). */
@@ -88,13 +94,17 @@ async function refused(url: string): Promise<Outcome> {
 }
 
 /** What the probe's frame reports, as checks. */
-function framed(seen: Seen | undefined, hostApi: readonly string[]): Outcome[] {
+function framed(seen: Seen | undefined, hostApi: readonly string[], webkitIpc: "absent" | "guarded"): Outcome[] {
   const check = (name: string, ok: (seen: Seen) => boolean, failure: (seen: Seen) => string): Outcome =>
     seen === undefined ? failing(name, "the probe didn't report: its strict frame didn't load or run") : ok(seen) ? passing(name) : failing(name, failure(seen));
+  const handler =
+    webkitIpc === "guarded"
+      ? check("a strict frame's WebKit `ipc` message handler, if any, is the host's to guard", () => true, () => "")
+      : check("a strict frame has no WebKit `ipc` message handler", (seen) => !seen.webkitIpc, () => "`window.webkit.messageHandlers.ipc` is there, which no policy governs");
   return [
     check("a strict frame's origin is opaque", ({ origin }) => origin === "null", ({ origin }) => `its origin is ${origin}`),
     check("a strict frame's `fetch` is refused", ({ fetchRefused }) => fetchRefused, () => "it fetched the frames' own document"),
-    check("a strict frame has no WebKit `ipc` message handler", ({ webkitIpc }) => !webkitIpc, () => "`window.webkit.messageHandlers.ipc` is there, which no policy governs"),
+    handler,
     ...hostApi.map((name) => check(`a strict frame has no \`${name}\``, (seen) => seen.hostApi[name] === false, () => `\`${name}\` is there: a frame's code could reach the host`)),
   ];
 }
@@ -163,7 +173,7 @@ export async function runCheck(options: CheckOptions): Promise<CheckReport> {
   const frames = [...options.container.querySelectorAll("iframe")].map((frame) => frame.src);
   const drawn: Outcome[] = [
     frames.length > 0 && frames.every((src) => src.startsWith(base)) ? passing("a strict frame loads from the origin") : failing("a strict frame loads from the origin", `the frames are ${JSON.stringify(frames)}, not under ${base}`),
-    ...framed(seenOf(seenValue), hostApi),
+    ...framed(seenOf(seenValue), hostApi, options.webkitIpc ?? "absent"),
     highlighted() ? passing("a code block is highlighted") : failing("a code block is highlighted", "the Rust block has no tokens: the page didn't load the frames' `highlight.js` (does its policy allow `script-src` to the frames?)"),
     ...packs.map(({ place }, i): Outcome => {
       const name = `\`${place.pack}@${place.version}/${place.path}\``;

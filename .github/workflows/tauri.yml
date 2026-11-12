@@ -1,8 +1,8 @@
 # The Tauri check (docs/tauri-plugin.md, decisions 9 and 10; docs/ci.md, decision 13): `cargo make tauri-check` on
-# Linux, with WebKitGTK under a virtual display. It builds tauri-plugin-compmd with its frames and the example app, and
-# runs the app in a real webview, which serves the sandbox's frames from a scheme of its own: what WebKit does there
-# (its `'self'`, its cache) no browser test can show. It runs when what it covers changes, and before every release,
-# which calls it (release.yml).
+# Linux, with WebKitGTK under a virtual display. It builds tauri-plugin-compmd and the example app, whose page's build
+# writes the bundle the app embeds, and runs the app in a real webview, which serves the bundle from a scheme of its
+# own: what WebKit does there (its `'self'`, its cache, its `ipc` handler in frames) no browser test can show. It runs
+# when what it covers changes, and before every release, which calls it (release.yml).
 name: Tauri
 
 on:
@@ -12,6 +12,10 @@ on:
       - "sandbox/**"
       - "render/**"
       - "processor/**"
+      - "pack-types/**"
+      - "host/**"
+      - "vite/**"
+      - "registry/**"
       - "packs/mermaid/**"
       - "tauri/**"
       - "examples/tauri/**"
@@ -25,6 +29,10 @@ on:
       - "sandbox/**"
       - "render/**"
       - "processor/**"
+      - "pack-types/**"
+      - "host/**"
+      - "vite/**"
+      - "registry/**"
       - "packs/mermaid/**"
       - "tauri/**"
       - "examples/tauri/**"

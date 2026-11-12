@@ -9,7 +9,7 @@ import { readdir, readFile } from "node:fs/promises";
 import { extname, join, relative, resolve, sep } from "node:path";
 import { NpmRegistry, registryProxy } from "@compmd/registry";
 import { toNodeListener } from "@compmd/registry/node";
-import type { Connect, Plugin, ResolvedConfig } from "vite";
+import type { Connect, Plugin, ResolvedConfig, UserConfig } from "vite";
 import { configOf, loadApp, requestWith, type App, type ServedModule } from "./app.ts";
 import { servedModules, writeFrames, writePacks, type BundledFrames } from "./bundle.ts";
 import type { ReadConfig } from "./config.ts";
@@ -117,6 +117,25 @@ async function filesUnder(dir: string): Promise<string[]> {
   return entries.filter((entry) => entry.isFile()).map((entry) => relative(dir, join(entry.parentPath, entry.name)).split(sep).join("/"));
 }
 
+/** What Vite scans for dependencies when an app names no entries: every page, but those it ignores itself. */
+const DEFAULT_ENTRIES = ["**/*.html", "!**/node_modules/**", "!**/__tests__/**", "!**/coverage/**"];
+
+/**
+ * Keeps the bundle written to `out` inside the app's folder (`src-tauri/compmd`) out of the dev server's view: it isn't
+ * the app's own files, so it reloads no page when it is written, and its frame documents aren't scanned for the app's
+ * dependencies. The app's own `optimizeDeps.entries`, when it has them, are left as they are.
+ */
+export function outsideTheApp(user: UserConfig, out: string | undefined): UserConfig | undefined {
+  if (out === undefined) return undefined;
+  const root = resolve(user.root ?? process.cwd());
+  const folder = relative(root, resolve(root, out)).split(sep).join("/");
+  if (folder === "" || folder.startsWith("..")) return undefined;
+  return {
+    server: { watch: { ignored: [`${resolve(root, out).split(sep).join("/")}/**`] } },
+    ...(user.optimizeDeps?.entries === undefined ? { optimizeDeps: { entries: [...DEFAULT_ENTRIES, `!${folder}/**`] } } : {}),
+  };
+}
+
 /**
  * The CompMD plugin.
  *
@@ -161,6 +180,7 @@ export function compmd(options: CompmdOptions = {}): Plugin {
 
   return {
     name: "compmd",
+    config: (user) => outsideTheApp(user, options.out),
     configResolved(resolved) {
       config = resolved;
       bundle = options.out === undefined ? join(resolved.cacheDir, "compmd-bundle") : resolve(resolved.root, options.out);
