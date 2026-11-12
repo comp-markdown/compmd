@@ -8,8 +8,10 @@ import type { AddressInfo } from "node:net";
 import { extname, join, normalize } from "node:path";
 import type { TestProject } from "vitest/node";
 import { buildFrames } from "../src/build/frames.ts";
+import { CONTRACT_HEADERS } from "../src/check/contract.ts";
 import { compile } from "../src/frame/compile.ts";
 import { AHEAD_JSX, AHEAD_SVELTE } from "./fixtures/ahead.ts";
+import { CHECK_HASH } from "./fixtures/hosts.ts";
 
 declare module "vitest" {
   interface ProvidedContext {
@@ -23,6 +25,12 @@ declare module "vitest" {
     allowed: string;
     /** A probe no frame may reach. */
     denied: string;
+    /**
+     * Hosts serving the frames in the bundle's layout, `<host>/frames/${CHECK_HASH}/` and `<host>/packs/`, one per
+     * folder: `good/` serves the contract; `loose/` without its headers; `lax/` answers 200 for any path; `plain/`
+     * has no `highlight.js`; `open/` serves frames whose policy lets them fetch.
+     */
+    hosts: string;
   }
 }
 
@@ -52,6 +60,24 @@ function recording(hits: Hits, respond: (path: string, answer: (status: number, 
     if (url.pathname.endsWith("/hits")) return answer(200, JSON.stringify(hits), "application/json");
     hits.push(url.pathname + url.search);
     respond(normalize(decodeURIComponent(url.pathname)), answer);
+  });
+}
+
+/**
+ * The hosts the check is tried on: each serves `sandbox` (or, for `open/`, `open`) at `frames/${CHECK_HASH}/` and its
+ * `packs/` at `packs/`, as its folder says it breaks the contract.
+ */
+function hostsServer(sandbox: string, open: string): Server {
+  const contract = Object.fromEntries(Object.entries(CONTRACT_HEADERS).map(([name, value]) => [name.toLowerCase(), value]));
+  return createServer((request, response) => {
+    const [, host = "", ...parts] = new URL(request.url ?? "/", "http://localhost").pathname.split("/");
+    const path = parts.join("/");
+    const frames = `frames/${CHECK_HASH}/`;
+    const refuse = () => response.writeHead(host === "lax" ? 200 : 404, { "access-control-allow-origin": "*", "content-type": "text/plain" }).end("not a file of the frames or packs this host serves");
+    const file = path.startsWith(frames) ? join(host === "open" ? open : sandbox, path.slice(frames.length)) : path.startsWith("packs/") ? join(sandbox, path) : undefined;
+    if (file === undefined || parts.includes("..") || (host === "plain" && path.endsWith("highlight.js"))) return refuse();
+    const headers = host === "loose" ? { "access-control-allow-origin": "*" } : contract;
+    readFile(file).then((body) => response.writeHead(200, { ...headers, "content-type": TYPES[extname(file)] ?? "text/plain" }).end(body), refuse);
   });
 }
 
@@ -120,6 +146,15 @@ export default async function setup(project: TestProject): Promise<() => Promise
   await writeFile(join(SANDBOX, "packs/built.js"), 'export default function mount(target, { set }) { target.textContent = "built"; set("result", JSON.stringify("built module")); }\n');
   // A pack's source components compiled ahead, as `@compmd/vite` writes them: a Svelte one's styles in its `css` export.
   for (const [file, compiled] of await compiledAhead()) await writeFile(join(SANDBOX, "packs", file), compiled);
+  // A pack's built module that draws and sets nothing, as a host's check draws one.
+  await writeFile(join(SANDBOX, "packs/drawn.js"), 'export default function mount(target) { target.textContent = "drawn"; }\n');
+  // Frames whose strict policy lets them fetch anything, for the check to catch.
+  const OPEN = join(OUT, "open");
+  await buildFrames({ out: OPEN, from: join(ROOT, "dist/frames") });
+  const strict = await readFile(join(OPEN, "strict.html"), "utf8");
+  await writeFile(join(OPEN, "strict.html"), strict.replace("default-src 'none'", "default-src * 'unsafe-inline'"));
+  const hosts = hostsServer(SANDBOX, OPEN);
+  project.provide("hosts", await listen(hosts));
   project.provide("frames", `${base}sandbox/`);
   project.provide("missing", `${base}missing/`);
   project.provide("refused", `${base}refused/`);
@@ -127,7 +162,7 @@ export default async function setup(project: TestProject): Promise<() => Promise
   project.provide("denied", denied ?? "");
   return async () => {
     await Promise.all(
-      [frames, ...probes].map(
+      [frames, hosts, ...probes].map(
         (server) =>
           new Promise((resolve) => {
             server.close(resolve);

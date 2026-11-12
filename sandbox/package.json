@@ -38,6 +38,10 @@
       "types": "./dist/build/index.d.ts",
       "default": "./dist/build/index.js"
     },
+    "./check": {
+      "types": "./dist/check/index.d.ts",
+      "default": "./dist/check/index.js"
+    },
     "./grammar": {
       "types": "./dist/highlight/grammar.d.ts",
       "default": "./dist/highlight/grammar.js"
