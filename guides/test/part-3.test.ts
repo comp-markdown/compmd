@@ -118,7 +118,7 @@ describe("the app's own components", () => {
       const reviews = page.frameLocator("#page iframe[title=reviews]").locator("body");
       await expect.poll(() => reviews.innerText(), { timeout: 20_000 }).toContain("12 readers gave it 4.2 of 5 on average.");
       expect(await page.locator("#page iframe").count()).toBe(1);
-      expect(await page.locator("#page iframe").getAttribute("src")).toMatch(/\/compmd\/permissive\.html$/);
+      expect(await page.locator("#page iframe").getAttribute("src")).toMatch(/\/compmd\/frames\/[0-9a-f]{16}\/permissive\.html$/);
       await page.locator('#page [aria-label="5 of 5"]').click();
       await expect.poll(() => page.locator("#page").innerText()).toContain("My rating: 5 of 5.");
       expect(await stars.allInnerTexts()).toEqual(["★", "★", "★", "★", "★"]);
@@ -160,15 +160,22 @@ describe("the two page modes", () => {
     await server.close();
   });
 
-  it("writes the frame documents and their runtime into the build's compmd/", () => {
-    for (const file of ["strict.html", "permissive.html", "runtime.js", "library-definition.json"]) expect(existsSync(join(OUT, "two-modes/compmd", file)), file).toBe(true);
+  /** The frames' folder in the build's `compmd/`, `frames/<hash>/`: the build's only one. */
+  const frames = (): string => {
+    const builds = readdirSync(join(OUT, "two-modes/compmd/frames"));
+    expect(builds).toHaveLength(1);
+    return `frames/${builds[0] ?? ""}/`;
+  };
+
+  it("writes the frame documents and their runtime into the build's compmd/frames/<hash>/", () => {
+    for (const file of ["strict.html", "permissive.html", "runtime.js", "library-definition.json"]) expect(existsSync(join(OUT, "two-modes/compmd", frames(), file)), file).toBe(true);
   });
 
-  it("serves compmd/ with the two headers the frames need", async () => {
-    const response = await fetch(`http://localhost:${String(port)}/compmd/strict.html`);
+  it("serves compmd/ with the headers the frames need", async () => {
+    const response = await fetch(`http://localhost:${String(port)}/compmd/${frames()}strict.html`);
     expect(response.headers.get("access-control-allow-origin")).toBe("*");
     expect(response.headers.get("content-security-policy")).toBe("sandbox allow-scripts");
-    const runtime = await fetch(`http://localhost:${String(port)}/compmd/runtime.js`);
+    const runtime = await fetch(`http://localhost:${String(port)}/compmd/${frames()}runtime.js`);
     expect(runtime.headers.get("access-control-allow-origin")).toBe("*");
   });
 

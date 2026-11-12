@@ -4,6 +4,10 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
 
 ## Version 1 (draft)
 
+### 2026-11-12
+
+- **A pack's source compiled ahead (§6.4).** A processor may compile a pack's source component file once, before a document needs it, and load the result by the file's place, as it may a built module: the same code, at the same trust. Before, the spec said nothing of where a source component is compiled. Not breaking.
+
 ### 2026-11-10
 
 - **A registry pack however it was got (§6.4).** A pack a host installed with an application, keeps in its own store of published versions, or fetched while a reader views the document is a registry pack all the same: checked against its integrity, at the trust its configuration gives it and never trusted, and cacheable by its place. Before, the spec said this only of packs fetched from a registry, and a host could read an installed or marketplace pack as its own. Not breaking.

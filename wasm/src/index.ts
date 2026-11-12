@@ -399,6 +399,11 @@ export interface HostComponent {
   code: string;
   /** For a built module, a `.js` file in a pack (spec §6.4): where it is, for the renderer to load from the pack's files. */
   module?: { pack: string; version: string; path: string; integrity?: string };
+  /**
+   * For a source component file in a pack (`.jsx`, `.tsx`, `.svelte`, `.ts`): where it is, by which a host that
+   * compiled it ahead (spec §6.4) gives the compiled module; `code` is compiled otherwise.
+   */
+  place?: { pack: string; version: string; path: string };
   /** How far its code is trusted: its pack's level in the request's `policy` (spec §15). */
   trust: Trust;
   /**

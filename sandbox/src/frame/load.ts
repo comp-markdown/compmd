@@ -1,8 +1,8 @@
 // A component's code loaded as a module, whose imports the frame's import map resolves, and mounted through its
 // binding (spec §7.6): React's for JSX and TSX, Svelte's for Svelte, and a plain component's default export is its
 // mount. Compiled text and a built module the host's page holds load as `blob:` modules, their imports of library
-// packs written as the URLs of the libraries' own `blob:` modules (docs/sharing-library-packs.md); a built module by
-// its URL, checked against its file's hash.
+// packs written as the URLs of the libraries' own `blob:` modules (docs/sharing-library-packs.md); a built module, or
+// a pack's source component the host compiled ahead, by its URL, checked against its file's hash.
 
 import type { Mount } from "@compmd/render";
 import { react } from "@compmd/render/react";
@@ -13,7 +13,7 @@ import type { Libraries, LibraryCode, Runnable } from "../protocol/messages.ts";
 import type { Loaded } from "./components.ts";
 import { withImports } from "./imports.ts";
 
-type Module = { default?: unknown };
+type Module = { default?: unknown; css?: unknown };
 
 const blobOf = (code: string | Blob): Blob => new Blob([code], { type: "text/javascript" });
 
@@ -78,6 +78,12 @@ async function checked(module: { url: string; integrity: string }): Promise<Modu
   return (await import(/* @vite-ignore */ url)) as Module;
 }
 
+/** A component's styles: the compiled text's, or the `css` export of a module compiled ahead; none when empty. */
+function cssOf(component: Runnable, module: Module): { css?: string } {
+  const css = "module" in component ? module.css : "css" in component ? component.css : undefined;
+  return typeof css === "string" && css !== "" ? { css } : {};
+}
+
 /**
  * `component`'s code loaded and bound.
  *
@@ -87,9 +93,11 @@ export async function load(component: Runnable): Promise<Loaded> {
   const module = "module" in component ? await checked(component.module) : await importedWith(component.code, component.libraries);
   const exported = module.default;
   if (typeof exported !== "function") throw new Error(`\`${component.name}\`'s module has no default export to mount`);
-  if ("module" in component) return { mount: exported as Mount };
-  const css = "css" in component && component.css ? { css: component.css } : {};
-  switch (component.binding) {
+  // A built module is a plain mount; one compiled ahead mounts through its binding, its styles in its `css` export.
+  const binding = component.binding ?? "plain";
+  if (binding === "plain" && "module" in component) return { mount: exported as Mount };
+  const css = cssOf(component, module);
+  switch (binding) {
     case "react":
       return { mount: react(exported as ComponentType<Record<string, unknown>>), ...css };
     case "svelte":

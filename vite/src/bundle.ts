@@ -2,8 +2,8 @@
 // `manifest.json`, written into a folder a host serves or embeds. The plugin writes it for its own servers and output,
 // or into its `out`; `buildBundle` writes it for a host built without Vite. Node only.
 
-import { cp, mkdir, rename, rm, writeFile } from "node:fs/promises";
-import { join, posix, relative, sep } from "node:path";
+import { cp, glob, mkdir, readdir, rename, rm, stat, writeFile } from "node:fs/promises";
+import { dirname, join, posix, resolve, sep } from "node:path";
 import type { Policy } from "@compmd/processor";
 import { buildFrames, buildLibraries, compile, hashOf, readLibraries, RUNTIMES, type Compiled, type LibraryDefinition } from "@compmd/sandbox/build";
 import semver from "semver";
@@ -80,8 +80,51 @@ export async function writeFrames(app: App, { root, out, source }: { root: strin
 /** Whether the configuration denies `pack` at `version`: its files are never served, and its uses fall back. */
 const isDenied = (app: App, pack: string, version: string): boolean => app.config.deny.some((denied) => denied.pack === pack && (denied.version === undefined || semver.satisfies(version, denied.version)));
 
-/** Copies the files of the pack at `dir` into `to`, as published: all but its own dependencies and hidden files. */
-const copyPack = (dir: string, to: string): Promise<void> => cp(dir, to, { recursive: true, filter: (file) => !relative(dir, file).split(sep).some(isSkipped) });
+/** Copies the folder `dir` into `to`: all but its own dependencies, hidden files, and `bundle` when it is inside. */
+async function copyFolder(dir: string, to: string, bundle: string): Promise<void> {
+  await mkdir(to, { recursive: true });
+  for (const entry of await readdir(dir, { withFileTypes: true })) {
+    const from = join(dir, entry.name);
+    // The bundle itself, when it is written inside the pack: an app whose own folder is a pack (`"./"`).
+    if (isSkipped(entry.name) || from === bundle) continue;
+    if (entry.isDirectory()) await copyFolder(from, join(to, entry.name), bundle);
+    else await cp(from, join(to, entry.name));
+  }
+}
+
+/** The files npm puts in every package, whatever its `files` says. */
+const ALWAYS = /^(readme|license|licence|changelog)(\..*)?$/i;
+
+/**
+ * What a pack publishes, by `/`-separated path, as npm packs it: what its `package.json`'s `files` names, what npm
+ * always adds, and every file its documents need; `undefined` for all of its folder, when `files` names nothing.
+ */
+async function publishedOf(pack: Pack): Promise<string[] | undefined> {
+  const { files } = JSON.parse(pack.files["package.json"] ?? "{}") as { files?: unknown };
+  if (!Array.isArray(files)) return undefined;
+  const published = new Set(Object.keys(pack.files));
+  for (const entry of await readdir(pack.dir)) if (ALWAYS.test(entry)) published.add(entry);
+  // A `!` entry leaves files out in npm; leaving none out only serves more of what the pack holds.
+  const patterns = files.filter((entry): entry is string => typeof entry === "string" && !entry.startsWith("!"));
+  for (const pattern of patterns) {
+    for await (const match of glob(pattern.replace(/^\.\//, "").replace(/\/+$/, ""), { cwd: pack.dir })) published.add(match.split(sep).join("/"));
+  }
+  return [...published].sort();
+}
+
+/** Copies the pack's files into `to`, as published (`publishedOf`), leaving out `bundle` when it is inside. */
+async function copyPack(pack: Pack, to: string, bundle: string): Promise<void> {
+  const published = await publishedOf(pack);
+  if (published === undefined) return copyFolder(pack.dir, to, bundle);
+  for (const path of published) {
+    const [from, into] = [join(pack.dir, ...path.split("/")), join(to, ...path.split("/"))];
+    if ((await stat(from)).isDirectory()) await copyFolder(from, into, bundle);
+    else {
+      await mkdir(dirname(into), { recursive: true });
+      await cp(from, into);
+    }
+  }
+}
 
 /**
  * The bundle's manifest: the frames, each pack the app offers (a denied pack too, so the processor says why it is
@@ -117,10 +160,16 @@ export function manifestOf(app: App, frames: BundledFrames, source?: string): Ma
 const SOURCES: ReadonlySet<ComponentFile["language"]> = new Set(["jsx", "tsx", "svelte", "ts"]);
 
 /** The built module of the source component at `path`, beside it; a compiled Svelte component's styles are `.css`. */
-export const builtPathOf = (path: string, kind: "js" | "css" = "js"): string => `${path}.${kind}`;
+export const builtPathOf = (path: string): string => `${path}.js`;
 
 /**
- * Compiles `pack`'s source components into built modules beside them in `to`, as a frame's compiler would
+ * A compiled component as one module: its code, with a Svelte component's styles as its `css` export, which the frame
+ * adopts, so one file and one hash hold both (a strict frame fetches nothing it could load the styles with).
+ */
+const moduleOf = ({ code, css }: Compiled): string => (css === undefined ? code : `${code}\nexport const css = ${JSON.stringify(css)};\n`);
+
+/**
+ * Compiles `pack`'s source components into modules beside them in `to`, `<path>.js`, as a frame's compiler would
  * (`@compmd/sandbox`'s `compile`), so no reader compiles them (docs/hosting.md, decision 3).
  *
  * @returns Each file written, by its path in the pack, with its `sha384`.
@@ -135,11 +184,9 @@ async function compileSources(pack: Pack, to: string): Promise<Record<string, st
     } catch (error) {
       throw new AppError(`${pack.name}@${pack.version}: \`${path}\` doesn't compile: ${error instanceof Error ? error.message : String(error)}`);
     }
-    const files: [string, string][] = [[builtPathOf(path), compiled.code], ...(compiled.css === undefined ? [] : [[builtPathOf(path, "css"), compiled.css] as [string, string]])];
-    for (const [file, text] of files) {
-      await writeFile(join(to, ...file.split("/")), text);
-      written[file] = sha384Of(text);
-    }
+    const text = moduleOf(compiled);
+    await writeFile(join(to, ...builtPathOf(path).split("/")), text);
+    written[builtPathOf(path)] = sha384Of(text);
   }
   return written;
 }
@@ -158,7 +205,7 @@ export async function writePacks(app: App, out: string, frames: BundledFrames, s
     const pack = app.packs.find(({ name, version }) => name === bundled.pack && version === bundled.version);
     if (pack === undefined) continue;
     const to = join(out, "packs", `${pack.name}@${pack.version}`);
-    await copyPack(pack.dir, to);
+    await copyPack(pack, to, resolve(out));
     if (bundled.trust !== "trusted") bundled.modules = { ...bundled.modules, ...(await compileSources(pack, to)) };
   }
   await writeFile(join(out, MANIFEST), `${JSON.stringify(manifest, null, 2)}\n`);
@@ -167,20 +214,16 @@ export async function writePacks(app: App, out: string, frames: BundledFrames, s
 
 /**
  * The built modules the frames load, by the place the processor names (`<pack>@<version>/<path>`), from the manifest:
- * a `.js` module by its own place, a compiled source component by its source's, with its styles.
+ * a `.js` module by its own place, a compiled source component by its source's (the processor's `place`).
  */
 export function servedModules(app: App, manifest: Manifest): Record<string, ServedModule> {
   const served: Record<string, ServedModule> = {};
   for (const { pack, version, modules } of manifest.packs) {
     const components = app.packs.find((found) => found.name === pack && found.version === version)?.components ?? [];
     const sources = components.filter(({ language }) => SOURCES.has(language)).map(({ path }) => path);
-    const at = (path: string) => `packs/${pack}@${version}/${path}`;
     for (const [path, integrity] of Object.entries(modules)) {
-      if (path.endsWith(".css")) continue;
       const source = sources.find((candidate) => builtPathOf(candidate) === path);
-      const css = source === undefined ? undefined : builtPathOf(source, "css");
-      const styles = css === undefined || modules[css] === undefined ? {} : { css: { path: at(css), integrity: modules[css] } };
-      served[`${pack}@${version}/${source ?? path}`] = { path: at(path), integrity, ...styles };
+      served[`${pack}@${version}/${source ?? path}`] = { path: `packs/${pack}@${version}/${path}`, integrity };
     }
   }
   return served;

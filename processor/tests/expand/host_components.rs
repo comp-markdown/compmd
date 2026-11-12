@@ -98,12 +98,18 @@ fn a_packs_built_module_comes_by_its_place_and_components_have_their_packs_trust
         "a pack's source file comes as text"
     );
     assert_eq!(
-        (&own.module, &own.trust),
-        (&None, &Trust::Strict),
-        "the document's own"
+        pin.place,
+        Some("@acme/maps@1.2.0/Pin.jsx".parse().expect("a place")),
+        "and by its place, for a module compiled ahead"
     );
     assert_eq!(
-        serde_json::to_value([map, own]).expect("serializes"),
+        (&own.module, &own.place, &own.trust),
+        (&None, &None, &Trust::Strict),
+        "the document's own"
+    );
+    assert_eq!(map.place, None, "a built module's place is its module's");
+    assert_eq!(
+        serde_json::to_value([map, own, pin]).expect("serializes"),
         json!([
             {
                 "name": "map", "language": "js", "code": "",
@@ -111,6 +117,11 @@ fn a_packs_built_module_comes_by_its_place_and_components_have_their_packs_trust
                 "trust": { "level": "permissive", "network": ["https://tiles.example.com"], "host": true },
             },
             { "name": "own", "language": "jsx", "code": "export default () => null;", "trust": { "level": "strict" } },
+            {
+                "name": "pin", "language": "jsx", "code": "export default () => null;",
+                "place": { "pack": "@acme/maps", "version": "1.2.0", "path": "Pin.jsx" },
+                "trust": { "level": "permissive", "network": ["https://tiles.example.com"], "host": true },
+            },
         ]),
         "the JSON a renderer reads, leaving out what is empty"
     );

@@ -144,18 +144,21 @@ The cost is a frame, and a copy of its runtime, per use. It is right for an app 
 
 A browser enforces every policy a document has, so the second policy can only narrow the first: no message can widen a frame's network.
 
-Besides the frames that render, each view makes one hidden `strict.html` frame, the **compile frame**, which compiles the document's source components (JSX, TSX, Svelte, TypeScript) once, and runs none of them. Each frame then gets the compiled code it needs, and only that: a frame never holds code of a level above its own. A pack's **built module** loads in its frame by its URL with its file's hash, `<script type="module" integrity>`, so a file that doesn't match never runs (W121); or, for a pack fetched from a registry, as the checked file itself ([chapter 9](09-packs-from-npm.md)).
+Besides the frames that render, each view makes one hidden `strict.html` frame, the **compile frame**, which compiles the document's source components (JSX, TSX, Svelte, TypeScript) once, and runs none of them; a pack's source components were compiled already, when your app was built, and load like built modules. Each frame then gets the compiled code it needs, and only that: a frame never holds code of a level above its own. A pack's **built module** loads in its frame by its URL with its file's hash, `<script type="module" integrity>`, so a file that doesn't match never runs (W121); or, for a pack fetched from a registry, as the checked file itself ([chapter 9](09-packs-from-npm.md)).
 
 ## Serving `compmd/`
 
-The frames have an opaque origin: `sandbox="allow-scripts"` without `allow-same-origin`. So what they load from your app is a cross-origin load, and the folder needs two headers:
+`compmd/` holds the frames under a hash of their files, `compmd/frames/<hash>/`, so a new build is a new path and no cache serves an old frame, and each pack's files by its place, `compmd/packs/<name>@<version>/<path>`. The frames have an opaque origin: `sandbox="allow-scripts"` without `allow-same-origin`. So what they load from your app is a cross-origin load, and every file under `compmd/frames/` and `compmd/packs/` is served with the same headers:
 
-| Path | Header | Why |
-| --- | --- | --- |
-| everything under `compmd/` | `Access-Control-Allow-Origin: *` | the frames' scripts are modules, which load cross-origin only with it |
-| `compmd/strict.html`, `compmd/permissive.html` | `Content-Security-Policy: sandbox allow-scripts` | the frame documents stay sandboxed even when someone opens one on its own, outside a frame |
+| Header | Why |
+| --- | --- |
+| `Access-Control-Allow-Origin: *` | the frames' scripts are modules, which load cross-origin only with it |
+| `Access-Control-Expose-Headers: *` | a host's check reads the headers its frames arrive with |
+| `Content-Security-Policy: sandbox allow-scripts` | the frame documents stay sandboxed even when someone opens one on its own, outside a frame |
+| `X-Content-Type-Options: nosniff` | each file is only what its type says |
+| `Cache-Control: max-age=31536000, immutable` | a path names a build of the frames or a pack's version, so what it serves never changes |
 
-The dev server and `vite preview` send both. A deployed app sends them from its server, or its static host's header rules. Nothing under `compmd/` is secret: it is the same for every reader.
+The dev server and `vite preview` send them. A deployed app sends them from its server, or its static host's header rules: the build writes a `_headers` file with them, for a host that reads one. Your page's own content security policy adds what `cspFor(origin)` from `@compmd/vite/config` gives. Nothing under `compmd/` is secret: it is the same for every reader.
 
 The frames may be served from another origin than your page, with the same headers: `createSandbox`'s `base` takes a full URL. That is the way to keep the requests a frame can make to them (its scripts, styles and prefetches) apart from your app's own server and logs.
 

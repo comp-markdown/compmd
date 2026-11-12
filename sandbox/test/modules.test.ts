@@ -7,6 +7,7 @@ import type { HostComponent } from "@compmd/processor";
 import type { ExpandedRoot } from "@compmd/render";
 import { afterEach, describe, expect, it } from "vitest";
 import { createSandbox, type SandboxOptions, type View } from "../src/index.ts";
+import { AHEAD_JSX, AHEAD_SVELTE } from "./fixtures/ahead.ts";
 import { frames, leaf, probe, type Probe } from "./harness.ts";
 
 let probes: Probe[] = [];
@@ -98,6 +99,57 @@ describe("a built module the host's page holds", () => {
       expect(area.querySelectorAll("iframe"), page).toHaveLength(1);
       area.remove();
     }
+  });
+});
+
+describe("a pack's source component the host compiled ahead (docs/hosting.md, decision 3)", () => {
+  /** A source component of `@kit/ahead` at `path`, in `language`, with `code`, as the processor gives it. */
+  const source = (language: "jsx" | "svelte", path: string, code: string): HostComponent => ({ name: "probe", language, code, trust: { level: "strict" }, place: { pack: "@kit/ahead", version: "1.0.0", path } });
+
+  /** What `component` sets `result` to in a view in `page` mode, and the places it asked `modules` for. */
+  async function resultOf(component: HostComponent, modules: NonNullable<SandboxOptions["modules"]>, page: "frame" | "host"): Promise<{ result: unknown; asked: string[] }> {
+    const asked: string[] = [];
+    const area = document.body.appendChild(document.createElement("div"));
+    const view = createSandbox({
+      base: frames,
+      page,
+      modules: (module) => {
+        asked.push(`${module.pack}@${module.version}/${module.path}`);
+        return modules(module);
+      },
+    }).open(area, { components: [component] });
+    views.push(view);
+    const result = new Promise((resolve) => {
+      view.on("set", ({ value }) => {
+        resolve(JSON.parse(value as string));
+      });
+    });
+    view.render({ type: "root", children: [leaf("probe")], inputs: { result: { type: "string", value: "" } } });
+    const value = await result;
+    area.remove();
+    return { result: value, asked };
+  }
+
+  /** The module `@compmd/vite` wrote for the file `file`, by its URL with its hash. */
+  const compiled = async (file: string) => ({ url: `${frames}packs/${file}`, integrity: await integrityOf(`${frames}packs/${file}`) });
+
+  it("loads by its place's URL and mounts through its binding, its own code never compiled", async () => {
+    const module = await compiled("ahead.jsx.js");
+    // Code that doesn't compile: only the module compiled ahead can mount.
+    const component = source("jsx", "ahead.jsx", "export default <");
+    for (const page of ["frame", "host"] as const) {
+      expect(await resultOf(component, () => module, page), page).toEqual({ result: "compiled ahead", asked: ["@kit/ahead@1.0.0/ahead.jsx"] });
+    }
+  });
+
+  it("brings a Svelte component's styles in its module, which its frame adopts", async () => {
+    const module = await compiled("dial.svelte.js");
+    const { result } = await resultOf(source("svelte", "dial.svelte", AHEAD_SVELTE), () => module, "frame");
+    expect(result).toBe("rgb(0, 128, 128)");
+  });
+
+  it("is compiled from its code when the host has no module for its place", async () => {
+    expect(await resultOf(source("jsx", "ahead.jsx", AHEAD_JSX), () => undefined, "host")).toEqual({ result: "compiled ahead", asked: ["@kit/ahead@1.0.0/ahead.jsx"] });
   });
 });
 

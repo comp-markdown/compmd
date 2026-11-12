@@ -27,13 +27,15 @@ export type ComponentCode = Runnable | { name: string; level: Level | "trusted" 
 
 /**
  * A component with its code. A built module the host's page holds is a `Blob`, whose bytes the frames share, with its
- * place (`pack@version/path`), by which a frame knows it has it already. Code given as text or a `Blob` may import
+ * place (`pack@version/path`), by which a frame knows it has it already. A module by its URL is a built module's plain
+ * mount, or, with a `binding`, a pack's source component the host compiled ahead (a Svelte one's styles in its `css`
+ * export). Code given as text or a `Blob` may import
  * library packs (docs/sharing-library-packs.md), which come with it in `libraries`, by the name it imports.
  */
 export type Runnable = { name: string; level: Level | "trusted" } & (
   | { binding: "react" | "svelte" | "plain"; code: string; css?: string; libraries?: Libraries }
   | { binding: "plain"; code: Blob; place: string; libraries?: Libraries }
-  | { module: { url: string; integrity: string } }
+  | { module: { url: string; integrity: string }; binding?: "react" | "svelte" }
 );
 
 /** Library packs' modules by the name code imports them by. */

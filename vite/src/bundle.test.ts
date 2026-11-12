@@ -96,7 +96,6 @@ describe("buildBundle", () => {
       "@acme/charts@2.1.0/bar.jsx",
       "@acme/charts@2.1.0/bar.jsx.js",
       "@acme/charts@2.1.0/dial.svelte",
-      "@acme/charts@2.1.0/dial.svelte.css",
       "@acme/charts@2.1.0/dial.svelte.js",
       "@acme/charts@2.1.0/dist/line.js",
       "@acme/charts@2.1.0/index.comp.md",
@@ -110,7 +109,7 @@ describe("buildBundle", () => {
     const { packs, libraries, ambient, policy, format } = built.manifest;
     expect(format).toBe(1);
     const hashed = async (path: string) => sha384(await readFile(join(out, "packs/@acme/charts@2.1.0", path), "utf8"));
-    const modules = { "dist/line.js": sha384(LINE_MODULE), "bar.jsx.js": await hashed("bar.jsx.js"), "dial.svelte.js": await hashed("dial.svelte.js"), "dial.svelte.css": await hashed("dial.svelte.css") };
+    const modules = { "dist/line.js": sha384(LINE_MODULE), "bar.jsx.js": await hashed("bar.jsx.js"), "dial.svelte.js": await hashed("dial.svelte.js") };
     expect(packs).toEqual([
       { pack: "@acme/charts", version: "2.1.0", integrity: "sha512-charts", trust: "strict", modules },
       { pack: "@acme/old", version: "1.0.0", trust: "strict", modules: {} },
@@ -126,8 +125,8 @@ describe("buildBundle", () => {
     const at = join(out, "packs/@acme/charts@2.1.0");
     expect(await readFile(join(at, "bar.jsx.js"), "utf8")).toBe((await compile({ name: "bar", language: "jsx", code: BAR })).code);
     const dial = await compile({ name: "dial", language: "svelte", code: DIAL });
-    expect(await readFile(join(at, "dial.svelte.js"), "utf8")).toBe(dial.code);
-    expect(await readFile(join(at, "dial.svelte.css"), "utf8")).toBe(dial.css);
+    // A Svelte component's styles in its module, as its `css` export.
+    expect(await readFile(join(at, "dial.svelte.js"), "utf8")).toBe(`${dial.code}\nexport const css = ${JSON.stringify(dial.css)};\n`);
     // A trusted pack's are the app's bundler's.
     expect(existsSync(join(out, "packs/@acme/app@1.0.0/gauge.js.js"))).toBe(false);
   });
@@ -139,13 +138,43 @@ describe("buildBundle", () => {
     expect(served).toEqual({
       "@acme/charts@2.1.0/dist/line.js": { path: "packs/@acme/charts@2.1.0/dist/line.js", integrity: sha384(LINE_MODULE) },
       "@acme/charts@2.1.0/bar.jsx": { path: "packs/@acme/charts@2.1.0/bar.jsx.js", integrity: integrity("bar.jsx.js") },
-      "@acme/charts@2.1.0/dial.svelte": {
-        path: "packs/@acme/charts@2.1.0/dial.svelte.js",
-        integrity: integrity("dial.svelte.js"),
-        css: { path: "packs/@acme/charts@2.1.0/dial.svelte.css", integrity: integrity("dial.svelte.css") },
-      },
+      "@acme/charts@2.1.0/dial.svelte": { path: "packs/@acme/charts@2.1.0/dial.svelte.js", integrity: integrity("dial.svelte.js") },
     });
   });
+
+  it("copies an app whose own folder is the pack, leaving out the bundle written inside it", async () => {
+    const own = join(dirname(root), "own");
+    const files: Record<string, string> = {
+      "package.json": JSON.stringify({ name: "@acme/own", version: "1.0.0" }),
+      "index.comp.md": "---\nmd:\n  export:\n    names: []\n---\n",
+      "dist/keep.js": "export {};\n",
+    };
+    for (const [path, text] of Object.entries(files)) {
+      await mkdir(dirname(join(own, path)), { recursive: true });
+      await writeFile(join(own, path), text);
+    }
+    await buildBundle({ root: own, config: { packs: { "./": {} } }, out: join(own, "dist/compmd") });
+    expect(await filesUnder(join(own, "dist/compmd/packs"))).toEqual(["@acme/own@1.0.0/dist/keep.js", "@acme/own@1.0.0/index.comp.md", "@acme/own@1.0.0/package.json"]);
+  }, 60_000);
+
+  it("copies what a folder pack's `files` publishes, what npm always adds, and what its documents need", async () => {
+    const kit = join(dirname(root), "kit");
+    const files: Record<string, string> = {
+      "package.json": JSON.stringify({ name: "@acme/kit", version: "2.0.0", files: ["./dist/", "!dist/skip.js"] }),
+      "index.comp.md": "---\nmd:\n  export:\n    names: []\n---\n",
+      "README.md": "Kit.",
+      "LICENSE": "MIT",
+      "dist/kit.js": "export {};\n",
+      "src/kit.test.ts": "a test, which isn't published",
+    };
+    for (const [path, text] of Object.entries(files)) {
+      await mkdir(dirname(join(kit, path)), { recursive: true });
+      await writeFile(join(kit, path), text);
+    }
+    const out = join(kit, "out");
+    await buildBundle({ root: kit, config: { packs: { "./": {} } }, out });
+    expect(await filesUnder(join(out, "packs"))).toEqual(["@acme/kit@2.0.0/LICENSE", "@acme/kit@2.0.0/README.md", "@acme/kit@2.0.0/dist/kit.js", "@acme/kit@2.0.0/index.comp.md", "@acme/kit@2.0.0/package.json"]);
+  }, 60_000);
 
   it("stops at a pack's component that doesn't compile", async () => {
     const broken = join(dirname(root), "broken");

@@ -2,7 +2,7 @@
 md:
   import:
     - from: "@example/charts@1"
-      names: [bar]
+      names: [bar, total]
     - from: "@example/old@1"
       names: [gauge]
   inputs:
@@ -18,5 +18,7 @@ How good was it? :value[3]{of=(string(md.input.rating))} of 5.
 Pages read each day:
 
 :: bar[Pages read each day: 30, 52, 18, 41] {values=[30, 52, 18, 41]}
+
+:: total[141 pages in all] {values=[30, 52, 18, 41]}
 
 :: gauge[An old gauge: 40] {value=40}

@@ -29,8 +29,6 @@ export interface ServedModule {
   path: string;
   /** Its file's hash, `sha384-…`, which the frame's script checks. */
   integrity: string;
-  /** A compiled Svelte component's styles, beside it, which the frame adopts once checked. */
-  css?: { path: string; integrity: string };
 }
 
 /** Everything the plugin gives the app. */

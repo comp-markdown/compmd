@@ -96,6 +96,10 @@
                     "properties": { "url": { "type": "string" }, "integrity": { "type": "string" } },
                     "required": ["url", "integrity"],
                     "additionalProperties": false
+                  },
+                  "binding": {
+                    "description": "For a source component compiled ahead, the binding it mounts through; a built module, without it, is a plain mount.",
+                    "enum": ["react", "svelte"]
                   }
                 },
                 "required": ["name", "level", "module"],

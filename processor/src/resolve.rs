@@ -211,6 +211,10 @@ pub struct HostComponent {
     /// files instead of passing its text.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub module: Option<Module>,
+    /// For a source component file in a pack (`.jsx`, `.tsx`, `.svelte`, `.ts`), where it is: a host that compiled it
+    /// ahead (spec §6.4) gives the renderer the compiled module by this place, and `code` is compiled otherwise.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub place: Option<Place>,
     /// How far its code is trusted: its pack's level in the host's policy (spec §15).
     pub trust: Trust,
     /// For a component of a pack, the library packs its pack names in `peerDependencies`, by the name its code
@@ -255,7 +259,7 @@ impl Component {
         libraries: BTreeMap<String, LibraryModule>,
     ) -> Option<HostComponent> {
         self.body.supported(policy).then_some(())?;
-        let (language, runtime, code, module) = match &self.body {
+        let (language, runtime, code, module, place) = match &self.body {
             Body::Host {
                 language,
                 runtime,
@@ -264,6 +268,7 @@ impl Component {
                 Language::from_name(language)?,
                 runtime.clone(),
                 source.clone(),
+                None,
                 None,
             ),
             Body::File {
@@ -279,9 +284,15 @@ impl Component {
                     place: place.clone(),
                     integrity,
                 };
-                (Language::Js, None, String::new(), Some(module))
+                (Language::Js, None, String::new(), Some(module), None)
             }
-            Body::File { origin, language } => (*language, None, store.read(origin)?, None),
+            Body::File { origin, language } => {
+                let place = match origin {
+                    Origin::Pack(place) => Some(place.clone()),
+                    Origin::File(_) => None,
+                };
+                (*language, None, store.read(origin)?, None, place)
+            }
             Body::Compmd(_) | Body::Processor => return None,
         };
         Some(HostComponent {
@@ -290,6 +301,7 @@ impl Component {
             runtime,
             code,
             module,
+            place,
             trust,
             libraries,
         })

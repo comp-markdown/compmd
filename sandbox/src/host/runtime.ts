@@ -211,6 +211,11 @@ export class HostRuntime {
       const { module, place } = given;
       return "code" in module ? { name: component.name, level, binding: "plain", code: module.code, place, ...withLibraries } : { name: component.name, level, module };
     }
+    const compiled = this.#compiledAhead(component, given.libraries);
+    if (compiled) {
+      const binding = bindingOf(component.language);
+      return { name: component.name, level, module: compiled, ...(binding === "plain" ? {} : { binding }) };
+    }
     try {
       const { code, css } = await this.#compilerFor().compile({ name: component.name, language: component.language, code: component.code, ...(component.runtime ? { runtime: component.runtime } : {}) });
       return { name: component.name, level, binding: bindingOf(component.language), code, ...(css === undefined ? {} : { css }), ...withLibraries };
@@ -234,6 +239,17 @@ export class HostRuntime {
     const names = Object.keys(libraries).map((name) => `\`${name}\``);
     if ("url" in module && names.length > 0) return `\`${place}\` loads by its URL, so its imports of library packs (${names.join(", ")}) can't be written: give it as code`;
     return { libraries, module, place };
+  }
+
+  /**
+   * The module the host compiled ahead from `component`'s source in its pack (spec §6.4), by its URL; none when the
+   * host has none, or when it imports library packs, whose imports a frame writes into code it holds
+   * (docs/hosting.md, H5): then `code` is compiled.
+   */
+  #compiledAhead(component: HostComponent, libraries: Libraries): { url: string; integrity: string } | undefined {
+    if (!component.place || Object.keys(libraries).length > 0) return undefined;
+    const module = this.#options.modules?.(component.place);
+    return module && "url" in module ? { url: module.url, integrity: module.integrity } : undefined;
   }
 
   /**

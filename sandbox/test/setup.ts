@@ -8,6 +8,8 @@ import type { AddressInfo } from "node:net";
 import { extname, join, normalize } from "node:path";
 import type { TestProject } from "vitest/node";
 import { buildFrames } from "../src/build/frames.ts";
+import { compile } from "../src/frame/compile.ts";
+import { AHEAD_JSX, AHEAD_SVELTE } from "./fixtures/ahead.ts";
 
 declare module "vitest" {
   interface ProvidedContext {
@@ -51,6 +53,16 @@ function recording(hits: Hits, respond: (path: string, answer: (status: number, 
     hits.push(url.pathname + url.search);
     respond(normalize(decodeURIComponent(url.pathname)), answer);
   });
+}
+
+/** The compiled-ahead modules, by file name: compiled as a frame compiles them, a Svelte one's styles exported. */
+async function compiledAhead(): Promise<[string, string][]> {
+  const { code: jsx } = await compile({ name: "ahead", language: "jsx", code: AHEAD_JSX });
+  const svelte = await compile({ name: "dial", language: "svelte", code: AHEAD_SVELTE });
+  return [
+    ["ahead.jsx.js", jsx],
+    ["dial.svelte.js", `${svelte.code}\nexport const css = ${JSON.stringify(svelte.css ?? "")};\n`],
+  ];
 }
 
 export default async function setup(project: TestProject): Promise<() => Promise<void>> {
@@ -106,6 +118,8 @@ export default async function setup(project: TestProject): Promise<() => Promise
   await writeFile(join(SANDBOX, "host/host.html"), '<!doctype html>\n<html lang="en"><head><meta charset="utf-8" /><script type="module" src="./host.js"></script></head><body></body></html>\n');
   // A pack's built module, which sets the input `result` when it mounts.
   await writeFile(join(SANDBOX, "packs/built.js"), 'export default function mount(target, { set }) { target.textContent = "built"; set("result", JSON.stringify("built module")); }\n');
+  // A pack's source components compiled ahead, as `@compmd/vite` writes them: a Svelte one's styles in its `css` export.
+  for (const [file, compiled] of await compiledAhead()) await writeFile(join(SANDBOX, "packs", file), compiled);
   project.provide("frames", `${base}sandbox/`);
   project.provide("missing", `${base}missing/`);
   project.provide("refused", `${base}refused/`);

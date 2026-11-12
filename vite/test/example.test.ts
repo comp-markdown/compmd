@@ -62,6 +62,9 @@ describe("the example's build", () => {
     const version = (definition.runtimes[0]?.version ?? "").replaceAll(".", "\\.");
     // Minified, the request's JSON is an object literal: `runtimes:[{name:"react",version:"19.3.0"}`, in any quotes.
     expect(bundle).toMatch(new RegExp(`runtimes:\\[\\{name:["'\`]react["'\`],version:["'\`]${version}["'\`]\\}`));
+    // The source component compiled ahead, beside it, with the hash the page gets for its place.
+    const total = readFileSync(join(OUT, "compmd/packs/@example/charts@1.0.0/Total.jsx.js"));
+    expect(bundle).toContain(`sha384-${createHash("sha384").update(total).digest("base64")}`);
     // The denied pack's code is nowhere: it is never served, and its uses fall back.
     expect(existsSync(join(OUT, "compmd/packs/@example/old@1.0.0"))).toBe(false);
   });
@@ -85,7 +88,7 @@ describe("the example on the dev server", () => {
       const page = await browser.newPage();
       await page.goto(`http://localhost:${String(PORT + 1)}/`);
       await expect.poll(() => page.getByRole("radiogroup", { name: "3 of 5" }).count(), { timeout: 15_000 }).toBe(1);
-      const bars = page.frameLocator("iframe").locator('svg[aria-label="Pages read each day: 30, 52, 18, 41"] rect');
+      const bars = page.frameLocator("iframe >> nth=0").locator('svg[aria-label="Pages read each day: 30, 52, 18, 41"] rect');
       await expect.poll(() => bars.count(), { timeout: 15_000 }).toBe(4);
       const { sandbox } = (await dev.ssrLoadModule("virtual:compmd")) as { sandbox: { base: string } };
       expect(sandbox.base).toMatch(/^\/compmd\/frames\/[0-9a-f]{16}\/$/);
@@ -120,6 +123,8 @@ describe.each(BROWSERS)("the example in %s", (_name, type, options) => {
     const page = await browser.newPage();
     const errors: string[] = [];
     page.on("pageerror", (error) => errors.push(error.message));
+    const requested: string[] = [];
+    page.on("request", (request) => requested.push(new URL(request.url()).pathname));
     await page.goto(URL_);
 
     const stars = page.getByRole("radiogroup", { name: "3 of 5" });
@@ -128,8 +133,11 @@ describe.each(BROWSERS)("the example in %s", (_name, type, options) => {
     await page.getByRole("radio", { name: "5 of 5" }).click();
     await expect.poll(() => page.locator("main").innerText()).toContain("How good was it? 5 of 5.");
 
-    const bars = page.frameLocator("iframe").locator('svg[aria-label="Pages read each day: 30, 52, 18, 41"] rect');
+    const bars = page.frameLocator("iframe >> nth=0").locator('svg[aria-label="Pages read each day: 30, 52, 18, 41"] rect');
     await expect.poll(() => bars.count(), { timeout: 10_000 }).toBe(4);
+    // The pack's source component, compiled ahead: its frame loads the module by its URL, and never compiles it.
+    await expect.poll(() => page.frameLocator("iframe >> nth=1").locator("p").innerText(), { timeout: 10_000 }).toBe("141 pages in all");
+    expect(requested).toContain("/compmd/packs/@example/charts@1.0.0/Total.jsx.js");
 
     await expect.poll(() => page.locator("main").innerText()).toContain("An old gauge: 40");
     // The denied import, and nothing else.

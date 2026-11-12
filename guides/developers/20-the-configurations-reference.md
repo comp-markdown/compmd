@@ -121,7 +121,7 @@ A list of npm packages the app installs, which the frames offer component code b
 { "libraries": ["d3", { "name": "d3-scale", "imports": ["d3-scale", "d3-scale-chromatic"] }] }
 ```
 
-Each one is built once into `compmd/libs/`, and the frames' import map gives components that copy. A library that isn't installed stops the build. Their names and versions go in the request's `policy.libraries`, so the processor reports a pack whose `peerDependencies` the app can't meet (W121). A document whose components import an offered library works only in hosts that offer it.
+Each one is built once into the frames' `libs/` (`compmd/frames/<hash>/libs/`), and the frames' import map gives components that copy. A library that isn't installed stops the build. Their names and versions go in the request's `policy.libraries`, so the processor reports a pack whose `peerDependencies` the app can't meet (W121). A document whose components import an offered library works only in hosts that offer it.
 
 ### `registries`
 
