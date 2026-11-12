@@ -8,7 +8,7 @@ use crate::resolve::libraries::Ask;
 use crate::resolve::source::PackSpec;
 use crate::resolve::{DocumentId, Origin};
 use crate::settings::Import;
-use compmd_pack::{FilePath, PackName, Place, ReleaseId};
+use compmd_pack::{FilePath, Integrity, PackName, Place, ReleaseId};
 use semver::VersionReq;
 use serde_json::Value;
 
@@ -57,12 +57,10 @@ impl Loader<'_, '_> {
                     integrity.at,
                     "`integrity` needs an exact version, such as `@1.4.2`, since a range takes whichever release is newest; ignored",
                 );
-            } else if release
-                .integrity
-                .as_ref()
-                .map(ToString::to_string)
-                .as_deref()
-                != Some(integrity.value.as_str())
+            } else if !integrity
+                .value
+                .parse::<Integrity>()
+                .is_ok_and(|pinned| release.integrity.as_ref() == Some(&pinned))
             {
                 return Err(Refusal::new(
                     Code::F035,

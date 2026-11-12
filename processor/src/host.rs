@@ -420,12 +420,8 @@ mod tests {
         let releases = packs.releases(&name("@acme/charts"));
         assert_eq!(releases.len(), 2);
         assert_eq!(
-            releases[0]
-                .integrity
-                .as_ref()
-                .map(ToString::to_string)
-                .as_deref(),
-            Some("sha512-x")
+            releases[0].integrity,
+            Some("sha512-x".parse().expect("an integrity"))
         );
         assert_eq!(
             packs.pack_file(&place("@acme/charts@1.4.2/package.json")),

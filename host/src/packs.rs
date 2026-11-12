@@ -117,13 +117,13 @@ mod tests {
             .map(|release| release.version.to_string())
             .collect();
         assert_eq!(versions, ["1.2.0", "1.3.0"]);
-        let integrity = |at: usize| releases[at].integrity.as_ref().map(ToString::to_string);
+        let integrity = |text: &str| Some(text.parse().expect("an integrity"));
         assert_eq!(
-            integrity(0).as_deref(),
-            Some("sha512-abc"),
+            releases[0].integrity,
+            integrity("sha512-abc"),
             "the bundle's integrity"
         );
-        assert_eq!(integrity(1).as_deref(), Some("sha512-3"));
+        assert_eq!(releases[1].integrity, integrity("sha512-3"));
         assert_eq!(packs.releases(&"@kit/none".parse().expect("a name")), []);
     }
 
