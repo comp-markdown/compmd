@@ -1,6 +1,6 @@
-# 19. The Rust crate
+# 20. The Rust crates
 
-The processor is a Rust crate, `compmd`; `@compmd/processor` is that crate compiled to WebAssembly. In Rust, it processes documents outside a browser: in a build, a server, a native app, or CI. This chapter shows its stages, what a host gives it, its diagnostics, and a program that checks a folder's documents and fails on an error. [The crate's README](../../processor/README.md) and its API documentation go further.
+The processor is a Rust crate, `compmd`; `@compmd/processor` is that crate compiled to WebAssembly. In Rust, it processes documents outside a browser: in a build, a server, a native app, or CI. This chapter shows its stages, what a host gives it, its diagnostics, and a program that checks a folder's documents and fails on an error. Then the crates beside it: `compmd-host`, what a host in Rust serves its readers, and the Rust crate `compmd-pack`, the names packs and their files are known by. [The crate's README](../../processor/README.md) and its API documentation go further.
 
 ## Getting it
 
@@ -12,7 +12,7 @@ cargo add compmd serde_json
 
 Its parser, a fork of markdown-rs, comes with it as the crate `compmd-markdown`.
 
-**Versions.** The crate shares its version with the npm packages, and each release publishes both ([RELEASING.md](../../RELEASING.md)): this chapter is written for 0.3.0, as the rest of the guide is. Its source is the folder `processor/` of [the repository](https://github.com/comp-markdown/compmd), and its API documentation is on [docs.rs](https://docs.rs/compmd).
+**Versions.** The crates share their version with the npm packages, and each release publishes them all ([RELEASING.md](../../RELEASING.md)): this chapter is written for 0.7.0, as the rest of the guide is. Its source is the folder `processor/` of [the repository](https://github.com/comp-markdown/compmd), and its API documentation is on [docs.rs](https://docs.rs/compmd).
 
 ## The stages
 
@@ -116,7 +116,7 @@ assert_eq!(policy.trust("@acme/charts"), Trust::Strict);
 - `message`, for people;
 - `file`, the document it is in when it isn't the processed one; `range`, its `start` and maybe `end` (`Location { line, column }`, from 1, columns in code points); `related` places; `stage`, a `Stage`; and `fix`, an edit, when the message suggests one.
 
-A `Diagnostic` serializes to the spec's [machine form](https://compmd.hakanserce.com/spec/#105-machine-format), the JSON `@compmd/processor` gives. Every code is in [the diagnostics' appendix](21-the-diagnostics.md). Two things differ from WebAssembly: the crate takes host metadata (`ParseOptions::metadata`), so it reports W115, and its `Code` has no W104, which no package reports yet.
+A `Diagnostic` serializes to the spec's [machine form](https://compmd.hakanserce.com/spec/#105-machine-format), the JSON `@compmd/processor` gives. Every code is in [the diagnostics' appendix](22-the-diagnostics.md). Two things differ from WebAssembly: the crate takes host metadata (`ParseOptions::metadata`), so it reports W115, and its `Code` has no W104, which no package reports yet.
 
 ## Checking documents in CI
 
@@ -173,10 +173,34 @@ What it leaves to you:
 - **Remote and `host:` data.** None is given, so a remote import loads its `fallback` or is F026, and a URL's origin is F028 unless you list it in `validate`. A check that should reach the network fetches what `sources` lists first.
 - **Warnings** are printed and pass. Fail on them too, if your documents should have none.
 
-The same check runs in Node with `@compmd/processor`'s `process` and `mode: "strict"`, which gives the same diagnostics and `failed`; the Vite plugin checks a listed pack's documents that way when an app builds ([chapter 20](20-the-configurations-reference.md#what-the-plugin-checks)).
+The same check runs in Node with `@compmd/processor`'s `process` and `mode: "strict"`, which gives the same diagnostics and `failed`; the Vite plugin checks a listed pack's documents that way when an app builds ([chapter 21](21-the-configurations-reference.md#what-the-plugin-checks)).
 
 ## What the crate doesn't do
 
 It implements stages 1 to 4b, and is a "compmd/1 processor with remote data and origins" in the spec's [conformance](https://compmd.hakanserce.com/spec/#131-what-conforms) terms. It doesn't run host-language components: it gives their code (`host_components`) to a renderer that does, such as `@compmd/sandbox` in a browser, and W118, found only by running one, is a renderer's. It doesn't analyse a component's code against its signature fence (W104). And it renders no HTML, but for what a plain CommonMark renderer shows, `compmd::plain::html`.
 
-Next: the appendices, starting with [the configuration's reference](20-the-configurations-reference.md).
+## A host in Rust: `compmd-host`
+
+A host in Rust that shows documents serves its readers' browsers or webviews what [other hosts](18-other-hosts.md) serve from Node: the bundle, with the serving contract. [`compmd-host`](https://crates.io/crates/compmd-host) has it, for any platform, so an adapter for one (a desktop framework's plugin, a server's route) is a few lines:
+
+```sh
+cargo add compmd-host --features processor
+```
+
+- **`Bundle`** reads the bundle `@compmd/vite` or `buildBundle` wrote: from a folder (`Bundle::read`), embedded in a binary, or made in memory for a test (`Bundle::from_files`). Its `Manifest` is the `manifest.json` the build wrote; a manifest of a format the crate doesn't know is refused, saying what to upgrade.
+- **`Store`** is where a host keeps packs it gets after the build, by their place, with their integrity. `FolderStore` keeps them in a folder, such as the app's data folder; `NoStore` holds none.
+- **`respond(&bundle, &store, &request)`** is the serving contract, over the `http` crate's types: it answers `GET /frames/<hash>/<path>` of the bundle's hash and `GET /packs/<name>@<version>/<path>` of a pack the bundle or the store holds, with the contract's headers, and refuses anything else (the manifest too) with a `404` that says why, readable from any origin, or a `405` for another method.
+- **`HostPacks`** (the `processor` feature) is `compmd::host::Packs` over the bundle and the store, the bundle's packs first, so the processor resolves a document's imports from exactly the files the frames load. From the crate's documentation:
+
+```rust
+let packs = HostPacks::new(Arc::new(bundle), Arc::new(NoStore));
+let resolved = Processor::new("a.comp.md", "# A\n").parse(&ParseOptions::default()).resolve((), packs, &Ambient::default());
+```
+
+`tauri-plugin-compmd` is the adapter for Tauri, on `compmd-host` ([a Tauri app](19-a-tauri-app.md)).
+
+## Names, checked once: the crate `compmd-pack`
+
+The Rust crate [`compmd-pack`](https://crates.io/crates/compmd-pack) has the names packs and their files are known by (spec §6.4), each checked when it is made, so `compmd` and `compmd-host` mean one thing by each: `PackName` (`@scope/name`, as npm names scoped packages), `ReleaseId` (a pack at one version), `FilePath` (a file's path in a pack, which can't leave it), `Place` (a release and a file's path in it, `@kit/mermaid@1.2.0/dist/mermaid.js`) and `Integrity`. The processor re-exports it as `compmd::pack`, so a host rarely adds it itself. In JSON each is what the spec writes: a name, a path and an integrity are strings, and a place is `{"pack", "version", "path"}`. It isn't `compmd-pack`, the command of [`@compmd/pack`](17-testing-and-publishing.md) that builds and tests a pack, which only shares its name.
+
+Next: the appendices, starting with [the configuration's reference](21-the-configurations-reference.md).

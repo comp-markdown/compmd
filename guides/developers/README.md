@@ -2,7 +2,7 @@
 
 How to build with [CompMD](https://compmd.hakanserce.com/): documents people write as text, rendered as pages in your application, with components of your own and from packs, and safe to open from anyone. The [spec](../../compmd-spec-v1.md) says what CompMD is; the package READMEs say what each package has; this guide shows how to build with them, from a first page to a published pack. Writing documents themselves is [the Author's Guide](../authors/README.md).
 
-It is written for the `@compmd` packages at version 0.3.0, and follows them as they change. On the website it is at [compmd.hakanserce.com/guides/developers/](https://compmd.hakanserce.com/guides/developers/).
+It is written for the `@compmd` packages and the crates at version 0.7.0, and follows them as they change. On the website it is at [compmd.hakanserce.com/guides/developers/](https://compmd.hakanserce.com/guides/developers/).
 
 ## Who it is for
 
@@ -44,14 +44,15 @@ If you write documents rather than code, [the Author's Guide](../authors/README.
 **Part V. Beyond Vite**
 
 18. [Other hosts](18-other-hosts.md)
-19. [The Rust crate](19-the-rust-crate.md)
+19. [A Tauri app](19-a-tauri-app.md)
+20. [The Rust crates](20-the-rust-crates.md)
 
 **Appendices**
 
-20. [The configuration's reference](20-the-configurations-reference.md)
-21. [The diagnostics](21-the-diagnostics.md)
-22. [A glossary](22-a-glossary.md)
+21. [The configuration's reference](21-the-configurations-reference.md)
+22. [The diagnostics](22-the-diagnostics.md)
+23. [A glossary](23-a-glossary.md)
 
 ## The examples
 
-Each chapter's code is a file in [`examples/`](examples), which the guides' tests type-check, build and run in Chrome and WebKit, and compare with the chapter's text, so the code you read is code that works.
+Each chapter's code is a file in [`examples/`](examples), which the guides' tests type-check, build and run in Chrome and WebKit, and compare with the chapter's text, so the code you read is code that works. Chapter 19 shows the files of the repository's Tauri example, [`examples/tauri/`](../../examples/tauri), which its own check runs in a real webview.

@@ -88,7 +88,8 @@
     { href: "playground/", title: "The playground", text: "Write CompMD and watch the page, with a tour, examples and the diagnostics." },
     { href: `${REPOSITORY}/tree/main/conformance`, title: "The conformance set", text: `${String(facts.cases)} cases any implementation can run, with their expected trees.` },
     { href: REPOSITORY, title: "GitHub", text: "The spec, the processor in Rust, the packages and this site." },
-    { href: "https://www.npmjs.com/org/compmd", title: "The packages", text: "The processor, the renderer, the sandbox, the Vite plugin and the pack template on npm, and the compmd crate." },
+    { href: "https://www.npmjs.com/org/compmd", title: "The npm packages", text: "The processor, the renderer, the sandbox, the registry client, the Vite plugin, the Developer Tools and the pack tools." },
+    { href: "https://crates.io/search?q=compmd", title: "The Rust crates", text: "The processor, compmd; what a host serves, compmd-host; and the Tauri plugin, tauri-plugin-compmd." },
   ];
 </script>
 
@@ -183,7 +184,7 @@
         <strong>An early stage:</strong> versions are <code>0.x</code> while the spec is a draft, and until version 1 a release can break documents and code written for the one before.
         On npm: <a href="https://www.npmjs.com/package/@compmd/vite">@compmd/vite</a>, <a href="https://www.npmjs.com/package/@compmd/processor">@compmd/processor</a>,
         <a href="https://www.npmjs.com/package/@compmd/sandbox">@compmd/sandbox</a> and <a href="https://www.npmjs.com/package/@compmd/render">@compmd/render</a>; in Rust, the crate
-        <a href="https://crates.io/crates/compmd">compmd</a>. What each release changed: <a href="{REPOSITORY}/releases">the releases</a> and
+        <a href="https://crates.io/crates/compmd">compmd</a>, and for a desktop app <a href="https://crates.io/crates/tauri-plugin-compmd">tauri-plugin-compmd</a>. What each release changed: <a href="{REPOSITORY}/releases">the releases</a> and
         <a href="{REPOSITORY}/blob/main/CHANGELOG.md">the spec's changelog</a>, and GitHub's <em>Watch → Releases</em> to hear of the next.
       </p>
       <Snippets />

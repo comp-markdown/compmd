@@ -10,6 +10,7 @@ import { createRequire } from "node:module";
 import { join } from "node:path";
 import { execPath } from "node:process";
 import { initSync, process as processDocument, type PackRelease, type Policy, type Request } from "@compmd/processor";
+import { CONTRACT_HEADERS } from "@compmd/sandbox/check";
 import { ConfigError, readConfig } from "@compmd/vite/config";
 import { chromium, webkit, type Browser, type BrowserType, type LaunchOptions } from "playwright";
 import { build } from "vite";
@@ -32,20 +33,25 @@ const BROWSERS: [string, BrowserType, LaunchOptions][] = [
 describe("chapter 18, other hosts", () => {
   const example = join(BOOK, "examples/other-hosts");
   const site = join(OUT, "public");
+  const bundle = join(OUT, "bundle");
   const port = 4260;
   const registryPort = 4261;
   const base = `http://localhost:${String(port)}`;
   const tarball = Buffer.from("the tarball's bytes");
   let registry: Server;
   let server: ChildProcess;
+  let frames: string;
 
-  // The chapter's steps: the page bundled into `public/` (by Vite, as a bundler alone), the document beside it, the
-  // frames built into `public/compmd/`, then the server, with the configuration's registry a local one.
+  // The chapter's steps: the pages bundled into `public/` (by Vite, as a bundler alone), the document beside them, the
+  // bundle built from the app's folder (the guides', which installs the Mermaid pack), then the server, with the
+  // configuration's registry a local one.
   beforeAll(async () => {
     await rm(OUT, { recursive: true, force: true });
-    await build({ root: example, configFile: false, logLevel: "warn", build: { outDir: site, emptyOutDir: true, target: "es2024" } });
+    const input = { page: join(example, "index.html"), check: join(example, "check.html") };
+    await build({ root: example, configFile: false, logLevel: "warn", build: { outDir: site, emptyOutDir: true, target: "es2024", rolldownOptions: { input } } });
     cpSync(join(example, "plan.comp.md"), join(site, "plan.comp.md"));
-    execFileSync(execPath, ["build.ts", join(site, "compmd")], { cwd: example, stdio: "pipe" });
+    execFileSync(execPath, [join(example, "build.ts"), bundle, join(example, "compmd.config.json")], { cwd: GUIDES, stdio: "pipe" });
+    frames = `frames/${(JSON.parse(readFileSync(join(bundle, "manifest.json"), "utf8")) as { frames: { hash: string } }).frames.hash}/`;
     registry = createServer((request, response) => {
       const path = decodeURIComponent(new URL(request.url ?? "/", "http://localhost").pathname);
       if (path === "/tarball.tgz") return response.writeHead(200, { "content-type": "application/octet-stream" }).end(tarball);
@@ -57,7 +63,7 @@ describe("chapter 18, other hosts", () => {
     const config = JSON.parse(readFileSync(join(example, "compmd.config.json"), "utf8")) as Record<string, unknown>;
     const configFile = join(OUT, "compmd.config.json");
     await writeFile(configFile, JSON.stringify({ ...config, registries: { "*": `http://127.0.0.1:${String(registryPort)}/` } }));
-    server = spawn(execPath, ["server.ts", site, String(port), configFile], { cwd: example, stdio: ["ignore", "pipe", "pipe"] });
+    server = spawn(execPath, ["server.ts", site, bundle, String(port), configFile], { cwd: example, stdio: ["ignore", "pipe", "pipe"] });
     let errors = "";
     server.stderr?.on("data", (data: Buffer) => (errors += data.toString()));
     await new Promise<void>((resolve, reject) => {
@@ -76,18 +82,21 @@ describe("chapter 18, other hosts", () => {
     await new Promise((resolve) => registry.close(resolve));
   });
 
-  it("serves the frames with their two headers", async () => {
-    const strict = await fetch(`${base}/compmd/strict.html`);
-    expect(strict.status).toBe(200);
-    expect(strict.headers.get("content-security-policy")).toBe("sandbox allow-scripts");
-    expect(strict.headers.get("access-control-allow-origin")).toBe("*");
-    const runtime = await fetch(`${base}/compmd/runtime.js`);
-    expect(runtime.headers.get("access-control-allow-origin")).toBe("*");
-    expect(runtime.headers.get("content-security-policy")).toBeNull();
+  it("serves the bundle's files with the contract's headers, and nothing else", async () => {
+    for (const file of ["strict.html", "runtime.js"]) {
+      const served = await fetch(`${base}/compmd/${frames}${file}`);
+      expect(served.status, file).toBe(200);
+      for (const [name, value] of Object.entries(CONTRACT_HEADERS)) expect(served.headers.get(name), `${file}: ${name}`).toBe(value);
+    }
+    for (const path of ["manifest.json", "frames/0000000000000000/strict.html", `${frames}not-a-file.js`, "packs/@acme/none@1.0.0/index.js", `${frames}%2e%2e/manifest.json`]) {
+      const refused = await fetch(`${base}/compmd/${path}`);
+      expect(refused.status, path).toBe(404);
+      expect(refused.headers.get("access-control-allow-origin"), path).toBe("*");
+    }
   });
 
-  it("gives a request that opens the document with the pack given by hand, and the policy the configuration says", async () => {
-    const { request, modules } = (await (await fetch(`${base}/app.json`)).json()) as { request: Omit<Request, "path" | "now">; modules: Record<string, string> };
+  it("gives a request that opens the document with the bundle's pack, and the policy the configuration says", async () => {
+    const { request, modules } = (await (await fetch(`${base}/app.json`)).json()) as { request: Omit<Request, "path" | "now">; modules: Record<string, { path: string; integrity: string }> };
     const text = readFileSync(join(example, "plan.comp.md"), "utf8");
     const opened = processDocument({ ...request, path: "plan.comp.md", files: { "plan.comp.md": text }, now: "2026-11-02T09:00:00Z" });
     expect(opened.diagnostics).toEqual([]);
@@ -96,11 +105,12 @@ describe("chapter 18, other hosts", () => {
     const other = "---\nmd:\n  import:\n    - from: \"@acme/kit@1\"\n      names: [card]\n---\n";
     expect(processDocument({ ...request, path: "a.comp.md", files: { "a.comp.md": other }, now: "2026-11-02T09:00:00Z" }).diagnostics.map(({ code }) => code)).toEqual(["F026"]);
     // The built module the server serves is the file whose hash the page gives its frame.
-    const [place, integrity] = Object.entries(modules)[0] ?? [];
+    const [place, module] = Object.entries(modules)[0] ?? [];
     expect(place).toBe("@comp-markdown/mermaid@0.1.1/dist/mermaid.js");
-    const served = await fetch(`${base}/compmd/packs/${place ?? ""}`);
+    expect(module?.path).toBe(`packs/${place ?? ""}`);
+    const served = await fetch(`${base}/compmd/${module?.path ?? ""}`);
     expect(served.headers.get("access-control-allow-origin")).toBe("*");
-    expect(integrity).toBe(`sha384-${createHash("sha384").update(Buffer.from(await served.arrayBuffer())).digest("base64")}`);
+    expect(module?.integrity).toBe(`sha384-${createHash("sha384").update(Buffer.from(await served.arrayBuffer())).digest("base64")}`);
   });
 
   it("passes a pack's metadata and tarball on through its proxy, and nothing else", async () => {
@@ -134,11 +144,19 @@ describe("chapter 18, other hosts", () => {
       expect(errors).toEqual([]);
       await page.close();
     });
+
+    it("passes the hosting check", async () => {
+      const page = await browser.newPage();
+      await page.goto(`${base}/check.html`);
+      await expect.poll(() => page.locator("body").getAttribute("data-checked"), { timeout: 60_000 }).not.toBeNull();
+      expect(await page.locator("#report").innerText()).toMatch(/^passed: /);
+      await page.close();
+    });
   });
 });
 
-describe("chapter 20, the configuration's reference", () => {
-  const text = chapter("20-the-configurations-reference.md");
+describe("chapter 21, the configuration's reference", () => {
+  const text = chapter("21-the-configurations-reference.md");
   const schema = JSON.parse(readFileSync(join(GUIDES, "node_modules/@compmd/vite/compmd.config.schema.json"), "utf8")) as {
     properties: Record<string, unknown>;
     $defs: { pack: { properties: Record<string, unknown> } };
@@ -146,7 +164,7 @@ describe("chapter 20, the configuration's reference", () => {
 
   it("has a section for every key of the schema, every pack option and every option of the plugin", () => {
     const sections = new Set([...text.matchAll(/^### `([^`]+)`/gm)].map(([, key]) => key));
-    const keys = [...Object.keys(schema.properties).filter((key) => key !== "$schema"), ...Object.keys(schema.$defs.pack.properties).map((key) => `packs.*.${key}`), "folder", "config"];
+    const keys = [...Object.keys(schema.properties).filter((key) => key !== "$schema"), ...Object.keys(schema.$defs.pack.properties).map((key) => `packs.*.${key}`), "folder", "config", "out", "source"];
     expect([...sections].sort()).toEqual(keys.sort());
   });
 
@@ -248,8 +266,8 @@ const TRIGGERS: Record<string, Trigger> = {
   },
 };
 
-describe("chapter 21, the diagnostics", () => {
-  const text = chapter("21-the-diagnostics.md");
+describe("chapter 22, the diagnostics", () => {
+  const text = chapter("22-the-diagnostics.md");
   /** Each code in the appendix's tables, with the severity and the stage it is listed with. */
   const listed: { code: string; severity: string; stage: string | undefined }[] = [];
   let stage: string | undefined;

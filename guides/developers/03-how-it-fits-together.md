@@ -51,7 +51,7 @@ Every stage reports what it finds wrong with the document as diagnostics, and no
 | `stage` | the stage that found it: `parse`, `resolve`, `validate`, `load` or `evaluate` |
 | `fix` | when there is one, the edit that fixes it, for a quick fix |
 
-The processor gives them in stage order, with its result. Two come later, from the sandbox, since only running a component's code finds them: `W118` for a component that threw or failed, and `W121` for code that can't load (the processor reports `W121` itself only for a pack whose `peerDependencies` your frames can't meet). They arrive through the view's `error` event, `view.on("error", ({ component, code, message }) => …)`. The [diagnostics appendix](21-the-diagnostics.md) lists every code.
+The processor gives them in stage order, with its result. Two come later, from the sandbox, since only running a component's code finds them: `W118` for a component that threw or failed, and `W121` for code that can't load (the processor reports `W121` itself only for a pack whose `peerDependencies` your frames can't meet). They arrive through the view's `error` event, `view.on("error", ({ component, code, message }) => …)`. The [diagnostics appendix](22-the-diagnostics.md) lists every code.
 
 ## The expanded tree, and the components
 
@@ -91,7 +91,7 @@ Frames only go down in trust: your page holds permissive and strict frames, a pe
 
 - it reads **`compmd.config.json`**: which packs get more than strict trust, which are ambient (every document gets their names), which are denied;
 - it finds your **packs**, in `node_modules` and in folders of your app, and gives them to the processor as `request.packs`;
-- it serves the sandbox's **frame documents** and the packs' **built modules** from your app, under `compmd/`, with the headers the frames need;
+- it builds the **bundle**, the sandbox's frames and your packs' files, and serves it from your app under `compmd/`, with the headers the frames need, or writes it into a folder a desktop app's plugin serves ([a Tauri app](19-a-tauri-app.md));
 - it builds your **trusted components** with your app, and gives them to the sandbox as `sandbox.trusted`.
 
 `virtual:compmd` hands both to your code, `request` for the processor and `sandbox` for the sandbox, so you spread them in and write no policy, path or import map yourself.

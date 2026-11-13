@@ -1,4 +1,4 @@
-# 20. The configuration's reference
+# 21. The configuration's reference
 
 Every key of `compmd.config.json` and every option of `@compmd/vite`'s plugin: its type, its default, an example, and what is checked. Then what the plugin checks when the app builds, and the errors it gives. [Chapter 9](09-packs-from-npm.md) teaches the configuration; this is the list to look things up in.
 
@@ -146,17 +146,33 @@ Each URL is `https:` (`http:` only for `localhost`, `127.0.0.1` and `[::1]`), wi
 
 ## The plugin's options
 
-`compmd(options)`, in `vite.config.ts`. Both are optional.
+`compmd(options)`, in `vite.config.ts`. All are optional.
 
 ### `folder`
 
-The folder of the app, under Vite's `base`, where the frame documents, their libraries, the packs' built modules and the registry proxy are served. Default: `"compmd/"`.
+The folder of the app, under Vite's `base`, where the bundle (the frames, their libraries and the packs' files) and the registry proxy are served. Default: `"compmd/"`.
 
 ```ts
 compmd({ folder: "sandbox/" });
 ```
 
-Leading slashes are dropped and a trailing one added: `"/sandbox"` is `sandbox/`. `virtual:compmd`'s `sandbox.origin` and `registry` follow it.
+Leading slashes are dropped and a trailing one added: `"/sandbox"` is `sandbox/`. `virtual:compmd`'s `sandbox.origin` and `registry` follow it. Not with `out`.
+
+### `out`
+
+The folder, relative to Vite's root, the bundle is written into, with its `manifest.json`, for a desktop app's plugin to embed or serve, in place of the web output. Default: none, and the bundle is part of the web output, under `folder`.
+
+```ts
+compmd({ out: "src-tauri/compmd", source: "compmd://localhost/" });
+```
+
+With it, the dev server serves no bundle, since the app's plugin does, and writes the bundle when it starts; `virtual:compmd`'s `sandbox` has no `origin`, which the page takes from the plugin (`globalThis.__COMPMD__`). The folder is build output: list it in the app's `.gitignore`. [A Tauri app](19-a-tauri-app.md) uses it.
+
+### `source`
+
+The custom scheme the bundle is served on, as a scheme, a host and a path ending in `/`: `"compmd://localhost/"`. Default: none, for a bundle served over http or https.
+
+WebKit reads `'self'` in a sandboxed frame as nothing on a scheme other than http and https, so the frames' policies name `source` beside each `'self'`, and the manifest records it, for the plugin to serve the scheme the bundle was built for. `buildBundle` takes the same option.
 
 ### `config`
 
@@ -208,4 +224,4 @@ In a build, a problem stops it. On the dev server, a change that brings one is l
 
 The plugin finds installed packs among the app's `dependencies` and `devDependencies`: each scoped one whose `package.json` has a `compmd` field or whose folder has `index.comp.md`. Each one's integrity comes from the nearest lock file above the app, `pnpm-lock.yaml` or `package-lock.json`; without one, a document that pins a pack's integrity gets F035.
 
-Next: [the diagnostics](21-the-diagnostics.md).
+Next: [the diagnostics](22-the-diagnostics.md).

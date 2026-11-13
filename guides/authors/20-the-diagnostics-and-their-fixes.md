@@ -1,6 +1,6 @@
 # 20. The diagnostics and their fixes
 
-When something in a document isn't right, CompMD says so with a *diagnostic*: a code, the place, and a message that says what it found. This appendix lists the diagnostics a writer meets, grouped by what you were doing when it came up, each with what it means and how to fix it. The [spec's catalogue](https://compmd.hakanserce.com/spec/#102-catalog) has every code, and the [Developer's Guide's appendix](../developers/21-the-diagnostics.md) the ones only an app or a pack's author causes.
+When something in a document isn't right, CompMD says so with a *diagnostic*: a code, the place, and a message that says what it found. This appendix lists the diagnostics a writer meets, grouped by what you were doing when it came up, each with what it means and how to fix it. The [spec's catalogue](https://compmd.hakanserce.com/spec/#102-catalog) has every code, and the [Developer's Guide's appendix](../developers/22-the-diagnostics.md) the ones only an app or a pack's author causes.
 
 ## Reading a diagnostic
 

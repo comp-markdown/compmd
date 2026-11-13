@@ -1,5 +1,5 @@
 // The guides' chapters against what they claim, book by book: each block of code marked `snippet=<file>` is that
-// example file's text, each example file is shown, each CompMD document in a chapter processes without diagnostics
+// example file's text, and one marked `excerpt=<file>` is in it, each example file is shown, each CompMD document in a chapter processes without diagnostics
 // (with the packs it imports from npm), the contents lists every chapter at its number, and the examples build and run
 // in Chrome and WebKit as the chapters say.
 import { execFileSync } from "node:child_process";
@@ -90,6 +90,14 @@ describe.each(BOOKS)("the %s' guide", (book) => {
         const file = /\bsnippet=(\S+)/.exec(info)?.[1];
         if (file === undefined) continue;
         expect(text, file).toBe(readFileSync(join(examples, file), "utf8").replace(/\n$/, ""));
+      }
+    });
+
+    // A block marked `excerpt=<file>` is part of a file too long to show whole, word for word.
+    it(`${chapter}: its excerpts are in their files`, () => {
+      for (const { info, text } of blocksOf(markdown)) {
+        const file = /\bexcerpt=(\S+)/.exec(info)?.[1];
+        if (file !== undefined) expect(readFileSync(join(examples, file), "utf8"), file).toContain(text);
       }
     });
 
