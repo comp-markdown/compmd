@@ -16,7 +16,7 @@ Its parser, a fork of markdown-rs, comes with it as the crate `compmd-markdown`.
 
 ## The stages
 
-A `Processor` goes through the spec's [stages](https://compmd.hakanserce.com/spec/#11-processing-model) as states: each stage takes the processor and gives it back in its next state, so they run only in order, and each state gives what its stage made and the diagnostics so far. Each stage takes only what it uses. From the crate's documentation:
+A `Processor` goes through the spec's [stages](https://compmd.dev/spec/#11-processing-model) as states: each stage takes the processor and gives it back in its next state, so they run only in order, and each state gives what its stage made and the diagnostics so far. Each stage takes only what it uses. From the crate's documentation:
 
 ```rust
 use compmd::context::RenderContext;
@@ -116,11 +116,11 @@ assert_eq!(policy.trust("@acme/charts"), Trust::Strict);
 - `message`, for people;
 - `file`, the document it is in when it isn't the processed one; `range`, its `start` and maybe `end` (`Location { line, column }`, from 1, columns in code points); `related` places; `stage`, a `Stage`; and `fix`, an edit, when the message suggests one.
 
-A `Diagnostic` serializes to the spec's [machine form](https://compmd.hakanserce.com/spec/#105-machine-format), the JSON `@compmd/processor` gives. Every code is in [the diagnostics' appendix](22-the-diagnostics.md). Two things differ from WebAssembly: the crate takes host metadata (`ParseOptions::metadata`), so it reports W115, and its `Code` has no W104, which no package reports yet.
+A `Diagnostic` serializes to the spec's [machine form](https://compmd.dev/spec/#105-machine-format), the JSON `@compmd/processor` gives. Every code is in [the diagnostics' appendix](22-the-diagnostics.md). Two things differ from WebAssembly: the crate takes host metadata (`ParseOptions::metadata`), so it reports W115, and its `Code` has no W104, which no package reports yet.
 
 ## Checking documents in CI
 
-The spec's [strict mode](https://compmd.hakanserce.com/spec/#101-modes) fails on any F code: for CI and publishing. It reports the same diagnostics and makes the same tree as lenient mode; `failed()` says whether it failed. A program that checks every document among the files it is given, prints each diagnostic, and fails on an error:
+The spec's [strict mode](https://compmd.dev/spec/#101-modes) fails on any F code: for CI and publishing. It reports the same diagnostics and makes the same tree as lenient mode; `failed()` says whether it failed. A program that checks every document among the files it is given, prints each diagnostic, and fails on an error:
 
 ```rust
 use compmd::context::RenderContext;
@@ -177,7 +177,7 @@ The same check runs in Node with `@compmd/processor`'s `process` and `mode: "str
 
 ## What the crate doesn't do
 
-It implements stages 1 to 4b, and is a "compmd/1 processor with remote data and origins" in the spec's [conformance](https://compmd.hakanserce.com/spec/#131-what-conforms) terms. It doesn't run host-language components: it gives their code (`host_components`) to a renderer that does, such as `@compmd/sandbox` in a browser, and W118, found only by running one, is a renderer's. It doesn't analyse a component's code against its signature fence (W104). And it renders no HTML, but for what a plain CommonMark renderer shows, `compmd::plain::html`.
+It implements stages 1 to 4b, and is a "compmd/1 processor with remote data and origins" in the spec's [conformance](https://compmd.dev/spec/#131-what-conforms) terms. It doesn't run host-language components: it gives their code (`host_components`) to a renderer that does, such as `@compmd/sandbox` in a browser, and W118, found only by running one, is a renderer's. It doesn't analyse a component's code against its signature fence (W104). And it renders no HTML, but for what a plain CommonMark renderer shows, `compmd::plain::html`.
 
 ## A host in Rust: `compmd-host`
 

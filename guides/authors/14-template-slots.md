@@ -65,7 +65,7 @@ No plots here yet. Ask Maya for one.
 ::: /grid
 ````
 
-[Try it](https://compmd.hakanserce.com/playground/?doc=guides/authors/template-slots) in the playground.
+[Try it](https://compmd.dev/playground/?doc=guides/authors/template-slots) in the playground.
 
 The page shows three boxes side by side. *The North bed* says *2 plots* and has a line for each of Maya's and Tomás's plots; *The South bed* has Jun's and Priya's; *The East bed* says *0 plots* and *No plots here yet.* Add a plot with `bed: East`, and it moves into the third box.
 

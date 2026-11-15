@@ -123,7 +123,7 @@ Nothing of the page is written into the pack. Add uses to `demo.comp.md` as you 
 
 ## The plain binding
 
-A built module is the plain binding (spec [§7.6](https://compmd.hakanserce.com/spec/#76-bindings)): its default export *is* `mount`, a function that gets an element and a context, draws into the element, and returns what to do on an update and when the component goes. The template's component:
+A built module is the plain binding (spec [§7.6](https://compmd.dev/spec/#76-bindings)): its default export *is* `mount`, a function that gets an element and a context, draws into the element, and returns what to do on an update and when the component goes. The template's component:
 
 ```ts snippet=first-pack/src/hello.ts
 // `hello`: draws its `value` in its box. Replace the drawing with yours; what it imports is bundled in.
@@ -159,7 +159,7 @@ export default component<Params>((target, { params, fallback }) => {
 
 ## The context
 
-The second argument is the host contract's context (spec [§7.4](https://compmd.hakanserce.com/spec/#74-the-host-contract)):
+The second argument is the host contract's context (spec [§7.4](https://compmd.dev/spec/#74-the-host-contract)):
 
 | Field | What it is |
 |---|---|

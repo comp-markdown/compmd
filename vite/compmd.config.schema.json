@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://compmd.hakanserce.com/schemas/compmd.config.schema.json",
+  "$id": "https://compmd.dev/schemas/compmd.config.schema.json",
   "title": "CompMD configuration",
   "description": "The packs a host gives its documents, with their trust, and which packs a document may import: compmd.config.json, or the compmd key of package.json.",
   "type": "object",

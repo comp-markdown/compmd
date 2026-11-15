@@ -11,7 +11,7 @@ CompMD (Component Markdown) is a Markdown flavor that adds components, container
 
 **Author:** Hakan Serce.
 
-**Website:** [compmd.hakanserce.com](https://compmd.hakanserce.com), with this spec as a page and a playground to try CompMD in.
+**Website:** [compmd.dev](https://compmd.dev), with this spec as a page and a playground to try CompMD in.
 
 ## 1. Status and conventions
 

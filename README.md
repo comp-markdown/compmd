@@ -7,7 +7,7 @@
 
 CompMD (Component Markdown) is a Markdown flavor that adds components, containers, slots and layout to CommonMark and GFM, and stays readable in any plain Markdown renderer. Files end in `.comp.md`.
 
-**[The website](https://compmd.hakanserce.com/)** shows CompMD live, with [the playground](https://compmd.hakanserce.com/playground/) and [the spec](https://compmd.hakanserce.com/spec/) as a page.
+**[The website](https://compmd.dev/)** shows CompMD live, with [the playground](https://compmd.dev/playground/) and [the spec](https://compmd.dev/spec/) as a page.
 
 **Status: early draft.** CompMD is at an early stage. Until version 1 is released, the spec and the packages will change in ways that break documents and code written for an earlier draft; the [changelog](CHANGELOG.md) says when one does.
 
@@ -32,7 +32,7 @@ CompMD (Component Markdown) is a Markdown flavor that adds components, container
 | [devtools/](devtools/README.md) | `@compmd/devtools`: the Developer Tools as a part any page embeds: a document's text and its page side by side, the views of what the processor makes of it, and the sandbox's frames, a console and the messages between them |
 | [editor/](editor/README.md) | The CompMD Playground: the website's page that embeds the Developer Tools, with a menu of documents and the host's stylesheets to try; a static site that works offline once loaded |
 | [logo/](logo/README.md) | The CompMD logo: the mark and the name, light, dark and in one color, and the favicon |
-| [website/](website/README.md) | [The CompMD website](https://compmd.hakanserce.com/): the landing page, with the playground and the spec, published on GitHub Pages |
+| [website/](website/README.md) | [The CompMD website](https://compmd.dev/): the landing page, with the playground and the spec, published on GitHub Pages |
 | [docs/](docs/README.md) | The design documents, [indexed by kind](docs/README.md), and how the repository is run: [releases and versions](docs/releases.md), [CI on GitHub](docs/ci.md); designs: [components from apps and packs](docs/components-from-apps-and-packs.md), [code renderers](docs/code-renderers.md), [running components in the sandbox](docs/running-components-in-the-sandbox.md), [the configuration and `@compmd/vite`](docs/vite.md), [`@compmd/create-pack`](docs/create-pack.md), [packs from a registry](docs/packs-from-a-registry.md), [resolving registry packs](docs/resolving-registry-packs.md), [handling pack loading states](docs/handling-pack-loading-states.md), [the Developer Tools](docs/devtools.md) |
 | [RELEASING.md](RELEASING.md) | How to release the packages, the crates and the spec, step by step |
 | [existing-specs-comparison.md](existing-specs-comparison.md) | The spec compared with MDX, Markdoc, Nuxt MDC and Comark, MyST, Quarto, Livebook's Live Markdown and Active Markdown |

@@ -7,13 +7,13 @@
 
 Runs a CompMD document's components in a browser at the trust levels of [spec §15](../compmd-spec-v1.md#15-security): strict code in frames with no network, permissive code in frames that reach only their pack's origins, and the host's own trusted code in its page. A host gives it trees and its configuration; it never writes a frame or a content security policy itself. The design is [running components in the sandbox](../docs/running-components-in-the-sandbox.md), its messages [docs/sandbox-protocol.md](../docs/sandbox-protocol.md).
 
-**Website:** [compmd.hakanserce.com](https://compmd.hakanserce.com/), with the spec and a playground to try CompMD in.
+**Website:** [compmd.dev](https://compmd.dev/), with the spec and a playground to try CompMD in.
 
 ```sh
 npm install @compmd/sandbox @compmd/render @compmd/processor
 ```
 
-It implements the draft of the [CompMD specification](https://compmd.hakanserce.com/spec/), version 1, and shares its version with `@compmd/render` and `@compmd/processor` ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
+It implements the draft of the [CompMD specification](https://compmd.dev/spec/), version 1, and shares its version with `@compmd/render` and `@compmd/processor` ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
 
 **Versions:**
 - **0.7.0:** on the hosting bundle ([hosting](../docs/hosting.md)): `createSandbox` takes the bundle's `frames` and `modules`, paths `@compmd/vite` gives in `virtual:compmd`, under the origin the host's adapter gives (`globalThis.__COMPMD__.origin`), so a page passes nothing; `modules` may answer a module's path under that origin; a pack's source component compiled ahead loads by its place; `buildFrames({ source, packs })` names where the packs are served beside the frames, so a frame on a host's own scheme loads their modules; `compile`, for a host's build; the hosting check, `@compmd/sandbox/check`, which every host runs, and the serving contract's `CONTRACT_HEADERS`. Breaking: the page is given an origin, no longer a `base` (`__COMPMD__.base` is gone), and the frames are served under a hash of their files.

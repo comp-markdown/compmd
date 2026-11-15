@@ -57,7 +57,7 @@ params:
 To :gardener[Maya Okafor (plot 1)]{name="Maya Okafor" plot=1} for turning the compost, and to :gardener[Priya Nair (plot 4)]{name="Priya Nair" plot=4} for mending the gate.
 ````
 
-[Try it](https://compmd.hakanserce.com/playground/?doc=guides/authors/definitions) in the playground.
+[Try it](https://compmd.dev/playground/?doc=guides/authors/definitions) in the playground.
 
 The page shows four cards, one per plot, each with its number as a heading and a line about it. Plot 3 has no gardener, so its card has the accent background and says *Free for next year.* The thanks name Maya and Priya in bold, with their plots.
 

@@ -184,7 +184,7 @@ describe("rendering and styling: the styled page", () => {
       await page.locator("#page[data-compmd-settled]").waitFor({ timeout: 20_000 });
       await frame(page).locator("a", { hasText: "the spec" }).click();
       // The click crosses from the frame to the page as a message, which a busy machine delivers late.
-      await expect.poll(() => page.locator("#link output").innerText(), { timeout: 10_000 }).toBe("https://compmd.hakanserce.com/spec/");
+      await expect.poll(() => page.locator("#link output").innerText(), { timeout: 10_000 }).toBe("https://compmd.dev/spec/");
       await page.locator("#link button[value=cancel]").click();
       expect(await page.locator("#link").evaluate((element: HTMLDialogElement) => element.open)).toBe(false);
     },

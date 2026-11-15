@@ -61,7 +61,7 @@ params:
 ```
 ````
 
-[Try it](https://compmd.hakanserce.com/playground/?doc=guides/authors/in-code) in the playground. Give plot 5 a gardener, and its square on the map no longer looks faded.
+[Try it](https://compmd.dev/playground/?doc=guides/authors/in-code) in the playground. Give plot 5 a gardener, and its square on the map no longer looks faded.
 
 The harvest's bars are drawn by a React component in a file beside the document:
 

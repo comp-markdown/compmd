@@ -69,7 +69,7 @@ Plots 3 and 5 are free.
 ::: /box
 ```
 
-[Try it](https://compmd.hakanserce.com/playground/?doc=guides/authors/breakpoints) in the playground. With the page narrow, the work day's box comes under the news, and the plots are a list. Drag the bar between the text and the page until the page is wider than 768 pixels (folding the text away is quickest): the work day moves beside the news, a third of the width, its padding grows, and the list gives way to the table.
+[Try it](https://compmd.dev/playground/?doc=guides/authors/breakpoints) in the playground. With the page narrow, the work day's box comes under the news, and the plots are a list. Drag the bar between the text and the page until the page is wider than 768 pixels (folding the text away is quickest): the work day moves beside the news, a third of the width, its padding grows, and the list gives way to the table.
 
 ## Breakpoints
 

@@ -55,7 +55,7 @@ No orders.
 ::: /each
 ```
 
-[Try it](https://compmd.hakanserce.com/playground/?doc=guides/developers/orders) in the playground, which has no orders of yours: it shows the fallback.
+[Try it](https://compmd.dev/playground/?doc=guides/developers/orders) in the playground, which has no orders of yours: it shows the fallback.
 
 `delivery.csv`:
 
@@ -156,7 +156,7 @@ A `host:` source names data your app provides: the processor gives it nothing bu
 - **A source you don't provide** is left out. The document then gets its `fallback`, with no diagnostic, or, without a fallback, `null` and F026: an `each` over it shows its `empty` slot.
 - **Access is yours.** The document carries no credentials, and a reader sees only what your app answers for that reader. A shared document can ask for any source by name, so answer each as you would any request from that reader.
 
-When your data changes, open the document again with the new data: rendering is a function of what the request holds ([spec §8.5](https://compmd.hakanserce.com/spec/#85-evaluation)).
+When your data changes, open the document again with the new data: rendering is a function of what the request holds ([spec §8.5](https://compmd.dev/spec/#85-evaluation)).
 
 ## Data from URLs
 
@@ -170,7 +170,7 @@ md:
       fallback: ./status.json
 ```
 
-What the spec asks of a host that fetches while a reader views a document ([spec §8.6](https://compmd.hakanserce.com/spec/#86-data-imports) and [§15](https://compmd.hakanserce.com/spec/#15-security)), which is your app, since the processor fetches nothing:
+What the spec asks of a host that fetches while a reader views a document ([spec §8.6](https://compmd.dev/spec/#86-data-imports) and [§15](https://compmd.dev/spec/#15-security)), which is your app, since the processor fetches nothing:
 
 - **The reader decides.** The first time a document needs an origin the reader hasn't decided on, ask, and remember the answer. Until the reader allows it, it isn't in `allowedOrigins`. Origins your app configures need no question.
 - **No credentials:** no cookies or other credentials with a document's fetches, except those you configured for that origin, and no `Referer`.
@@ -198,7 +198,7 @@ view.render(opened.expanded);
 - **A URL that can't be fetched** is left out: the document shows its fallback, or F026 without one.
 - **Your own fetching:** a host that fetches through its server, or caches by URL, calls `allowOrigins(urls, options)`, which asks and gives the allowed origins alone. Fetch only from those.
 
-The playground does this: [try it](https://compmd.hakanserce.com/playground/?doc=remote) with a document that reads a pack's latest release from npm's registry, which the playground doesn't list.
+The playground does this: [try it](https://compmd.dev/playground/?doc=remote) with a document that reads a pack's latest release from npm's registry, which the playground doesn't list.
 
 A document rendered once, at build time or on a server, has no reader to ask: give `loadData` an `ask` that denies, and it fetches only from your configured origins, so nothing reaches another origin.
 

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://compmd.hakanserce.com/schema/sandbox-protocol.schema.json",
+  "$id": "https://compmd.dev/schema/sandbox-protocol.schema.json",
   "title": "The CompMD sandbox's frame protocol",
   "description": "The messages between a frame and its parent, the window that made it (docs/sandbox-protocol.md), version 1. `@compmd/render`'s frame protocol travels on the same port beside them. `host` carries a MessagePort in the message's ports, and `code` may carry a Blob, which JSON can't hold.",
   "oneOf": [{ "$ref": "#/$defs/toFrame" }, { "$ref": "#/$defs/fromFrame" }],

@@ -46,7 +46,7 @@ Saturday, November 7, from nine to noon. Bring gloves; we bring the tea.
 ::: /box
 ```
 
-[Try it](https://compmd.hakanserce.com/playground/?doc=guides/authors/containers) in the playground.
+[Try it](https://compmd.dev/playground/?doc=guides/authors/containers) in the playground.
 
 ## Three ways to write a component
 

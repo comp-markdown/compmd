@@ -1,6 +1,6 @@
 # CompMD Author's Guide
 
-How to write in [CompMD](https://compmd.hakanserce.com/): documents that read as Markdown and render as pages, with boxes, grids, values from data, inputs the reader changes, and components of your own, written in CompMD itself. It is for writers, not programmers: no code is needed. Building CompMD into an application is [the Developer's Guide](../developers/README.md).
+How to write in [CompMD](https://compmd.dev/): documents that read as Markdown and render as pages, with boxes, grids, values from data, inputs the reader changes, and components of your own, written in CompMD itself. It is for writers, not programmers: no code is needed. Building CompMD into an application is [the Developer's Guide](../developers/README.md).
 
 The playground's _Learn CompMD_ tour is the five-minute introduction, hands on; this book is what you keep open while writing. Every example in it opens in the playground, where you can change it and watch the page.
 

@@ -54,7 +54,7 @@ Maya keeps the keys, and Tomás the tools.
 </details>
 ```
 
-[Try it](https://compmd.hakanserce.com/playground/?doc=guides/authors/markdown) in the playground.
+[Try it](https://compmd.dev/playground/?doc=guides/authors/markdown) in the playground.
 
 ## Markdown
 

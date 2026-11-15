@@ -61,7 +61,7 @@ Thank you, **{{md.input.name}}**.
 ::: /each
 ```
 
-[Try it](https://compmd.hakanserce.com/playground/?doc=guides/authors/inputs) in the playground. Type a name, pick *large*, make it 2 plots and tick the tool shed: the box says *Thank you*, then *2 large plots for the year: $85.00, with the tool shed*. Pick *december*, and the jobs change.
+[Try it](https://compmd.dev/playground/?doc=guides/authors/inputs) in the playground. Type a name, pick *large*, make it 2 plots and tick the tool shed: the box says *Thank you*, then *2 large plots for the year: $85.00, with the tool shed*. Pick *december*, and the jobs change.
 
 The jobs for each month are a file beside the document:
 
@@ -173,6 +173,6 @@ So input components go in the document's own text, never in a component's defini
 
 A component from a pack can change an input too, when its params say so and you bind one to it: a chart whose bars the reader clicks to pick a region, written `selected=region`. Its README says which params do. Since such a component's code can set the input, that input can't be used in a data import's `from` (`F031`): code could otherwise send what it likes through it.
 
-The [spec's inputs](https://compmd.hakanserce.com/spec/#87-inputs) have every rule.
+The [spec's inputs](https://compmd.dev/spec/#87-inputs) have every rule.
 
 Next: [dates, numbers and lists](08-dates-numbers-and-lists.md), for the functions that count, sum, sort and write dates.

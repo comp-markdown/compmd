@@ -1,6 +1,6 @@
 # __pack__
 
-A [CompMD](https://compmd.hakanserce.com/) library pack: `__library__`, built as one module that packs share, so a sandbox loads one copy of it instead of each pack bundling its own.
+A [CompMD](https://compmd.dev/) library pack: `__library__`, built as one module that packs share, so a sandbox loads one copy of it instead of each pack bundling its own.
 
 ## Use it in a pack
 

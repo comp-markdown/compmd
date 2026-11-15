@@ -90,7 +90,7 @@ Empty your cans and hoses before then.
 ::: /grid
 ```
 
-[Try it](https://compmd.hakanserce.com/playground/?doc=guides/authors/signatures) in the playground.
+[Try it](https://compmd.dev/playground/?doc=guides/authors/signatures) in the playground.
 
 The page shows the notice with the accent background, then three cards: *Plot 1, large* for Maya's garlic, *Plot 2, small* for Tomás, growing *something new*, since the use gives no crop, and *Plot 3, small*, free for next year.
 

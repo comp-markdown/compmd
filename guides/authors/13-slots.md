@@ -72,7 +72,7 @@ The last work day of the year, and the garlic goes in.
 ::: /work-day
 ````
 
-[Try it](https://compmd.hakanserce.com/playground/?doc=guides/authors/slots) in the playground.
+[Try it](https://compmd.dev/playground/?doc=guides/authors/slots) in the playground.
 
 The page shows the notice in a shaded box, then the work day: its date as a heading, *From nine to noon*, the line about the garlic, the heading *On the list* with the three jobs, and what to bring in a shaded box at the end, though the text gives it before the jobs.
 

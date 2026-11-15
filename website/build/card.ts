@@ -63,7 +63,7 @@ export function cardHtml(logo: string): string {
       <h1>Markdown with components.</h1>
       <p>Readable as text, rendered as a page.</p>
     </div>
-    <div class="address">compmd.hakanserce.com</div>
+    <div class="address">compmd.dev</div>
   </div>
 </body>
 </html>`;

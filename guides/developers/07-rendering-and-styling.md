@@ -37,7 +37,7 @@ Your first week, from :value[the docs team]{of=(md.doc.team)}.
 
 ::: row {gap=m}
 ::: box {padding=m border=subtle border-radius=m}
-**Monday:** read [the spec](https://compmd.hakanserce.com/spec/).
+**Monday:** read [the spec](https://compmd.dev/spec/).
 ::: /box
 ::: box {padding=m border=subtle border-radius=m}
 **Tuesday:** write a first document.
@@ -45,7 +45,7 @@ Your first week, from :value[the docs team]{of=(md.doc.team)}.
 ::: /row
 ```
 
-[Try it](https://compmd.hakanserce.com/playground/?doc=guides/developers/styled-page) in the playground.
+[Try it](https://compmd.dev/playground/?doc=guides/developers/styled-page) in the playground.
 
 The app's stylesheet for its documents, `public/page.css`, which Vite serves as `/page.css`:
 
@@ -133,7 +133,7 @@ Run it: the heading is in Georgia and teal, the first box has the accent's backg
 
 ## Theme tokens
 
-The built-ins' tokens are CSS custom properties ([spec §9.4](https://compmd.hakanserce.com/spec/#94-values-and-spacing)). `padding=m` is `var(--compmd-space-m, 1rem)`, `background=accent` a mix of `--compmd-accent`, so a theme changes them without a document changing:
+The built-ins' tokens are CSS custom properties ([spec §9.4](https://compmd.dev/spec/#94-values-and-spacing)). `padding=m` is `var(--compmd-space-m, 1rem)`, `background=accent` a mix of `--compmd-accent`, so a theme changes them without a document changing:
 
 | Token | Custom property | Default |
 | --- | --- | --- |
@@ -167,7 +167,7 @@ To style it, a stylesheet styles `pre` and `code` as it would any page's: the to
 
 ## Links and the `link` event
 
-A component in a sandbox can't navigate or open a window ([spec §15](https://compmd.hakanserce.com/spec/#15-security), rule 4). When a reader clicks a link in a frame, the frame doesn't follow it: it sends the view `link`, `{url}`, with the `href` as written, and your app decides. Only a reader's real click sends it; a link to a place in the page, a footnote, stays in the frame.
+A component in a sandbox can't navigate or open a window ([spec §15](https://compmd.dev/spec/#15-security), rule 4). When a reader clicks a link in a frame, the frame doesn't follow it: it sends the view `link`, `{url}`, with the `href` as written, and your app decides. Only a reader's real click sends it; a link to a place in the page, a footnote, stays in the frame.
 
 - **In frame mode** every link of the page is in the frame, links written in Markdown too, so every click on one comes as `link`.
 - **In host mode** the page's own links are your page's, and open as your other links do; `link` comes from the frames of components.
@@ -176,7 +176,7 @@ The spec's rule is to show the reader the full address before opening it: a docu
 
 ## What a plain renderer shows
 
-A CompMD document is a Markdown document, and GitHub, an editor's preview or any CommonMark renderer shows it without CompMD: the component lines as text, the content inside containers as Markdown, a leaf's fallback in its line ([spec §14](https://compmd.hakanserce.com/spec/#14-degradation-contract)). `plainHtml(text)` gives that rendering, CommonMark and GFM, as HTML, with raw HTML escaped. Writers use it to see how their document degrades; the example shows it under the page.
+A CompMD document is a Markdown document, and GitHub, an editor's preview or any CommonMark renderer shows it without CompMD: the component lines as text, the content inside containers as Markdown, a leaf's fallback in its line ([spec §14](https://compmd.dev/spec/#14-degradation-contract)). `plainHtml(text)` gives that rendering, CommonMark and GFM, as HTML, with raw HTML escaped. Writers use it to see how their document degrades; the example shows it under the page.
 
 The example puts it in a frame with `sandbox=""`, which runs no script and opens no link in your page, rather than in your page: what it shows is the document's, which may be anyone's.
 

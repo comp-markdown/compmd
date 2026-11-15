@@ -80,7 +80,7 @@ No news from the committee this month.
 ::: /each
 ```
 
-[Try it](https://compmd.hakanserce.com/playground/?doc=guides/authors/showing) in the playground.
+[Try it](https://compmd.dev/playground/?doc=guides/authors/showing) in the playground.
 
 The page shows the three jobs as one numbered list, a line thanking *Maya, Tomás and Jun*, a box for each of the three plots with a gardener, the line *2 plots are free for next year*, and *No news from the committee this month.*
 

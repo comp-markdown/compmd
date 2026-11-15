@@ -2,7 +2,7 @@
 
 A text area on the left, the rendered page on the right, updated as you type, with tabs on what the processor and the sandbox make of it. It opens the documents in its menu, from a tutorial to the spec's complete example, with everything they need bundled: their files, the packs of its configuration, remote and host data. Once loaded it makes no requests, but for a pack a document imports that its configuration doesn't have, which it fetches from npm (below, *Packs*).
 
-**Website:** it is the playground at [compmd.hakanserce.com/playground/](https://compmd.hakanserce.com/playground/), on the [CompMD website](https://compmd.hakanserce.com/) with the spec.
+**Website:** it is the playground at [compmd.dev/playground/](https://compmd.dev/playground/), on the [CompMD website](https://compmd.dev/) with the spec.
 
 **Status: in development,** as the processor is; not published yet.
 

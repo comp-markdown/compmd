@@ -232,7 +232,7 @@ graph LR
 ```
 ````
 
-[Try it](https://compmd.hakanserce.com/playground/?doc=guides/developers/other-hosts) in the playground.
+[Try it](https://compmd.dev/playground/?doc=guides/developers/other-hosts) in the playground.
 
 ## The hosting check
 

@@ -1,6 +1,6 @@
 # The CompMD website
 
-The landing page, with the playground and the spec, assembled into one static site and published on GitHub Pages at [compmd.hakanserce.com](https://compmd.hakanserce.com/). Why it is built this way is in [the design](docs/design.md).
+The landing page, with the playground and the spec, assembled into one static site and published on GitHub Pages at [compmd.dev](https://compmd.dev/). Why it is built this way is in [the design](docs/design.md).
 
 | Address | What | Made from |
 |---|---|---|
@@ -56,9 +56,11 @@ Measured on 2026-10-30 on an Apple M4. Without the prerender, the page painted a
 - on every `spec-v*` tag;
 - by hand.
 
-The repository's Pages source is "GitHub Actions" (Settings, Pages). The site's own address, `compmd.hakanserce.com`, was set up on 2026-10-30:
-1. The domain verified for the `comp-markdown` organization (its settings, Pages), so no one else's Pages can claim it, by a TXT record in Route 53, which must stay.
-2. A DNS `CNAME` record from `compmd.hakanserce.com` to `comp-markdown.github.io`.
-3. The custom domain set in the repository's Pages settings, with HTTPS enforced. The old address, `comp-markdown.github.io/compmd/`, redirects to it.
+The repository's Pages source is "GitHub Actions" (Settings, Pages). The site's own address, `compmd.dev`, was set up on 2026-11-15, in Route 53:
+1. The domain verified for the `comp-markdown` organization (its settings, Pages), so no one else's Pages can claim it, by a TXT record, which must stay.
+2. `A` and `AAAA` records from `compmd.dev` to GitHub Pages' four addresses each, and a `CNAME` record from `www.compmd.dev` to `comp-markdown.github.io`.
+3. The custom domain set in the repository's Pages settings, with HTTPS enforced. GitHub's own address, `comp-markdown.github.io/compmd/`, and `www.compmd.dev` redirect to it.
 
-A resolver that looked the name up before the `CNAME` existed keeps "no such name" for up to 15 minutes (the zone's SOA TTL), so GitHub's DNS check can fail for that long after the record is created.
+The site's address before, `compmd.hakanserce.com` (2026-10-30 to 2026-11-15), was retired, not redirected: Pages serves one domain per site, and the name had been live for two weeks, with no released version of the spec linking to it. Its `CNAME` record was deleted with the move, so the name points nowhere. Packages released before the move still name it as their homepage on npm and crates.io; each package's next release names `compmd.dev`.
+
+A resolver that looked a name up before its record existed keeps "no such name" for up to 15 minutes (the zone's SOA TTL), so GitHub's DNS check can fail for that long after a record is created.

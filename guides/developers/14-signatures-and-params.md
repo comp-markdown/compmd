@@ -298,7 +298,7 @@ tasks:
 
 - **The binding is checked:** a name no input under `md.inputs` declares, or an input of another type, is F030. `input<enum>` binds an input of any enum, and `input<small | large>` only one with exactly those members, in that order.
 - **`set` is refused** for a param that isn't bound to an input, and during `update`: in `@compmd/render` it throws. Call it from what the reader does, as `rating` does from a click.
-- **A value of the wrong type isn't the component's to send.** `set` sends any value; the host gives it to the processor as the input's value, and the spec has the processor use the input's default instead of a value that doesn't match its type (spec [§8.7](https://compmd.hakanserce.com/spec/#87-inputs)).
+- **A value of the wrong type isn't the component's to send.** `set` sends any value; the host gives it to the processor as the input's value, and the spec has the processor use the input's default instead of a value that doesn't match its type (spec [§8.7](https://compmd.dev/spec/#87-inputs)).
 - **An input a component can change can't choose what is loaded:** a data `from` that interpolates it is F031, so component code can't send data out through it.
 
 The test names the params bound to an input, and reads what the component set:
@@ -330,7 +330,7 @@ The fallback is in a document's hands, so don't rely on it for anything but text
 
 ## How a use is checked
 
-Hosts validate every use against its component's signature after resolving the document's imports and before loading data or running code (spec [§5.3](https://compmd.hakanserce.com/spec/#53-validation)). Each diagnostic points at the param, not the whole line, and the document still renders:
+Hosts validate every use against its component's signature after resolving the document's imports and before loading data or running code (spec [§5.3](https://compmd.dev/spec/#53-validation)). Each diagnostic points at the param, not the whole line, and the document still renders:
 
 | Code | When | What renders |
 |---|---|---|

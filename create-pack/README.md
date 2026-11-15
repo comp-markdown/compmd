@@ -7,7 +7,7 @@
 
 Writes a CompMD pack: a component as one built ES module, with every library it uses bundled in, its signature, a test page that renders it in the strict sandbox as a host does, and the steps to publish it. The design is [docs/create-pack.md](../docs/create-pack.md).
 
-**Website:** [compmd.hakanserce.com](https://compmd.hakanserce.com/), with the spec and a playground to try CompMD in.
+**Website:** [compmd.dev](https://compmd.dev/), with the spec and a playground to try CompMD in.
 
 ```sh
 npm create @compmd/pack mermaid -- --name @kit/mermaid --renders mermaid

@@ -20,9 +20,9 @@ describe("bookLink", () => {
   });
 
   it("takes the other book, and the site, to their addresses in full", () => {
-    expect(bookLink("developers", "../authors/02-the-document.md")).toBe("https://compmd.hakanserce.com/guides/authors/the-document/");
-    expect(bookLink("developers", "../authors/README.md")).toBe("https://compmd.hakanserce.com/guides/authors/");
-    expect(bookLink("developers", "https://compmd.hakanserce.com/playground/?doc=x")).toBe("https://compmd.hakanserce.com/playground/?doc=x");
+    expect(bookLink("developers", "../authors/02-the-document.md")).toBe("https://compmd.dev/guides/authors/the-document/");
+    expect(bookLink("developers", "../authors/README.md")).toBe("https://compmd.dev/guides/authors/");
+    expect(bookLink("developers", "https://compmd.dev/playground/?doc=x")).toBe("https://compmd.dev/playground/?doc=x");
   });
 
   it("leaves the rest for GitHub", () => {

@@ -8,7 +8,7 @@ The book follows one document as it grows: the newsletter of a community garden.
 
 Anywhere you write Markdown: a text editor, a notes app, a repository on GitHub. A CompMD file ends in `.comp.md`, so tools know what it is.
 
-To see the page as you type, use the [playground](https://compmd.hakanserce.com/playground/): the text on the left, the page on the right. Its *Learn CompMD* tour is a quick, hands-on introduction to everything this book covers.
+To see the page as you type, use the [playground](https://compmd.dev/playground/): the text on the left, the page on the right. Its *Learn CompMD* tour is a quick, hands-on introduction to everything this book covers.
 
 ## The document
 
@@ -35,7 +35,7 @@ News from the plots, {{md.doc.issue}}.
 The compost bins are full again, so the next load goes to the bins by the shed.
 ```
 
-[Try it](https://compmd.hakanserce.com/playground/?doc=guides/authors/first-document) in the playground.
+[Try it](https://compmd.dev/playground/?doc=guides/authors/first-document) in the playground.
 
 The page shows the heading *Elm Street Garden*, the line *News from the plots, November 2026.*, the work day in a box with a thin border and rounded corners, and the paragraph about compost.
 

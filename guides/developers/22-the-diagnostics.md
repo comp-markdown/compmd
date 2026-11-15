@@ -1,10 +1,10 @@
 # 22. The diagnostics
 
-Every diagnostic in the spec's [catalogue](https://compmd.hakanserce.com/spec/#102-catalog), as the packages report it: its code, its severity, the stage that finds it, what causes it, who causes it, and what fixes it. Writers have their own appendix, with an example of each: [the diagnostics and their fixes](../authors/20-the-diagnostics-and-their-fixes.md) in the Author's Guide. This one is for the developer whose app shows them, or whose pack causes them.
+Every diagnostic in the spec's [catalogue](https://compmd.dev/spec/#102-catalog), as the packages report it: its code, its severity, the stage that finds it, what causes it, who causes it, and what fixes it. Writers have their own appendix, with an example of each: [the diagnostics and their fixes](../authors/20-the-diagnostics-and-their-fixes.md) in the Author's Guide. This one is for the developer whose app shows them, or whose pack causes them.
 
 ## Reading a diagnostic
 
-A diagnostic is the spec's [machine form](https://compmd.hakanserce.com/spec/#105-machine-format), as `process`, `OpenDocument` and the crate give it:
+A diagnostic is the spec's [machine form](https://compmd.dev/spec/#105-machine-format), as `process`, `OpenDocument` and the crate give it:
 
 | Field | What it is |
 |---|---|
@@ -17,7 +17,7 @@ A diagnostic is the spec's [machine form](https://compmd.hakanserce.com/spec/#10
 | `stage` | `parse`, `resolve`, `validate`, `load` or `evaluate` |
 | `fix` | an edit that fixes it, when the message suggests one: the text at a range on one line becomes `text` |
 
-An editor turns a diagnostic into an LSP diagnostic and its `fix` into a quick fix; columns are code points, so convert them to UTF-16 for an editor that counts that way. Errors don't stop processing: the processor recovers as the spec says ([section 10.3](https://compmd.hakanserce.com/spec/#103-recovery-rules-lenient-mode)) and gives the whole tree, fallbacks where something failed. The spec calls that lenient mode, for previews; strict mode, for CI and publishing, fails on any F code: the request's `mode: "strict"` gives the same diagnostics and tree, with `failed` set ([the Rust crates](20-the-rust-crates.md#checking-documents-in-ci) has a check that uses it).
+An editor turns a diagnostic into an LSP diagnostic and its `fix` into a quick fix; columns are code points, so convert them to UTF-16 for an editor that counts that way. Errors don't stop processing: the processor recovers as the spec says ([section 10.3](https://compmd.dev/spec/#103-recovery-rules-lenient-mode)) and gives the whole tree, fallbacks where something failed. The spec calls that lenient mode, for previews; strict mode, for CI and publishing, fails on any F code: the request's `mode: "strict"` gives the same diagnostics and tree, with `failed` set ([the Rust crates](20-the-rust-crates.md#checking-documents-in-ci) has a check that uses it).
 
 **Who causes it**, in the tables: a **writer**, in the document's text; a **pack author**, in a pack's files or `package.json`, which the document's writer can't fix but can work around (another version, another pack); a **host**, the app, by its configuration or by what it gives the processor. A writer can cause a pack-author code by writing a pack.
 

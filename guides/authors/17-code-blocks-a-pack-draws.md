@@ -39,7 +39,7 @@ No meat, no bread, nothing cooked: they bring rats.
 :: mermaid[Beans, then cabbages, then roots, then potatoes, then beans again] {code=("graph LR; " + md.doc.rotation.join(" --> ") + " --> " + md.doc.rotation[0])}
 ````
 
-[Try it](https://compmd.hakanserce.com/playground/?doc=guides/authors/code-blocks) in the playground. Change `theme=forest` to `theme=dark`, or add a step to the compost's way, and the diagram follows.
+[Try it](https://compmd.dev/playground/?doc=guides/authors/code-blocks) in the playground. Change `theme=forest` to `theme=dark`, or add a step to the compost's way, and the diagram follows.
 
 ## A code block, drawn
 
@@ -101,6 +101,6 @@ A block's fallback is the code block itself: where it can't be drawn, it shows i
 
 Giving a code renderer another name with `as` (chapter 16) renames the leaf only: `:: diagram[…] {…}`. Blocks are chosen by their language, so ` ```mermaid ` blocks are still drawn.
 
-A code renderer can also be written in CompMD itself, as a definition whose signature says which language it renders; the [spec's section on code renderers](https://compmd.hakanserce.com/spec/#77-code-renderers) has the details.
+A code renderer can also be written in CompMD itself, as a definition whose signature says which language it renders; the [spec's section on code renderers](https://compmd.dev/spec/#77-code-renderers) has the details.
 
 Next: [components in code, in brief](18-components-in-code-in-brief.md), for what a component written in JSX, Svelte or JavaScript looks like to the document that uses it.

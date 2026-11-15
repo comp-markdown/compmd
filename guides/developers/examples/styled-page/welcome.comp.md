@@ -10,7 +10,7 @@ Your first week, from :value[the docs team]{of=(md.doc.team)}.
 
 ::: row {gap=m}
 ::: box {padding=m border=subtle border-radius=m}
-**Monday:** read [the spec](https://compmd.hakanserce.com/spec/).
+**Monday:** read [the spec](https://compmd.dev/spec/).
 ::: /box
 ::: box {padding=m border=subtle border-radius=m}
 **Tuesday:** write a first document.

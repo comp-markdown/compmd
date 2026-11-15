@@ -95,7 +95,7 @@ Gate
 ::: /grid
 ```
 
-[Try it](https://compmd.hakanserce.com/playground/?doc=guides/authors/placing) in the playground. The map is a box three wide by two high, with the five plots on it in two rows, the free ones in the accent colour, the shed in its far corner and the gate at the bottom. With the page narrow, the map, the plots and the notes come one under another. From 768 pixels up (drag the bar between the text and the page, or fold the text away), the notes move beside the map and the plots, and stay in view as you scroll down the list of plots. Move a plot by changing its `x` or `y`.
+[Try it](https://compmd.dev/playground/?doc=guides/authors/placing) in the playground. The map is a box three wide by two high, with the five plots on it in two rows, the free ones in the accent colour, the shed in its far corner and the gate at the bottom. With the page narrow, the map, the plots and the notes come one under another. From 768 pixels up (drag the bar between the text and the page, or fold the text away), the notes move beside the map and the plots, and stay in view as you scroll down the list of plots. Move a plot by changing its `x` or `y`.
 
 ## Cells with names
 

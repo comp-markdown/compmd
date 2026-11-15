@@ -43,7 +43,7 @@ describe("guidePages", () => {
   it("keeps links to the site on the site the page is read on", () => {
     const html = htmlOf("guides/developers/quick-start/");
     expect(html).toContain('href="../../../playground/?doc=guides/developers/quick-start"');
-    expect(html).not.toContain("https://compmd.hakanserce.com/");
+    expect(html).not.toContain("https://compmd.dev/");
   });
 
   it("links each heading to itself, not to its source on GitHub", () => {

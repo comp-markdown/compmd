@@ -7,7 +7,7 @@
 
 Renders a CompMD expanded tree ([spec §12.3](../compmd-spec-v1.md#123-the-expanded-tree)) as a live page: Markdown, layout, inputs, and host-language components through the host contract (§7.4), with the React, Svelte 5 and plain bindings (§7.6). A new tree updates the page in place, so components keep their instances and their state.
 
-**Website:** [compmd.hakanserce.com](https://compmd.hakanserce.com/), with the spec and a playground to try CompMD in.
+**Website:** [compmd.dev](https://compmd.dev/), with the spec and a playground to try CompMD in.
 
 It renders trees; it doesn't process documents. A processor (stages 1 to 4b, spec §11) gives it the tree: [`@compmd/processor`](https://www.npmjs.com/package/@compmd/processor) in the browser.
 
@@ -15,7 +15,7 @@ It renders trees; it doesn't process documents. A processor (stages 1 to 4b, spe
 npm install @compmd/render @compmd/processor
 ```
 
-It implements the draft of the [CompMD specification](https://compmd.hakanserce.com/spec/), version 1. Its versions are `0.x` until the spec's version 1 is published, and it shares its version with `@compmd/processor` ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
+It implements the draft of the [CompMD specification](https://compmd.dev/spec/), version 1. Its versions are `0.x` until the spec's version 1 is published, and it shares its version with `@compmd/processor` ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
 
 **Versions:**
 - **0.7.0:** the same renderer as 0.6.0, released with CompMD's hosting (`@compmd/vite`'s bundle, the sandbox on it, `tauri-plugin-compmd` as the Tauri adapter).

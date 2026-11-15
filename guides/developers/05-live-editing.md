@@ -93,7 +93,7 @@ md:
 Edit this text, and the page follows it as you type.
 ```
 
-[Try it](https://compmd.hakanserce.com/playground/?doc=guides/developers/live-editor) in the playground.
+[Try it](https://compmd.dev/playground/?doc=guides/developers/live-editor) in the playground.
 
 And `main.ts`. The app is the quick start's, with the same `vite.config.ts`:
 

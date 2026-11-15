@@ -42,7 +42,7 @@ News from the plots, {{md.doc.issue}}, from {{md.doc.editor}}.
 :value[3 plots are]{of=(string(md.doc.plots.small + md.doc.plots.large - md.doc.plots.taken) + " " + md.plural(md.doc.plots.small + md.doc.plots.large - md.doc.plots.taken, "plot is", "plots are"))} still free. Call {{md.doc.editor.name}} at {{md.doc.editor.phone}} to take one.
 ```
 
-[Try it](https://compmd.hakanserce.com/playground/?doc=guides/authors/values) in the playground.
+[Try it](https://compmd.dev/playground/?doc=guides/authors/values) in the playground.
 
 ## The frontmatter's values
 

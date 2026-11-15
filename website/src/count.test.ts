@@ -9,7 +9,7 @@ function documentAt(url: string): Document {
 
 describe("count", () => {
   it("adds GoatCounter's script on the published site", () => {
-    const document = documentAt("https://compmd.hakanserce.com/spec/");
+    const document = documentAt("https://compmd.dev/spec/");
     count(document);
     const script = document.head.querySelector("script");
     expect(script?.src).toBe(SCRIPT);

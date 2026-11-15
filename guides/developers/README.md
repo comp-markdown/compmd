@@ -1,8 +1,8 @@
 # CompMD Developer's Guide
 
-How to build with [CompMD](https://compmd.hakanserce.com/): documents people write as text, rendered as pages in your application, with components of your own and from packs, and safe to open from anyone. The [spec](../../compmd-spec-v1.md) says what CompMD is; the package READMEs say what each package has; this guide shows how to build with them, from a first page to a published pack. Writing documents themselves is [the Author's Guide](../authors/README.md).
+How to build with [CompMD](https://compmd.dev/): documents people write as text, rendered as pages in your application, with components of your own and from packs, and safe to open from anyone. The [spec](../../compmd-spec-v1.md) says what CompMD is; the package READMEs say what each package has; this guide shows how to build with them, from a first page to a published pack. Writing documents themselves is [the Author's Guide](../authors/README.md).
 
-It is written for the `@compmd` packages and the crates at version 0.7.0, and follows them as they change. On the website it is at [compmd.hakanserce.com/guides/developers/](https://compmd.hakanserce.com/guides/developers/).
+It is written for the `@compmd` packages and the crates at version 0.7.0, and follows them as they change. On the website it is at [compmd.dev/guides/developers/](https://compmd.dev/guides/developers/).
 
 ## Who it is for
 

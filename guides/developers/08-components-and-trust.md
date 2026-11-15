@@ -16,7 +16,7 @@ A level belongs to a pack, never to a component or a use: every component of a p
 
 ## Strict: the default
 
-Strict code gets the host contract ([spec §7.4](https://compmd.hakanserce.com/spec/#74-the-host-contract)) and nothing else. In plain words, a strict component:
+Strict code gets the host contract ([spec §7.4](https://compmd.dev/spec/#74-the-host-contract)) and nothing else. In plain words, a strict component:
 
 1. **sees only what it is given**: its params, its slots and its box, not the rest of the document, its data or your page;
 2. **has no network**: no requests, images, fonts, stylesheets or sockets, to anywhere; its code comes from its pack, and its libraries from the frames;
@@ -110,6 +110,6 @@ What a browser can't stop, and so the sandbox can't either:
 - **A frame that spins in WebKit.** Chrome stops it and removes it; WebKit runs these frames in the page's process, so a frame that never lets go freezes the page with it.
 - **What a component draws in its own box**, such as a fake password prompt. What is typed into it has no way out, and the frames are placed as the document's content, never over your interface.
 
-Code that acts with someone's access, a trusted component or one given `host`, has one more rule ([spec §15](https://compmd.hakanserce.com/spec/#15-security)): the document that uses it may be someone else's, so it acts outside the document (sends, writes, shares, pays) only when the reader asks, after showing what it will do.
+Code that acts with someone's access, a trusted component or one given `host`, has one more rule ([spec §15](https://compmd.dev/spec/#15-security)): the document that uses it may be someone else's, so it acts outside the document (sends, writes, shares, pays) only when the reader asks, after showing what it will do.
 
 Next: [packs from npm](09-packs-from-npm.md), what your app installs or fetches, and what your configuration gives them.

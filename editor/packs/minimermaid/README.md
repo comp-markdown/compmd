@@ -1,6 +1,6 @@
 # @preview/minimermaid
 
-A [CompMD](https://compmd.hakanserce.com/) pack with one component, `minimermaid`, as one built module that a host loads by URL and runs in its sandbox.
+A [CompMD](https://compmd.dev/) pack with one component, `minimermaid`, as one built module that a host loads by URL and runs in its sandbox.
 
 ## Use it in a document
 

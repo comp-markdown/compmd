@@ -1,6 +1,6 @@
 # @comp-markdown/mermaid
 
-A [CompMD](https://compmd.hakanserce.com/) pack that draws [Mermaid](https://mermaid.js.org/) diagrams in any document that imports it, with no support from the host: ` ```mermaid ` blocks, and diagrams computed from the document's data. It bundles Mermaid 12.2.0 as one module, which runs in the host's strict sandbox. The design is [docs/mermaid-pack.md](../../docs/mermaid-pack.md).
+A [CompMD](https://compmd.dev/) pack that draws [Mermaid](https://mermaid.js.org/) diagrams in any document that imports it, with no support from the host: ` ```mermaid ` blocks, and diagrams computed from the document's data. It bundles Mermaid 12.2.0 as one module, which runs in the host's strict sandbox. The design is [docs/mermaid-pack.md](../../docs/mermaid-pack.md).
 
 ## Use it in a document
 

@@ -42,7 +42,7 @@ export default function Meter({ value, label }) {
 :: number-input[Docs done, in percent: 72] {bind=docs}
 ````
 
-[Try it](https://compmd.hakanserce.com/playground/?doc=guides/developers/two-modes) in the playground.
+[Try it](https://compmd.dev/playground/?doc=guides/developers/two-modes) in the playground.
 
 A page with a place for each mode:
 

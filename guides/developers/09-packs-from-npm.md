@@ -85,7 +85,7 @@ graph LR
 ```
 ````
 
-[Try it](https://compmd.hakanserce.com/playground/?doc=guides/developers/packs-from-npm) in the playground, which fetches its packs from npm the same way.
+[Try it](https://compmd.dev/playground/?doc=guides/developers/packs-from-npm) in the playground, which fetches its packs from npm the same way.
 
 The page, as in the quick start:
 

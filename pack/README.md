@@ -7,7 +7,7 @@
 
 Everything a CompMD pack would otherwise copy into itself: `compmd-pack` builds a pack, checks it before it is published, runs its tests and serves its test page, and two small modules help write and test its components. A pack holds only what is its own: its components, their signatures, a document to try them in, and their tests. Upgrading this package updates the build, the checks and the test page of every pack. The design is [writing a pack](../docs/writing-a-pack.md).
 
-**Website:** [compmd.hakanserce.com](https://compmd.hakanserce.com/), with the spec and a playground to try CompMD in.
+**Website:** [compmd.dev](https://compmd.dev/), with the spec and a playground to try CompMD in.
 
 `npm create @compmd/pack` writes a pack on it ([`@compmd/create-pack`](../create-pack/README.md)). It shares its version with the other `@compmd` packages.
 

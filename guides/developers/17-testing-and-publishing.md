@@ -138,7 +138,7 @@ Params come from documents, so test what a document may give: here a value past 
 }
 ```
 
-What makes it a pack on a registry ([*CompMD packs on a registry*](https://compmd.hakanserce.com/spec/#registry), section 2):
+What makes it a pack on a registry ([*CompMD packs on a registry*](https://compmd.dev/spec/#registry), section 2):
 
 - **A scoped name**, `@you/progress`, the name documents import. No prefix is needed; a scope with a library of the same name may call its pack `@you/compmd-progress`.
 - **The `compmd` field**, naming the pack's document, even when it is the default `index.comp.md`: a registry keeps every field, so a tool can tell a pack from other packages without downloading it.

@@ -59,7 +59,7 @@ describe("the Console's input", () => {
 
   it("says in its tooltip where the expressions are described: the spec's section 8.2, and CEL by example", () => {
     const { input } = consoleWith();
-    expect(input.title).toContain("https://compmd.hakanserce.com/spec/#82-expressions");
+    expect(input.title).toContain("https://compmd.dev/spec/#82-expressions");
     expect(input.title).toContain("https://celbyexample.com/");
   });
 

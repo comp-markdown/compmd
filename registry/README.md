@@ -7,13 +7,13 @@
 
 Packs for CompMD documents from an npm registry. A document imports `@kit/mermaid@1` and the host has never heard of it: `resolvePacks` asks the processor which packs are missing, resolves each range as the processor does, applies the host's policy before anything is downloaded, checks each tarball against the integrity its registry publishes, and gives back the request with the packs in it. It does what [*CompMD packs on a registry*](../compmd-registry-v1.md) (sections 3 to 5) says a host does; the design is [resolving registry packs](../docs/resolving-registry-packs.md), and for library packs [sharing library packs](../docs/sharing-library-packs.md).
 
-**Website:** [compmd.hakanserce.com](https://compmd.hakanserce.com/), with the spec and a playground to try CompMD in.
+**Website:** [compmd.dev](https://compmd.dev/), with the spec and a playground to try CompMD in.
 
 ```sh
 npm install @compmd/registry @compmd/processor
 ```
 
-It implements the draft of the [CompMD specification](https://compmd.hakanserce.com/spec/), version 1, and shares its version with the other `@compmd/` packages ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
+It implements the draft of the [CompMD specification](https://compmd.dev/spec/), version 1, and shares its version with the other `@compmd/` packages ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
 
 **Versions:**
 - **0.4.0:** `timeout`, after which `resolvePacks` stops waiting for a pack and lists it in `problems`, for a host that renders with its packs pending meanwhile.

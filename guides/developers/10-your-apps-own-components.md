@@ -57,7 +57,7 @@ The file's extension says how it is mounted:
 | `.tsx`, `.jsx` | React 19: params are props, the default slot is `children`, the rest is the `compmd` prop | Vite alone, with `react` and `react-dom` installed |
 | `.svelte` | Svelte 5: params are props, the default slot is the `children` snippet, the rest is the `compmd` prop | Svelte's plugin, `@sveltejs/vite-plugin-svelte`, with `svelte` installed |
 
-A param is a prop of the same name, in camelCase. The `compmd` prop holds the rest of the host contract ([spec §7.4](https://compmd.hakanserce.com/spec/#74-the-host-contract)): `set`, `fallback`, `scheme`, `fail` and the others.
+A param is a prop of the same name, in camelCase. The `compmd` prop holds the rest of the host contract ([spec §7.4](https://compmd.dev/spec/#74-the-host-contract)): `set`, `fallback`, `scheme`, `fail` and the others.
 
 `Stars.tsx` is a React component:
 
@@ -151,7 +151,7 @@ Your component is trusted, but the documents that use it may be anyone's, and so
 - **never makes HTML from a param**: in React and Svelte, text and attributes in the template, as `Stars` and `Spoiler` do, never `dangerouslySetInnerHTML` or `{@html}`; in a plain component, `textContent` and attributes, never `innerHTML`;
 - **keeps numbers in bounds**: here a document that asks for a million stars gets ten, and a value past `of` fills them all;
 - **checks URLs** before it shows a link from a param, as the processor's interpolation does: `https:` and the like, never `javascript:`;
-- **acts outside the document only when the reader asks**, after showing what it will do ("Send *notes.csv* to …?"): a document that isn't yours can aim it at what it shouldn't touch ([spec §15](https://compmd.hakanserce.com/spec/#15-security)).
+- **acts outside the document only when the reader asks**, after showing what it will do ("Send *notes.csv* to …?"): a document that isn't yours can aim it at what it shouldn't touch ([spec §15](https://compmd.dev/spec/#15-security)).
 
 The same holds for anything the component reads through `set`'s bound input: it came from the reader or the document.
 
@@ -291,7 +291,7 @@ export default function reviews(target: Element, { params, host, busy }: Context
 
 `host.call(name, ...args)` sends the call to your page over the frame's port, and resolves with what your function returned. Arguments and results cross by copy, so they must be copyable (no functions, no DOM). A name your app doesn't offer, or a function that throws, rejects the call with a message. A component without `host`, in an app that doesn't give it, gets `undefined`, and should say so rather than fail.
 
-`busy(work)` says the component is still drawing until `work` settles, here until the answer is shown ([spec §7.4](https://compmd.hakanserce.com/spec/#74-the-host-contract)). Nothing shows differently meanwhile, but a page that waits to settle, to print, to scroll to a link's target, or in a test, waits for it: the view's `settled()` ([chapter 11](11-the-sandbox-closer.md)).
+`busy(work)` says the component is still drawing until `work` settles, here until the answer is shown ([spec §7.4](https://compmd.dev/spec/#74-the-host-contract)). Nothing shows differently meanwhile, but a page that waits to settle, to print, to scroll to a link's target, or in a test, waits for it: the view's `settled()` ([chapter 11](11-the-sandbox-closer.md)).
 
 What `host` holds is your app's: `createSandbox`'s `host` option, a `HostApi`, an object of functions by name.
 

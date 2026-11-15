@@ -29,7 +29,7 @@ Each bed moves one step along the rotation every spring, so nothing grows where 
 Your bed's crop next year is the one after this year's.
 ```
 
-[Try it](https://compmd.hakanserce.com/playground/?doc=guides/authors/a-pack) in the playground. The first time, the diagram's text shows for a moment while the pack arrives; then the diagram is drawn. Add `Onions` to the rotation, and it grows a step.
+[Try it](https://compmd.dev/playground/?doc=guides/authors/a-pack) in the playground. The first time, the diagram's text shows for a moment while the pack arrives; then the diagram is drawn. Add `Onions` to the rotation, and it grows a step.
 
 ## Importing a pack
 

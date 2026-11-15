@@ -50,7 +50,7 @@ News from the plots, {{md.doc.issue}}.
 :value[2 plots are free]{of=(string(size(md.data.plots.filter(p, p.gardener == null))) + " " + md.plural(size(md.data.plots.filter(p, p.gardener == null)), "plot is", "plots are") + " free")} for next year. A small plot is :value[$25.00]{of=(md.currency(md.data.club.fees.small, "USD"))} a year, a large one :value[$40.00]{of=(md.currency(md.data.club.fees.large, "USD"))}. Call {{md.data.club.contact}} at {{md.data.club.contact.phone}} to take one.
 ```
 
-[Try it](https://compmd.hakanserce.com/playground/?doc=guides/authors/data) in the playground.
+[Try it](https://compmd.dev/playground/?doc=guides/authors/data) in the playground.
 
 The plots, as a spreadsheet saves them:
 
@@ -207,7 +207,7 @@ The document can't decide on its own to fetch from a site. The app that shows it
 
 The reader's answer is kept for every document, so they are asked once per site. Until they answer, and if they say no, the site is `F028`, and the document gets its `fallback`, a file of its own folder, or `null` without one. Once they allow it, the page shows the site's data. A fetch that fails also takes the fallback. An app with no reader to ask, such as one that prints documents on a server, reads only from its list.
 
-[Try it](https://compmd.hakanserce.com/playground/?doc=remote) in the playground: a document that reads a pack's latest release from npm, a site the playground doesn't list. It shows its fallback, and the playground asks you.
+[Try it](https://compmd.dev/playground/?doc=remote) in the playground: a document that reads a pack's latest release from npm, a site the playground doesn't list. It shows its fallback, and the playground asks you.
 
 So give remote data a `fallback`, kept up to date now and then, and the page reads well wherever it's opened, before the reader answers and after a no. The site you fetch from learns that the document was opened, and the values it asks with (chapter 7). A document carries no passwords: data that needs one comes through the app, below.
 
@@ -226,6 +226,6 @@ md:
 
 It lands in `md.data` like any file, with the same `schema` and `fallback`. Give it a schema, since two apps may give the same name different data. In an app that has no such data, the import is `F026` and takes its fallback, so a document that names `host:` works fully only in its own app. The playground has no `host:` data.
 
-The [spec's data imports](https://compmd.hakanserce.com/spec/#86-data-imports) have every rule.
+The [spec's data imports](https://compmd.dev/spec/#86-data-imports) have every rule.
 
 Next: [inputs the reader changes](07-inputs-the-reader-changes.md), for values the reader picks on the page: a plot size, a name, a month.

@@ -54,7 +54,7 @@ The last three:
 Bring your spare :value[beans, kale, leeks, or squash]{of=(md.list(md.sort(md.unique(md.data.harvest.map(h, h.crop))), "or"))} to the swap table by the gate.
 ```
 
-[Try it](https://compmd.hakanserce.com/playground/?doc=guides/authors/lists) in the playground.
+[Try it](https://compmd.dev/playground/?doc=guides/authors/lists) in the playground.
 
 The harvest, one row per picking:
 
@@ -225,6 +225,6 @@ There is no matching by patterns: a function for that would work differently in 
 
 A function given something it can't use is a diagnostic, `F024`, that says what it takes: `md.date(d, "longer")` says the styles are `"short"`, `"medium"`, `"long"` and `"full"`, and `md.sum` over text says it needs numbers. Text from a CSV without a schema is the usual cause: chapter 6's schema makes its numbers and dates what they are.
 
-Every function is in the [spec's expression profile](https://compmd.hakanserce.com/spec/#82-expressions).
+Every function is in the [spec's expression profile](https://compmd.dev/spec/#82-expressions).
 
 Next: [boxes, rows, stacks and grids](09-boxes-rows-stacks-and-grids.md), the first chapter of Part III, where the newsletter's blocks go side by side.

@@ -24,7 +24,7 @@
   /** The input's tooltip: what it takes, and where the language is described. */
   const EXPRESSIONS_HELP = [
     "An expression of the CompMD CEL profile, as in a param's parentheses: Enter evaluates it, Shift+Enter adds a line, ↑ and ↓ go through the earlier ones.",
-    "The profile, its variables and its md. functions: the CompMD spec, section 8.2, https://compmd.hakanserce.com/spec/#82-expressions",
+    "The profile, its variables and its md. functions: the CompMD spec, section 8.2, https://compmd.dev/spec/#82-expressions",
     "CEL itself, by example: https://celbyexample.com/",
   ].join("\n\n");
 

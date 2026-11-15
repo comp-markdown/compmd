@@ -4,7 +4,7 @@ A pack's module is plain JavaScript, but what it draws with is yours: React, a c
 
 ## What the frames provide
 
-Every frame a host runs components in has one copy of each runtime of the spec's bindings (spec [§7.6](https://compmd.hakanserce.com/spec/#76-bindings)), shared by every component in it, through its import map:
+Every frame a host runs components in has one copy of each runtime of the spec's bindings (spec [§7.6](https://compmd.dev/spec/#76-bindings)), shared by every component in it, through its import map:
 
 | Runtime | The import names a module may use |
 |---|---|
@@ -334,7 +334,7 @@ and its `package.json` the template's, with its own name and description:
 
 ## What component code may import
 
-Whatever a pack bundles, its module's imports, and those of every component a host runs, resolve to four kinds of module only (spec [§7.6](https://compmd.hakanserce.com/spec/#76-bindings)):
+Whatever a pack bundles, its module's imports, and those of every component a host runs, resolve to four kinds of module only (spec [§7.6](https://compmd.dev/spec/#76-bindings)):
 
 | An import of | Resolves to | Where it can't |
 |---|---|---|

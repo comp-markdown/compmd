@@ -10,7 +10,7 @@ const escaped = (text: string): string => text.replace(/&/g, "&amp;").replace(/<
  *
  * @example
  * sitemapOf(["", "spec/"]);
- * // <?xml …?><urlset …><url><loc>https://compmd.hakanserce.com/</loc></url><url><loc>…/spec/</loc></url></urlset>
+ * // <?xml …?><urlset …><url><loc>https://compmd.dev/</loc></url><url><loc>…/spec/</loc></url></urlset>
  */
 export function sitemapOf(folders: readonly string[]): string {
   const urls = [...new Set(folders)].map((folder) => `  <url><loc>${escaped(`${SITE}${folder}`)}</loc></url>`);

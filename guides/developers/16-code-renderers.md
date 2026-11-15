@@ -1,6 +1,6 @@
 # 16. Code renderers
 
-Some content is source in a language of its own: a diagram in Mermaid, a table as CSV, music as ABC. A document writes it as a fenced code block, which every Markdown renderer shows as code. A **code renderer** is a leaf whose signature also names a language, so it draws that language's blocks in every document that imports it, and is still a leaf for source made from data (spec [§7.7](https://compmd.hakanserce.com/spec/#77-code-renderers)). This chapter writes one that draws ` ```csv ` blocks as tables, then looks at the Mermaid pack.
+Some content is source in a language of its own: a diagram in Mermaid, a table as CSV, music as ABC. A document writes it as a fenced code block, which every Markdown renderer shows as code. A **code renderer** is a leaf whose signature also names a language, so it draws that language's blocks in every document that imports it, and is still a leaf for source made from data (spec [§7.7](https://compmd.dev/spec/#77-code-renderers)). This chapter writes one that draws ` ```csv ` blocks as tables, then looks at the Mermaid pack.
 
 ## Writing one
 

@@ -65,7 +65,7 @@ md:
 ::: /each
 ```
 
-[Try it](https://compmd.hakanserce.com/playground/?doc=guides/developers/check-docs) in the playground.
+[Try it](https://compmd.dev/playground/?doc=guides/developers/check-docs) in the playground.
 
 Its data, `releases.csv`:
 
@@ -165,7 +165,7 @@ It prints `quarter.comp.md: no diagnostics`.
 
 `process(request)` gives three things:
 
-- **`parse`**, the parse tree: the document as written, mdast with CompMD's own nodes ([spec §12](https://compmd.hakanserce.com/spec/#12-document-tree)). Tools that read or rewrite documents use it.
+- **`parse`**, the parse tree: the document as written, mdast with CompMD's own nodes ([spec §12](https://compmd.dev/spec/#12-document-tree)). Tools that read or rewrite documents use it.
 - **`expanded`**, the expanded tree: content only, with definitions, `if`, `each` and interpolations replaced by what they give. It is what a page renders ([chapter 7](07-rendering-and-styling.md)), with the inputs and their values on its root.
 - **`diagnostics`**, of every stage, in stage order.
 
@@ -184,7 +184,7 @@ It exits with 1, so a CI job that runs it fails. A diagnostic has:
 
 | Field | What it is |
 | --- | --- |
-| `code` | `F…` for an error, `W…` for a warning ([spec §10.2](https://compmd.hakanserce.com/spec/#102-catalog)) |
+| `code` | `F…` for an error, `W…` for a warning ([spec §10.2](https://compmd.dev/spec/#102-catalog)) |
 | `severity` | `error` or `warning` |
 | `message` | what is wrong, in words, for people |
 | `file` | the file it is in, when it isn't the processed document: an imported document, or `@scope/pack@version/path` for a pack's |
@@ -195,7 +195,7 @@ It exits with 1, so a CI job that runs it fails. A diagnostic has:
 
 Columns count code points, not UTF-16 units: in the line `😀 Hi`, `Hi` is at column 3, while JavaScript counts the emoji as two units and puts `Hi` at index 3, which would be column 4. To make a fix in a JavaScript string, count the line's characters as code points; [chapter 5](05-live-editing.md)'s editor does, in `offsetOf`.
 
-The processor always recovers. With an error, it drops the smallest broken piece, a param, a line, a record, and goes on, so there is always a page: here the box has no border. It never hides author content ([spec §10.3](https://compmd.hakanserce.com/spec/#103-recovery-rules-lenient-mode)). What an error means is yours to decide: a build fails on any `F`, as the script does, and a preview shows the page with the diagnostics beside it.
+The processor always recovers. With an error, it drops the smallest broken piece, a param, a line, a record, and goes on, so there is always a page: here the box has no border. It never hides author content ([spec §10.3](https://compmd.dev/spec/#103-recovery-rules-lenient-mode)). What an error means is yours to decide: a build fails on any `F`, as the script does, and a preview shows the page with the diagnostics beside it.
 
 ## What a document needs fetched
 
@@ -220,7 +220,7 @@ Two more functions take the same request:
 
 The processor bounds what a document can make it do, whoever wrote it:
 
-- **An expanded tree of 100,000 nodes.** A document whose `each` or template slot would make more gets F034 at the one that crossed the limit, which shows its fallback; what came before stays ([spec §8.5](https://compmd.hakanserce.com/spec/#85-evaluation)). Four nested lists of 100 records are 100 million nodes, so the limit is what keeps such a document from hanging a page.
+- **An expanded tree of 100,000 nodes.** A document whose `each` or template slot would make more gets F034 at the one that crossed the limit, which shows its fallback; what came before stays ([spec §8.5](https://compmd.dev/spec/#85-evaluation)). Four nested lists of 100 records are 100 million nodes, so the limit is what keeps such a document from hanging a page.
 - **100,000 steps per expression**, a step for each node evaluated and each character or element it builds. An expression that takes more is F024, "the expression takes too much work". A filter takes about six steps a record.
 
 Neither can be changed in `@compmd/processor`.

@@ -84,7 +84,7 @@ Free for next year. Ask Maya.
 ::: /grid
 ```
 
-[Try it](https://compmd.hakanserce.com/playground/?doc=guides/authors/layout) in the playground. The two notices sit one under the other with a small gap, and the three jobs are pills side by side. Drag the bar between the text and the page: with the page narrow, the pills wrap onto a second line and the plots are one card per row; as it widens, two, three, then all five cards fit across, and the free plots stand out in the accent colour.
+[Try it](https://compmd.dev/playground/?doc=guides/authors/layout) in the playground. The two notices sit one under the other with a small gap, and the three jobs are pills side by side. Drag the bar between the text and the page: with the page narrow, the pills wrap onto a second line and the plots are one card per row; as it widens, two, three, then all five cards fit across, and the free plots stand out in the accent colour.
 
 ## The four layouts
 

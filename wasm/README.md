@@ -7,13 +7,13 @@
 
 The [CompMD processor](../processor/README.md) as WebAssembly, for the browser: one call takes a document with everything it needs and gives its parse tree, its expanded tree and its diagnostics, typed. The expanded tree is what [`@compmd/render`](../render/README.md) draws.
 
-**Website:** [compmd.hakanserce.com](https://compmd.hakanserce.com/), with the spec and a playground to try CompMD in.
+**Website:** [compmd.dev](https://compmd.dev/), with the spec and a playground to try CompMD in.
 
 ```sh
 npm install @compmd/processor @compmd/render
 ```
 
-It implements the draft of the [CompMD specification](https://compmd.hakanserce.com/spec/), version 1, as the crate [`compmd`](https://crates.io/crates/compmd) does. Its versions are `0.x` until the spec's version 1 is published, and it shares its version with `@compmd/render` ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
+It implements the draft of the [CompMD specification](https://compmd.dev/spec/), version 1, as the crate [`compmd`](https://crates.io/crates/compmd) does. Its versions are `0.x` until the spec's version 1 is published, and it shares its version with `@compmd/render` ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
 
 **Versions:**
 - **0.7.0:** the spec's draft as of 2026-11-12 ([its changelog](https://github.com/comp-markdown/compmd/blob/main/CHANGELOG.md)): a pack a host installed or keeps is a registry pack all the same, and a pack's source may be compiled ahead; a pack's source component in `hostComponents` names its `place`, by which a host gives the module it compiled ahead. Released with CompMD's hosting: `@compmd/vite`'s bundle, the sandbox on it, and `tauri-plugin-compmd` as the Tauri adapter.

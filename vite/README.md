@@ -7,13 +7,13 @@
 
 A Vite plugin that gives a web app's CompMD documents their components with one line of configuration. It reads `compmd.config.json`, gives the processor every pack the app installs, serves the sandbox's frame documents and the packs' built modules from the app's own origin, and builds the app's own trusted components with the app. The design is [docs/vite.md](../docs/vite.md).
 
-**Website:** [compmd.hakanserce.com](https://compmd.hakanserce.com/), with the spec and a playground to try CompMD in.
+**Website:** [compmd.dev](https://compmd.dev/), with the spec and a playground to try CompMD in.
 
 ```sh
 npm install @compmd/vite @compmd/processor @compmd/sandbox
 ```
 
-It implements the draft of the [CompMD specification](https://compmd.hakanserce.com/spec/), version 1, and shares its version with `@compmd/render`, `@compmd/processor` and `@compmd/sandbox` ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)). It needs Vite 8 or later.
+It implements the draft of the [CompMD specification](https://compmd.dev/spec/), version 1, and shares its version with `@compmd/render`, `@compmd/processor` and `@compmd/sandbox` ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)). It needs Vite 8 or later.
 
 **Versions:**
 - **0.7.0:** the bundle ([hosting](../docs/hosting.md)): the frames under a hash of their files, `frames/<hash>/`, each pack's files by its place with its source components compiled ahead, and `manifest.json`; `out` and `source` for a desktop app's adapter; `buildBundle` for a host without Vite; `cspFor`; a `_headers` file; every file served with the serving contract's headers; `virtual:compmd`'s paths relative to the bundle's origin. Breaking: the frames move from `compmd/strict.html` to `compmd/frames/<hash>/`, and `virtual:compmd`'s `sandbox` gives `frames` and an `origin`, no longer a `base`. An app that uses `virtual:compmd` and `cspFor` changes nothing; one that wrote `compmd/` paths into its own policy or server rules updates them.
