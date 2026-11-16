@@ -50,5 +50,6 @@ The build, its checks and the test page are [`@compmd/pack`](../../pack/README.m
 
 The pack has its own version, for its component's params and forms; a new Mermaid is a new version of the pack. A tag `mermaid-v<version>` publishes it from CI (`RELEASING.md`).
 
+- **0.1.2:** the same as 0.1.1; its homepage and links name the website's new address, [compmd.dev](https://compmd.dev/).
 - **0.1.1:** the same as 0.1.0; the first version the release workflow publishes, which proves its trusted publishing.
 - **0.1.0:** the first version, published by hand.

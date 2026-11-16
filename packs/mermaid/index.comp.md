@@ -5,7 +5,7 @@ md:
       names: [mermaid]
   export:
     pack: "@comp-markdown/mermaid"
-    version: "0.1.1"
+    version: "0.1.2"
     names: [mermaid]
 ---
 

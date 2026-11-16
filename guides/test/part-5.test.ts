@@ -20,6 +20,8 @@ const GUIDES = join(import.meta.dirname, "..");
 const BOOK = join(GUIDES, "developers");
 const OUT = join(import.meta.dirname, ".out/part-5");
 const chapter = (file: string) => readFileSync(join(BOOK, file), "utf8");
+/** The version of the repository's Mermaid pack, which the guides' folder installs. */
+const MERMAID = (JSON.parse(readFileSync(join(GUIDES, "../packs/mermaid/package.json"), "utf8")) as { version: string }).version;
 
 beforeAll(() => {
   initSync({ module: readFileSync(createRequire(import.meta.url).resolve("@compmd/processor/compmd_wasm_bg.wasm")) });
@@ -106,7 +108,8 @@ describe("chapter 18, other hosts", () => {
     expect(processDocument({ ...request, path: "a.comp.md", files: { "a.comp.md": other }, now: "2026-11-02T09:00:00Z" }).diagnostics.map(({ code }) => code)).toEqual(["F026"]);
     // The built module the server serves is the file whose hash the page gives its frame.
     const [place, module] = Object.entries(modules)[0] ?? [];
-    expect(place).toBe("@comp-markdown/mermaid@0.1.1/dist/mermaid.js");
+    // The bundle installs the repository's Mermaid pack, so its place is that pack's version.
+    expect(place).toBe(`@comp-markdown/mermaid@${MERMAID}/dist/mermaid.js`);
     expect(module?.path).toBe(`packs/${place ?? ""}`);
     const served = await fetch(`${base}/compmd/${module?.path ?? ""}`);
     expect(served.headers.get("access-control-allow-origin")).toBe("*");
