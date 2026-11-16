@@ -18,6 +18,7 @@ npm install @compmd/render @compmd/processor
 It implements the draft of the [CompMD specification](https://compmd.dev/spec/), version 1. Its versions are `0.x` until the spec's version 1 is published, and it shares its version with `@compmd/processor` ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
 
 **Versions:**
+- **0.7.1:** the same as 0.7.0; its homepage and links name the website's new address, [compmd.dev](https://compmd.dev/).
 - **0.7.0:** the same renderer as 0.6.0, released with CompMD's hosting (`@compmd/vite`'s bundle, the sandbox on it, `tauri-plugin-compmd` as the Tauri adapter).
 - **0.6.0:** a React or Svelte component draws again at the next change after it threw or failed.
 - **0.5.0:** where each line of the text is on the page (`page.lines()` and `region.lines()`, generators of each line's boxes, and `onLayout`, when they moved), for a gutter of line numbers; `context.busy(work)` for a component still drawing (spec §7.4, in the React and Svelte bindings too), and `page.drawn()`, which waits for it. Breaking: the frame protocol is version 4 (`lines`, `layout`, `drawn`), so a page and a frame of 0.4.0 refuse each other.

@@ -12,6 +12,7 @@ Everything a CompMD pack would otherwise copy into itself: `compmd-pack` builds 
 `npm create @compmd/pack` writes a pack on it ([`@compmd/create-pack`](../create-pack/README.md)). It shares its version with the other `@compmd` packages.
 
 **Versions:**
+- **0.7.1:** the same as 0.7.0; its homepage and links name the website's new address, [compmd.dev](https://compmd.dev/).
 - **0.7.0:** the same as 0.6.0, on the sandbox's 0.7.0.
 - **0.6.0:** the same as 0.5.0, on the sandbox's 0.6.0.
 - **0.5.0:** `draw` tells the page it is drawing (`context.busy`, spec §7.4) until the drawing shows or a newer one overtakes it, on a renderer that has `busy`; `mountForTest`'s `settled()` waits for what a component gave `busy` too.

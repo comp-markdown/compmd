@@ -22,4 +22,5 @@ Adapters: [`tauri-plugin-compmd`](../tauri/README.md) for Tauri.
 In development, released with CompMD's packages at the same version.
 
 **Versions:**
+- **0.7.1:** the same as 0.7.0; its homepage and links name the website's new address, [compmd.dev](https://compmd.dev/).
 - **0.7.0:** the first version.
