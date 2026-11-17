@@ -13,8 +13,8 @@ brings. Its first posts are *Why CompMD*, *Where CompMD is, and its roadmap*, an
    own pack (`content/app/`) as the landing page does. A post's frontmatter is the tool's: `title`, `date`, `summary`,
    and optional `author`, `updated`, `tags` and `draft`.
 
-2. **The site's build runs `compmd-blog build`** into `dist/blog/`, beside the guides and the spec, and its dev server
-   serves the blog's pages from `compmd-blog dev`, as it serves the playground from the playground's.
+2. **The site's build runs `cblo build`** into `dist/blog/`, beside the guides and the spec, and its dev server serves
+   the blog's pages from `cblo dev`, as it serves the playground from the playground's.
 
 3. **It looks like the rest of the site** with a `layout.html` of its own: the site's header, with "Blog" beside the
    guides and the spec, and its footer; and a `theme.css` that takes the site's fonts and colours, light and dark.
@@ -30,6 +30,7 @@ brings. Its first posts are *Why CompMD*, *Where CompMD is, and its roadmap*, an
      start discussions there, so it holds the posts' discussions and nothing else; readers comment in them.
    - It needs Discussions turned on for the repository, the "Blog" category, and the giscus app installed on it, all by
      the repository's owner; the category's id goes in `blog.config.json`.
+   - A writer starts a post with `cblo new`, and sees the blog as it will be built with `cblo dev --no-drafts`.
 
 6. **Part of the site, as the guides are**: its pages in the sitemap and in the site's search (each post from one
    heading to the next), checked by `pnpm check` (light and dark, desktop and phone, styled before their script, their
@@ -42,4 +43,5 @@ brings. Its first posts are *Why CompMD*, *Where CompMD is, and its roadmap*, an
 
 ## Not in this change
 
-- A "Latest from the blog" line on the landing page, once there are posts worth pointing to.
+- A "Latest from the blog" line on the landing page, once there are posts worth pointing to: the site's own feature,
+  which needs nothing more from the tool, since it reads the latest posts from the blog's `posts.json` at build time.

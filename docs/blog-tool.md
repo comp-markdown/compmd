@@ -7,10 +7,11 @@ Anyone who writes in CompMD gets a blog from it in a few minutes; the CompMD web
 
 ## Decisions
 
-1. **Its name: `@compmd/blog`, with the command `compmd-blog`** (proposed). A blog is all it does, so the name says
-   that; a site generator would be a different, larger tool, and if this one grows into it, it takes that name then.
-   The other names considered: `compmd-blogger` (the same, less like the other packages' names) and `compmd-site-gen`
-   (a promise of more than it does).
+1. **Its name: the package `@compmd/blog`, the command `cblo`** (proposed). A blog is all it does, so the package's
+   name says that; a site generator would be a different, larger tool, and if this one grows into it, it takes that
+   name then. The command is short, to type often: `cblo dev`, `cblo new`. It also answers to `compmd-blog`, the name a
+   reader of a script or a README recognizes. The other names considered: `compmd-blogger` (the same, less like the
+   other packages' names) and `compmd-site-gen` (a promise of more than it does).
 
 2. **A blog is a folder, and the tool reads it as it is:**
 
@@ -28,9 +29,15 @@ Anyone who writes in CompMD gets a blog from it in a few minutes; the CompMD web
    `tags` (a list of names) and `draft` (shown by `dev`, left out of `build`). Anything else is the post's own, as
    `md.doc` (spec §2.1).
 
-3. **Two commands:** `compmd-blog dev`, a server that renders a post as it is saved, drafts included; and
-   `compmd-blog build`, which writes the static site into `dist/`. `npm create @compmd/blog` writes a new blog's folder
-   with one post, as `npm create @compmd/pack` writes a pack.
+3. **Three commands:**
+   - `cblo new "Why CompMD"`: a new post, `posts/why-compmd.comp.md` (its slug from the title), its frontmatter filled
+     in (the title, today's date, the blog's author, an empty `summary` and `tags`, and `draft: true`) and a first
+     heading, so writing starts at once; `--slug` names the file otherwise.
+   - `cblo dev`: a server that renders a post as it is saved, drafts included; `--no-drafts` shows the blog as `build`
+     will.
+   - `cblo build`: the static site, into `dist/`, without drafts.
+
+   `npm create @compmd/blog` writes a new blog's folder with one post, as `npm create @compmd/pack` writes a pack.
 
 4. **What it writes:**
    - `/`, the posts, newest first, each with its title, date, author, summary and tags;
@@ -39,6 +46,8 @@ Anyone who writes in CompMD gets a blog from it in a few minutes; the CompMD web
    - `/tags/<tag>/`, the posts with a tag, and `/tags/`, every tag with its count;
    - `/feed.xml`, an Atom feed of the latest posts, each with its tags as `category` and its HTML as `content`, named
      by every page in a `<link rel="alternate">`;
+   - `posts.json`, the posts as data (title, date, summary, tags, author and address, newest first), for a site to show
+     its blog's latest posts elsewhere, as the CompMD website's landing page may;
    - `sitemap.xml`, and each page's title, description and Open Graph tags from the post.
 
 5. **Built on CompMD's packages, as a host is** ([hosting](hosting.md)): each post is processed by
@@ -53,13 +62,11 @@ Anyone who writes in CompMD gets a blog from it in a few minutes; the CompMD web
    header and footer, with `layout.html`: an HTML page with `<!-- content -->` where the tool puts each page. No theme
    system or plugins: a blog that needs more is a site, not this tool's job.
 
-7. **Comments, from a provider the blog names**, or none (the default). `blog.config.json`'s `comments` names one:
-   - **`giscus`** (proposed for most blogs): comments as GitHub Discussions of a repository, by a small open-source
-     script, with no tracking or ads; readers sign in with GitHub. It suits a blog for developers;
-   - **`disqus`**: a hosted service, readers sign in with an account of their own or as guests; its free plan shows ads
-     and its script tracks readers across sites, which a blog's privacy statement should say.
-   The comments load only when a reader scrolls to them, so a post's page stays within its budget, and the page's
-   content security policy names only the provider's origins.
+7. **Comments with giscus**, or none (the default): `blog.config.json`'s `comments` names a repository and a
+   Discussions category, and each post's comments are a discussion there, one per post (giscus's `pathname` mapping,
+   strict), by a small open-source script with no tracking or ads; readers sign in with GitHub. The comments load only
+   when a reader scrolls to them, so a post's page stays within its budget, and the page's content security policy
+   names only giscus's origin.
 
 8. **In this repository, a workspace package beside `@compmd/vite`**, released with the other `@compmd` packages: it
    depends on them at their own version and is tested against them, and the CompMD website builds its blog with it,
@@ -70,4 +77,4 @@ Anyone who writes in CompMD gets a blog from it in a few minutes; the CompMD web
 ## Not in this change
 
 - Pagination of the list, search, and posts in more than one language: when a blog needs them.
-- Other comment providers: each is a small adapter, added when a blog asks for it.
+- Other comment providers, Disqus among them: each is a small adapter, added when a blog asks for it.
