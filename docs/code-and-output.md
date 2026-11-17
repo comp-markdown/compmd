@@ -20,7 +20,7 @@
    ```
    ````
 
-   It is the processor's param, not the component's: the component never gets it, as it never gets `alt` directly (it gets `fallback.text`). A code renderer's signature that declares a param named `render` would never get it from a block, so it is F013. The spec says nothing today of a signature that declares `alt`, `class` or `id`; this change says the same of them (F013 for `alt` in a code renderer's signature; `class` and `id` in any), in the same row. It isn't evaluated: a bare value only, so `render=(…)` is F009, since what shows is decided when the document is written, not from data or inputs. An unknown value (`render=code`) is F009, naming the three values.
+   It is the processor's param, not the component's: the component never gets it, as it never gets `alt` directly (it gets `fallback.text`). A code renderer's signature that declares a param named `render` would never get it from a block, so it is F013. The spec says nothing today of a signature that declares `alt`, `class` or `id`, and the processor gives each a meaning by form (a block's `alt` never reaches the component, a leaf's does; `class=x` goes to a component that declares it, `.x` to the box). This change says the same of them as of `render`: F013 for `alt` in a code renderer's signature, and for `class` and `id` in any, in the same catalog row (decided in review). A declared common param (`padding`) is left as it is. It isn't evaluated: a bare value only, so `render=(…)` is F009, since what shows is decided when the document is written, not from data or inputs. An unknown value (`render=code`) is F009, naming the three values.
 
 2. **`render=source` shows the code block and nothing else.** The component isn't run, and the block needs no `alt` (no W101), since it draws nothing that needs a text alternative. Its other params are still checked against the signature (F008, F009, F010), so switching it back to `output` gives no new diagnostics. This is for a post that shows a diagram's source on its own, and for an author who wants to see the code while a renderer misbehaves, without changing the block's language.
 
@@ -70,12 +70,6 @@
 
 ## Open questions
 
-Decided in review (2026-11-17): `both` is stacked by default (decision 3), and `compmd` examples are part of this change (decision 8).
+Decided in review (2026-11-17): `both` is stacked by default (decision 3), and `compmd` examples are part of this change (decision 8); F013 covers a declared `render`, `alt` (on a code renderer), `class` and `id` together, in this change (decision 1).
 
-1. **Decision 1's F013 for a signature declaring `alt`, `class` or `id`.** What happens today, in the processor:
-   - **`alt`.** The parser takes a rendered block's `alt` as its text alternative before the params are checked (`parse/blocks.rs`), so a code renderer whose signature declares `alt` never gets it from a block. Declared optional, it is silently its default on every block; declared required, every block is F008, with no way to fix it. As a leaf, `:: mermaid {alt="…"}` does pass it, so one name means two things by form.
-   - **`class` and `id`.** A declared param wins over a universal one of the same name (`validate/params.rs`). A signature declaring `class` gets `class=wide` as its own param, and the box gets no class; yet `.wide` still goes to the box, so the two forms §5.1 calls the same differ. A declared `id` likewise: `id=intro` goes to the component and `#intro` to the box, and §5.1's F017 for both together no longer means a conflict.
-   - The same holds for a declared common param (`padding`, `border`): the component gets it and the box doesn't. The spec says nothing of it either; it may be on purpose for a component that lays out its own box, so it isn't part of this question.
-
-   The choice: (a) this change makes `render`, `alt` (on a code renderer), `class` and `id` F013 when a signature declares them, in one catalog row, since it adds `render` there anyway; (b) this change makes only `render` F013, and the other three get a change of their own, which can also settle the common params. (a) is less work and one rule; (b) keeps this change to its subject. A signature in a published pack that declares one of them breaks with (a) or with (b)'s later change alike.
-2. **An example's inputs** (decision 8): reader-changeable and kept per example, as proposed, or fixed at their defaults (simpler: no API for an example's values, input components shown with their values but a change does nothing)?
+1. **An example's inputs** (decision 8): reader-changeable and kept per example, as proposed, or fixed at their defaults (simpler: no API for an example's values, input components shown with their values but a change does nothing)?
