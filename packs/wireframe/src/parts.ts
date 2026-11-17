@@ -87,10 +87,3 @@ export const PARTS: Readonly<Record<string, PartRules>> = {
 
 /** The top-level line after the window: a note pointing at a part (decision 5). */
 export const ANNOTATION: PartRules = { positionals: one(), attributes: { target: "text", position: ["left", "right", "top", "bottom"] }, required: ["target", "position"] };
-
-/** The parts the pack draws first (decision 4); the others are drawn as a named box until it draws them. */
-export const DRAWN = new Set([
-  "window", "header", "footer", "panel", "section", "row", "col", "grid", "cell", "tabs", "tab", "list", "item", "tree", "node",
-  "menubar", "menu", "menuitem", "separator", "divider", "text", "button", "input", "combo", "checkbox", "radio", "toggle",
-  "progress", "image", "icon", "spacer",
-]);

@@ -87,14 +87,16 @@ annotation "Shows an error under the field that failed" target="email" position=
    `accent=` and `state=` values). A source that uses them stays valid.
 
 5. **Drawn as HTML and CSS**, each part a small function:
-   - containers are boxes: `row` a flex row (`justify`, `align` as `justify-content` and `align-items`), `col` a flex
+   - containers are boxes: `row` a flex row, its parts placed along it by `justify` (`justify-content`), or by `align`
+     when it has no `justify` (`left` by default, as Wireloom's: `justify` wins over `align`), `col` a flex
      column of its width, `grid` a CSS grid of `cols` and `rows` with each `cell` at its place, `panel` a box with a
      dashed border, `section` a titled box;
    - `window` is the frame: a window with a title bar, or *(ours)* a phone's or a tablet's outline, or a browser's
      bar, as `device` says; it is as wide as its block, and as tall as its content;
    - controls are drawn as the controls they stand for, in greys: a `button` a bordered box, `primary` filled; an
-     `input` a box with its placeholder muted; a `combo` a box with a chevron; `checkbox`, `radio` and `toggle` their
-     marks; `tabs` a row of tabs over a line; `menubar` a bar of its menus' titles, each `menu` drawn open below its
+     `input` a box with its placeholder muted; a `combo` its label, then a box with its value and a chevron; `checkbox`, `radio`
+     and `toggle` their label, then their mark (`label-right` the other way round, as Wireloom's); `progress` a bar
+     filled to `value` of `max`, its label above it; `tabs` a row of tabs over a line; `menubar` a bar of its menus' titles, each `menu` drawn open below its
      title; `tree` an indented list with chevrons;
    - `image` is a crossed box of its size; `icon` a small square with the icon's first letter, as Wireloom draws an
      icon it doesn't know (a set of drawn icons comes with the pack later);
