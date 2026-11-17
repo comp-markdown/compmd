@@ -179,6 +179,15 @@ mod tests {
     }
 
     #[test]
+    fn components_inside_containers_give_theirs_at_any_depth() {
+        let document = "::: row {gap=m}\n::: card\nFirst :badge[new]{tone=info} card.\n\n:: chart[Pages read] {rows=x}\n\n:: #footer\n::: stack\nDeep inside.\n::: /stack\n::: /card\n::: /row\n\n::: if {when=(md.input.on)}\nShown when on.\n:: #else\nShown when off.\n::: /if\n";
+        assert_eq!(
+            plain(document),
+            "First new card.\nPages read\nDeep inside.\nShown when on.\nShown when off."
+        );
+    }
+
+    #[test]
     fn frontmatter_html_and_interpolations_show_nothing() {
         let document = "---\ntitle: Notes\n---\n\n<div>\n\nHello {{md.doc.title}}, <b>you</b>.[^1]\n\n</div>\n\n[^1]: A note.\n";
         assert_eq!(plain(document), "Hello , you.\nA note.");

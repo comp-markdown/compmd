@@ -4,6 +4,10 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
 
 ## Version 1 (draft)
 
+### Unreleased
+
+- **A container's plain text (§14).** The plain-text paragraph says that a container's fallback is its slots, so the components in them, nested containers among them, give their fallbacks at any depth, and an `if` gives both its branches, as §4.5 has it. Not breaking.
+
 ### 1.0-draft.13, 2026-11-17
 
 - **Version numbers (§1).** The spec and its companion are versioned on their own, apart from any implementation's: `MAJOR.MINOR`, with drafts `1.0-draft.N`, one for each revision, the entries here numbered from the first; each revision is tagged `spec-v1.0-draft.N`, changes wait under "Unreleased" until the next one, and an implementation states the version it implements. Before, the spec said only "version 1, draft" and a date. Not breaking.
