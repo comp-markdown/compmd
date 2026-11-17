@@ -13,7 +13,7 @@ The designs behind the spec and its implementation. Each starts with its status 
 - [Content languages in editors](content-languages.md): a pack's grammars for the languages its code renderers read, and each block's language and range, so editors highlight them and choose a language server for them.
 - [A tree-sitter grammar](tree-sitter.md): proposed, `tree-sitter-compmd` for editors, two grammars on tree-sitter-markdown's, with CEL injected and tests from the spec.
 - [Remote images, asked about](remote-images.md): how the renderer and the sandbox ask the reader before a document's remote images, in both modes, with the data's answers.
-- [Reading CompMD with pandoc](pandoc.md): proposed, the processor's expanded tree written as pandoc's JSON, by a `compmd` command and a pandoc reader, so pandoc turns documents into PDF, Word and EPUB.
+- [Reading CompMD with pandoc](pandoc.md): proposed, the processor's expanded tree written as pandoc's JSON, each component as it prints, by a `compmd-pandoc` command and a pandoc reader in a repository of their own, so pandoc turns documents into PDF, Word and EPUB.
 - [Printing a document](printing.md): proposed, what a document looks like on paper: its components, its colours, its page breaks, and what a processor without a browser prints.
 - [Hosting CompMD](hosting.md): what every host does (the configuration, the bundle, the pack store, serving, the page's configuration, the check), which of it is shared code, and the adapter a platform writes.
 
