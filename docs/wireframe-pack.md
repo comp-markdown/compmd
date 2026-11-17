@@ -1,7 +1,7 @@
 # Wireframes in CompMD
 
-**Status: accepted (2026-11-17), option B; its language being reconsidered.** The user asked whether an existing
-wireframe language should be adopted rather than designing our own (option F, Appendix C); the decision on it is open.
+**Status: accepted (2026-11-17), option B with F2's language.** B's code renderer drawn as HTML and CSS, its language
+Wireloom's syntax written down as a grammar of our own (Appendix C), in ```` ```wireframe ```` blocks.
 
 A writer sketching a screen in a design note, an issue or a spec wants a **wireframe**: the screen's boxes, its
 buttons, inputs and images, and notes on them, drawn roughly enough that nobody mistakes it for the design. Mermaid,
@@ -93,8 +93,9 @@ screen phone "Sign in"
 
 With the HTML drawing, about five tasks, each reviewed:
 
-1. **The language, designed**: its grammar in ABNF (an outline: one part per line, its children indented), its parts
-   and their attributes, its errors, with real example documents; reviewed first.
+1. **The language, written down** (designed, before F2): Wireloom's syntax as a grammar in ABNF (an outline: one part
+   per line, its children indented), the parts the pack draws first and their attributes, its errors, with real
+   example documents; reviewed first.
 2. **The parser**: text to an outline, with each error's line and column, tested on the grammar's examples and on
    broken input.
 3. **The drawing**: the outline to HTML and CSS, each part a small function, light and dark, printed.
@@ -118,19 +119,25 @@ A is about two (the spec change, then the pack of `compmd` definitions).
 
 ## Decision
 
-**B, a code renderer for a wireframe language of our own, drawn as HTML and CSS** (decided 2026-11-17). Writers get
-the short text they know from Mermaid, renderers a grammar they can comply with, and the browser does the layout. It
-is built in the five steps of *What B takes*, each a task.
+**B, a code renderer for a wireframe language, drawn as HTML and CSS** (decided 2026-11-17), **with F2's language**
+(decided the same day, after Appendix C): Wireloom's syntax as its examples and documentation show it on 2026-11-17,
+written down as a grammar of our own in ABNF, with our own parser and drawing, and no dependency on Wireloom. Writers
+get the short text they know from Mermaid, and the syntax those who know Wireloom already write; renderers get a
+grammar they can comply with; the browser does the layout. The fence is ```` ```wireframe ````. It is built in the five
+steps of *What B takes*, each a task; the first writes the language down instead of designing it.
+
+**Credit.** The pack's README says, briefly, that its language is based on Wireloom's syntax as its examples showed it
+on 2026-11-17 (MIT, Stardock), and that the grammar, the parser and the HTML and CSS drawing are the pack's own; it
+doesn't use the Wireloom name for itself.
 
 ## What B is
 
 - `@comp-markdown/wireframe`, in `packs/wireframe/`, written with `npm create @compmd/pack -- --renders wireframe`, as
   [the Mermaid pack](mermaid-pack.md) is, released on its own tag: a code renderer of ```` ```wireframe ```` blocks
   (spec §7.7), with `alt` for its text alternative.
-- Its parts, as its grammar will name them: a `screen` (`phone`, `tablet`, `window`, `browser`; a title), `row`,
-  `column` and `grid`, `heading`, `text` (lines of placeholder text), `button` (`primary`, `link`), `input`
-  (`password`, `placeholder`), `select`, `checkbox`, `image` (a crossed box), `icon`, `list`, `tabs` and `note` (a
-  note pointing at a part, numbered). The language's design settles them.
+- Its parts, as Wireloom's syntax names them (`window`, `row`, `col`, `grid`, `panel`, `text`, `button`, `input`,
+  `combo`, `checkbox`, `radio`, `tabs`, `tree`, `menubar`, `image`, `icon`, `annotation` and the rest): the
+  language's writing-down (step 1) settles which of them the pack draws first, and how each is drawn.
 - The look: borders a little uneven, greys from the host's tokens, light and dark by the page's scheme, a hand-written
   font only if the host offers one.
 - Tests: the grammar's examples parsed, broken input with its errors' places, each part drawn on the pack's test page
