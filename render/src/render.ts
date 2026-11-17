@@ -89,6 +89,8 @@ export interface Surface {
   drawn: Drawn;
   /** What the components are still drawing (`context.busy`). */
   busy: Busy;
+  /** Whether it draws one use the page around it placed (`RegionOptions.part`); `false` when absent. */
+  part?: boolean;
 }
 
 /** What one render carries in document order. */

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { Mount, MountContext, RenderError } from "./contract.ts";
 import { createPage } from "./page.ts";
+import { createRegion } from "./region.ts";
 import type { ExpandedNode } from "./tree.ts";
 
 /** A Mermaid block a code renderer `mermaid` renders (spec §7.7), with its box's width. */
@@ -105,6 +106,18 @@ describe("a rendered block with `render=both`", () => {
     const page = createPage(area, { onError: () => undefined });
     page.render({ type: "root", children: [both("A --> B")] });
     expect(area.querySelectorAll("pre code.language-mermaid")).toHaveLength(1);
+  });
+
+  it("draws its component alone in a part, whose page shows the code: no code there, even when it can't run", () => {
+    const part = createRegion(area, { part: true, components: { mermaid } });
+    part.render([both("A --> B")]);
+    expect(area.querySelector(".compmd-both")).toBeNull();
+    expect(area.textContent).toBe("drawn: A --> B");
+    part.stylesheet.flush();
+    expect(part.stylesheet.text).not.toContain("50%");
+    const missing = createRegion(area.appendChild(document.createElement("div")), { part: true, onError: () => undefined });
+    missing.render([both("A --> B")]);
+    expect(area.querySelectorAll("pre")).toHaveLength(0);
   });
 
   it("is a view apart from the same block drawn alone", () => {

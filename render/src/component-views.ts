@@ -26,8 +26,10 @@ export class RenderedCodeView implements View {
   readonly #surface: Surface;
   readonly #handle: ComponentHandle;
   readonly #code: View;
-  /** `render=both`'s box, which holds the code block and the component's box. */
+  /** `render=both`'s box, which holds the code block and the component's box; none in a part. */
   readonly #both: HTMLElement | undefined;
+  /** Whether the block is `render=both`, whose common params, `class` and `id` are its box's, not the component's. */
+  readonly #shown: boolean;
   /** The use a mount that renders it itself gets: the code block, whose `alt` and code a sandbox's frame needs too. */
   #current: { node: ExpandedCode; inputs: Pass["inputs"] };
 
@@ -37,15 +39,17 @@ export class RenderedCodeView implements View {
     this.#current = { node: node as ExpandedCode, inputs: pass.inputs };
     this.#code = new CodeBlockView(surface, plainCode(node), undefined);
     this.#surface = surface;
+    // A `both` block shows its code already, so its fallback adds nothing: the code shows once (spec §7.7). In a part,
+    // the page around it shows the code, and the part draws the component alone.
     const both = (node as ExpandedCode).render === "both";
-    // `both` shows its code already, so its fallback adds nothing: the code shows once (spec §7.7).
+    this.#shown = both;
     const fallback = surface.document.createElement("div");
-    if (both) {
+    if (both && surface.part !== true) {
       this.#both = surface.document.createElement("div");
       this.#both.classList.add("compmd-component", "compmd-both");
       this.#both.appendChild(this.#code.dom);
       applyBox(this.#both, renderer.params, pass.parent, surface.stylesheet);
-    } else fallback.appendChild(this.#code.dom);
+    } else if (!both) fallback.appendChild(this.#code.dom);
     const mount = surface.components[renderer.name];
     // The component layer appends the box to its target; the region places it, so it starts in a fragment.
     this.#handle = mountComponent(this.#both ?? surface.document.createDocumentFragment(), this.#drawn(renderer), {
@@ -83,9 +87,12 @@ export class RenderedCodeView implements View {
     }
   }
 
-  /** The component as its box gets it: with `both`, the common params, `class` and `id` are `both`'s box's instead. */
+  /**
+   * The component as its box gets it: with `both`, the common params, `class` and `id` are `both`'s box's instead, the
+   * page's when this is a part.
+   */
   #drawn(renderer: ExpandedComponent): ExpandedComponent {
-    return this.#both ? { ...renderer, params: renderer.params.filter((param) => !BOX_PARAMS.has(param.key)) } : renderer;
+    return this.#shown ? { ...renderer, params: renderer.params.filter((param) => !BOX_PARAMS.has(param.key)) } : renderer;
   }
 }
 

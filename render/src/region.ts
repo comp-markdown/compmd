@@ -71,6 +71,11 @@ export interface SurfaceOptions {
 export interface RegionOptions extends SurfaceOptions {
   /** The document's stylesheet, shared with the page around the region; by default the region has its own. */
   stylesheet?: Stylesheet;
+  /**
+   * Whether the region draws one use the page around it placed, as a frame of its own does: a `render=both` block's
+   * code is then the page's, so the region draws its component alone, with no code in its fallback (spec §7.7).
+   */
+  part?: boolean;
 }
 
 /** What a region needs from the document around it. */
@@ -162,7 +167,7 @@ export function createRegion(target: HTMLElement, options: RegionOptions = {}): 
   const document = target.ownerDocument;
   const stylesheet = options.stylesheet ?? new Stylesheet(document);
   const schemes = new Schemes(target);
-  const surface = surfaceOf(document, stylesheet, schemes, options);
+  const surface = { ...surfaceOf(document, stylesheet, schemes, options), part: options.part === true };
   let views: View[] = [];
   let rendered: readonly ExpandedNode[] = [];
   const placed = () => placedOf(rendered, surface.drawn, target, ({ start, end }) => ({ start, end }));
