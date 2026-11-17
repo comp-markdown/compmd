@@ -1,4 +1,6 @@
-# Content languages in editors (proposed)
+# Content languages in editors
+
+- **Status:** Approved (2026-11-17). Its parts are built as tasks of their own: the pack's manifest and check, the processor's blocks, the playground, a VS Code extension, the tree-sitter grammar's injections.
 
 A CompMD document holds text in languages that aren't Markdown: a code block a code renderer draws (spec §7.7) is a
 diagram, a chart's data, a query, a score, in whatever language that renderer reads. The pack that brings the renderer
