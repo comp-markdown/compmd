@@ -22,11 +22,14 @@ brings. Its first posts are *Why CompMD*, *Where CompMD is, and its roadmap*, an
 4. **Tags from the start**: each post names a few (`release`, `design`, `comparison`), the tool writes their pages at
    `/blog/tags/<tag>/`, and the feed carries them.
 
-5. **Comments with giscus** (proposed): each post's comments are a discussion in this repository's GitHub Discussions,
-   in a category of their own, "Blog", so readers talk where the project's developers already are, with no tracking
-   and no ads. It needs Discussions turned on for the repository and the giscus app installed on it, both by the
-   repository's owner. Disqus is what the tool offers too, if that is preferred: it lets readers comment without a
-   GitHub account, but its free plan shows ads and tracks readers.
+5. **Comments with giscus** (decided 2026-11-17): each post has a discussion of its own in this repository's GitHub
+   Discussions, so readers talk where the project's developers already are, with no tracking and no ads.
+   - **One discussion per post**, found by the post's path (giscus's `pathname` mapping, with strict matching, so two
+     posts never share one), and created when its first comment is written.
+   - **In a category of their own, "Blog"**, of the *Announcements* type: only maintainers, and giscus's app for them,
+     start discussions there, so it holds the posts' discussions and nothing else; readers comment in them.
+   - It needs Discussions turned on for the repository, the "Blog" category, and the giscus app installed on it, all by
+     the repository's owner; the category's id goes in `blog.config.json`.
 
 6. **Part of the site, as the guides are**: its pages in the sitemap and in the site's search (each post from one
    heading to the next), checked by `pnpm check` (light and dark, desktop and phone, styled before their script, their
