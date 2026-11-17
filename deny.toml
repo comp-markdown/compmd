@@ -3,6 +3,14 @@
 [advisories]
 # Vulnerabilities and unmaintained crates fail the check; yanked versions too.
 yanked = "deny"
+# Ignored only because the crates they name come through `cel`, the dev-dependency the processor's CEL tests use as an
+# oracle (`processor/src/cel/tests/differential.rs`), never in anything released: its `chrono` feature, for the
+# timestamp and duration expressions they compare. `[bans]` below keeps both crates to `cel`, so a dependency that
+# brings them in anywhere else fails the check.
+ignore = [
+    { id = "RUSTSEC-2026-0543", reason = "chrono is unmaintained: only through cel, the CEL tests' oracle (dev-only)" },
+    { id = "RUSTSEC-2026-0555", reason = "chrono-tz is unmaintained: only through cel, the CEL tests' oracle (dev-only)" },
+]
 
 [licenses]
 # Permissive licenses only. A dependency under any other license needs a decision first.
@@ -28,3 +36,8 @@ multiple-versions = "warn"
 # Every version is pinned, except the workspace's own path dependencies.
 wildcards = "deny"
 allow-wildcard-paths = true
+# chrono and chrono-tz are unmaintained (the ignored advisories above): allowed only as cel's, the CEL tests' oracle.
+deny = [
+    { crate = "chrono", wrappers = ["cel", "chrono-tz"], reason = "unmaintained; only for cel, the CEL tests' oracle" },
+    { crate = "chrono-tz", wrappers = ["cel"], reason = "unmaintained; only for cel, the CEL tests' oracle" },
+]
