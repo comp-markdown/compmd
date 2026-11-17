@@ -1,0 +1,109 @@
+/* The default look of a blog @compmd/blog writes: plain and readable, light or dark by the reader's preference. A
+   blog's own theme.css comes after it. */
+
+:root {
+  color-scheme: light dark;
+  --blog-text: #1f2328;
+  --blog-muted: #59636e;
+  --blog-link: #0969da;
+  --blog-line: #d1d9e0;
+  --blog-background: #ffffff;
+  --blog-width: 42rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --blog-text: #e6edf3;
+    --blog-muted: #9198a1;
+    --blog-link: #4493f8;
+    --blog-line: #3d444d;
+    --blog-background: #0d1117;
+  }
+
+  /* Shiki writes both themes; the dark one shows in the dark. */
+  .shiki,
+  .shiki span {
+    color: var(--shiki-dark) !important;
+    background-color: var(--shiki-dark-bg) !important;
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--blog-background);
+  color: var(--blog-text);
+  font: 1.0625rem/1.6 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+a {
+  color: var(--blog-link);
+}
+
+.blog-header,
+.blog-main,
+.blog-footer {
+  box-sizing: border-box;
+  max-width: var(--blog-width);
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.blog-header {
+  padding-block: 1.5rem;
+  font-weight: 600;
+}
+
+.blog-header a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.blog-footer {
+  padding-block: 2rem;
+  color: var(--blog-muted);
+  font-size: 0.875rem;
+}
+
+.post-meta,
+.post-list .post-meta {
+  color: var(--blog-muted);
+  font-size: 0.9375rem;
+}
+
+.post-list {
+  list-style: none;
+  padding: 0;
+}
+
+.post-list > li {
+  padding-block: 1rem;
+  border-bottom: 1px solid var(--blog-line);
+}
+
+.post-list h2 {
+  margin: 0 0 0.25rem;
+  font-size: 1.25rem;
+}
+
+.tags a {
+  margin-inline-end: 0.25rem;
+}
+
+.post-nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-block: 2rem;
+  padding-block-start: 1rem;
+  border-top: 1px solid var(--blog-line);
+}
+
+pre {
+  overflow-x: auto;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+}
+
+img {
+  max-width: 100%;
+}

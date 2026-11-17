@@ -28,5 +28,7 @@ host-js/README.md
 host-js/src
 devtools/README.md
 devtools/src
+blog/README.md
+blog/src
 packs/mermaid/README.md
 packs/mermaid/src

@@ -1,0 +1,56 @@
+{
+  "name": "@compmd/blog",
+  "version": "0.7.1",
+  "description": "A blog in CompMD: a folder of CompMD documents made a static blog, with a page per post, tags, an Atom feed and comments. cblo new, cblo dev, cblo build",
+  "keywords": [
+    "compmd",
+    "markdown",
+    "blog",
+    "static-site",
+    "components"
+  ],
+  "homepage": "https://compmd.dev/",
+  "bugs": "https://github.com/comp-markdown/compmd/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/comp-markdown/compmd.git",
+    "directory": "blog"
+  },
+  "author": "Hakan Serce",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "cblo": "./dist/cli.js",
+    "compmd-blog": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "theme"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "lint": "eslint . && tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@compmd/processor": "workspace:^",
+    "@compmd/render": "workspace:^",
+    "@compmd/sandbox": "workspace:^",
+    "happy-dom": "21.0.3",
+    "shiki": "4.5.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "26.6.5",
+    "eslint": "10.13.0",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.0",
+    "vitest": "5.0.5"
+  }
+}

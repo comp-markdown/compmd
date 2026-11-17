@@ -1,0 +1,74 @@
+// A post rendered at build time (docs/blog-tool.md, decision 5): processed by the processor in strict mode, so an
+// error fails the build, and rendered to static HTML by `@compmd/render` in happy-dom's DOM, with its code highlighted.
+// A host-language component shows its fallback here; the page's script mounts it live.
+
+import { process, type Diagnostic, type Request } from "@compmd/processor";
+import { createPage } from "@compmd/render";
+import { Window } from "happy-dom";
+import { BlogError } from "./config.ts";
+import type { Highlight } from "./highlight.ts";
+import { POSTS, type Post } from "./posts.ts";
+import { loadProcessor } from "./processor.ts";
+
+/** A post, rendered. */
+export interface Rendered {
+  /** The post's HTML, the content of its page's article. */
+  html: string;
+  /** Its stylesheet, the renderer's. */
+  css: string;
+  /** Its warnings, as lines of the build's output. */
+  warnings: string[];
+}
+
+/** What the blog gives its posts besides their files: its packs, as `@compmd/vite` reads them. */
+export type Given = Pick<Request, "packs" | "ambient" | "policy">;
+
+/** A diagnostic as a line of the build's output. */
+const lineOf = (post: Post, { code, message, file, range }: Diagnostic): string => `${POSTS}/${file ?? post.path}:${String(range.start.line)}:${String(range.start.column)}: ${code} ${message}`;
+
+/** The fence languages a post's text names: its code blocks', for the highlighter to load first. */
+const languagesOf = (text: string): Set<string> => new Set([...text.matchAll(/^ {0,3}(?:`{3,}|~{3,})\s*([\w+-]+)/gm)].map(([, language]) => language ?? ""));
+
+/** Whether `url` is relative to the document: not absolute, not from the site's root, not a fragment. */
+const isRelative = (url: string): boolean => url !== "" && !/^([a-z][a-z0-9+.-]*:|\/|#|\?)/i.test(url);
+
+/** Puts `up` before each relative link and image source in `root`, for a page that is that many folders below its post. */
+function rebase(root: HTMLElement, up: string): void {
+  if (up === "") return;
+  for (const [selector, attribute] of [["a[href]", "href"], ["img[src]", "src"], ["source[src]", "src"]] as const) {
+    for (const element of root.querySelectorAll(selector)) {
+      const url = element.getAttribute(attribute) ?? "";
+      if (isRelative(url)) element.setAttribute(attribute, `${up}${url.replace(/^\.\//, "")}`);
+    }
+  }
+}
+
+/**
+ * `post` rendered at `now`, with what the blog gives it; `up` goes before its relative links and images, for a page in
+ * a folder below the posts' (`../`).
+ *
+ * @throws BlogError with its errors, when it has one.
+ */
+export async function renderPost(post: Post, now: string, highlight: Highlight, given: Given = {}, up = ""): Promise<Rendered> {
+  loadProcessor();
+  const { expanded, diagnostics, failed } = process({ ...given, path: post.path, files: post.files, now, mode: "strict" });
+  const errors = diagnostics.filter(({ severity }) => severity === "error");
+  if (failed || errors.length > 0) throw new BlogError(`${POSTS}/${post.path} has errors:\n${errors.map((error) => `- ${lineOf(post, error)}`).join("\n")}`);
+  await highlight.load(languagesOf(post.files[post.path] ?? ""));
+  const window = new Window();
+  try {
+    // happy-dom's elements are the DOM's, as the renderer takes them.
+    const root = window.document.body.appendChild(window.document.createElement("div")) as unknown as HTMLElement;
+    const page = createPage(root, { highlight: highlight.highlight });
+    page.render(expanded);
+    // An input's state is in its properties, which HTML doesn't hold; its attributes give it to the page.
+    for (const input of root.querySelectorAll("input")) {
+      if (input.type === "checkbox") input.toggleAttribute("checked", input.checked);
+      else input.setAttribute("value", input.value);
+    }
+    rebase(root, up);
+    return { html: root.innerHTML, css: page.stylesheet.text, warnings: diagnostics.map((diagnostic) => lineOf(post, diagnostic)) };
+  } finally {
+    window.close();
+  }
+}
