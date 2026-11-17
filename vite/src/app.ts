@@ -5,13 +5,14 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
-import { join, posix, relative, sep } from "node:path";
+import { join, relative, sep } from "node:path";
 import { initSync, process as processDocument, type Diagnostic, type PackRelease } from "@compmd/processor";
 import type { LibraryDefinition } from "@compmd/sandbox/build";
 import semver from "semver";
 import { parse as parseYaml } from "yaml";
 import { isFolder, policyOf, readConfig, type ReadConfig, type Translated } from "./config.ts";
-import { findPacks, integrities, lockFileOf, releaseOf, type ComponentFile, type Pack } from "./packs.ts";
+import { analysePack, loadCompilers } from "./analysis.ts";
+import { findPacks, integrities, localComponents, lockFileOf, namesOf, releaseOf, type ComponentFile, type Pack } from "./packs.ts";
 
 /** A trusted component, which the app's own build compiles and the sandbox mounts in the page. */
 export interface TrustedComponent {
@@ -93,32 +94,10 @@ function mdOf(text: string): Record<string, unknown> {
   }
 }
 
-/** The names of an import or an export entry: `[name, as]`. */
-function namesOf(entries: unknown): [string, string][] {
-  if (!Array.isArray(entries)) return [];
-  return entries.flatMap((entry: unknown): [string, string][] => {
-    if (typeof entry === "string") return [[entry, entry]];
-    if (typeof entry === "object" && entry !== null) {
-      const { name, as } = entry as { name?: unknown; as?: unknown };
-      if (typeof name === "string") return [[name, typeof as === "string" ? as : name]];
-    }
-    return [];
-  });
-}
-
 /** A trusted pack's components, by the names its document exports, each with its file and binding. */
 export function trustedComponents(pack: Pack): TrustedComponent[] {
   const md = mdOf(pack.files[pack.document] ?? "");
-  const local = new Map<string, ComponentFile>();
-  for (const entry of Array.isArray(md.import) ? (md.import as unknown[]) : []) {
-    const { from, names } = (typeof entry === "object" && entry !== null ? entry : {}) as { from?: unknown; names?: unknown };
-    if (typeof from !== "string") continue;
-    const path = posix.normalize(posix.join(posix.dirname(pack.document), from));
-    const file = pack.components.find((component) => component.path === path);
-    if (!file) continue;
-    const stem = posix.basename(path).replace(/\.[^.]+$/, "");
-    for (const [, as] of names === "*" ? [[stem, stem] as [string, string]] : namesOf(names)) local.set(as, file);
-  }
+  const local = localComponents(pack, md);
   const exported = (md.export as { names?: unknown } | undefined)?.names;
   const pairs = exported === "*" ? [...local.keys()].map((name): [string, string] => [name, name]) : namesOf(exported);
   return pairs.flatMap(([name, as]) => {
@@ -213,6 +192,10 @@ export async function loadApp(root: string, given?: unknown): Promise<App> {
   const warnings: string[] = [];
   const listed = packs.filter((pack) => [...config.packs.keys()].some((key) => byKey(key) === pack) && !(pack.name in refused));
   check(listed, request, warnings);
+  // Component analysis (W104) needs the app's TypeScript, and Svelte's compiler for Svelte components; without them,
+  // it is left out, as the optional feature it is (spec §13.1).
+  const compilers = listed.length > 0 ? await loadCompilers() : undefined;
+  if (compilers) for (const pack of listed) warnings.push(...analysePack(pack, mdOf(pack.files[pack.document] ?? ""), compilers));
   for (const [name, why] of Object.entries(refused)) warnings.push(`${name} is left out: ${why}`);
   // docs/vite.md, V1: the lock file holds every package installed from a registry, so a pack it lacks is a sign the
   // plugin didn't read it right, which would otherwise show only as documents that pin the pack failing to load it.

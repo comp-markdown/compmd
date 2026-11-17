@@ -53,8 +53,8 @@ params:
   product: string
 \`\`\`
 `,
-  "components/Stars.tsx": "export default function Stars() { return null; }",
-  "components/rating.svelte": "<p>rating</p>",
+  "components/Stars.tsx": "export default function Stars({ value }: { value: number }) { return null; }",
+  "components/rating.svelte": "<script>\n  let { product } = $props();\n</script>\n<p>{product}</p>",
   "node_modules/@acme/charts/package.json": { name: "@acme/charts", version: "2.1.0" },
   "node_modules/@acme/charts/index.comp.md": `---
 md:
@@ -80,7 +80,7 @@ params:
 \`\`\`
 `,
   "node_modules/@acme/charts/dist/line.js": LINE_MODULE,
-  "node_modules/@acme/charts/bar.jsx": "export default () => null;",
+  "node_modules/@acme/charts/bar.jsx": "export default ({ rows }) => null;",
   "node_modules/@acme/maps/package.json": { name: "@acme/maps", version: "3.0.0" },
   "node_modules/@acme/maps/index.comp.md": `---
 md:
@@ -90,7 +90,7 @@ md:
 ---
 
 \`\`\`jsx component=map runtime=react@19
-export default () => null;
+export default ({ place }) => null;
 \`\`\`
 
 \`\`\`compmd component=map signature
@@ -176,7 +176,7 @@ describe("loadApp", () => {
     const [charts] = app.request.packs["@acme/charts"]!;
     expect(charts!.integrity).toBe("sha512-charts");
     expect(charts!.files["dist/line.js"]).toBe("");
-    expect(charts!.files["bar.jsx"]).toBe("export default () => null;");
+    expect(charts!.files["bar.jsx"]).toBe("export default ({ rows }) => null;");
     expect(app.request.packs["@acme/app"]![0]!.files["Stars.tsx"]).toBe("");
     expect(app.warnings).toEqual([]);
   });
@@ -231,10 +231,22 @@ describe("loadApp", () => {
     });
     await expect(loadApp(root)).rejects.toThrow(/the listed packs have errors:\n- @acme\/maps@3\.0\.0\/index\.comp\.md:\d+:\d+: F029 /);
     await write({
-      "node_modules/@acme/maps/index.comp.md": "---\nmd:\n  export:\n    pack: \"@acme/maps\"\n    names: [map]\n---\n\n```jsx component=map\nexport default () => null;\n```\n\n```compmd component=map signature\nparams:\n  place: string\n```\n",
+      "node_modules/@acme/maps/index.comp.md": "---\nmd:\n  export:\n    pack: \"@acme/maps\"\n    names: [map]\n---\n\n```jsx component=map\nexport default ({ place }) => null;\n```\n\n```compmd component=map signature\nparams:\n  place: string\n```\n",
     });
     const app = await loadApp(root);
     expect(app.warnings).toHaveLength(1);
     expect(app.warnings[0]).toMatch(/^@acme\/maps@3\.0\.0\/index\.comp\.md:\d+:\d+: W117 /);
+  });
+
+  it("warns where a listed pack's component and its signature fence disagree (W104)", async () => {
+    await write({
+      "components/Stars.tsx": "export default function Stars({ value, size }: { value: string; size?: number }) { return null; }",
+      "components/rating.svelte": "<p>no props</p>",
+    });
+    expect((await loadApp(root)).warnings).toEqual([
+      "@acme/app@1.0.0/index.comp.md:15:3: W104 the signature declares `value` as a number, which Stars.tsx's prop takes as a string",
+      "@acme/app@1.0.0/index.comp.md:13:1: W104 Stars.tsx has the prop `size`, which the signature doesn't declare",
+      "@acme/app@1.0.0/index.comp.md:20:3: W104 the signature declares `product`, which rating.svelte has no prop for (`product`)",
+    ]);
   });
 });

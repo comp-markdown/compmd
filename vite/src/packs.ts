@@ -186,6 +186,34 @@ export async function integrities(root: string): Promise<Map<string, string>> {
   return found;
 }
 
+/** The names of an import or an export entry: `[name, as]`. */
+export function namesOf(entries: unknown): [string, string][] {
+  if (!Array.isArray(entries)) return [];
+  return entries.flatMap((entry: unknown): [string, string][] => {
+    if (typeof entry === "string") return [[entry, entry]];
+    if (typeof entry === "object" && entry !== null) {
+      const { name, as } = entry as { name?: unknown; as?: unknown };
+      if (typeof name === "string") return [[name, typeof as === "string" ? as : name]];
+    }
+    return [];
+  });
+}
+
+/** The component files a pack's document imports, by the local name it gives each; `md` is its frontmatter's `md` key. */
+export function localComponents(pack: Pack, md: Record<string, unknown>): Map<string, ComponentFile> {
+  const local = new Map<string, ComponentFile>();
+  for (const entry of Array.isArray(md.import) ? (md.import as unknown[]) : []) {
+    const { from, names } = (typeof entry === "object" && entry !== null ? entry : {}) as { from?: unknown; names?: unknown };
+    if (typeof from !== "string") continue;
+    const path = posix.normalize(posix.join(posix.dirname(pack.document), from));
+    const file = pack.components.find((component) => component.path === path);
+    if (!file) continue;
+    const stem = posix.basename(path).replace(/\.[^.]+$/, "");
+    for (const [, as] of names === "*" ? [[stem, stem] as [string, string]] : namesOf(names)) local.set(as, file);
+  }
+  return local;
+}
+
 /**
  * A pack as the processor's release (`Request.packs`): its files, but empty text for the component files the app's
  * own bundle or the frames load (built modules, trusted packs' components), which the processor only needs to exist
