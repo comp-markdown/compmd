@@ -6,6 +6,7 @@ The designs behind the spec and its implementation. Each starts with its status 
 
 - [Components from apps and packs](components-from-apps-and-packs.md): where component code comes from (an app, a pack, the registry), and at what trust; the parent of most designs below.
 - [Packs from a registry](packs-from-a-registry.md): how a host lets documents use packs straight from an npm registry, what a registry pack is, and how packs share libraries.
+- [Any npm package, as published](npm-packages.md): proposed, a package's ES module tree resolved by the registry and bundled once in the compile frame, so a pack imports `d3` by its own name.
 - [What component code may import](what-component-code-may-import.md): what a bare import in a component resolves to: a runtime, a library the host offers, or a library pack.
 - [Code renderers](code-renderers.md): a component that also draws the code blocks of one language (spec §7.7).
 - [Handling pack loading states](handling-pack-loading-states.md): a placeholder, for telling a pack on its way from one that won't load.
