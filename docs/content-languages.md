@@ -1,57 +1,64 @@
 # Content languages in editors (proposed)
 
-A code renderer's signature already says its block's content is Mermaid (`renders: mermaid`, spec §7.7). The same
-declaration can tell an editor how to treat that content: an editor that knows CompMD highlights, and maybe completes,
-Mermaid in any document that imports the pack, without knowing Mermaid itself, because the pack brings what it takes.
-This proposes what a pack declares, what it ships, and who uses it.
+A CompMD document holds text in languages that aren't Markdown: a code block a code renderer draws (spec §7.7) is a
+diagram, a chart's data, a query, a score, in whatever language that renderer reads. The pack that brings the renderer
+is the one thing that knows that language; the editor a writer works in knows only the languages it was built or
+configured for. So today such a block is plain text in the editor, with no colours, no folding, no errors and no
+completion, while the same text in a file of its own would have them all. A document's other content is no better off
+than a plain code block in any Markdown file.
 
-## Decisions to make
+This decides how a pack tells editors about the languages its renderers read, what it ships for them, and what an editor
+does with it, so that a writer gets the same help inside a CompMD document as in a file of that language. (A Mermaid pack
+is the first example: `renders: mermaid` already says its blocks are Mermaid.)
 
-1. **Where a language is named.**
-   - (a) A code renderer's `renders` only, as today: a fence's content has the language its renderer names.
-   - (b) Also a slot's content: a slot declaration names a language (`slots: { query: { language: sql } }`), for a
-     component whose slot is code, not Markdown. A spec change (§7.3), for a later minor version.
-   - *Recommended:* (a) now, (b) when a pack needs it; nothing here depends on (b).
+## Decisions
 
-2. **What a pack ships.**
-   - (a) A TextMate grammar (`.tmLanguage.json`): what VS Code and Shiki read, so the playground, the Developer Tools
-     and the site's highlighting (Shiki, in the frames) use it at once.
-   - (b) A tree-sitter grammar (WebAssembly): what Neovim, Helix and Zed read, and [the CompMD grammar](tree-sitter.md)
-     can inject.
-   - (c) Either, or both.
-   - *Recommended:* (c), declared in the pack's `package.json`, `compmd.languages: [{ "id": "mermaid", "textmate":
-     "grammars/mermaid.tmLanguage.json", "treeSitter": "grammars/mermaid.wasm" }]`, each a file of the pack, checked
-     by `compmd-pack check` (it parses, it names the language its renderer `renders`).
+1. **Where a language is named: a code renderer's `renders`.** A fence's content has the language its renderer names,
+   as the spec has it now. A slot whose content is code (`slots: { query: { language: sql } }`) would be a spec change,
+   left until a pack needs it; nothing here depends on it.
 
-3. **Completion and diagnostics: a language server.**
-   - (a) None: grammars only. Highlighting, no completion.
-   - (b) A pack ships a language server, which the CompMD language server starts and forwards the block's requests to,
-     as editors forward an embedded language's.
-   - *Recommended:* (a) by default, and (b) only for packs the writer trusts by name in their editor's settings: a
-     server is a program run on the writer's machine, with their files and network, unlike a grammar, which is data.
-     It never follows from importing a pack.
+2. **What a pack ships: grammars, TextMate and tree-sitter, either or both.** A TextMate grammar (`.tmLanguage.json`) is
+   what VS Code and Shiki read, so the playground, the Developer Tools and the site's highlighting use it at once; a
+   tree-sitter grammar (WebAssembly) is what Neovim, Helix and Zed read, and what [the CompMD grammar](tree-sitter.md)
+   injects. The pack declares them in its `package.json`, each a file of the pack:
 
-4. **Who reads them.**
-   - The playground and the Developer Tools: the frames' Shiki loads a pack's TextMate grammar with the pack, for the
-     blocks its renderer renders.
-   - A VS Code extension (to come): its CompMD grammar embeds each imported pack's grammar for its fences, found from
-     the document's imports and the installed packs.
-   - The tree-sitter grammar: injects by the fence's language name, as Markdown's does; an editor that has a grammar
-     for that name highlights it, from the pack or from elsewhere.
-   - *Recommended:* the playground first, since it already has Shiki in its frames and the packs at hand.
+   ```json
+   "compmd": { "languages": [{ "id": "mermaid", "textmate": "grammars/mermaid.tmLanguage.json", "treeSitter": "grammars/mermaid.wasm" }] }
+   ```
 
-5. **Safety of a grammar.** A TextMate grammar is regular expressions, and a bad one backtracks for ever on some text.
-   Highlighting with a pack's grammar runs where the pack's code runs, in its frame (the playground's Shiki is there
-   already), with the frame's timeout, so a grammar can stall at most its own block.
+   `compmd-pack check` checks each: it parses, and its `id` is a language the pack's renderers `renders`.
+
+3. **Language servers: none from CompMD; what an editor needs to choose its own.** CompMD neither ships nor starts a
+   language server for a content language. An editor, or its CompMD plugin, decides that, as it does for any language,
+   with whatever server the writer has set up for it. What CompMD gives is everything that takes:
+   - **the blocks**: for each code block a renderer draws, its language `id` and the range of its content in the
+     document, from the processor (positions it has already) and from the tree-sitter grammar's injections, so a
+     plugin forwards the requests inside that range to the server it chose, as editors do for an embedded language;
+   - **the language's names elsewhere**: a pack's language may give the names editors and servers know it by, its
+     `aliases`, a `languageId` (VS Code's), and `extensions` (`.mmd`), so a plugin finds the server it has for it.
+
+   The `compmd.languages` entry above takes these as optional keys.
+
+4. **Who reads them: the playground, a VS Code extension, and the tree-sitter grammar, all three.** The playground and
+   the Developer Tools load a pack's TextMate grammar into the frames' Shiki for its renderer's blocks; a VS Code
+   extension's CompMD grammar embeds each imported pack's grammar for its fences, found from the document's imports and
+   the installed packs, and hands the blocks to the language servers the writer has; the tree-sitter grammar injects by
+   the fence's language, as Markdown's does, so an editor with a grammar for it highlights it, from the pack or
+   elsewhere. Each is a task of its own when its turn comes, in whatever order they are taken.
+
+5. **A language's `id` is the fence's language as written** (`mermaid`), not scoped to the pack: two packs may give the
+   same one, and the renderer the document resolves (spec §6.3) decides whose grammar its blocks use, as it decides how
+   they render.
+
+6. **A grammar is data, and runs where the pack's code runs.** A TextMate grammar is regular expressions, and a bad one
+   backtracks for ever on some text. Highlighting with a pack's grammar happens in its frame (the playground's Shiki is
+   there already), with the frame's timeout, so a grammar can stall at most its own block. In an editor it runs in the
+   editor's own highlighter, as any grammar the writer installs does.
 
 ## What it changes
 
 - `@compmd/pack`: `compmd.languages` in a pack's manifest, checked; the test page highlights with it.
 - `@compmd/sandbox`: the frames' highlighter takes a pack's grammar for its renderer's language.
+- The processor: each rendered code block's language and content range, for editors (its positions already have them).
 - The Mermaid pack ships a Mermaid grammar, as the first.
-- No spec change, unless decision 1 (b).
-
-## Open
-
-- Whether a language's `id` is the fence's language as written (`mermaid`), so two packs may name the same one (the
-  document's renderer decides which, as it decides rendering), or scoped to the pack. Proposed: as written.
+- No spec change.
