@@ -242,6 +242,7 @@ impl<'r> Expander<'r> {
     fn node(&mut self, node: &'r Node, env: &Env<'r>, out: &mut Vec<expanded::Node>) {
         let content = match node {
             Node::Yaml(_)
+            | Node::Toml(_)
             | Node::ComponentDefinition(_)
             | Node::ComponentSignature(_)
             | Node::ComponentSlot(_) => return,
@@ -279,12 +280,7 @@ impl<'r> Expander<'r> {
             Node::Delete(delete) => Content::Delete(self.parent(&delete.children, env)),
             Node::Emphasis(emphasis) => Content::Emphasis(self.parent(&emphasis.children, env)),
             Node::FootnoteDefinition(footnote) => {
-                Content::FootnoteDefinition(tree::FootnoteDefinition {
-                    identifier: footnote.identifier.clone(),
-                    label: footnote.label.clone(),
-                    children: self.list(&footnote.children, env),
-                    position: None,
-                })
+                Content::FootnoteDefinition(self.footnote(footnote, env))
             }
             Node::FootnoteReference(reference) => Content::FootnoteReference(tree::Reference {
                 position: None,
@@ -340,6 +336,20 @@ impl<'r> Expander<'r> {
         };
         let made = self.made(content, origins::of(node, env));
         out.push(made);
+    }
+
+    /// A footnote definition with its content expanded.
+    fn footnote(
+        &mut self,
+        footnote: &'r tree::FootnoteDefinition,
+        env: &Env<'r>,
+    ) -> tree::FootnoteDefinition<expanded::Node> {
+        tree::FootnoteDefinition {
+            identifier: footnote.identifier.clone(),
+            label: footnote.label.clone(),
+            children: self.list(&footnote.children, env),
+            position: None,
+        }
     }
 
     /// The name of the code renderer that renders `code` in `env`'s document, when one alone does (spec §7.7).

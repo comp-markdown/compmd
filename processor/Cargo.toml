@@ -28,6 +28,7 @@ semver = { version = "1.0.28", features = ["serde"] }
 serde ={ version = "1.0.228", features = ["derive"] }
 serde_json = { version = "1.0.145", features = ["preserve_order"] }
 thiserror = "2.0.18"
+toml = { version = "0.9", default-features = false, features = ["parse"] }
 yaml-rust2 = "0.13.0"
 
 [dev-dependencies]

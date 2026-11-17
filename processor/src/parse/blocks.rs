@@ -353,6 +353,11 @@ impl Converter<'_, '_> {
                 parsed: self.frontmatter.take(),
                 position: self.source.position(yaml.position.as_ref()),
             }),
+            mdast::Node::Toml(toml) => Node::Toml(Yaml {
+                value: toml.value,
+                parsed: self.frontmatter.take(),
+                position: self.source.position(toml.position.as_ref()),
+            }),
             other => return self.inline(other, false),
         })
     }

@@ -126,6 +126,8 @@ pub enum Node {
     Text(Literal),
     /// A thematic break.
     ThematicBreak(Void),
+    /// The frontmatter, when it is TOML (spec §2.1).
+    Toml(Yaml),
     /// A wiki link, `[[target|label]]`, when the document opts in (spec §2.3).
     WikiLink(WikiLink),
     /// The frontmatter (spec §2.1).
@@ -196,7 +198,7 @@ impl Node {
             Self::Table(n) => n.position,
             Self::Break(n) | Self::ThematicBreak(n) => n.position,
             Self::WikiLink(n) => n.position,
-            Self::Yaml(n) => n.position,
+            Self::Yaml(n) | Self::Toml(n) => n.position,
         }
     }
 }
@@ -500,16 +502,16 @@ pub struct Reference {
     pub position: Option<Position>,
 }
 
-/// The frontmatter.
+/// The frontmatter, YAML ([`Node::Yaml`]) or TOML ([`Node::Toml`]).
 #[derive(Clone, Debug, Default, PartialEq, Serialize)]
 pub struct Yaml {
-    /// The YAML text.
+    /// The frontmatter's text.
     pub value: String,
-    /// The frontmatter as parsed YAML, each data import's `from` as text and interpolation parts; absent when
-    /// CompMD processing doesn't apply (spec §12.2).
+    /// The frontmatter as parsed, each data import's `from` as text and interpolation parts; absent when CompMD
+    /// processing doesn't apply (spec §12.2).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub parsed: Option<Value>,
-    /// Where the frontmatter is, with its `---` lines.
+    /// Where the frontmatter is, with its `---` (or `+++`) lines.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub position: Option<Position>,
 }

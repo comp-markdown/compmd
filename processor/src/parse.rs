@@ -13,6 +13,7 @@ mod inlines;
 pub(crate) mod line;
 pub(crate) mod params;
 mod source;
+mod toml;
 pub(crate) mod yaml;
 
 pub(crate) use definitions::CODE;
@@ -75,7 +76,7 @@ pub(crate) fn parse(text: &str, options: &ParseOptions) -> Parsed {
     let mut parsed = None;
     let mut settings = Settings::default();
     let mut compmd = true;
-    if let Some(yaml) = frontmatter::find(text) {
+    if let Some(found) = frontmatter::find(text) {
         if options.metadata.is_some() {
             diagnostics.push(Diagnostic::new(
                 Code::W115,
@@ -83,12 +84,12 @@ pub(crate) fn parse(text: &str, options: &ParseOptions) -> Parsed {
                 "the document has its own frontmatter, so the host's metadata is ignored",
             ));
         }
-        let document = frontmatter::read(yaml, &mut diagnostics);
+        let document = frontmatter::read(found, &mut diagnostics);
         compmd = document.is_some();
         parsed = document.as_ref().map(frontmatter::tree_value);
         metadata.clone_from(&parsed);
         if let Some(document) = document {
-            settings = Settings::read(document, yaml);
+            settings = Settings::read(document, found.text);
         }
     } else if let Some(given) = &options.metadata {
         // A document without frontmatter takes the host's metadata as its frontmatter (spec §2.1).
@@ -195,7 +196,6 @@ impl Syntax {
         } else {
             markdown::Constructs {
                 frontmatter,
-                frontmatter_toml: false,
                 ..markdown::Constructs::gfm()
             }
         };

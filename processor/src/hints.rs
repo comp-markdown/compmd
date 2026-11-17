@@ -489,7 +489,9 @@ fn surrounding(nodes: &[Node], offset: usize) -> Surrounding<'_> {
     match block {
         Node::Yaml(_) if inside => Surrounding::Frontmatter,
         Node::Code(code) if inside => Surrounding::Code(code),
-        Node::Math(_)
+        // The frontmatter's hints are YAML's: a TOML frontmatter has none.
+        Node::Toml(_)
+        | Node::Math(_)
         | Node::Html(_)
         | Node::InlineCode(_)
         | Node::InlineMath(_)

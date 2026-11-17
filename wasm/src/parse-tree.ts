@@ -100,9 +100,9 @@ export interface SignatureFence {
   position?: Position;
 }
 
-/** The frontmatter. */
+/** The frontmatter, YAML (`---`) or TOML (`+++`): its text, and what it says, as JSON, when CompMD processing applies. */
 export interface Yaml {
-  type: "yaml";
+  type: "yaml" | "toml";
   value: string;
   parsed?: Record<string, unknown>;
   position?: Position;

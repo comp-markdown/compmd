@@ -299,7 +299,7 @@ impl Shift for Node {
                 table.position.shift(by);
             }
             Self::WikiLink(link) => link.position.shift(by),
-            Self::Yaml(yaml) => yaml.position.shift(by),
+            Self::Yaml(yaml) | Self::Toml(yaml) => yaml.position.shift(by),
         }
     }
 }

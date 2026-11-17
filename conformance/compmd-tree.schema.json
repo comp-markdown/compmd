@@ -58,10 +58,10 @@
         { "if": { "properties": { "type": { "const": "componentDefinition" } } }, "then": { "$ref": "#/$defs/definition" } },
         { "if": { "properties": { "type": { "const": "componentSignature" } } }, "then": { "$ref": "#/$defs/signatureFence" } },
         { "if": { "properties": { "type": { "const": "interpolation" } } }, "then": { "$ref": "#/$defs/interpolation" } },
-        { "if": { "properties": { "type": { "const": "yaml" } } }, "then": { "$ref": "#/$defs/yaml" } },
+        { "if": { "properties": { "type": { "enum": ["yaml", "toml"] } } }, "then": { "$ref": "#/$defs/yaml" } },
         { "if": { "required": ["urlParts"] }, "then": { "properties": { "urlParts": { "$ref": "#/$defs/stringParts" } } } },
         {
-          "if": { "properties": { "type": { "not": { "enum": ["componentContainer", "componentSlot", "componentLeaf", "componentInline", "componentDefinition", "componentSignature", "interpolation", "yaml"] } } } },
+          "if": { "properties": { "type": { "not": { "enum": ["componentContainer", "componentSlot", "componentLeaf", "componentInline", "componentDefinition", "componentSignature", "interpolation", "yaml", "toml"] } } } },
           "then": { "$ref": "#/$defs/mdastParseNode" }
         }
       ]
@@ -287,7 +287,7 @@
       "type": "object",
       "required": ["type"],
       "properties": {
-        "type": { "not": { "enum": ["componentDefinition", "componentSignature", "interpolation", "yaml", "root"] } },
+        "type": { "not": { "enum": ["componentDefinition", "componentSignature", "interpolation", "yaml", "toml", "root"] } },
         "position": { "$ref": "#/$defs/position" },
         "origin": { "$ref": "#/$defs/origin" }
       },

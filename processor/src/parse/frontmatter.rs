@@ -1,8 +1,9 @@
 //! A document's frontmatter (spec §2.1, §2.2), read before the document is parsed: YAML 1.2 core without tags,
-//! anchors, aliases or repeated keys (F033), a major version this processor implements (F001), and CompMD's keys
-//! under `md` (W110, W111).
+//! anchors, aliases or repeated keys, or TOML (F033), a major version this processor implements (F001), and
+//! CompMD's keys under `md` (W110, W111).
 
 use super::params::string_parts;
+use super::toml;
 use super::yaml::{self, Mark, Refused};
 use crate::diagnostic::{Code, Diagnostic, Location};
 use crate::nearest::nearest;
@@ -60,27 +61,56 @@ fn md_key_names() -> impl Iterator<Item = &'static str> + Clone {
 /// The opt-in syntax this processor knows (spec §2.3).
 pub(crate) const SYNTAX_NAMES: [&str; 1] = ["wiki-links"];
 
-/// The YAML text of the frontmatter at the start of `text`: a `---` line, the YAML, and a closing `---` line, as
-/// the fork of markdown-rs finds it. The YAML starts on line 2.
-pub(crate) fn find(text: &str) -> Option<&str> {
+/// What a frontmatter is written in (spec §2.1).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Format {
+    /// YAML, between `---` lines.
+    Yaml,
+    /// TOML, between `+++` lines.
+    Toml,
+}
+
+impl Format {
+    /// The fence's line, without trailing white space.
+    fn fence(self) -> &'static str {
+        match self {
+            Self::Yaml => "---",
+            Self::Toml => "+++",
+        }
+    }
+}
+
+/// A frontmatter as written: its format, and its text, which starts on line 2.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct Found<'t> {
+    pub(crate) format: Format,
+    pub(crate) text: &'t str,
+}
+
+/// The frontmatter at the start of `text`: a `---` (or `+++`) line, its text, and a closing line of the same, as the
+/// fork of markdown-rs finds it.
+pub(crate) fn find(text: &str) -> Option<Found<'_>> {
     let mut lines = lines(text);
     let (_, opener) = lines.next()?;
-    if !is_fence(opener) {
-        return None;
-    }
-    let yaml_start = lines.clone().next().map_or(text.len(), |(start, _)| start);
-    let mut yaml_end = yaml_start;
-    for (start, line) in lines {
-        if is_fence(line) {
-            return Some(&text[yaml_start..yaml_end.max(yaml_start)]);
+    let format = [Format::Yaml, Format::Toml]
+        .into_iter()
+        .find(|format| is_fence(opener, *format))?;
+    let start = lines.clone().next().map_or(text.len(), |(start, _)| start);
+    let mut end = start;
+    for (line_start, line) in lines {
+        if is_fence(line, format) {
+            return Some(Found {
+                format,
+                text: &text[start..end.max(start)],
+            });
         }
-        yaml_end = start + line.len();
+        end = line_start + line.len();
     }
     None
 }
 
-fn is_fence(line: &str) -> bool {
-    line.strip_prefix("---")
+fn is_fence(line: &str, format: Format) -> bool {
+    line.strip_prefix(format.fence())
         .is_some_and(|rest| rest.bytes().all(|b| b == b' ' || b == b'\t'))
 }
 
@@ -104,16 +134,22 @@ fn lines(text: &str) -> impl Iterator<Item = (usize, &str)> + Clone {
     })
 }
 
-/// Reads the frontmatter's YAML, with where each key and value is; `None` when CompMD processing doesn't apply
-/// (F001, F033).
-pub(crate) fn read(yaml_text: &str, diagnostics: &mut Vec<Diagnostic>) -> Option<yaml::Document> {
-    match yaml::parse(yaml_text) {
+/// Reads the frontmatter, YAML or TOML, with where each key and value is; `None` when CompMD processing doesn't
+/// apply (F001, F033).
+pub(crate) fn read(found: Found<'_>, diagnostics: &mut Vec<Diagnostic>) -> Option<yaml::Document> {
+    let (parsed, written) = match found.format {
+        Format::Yaml => (yaml::parse(found.text), "YAML 1.2 core"),
+        Format::Toml => (toml::parse(found.text), "TOML"),
+    };
+    match parsed {
         Ok(document) => checked(document, diagnostics),
         Err(Refused(mark, why)) => {
             diagnostics.push(Diagnostic::new(
                 Code::F033,
                 Location::new(1 + mark.line, mark.column + 1),
-                format!("the frontmatter isn't YAML 1.2 core: {why}; the document is read as plain Markdown"),
+                format!(
+                    "the frontmatter isn't {written}: {why}; the document is read as plain Markdown"
+                ),
             ));
             None
         }
@@ -234,8 +270,13 @@ mod tests {
     use serde_json::json;
 
     fn read_all(yaml: &str) -> (Option<Value>, Vec<(Code, Location)>) {
+        read_as(Format::Yaml, yaml)
+    }
+
+    fn read_as(format: Format, text: &str) -> (Option<Value>, Vec<(Code, Location)>) {
         let mut diagnostics = Vec::new();
-        let parsed = read(yaml, &mut diagnostics).map(|document| tree_value(&document));
+        let parsed =
+            read(Found { format, text }, &mut diagnostics).map(|document| tree_value(&document));
         let found = diagnostics
             .iter()
             .map(|d| (d.code, d.range.start))
@@ -245,13 +286,51 @@ mod tests {
 
     #[test]
     fn finds_frontmatter_between_fences() {
-        assert_eq!(find("---\na: 1\nb: 2\n---\ntext"), Some("a: 1\nb: 2"));
-        assert_eq!(find("--- \t\r\na: 1\r\n---  "), Some("a: 1"));
-        assert_eq!(find("---\n---\n"), Some(""));
+        let yaml = |text| {
+            Some(Found {
+                format: Format::Yaml,
+                text,
+            })
+        };
+        assert_eq!(find("---\na: 1\nb: 2\n---\ntext"), yaml("a: 1\nb: 2"));
+        assert_eq!(find("--- \t\r\na: 1\r\n---  "), yaml("a: 1"));
+        assert_eq!(find("---\n---\n"), yaml(""));
         assert_eq!(find("---\na: 1"), None);
         assert_eq!(find("----\n---"), None);
         assert_eq!(find(" ---\n---"), None);
         assert_eq!(find(""), None);
+    }
+
+    #[test]
+    fn finds_toml_between_plus_fences() {
+        let toml = |text| {
+            Some(Found {
+                format: Format::Toml,
+                text,
+            })
+        };
+        assert_eq!(find("+++\na = 1\n+++\ntext"), toml("a = 1"));
+        assert_eq!(find("+++\na = 1\n---\n+++"), toml("a = 1\n---"));
+        assert_eq!(find("+++\na = 1"), None);
+        assert_eq!(find("---\na: 1\n+++"), None);
+    }
+
+    #[test]
+    fn toml_reads_as_yaml_does() {
+        assert_eq!(
+            read_as(
+                Format::Toml,
+                "[md]\nversion = 1\nsyntax = [\"wiki-links\", \"tables\"]"
+            ),
+            (
+                Some(json!({ "md": { "version": 1, "syntax": ["wiki-links", "tables"] } })),
+                vec![(Code::W111, Location::new(4, 25))]
+            )
+        );
+        assert_eq!(
+            read_as(Format::Toml, "a = 1\na = 2"),
+            (None, vec![(Code::F033, Location::new(3, 1))])
+        );
     }
 
     #[test]

@@ -204,7 +204,7 @@ fn whole_change(previous: &Parsed, parsed: &Parsed, old: &str, new: &str, edit: 
             .root
             .children
             .first()
-            .filter(|node| matches!(node, Node::Yaml(_)))
+            .filter(|node| matches!(node, Node::Yaml(_) | Node::Toml(_)))
             .cloned()
     };
     if previous.settings != parsed.settings
@@ -376,7 +376,10 @@ impl Slicer<'_> {
     fn parse(&self, mut tried: Option<&mut Vec<Tried>>) -> Option<Slice> {
         let units = &self.previous.units;
         let last = units.len().checked_sub(1)?;
-        let frontmatter = matches!(self.previous.root.children.first(), Some(Node::Yaml(_)));
+        let frontmatter = matches!(
+            self.previous.root.children.first(),
+            Some(Node::Yaml(_) | Node::Toml(_))
+        );
         if !frontmatter && frontmatter::find(self.new).is_some() {
             return None;
         }

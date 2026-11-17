@@ -66,7 +66,7 @@ A CompMD document is a CommonMark + GFM document, usually with a `.comp.md` exte
 
 ### 2.1 Frontmatter
 
-Frontmatter is a YAML block at the start of the document, delimited by `---` lines. Everything CompMD reads is under one key, `md`; every other key belongs to the author.
+Frontmatter is a block at the start of the document: YAML delimited by `---` lines, or TOML delimited by `+++` lines. Everything CompMD reads is under one key, `md`; every other key belongs to the author.
 
 ```yaml
 ---
@@ -100,7 +100,9 @@ The author's `version` is `md.doc.version`; CompMD's is `md.version` inside the 
 - Every key outside `md` is the author's, readable as `md.doc.<key>`. `md.doc` never holds CompMD's own keys.
 - CompMD adds keys only under `md`, so a later version never collides with an author's key, or with keys other tools read from the same frontmatter (`layout`, `permalink`).
 
-**YAML.** Frontmatter is YAML 1.2 with the core schema: `no` is a string and only `true` and `false` are booleans, and `2026-10-21` is a string. Tags (`!!…`), anchors and aliases (`&a`, `*a`) and duplicate keys are not allowed (F033). Processors MAY cap frontmatter size (F033). A leading byte order mark is ignored. Only `---` YAML is frontmatter; TOML (`+++`) is ordinary text. Write minor versions and other version-like values as strings: `1.10` is the number 1.1.
+**YAML.** Frontmatter between `---` lines is YAML 1.2 with the core schema: `no` is a string and only `true` and `false` are booleans, and `2026-10-21` is a string. Tags (`!!…`), anchors and aliases (`&a`, `*a`) and duplicate keys are not allowed (F033). Processors MAY cap frontmatter size (F033). A leading byte order mark is ignored. Write minor versions and other version-like values as strings: `1.10` is the number 1.1.
+
+**TOML.** Frontmatter between `+++` lines is TOML 1.1 (a TOML 1.0 document is one too), and says the same as YAML would, so a document reads the same whichever it uses: strings, integers, floats and booleans are themselves; dates, date-times and times are strings, as TOML writes them (`2026-10-21`, `1979-05-27T07:32:00Z`); an infinity or NaN, which JSON can't hold, is a string too; tables are mappings, in the order they are written; arrays of tables are lists of mappings (`[[md.data]]`). Text that isn't TOML, a duplicate key among it, is F033, and so is a frontmatter over the processor's size cap.
 
 **Metadata from a host.** A processor MAY receive a document's metadata apart from its text, for example from a host that keeps it in its own fields. Such metadata is equivalent to the same keys in frontmatter. A document whose text has its own frontmatter uses only that; there is no merging, and a processor that was also given metadata reports W115. Since metadata has no place in the text, a diagnostic about it (an unknown `md` key, an import that can't be loaded) is reported at line 1.
 
@@ -1329,7 +1331,7 @@ Every diagnostic MUST name its code, the line and column where it was detected, 
 | F030 | A param of type `input<…>` (an input component's `bind`, a host component's bound param) names an undeclared input, or an input of another type | the param's value                                                    |
 | F031 | A `from` interpolates something other than `md.input` or `md.doc`, an input a host-language component can change, or a value in a URL's scheme or host | the interpolation                                                    |
 | F032 | Closer names a container opened outside its list item or block quote                                                                   | the closer, naming the opener's line                                 |
-| F033 | Frontmatter isn't YAML 1.2 core, uses tags, anchors or aliases, repeats a key, or exceeds the processor's size cap                     | the frontmatter, at the offending position                           |
+| F033 | Frontmatter isn't YAML 1.2 core or TOML, uses tags, anchors or aliases, repeats a key, or exceeds the processor's size cap             | the frontmatter, at the offending position                           |
 | F034 | Expansion larger than the processor allows (at least 100,000 nodes, section 8.5)                                                     | the `each`, template slot or invocation that crossed the limit       |
 | F035 | Pack does not match its import's `integrity` hash                                                                                  | the `integrity` key                                                  |
 | F036 | Param list on a signature fence; ignored                                                                                            | the `{`                                                              |
@@ -1479,7 +1481,7 @@ A signature is `{params, slots, headings}`, plus `renders`, the list of its lang
 
 - **A block interpolation.** A `interpolation` alone in its paragraph replaces the paragraph and has `block: true`; it can hold block content such as a slot. Elsewhere it is inline (`block: false`).
 - **Interpolation in URLs.** Links, images and link reference definitions keep mdast's `url` as written; when the URL holds an interpolation they add `urlParts`, the same list of text and interpolation parts as a string param.
-- **Frontmatter.** The `yaml` node adds `parsed`, the frontmatter as parsed YAML, in which each data import's `from` is such a list of parts. (Not `data`: unist reserves that field for tools.) When CompMD processing doesn't apply (F001, F033), `parsed` is absent and the rest of the document is plain CommonMark and GFM.
+- **Frontmatter.** The `yaml` node, or the `toml` node for a TOML frontmatter, adds `parsed`, the frontmatter as parsed, in which each data import's `from` is such a list of parts. (Not `data`: unist reserves that field for tools.) When CompMD processing doesn't apply (F001, F033), `parsed` is absent and the rest of the document is plain CommonMark and GFM.
 - **Recovery.** A node made by a recovery rule (section 10.3) has `recovered: true`. A container closed by recovery has `autoClosed: true` and no `closePosition`. Both fields are absent otherwise.
 
 ### 12.3 The expanded tree
