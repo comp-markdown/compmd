@@ -1,5 +1,12 @@
 import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
+import type { BrowserCommand } from "vitest/node";
+
+/** The page as it prints, or as it shows (`print` or `screen`): the print styles apply, in the page and its frames. */
+const emulateMedia: BrowserCommand<[media: "print" | "screen"]> = async (context, media) => {
+  if (context.provider.name !== "playwright") throw new Error("emulateMedia needs Playwright");
+  await context.page.emulateMedia({ media });
+};
 
 export default defineConfig({
   test: {
@@ -17,6 +24,7 @@ export default defineConfig({
             enabled: true,
             headless: true,
             screenshotFailures: false,
+            commands: { emulateMedia },
             instances: [
               { browser: "chromium", provider: playwright({ launchOptions: { channel: "chrome" } }) },
               { browser: "webkit", provider: playwright() },

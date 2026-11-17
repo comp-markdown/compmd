@@ -9,7 +9,7 @@ use crate::reserved;
 use crate::resolve::names::{Binding, Builder, Level};
 use crate::resolve::{Body, Component, DocumentId};
 use crate::tree::{
-    Declaration, DeclaredType, Definition, DefinitionBody, Node, Signature, SignatureFence,
+    Declaration, DeclaredType, Definition, DefinitionBody, Node, Print, Signature, SignatureFence,
     SlotDeclaration, TypeName,
 };
 use std::collections::{HashMap, HashSet};
@@ -152,6 +152,26 @@ impl Loader<'_, '_> {
             self.check_type(id, param);
         }
         self.check_code(id, signature, at);
+        self.check_print(id, signature, compmd);
+    }
+
+    /// W122 for a `print` that is neither `drawn` nor `fallback`, or that a `compmd` definition writes (spec §7.3):
+    /// the component prints as drawn.
+    fn check_print(&mut self, id: DocumentId, signature: &Signature, compmd: bool) {
+        let Some((at, written)) = &signature.print_written else {
+            return;
+        };
+        let why = if compmd {
+            "a `compmd` definition prints its Markdown as it renders, so `print` is for host-language components"
+                .to_string()
+        } else if Print::from_name(written).is_none() {
+            format!(
+                "`print` is `drawn` or `fallback`, not `{written}`, so the component prints as drawn"
+            )
+        } else {
+            return;
+        };
+        self.report(id, Code::W122, *at, why);
     }
 
     /// F009 for a code renderer that declares `code` as anything but a required string: the block's text fills it

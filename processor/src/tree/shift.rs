@@ -186,6 +186,9 @@ impl Shift for Signature {
                 unquoted.rest_at.shift(by);
             }
         }
+        if let Some((at, _)) = &mut self.print_written {
+            at.shift(by);
+        }
     }
 }
 

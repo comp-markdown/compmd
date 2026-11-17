@@ -23,7 +23,17 @@ export type Scheme = "light" | "dark";
  * or a built module by its URL. One of a level above the frame's comes without code: the frame can't hold it, and its
  * uses show their fallbacks.
  */
-export type ComponentCode = Runnable | { name: string; level: Level | "trusted" };
+export type ComponentCode = Runnable | Named;
+
+/**
+ * A component's name and level, which every component's code has, and `print: "fallback"` when its uses print their
+ * fallback (spec §7.3, §14).
+ */
+export interface Named {
+  name: string;
+  level: Level | "trusted";
+  print?: "fallback";
+}
 
 /**
  * A component with its code. A built module the host's page holds is a `Blob`, whose bytes the frames share, with its
@@ -32,7 +42,7 @@ export type ComponentCode = Runnable | { name: string; level: Level | "trusted" 
  * export). Code given as text or a `Blob` may import
  * library packs (docs/sharing-library-packs.md), which come with it in `libraries`, by the name it imports.
  */
-export type Runnable = { name: string; level: Level | "trusted" } & (
+export type Runnable = Named & (
   | { binding: "react" | "svelte" | "plain"; code: string; css?: string; libraries?: Libraries }
   | { binding: "plain"; code: Blob; place: string; libraries?: Libraries }
   | { module: { url: string; integrity: string }; binding?: "react" | "svelte" }

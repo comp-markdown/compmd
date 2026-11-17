@@ -76,6 +76,8 @@ export interface Surface {
   wikiLink?: ((target: string) => string | undefined) | undefined;
   /** The host's own URL schemes, checked: links, wiki links and images may use them (spec §15). */
   ownSchemes: readonly string[];
+  /** Whether a component's uses print their fallback (spec §7.3, §14). */
+  printsFallback(name: string): boolean;
   /** Where images come from; without it, each loads from its `src`. */
   images?: ImageSource | undefined;
   /** The views drawn for each node with an origin. */

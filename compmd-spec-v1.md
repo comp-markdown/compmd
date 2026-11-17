@@ -559,6 +559,7 @@ params:
 - A short form's default is one param value (section 3.1), so an unquoted one ends at its first white space. Text after it is F011, reported where that text starts, with a fix that quotes the whole default (`book: string = "Klara and the Sun"`); the default is what comes before the white space.
 - `slots` lists slot names; `default` names the default slot. A component with no `slots` key takes no body: using it as a container is F018. `slots` may instead be a mapping from slot name to options, for template slots (section 7.5): `slots: {default: {each: rows, as: as}, footer: {}}`.
 - `headings` is `relative` (the default) or `absolute`: whether headings in a `compmd` definition's body are shifted to fit where it is used (section 7.2).
+- `print` is `drawn` (the default) or `fallback`, for a host-language component: what a use of it shows on paper (section 14). `fallback` is for a component that means nothing there, an interactive map or a video: each use prints its fallback (section 4.5) instead of the component. Any other value, or `print` in a `compmd` definition, whose Markdown prints as it renders, is W122, and the component prints as drawn.
 - `renders` is a language, or a list of languages that are names of one (`[mermaid, mmd]`): the component is also a code renderer for them (section 7.7). It has a required `string` param `code`, which holds the block's text, without declaring it. A signature MAY declare `code` to document it, but only as a required `string` with no default (F009 otherwise). A code renderer has no `slots`.
 - A `name` param is a bare value that must be a CEL identifier and is never evaluated: the name a template slot binds. A `name` param given an expression or anything but an identifier is F009. There is no `expression` type: any param accepts `(…)`, and its type says what the value is, not how it's written.
 - A `compmd` definition's body MAY invoke other components, including built-ins. Direct or indirect recursion is F019. A code block a code renderer renders invokes it (section 7.7), so a body that leads back to its component through such a block recurses too.
@@ -1357,6 +1358,7 @@ Every diagnostic MUST name its code, the line and column where it was detected, 
 | W119 | A box that places blocks by position has no `height`, `aspect-ratio` or `fill` at some width (section 9.2)                    | the box's opener; at the top level, the placed block                 |
 | W120 | A param for a box given to a `display=contents` component, which has none, on its fence or by an invocation; ignored (section 9.2) | the param                                                            |
 | W121 | Host-language component's code can't load: an import of something it may not import (section 7.6), a compile error, a built module that doesn't match its file, or a runtime or library its pack's `peerDependencies` name that the processor doesn't have in that range (section 6.4); fallback rendered | the invocation, or the import's `from` for `peerDependencies` |
+| W122 | A signature's `print` is neither `drawn` nor `fallback`, or is in a `compmd` definition (section 7.3); the component prints as drawn  | the value                                                            |
 
 ### 10.3 Recovery rules (lenient mode)
 
@@ -1471,7 +1473,7 @@ A param is `{key, breakpoint, kind, value, position}`:
 - Params from continuation lines join their opener's or leaf's `params`; their positions keep the line they came from.
 - A repeated param (F017) keeps only its first occurrence.
 
-A signature is `{params, slots, headings}`, plus `renders`, the list of its languages, for a code renderer, whose `params` include `code` (section 7.7): `slots` is the list of slots, or null when the signature has no `slots` key, each a slot name or, for a template slot, `{name, each, as}`; `headings` is `"relative"` or `"absolute"` (section 7.2); each param is `{name, type, optional, default, doc}`:
+A signature is `{params, slots, headings}`, plus `renders`, the list of its languages, for a code renderer, whose `params` include `code` (section 7.7), and `print: "fallback"` for a component that prints its fallback (section 7.3): `slots` is the list of slots, or null when the signature has no `slots` key, each a slot name or, for a template slot, `{name, each, as}`; `headings` is `"relative"` or `"absolute"` (section 7.2); each param is `{name, type, optional, default, doc}`:
 
 - `type` is a type name (`"string"`, `"length"`, …), `{"enum": [members]}`, or `{"input": type}` for `input<type>`.
 - `default` is null, or a param value from the short form (`{"kind": "bare", "value": "tip"}`), or `{"kind": "yaml", "value": …}` from the long form.
@@ -1579,6 +1581,8 @@ What a plain renderer shows:
 | frontmatter                     | a metadata table (GitHub), hidden (renderers that read frontmatter), or a horizontal rule and a heading (plain CommonMark) |
 
 Authors SHOULD separate component lines from surrounding paragraphs with blank lines. Otherwise CommonMark joins a component line to the paragraph above it, which can change the structure around it (two lists become one), and processors report W108 (section 3.2).
+
+**Printing** (informative). A processor that prints shows the document as it renders it, in a light colour scheme on paper unless the host says otherwise, after its components have drawn. A component whose signature says `print: fallback` (section 7.3) prints its fallback, and one the processor can't run prints its fallback, as anywhere (section 4.5).
 
 ## 15. Security
 

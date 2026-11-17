@@ -7,7 +7,7 @@ use super::{Converter, Labels};
 use crate::diagnostic::{Code, Location};
 use crate::tree::{
     Declaration, DeclaredType, DefaultValue, Definition, DefinitionBody, Headings, Node, Param,
-    Point, Position, Signature, SignatureFence, SlotDeclaration, TypeName, Unquoted,
+    Point, Position, Print, Signature, SignatureFence, SlotDeclaration, TypeName, Unquoted,
 };
 use markdown::mdast;
 use serde_json::Value;
@@ -173,12 +173,31 @@ fn signature(value: &Value, text_at: &dyn Fn(&str) -> Option<Location>) -> Signa
     if renders.is_some() && !params.iter().any(|param| param.name == CODE) {
         params.insert(0, code_declaration());
     }
+    let (print, print_written) = print(value.get("print"), || text_at("/print"));
     Signature {
         params,
         slots: slots(value.get("slots")),
         headings,
         renders,
+        print,
+        print_written,
     }
+}
+
+/// `print`: `drawn` or `fallback` (spec §7.3), any other value printing as drawn; with where it is written, from
+/// `at`, and its value as written, for W122.
+fn print(
+    value: Option<&Value>,
+    at: impl FnOnce() -> Option<Location>,
+) -> (Print, Option<(Location, String)>) {
+    let Some(value) = value else {
+        return (Print::Drawn, None);
+    };
+    let written = value
+        .as_str()
+        .map_or_else(|| value.to_string(), str::to_string);
+    let print = Print::from_name(&written).unwrap_or_default();
+    (print, at().map(|at| (at, written)))
 }
 
 /// The param a code block's text fills when a code renderer renders it (spec §7.7).

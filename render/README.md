@@ -97,6 +97,8 @@ for (const [pane, nodes] of [[left, before], [right, after]]) {
 
 **A component still drawing.** `context.busy(work)` is for a component that draws after `mount` or `update` returned: `work` is a promise of the drawing (spec §7.4). `page.drawn()` (and `region.drawn()`) resolves once the components of the last render and splice have mounted and every promise they gave `busy` has settled, fulfilled or rejected, or after `BUSY_MS` (10 s) for one that never does; a later render waits for its own. Nothing shows differently meanwhile. A frame's end tells its host the same (`drawn`, *In a frame*), which a sandbox builds its `settled` on.
 
+**Printing** ([docs/printing.md](https://github.com/comp-markdown/compmd/blob/main/docs/printing.md)). On paper the page is light, a component, a table, a code block or an image is kept whole where it fits, and a heading stays with what follows it; the page's own print styles, at no specificity, so the host's win. `page.print()` sets the page light, waits for its components to redraw (`page.drawn()`), then calls the browser's print, and puts the scheme back. `printsFallback(name)` names the components whose uses print their fallback (a host component's `print: fallback`, spec §7.3): each such use has its fallback beside its box, shown only on paper.
+
 ## Where the page came from
 
 An app that embeds the page often needs the link between what the page shows and the text that made it. An editor moves its caret to what the reader clicked, or scrolls the preview to the caret; a review tool marks the passage a comment is on. The page and a region keep it, from the tree's origins (spec §12.3: request them with `origins: true`), and give it both ways:

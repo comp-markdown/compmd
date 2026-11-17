@@ -267,6 +267,7 @@ const TRIGGERS: Record<string, Trigger> = {
     packs: { "@acme/charts": [release("@acme/charts", "2.1.0", "---\nmd:\n  export:\n    pack: \"@acme/charts\"\n    version: \"2.1.0\"\n    names: \"*\"\n---\n\n" + fence("legend"), { peerDependencies: { svelte: "^5.57" } })] },
     policy: { runtimes: [{ name: "svelte", version: "5.40.0" }] } satisfies Policy,
   },
+  W122: { text: "```compmd component=note\nprint: sideways\n---\nN.\n```\n" },
 };
 
 describe("chapter 22, the diagnostics", () => {

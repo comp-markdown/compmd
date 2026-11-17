@@ -328,6 +328,8 @@ Every use has a fallback, which the component gets as `fallback`: a leaf's or an
 
 The fallback is in a document's hands, so don't rely on it for anything but text.
 
+A component that means nothing on paper, an interactive map or a video, can print its fallback instead: `print: fallback` in its signature fence. On screen it draws itself; printed, each use shows its fallback, a container's slots as Markdown, so tabs print every tab. Leave it out, or write `print: drawn`, for a component that prints as it draws; any other value is W122.
+
 ## How a use is checked
 
 Hosts validate every use against its component's signature after resolving the document's imports and before loading data or running code (spec [§5.3](https://compmd.dev/spec/#53-validation)). Each diagnostic points at the param, not the whole line, and the document still renders:

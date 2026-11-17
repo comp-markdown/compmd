@@ -125,6 +125,8 @@ named! {
         /// processor reports; an import it may not make, a compile error or a module that doesn't match its file,
         /// which a renderer reports (stage 5).
         W121 = "W121",
+        /// A signature's `print` that is neither `drawn` nor `fallback`.
+        W122 = "W122",
     }
 }
 

@@ -77,7 +77,7 @@ function timed(name: string, mount: Mount, observer: Observer): Mount {
  * level of the rest, so it never holds code it can't run.
  */
 export function codeFor(components: readonly ComponentCode[], level: Level): ComponentCode[] {
-  return components.map((component) => (RANK[component.level] <= RANK[level] ? component : { name: component.name, level: component.level }));
+  return components.map((component) => (RANK[component.level] <= RANK[level] ? component : { name: component.name, level: component.level, ...(component.print ? { print: component.print } : {}) }));
 }
 
 /** Why a component of `level` can't be in a part rendered `here`. */

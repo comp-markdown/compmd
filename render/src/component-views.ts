@@ -7,6 +7,7 @@ import { plainText } from "./document.ts";
 import { withHtml } from "./html.ts";
 import { CodeBlockView } from "./markdown-views.ts";
 import { nodesMountOf, runnable } from "./nodes.ts";
+import { PaperFallback } from "./paper.ts";
 import { createView, destroyAll, Matcher, patch, shapeOf, type Pass, type Surface, type View } from "./render.ts";
 import { fills, layoutOf, ownParams, usesBreakpoints, type ParentLayout } from "./styles.ts";
 import { contentOf, isComponent, rendererOf, textOf, type ExpandedCode, type ExpandedComponent, type ExpandedInstance, type ExpandedNode, type MarkdownNode } from "./tree.ts";
@@ -259,6 +260,8 @@ export class ComponentView implements View {
   #inputs: Pass["inputs"];
   /** Whether the component renders its slots itself, from their nodes (`rendersSlots`). */
   readonly #ownSlots: boolean;
+  /** Its fallback for paper, beside its box, when its component prints its fallback (spec §7.3, §14). */
+  readonly #paper: PaperFallback | undefined;
 
   constructor(surface: Surface, node: ExpandedComponent, pass: Pass, key: string | undefined) {
     this.#surface = surface;
@@ -291,16 +294,21 @@ export class ComponentView implements View {
       later,
     });
     followScheme(surface, this.#handle, mount);
+    if (surface.printsFallback(node.name)) {
+      this.#paper = new PaperFallback(surface, this.#handle.element, node.type === "componentInline");
+      this.#paper.render(this.#failedContent(node), pass);
+    }
   }
 
   get dom(): Node {
-    return this.#handle.element;
+    return this.#paper?.element ?? this.#handle.element;
   }
 
   update(node: ExpandedNode, pass: Pass): void {
     const next = node as ExpandedComponent;
     this.#node = next;
     this.#inputs = pass.inputs;
+    this.#paper?.render(this.#failedContent(next), pass);
     if (this.#handle.failed) {
       this.#handle.update(next, { slots: {}, parent: pass.parent });
       const into = next.fallback ? this.#fallbackElement : this.#handle.element;
@@ -316,6 +324,7 @@ export class ComponentView implements View {
     this.#handle.destroy();
     for (const slot of this.#slots.values()) for (const item of itemsOf(slot)) this.#destroyItem(item);
     destroyAll(this.#fallback);
+    this.#paper?.destroy();
   }
 
   /** The fallback the component receives: a leaf's rendered, or a container's content as plain text. */

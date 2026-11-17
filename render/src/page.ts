@@ -7,6 +7,7 @@ import { diff, editOf, type Edit } from "./keys.ts";
 import { Layout } from "./layout.ts";
 import { linesIn, type Line } from "./lines.ts";
 import { surfaceOf, type SurfaceOptions } from "./region.ts";
+import { printLight } from "./print.ts";
 import { Schemes } from "./scheme.ts";
 import { elementsIn, sourceIn, type Source } from "./source.ts";
 import { breaksDocument, errorsOf, type Change } from "./stable.ts";
@@ -95,6 +96,14 @@ export interface Page {
    * await page.drawn();   // a diagram that draws asynchronously has drawn
    */
   drawn(): Promise<void>;
+  /**
+   * Prints the page as paper shows it (docs/printing.md): in the light scheme, once its components have redrawn for
+   * it and settled, then the browser's print. A reader's own ⌘P prints at once, without waiting.
+   *
+   * @example
+   * printButton.onclick = () => page.print();
+   */
+  print(): Promise<void>;
 }
 
 /**
@@ -158,6 +167,7 @@ export function createPage(root: HTMLElement, options: PageOptions = {}): Page {
     lines: (from) => linesIn(blocks.placed(), root, from),
     // Mounts run in the render itself, so what is left is what the components said they were drawing.
     drawn: () => surface.busy.idle(),
+    print: () => printLight(root, schemes, () => surface.busy.idle()),
     destroy() {
       layout?.destroy();
       schemes.destroy();

@@ -26,7 +26,7 @@ use crate::parse::{Parsed, Spliced};
 use crate::policy::{Policy, Trust};
 use crate::reserved::Keyword;
 use crate::settings::Settings;
-use crate::tree::{Move, Node, Param, Point, Position, Root, Shift, Signature};
+use crate::tree::{Move, Node, Param, Point, Position, Print, Root, Shift, Signature};
 use compmd_pack::{Integrity, PackName, Place};
 use serde::Serialize;
 use std::collections::{BTreeMap, HashMap, HashSet};
@@ -221,6 +221,9 @@ pub struct HostComponent {
     /// imports, with the module chosen for the document (the companion, section 5); empty for any other.
     #[serde(skip_serializing_if = "BTreeMap::is_empty")]
     pub libraries: BTreeMap<String, LibraryModule>,
+    /// What its uses show on paper, from its signature (spec §7.3); in JSON only when it is their fallback.
+    #[serde(skip_serializing_if = "Print::is_drawn")]
+    pub print: Print,
 }
 
 /// A library pack's module, chosen for a document, and the libraries it imports in turn, by name. In JSON its place
@@ -304,6 +307,10 @@ impl Component {
             place,
             trust,
             libraries,
+            print: self
+                .signature
+                .as_ref()
+                .map_or(Print::Drawn, |signature| signature.print),
         })
     }
 

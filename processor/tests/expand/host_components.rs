@@ -5,6 +5,7 @@ use super::*;
 use crate::common;
 use compmd::policy::{Policy, Trust};
 use compmd::processor::Module;
+use compmd::tree::Print;
 use serde_json::json;
 
 #[test]
@@ -142,6 +143,32 @@ fn host_components_leave_out_what_no_binding_runs() {
         .map(|c| (c.name, c.language))
         .collect();
     assert_eq!(names, [("c".into(), Language::Svelte)]);
+}
+
+#[test]
+fn host_components_say_when_their_uses_print_their_fallback() {
+    let input = "```js component=map\nexport default () => {};\n```\n\n```compmd component=map signature\nprint: fallback\n```\n\n```js component=chart\nexport default () => {};\n```\n\n```compmd component=chart signature\nprint: drawn\n```\n";
+    let rendered = Processor::new("input.comp.md", input)
+        .parse(&ParseOptions::default())
+        .resolve((), (), &Ambient::default())
+        .validate(&[])
+        .load(context(), (), ())
+        .expand(&expand::Options::default());
+    let printing: Vec<(String, Print)> = rendered
+        .host_components()
+        .into_iter()
+        .map(|c| (c.name, c.print))
+        .collect();
+    assert_eq!(
+        printing,
+        [
+            ("chart".into(), Print::Drawn),
+            ("map".into(), Print::Fallback)
+        ]
+    );
+    let json = serde_json::to_value(rendered.host_components()).expect("JSON");
+    assert!(json[0].get("print").is_none(), "drawn is left out");
+    assert_eq!(json[1]["print"], json!("fallback"));
 }
 
 #[test]

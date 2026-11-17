@@ -1,0 +1,23 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentSignature",
+      "name": "map",
+      "signature": {
+        "params": [
+          {
+            "name": "place",
+            "type": "string",
+            "optional": false,
+            "default": null,
+            "doc": null
+          }
+        ],
+        "slots": null,
+        "headings": "relative",
+        "print": "fallback"
+      }
+    }
+  ]
+}

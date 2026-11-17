@@ -205,6 +205,10 @@
           "type": "array",
           "minItems": 1,
           "items": { "type": "string" }
+        },
+        "print": {
+          "description": "`fallback` when each use prints its fallback (§7.3, §14); absent when it prints as drawn.",
+          "const": "fallback"
         }
       },
       "additionalProperties": false

@@ -183,6 +183,10 @@ export function ownParams(params: readonly ExpandedParam[]): Record<string, unkn
  * Rules every document needs once: the boxes the renderer makes, the containers breakpoints query, and the look of
  * what Markdown has no CSS for. A box's padding is its own: the margins of its first and last child are trimmed, as
  * `margin-trim: block` would, at the specificity of `:first-child`, so a host's own rules still win.
+ *
+ * On paper (docs/printing.md): the page is light, a component that prints its fallback shows it instead of itself, a
+ * component, a table, a code block or an image is kept whole where it fits, and a heading stays with what follows it;
+ * all at no specificity, so a host's print styles win.
  */
 const BASE_RULES = `
 .compmd-page { container-type: inline-size; position: relative; }
@@ -204,6 +208,16 @@ const BASE_RULES = `
 .compmd-align-left { text-align: start; }
 .compmd-align-center { text-align: center; }
 .compmd-align-right { text-align: end; }
+.compmd-print-wrap { display: contents; }
+.compmd-print-paper { display: none; }
+@media print {
+  :where(.compmd-page) { color-scheme: light; }
+  .compmd-print-wrap > .compmd-component { display: none !important; }
+  div.compmd-print-paper { display: block; }
+  span.compmd-print-paper { display: inline; }
+  :where(.compmd-page) :where(.compmd-component, .compmd-box, table, pre, img, figure) { break-inside: avoid; }
+  :where(.compmd-page) :where(h1, h2, h3, h4, h5, h6) { break-after: avoid; }
+}
 `;
 
 const declarationsText = (declarations: Declarations) => Object.entries(declarations).map(([property, value]) => `${property}: ${value};`).join(" ");

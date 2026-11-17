@@ -81,6 +81,10 @@ const messageOf = (error: unknown): string => (error instanceof Error ? error.me
  */
 export const frameUrl = (base: string, name: "strict.html" | "permissive.html" | "highlight.js" | "math.js"): string => new URL(name, new URL(base, location.href)).href;
 
+/** `code` with its component's `print`, which the frames read to print its uses' fallbacks (spec §7.3). */
+const withPrint = (code: ComponentCode | undefined, component: HostComponent): ComponentCode | undefined =>
+  code && component.print === "fallback" ? { ...code, print: "fallback" } : code;
+
 /** A level as a frame has it; a trusted component never runs in one. */
 const levelOf = (trust: Trust): Level | "trusted" => trust.level;
 
@@ -108,6 +112,8 @@ export class HostRuntime {
   readonly #frameEvents = new Set<(event: string, data: unknown) => void>();
   /** The host's own URL schemes, checked. */
   readonly schemes: readonly string[];
+  /** The components whose uses print their fallback, as `set` last gave them. */
+  #printing = new Set<string>();
 
   /** @throws Error when `options.ownSchemes` names something that isn't a scheme, or one a host can't name. */
   constructor(options: HostRuntimeOptions, events: HostEvents) {
@@ -155,10 +161,16 @@ export class HostRuntime {
   /** The document's components are now `components`: resolves once each is compiled, or has failed. */
   async set(components: readonly HostComponent[]): Promise<void> {
     this.#trust = new Map(components.map((component) => [component.name, component.trust]));
-    const code = await Promise.all(components.map((component) => this.#codeOf(component)));
+    this.#printing = new Set(components.filter((component) => component.print === "fallback").map((component) => component.name));
+    const code = await Promise.all(components.map(async (component) => withPrint(await this.#codeOf(component), component)));
     // A component whose code didn't compile or has no URL is left out: its uses show their fallbacks, as missing.
     this.#code = code.filter((component) => component !== undefined);
     this.#mounts.set(this.#code);
+  }
+
+  /** Whether the uses of the component `name` print their fallback (its signature's `print`, spec §7.3). */
+  printsFallback(name: string): boolean {
+    return this.#printing.has(name);
   }
 
   /**
@@ -178,6 +190,7 @@ export class HostRuntime {
         this.#events.recovered?.(component, use);
       },
       ownSchemes: this.schemes,
+      printsFallback: (name) => this.printsFallback(name),
       ...(this.#local ? { host: this.#local.client } : {}),
     });
     region.render([node], { inputs: { ...inputs } });

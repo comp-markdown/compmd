@@ -55,6 +55,7 @@ export function hostPage(container: HTMLElement, runtime: HostRuntime, options: 
     math: framesMath(options.base),
     highlight: framesHighlight(options.base),
     ownSchemes: runtime.schemes,
+    printsFallback: (name) => runtime.printsFallback(name),
     // Images of the host's own schemes from the host's files; every other image loads from its `src`, as this page's do.
     ...(options.ownImages ? { images: hostImages(runtime.schemes, options.ownImages) } : {}),
     // The trusted components in this page get `host` as the runtime gives it; framed ones get theirs from their frame.

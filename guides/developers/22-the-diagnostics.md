@@ -72,6 +72,7 @@ The imports, packs and names. What a pack's files cause is reported in the pack'
 | W113 | warning | a name from an ambient pack is used, when the host asks for it (`reportAmbient`); for a `host:` data source, found when loading | host | nothing: it tells a writer the document isn't portable |
 | W117 | warning | an exported host-language component without `runtime=` | pack author | `runtime=react@19` or `svelte@5` on its fence |
 | W121 | warning | a pack's `peerDependencies` names a runtime or library the host doesn't have in that range, or a library pack that can't be had (see also rendering, below) | pack author, host | the host offering it, a pack range it meets, or the library pack published |
+| W122 | warning | a signature's `print` is neither `drawn` nor `fallback`, or is in a `compmd` definition; the component prints as drawn | pack author | `print: fallback` or `print: drawn` on a host-language component's signature fence |
 
 ## Stage 3, `validate`
 

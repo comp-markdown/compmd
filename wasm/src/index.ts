@@ -411,6 +411,8 @@ export interface HostComponent {
    * each with the module chosen for the document; absent when there are none.
    */
   libraries?: Record<string, LibraryModule>;
+  /** `fallback` when its signature says each use prints its fallback (spec §7.3, §14); absent when it prints as drawn. */
+  print?: "fallback";
 }
 
 /** A library pack's module chosen for a document, and the libraries it imports in turn, by name. */

@@ -5,6 +5,7 @@
 
 mod components;
 mod definitions;
+mod print;
 mod shift;
 
 pub use components::{Container, Interpolation, Leaf, Param, ParamValue, Slot, StringPart};
@@ -13,6 +14,7 @@ pub use definitions::{
     Declaration, DeclaredType, DefaultValue, Definition, DefinitionBody, Headings, Signature,
     SignatureFence, SlotDeclaration, TypeName,
 };
+pub use print::Print;
 pub(crate) use shift::{Move, Moved, Shift};
 
 use crate::diagnostic::{Diagnostic, Location};

@@ -272,8 +272,11 @@ function start(port: MessagePort): void {
   /** What the frame renders: one use (`part`), or the page (frame mode). */
   let region: Region | undefined;
   let page: Page | undefined;
+  /** Whether a component's uses print their fallback, as the code the parent sent says (spec §7.3, §14). */
+  const printsFallback = (name: string) => components.some((component) => component.name === name && component.print === "fallback");
   const regionFor = (target: HTMLElement): Region =>
     createRegion(target, {
+      printsFallback,
       components: mounts.mounts,
       math,
       highlight,
@@ -297,7 +300,7 @@ function start(port: MessagePort): void {
       schemes = given;
       // A page frame (frame mode) renders the page through `@compmd/render`'s protocol, on the same port.
       const container = document.getElementById("page");
-      if (container) page = serveFrame(recordingFallbacks(port, observer), { container, components: mounts.mounts, math, highlight, images: imagesFrom(parent), onLayout: moved, ownSchemes: schemes }).page;
+      if (container) page = serveFrame(recordingFallbacks(port, observer), { container, components: mounts.mounts, math, highlight, images: imagesFrom(parent), onLayout: moved, ownSchemes: schemes, printsFallback }).page;
     },
     code: async (next) => {
       components = next;

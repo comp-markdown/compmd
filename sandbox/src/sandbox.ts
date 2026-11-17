@@ -11,6 +11,7 @@ import { HostRuntime, type HostRuntimeOptions, type ModuleSource } from "./host/
 import { Log, reportedBy, type Observation, type ObservedEvent } from "./observation.ts";
 import { Observer } from "./observer.ts";
 import { errorEvent, framePage, hostPage } from "./pages.ts";
+import { printLight } from "./print.ts";
 import type { ErrorReason, SandboxDiagnostic, Scheme } from "./protocol/messages.ts";
 import { Settling } from "./settling.ts";
 
@@ -139,6 +140,15 @@ export interface View {
    * await view.settled();   // safe to click, print, or scroll to a link's target
    */
   settled(): Promise<void>;
+  /**
+   * Prints the page as paper shows it (docs/printing.md): in the light scheme, once the page and every frame have
+   * redrawn for it and the view has settled, then the browser's print; the scheme is put back after. A reader's own
+   * ⌘P prints at once, without waiting.
+   *
+   * @example
+   * printButton.onclick = () => view.print();
+   */
+  print(): Promise<void>;
   /**
    * Listens for `type`; a listener added as soon as `open` returns hears everything, opening's errors too. The first
    * listener for `pointed` asks the page to report clicks.
@@ -311,6 +321,16 @@ export function createSandbox(given: SandboxOptions): Sandbox {
           yield* page.lines(from);
         },
         settled: () => settling.whenSettled(),
+        print: () =>
+          printLight(
+            container,
+            () => {
+              changed();
+              followScheme();
+              page.reread();
+            },
+            () => settling.whenSettled(),
+          ),
         on: (type, listener) => {
           if (type === "pointed" && listeners.pointed.length === 0) page.point();
           listeners[type].push(listener);

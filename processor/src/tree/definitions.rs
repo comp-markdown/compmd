@@ -1,7 +1,7 @@
 //! Component definitions and their signatures in a document (spec §7, §12.1): the fences, the declared params and
 //! slots, and their types.
 
-use super::{Node, Param, ParamValue, Position};
+use super::{Node, Param, ParamValue, Position, Print};
 use crate::diagnostic::Location;
 use crate::named::named;
 use serde::ser::SerializeMap;
@@ -71,6 +71,13 @@ pub struct Signature {
     /// `params` then include `code`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub renders: Option<Vec<String>>,
+    /// What a use shows on paper (spec §7.3, §14); in JSON only when it is its fallback.
+    #[serde(skip_serializing_if = "Print::is_drawn")]
+    pub print: Print,
+    /// Where `print` is written, and its value as written, when the signature has it: W122 when that is neither
+    /// `drawn` nor `fallback`, or when the signature is a `compmd` definition's.
+    #[serde(skip)]
+    pub(crate) print_written: Option<(Location, String)>,
 }
 
 /// A slot of a signature.

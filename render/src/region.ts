@@ -48,6 +48,11 @@ export interface SurfaceOptions {
    * `javascript`, `vbscript`, `data`, `blob` and `file` can never be named.
    */
   ownSchemes?: readonly string[];
+  /**
+   * Whether the component `name`'s uses print their fallback (a host component's `print`, spec §7.3): on paper each
+   * shows its fallback (spec §4.5) instead of itself; on screen, itself. Asked as each use is drawn.
+   */
+  printsFallback?(name: string): boolean;
   /** Where images come from, for a page that can't load them itself; without it, each loads from its `src`. */
   images?: ImageSource;
   /**
@@ -118,6 +123,7 @@ export function surfaceOf(document: Document, stylesheet: Stylesheet, schemes: S
     highlight: options.highlight,
     wikiLink: options.wikiLink?.bind(options),
     ownSchemes: ownSchemes(options.ownSchemes ?? []),
+    printsFallback: options.printsFallback?.bind(options) ?? (() => false),
     images: options.images,
     drawn: new Drawn(),
     busy: new Busy(),
