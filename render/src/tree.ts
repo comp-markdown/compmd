@@ -80,8 +80,12 @@ export interface ExpandedCode extends MarkdownNode {
   value: string;
   component?: { name: string; params: ExpandedParam[] };
   alt?: string;
-  /** What a rendered block shows (spec §7.7); a `source` block has no `component`. */
+  /** What a rendered block or an example shows (spec §7.7, §7.8); a `source` block has no `component`. */
   render?: "output" | "source" | "both";
+  /** An example's box params (spec §7.8). */
+  params?: ExpandedParam[];
+  /** An example's expanded root (spec §7.8, §12.3). */
+  document?: ExpandedRoot;
 }
 
 /**
@@ -109,6 +113,8 @@ export interface ExpandedRoot {
   type: "root";
   children: ExpandedNode[];
   inputs?: Record<string, ExpandedInput>;
+  /** An example's number among the document's examples (spec §7.8), which its components are found by. */
+  example?: number;
 }
 
 /** An edit in code points (spec §10.5): the text's `start..end` became `text`. */

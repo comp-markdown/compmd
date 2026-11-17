@@ -20,8 +20,15 @@ import type { ExpandedInput, ExpandedNode } from "./tree.ts";
 export interface SurfaceOptions {
   /** Host-language components by name: a plain component's default export, or what `react()` or `svelte()` made. */
   components?: Record<string, Mount>;
+  /**
+   * Each example's host-language components (spec §7.8), by its number, then by name: the components an example's
+   * nodes name are its own, never the document's.
+   */
+  examples?: Record<number, Record<string, Mount>>;
   /** A component or an input component changed an input; the caller processes the document again with it. */
   onSet?(input: string, value: unknown): void;
+  /** A component or an input component in example `example` changed one of its inputs (spec §7.8). */
+  onSetExample?(example: number, input: string, value: unknown): void;
   /**
    * A component shows its fallback: it isn't in `components`, or it threw (W118). Or a region's breakpoints have no
    * container to follow (`no-container`), reported once.
@@ -125,7 +132,9 @@ export function surfaceOf(document: Document, stylesheet: Stylesheet, schemes: S
     pending: new PendingMounts(),
     schemes,
     components: options.components ?? {},
+    examples: options.examples ?? {},
     onSet: (input, value) => options.onSet?.(input, value),
+    onSetExample: (example, input, value) => options.onSetExample?.(example, input, value),
     ...(options.onError ? { onError: (error: ComponentError) => options.onError?.(error) } : {}),
     ...(options.onRecovered ? { onRecovered: (recovered: ComponentRecovered) => options.onRecovered?.(recovered) } : {}),
     ...(options.host === undefined ? {} : { host: options.host }),

@@ -6,6 +6,7 @@ import type { Busy } from "./busy.ts";
 import { BoxView, ComponentView, INPUTS, InputView, RenderedCodeView } from "./component-views.ts";
 import type { ComponentError, ComponentRecovered, Mount } from "./contract.ts";
 import type { LinkDefinition } from "./document.ts";
+import { ExampleView } from "./example-view.ts";
 import { withHtml } from "./html.ts";
 import type { ImageSource } from "./images.ts";
 import { CallbackView, CodeBlockView, ElementView, ImageView, isImage, textView } from "./markdown-views.ts";
@@ -13,7 +14,7 @@ import type { RefusedImages } from "./refused-images.ts";
 import type { Schemes } from "./scheme.ts";
 import type { Drawn } from "./source.ts";
 import type { ParentLayout, Stylesheet } from "./styles.ts";
-import { isComponent, rendererOf, textOf, type ExpandedInput, type ExpandedNode } from "./tree.ts";
+import { isComponent, rendererOf, textOf, type ExpandedCode, type ExpandedInput, type ExpandedNode } from "./tree.ts";
 
 /** Renders a fenced code block of one language, such as a Mermaid diagram, into `target`. */
 export type CodeRenderer = (source: string, target: HTMLElement) => void;
@@ -65,7 +66,11 @@ export interface Surface {
   /** The colour scheme components are shown in, which the components it gives follow. */
   schemes: Schemes;
   components: Readonly<Record<string, Mount>>;
+  /** Each example's host-language components, by its number (spec §7.8). */
+  examples: Readonly<Record<number, Readonly<Record<string, Mount>>>>;
   onSet: (input: string, value: unknown) => void;
+  /** An input of example `example` changed (spec §7.8). */
+  onSetExample: (example: number, input: string, value: unknown) => void;
   onError?: ((error: ComponentError) => void) | undefined;
   onRecovered?: ((recovered: ComponentRecovered) => void) | undefined;
   host?: unknown;
@@ -121,6 +126,8 @@ export function shapeOf(node: ExpandedNode): string {
   if (type === "heading") return `heading:${textOf(node.depth)}`;
   if (type === "list") return `list:${String(node.ordered === true)}`;
   if (type === "code") {
+    const { document, render } = node as ExpandedCode;
+    if (document) return `example:${textOf(document.example)}:${textOf(render)}`;
     const renderer = rendererOf(node);
     if (!renderer) return `code:${textOf(node.lang)}`;
     return `code:${textOf(node.lang)}:${renderer.name}${node.render === "both" ? ":both" : ""}`;
@@ -227,6 +234,7 @@ export function createView(surface: Surface, node: ExpandedNode, pass: Pass): Vi
   }
   if (node.type === "text") return textView(surface, node, key);
   if (surface.images && isImage(node)) return new ImageView(surface, surface.images, node, pass, key);
+  if (node.type === "code" && (node as ExpandedCode).document) return new ExampleView(surface, node, pass, key);
   const renderer = rendererOf(node);
   if (renderer) return new RenderedCodeView(surface, node, renderer, pass, key);
   if ((node.type === "code" && typeof node.lang === "string" && surface.code[node.lang]) || ((node.type === "math" || node.type === "inlineMath") && surface.math)) {
