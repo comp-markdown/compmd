@@ -15,6 +15,10 @@ repository.workspace = true
 # adapter that only serves (the Tauri plugin) doesn't build the processor.
 processor = ["dep:compmd"]
 
+# docs.rs documents `HostPacks` too, which the crate's docs link to.
+[package.metadata.docs.rs]
+all-features = true
+
 [dependencies]
 compmd = { path = "../processor", version = "0.7.1", optional = true }
 # The names packs and their files are known by, as the processor has them.

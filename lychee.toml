@@ -1,0 +1,34 @@
+# lychee, the link checker: `cargo make links` checks the published packages' READMEs and doc sources offline, CI's
+# `links` job the same with the network, on every push to `main` (docs/ci.md, decision 14).
+
+# Check the `#anchors` too: a link to a section that was renamed is as broken as one to a missing file.
+include_fragments = "anchor-only"
+# Only the web and files: the sources' own schemes (`compmd://`, `app://`) are examples, not links.
+scheme = ["https", "http", "file"]
+max_concurrency = 16
+max_retries = 3
+timeout = 20
+# A site that limits a checker's rate answers 429; the link itself is there.
+accept = ["200..=299", "429"]
+no_progress = true
+# The READMEs, and the Rust and TypeScript sources the API docs come from.
+extensions = ["md", "rs", "ts"]
+
+# The examples' local servers, which are not links.
+exclude_loopback = true
+
+exclude = [
+  # The placeholder hosts of the sources' examples, which are not links.
+  '^https?://(host|a\.org)(/|$)',
+  # npm's site answers a checker 403 for every page.
+  '^https://www\.npmjs\.com/',
+]
+
+# What is built or installed, never written; and the tests, whose addresses are made up.
+exclude_path = [
+  'node_modules',
+  '(^|/)target/',
+  '(^|/)dist/',
+  '(^|/)\.out/',
+  '\.test\.ts$',
+]

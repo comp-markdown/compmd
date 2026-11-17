@@ -1,6 +1,6 @@
 # tauri-plugin-compmd
 
-Shows CompMD documents in a [Tauri](https://tauri.app) app. It is the Tauri adapter of CompMD's hosting: what every host does (the configuration, the bundle, the pack store, the serving contract) is shared, in `@compmd/vite` and `compmd-host`, and the plugin does what only Tauri can. It embeds the bundle in the app, serves it on a scheme of its own, gives the page the origin, and keeps the packs the app fetches in its data folder. The design, and why each rule is there, is [docs/tauri-plugin.md](../docs/tauri-plugin.md), on [docs/hosting.md](../docs/hosting.md).
+Shows CompMD documents in a [Tauri](https://tauri.app) app. It is the Tauri adapter of CompMD's hosting: what every host does (the configuration, the bundle, the pack store, the serving contract) is shared, in `@compmd/vite` and `compmd-host`, and the plugin does what only Tauri can. It embeds the bundle in the app, serves it on a scheme of its own, gives the page the origin, and keeps the packs the app fetches in its data folder. The design, and why each rule is there, is [docs/tauri-plugin.md](https://github.com/comp-markdown/compmd/blob/main/docs/tauri-plugin.md), on [docs/hosting.md](https://github.com/comp-markdown/compmd/blob/main/docs/hosting.md).
 
 It shares its version with the `@compmd` packages: use `@compmd/vite` and `@compmd/sandbox` of the same version.
 
@@ -70,7 +70,7 @@ import { cspFor } from "@compmd/vite/config";
 cspFor("compmd://localhost"); cspFor("http://compmd.localhost"); // Windows and Android
 ```
 
-**Keeping frames from the app's commands:** a frame's code can't call a command, since Tauri gives its invoke key to the app's own page only. A capability doesn't do it: Tauri counts a page on a scheme the app registers as one of its own. Declare the app's commands (`tauri_build::AppManifest`) and grant them in the capability, as the example app does. On WebKit (macOS, Linux) a frame has Tauri's `ipc` message handler, which WebKit gives every frame and no content security policy governs: Tauri drops a message without the key, which the example's check shows by posting one ([the research](../docs/tauri-plugin.md#appendix-webkits-ipc-handler-in-a-frame)). The plugin needs Tauri 2.11.1 or later, which has the fix for [GHSA-7gmj-67g7-phm9](https://github.com/tauri-apps/tauri/security/advisories/GHSA-7gmj-67g7-phm9).
+**Keeping frames from the app's commands:** a frame's code can't call a command, since Tauri gives its invoke key to the app's own page only. A capability doesn't do it: Tauri counts a page on a scheme the app registers as one of its own. Declare the app's commands (`tauri_build::AppManifest`) and grant them in the capability, as the example app does. On WebKit (macOS, Linux) a frame has Tauri's `ipc` message handler, which WebKit gives every frame and no content security policy governs: Tauri drops a message without the key, which the example's check shows by posting one ([the research](https://github.com/comp-markdown/compmd/blob/main/docs/tauri-plugin.md#appendix-webkits-ipc-handler-in-a-frame)). The plugin needs Tauri 2.11.1 or later, which has the fix for [GHSA-7gmj-67g7-phm9](https://github.com/tauri-apps/tauri/security/advisories/GHSA-7gmj-67g7-phm9).
 
 ## Building it from this repository
 

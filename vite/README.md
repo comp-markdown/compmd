@@ -5,7 +5,7 @@
 
 # @compmd/vite
 
-A Vite plugin that gives a web app's CompMD documents their components with one line of configuration. It reads `compmd.config.json`, gives the processor every pack the app installs, serves the sandbox's frame documents and the packs' built modules from the app's own origin, and builds the app's own trusted components with the app. The design is [docs/vite.md](../docs/vite.md).
+A Vite plugin that gives a web app's CompMD documents their components with one line of configuration. It reads `compmd.config.json`, gives the processor every pack the app installs, serves the sandbox's frame documents and the packs' built modules from the app's own origin, and builds the app's own trusted components with the app. The design is [docs/vite.md](https://github.com/comp-markdown/compmd/blob/main/docs/vite.md).
 
 **Website:** [compmd.dev](https://compmd.dev/), with the spec and a playground to try CompMD in.
 
@@ -17,7 +17,7 @@ It implements the draft of the [CompMD specification](https://compmd.dev/spec/),
 
 **Versions:**
 - **0.7.1:** the same as 0.7.0; its homepage and links name the website's new address, [compmd.dev](https://compmd.dev/).
-- **0.7.0:** the bundle ([hosting](../docs/hosting.md)): the frames under a hash of their files, `frames/<hash>/`, each pack's files by its place with its source components compiled ahead, and `manifest.json`; `out` and `source` for a desktop app's adapter; `buildBundle` for a host without Vite; `cspFor`; a `_headers` file; every file served with the serving contract's headers; `virtual:compmd`'s paths relative to the bundle's origin. Breaking: the frames move from `compmd/strict.html` to `compmd/frames/<hash>/`, and `virtual:compmd`'s `sandbox` gives `frames` and an `origin`, no longer a `base`. An app that uses `virtual:compmd` and `cspFor` changes nothing; one that wrote `compmd/` paths into its own policy or server rules updates them.
+- **0.7.0:** the bundle ([hosting](https://github.com/comp-markdown/compmd/blob/main/docs/hosting.md)): the frames under a hash of their files, `frames/<hash>/`, each pack's files by its place with its source components compiled ahead, and `manifest.json`; `out` and `source` for a desktop app's adapter; `buildBundle` for a host without Vite; `cspFor`; a `_headers` file; every file served with the serving contract's headers; `virtual:compmd`'s paths relative to the bundle's origin. Breaking: the frames move from `compmd/strict.html` to `compmd/frames/<hash>/`, and `virtual:compmd`'s `sandbox` gives `frames` and an `origin`, no longer a `base`. An app that uses `virtual:compmd` and `cspFor` changes nothing; one that wrote `compmd/` paths into its own policy or server rules updates them.
 
 ## Commands
 
@@ -119,7 +119,7 @@ Listed as `trusted`, its components are compiled by the app's own build, with it
 
 ## What it serves
 
-The plugin writes the bundle ([hosting](../docs/hosting.md), decision 3), which a web app serves under its base, in `compmd/` (the `folder` option changes it):
+The plugin writes the bundle ([hosting](https://github.com/comp-markdown/compmd/blob/main/docs/hosting.md), decision 3), which a web app serves under its base, in `compmd/` (the `folder` option changes it):
 
 - `frames/<hash>/`, the sandbox's frame documents and their files (`buildFrames`), with the libraries the configuration offers, under a hash of their files: a new build is a new path, so no cache serves an old frame;
 - `packs/<name>@<version>/<path>`, each installed and folder pack's files, as published (a denied pack's none); the frames load its built modules checked against the hash `sandbox.modules` gives;
@@ -145,7 +145,7 @@ Installed packs come from `node_modules`. Each one's `integrity` comes from the 
 
 ## Packs from a registry
 
-With `registries`, a document may import a pack the app doesn't install. The app installs `@compmd/registry` too, and resolves the document's packs before processing it ([docs/vite.md](../docs/vite.md#packs-from-a-registry)):
+With `registries`, a document may import a pack the app doesn't install. The app installs `@compmd/registry` too, and resolves the document's packs before processing it ([docs/vite.md](https://github.com/comp-markdown/compmd/blob/main/docs/vite.md#packs-from-a-registry)):
 
 ```ts
 import { defaultCache, resolvePacks } from "@compmd/registry";
@@ -164,9 +164,9 @@ const view = createSandbox({ ...sandbox, page: "host", modules: (place) => resol
 
 ## The example
 
-[`example/`](example) is an app with its own `stars` as a trusted folder pack, a strict pack with a built module installed as a dependency, and a pack its configuration denies. `pnpm --dir example dev` runs it; the tests build it and drive it in Chrome and WebKit. It renders in host mode, and with `?page=frame` in one strict frame.
+[`example/`](https://github.com/comp-markdown/compmd/tree/main/vite/example) is an app with its own `stars` as a trusted folder pack, a strict pack with a built module installed as a dependency, and a pack its configuration denies. `pnpm --dir example dev` runs it; the tests build it and drive it in Chrome and WebKit. It renders in host mode, and with `?page=frame` in one strict frame.
 
-On the dev server it opens the [Developer Tools' inspector](../devtools/README.md#the-inspector) under its page, on its view: a build leaves it out, since it is imported only in the dev server's mode. Its config lists `@compmd/devtools` in `optimizeDeps.exclude`, so Vite builds the inspector's workers. The tests check the inspector on the dev server, in Chrome and WebKit, in both page modes.
+On the dev server it opens the [Developer Tools' inspector](https://github.com/comp-markdown/compmd/blob/main/devtools/README.md#the-inspector) under its page, on its view: a build leaves it out, since it is imported only in the dev server's mode. Its config lists `@compmd/devtools` in `optimizeDeps.exclude`, so Vite builds the inspector's workers. The tests check the inspector on the dev server, in Chrome and WebKit, in both page modes.
 
 ## License
 

@@ -28,6 +28,25 @@ clear = true
 command = "cargo"
 args = ["test", "--workspace", "--all-features", "--doc"]
 
+[tasks.docs]
+description = "Build the crates' API docs as docs.rs does; a broken intra-doc link is an error (the crates' `rustdoc` lints)"
+clear = true
+command = "cargo"
+args = ["doc", "--workspace", "--all-features", "--no-deps"]
+
+[tasks.links]
+description = "Check the links in what npmjs.com, crates.io and docs.rs show of the published packages (`lychee-inputs.txt`), offline: a link to this repository's files on GitHub, or to the spec on compmd.dev, is checked against the file here, with its anchor. Needs lychee; CI's `links` job checks every link with the network, on each push to `main` (docs/ci.md, decision 14)"
+clear = true
+command = "lychee"
+args = [
+  "--offline",
+  "--remap", "^https://github\\.com/comp-markdown/compmd/(blob|tree)/main/ file://${CARGO_MAKE_WORKING_DIRECTORY}/",
+  "--remap", "^https://compmd\\.dev/spec/#registry-(.*) file://${CARGO_MAKE_WORKING_DIRECTORY}/compmd-registry-v1.md#$1",
+  "--remap", "^https://compmd\\.dev/spec/#registry$ file://${CARGO_MAKE_WORKING_DIRECTORY}/compmd-registry-v1.md",
+  "--remap", "^https://compmd\\.dev/spec/ file://${CARGO_MAKE_WORKING_DIRECTORY}/compmd-spec-v1.md",
+  "--files-from", "lychee-inputs.txt",
+]
+
 [tasks.wasm]
 description = "Build the processor as WebAssembly, size-optimized; `pnpm wasm` in `wasm/` adds wasm-bindgen's JavaScript"
 clear = true
@@ -75,7 +94,7 @@ docker run --rm --platform linux/amd64 \
 '''
 
 [tasks.tauri-plugin]
-description = "Lint and test `tauri-plugin-compmd`, with its features and without, and measure its coverage; fails below 99%. Outside the workspace and `ci`, since it builds Tauri: the Tauri check runs it (docs/tauri-plugin.md, decision 10)"
+description = "Lint and test `tauri-plugin-compmd`, with its features and without, measure its coverage (fails below 99%) and build its API docs (a broken intra-doc link fails). Outside the workspace and `ci`, since it builds Tauri: the Tauri check runs it (docs/tauri-plugin.md, decision 10)"
 clear = true
 script = [
   "cargo fmt --manifest-path tauri/Cargo.toml -- --check",
@@ -85,6 +104,7 @@ script = [
   # Cargo calls: the example app's check covers both, and the functions they call are tested here.
   "cargo llvm-cov --manifest-path tauri/Cargo.toml --all-features --ignore-filename-regex 'tauri/src/scheme\\.rs' --fail-under-lines 99",
   "cargo test --manifest-path tauri/Cargo.toml --all-features --doc",
+  "cargo doc --manifest-path tauri/Cargo.toml --all-features --no-deps",
 ]
 
 [tasks.tauri-check]
@@ -104,4 +124,4 @@ script = [
 [tasks.ci]
 description = "Every check CI runs; coverage runs the tests, the conformance set's among them, so `test` isn't run again"
 clear = true
-dependencies = ["fmt", "clippy", "coverage", "doctest", "wasm", "deny", "packages"]
+dependencies = ["fmt", "clippy", "coverage", "doctest", "docs", "wasm", "deny", "packages"]

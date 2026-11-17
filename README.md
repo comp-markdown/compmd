@@ -90,7 +90,7 @@ AI models know MDX, Markdoc and MDC far better than CompMD, so [llms.txt](llms.t
 
 ## Checks and CI
 
-`cargo make ci` runs every check of the repository: formatting, clippy with warnings as errors, the tests with the conformance set, the WebAssembly build, cargo-deny, line coverage of at least 99%, and every TypeScript package built, linted and tested. CI on GitHub runs the same command on every push to `main` and every pull request ([how](docs/ci.md)); the browser benches stay local.
+`cargo make ci` runs every check of the repository: formatting, clippy with warnings as errors, the tests with the conformance set, the crates' API docs with no broken intra-doc link, the WebAssembly build, cargo-deny, line coverage of at least 99%, and every TypeScript package built, linted and tested. CI on GitHub runs the same command on every push to `main` and every pull request ([how](docs/ci.md)); the browser benches stay local.
 
 It needs the tools at the versions CI uses: the Rust toolchain `rust-toolchain.toml` names, with `llvm-tools-preview`; [cargo-make](https://github.com/sagiegurari/cargo-make) 0.37.24, [cargo-deny](https://github.com/EmbarkStudios/cargo-deny) 0.20.2, [cargo-llvm-cov](https://github.com/taiki-e/cargo-llvm-cov) 0.8.4 and `wasm-bindgen-cli` 0.2.129; Node 24 and pnpm 12.14.0.
 
@@ -101,6 +101,8 @@ cargo make ci
 ```
 
 The site's check isn't part of `cargo make ci`: the Pages workflow builds the site and checks it in Chrome before it deploys. After a change to `website/`, `guides/` or the spec, `cargo make site` runs that build and check too.
+
+The links in the published packages' READMEs and API docs, which npmjs.com, crates.io and docs.rs show away from the repository, are checked with [lychee](https://github.com/lycheeverse/lychee) 0.24.2: `cargo make links` offline, against the files here, and CI with the network on every push to `main` ([how](docs/ci.md)). A link there to the repository is absolute, to its file on GitHub or its page on compmd.dev.
 
 Some failures show only on CI's Linux runner, such as a page laid out a pixel wider with its fonts. `cargo make linux` runs the checks on a commit in a container like the runner, with Docker: `cargo make linux` all of them, `cargo make linux site` the site's build and check, `cargo make linux --ref <commit> …` another commit ([how](docs/ci.md)).
 

@@ -5,7 +5,7 @@
 
 # @compmd/create-pack
 
-Writes a CompMD pack: a component as one built ES module, with every library it uses bundled in, its signature, a test page that renders it in the strict sandbox as a host does, and the steps to publish it. The design is [docs/create-pack.md](../docs/create-pack.md).
+Writes a CompMD pack: a component as one built ES module, with every library it uses bundled in, its signature, a test page that renders it in the strict sandbox as a host does, and the steps to publish it. The design is [docs/create-pack.md](https://github.com/comp-markdown/compmd/blob/main/docs/create-pack.md).
 
 **Website:** [compmd.dev](https://compmd.dev/), with the spec and a playground to try CompMD in.
 
@@ -25,11 +25,11 @@ It asks nothing: everything is a flag, so it scripts the same way it runs.
 | `--renders <language>` | makes the component a code renderer of that language's code blocks (spec §7.7) |
 | `--library <package>` | makes a library pack of that npm package instead, which packs share (below) |
 
-It shares its version with the other `@compmd` packages, and the pack it writes pins [`@compmd/pack`](../pack/README.md) and Vitest at the versions released with it, so a pack made today builds the same later.
+It shares its version with the other `@compmd` packages, and the pack it writes pins [`@compmd/pack`](https://github.com/comp-markdown/compmd/blob/main/pack/README.md) and Vitest at the versions released with it, so a pack made today builds the same later.
 
 ## What it writes
 
-Only what is the pack's own. The build, the checks before publishing and the test page are `@compmd/pack`'s, run by its scripts (`compmd-pack build`, `dev`, `test`), so upgrading that package updates them in packs made earlier ([writing a pack](../docs/writing-a-pack.md)).
+Only what is the pack's own. The build, the checks before publishing and the test page are `@compmd/pack`'s, run by its scripts (`compmd-pack build`, `dev`, `test`), so upgrading that package updates them in packs made earlier ([writing a pack](https://github.com/comp-markdown/compmd/blob/main/docs/writing-a-pack.md)).
 
 ```
 mermaid/
@@ -55,7 +55,7 @@ npm install
 npm run build
 ```
 
-writes a library pack ([CompMD packs on a registry](../compmd-registry-v1.md), section 5): `src/index.ts` re-exports `three`, built as one module, `dist/index.js`, which `package.json` names in `"compmd": { "library": "dist/index.js" }`. It has no document, no component and no test page. Its version is the library's: the build writes the installed `three`'s version into `package.json`, and publishing checks it. Its README says when to add `"single": true`.
+writes a library pack ([CompMD packs on a registry](https://compmd.dev/spec/#registry), section 5): `src/index.ts` re-exports `three`, built as one module, `dist/index.js`, which `package.json` names in `"compmd": { "library": "dist/index.js" }`. It has no document, no component and no test page. Its version is the library's: the build writes the installed `three`'s version into `package.json`, and publishing checks it. Its README says when to add `"single": true`.
 
 ## Commands
 
@@ -66,7 +66,7 @@ pnpm test            # writing packs, the template's components, written packs b
 pnpm lint            # eslint and the type check, the template's files too
 ```
 
-The template is in [`template/`](template): the files every pack has, those of a leaf or a code renderer, and a library pack's own. Its names are `__pack__`, `__component__`, `__language__` and `__library__`, which are valid in code, so its files are linted, type-checked and tested in place (the components in happy-dom, as `compmd-pack test` runs them), but a library pack's `src/index.ts`, which imports the library only a written pack has.
+The template is in [`template/`](https://github.com/comp-markdown/compmd/tree/main/create-pack/template): the files every pack has, those of a leaf or a code renderer, and a library pack's own. Its names are `__pack__`, `__component__`, `__language__` and `__library__`, which are valid in code, so its files are linted, type-checked and tested in place (the components in happy-dom, as `compmd-pack test` runs them), but a library pack's `src/index.ts`, which imports the library only a written pack has.
 
 ## License
 

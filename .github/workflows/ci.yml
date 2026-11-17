@@ -1,4 +1,5 @@
-# CI: every check of the repository, as `cargo make ci` runs it on a contributor's machine (docs/ci.md).
+# CI: every check of the repository, as `cargo make ci` runs it on a contributor's machine, and on pushes to `main` the
+# published packages' links, with the network (docs/ci.md).
 name: CI
 
 on:
@@ -30,3 +31,16 @@ jobs:
       - uses: ./.github/actions/webkit
         timeout-minutes: 10
       - run: cargo make ci
+
+  # The links in what npmjs.com, crates.io and docs.rs show of the published packages, with the network: on pushes to
+  # `main` only, since a site that is down for a moment shouldn't fail a pull request (docs/ci.md, decision 14).
+  links:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
+        with:
+          lycheeVersion: v0.24.2
+          args: --config lychee.toml --files-from lychee-inputs.txt
+          fail: true

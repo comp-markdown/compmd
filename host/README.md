@@ -1,6 +1,6 @@
 # compmd-host
 
-What every host of CompMD documents shares, whatever its platform: the bundle a host builds before anyone reads (the sandbox's frames under a content hash, the packs it installs, and its `manifest.json`), the store of packs it gets later, and `respond`, the serving contract an adapter puts behind its origin. The design, and why each rule is there, is [hosting CompMD](../docs/hosting.md).
+What every host of CompMD documents shares, whatever its platform: the bundle a host builds before anyone reads (the sandbox's frames under a content hash, the packs it installs, and its `manifest.json`), the store of packs it gets later, and `respond`, the serving contract an adapter puts behind its origin. The design, and why each rule is there, is [hosting CompMD](https://github.com/comp-markdown/compmd/blob/main/docs/hosting.md).
 
 ```rust
 use compmd_host::{respond, Bundle, FolderStore};
@@ -15,7 +15,7 @@ let response = respond(&bundle, &store, &request); // for a request on the adapt
 - **`respond`** answers `GET /frames/<hash>/<path>` and `GET /packs/<name>@<version>/<path>`, with the headers that sandbox them, and refuses anything else, saying why.
 - **`HostPacks`** (the `processor` feature) gives the processor, `compmd`, the same packs the frames load.
 
-Adapters: [`tauri-plugin-compmd`](../tauri/README.md) for Tauri.
+Adapters: [`tauri-plugin-compmd`](https://github.com/comp-markdown/compmd/blob/main/tauri/README.md) for Tauri.
 
 ## Status
 

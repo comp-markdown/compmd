@@ -5,7 +5,7 @@
 
 # @compmd/registry
 
-Packs for CompMD documents from an npm registry. A document imports `@kit/mermaid@1` and the host has never heard of it: `resolvePacks` asks the processor which packs are missing, resolves each range as the processor does, applies the host's policy before anything is downloaded, checks each tarball against the integrity its registry publishes, and gives back the request with the packs in it. It does what [*CompMD packs on a registry*](../compmd-registry-v1.md) (sections 3 to 5) says a host does; the design is [resolving registry packs](../docs/resolving-registry-packs.md), and for library packs [sharing library packs](../docs/sharing-library-packs.md).
+Packs for CompMD documents from an npm registry. A document imports `@kit/mermaid@1` and the host has never heard of it: `resolvePacks` asks the processor which packs are missing, resolves each range as the processor does, applies the host's policy before anything is downloaded, checks each tarball against the integrity its registry publishes, and gives back the request with the packs in it. It does what [*CompMD packs on a registry*](https://compmd.dev/spec/#registry) (sections 3 to 5) says a host does; the design is [resolving registry packs](https://github.com/comp-markdown/compmd/blob/main/docs/resolving-registry-packs.md), and for library packs [sharing library packs](https://github.com/comp-markdown/compmd/blob/main/docs/sharing-library-packs.md).
 
 **Website:** [compmd.dev](https://compmd.dev/), with the spec and a playground to try CompMD in.
 
@@ -84,4 +84,4 @@ The browser tests drive the installed Chrome and Playwright's WebKit (`pnpm exec
 
 ## License
 
-[MIT](../LICENSE-CODE). Copyright © 2026 Hakan Serce.
+[MIT](https://github.com/comp-markdown/compmd/blob/main/LICENSE-CODE). Copyright © 2026 Hakan Serce.

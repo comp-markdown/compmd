@@ -1,6 +1,6 @@
 # @comp-markdown/mermaid
 
-A [CompMD](https://compmd.dev/) pack that draws [Mermaid](https://mermaid.js.org/) diagrams in any document that imports it, with no support from the host: ` ```mermaid ` blocks, and diagrams computed from the document's data. It bundles Mermaid 12.2.0 as one module, which runs in the host's strict sandbox. The design is [docs/mermaid-pack.md](../../docs/mermaid-pack.md).
+A [CompMD](https://compmd.dev/) pack that draws [Mermaid](https://mermaid.js.org/) diagrams in any document that imports it, with no support from the host: ` ```mermaid ` blocks, and diagrams computed from the document's data. It bundles Mermaid 12.2.0 as one module, which runs in the host's strict sandbox. The design is [docs/mermaid-pack.md](https://github.com/comp-markdown/compmd/blob/main/docs/mermaid-pack.md).
 
 ## Use it in a document
 
@@ -44,7 +44,7 @@ pnpm --dir packs/mermaid test    # the build, the component in happy-dom, the te
 pnpm --dir packs/mermaid lint    # the type check
 ```
 
-The build, its checks and the test page are [`@compmd/pack`](../../pack/README.md)'s, as for any pack: the pack holds its component (`src/mermaid.ts`, on `draw`), its signature, `demo.comp.md` and its tests. Its browser tests (`test/`) are this repository's checks of the sandbox and the registry with a real library; a pack's own tests are the unit tests.
+The build, its checks and the test page are [`@compmd/pack`](https://github.com/comp-markdown/compmd/blob/main/pack/README.md)'s, as for any pack: the pack holds its component (`src/mermaid.ts`, on `draw`), its signature, `demo.comp.md` and its tests. Its browser tests (`test/`) are this repository's checks of the sandbox and the registry with a real library; a pack's own tests are the unit tests.
 
 ## Releases
 

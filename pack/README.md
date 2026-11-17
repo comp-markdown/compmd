@@ -5,11 +5,11 @@
 
 # @compmd/pack
 
-Everything a CompMD pack would otherwise copy into itself: `compmd-pack` builds a pack, checks it before it is published, runs its tests and serves its test page, and two small modules help write and test its components. A pack holds only what is its own: its components, their signatures, a document to try them in, and their tests. Upgrading this package updates the build, the checks and the test page of every pack. The design is [writing a pack](../docs/writing-a-pack.md).
+Everything a CompMD pack would otherwise copy into itself: `compmd-pack` builds a pack, checks it before it is published, runs its tests and serves its test page, and two small modules help write and test its components. A pack holds only what is its own: its components, their signatures, a document to try them in, and their tests. Upgrading this package updates the build, the checks and the test page of every pack. The design is [writing a pack](https://github.com/comp-markdown/compmd/blob/main/docs/writing-a-pack.md).
 
 **Website:** [compmd.dev](https://compmd.dev/), with the spec and a playground to try CompMD in.
 
-`npm create @compmd/pack` writes a pack on it ([`@compmd/create-pack`](../create-pack/README.md)). It shares its version with the other `@compmd` packages.
+`npm create @compmd/pack` writes a pack on it ([`@compmd/create-pack`](https://github.com/comp-markdown/compmd/blob/main/create-pack/README.md)). It shares its version with the other `@compmd` packages.
 
 **Versions:**
 - **0.7.1:** the same as 0.7.0; its homepage and links name the website's new address, [compmd.dev](https://compmd.dev/).
@@ -104,7 +104,7 @@ pnpm test            # reading, building and checking packs in Node; the helpers
 pnpm lint            # eslint and the type check
 ```
 
-The test page and the command run end to end in [`@compmd/create-pack`'s tests](../create-pack/test/pack.test.ts), on packs it writes, in Chrome and WebKit.
+The test page and the command run end to end in [`@compmd/create-pack`'s tests](https://github.com/comp-markdown/compmd/blob/main/create-pack/test/pack.test.ts), on packs it writes, in Chrome and WebKit.
 
 ## License
 

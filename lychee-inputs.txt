@@ -1,0 +1,30 @@
+# What lychee checks (lychee.toml): what npmjs.com, crates.io and docs.rs show of the published packages, where a link
+# relative to the repository breaks. Each package's README, and the sources its API docs come from.
+processor/README.md
+processor/src
+host/README.md
+host/src
+tauri/README.md
+tauri/src
+pack-types/README.md
+pack-types/src
+wasm/README.md
+wasm/src
+render/README.md
+render/src
+sandbox/README.md
+sandbox/src
+vite/README.md
+vite/src
+vite/client.d.ts
+pack/README.md
+pack/src
+create-pack/README.md
+create-pack/src
+create-pack/template
+registry/README.md
+registry/src
+devtools/README.md
+devtools/src
+packs/mermaid/README.md
+packs/mermaid/src

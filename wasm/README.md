@@ -5,7 +5,7 @@
 
 # @compmd/processor
 
-The [CompMD processor](../processor/README.md) as WebAssembly, for the browser: one call takes a document with everything it needs and gives its parse tree, its expanded tree and its diagnostics, typed. The expanded tree is what [`@compmd/render`](../render/README.md) draws.
+The [CompMD processor](https://github.com/comp-markdown/compmd/blob/main/processor/README.md) as WebAssembly, for the browser: one call takes a document with everything it needs and gives its parse tree, its expanded tree and its diagnostics, typed. The expanded tree is what [`@compmd/render`](https://github.com/comp-markdown/compmd/blob/main/render/README.md) draws.
 
 **Website:** [compmd.dev](https://compmd.dev/), with the spec and a playground to try CompMD in.
 
@@ -48,11 +48,11 @@ const { parse, expanded, diagnostics, failed, cacheKeys } = process(request);
 - **`pending`**, in the request, names what the host is still getting (spec §6.4, §8.6): `{packs, remote, host}`. A pending pack's uses render their fallbacks as `componentPending` nodes, which `@compmd/render` shows as loading, and pending data is its `fallback` or `null`; neither is F026. The result's `pending` is what the render treated as pending, for a host's "loading 1 pack". Once the host gives up on a source, it leaves it out, and the source is F026 as before. An open document takes `pending` the same way, its data's in `reload({remote, host, pending})`, and gives `pending()`.
 - **`cacheKeys`** gives each of the document's data imports with its final URL or path, the inputs filled in (`{as: "sales", key: "https://api.example.com/sales?region=eu"}`): a host that keeps fetched copies keys them by it (spec §8.6), so a copy is reused only for the same values.
 
-`sources` lists the packs the document, and the packs the request holds, import that `packs` has no matching release of, each once with its range as written and its pinned `integrity` (`{pack: "@kit/mermaid", range: "1"}`), for a host that gets packs from a registry: it fetches them, adds them to `packs`, and asks again, until none is missing. Packs the `policy` refuses aren't listed. The processor itself fetches nothing. [`@compmd/registry`](../registry/README.md) does this loop. `newestMatching(range, versions)` picks a version for a range as the processor does, and a release a host found broken (its tarball doesn't match its integrity) is given with `broken: "<why>"`, which makes an import of it F035.
+`sources` lists the packs the document, and the packs the request holds, import that `packs` has no matching release of, each once with its range as written and its pinned `integrity` (`{pack: "@kit/mermaid", range: "1"}`), for a host that gets packs from a registry: it fetches them, adds them to `packs`, and asks again, until none is missing. Packs the `policy` refuses aren't listed. The processor itself fetches nothing. [`@compmd/registry`](https://github.com/comp-markdown/compmd/blob/main/registry/README.md) does this loop. `newestMatching(range, versions)` picks a version for a range as the processor does, and a release a host found broken (its tarball doesn't match its integrity) is given with `broken: "<why>"`, which makes an import of it F035.
 
 A request holds the files of the document's root folder by path, the registry's packs with their files, the ambient packs, the host's `policy` for packs (those it lists with their trust, whether a document may import others, those it denies or left out; spec §6.4, §15), the origins remote data may come from, remote data fetched beforehand by URL (`{text, contentType}`), host data by source, the render time (RFC 3339), the time zone, the inputs' values, whether expanded nodes carry origins, and the mode. `process` throws when the request isn't valid or its document isn't one of its files; everything wrong with the document itself is a diagnostic.
 
-An editor keeps the document open instead, and sends each edit ([incremental processing](../processor/docs/incremental.md)):
+An editor keeps the document open instead, and sends each edit ([incremental processing](https://github.com/comp-markdown/compmd/blob/main/processor/docs/incremental.md)):
 
 ```ts
 import { init, OpenDocument } from "@compmd/processor";
@@ -77,7 +77,7 @@ document.reload({ remote: await fetchAll(remote), host: hostData(host) });
 - **`OpenDocument` keeps the tree:** it applies each splice, moving the origins of the nodes after it, so `expanded` is always the whole tree. Only its top-level array is new after a change; the nodes in it are updated in place.
 - **`OpenDocumentJson` keeps none:** it gives each change's inputs apart, and each splice as the module's JSON text, for a host that passes it on to where it renders without reading it, such as an editor's worker to the page's frame (`frame.splice` in `@compmd/render/frame`). Posted text is copied in one piece, and the renderer parses it once.
 - For an edit inside one block, neither the processing nor the splice grows with the document. Moving the origins after the edit does: it is a pass over those nodes.
-- **`hintAt(offset)`** gives what is at a UTF-16 position of the text as the last change left it ([positional hints](../processor/docs/positional-hints.md)): `{range, subject, completions, diagnostics}`, or `undefined` in plain prose. Its `range` is in lines and code point columns, as a diagnostic's `fix` is, and a completion replaces it.
+- **`hintAt(offset)`** gives what is at a UTF-16 position of the text as the last change left it ([positional hints](https://github.com/comp-markdown/compmd/blob/main/processor/docs/positional-hints.md)): `{range, subject, completions, diagnostics}`, or `undefined` in plain prose. Its `range` is in lines and code point columns, as a diagnostic's `fix` is, and a completion replaces it.
 - **`evaluate(expression)`** evaluates a CEL expression of the profile (spec §8.2) in the scope the document's body sees at its top level, as the last change left it: `md.doc`, `md.data`, `md.input` with the inputs' values, the `md.` functions at the render's time. It is checked against the document's types, evaluated within the same work budget, and changes nothing: for a developer's console. It gives `{value}`, as JSON, or `{error}`, F024 with its message and its line and column in `expression`.
 - **`cacheKeys()`** gives each data import's cache key for the text and inputs as they are now, as `process` gives `cacheKeys`; it is computed when asked, not with each change.
 - `free()` releases the module's memory for the document.
@@ -95,7 +95,7 @@ Time zone offsets come from the page's `Intl`, so the module carries no zone dat
 - `wasm-bindgen --target web` writes the JavaScript glue to `pkg/`. The `package.json` it writes there is removed, since it has no `"type": "module"`, which made TypeScript read the glue as CommonJS and `init` as no function.
 - `src/index.ts` parses both ways, gives the types, and keeps an open document's expanded tree (`OpenDocument`).
   - The expanded tree's types are `@compmd/render`'s, the splice's too.
-  - The parse tree's types are in `src/parse-tree.ts`, following [the tree schema](../conformance/compmd-tree.schema.json).
+  - The parse tree's types are in `src/parse-tree.ts`, following [the tree schema](https://github.com/comp-markdown/compmd/blob/main/conformance/compmd-tree.schema.json).
 
 ## Commands
 
@@ -131,4 +131,4 @@ The budgets for `process` are one frame (16 ms) from key press to paint for a sh
 
 ## License
 
-[MIT](../LICENSE-CODE). Copyright © 2026 Hakan Serce.
+[MIT](https://github.com/comp-markdown/compmd/blob/main/LICENSE-CODE). Copyright © 2026 Hakan Serce.

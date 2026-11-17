@@ -1,6 +1,6 @@
-// Links to a passage of a document's text as text fragments, the web's way to link to text (https://wicg.github.io/
-// scroll-to-text-fragment/): `#:~:text=[prefix-,]start[,end][,-suffix]`, each part percent-encoded. A page shows the
-// passage in its rendered text; the editor finds it in the document's source.
+// Links to a passage of a document's text as text fragments, the web's way to link to text
+// (https://wicg.github.io/scroll-to-text-fragment/): `#:~:text=[prefix-,]start[,end][,-suffix]`, each part
+// percent-encoded. A page shows the passage in its rendered text; the editor finds it in the document's source.
 
 /** A text directive: the passage starts with `start` and, when given, ends with `end`, after `prefix` and before `suffix`. */
 export interface TextDirective {
