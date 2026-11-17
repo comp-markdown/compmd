@@ -42,6 +42,11 @@ impl LineStarts {
             )
     }
 
+    /// The code point line `line`, counted from 1, starts at; `None` past the last line.
+    pub(crate) fn start(&self, line: usize) -> Option<usize> {
+        self.0.get(line.checked_sub(1)?).map(|start| start.offset)
+    }
+
     /// The line and column of code point `offset`; past the end of the text, a column past its last line.
     pub(crate) fn location(&self, offset: usize) -> Location {
         let line = self.0.partition_point(|start| start.offset <= offset);

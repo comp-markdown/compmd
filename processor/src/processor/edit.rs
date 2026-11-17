@@ -1,6 +1,8 @@
 //! An edit of the text an expanded processor holds, processed again only as far as it reaches (spec §10.5).
 
+use super::examples::Examples;
 use super::{EditContext, Expanded, Parsed, Processor, Validated};
+use crate::diagnostic::Diagnostic;
 use crate::expand;
 use crate::parse::{self, Change, TextEdit};
 use crate::tree::Move;
@@ -43,7 +45,7 @@ impl Processor<Expanded> {
         let Expanded {
             validated,
             render,
-            data,
+            mut data,
             options,
             result,
             ..
@@ -87,18 +89,24 @@ impl Processor<Expanded> {
         let mut diagnostics = document.diagnostics.clone();
         diagnostics.extend(resolved.diagnostics().cloned());
         diagnostics.extend(checks.diagnostics().cloned());
-        let validated = Validated {
-            store,
-            resolved,
-            checks,
-            kept: diagnostics.len(),
-            edit_context: EditContext {
-                parsed: document,
-                ..context
+        let validated = with_examples(
+            Validated {
+                store,
+                resolved,
+                checks,
+                examples: Examples::default(),
+                kept: 0,
+                edit_context: EditContext {
+                    parsed: document,
+                    ..context
+                },
+                allowed_origins,
             },
-            allowed_origins,
-        };
-        if reload {
+            &mut diagnostics,
+        );
+        // A block the edit didn't touch may hold an example whose number or place it changed: a document with
+        // examples is loaded and expanded whole, as after a reload.
+        if reload || !validated.examples.is_empty() {
             let mut processor = Processor {
                 diagnostics,
                 state: validated,
@@ -108,6 +116,9 @@ impl Processor<Expanded> {
             processor.state.replaced.nodes = 0..before;
             return processor;
         }
+        diagnostics.extend_from_slice(&data.diagnostics);
+        // The document has no examples now: none of those it had stays.
+        data.examples.clear();
         let result = expand::splice(
             result,
             &validated.resolved,
@@ -117,7 +128,6 @@ impl Processor<Expanded> {
             &options,
             &spliced,
         );
-        diagnostics.extend_from_slice(&data.diagnostics);
         diagnostics.extend_from_slice(&result.diagnostics);
         let replaced = result.replaced.clone().unwrap_or(expand::Replaced {
             nodes: 0..before,
@@ -136,4 +146,18 @@ impl Processor<Expanded> {
             },
         }
     }
+}
+
+/// `validated` with its document's examples (spec §7.8), each processed again: an example is small, and its text may
+/// have changed with its block. Their diagnostics go to `diagnostics`, which stages 1 to 3 then end with.
+fn with_examples(mut validated: Validated, diagnostics: &mut Vec<Diagnostic>) -> Validated {
+    validated.examples = Examples::of(
+        &validated.resolved,
+        &validated.store,
+        &validated.edit_context,
+        &validated.allowed_origins,
+        diagnostics,
+    );
+    validated.kept = diagnostics.len();
+    validated
 }

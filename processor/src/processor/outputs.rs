@@ -170,10 +170,12 @@ impl Processor<Expanded> {
     /// ```
     #[must_use]
     pub fn pending(&self) -> Pending {
-        Pending {
+        let mut pending = Pending {
             packs: self.state.validated.resolved.pending.clone(),
             ..self.state.data.pending.clone()
-        }
+        };
+        self.state.validated.examples.pending(&mut pending);
+        pending
     }
 
     /// The expanded tree (spec §12.3).
@@ -240,7 +242,8 @@ impl Processor<Expanded> {
     }
 
     /// The host-language components the expanded tree can name, with their code, by name: what a renderer that
-    /// runs them needs, since the tree names a component but doesn't hold its code (spec §7.4, §12.3). Only those
+    /// runs them needs, since the tree names a component but doesn't hold its code (spec §7.4, §12.3). Those of an
+    /// example (spec §7.8) come after the document's, each with its example's number. Only those
     /// one of the processor's bindings runs (others render their fallback, W102); a name two documents give
     /// different components is the processed document's, or else the first loaded.
     ///
@@ -264,7 +267,9 @@ impl Processor<Expanded> {
     #[must_use]
     pub fn host_components(&self) -> Vec<HostComponent> {
         let validated = &self.state.validated;
-        validated.resolved.host_components(validated.store.store())
+        let mut components = validated.resolved.host_components(validated.store.store());
+        components.extend(validated.examples.host_components());
+        components
     }
 
     /// The remote and `host:` sources a render needs with the context the processor keeps, and the packs it has no
@@ -274,11 +279,15 @@ impl Processor<Expanded> {
     #[must_use]
     pub fn sources(&self) -> Needed {
         let validated = &self.state.validated;
-        load::sources(
+        let mut needed = load::sources(
             &validated.resolved,
             &validated.checks,
             &self.state.render.context,
             &validated.allowed_origins,
-        )
+        );
+        validated
+            .examples
+            .sources(&self.state.render.context, &mut needed);
+        needed
     }
 }

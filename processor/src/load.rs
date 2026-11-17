@@ -36,6 +36,9 @@ pub(crate) struct Loaded {
     /// The remote and `host:` sources that were pending (spec §8.6); its `packs` are empty.
     pub(crate) pending: Pending,
     data: HashMap<DocumentId, Value>,
+    /// The expanded roots of the processed document's examples (spec §7.8), by where each one's fence starts, in code
+    /// points: the processor expands them before the document, which places each at its block.
+    pub(crate) examples: HashMap<usize, crate::expanded::Root>,
 }
 
 impl Loaded {
@@ -133,6 +136,7 @@ pub(crate) fn load(
             diagnostics,
             pending: Pending::default(),
             data: HashMap::new(),
+            examples: HashMap::new(),
         },
     };
     let input = loader.loaded.inputs.value();

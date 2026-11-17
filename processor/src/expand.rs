@@ -25,6 +25,7 @@ use crate::resolve::{DocumentId, Renderer, Resolved};
 use crate::tree::{self, Move, Node};
 use crate::validate::Validated;
 use crate::validate::scope::Scope;
+use crate::validate::universal::Universal;
 pub(crate) use blocks::splice;
 use blocks::{Block, finished};
 use env::Env;
@@ -132,6 +133,8 @@ struct Expander<'r> {
     crossed: Option<usize>,
     /// What evaluating the block being expanded reported.
     reports: Vec<Report>,
+    /// The expanded roots of the processed document's examples, by where each fence starts.
+    examples: &'r HashMap<usize, Root>,
 }
 
 impl<'r> Expander<'r> {
@@ -171,6 +174,7 @@ impl<'r> Expander<'r> {
             expanding: Vec::new(),
             crossed: None,
             reports: Vec::new(),
+            examples: &loaded.examples,
         }
     }
 
@@ -267,16 +271,9 @@ impl<'r> Expander<'r> {
                 position: None,
             }),
             Node::Break(_) => Content::Break(tree::Void::default()),
-            Node::Code(code) => match (self.renderer(code, env), code.info.as_ref()) {
-                (Some(_), Some(info)) if !info.render.draws() => Content::Code(expanded::Code {
-                    render: Some(info.render),
-                    ..plain_code(code)
-                }),
-                (Some(name), _) => {
-                    let invocation = components::Invocation::code(node, code, name);
-                    return self.component(invocation, env, out);
-                }
-                (None, _) => Content::Code(plain_code(code)),
+            Node::Code(code) => match self.code(node, code, env) {
+                Ok(content) => content,
+                Err(invocation) => return self.component(invocation, env, out),
             },
             Node::Definition(definition) => {
                 Content::Definition(self.definition(definition, node, env))
@@ -354,6 +351,55 @@ impl<'r> Expander<'r> {
             children: self.list(&footnote.children, env),
             position: None,
         }
+    }
+
+    /// A code block: as the invocation of the code renderer that draws it (spec §7.7), unless it is `render=source`;
+    /// an example (spec §7.8); or a code block.
+    fn code(
+        &mut self,
+        node: &'r Node,
+        code: &'r tree::Code,
+        env: &Env<'r>,
+    ) -> Result<Content, components::Invocation<'r>> {
+        match (self.renderer(code, env), code.info.as_ref()) {
+            (Some(_), Some(info)) if !info.render.draws() => Ok(Content::Code(expanded::Code {
+                render: Some(info.render),
+                ..plain_code(code)
+            })),
+            (Some(name), _) => Err(components::Invocation::code(node, code, name)),
+            (None, _) => Ok(self
+                .example(code, env)
+                .unwrap_or_else(|| Content::Code(plain_code(code)))),
+        }
+    }
+
+    /// `code` as an example (spec §7.8), when it is one of the processed document's: what it shows, its box's params,
+    /// and its expanded root.
+    fn example(&mut self, code: &'r tree::Code, env: &Env<'r>) -> Option<Content> {
+        let info = code.info.as_ref()?;
+        if code.lang.as_deref() != Some("compmd")
+            || env.document != self.resolved.main
+            || !info.render.draws()
+        {
+            return None;
+        }
+        let root = self.examples.get(&code.position?.start.offset)?;
+        let given: Vec<&'r tree::Param> = info
+            .params
+            .iter()
+            .filter(|param| {
+                let key = params::key_of(param);
+                (key == "class" || key == "id" || Universal::from_name(key).is_some())
+                    && !self.validated.refuses_param(env.document, param)
+            })
+            .collect();
+        let evaluated = self.evaluated(&given, None, env);
+        Some(Content::Code(expanded::Code {
+            render: Some(info.render),
+            params: params::boxed(Vec::new(), evaluated),
+            document: Some(Box::new(root.clone())),
+            ..plain_code(code)
+        }))
     }
 
     /// The name of the code renderer that renders `code` in `env`'s document, when one alone does (spec §7.7).
@@ -480,5 +526,7 @@ fn plain_code(code: &tree::Code) -> expanded::Code {
         component: None,
         alt: None,
         render: None,
+        params: Vec::new(),
+        document: None,
     }
 }

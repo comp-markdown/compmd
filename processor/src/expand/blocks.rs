@@ -159,6 +159,7 @@ pub(super) fn finished(
         root: Root {
             children,
             inputs: loaded.inputs.clone(),
+            example: None,
         },
         diagnostics,
         blocks: (!joined).then_some(blocks),

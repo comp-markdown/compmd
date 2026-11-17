@@ -1,0 +1,165 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "An example, its code then what it renders, in a box of its own; its frontmatter is its own, so "
+        },
+        {
+          "type": "inlineCode",
+          "value": "rating"
+        },
+        {
+          "type": "text",
+          "value": " there is 4:"
+        }
+      ]
+    },
+    {
+      "type": "code",
+      "lang": "compmd",
+      "meta": "{render=both padding=s .demo}",
+      "value": "---\nrating: 4\n---\nRated :value[4 of 5]{of=(string(md.doc.rating) + \" of 5\")}.",
+      "render": "both",
+      "params": [
+        {
+          "key": "padding",
+          "breakpoint": null,
+          "value": "s"
+        },
+        {
+          "key": "class",
+          "breakpoint": null,
+          "value": "demo"
+        }
+      ],
+      "document": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "value": "Rated 4 of 5."
+              }
+            ]
+          }
+        ],
+        "example": 1
+      }
+    },
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "What it renders alone, an example without frontmatter:"
+        }
+      ]
+    },
+    {
+      "type": "code",
+      "lang": "compmd",
+      "meta": "{render=output}",
+      "value": "**Bold**, {{md.version}}.",
+      "render": "output",
+      "document": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "value": "Bold"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "value": ", 1."
+              }
+            ]
+          }
+        ],
+        "example": 2
+      }
+    },
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "Source, as every "
+        },
+        {
+          "type": "inlineCode",
+          "value": "compmd"
+        },
+        {
+          "type": "text",
+          "value": " block is by default:"
+        }
+      ]
+    },
+    {
+      "type": "code",
+      "lang": "compmd",
+      "meta": null,
+      "value": "Rated {{md.doc.rating}}."
+    },
+    {
+      "type": "list",
+      "ordered": false,
+      "start": null,
+      "spread": false,
+      "children": [
+        {
+          "type": "listItem",
+          "spread": true,
+          "checked": null,
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "In a list item, indented:"
+                }
+              ]
+            },
+            {
+              "type": "code",
+              "lang": "compmd",
+              "meta": "{render=output}",
+              "value": "An item's example.",
+              "render": "output",
+              "document": {
+                "type": "root",
+                "children": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "An item's example."
+                      }
+                    ]
+                  }
+                ],
+                "example": 3
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

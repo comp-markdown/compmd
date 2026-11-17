@@ -301,9 +301,10 @@
         { "if": { "properties": { "type": { "const": "componentSlot" } } }, "then": { "$ref": "#/$defs/expandedSlot" } },
         { "if": { "properties": { "type": { "const": "code" } }, "required": ["component"] }, "then": { "$ref": "#/$defs/renderedCode" } },
         {
-          "if": { "properties": { "type": { "const": "code" } }, "required": ["render"], "not": { "required": ["component"] } },
+          "if": { "properties": { "type": { "const": "code" } }, "required": ["render"], "not": { "anyOf": [{ "required": ["component"] }, { "required": ["document"] }] } },
           "then": { "properties": { "render": { "const": "source" } } }
         },
+        { "if": { "properties": { "type": { "const": "code" } }, "required": ["document"] }, "then": { "$ref": "#/$defs/example" } },
         { "if": { "properties": { "type": { "const": "componentPending" } } }, "then": { "$ref": "#/$defs/pendingUse" } },
         {
           "if": { "properties": { "type": { "not": { "enum": ["componentContainer", "componentLeaf", "componentInline", "componentSlot"] } } } },
@@ -371,6 +372,32 @@
         "name": { "type": "string" },
         "params": { "type": "array", "items": { "$ref": "#/$defs/expandedParam" } },
         "fallback": { "type": "array", "items": { "$ref": "#/$defs/expandedNode" } }
+      },
+      "additionalProperties": false
+    },
+    "example": {
+      "description": "An example (§7.8, §12.3): a ```compmd block that renders, with its box's params and its own expanded root, numbered among the document's examples.",
+      "required": ["value", "render", "document"],
+      "properties": {
+        "type": true,
+        "position": true,
+        "origin": true,
+        "lang": { "const": "compmd" },
+        "meta": { "type": ["string", "null"] },
+        "value": { "type": "string" },
+        "render": { "enum": ["output", "both"] },
+        "params": { "type": "array", "items": { "$ref": "#/$defs/expandedParam" } },
+        "document": {
+          "type": "object",
+          "required": ["type", "children", "example"],
+          "properties": {
+            "type": { "const": "root" },
+            "children": { "type": "array", "items": { "$ref": "#/$defs/expandedNode" } },
+            "inputs": true,
+            "example": { "type": "integer", "minimum": 1 }
+          },
+          "additionalProperties": false
+        }
       },
       "additionalProperties": false
     },

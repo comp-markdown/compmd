@@ -9,8 +9,8 @@ use crate::parse::params::interpolations;
 use crate::reserved::Keyword;
 use crate::resolve::{Binding, Body, Renderer};
 use crate::tree::{
-    Code as CodeBlock, Container, Definition, Interpolation, Node, Param, ParamValue, Position,
-    StringPart, start_of,
+    Code as CodeBlock, Container, Definition, Info, Interpolation, Node, Param, ParamValue,
+    Position, StringPart, start_of,
 };
 use crate::values::forms::area_names;
 use std::rc::Rc;
@@ -99,6 +99,10 @@ impl<'r> Checker<'r, '_> {
         let (Some(language), Some(info)) = (code.lang.as_deref(), &code.info) else {
             return;
         };
+        if language == "compmd" && self.id == resolved.main {
+            self.example(info, scope);
+            return;
+        }
         let Some(renderer) = renderers.get(language) else {
             return;
         };
@@ -139,6 +143,27 @@ impl<'r> Checker<'r, '_> {
                 }
             }
         }
+    }
+
+    /// A ` ```compmd ` block of the processed document's body (spec §7.8): what is wrong with its `render`, its box's
+    /// params, and F008 for `alt`, which an example doesn't take.
+    fn example(&mut self, info: &'r Info, scope: &Scope<'r>) {
+        for problem in &info.problems {
+            self.found.diagnostics.push(
+                problem
+                    .clone()
+                    .in_stage(Stage::Validate)
+                    .in_file(self.file.clone()),
+            );
+        }
+        if let Some(alt) = &info.alt {
+            self.report(
+                Code::F008,
+                start_of(alt.position),
+                "a `compmd` example takes no `alt`: what it renders is read as it is; it is ignored",
+            );
+        }
+        self.example_params(&info.params, scope);
     }
 
     /// F014 for a path nothing in `scope` gives, reported at the path: with why, when a colon without a space after

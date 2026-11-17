@@ -224,6 +224,10 @@ pub struct HostComponent {
     /// What its uses show on paper, from its signature (spec §7.3); in JSON only when it is their fallback.
     #[serde(skip_serializing_if = "Print::is_drawn")]
     pub print: Print,
+    /// For a component of an example (spec §7.8), the example's number, as its expanded root gives it: a renderer
+    /// finds the components an example's nodes name among those of its number; absent for the processed document's.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub example: Option<usize>,
 }
 
 /// A library pack's module, chosen for a document, and the libraries it imports in turn, by name. In JSON its place
@@ -311,6 +315,7 @@ impl Component {
                 .signature
                 .as_ref()
                 .map_or(Print::Drawn, |signature| signature.print),
+            example: None,
         })
     }
 

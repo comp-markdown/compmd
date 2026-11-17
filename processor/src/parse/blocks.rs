@@ -388,8 +388,14 @@ impl Converter<'_, '_> {
                     position,
                 });
             }
-            if code.lang.is_some() {
-                info = Some(self.info(&code.value, position));
+            if let Some(lang) = code.lang.as_deref() {
+                // A ` ```compmd ` block is source unless it says otherwise; a code renderer draws its blocks.
+                let default = if lang == "compmd" {
+                    Render::Source
+                } else {
+                    Render::Output
+                };
+                info = Some(self.info(&code.value, position, default));
             }
         }
         Node::Code(CodeBlock {
@@ -402,9 +408,9 @@ impl Converter<'_, '_> {
     }
 
     /// The block at `position`, whose text is `text`, as a code renderer's invocation (spec §7.7): its text as `code`,
-    /// the param list after its language, `alt` and `render`. What is wrong with them is kept, not reported: the block is
-    /// content unless a code renderer renders it.
-    fn info(&mut self, text: &str, position: Option<Position>) -> Info {
+    /// the param list after its language, `alt` and `render`, which is `default` when it doesn't say. What is wrong with
+    /// them is kept, not reported: the block is content unless a code renderer renders it, or it is an example.
+    fn info(&mut self, text: &str, position: Option<Position>, default: Render) -> Info {
         let before = self.diagnostics.len();
         let mut params = Vec::new();
         let start = position.map_or(super::START, |position| position.start);
@@ -416,7 +422,7 @@ impl Converter<'_, '_> {
         }
         let mut problems = self.diagnostics.split_off(before);
         let mut alt = None;
-        let mut render = Render::default();
+        let mut render = default;
         params.retain(|param| match param.key.as_deref() {
             Some(CODE) => {
                 problems.push(Diagnostic::new(

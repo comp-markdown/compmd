@@ -498,6 +498,30 @@ impl<'r> Checker<'r, '_> {
         Verdict::Declared(None)
     }
 
+    /// The param list of a ` ```compmd ` block that isn't a definition (spec §7.8): `render`, the common params, `class`
+    /// and `id`, for the example's box; any other key is F008, and treated as absent, as a value its param doesn't
+    /// take is.
+    pub(super) fn example_params(&mut self, params: &'r [Param], scope: &Scope<'r>) {
+        for param in params.iter().filter(|param| param.position.is_some()) {
+            if matches!(param.value, ParamValue::Class(_) | ParamValue::Id(_)) {
+                continue;
+            }
+            let key = param.key.as_deref().unwrap_or("");
+            if let Some(universal) = Universal::from_name(key) {
+                if !self.universal(universal, param, scope) {
+                    self.refuse_param(param);
+                }
+                continue;
+            }
+            self.report(
+                Code::F008,
+                key_at(param),
+                format!("a `compmd` example takes `render`, the common params, `class` and `id`, not `{key}`; it is ignored"),
+            );
+            self.refuse_param(param);
+        }
+    }
+
     /// A universal param's value against its grammar, and its breakpoint; whether it is accepted.
     fn universal(&mut self, universal: Universal, param: &'r Param, scope: &Scope<'r>) -> bool {
         let key = universal.name();

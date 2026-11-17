@@ -127,6 +127,8 @@ named! {
         W121 = "W121",
         /// A signature's `print` that is neither `drawn` nor `fallback`.
         W122 = "W122",
+        /// A ```` ```compmd ```` block that would render inside an example, which shows its source.
+        W123 = "W123",
     }
 }
 

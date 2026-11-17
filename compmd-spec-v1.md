@@ -403,7 +403,7 @@ Rules:
 - A local definition or explicit import with the name of another `@compmd/core` component shadows it, with W112. A name `@compmd/core` adds in a later version therefore never breaks a document that already uses it.
 - Importing a name its source does not export is F021, reported on that `names` entry.
 - Import cycles are F020, reported on the `from` that closes the cycle.
-- **Scope is lexical.** An imported definition resolves names and `md.doc` in its own document, never in the importer's. A `compmd` definition's body is a document of its own too: it resolves footnotes and link reference definitions among its own lines, so a `[^1]` in a body doesn't reach a note outside it. Slot content resolves in the document it is written in: in `::: card` … `::: /card`, the content's components, `md.doc`, `md.input` and `each` variables are the caller's, even though `card`'s body comes from another document.
+- **Scope is lexical.** An imported definition resolves names and `md.doc` in its own document, never in the importer's, and an example (section 7.8) in its own, never in the document it is in. A `compmd` definition's body is a document of its own too: it resolves footnotes and link reference definitions among its own lines, so a `[^1]` in a body doesn't reach a note outside it. Slot content resolves in the document it is written in: in `::: card` … `::: /card`, the content's components, `md.doc`, `md.input` and `each` variables are the caller's, even though `card`'s body comes from another document.
 
 **Ambient packs.** A processor MAY provide packs that every document imports implicitly, like `@compmd/core`, at the lowest priority, so local names and imports always win. Names from them are not portable: another processor reports F002 and renders fallbacks. A processor SHOULD also let documents import an ambient pack explicitly (`from: "@host/components"`), so a document can state what it depends on, and MAY report W113 for each ambient name used.
 
@@ -721,6 +721,26 @@ graph LR; Draft --> Review --> Published
   ````
 - **Blocks only.** CommonMark gives a code span no language, so a code renderer renders no inline code.
 - Math is not a code renderer: a ` ```math ` block is display math in every processor (section 2.3), and a code renderer for `math` is never used.
+
+### 7.8 Examples
+
+A ` ```compmd ` block that isn't a definition (no `component=`) is CompMD source shown as a code block. With `render=output` or `render=both` it is an **example**: its text is processed as a `.comp.md` document of its own, and what that renders shows in the block's place, after the code with `both`, as for a code renderer (section 7.7). A post or a guide about CompMD shows its source and what it makes from one block.
+
+````md
+```compmd {render=both}
+---
+rating: 4
+---
+Rated :value[4 of 5]{of=(string(md.doc.rating) + " of 5")}.
+```
+````
+
+- **`render`** is `source` by default, unlike a code renderer's `output`: a ` ```compmd ` block is source unless it says otherwise. Its param list takes `render`, the common params, `class` and `id`, which style the example's box (section 9.2); any other key is F008. An example takes no `alt`: what it renders is content, read as it is.
+- **Its own document.** An example is a document as an imported one is (section 6.3, *scope is lexical*): its frontmatter is its own, so `md.doc` is the example's keys and its `md` key gives its version, imports, data and inputs; without frontmatter it is a version 1 document with none. Nothing of the document it is in reaches it: not its `md.doc`, imports, data, inputs or definitions. Its definition fences define components for it alone. Its imports and data paths resolve from the place of the document it is in, and load under that document's permissions and trust levels (section 15).
+- **Its inputs are its own.** They start at their defaults; values given to the processor (section 8.7) are the document's, not its examples'. Its input components change its inputs, and the processor renders the example again.
+- **Its diagnostics are the document's**, at their place in the block: a line and a column of the document, counting the fence's indentation. Strict mode fails on them as on any (section 10.1); a document that shows a broken example on purpose writes it with `render=source`.
+- **One level.** A ` ```compmd ` block inside an example shows its source, whatever its `render` says (W123).
+- **Degradation.** A plain renderer shows the code block (section 14). Plain text gives the code once. Printed, `both` prints the code, then the example; `output` the example.
 
 ## 8. Interpolation, expressions and control flow
 
@@ -1112,7 +1132,7 @@ md:
 :: chart[Sales by day] {rows=(md.data.sales.filter(s, s.date >= md.input.from && (md.input.region == "all" || s.region == md.input.region)))}
 ```
 
-**Declaring.** Each entry under `inputs` names an input, a CEL identifier, and gives its type and default as a declaration (section 7.3). Every input MUST have a default, so a document always renders. Inputs belong to the document being rendered: `md.input` is available in document bodies and in `from` values (section 8.6), not in `compmd` definition bodies, which receive input values as params. An imported document's inputs are not used.
+**Declaring.** Each entry under `inputs` names an input, a CEL identifier, and gives its type and default as a declaration (section 7.3). Every input MUST have a default, so a document always renders. Inputs belong to the document being rendered: `md.input` is available in document bodies and in `from` values (section 8.6), not in `compmd` definition bodies, which receive input values as params. An imported document's inputs are not used. An example's are its own, starting at their defaults (section 7.8).
 
 **Values.** An input's value comes from whoever runs the processor (a command-line argument, a URL query, a host) when given, otherwise from its default. A given value that doesn't match the input's type is rejected, and the default is used. Where values are kept between renders is the processor's business.
 
@@ -1371,6 +1391,7 @@ Every diagnostic MUST name its code, the line and column where it was detected, 
 | W120 | A param for a box given to a `display=contents` component, which has none, on its fence or by an invocation; ignored (section 9.2) | the param                                                            |
 | W121 | Host-language component's code can't load: an import of something it may not import (section 7.6), a compile error, a built module that doesn't match its file, or a runtime or library its pack's `peerDependencies` name that the processor doesn't have in that range (section 6.4); fallback rendered | the invocation, or the import's `from` for `peerDependencies` |
 | W122 | A signature's `print` is neither `drawn` nor `fallback`, or is in a `compmd` definition (section 7.3); the component prints as drawn  | the value                                                            |
+| W123 | A ` ```compmd ` block with `render=output` or `both` inside an example (section 7.8); it shows its source | the block's opening fence                                            |
 
 ### 10.3 Recovery rules (lenient mode)
 
@@ -1510,6 +1531,7 @@ Stage 4b replaces every `compmd` definition, `if`, `each`, `value` and `interpol
 - **Headings** from `compmd` definition bodies have their computed `depth` (section 7.2).
 - **A use of a pending component** (section 4.5) is a `componentPending` node: `name`, the component's local name, `pack`, the pending pack as the import names it (`@kit/mermaid`), and `children`, the fallback the use renders (section 4.5), expanded. For a leaf or an inline component that is its fallback text, for a container its slots as Markdown, and for a code block a code renderer renders the code block, without its `component`. It is inline in inline content, and a block elsewhere. A renderer that doesn't know the node renders its children.
 - **A code block a code renderer renders** (section 7.7) stays a `code` node, with its `lang` and `value`, and adds `component`, `{name, params}`, with params as a component node's, its `code` param holding the block's text, so a renderer passes them on as for any leaf; and `alt`, when given: `{"type": "code", "lang": "mermaid", "value": "graph LR; A --> B", "component": {"name": "mermaid", "params": [{"key": "code", "breakpoint": null, "value": "graph LR; A --> B"}]}, "alt": "A, then B"}`. A renderer runs the component, and shows the code block as its fallback. It also has `render`, `"output"`, `"source"` or `"both"` (`"output"` when the block doesn't give it). A `"source"` block has no `component`, so it is a code block to any renderer. For a `"both"` block a renderer shows the code block, then runs the component below it; a renderer that doesn't know `render` treats it as `"output"`.
+- **An example** (section 7.8) stays a `code` node, `lang: "compmd"`, with `render` (`"output"` or `"both"`), `params`, its box's params as a component node's, when it has any, and `document`, the example's expanded root: its `children`, its `inputs` when it has any, and `example`, its number among the document's examples, from 1. A renderer shows the code block for `"both"`, then the root's children in the example's box. Inside an example, a component node names a component of the example, not the document's: the processor lists an example's host-language components with its number, and a renderer looks a name up among those of the nearest root above the node. A param bound to an input names an input of the nearest root above it, the example's inside one. A renderer that doesn't know `document` shows the code block, the example's source.
 - **Origins** (the `origins` feature, section 13.1). Every expanded node except the root has `origin`, the range of the processed document that made it: `start` and `end` points as in `position`, and `occurrence`, how many nodes before it in the same list of children have the same range (a template slot's instances count as one list). Lines and columns are 1-based, offsets 0-based, and columns and offsets count code points (section 10.5). The range is:
   - for a node from a `compmd` definition's body, local or imported, at any depth: the origin of the invocation in this document that led to it;
   - for text that a `value` or an interpolation produced: its parent's origin;

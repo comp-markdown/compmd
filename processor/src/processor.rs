@@ -59,6 +59,7 @@ use std::rc::Rc;
 
 mod edit;
 mod evaluate;
+mod examples;
 mod outputs;
 
 /// A document on its way through the stages, in the state `S`.
@@ -80,6 +81,8 @@ pub struct Parsed {
     /// The tree and settings; the processor holds a copy of its diagnostics.
     document: parse::Parsed,
     options: ParseOptions,
+    /// Whether the document is an example (spec §7.8), whose own ` ```compmd ` blocks show their source (W123).
+    example: bool,
 }
 
 /// After stage 2: the document, everything it imports, and what each name stands for.
@@ -119,6 +122,8 @@ struct EditContext {
     policy: Policy,
     /// The parses of the documents resolving loaded, which it reuses while their text stays the same.
     parses: resolve::Parses,
+    /// Whether the document is an example (spec §7.8).
+    example: bool,
 }
 
 /// After stage 3: the checked documents, and what checking refused.
@@ -126,6 +131,8 @@ pub struct Validated {
     store: HostFiles,
     resolved: resolve::Resolved,
     checks: validate::Validated,
+    /// The processed document's examples (spec §7.8), each processed beside it, at its stage.
+    examples: examples::Examples,
     /// How many diagnostics stages 1 to 3 gave, which a reload keeps.
     kept: usize,
     edit_context: EditContext,
@@ -230,6 +237,14 @@ impl Processor<New> {
             Parsed::new(path, text, document, options.clone(), diagnostics)
         })
     }
+
+    /// Stage 1 for an example (spec §7.8), whose text is a ` ```compmd ` block's: as [`Self::parse`], for a document
+    /// that makes no examples of its own.
+    fn parse_example(self, options: &ParseOptions) -> Processor<Parsed> {
+        let mut parsed = self.parse(options);
+        parsed.state.example = true;
+        parsed
+    }
 }
 
 impl Parsed {
@@ -247,6 +262,7 @@ impl Parsed {
             text,
             document,
             options,
+            example: false,
         }
     }
 }
@@ -307,6 +323,7 @@ impl Processor<Parsed> {
                 text,
                 document,
                 options,
+                example,
             } = parsed;
             let resolved = resolve::resolve(
                 &path,
@@ -326,6 +343,7 @@ impl Processor<Parsed> {
                 ambient,
                 policy,
                 parses,
+                example,
             };
             diagnostics.extend(resolved.diagnostics().cloned());
             Resolved {
@@ -351,10 +369,18 @@ impl Processor<Resolved> {
              diagnostics| {
                 let checks = validate::validate(&resolved, allowed_origins);
                 diagnostics.extend(checks.diagnostics().cloned());
+                let examples = examples::Examples::of(
+                    &resolved,
+                    &store,
+                    &edit_context,
+                    allowed_origins,
+                    diagnostics,
+                );
                 Validated {
                     store,
                     resolved,
                     checks,
+                    examples,
                     kept: diagnostics.len(),
                     edit_context,
                     allowed_origins: allowed_origins.to_vec(),
@@ -389,12 +415,14 @@ impl Processor<Validated> {
     /// ```
     #[must_use]
     pub fn sources(&self, context: &RenderContext) -> Needed {
-        load::sources(
+        let mut needed = load::sources(
             &self.state.resolved,
             &self.state.checks,
             context,
             &self.state.allowed_origins,
-        )
+        );
+        self.state.examples.sources(context, &mut needed);
+        needed
     }
 
     /// Stage 4a, loading, for a render with `context`: the inputs' values and every data import, with the host's
@@ -410,7 +438,7 @@ impl Processor<Validated> {
     }
 
     fn load_with(self, render: RenderInputs) -> Processor<Loaded> {
-        self.then(|validated, diagnostics| {
+        self.then(|mut validated, diagnostics| {
             let host = load::Host {
                 store: validated.store.store(),
                 fetch: &*render.fetch,
@@ -424,6 +452,7 @@ impl Processor<Validated> {
                 &host,
             );
             diagnostics.extend_from_slice(&data.diagnostics);
+            validated.examples.load(&render, diagnostics);
             Loaded {
                 validated,
                 render,
@@ -445,11 +474,12 @@ impl Processor<Loaded> {
     pub fn expand(self, options: &expand::Options) -> Processor<Expanded> {
         self.then(
             |Loaded {
-                 validated,
+                 mut validated,
                  render,
-                 data,
+                 mut data,
              },
              diagnostics| {
+                data.examples = validated.examples.expand(options, diagnostics);
                 let result = expand::expand(
                     &validated.resolved,
                     &validated.checks,
@@ -489,8 +519,9 @@ impl Processor<Loaded> {
 }
 
 /// The validated state again, with the diagnostics of stage 4 dropped.
-fn back(validated: Validated, diagnostics: &mut Vec<Diagnostic>) -> Validated {
+fn back(mut validated: Validated, diagnostics: &mut Vec<Diagnostic>) -> Validated {
     diagnostics.truncate(validated.kept);
+    validated.examples.back();
     validated
 }
 

@@ -25,6 +25,10 @@ pub struct Root {
     /// The document's inputs, in declared order, with the values the render used; absent when it has none.
     #[serde(skip_serializing_if = "Inputs::is_empty")]
     pub inputs: Inputs,
+    /// For an example (spec §7.8), its number among the processed document's examples, from 1, which its
+    /// host-language components are listed under; absent for the processed document.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub example: Option<usize>,
 }
 
 /// A document's inputs, serialized as a map from each name to its state.
@@ -329,9 +333,15 @@ pub struct Code {
     /// Its text alternative, `alt`, when a code renderer renders it.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub alt: Option<String>,
-    /// What it shows, when a code renderer renders it; a `source` block has no `component`.
+    /// What it shows, when a code renderer renders it or it is an example; a `source` block has no `component`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub render: Option<crate::render::Render>,
+    /// An example's box params, evaluated: the common params, `class` and `id` (spec §7.8).
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub params: Vec<Param>,
+    /// An example's expanded root (spec §7.8, §12.3).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub document: Option<Box<Root>>,
 }
 
 /// The code renderer of a code block, with its params, the block's text as `code` (spec §7.7).
