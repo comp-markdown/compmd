@@ -1584,6 +1584,8 @@ Authors SHOULD separate component lines from surrounding paragraphs with blank l
 
 **Printing** (informative). A processor that prints shows the document as it renders it, in a light colour scheme on paper unless the host says otherwise, after its components have drawn. A component whose signature says `print: fallback` (section 7.3) prints its fallback, and one the processor can't run prints its fallback, as anywhere (section 4.5).
 
+**Plain text** (informative). A processor that gives a document's text as a reader reads it, for a search index or a preview, gives one line per block, so the first line is the first block's text. It leaves out syntax markers (a heading's `#`, emphasis, list and quote markers, table pipes, task-list boxes, an alert's tag), URLs, raw HTML, the frontmatter, component lines and definition fences, and keeps link and wiki-link labels, images' alt text, code and math as written, and each component's fallback (section 4.5). Interpolations are left out: their values belong to a render, and a document's text as written doesn't hold them.
+
 ## 15. Security
 
 Code from a host-language component runs at one of three **trust levels**. The processor's configuration sets the level of each pack; a document can never raise one.
