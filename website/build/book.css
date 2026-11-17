@@ -41,6 +41,22 @@
   }
 }
 
+/* The cover: the page itself, edge to edge, with nothing in its margins. */
+@page jacket {
+  margin: 0;
+
+  @top-left {
+    content: none;
+  }
+  @top-right {
+    content: none;
+  }
+  @bottom-center {
+    content: none;
+  }
+}
+
+/* The title page and the copyright page on its back: no running head, no number. */
 @page cover {
   @top-left {
     content: none;
@@ -78,31 +94,78 @@
   }
 }
 
-/* No ligatures: the serif's ("fi" in "first") have no text in the PDF, so a search or a copy lost their letters. */
+/* A technical book's type: the text 10 pt on 13.5 pt, headings a step or two up, code 8.5 pt; about forty lines a page.
+   The site's sizes are for a screen, in `rem` and with a screen's leading, so each is set here in points.
+   No ligatures: the serif's ("fi" in "first") have no text in the PDF, so a search or a copy lost their letters. */
+:root {
+  font-size: 10pt;
+}
+
 body {
   font-family: var(--serif);
   font-size: 10pt;
-  line-height: 1.45;
+  line-height: 1.35;
   hyphens: auto;
   font-variant-ligatures: no-common-ligatures;
 }
 
 .spec {
   max-inline-size: none;
+  font-size: 10pt;
+  line-height: 1.35;
 }
 
 .spec p {
+  margin-block: 0 0.55em;
   text-align: justify;
   widows: 2;
   orphans: 2;
+}
+
+.spec h2 {
+  margin: 1.5em 0 0.45em;
+  padding: 0;
+  border: 0;
+  font-size: 15pt;
+  line-height: 1.2;
+}
+
+.spec h3 {
+  margin: 1.3em 0 0.35em;
+  font-size: 12pt;
+  line-height: 1.25;
+}
+
+.spec h4 {
+  margin: 1.1em 0 0.3em;
+  font-size: 10.5pt;
+}
+
+.spec li + li {
+  margin-block-start: 0.15em;
+}
+
+.spec blockquote {
+  margin: 0.8em 0;
+  padding: 0.35em 0.8em;
+}
+
+.spec table {
+  margin-block: 0.8em;
+  font-size: 9pt;
+  line-height: 1.3;
+}
+
+.spec th,
+.spec td {
+  padding: 3pt 10pt 3pt 0;
 }
 
 /* Headings break between words only: a hyphen would also change their titles in the PDF's outline. */
 h1,
 h2,
 h3,
-h4,
-.cover .title {
+h4 {
   hyphens: manual;
 }
 
@@ -115,6 +178,9 @@ h4,
 /* A code block breaks between its lines: each of Shiki's lines a block a line high, the line breaks between them taken
    out by `print.ts` (Paged.js drops them where it splits a block, which ran the lines after together). */
 .spec pre {
+  margin-block: 0.7em;
+  padding: 5pt 7pt;
+  line-height: 1.3;
   break-inside: auto;
 }
 
@@ -124,36 +190,120 @@ h4,
   min-block-size: 1lh;
 }
 
-/* The title page: the book's name, what it is for, the version it follows, and where its online edition is. */
+/* The front matter's first pages (`FrontMatter.svelte`), hidden on the site: the cover, the title page on the right,
+   and the copyright page on its back. */
+.front-matter {
+  display: block;
+}
+
+.front-matter p {
+  margin: 0;
+  text-align: start;
+  hyphens: manual;
+}
+
+/* The cover: the page edge to edge in the site's blue, the series above, the title and what the book is for, the
+   author at the foot. */
 .cover {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
   box-sizing: border-box;
-  block-size: 8in;
-  margin: 0;
-  padding: 0;
-  page: cover;
+  inline-size: 7in;
+  block-size: 10in;
+  padding: 1.1in 0.85in 0.9in;
+  background: #24408f;
+  color: #fff;
+  font-family: var(--sans);
+  page: jacket;
+  break-after: page;
+  print-color-adjust: exact;
+}
+
+.cover .series {
+  padding-block-end: 0.12in;
+  border-block-end: 1.5pt solid #9db4f2;
+  font-size: 11pt;
+  font-weight: 600;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+}
+
+.cover .cover-title {
+  margin-block-start: 1.6in;
 }
 
 .cover .title {
-  margin: 1.2in 0 0;
-  font-size: 28pt;
+  font-family: var(--serif);
+  font-size: 34pt;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.cover .subtitle {
+  margin-block-start: 0.3in;
+  color: #dbe4fb;
+  font-size: 13pt;
+  line-height: 1.35;
+}
+
+.cover .author {
+  margin-block-start: auto;
+  font-size: 14pt;
+  font-weight: 500;
+}
+
+/* The title page: the title, what the book is for and the author, with the imprint at the foot. */
+.title-page {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  block-size: 8.4in;
+  page: cover;
+  break-before: right;
+}
+
+.title-page .title {
+  margin-block-start: 1in;
+  font-size: 26pt;
   font-weight: 600;
   line-height: 1.15;
   string-set: book content(text);
 }
 
-.cover .purpose {
-  margin-block-start: 0.35in;
+.title-page .subtitle {
+  margin-block-start: 0.25in;
   font-size: 12pt;
   font-style: italic;
-  text-align: start;
+  line-height: 1.35;
 }
 
-.cover .imprint {
+.title-page .author {
+  margin-block-start: 0.6in;
+  font-size: 13pt;
+}
+
+.title-page .publisher {
+  font-family: var(--sans);
   font-size: 9pt;
-  text-align: start;
+  letter-spacing: 0.08em;
+}
+
+/* The copyright page: the edition, the copyright, the license and the online edition, set small at the foot. */
+.copyright {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 0.6em;
+  block-size: 8.4in;
+  font-size: 8.5pt;
+  line-height: 1.4;
+  page: cover;
+  break-before: page;
+}
+
+.copyright a {
+  color: inherit;
+  overflow-wrap: anywhere;
 }
 
 /* What an example renders, after its code (`previews.ts`): the page as a host shows it, framed, captioned. */
@@ -168,7 +318,7 @@ figure.preview img {
   inline-size: auto;
   block-size: auto;
   max-inline-size: 100%;
-  max-block-size: 6in;
+  max-block-size: 3.6in;
   object-fit: contain;
   margin-inline: auto;
   border: 0.5pt solid #c9d1da;

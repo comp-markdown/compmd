@@ -12,6 +12,7 @@
 <script lang="ts">
   import type { Heading } from "../build/spec.ts";
   import Footer from "./Footer.svelte";
+  import FrontMatter from "./FrontMatter.svelte";
   import Header from "./Header.svelte";
   import Meta from "./Meta.svelte";
   import { SITE, specPdf } from "./site.ts";
@@ -31,6 +32,8 @@
   let { html, toc, root, version, versions }: Props = $props();
   const title = $derived(version === undefined ? "CompMD specification, version 1 (draft)" : `CompMD specification, version ${version}`);
   const description = "The CompMD specification: Markdown with components, data, inputs and layout, readable as text in any Markdown renderer.";
+  /** The month it was printed in, for the draft's edition. */
+  const month = new Intl.DateTimeFormat("en", { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date());
 
   /** Each section with its subsections, for "On this page": `spec.ts` shows the one being read. */
   const sections = $derived(
@@ -49,17 +52,14 @@
 
 <Meta {title} {description} />
 
-<!-- The PDF's title page, which only its typesetting shows (`build/book.css`): first, so it is the PDF's first page. -->
-<header class="cover" hidden>
-  <div>
-    <p class="title">{title}</p>
-    <p class="purpose">{description}</p>
-  </div>
-  <p class="imprint">
-    {version === undefined ? "The editor's draft, which changes as the spec does." : `Version ${version}, released and never changed after.`}<br />
-    Online: <a href="{SITE}spec/">{SITE}spec/</a>
-  </p>
-</header>
+<!-- The PDF's first pages, which only its typesetting shows (`build/book.css`): first, so they are the PDF's first pages. -->
+<FrontMatter
+  {title}
+  subtitle="Markdown with components, data, inputs and layout, readable as text in any Markdown renderer."
+  edition={version === undefined ? `The editor's draft of ${month}, which changes as the spec does.` : `Version ${version}, released and never changed after.`}
+  online="{SITE}spec/"
+  license={{ text: "The specification text is licensed under CC BY 4.0; its conformance set and any code, under the MIT license. The terms:", url: "https://creativecommons.org/licenses/by/4.0/" }}
+/>
 
 <Header {root} current="spec" />
 

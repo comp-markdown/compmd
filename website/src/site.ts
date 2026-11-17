@@ -6,6 +6,9 @@ export const SITE = "https://compmd.dev/";
 /** The repository on GitHub. */
 export const REPOSITORY = "https://github.com/comp-markdown/compmd";
 
+/** Who wrote the spec and the guides, and holds their copyright (the repository's README). */
+export const AUTHOR = "Hakan Serce";
+
 /** A book's PDF, in its folder of the guides: `compmd-authors-guide.pdf`. */
 export const guidePdf = (book: string): string => `compmd-${book}-guide.pdf`;
 
