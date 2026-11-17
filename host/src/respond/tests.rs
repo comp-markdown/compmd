@@ -1,164 +1,122 @@
+//! The serving contract's cases (`fixtures/respond/`), which `@compmd/host` runs too.
+
+use std::collections::HashMap;
+use std::path::PathBuf;
+
 use compmd_pack::PackName;
-use http::{Request, Response, StatusCode};
+use http::{Request, Response};
+use serde::Deserialize;
 
 use super::*;
-use crate::bundle::tests::{HASH, bundle};
 use crate::store::{NoStore, StoredRelease};
 
-/// A store holding `@kit/charts` 2.0.0 with `index.js`.
-struct Charts;
+/// The contract's cases, as `fixtures/respond/cases.json` has them.
+#[derive(Deserialize)]
+struct Contract {
+    store: HashMap<String, String>,
+    headers: HashMap<String, HashMap<String, Option<String>>>,
+    cases: Vec<Case>,
+}
 
-impl Store for Charts {
+#[derive(Deserialize)]
+struct Case {
+    method: Option<String>,
+    path: String,
+    #[serde(default)]
+    store: bool,
+    status: u16,
+    answer: String,
+    #[serde(rename = "type")]
+    kind: Option<String>,
+    body: String,
+}
+
+/// A store holding the files the cases name, by place.
+struct Fixed(HashMap<String, String>);
+
+impl Store for Fixed {
     fn releases(&self, _pack: &PackName) -> Vec<StoredRelease> {
         Vec::new()
     }
 
     fn file(&self, place: &Place) -> Option<Vec<u8>> {
-        (place.to_string() == "@kit/charts@2.0.0/index.js").then(|| b"export default 2".to_vec())
+        self.0
+            .get(&place.to_string())
+            .map(|body| body.clone().into_bytes())
     }
 }
 
-#[test]
-fn the_store_in_these_tests_lists_nothing() {
-    assert_eq!(Charts.releases(&"@kit/charts".parse().expect("a name")), []);
+fn fixtures() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("fixtures/respond")
 }
 
-fn get(path: &str) -> Request<()> {
-    Request::get(path).body(()).expect("a request")
-}
-
-fn header<'a>(response: &'a Response<Vec<u8>>, name: &str) -> &'a str {
+fn header<'a>(response: &'a Response<Vec<u8>>, name: &str) -> Option<&'a str> {
     response
         .headers()
         .get(name)
         .and_then(|value| value.to_str().ok())
-        .unwrap_or_default()
 }
 
 #[test]
-fn a_frames_file_is_served_sandboxed_with_its_type() {
-    let bundle = bundle();
-    let page = respond(
-        &bundle,
-        &NoStore,
-        &get(&format!("/frames/{HASH}/strict.html")),
-    );
-    assert_eq!(page.status(), StatusCode::OK);
-    assert_eq!(page.body(), b"<!doctype html>");
-    assert_eq!(header(&page, "content-type"), "text/html; charset=utf-8");
-    assert_eq!(
-        header(&page, "content-security-policy"),
-        "sandbox allow-scripts"
-    );
-    assert_eq!(header(&page, "access-control-allow-origin"), "*");
-    assert_eq!(header(&page, "access-control-expose-headers"), "*");
-    assert_eq!(header(&page, "x-content-type-options"), "nosniff");
-    assert_eq!(
-        header(&page, "cache-control"),
-        "max-age=31536000, immutable"
-    );
-    let script = respond(
-        &bundle,
-        &NoStore,
-        &get(&format!("/frames/{HASH}/chunks/runtime.js?v=1")),
-    );
-    assert_eq!(script.status(), StatusCode::OK);
-    assert_eq!(
-        header(&script, "content-type"),
-        "text/javascript; charset=utf-8"
-    );
-}
-
-#[test]
-fn a_packs_file_comes_from_the_bundle_or_the_store() {
-    let bundle = bundle();
-    let bundled = respond(
-        &bundle,
-        &NoStore,
-        &get("/packs/@kit/mermaid@1.2.0/dist/mermaid.js"),
-    );
-    assert_eq!(bundled.status(), StatusCode::OK);
-    assert_eq!(bundled.body(), b"export default 1");
-    assert_eq!(
-        header(&bundled, "content-type"),
-        "text/javascript; charset=utf-8"
-    );
-    assert_eq!(
-        header(&bundled, "cache-control"),
-        "max-age=31536000, immutable"
-    );
-    let stored = respond(&bundle, &Charts, &get("/packs/@kit/charts@2.0.0/index.js"));
-    assert_eq!(stored.status(), StatusCode::OK);
-    assert_eq!(stored.body(), b"export default 2");
-    let held_by_neither = respond(&bundle, &NoStore, &get("/packs/@kit/charts@2.0.0/index.js"));
-    assert_eq!(held_by_neither.status(), StatusCode::NOT_FOUND);
-}
-
-#[test]
-fn nothing_else_is_served_and_the_refusal_says_why() {
-    let bundle = bundle();
-    for path in [
-        "/frames/../secret.txt".to_owned(),
-        format!("/frames/{HASH}/../secret.txt"),
-        format!("/frames/{HASH}/./strict.html"),
-        format!("/frames/{HASH}/chunks//runtime.js"),
-        format!("/frames/{HASH}/"),
-        format!("/frames/{HASH}"),
-        format!("/frames/{HASH}/chunks"),
-        format!("/frames/{HASH}/missing.js"),
-        format!("/frames/{HASH}strict.html"),
-        "/frames/0000000000000000/strict.html".to_owned(),
-        "/manifest.json".to_owned(),
-        "/secret.txt".to_owned(),
-        format!("/{HASH}/strict.html"),
-        "/packs/@kit/other@1.0.0/index.js".to_owned(),
-        "/packs/@kit/mermaid@1.2.0/../../secret.txt".to_owned(),
-        "/packs/@kit/mermaid@1.2.0".to_owned(),
-        "/packs/kit/mermaid@1.2.0/package.json".to_owned(),
-        "/".to_owned(),
-    ] {
-        let refused = respond(&bundle, &NoStore, &get(&path));
-        assert_eq!(refused.status(), StatusCode::NOT_FOUND, "{path}");
+fn every_case_of_the_contract_gets_its_answer() {
+    let cases: Contract =
+        serde_json::from_slice(&std::fs::read(fixtures().join("cases.json")).expect("the cases"))
+            .expect("cases.json");
+    let bundle = Bundle::read(&fixtures().join("bundle")).expect("the bundle");
+    let store = Fixed(cases.store.clone());
+    for case in &cases.cases {
+        let request = Request::builder()
+            .method(case.method.as_deref().unwrap_or("GET"))
+            .uri(&case.path)
+            .body(())
+            .expect("a request");
+        let response = if case.store {
+            respond(&bundle, &store, &request)
+        } else {
+            respond(&bundle, &NoStore, &request)
+        };
+        let label = format!("{} {}", request.method(), case.path);
+        assert_eq!(response.status().as_u16(), case.status, "{label}");
         assert_eq!(
-            refused.body(),
-            b"not a file of the frames or packs this host serves"
+            String::from_utf8_lossy(response.body()),
+            case.body,
+            "{label}"
         );
-        assert_eq!(
-            header(&refused, "content-type"),
-            "text/plain; charset=utf-8"
-        );
-        assert_eq!(header(&refused, "access-control-allow-origin"), "*");
-        assert_eq!(
-            header(&refused, "cache-control"),
-            "",
-            "a refusal isn't cached"
-        );
+        if let Some(kind) = &case.kind {
+            assert_eq!(
+                header(&response, "content-type"),
+                Some(kind.as_str()),
+                "{label}"
+            );
+        }
+        for (name, value) in &cases.headers[&case.answer] {
+            assert_eq!(header(&response, name), value.as_deref(), "{label}: {name}");
+        }
     }
 }
 
 #[test]
-fn a_path_without_its_leading_slash_is_refused() {
-    let bundle = bundle();
-    let request = Request::get("compmd://localhost")
-        .body(())
-        .expect("a request");
+fn the_cases_store_lists_no_releases() {
     assert_eq!(
-        respond(&bundle, &NoStore, &request).status(),
-        StatusCode::NOT_FOUND
+        Fixed(HashMap::new()).releases(&"@kit/charts".parse().expect("a name")),
+        []
     );
 }
 
+/// Paths that reach `respond` as written only over `http` types (a URL parser resolves `.` parts before a Fetch API
+/// handler sees them): refused.
 #[test]
-fn only_get_is_answered() {
-    let bundle = bundle();
-    let post = Request::post(format!("/frames/{HASH}/strict.html"))
-        .body(())
-        .expect("a request");
-    let refused = respond(&bundle, &NoStore, &post);
-    assert_eq!(refused.status(), StatusCode::METHOD_NOT_ALLOWED);
-    assert_eq!(
-        refused.body(),
-        b"the frames and packs are only read, with GET"
-    );
-    assert_eq!(header(&refused, "access-control-allow-origin"), "*");
+fn a_path_with_a_dot_part_or_without_its_leading_slash_is_refused() {
+    let bundle = Bundle::read(&fixtures().join("bundle")).expect("the bundle");
+    for uri in [
+        "compmd://localhost",
+        "/frames/1df336e75685de8c/./strict.html",
+    ] {
+        let request = Request::get(uri).body(()).expect("a request");
+        assert_eq!(
+            respond(&bundle, &NoStore, &request).status().as_u16(),
+            404,
+            "{uri}"
+        );
+    }
 }

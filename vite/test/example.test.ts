@@ -114,7 +114,12 @@ describe("the example on the dev server", () => {
       const response = await fetch(`http://localhost:${String(PORT + 1)}${sandbox.origin}${sandbox.frames}strict.html`);
       expect(Object.fromEntries([...response.headers].filter(([name]) => name in LOWER_CONTRACT))).toEqual(LOWER_CONTRACT);
       const unserved = ["packs/@example/old@1.0.0/index.comp.md", "manifest.json", `${sandbox.frames}../frames.json`];
-      for (const path of unserved) expect((await fetch(`http://localhost:${String(PORT + 1)}/compmd/${path}`)).headers.get("access-control-allow-origin"), path).toBeNull();
+      // Refused as every host refuses them (`@compmd/host`'s `respond`): a 404 that says why, readable from any origin.
+      for (const path of unserved) {
+        const refused = await fetch(`http://localhost:${String(PORT + 1)}/compmd/${path}`);
+        expect(refused.status, path).toBe(404);
+        expect(await refused.text(), path).toBe("not a file of the frames or packs this host serves");
+      }
     } finally {
       await browser.close();
       await dev.close();

@@ -54,6 +54,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@compmd/host": "workspace:^",
     "@compmd/processor": "workspace:^",
     "@compmd/registry": "workspace:^",
     "@compmd/render": "workspace:^",

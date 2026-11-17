@@ -1,0 +1,46 @@
+{
+  "description": "The serving contract (docs/hosting.md, decision 8), as requests to `respond` over the bundle in `bundle/` and what each gets. `store: true` answers with the store below too, which holds one pack file the bundle doesn't. Every implementation of `respond` (compmd-host's, @compmd/host's) runs these. A header that is null must be absent. Each path is one a URL parser leaves as it is: the Fetch API resolves `.` parts before a handler sees them, so a case of those is compmd-host's own.",
+  "store": {
+    "@kit/charts@2.0.0/index.js": "export default 2"
+  },
+  "headers": {
+    "served": {
+      "content-security-policy": "sandbox allow-scripts",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "*",
+      "x-content-type-options": "nosniff",
+      "cache-control": "max-age=31536000, immutable"
+    },
+    "refused": {
+      "access-control-allow-origin": "*",
+      "content-type": "text/plain; charset=utf-8",
+      "cache-control": null
+    }
+  },
+  "cases": [
+    { "path": "/frames/1df336e75685de8c/strict.html", "status": 200, "answer": "served", "type": "text/html; charset=utf-8", "body": "<!doctype html>" },
+    { "path": "/frames/1df336e75685de8c/chunks/runtime.js?v=1", "status": 200, "answer": "served", "type": "text/javascript; charset=utf-8", "body": "export {}" },
+    { "path": "/packs/@kit/mermaid@1.2.0/dist/mermaid.js", "status": 200, "answer": "served", "type": "text/javascript; charset=utf-8", "body": "export default 1" },
+    { "path": "/packs/@kit/mermaid@1.2.0/package.json", "status": 200, "answer": "served", "type": "application/json", "body": "{\"name\": \"@kit/mermaid\"}" },
+    { "path": "/packs/@kit/charts@2.0.0/index.js", "store": true, "status": 200, "answer": "served", "type": "text/javascript; charset=utf-8", "body": "export default 2" },
+    { "path": "/packs/@kit/charts@2.0.0/index.js", "status": 404, "answer": "refused", "body": "not a file of the frames or packs this host serves" },
+    { "path": "/frames/../secret.txt", "status": 404, "answer": "refused", "body": "not a file of the frames or packs this host serves" },
+    { "path": "/frames/1df336e75685de8c/../secret.txt", "status": 404, "answer": "refused", "body": "not a file of the frames or packs this host serves" },
+    { "path": "/frames/1df336e75685de8c/chunks//runtime.js", "status": 404, "answer": "refused", "body": "not a file of the frames or packs this host serves" },
+    { "path": "/frames/1df336e75685de8c/", "status": 404, "answer": "refused", "body": "not a file of the frames or packs this host serves" },
+    { "path": "/frames/1df336e75685de8c", "status": 404, "answer": "refused", "body": "not a file of the frames or packs this host serves" },
+    { "path": "/frames/1df336e75685de8c/chunks", "status": 404, "answer": "refused", "body": "not a file of the frames or packs this host serves" },
+    { "path": "/frames/1df336e75685de8c/missing.js", "status": 404, "answer": "refused", "body": "not a file of the frames or packs this host serves" },
+    { "path": "/frames/1df336e75685de8cstrict.html", "status": 404, "answer": "refused", "body": "not a file of the frames or packs this host serves" },
+    { "path": "/frames/0000000000000000/strict.html", "status": 404, "answer": "refused", "body": "not a file of the frames or packs this host serves" },
+    { "path": "/manifest.json", "status": 404, "answer": "refused", "body": "not a file of the frames or packs this host serves" },
+    { "path": "/secret.txt", "status": 404, "answer": "refused", "body": "not a file of the frames or packs this host serves" },
+    { "path": "/1df336e75685de8c/strict.html", "status": 404, "answer": "refused", "body": "not a file of the frames or packs this host serves" },
+    { "path": "/packs/@kit/other@1.0.0/index.js", "status": 404, "answer": "refused", "body": "not a file of the frames or packs this host serves" },
+    { "path": "/packs/@kit/mermaid@1.2.0/../../secret.txt", "status": 404, "answer": "refused", "body": "not a file of the frames or packs this host serves" },
+    { "path": "/packs/@kit/mermaid@1.2.0", "status": 404, "answer": "refused", "body": "not a file of the frames or packs this host serves" },
+    { "path": "/packs/kit/mermaid@1.2.0/package.json", "status": 404, "answer": "refused", "body": "not a file of the frames or packs this host serves" },
+    { "path": "/", "status": 404, "answer": "refused", "body": "not a file of the frames or packs this host serves" },
+    { "method": "POST", "path": "/frames/1df336e75685de8c/strict.html", "status": 405, "answer": "refused", "body": "the frames and packs are only read, with GET" }
+  ]
+}

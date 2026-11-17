@@ -3,6 +3,7 @@ packages:
   - sandbox
   - devtools
   - registry
+  - host-js
   - vite
   - vite/example
   - pack

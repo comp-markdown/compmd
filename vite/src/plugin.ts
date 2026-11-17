@@ -6,7 +6,9 @@
 import { existsSync } from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { readdir, readFile } from "node:fs/promises";
-import { extname, join, relative, resolve, sep } from "node:path";
+import { join, relative, resolve, sep } from "node:path";
+import { respond, type Bundle } from "@compmd/host";
+import { folderBundle } from "@compmd/host/node";
 import { NpmRegistry, registryProxy } from "@compmd/registry";
 import { toNodeListener } from "@compmd/registry/node";
 import type { Connect, Plugin, ResolvedConfig, UserConfig } from "vite";
@@ -36,7 +38,6 @@ export interface CompmdOptions {
 
 const VIRTUAL = "virtual:compmd";
 const RESOLVED = `\0${VIRTUAL}`;
-const TYPES: Record<string, string> = { ".html": "text/html", ".js": "text/javascript", ".json": "application/json", ".css": "text/css", ".map": "application/json", ".md": "text/markdown" };
 
 /**
  * The code of `virtual:compmd`'s `registry`, after `origin`: what `resolvePacks` takes from the configuration. With
@@ -159,6 +160,8 @@ export function compmd(options: CompmdOptions = {}): Plugin {
   let frames: BundledFrames | undefined;
   /** The built modules the frames load, from the bundle's manifest. */
   let modules: Record<string, ServedModule> = {};
+  /** The bundle as the dev server serves it, read when it is first asked for after it was written. */
+  let served: Promise<Bundle> | undefined;
   const source = options.source === undefined ? {} : { source: options.source };
 
   /** Reads the app again and writes its packs, after its frames, which are built once. */
@@ -168,14 +171,10 @@ export function compmd(options: CompmdOptions = {}): Plugin {
     built ??= writeFrames(loaded, { root: config.root, out: bundle, ...source });
     frames = await built;
     modules = servedModules(loaded, await writePacks(loaded, bundle, frames, options.source));
+    // Its packs may have changed: the dev server reads the bundle again.
+    served = undefined;
     app = loaded;
     return loaded;
-  };
-
-  /** The file of the bundle `path` names, or `undefined` for none the contract serves. */
-  const fileOf = (path: string): string | undefined => {
-    const file = join(bundle, ...path.split("/"));
-    return isServed(path) && existsSync(file) ? file : undefined;
   };
 
   return {
@@ -222,23 +221,23 @@ export function compmd(options: CompmdOptions = {}): Plugin {
       server.middlewares.use(proxying(`${prefix}registry/`, () => proxy));
       // With `out`, the adapter serves the bundle.
       if (options.out !== undefined) return;
+      // The bundle under `prefix`, as every host serves it: the serving contract's `respond` (`@compmd/host`).
       server.middlewares.use((request, response, next) => {
         const url = new URL(request.url ?? "/", "http://localhost");
-        let file: string | undefined;
-        try {
-          file = url.pathname.startsWith(prefix) ? fileOf(decodeURIComponent(url.pathname.slice(prefix.length))) : undefined;
-        } catch {
-          // A malformed escape names no file.
-        }
-        if (!file) {
+        if (!url.pathname.startsWith(prefix)) {
           next();
           return;
         }
-        void readFile(file).then((body) => {
-          setContractHeaders(response);
-          response.setHeader("Content-Type", TYPES[extname(file)] ?? "application/octet-stream");
-          response.end(body);
-        }, next);
+        const asked = new Request(new URL(`/${url.pathname.slice(prefix.length)}${url.search}`, url), { method: request.method ?? "GET" });
+        void (served ??= folderBundle(bundle))
+          .then((held) => respond(asked, held))
+          .then(async (answer) => {
+            response.statusCode = answer.status;
+            answer.headers.forEach((value, name) => {
+              response.setHeader(name, value);
+            });
+            response.end(Buffer.from(await answer.arrayBuffer()));
+          }, next);
       });
     },
     async configurePreviewServer(server) {

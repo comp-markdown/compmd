@@ -24,6 +24,8 @@ create-pack/src
 create-pack/template
 registry/README.md
 registry/src
+host-js/README.md
+host-js/src
 devtools/README.md
 devtools/src
 packs/mermaid/README.md
