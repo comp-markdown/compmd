@@ -26,6 +26,7 @@ A release publishes only packages that npm and this repository's workflow alread
 - The [prerequisites](#prerequisites-once-per-package) hold for every package the release publishes.
 - `cargo make ci` is green on `main`.
 - Each package's README says what changed, until the implementation has a changelog of its own.
+- The code implements the spec as it is on `main`, and `SPEC_VERSION` in `processor/src/lib.rs` is the spec header's revision (`**Version 1.0-draft.N.**`), with `wasm/src/index.ts` and the READMEs the same (their tests say so). The workflow refuses a release otherwise.
 - The version, in one commit: `render/package.json`, `wasm/package.json`, `sandbox/package.json`, `registry/package.json`, `devtools/package.json`, `vite/package.json`, `pack/package.json`, `create-pack/package.json`, `processor/Cargo.toml`, `pack-types/Cargo.toml`, `host/Cargo.toml` and `tauri/Cargo.toml`, with the crates' dependencies on each other (`version = …` beside each `path`).
 - If the fork changed since its last release: its version in `markdown-rs/Cargo.toml` (on its `compmd` branch), and the same version in the `compmd-markdown` dependency of `processor/Cargo.toml` and `markdown-rs/mdast_util_to_markdown/Cargo.toml`.
 - On Linux, once the version is committed: `cargo make linux` and `cargo make linux site` pass, so neither the release's checks nor its site deploy fail on the runner alone ([CI](docs/ci.md), decision 12).
@@ -39,7 +40,7 @@ git push origin v0.1.1
 ```
 
 The release workflow:
-1. checks the tag is the version in every package's `package.json` and in `processor/Cargo.toml`;
+1. checks the tag is the version in every package's `package.json` and in `processor/Cargo.toml`, and that `compmd::SPEC_VERSION` is the spec header's revision;
 2. installs Playwright's WebKit, for the sandbox's, the registry's, the Vite plugin's and create-pack's browser tests, and runs `cargo make ci`;
 3. packs the packages with pnpm, which writes the versions in place of their `workspace:*` dependencies on each other;
 4. stages them with npm's trusted publishing (`npm stage publish`): the renderer, then the processor, then the sandbox, which depends on both, then the registry, which needs the processor, then the Developer Tools, which depend on those four, then the Vite plugin, which depends on the first three, then `@compmd/pack`, which depends on all of those, then create-pack, whose packs pin it. No token is stored; each version carries its provenance. A version npm already has is left as it is, so a package whose first version was published by hand at the release's version is skipped, and a release that failed halfway can run again; a version it staged and nobody approved or rejected yet can't be staged again, so settle those first.
@@ -122,6 +123,8 @@ Run them from this repository's root, where its tags are. Git won't remove a wor
    ```
 
 3. The Pages workflow deploys the site with the version at `/spec/1.0/`, frozen. `/spec/` shows the latest release, and `/spec/draft/` the draft.
+
+**A draft's revision** (`1.0-draft.N`, spec §1) is tagged when it is pushed, on the last commit of its dated changelog entry, after the commits it is on: `git tag spec-v1.0-draft.13`, then `git push origin spec-v1.0-draft.13`. The Pages workflow skips draft tags: the push to `main` deployed the draft already.
 
 ## Prerequisites, once per package
 

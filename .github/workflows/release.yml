@@ -61,6 +61,17 @@ jobs:
             echo "::error::tauri/Cargo.toml is $written, the tag $GITHUB_REF_NAME"
             exit 1
           fi
+      # The release implements the spec as it is at this commit (docs/releases.md, decision 3): between releases the
+      # spec may move ahead of the code, but no release names an older revision than the one it ships beside. The
+      # tests keep @compmd/processor's SPEC_VERSION and the READMEs the same as the crate's.
+      - name: The release implements the spec's revision
+        run: |
+          spec="$(sed -n 's/^\*\*Version \([0-9][0-9.a-z-]*\)\. .*/\1/p' compmd-spec-v1.md)"
+          implemented="$(sed -n 's/^pub const SPEC_VERSION: &str = "\(.*\)";$/\1/p' processor/src/lib.rs)"
+          if [ -z "$spec" ] || [ "$spec" != "$implemented" ]; then
+            echo "::error::compmd::SPEC_VERSION is ${implemented:-missing}, the spec's header ${spec:-has none}: implement the revision, then set SPEC_VERSION"
+            exit 1
+          fi
       # Every check, and every package built.
       - run: cargo make ci
       # The crates packaged as the crates job will publish them, so a package cargo refuses stops the release before
