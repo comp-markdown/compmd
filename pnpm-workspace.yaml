@@ -15,6 +15,7 @@ packages:
   - editor
   - editor/packs/minimermaid
   - packs/mermaid
+  - packs/wireframe
   - examples/tauri
   - website
 
