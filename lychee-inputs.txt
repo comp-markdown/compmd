@@ -34,3 +34,6 @@ create-blog/README.md
 create-blog/src
 packs/mermaid/README.md
 packs/mermaid/src
+packs/wireframe/README.md
+packs/wireframe/LANGUAGE.md
+packs/wireframe/src
