@@ -22,6 +22,7 @@ export {
   type OriginAnswer,
   type OriginAnswers,
 } from "./origins.ts";
+export { cacheStorage, COMPILER, compiledKey, type Compiled, type CompiledCache } from "./compiled-cache.ts";
 export { Observer } from "./observer.ts";
 export type { Observation, ObservedEvent } from "./observation.ts";
 export type { FrameId, Gone, Observed, Renders } from "./protocol/observed.ts";

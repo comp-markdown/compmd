@@ -5,6 +5,7 @@
 import type { HostComponent } from "@compmd/processor";
 import type { ExpandedCode, ExpandedComponent, Mount } from "@compmd/render";
 import { afterEach, describe, expect, it } from "vitest";
+import type { Compiled, CompiledCache } from "../src/compiled-cache.ts";
 import type { HostClient } from "../src/host-api.ts";
 import { HostRuntime, type HostEvents } from "../src/host/runtime.ts";
 import { allowed, frames, leaf, missing, probeCode, refused } from "./harness.ts";
@@ -32,7 +33,8 @@ function setup(options: Partial<ConstructorParameters<typeof HostRuntime>[0]> = 
       waiting.get(`error:${component}`)?.([reason, message]);
     },
   };
-  const runtime = new HostRuntime({ base: frames, timeout: 1500, ...options }, events);
+  // No compiled code kept between tests, but in the test of keeping it: each test compiles what it sets.
+  const runtime = new HostRuntime({ base: frames, timeout: 1500, compiled: null, ...options }, events);
   runtimes.push(runtime);
   const area = document.body.appendChild(document.createElement("div"));
   areas.push(area);
@@ -162,6 +164,42 @@ export default function Chart({ compmd }) {
     expect(await second).toBe("two");
     handle.destroy();
     expect(area.querySelector("iframe")).toBeNull();
+  });
+
+  it("keeps compiled code by its source, so another document's runtime doesn't start a compile frame for it", async () => {
+    const kept = new Map<string, Compiled>();
+    const compiled: CompiledCache = {
+      get: (key) => Promise.resolve(kept.get(key)),
+      set: (key, code) => {
+        kept.set(key, code);
+        return Promise.resolve();
+      },
+    };
+    const chart = (name: string): HostComponent => ({
+      name,
+      language: "jsx",
+      code: `import { useEffect } from "react";
+export default function Chart({ compmd }) {
+  useEffect(() => { compmd.set("result", JSON.stringify("drawn")); }, []);
+  return <svg role="img" aria-label="chart" />;
+}`,
+      trust: { level: "strict" },
+    });
+    const compileFrames = () => document.querySelectorAll("iframe[title=compile]").length;
+    const first = setup({ compiled });
+    await first.runtime.set([chart("chart")]);
+    expect(compileFrames()).toBe(1);
+    expect(kept.size).toBe(1);
+    first.runtime.destroy();
+    expect(compileFrames()).toBe(0);
+
+    // Another document, the same source under another name: kept, so no compile frame starts, and it draws.
+    const { runtime, area, next } = setup({ compiled });
+    await runtime.set([chart("graph")]);
+    expect(compileFrames()).toBe(0);
+    const result = next("graph");
+    runtime.mountUse(area, use("graph"), { graph: { type: "string", value: "" } });
+    expect(await result).toBe("drawn");
   });
 
   it("says which component didn't compile, and shows its fallback", async () => {

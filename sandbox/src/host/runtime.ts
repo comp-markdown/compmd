@@ -8,6 +8,7 @@ import { createRegion, linkSchemes, type ExpandedInput, type ExpandedUse, type M
 import { localHost, serveHost, type HostApi, type HostClient } from "../host-api.ts";
 import { codeFor, Mounts } from "../mounts.ts";
 import type { Observer } from "../observer.ts";
+import { cacheStorage, compiledWith, type CompiledCache } from "../compiled-cache.ts";
 import { connectCompiler, type Compiler } from "../protocol/compiler.ts";
 import { failureText } from "../protocol/parent-end.ts";
 import { bindingOf, HELLO, SANDBOX_VERSION, type ComponentCode, type ErrorReason, type Level, type Libraries, type LibraryCode, type Scheme } from "../protocol/messages.ts";
@@ -43,6 +44,11 @@ export interface HostRuntimeOptions {
    * `javascript`, `vbscript`, `data`, `blob` and `file` can never be named.
    */
   linkSchemes?: readonly string[];
+  /**
+   * Where compiled code is kept, by its source, so a component isn't compiled again in another document or view
+   * (docs/hosting.md, decision 6): the page's Cache Storage by default (`cacheStorage`); `null` keeps nothing.
+   */
+  compiled?: CompiledCache | null;
   /** How long a frame may not answer before it is stopped, in ms (default 5000). */
   timeout?: number;
   /** The observer of the host's page, which records the document's frames, their messages and its components. */
@@ -87,6 +93,8 @@ export class HostRuntime {
   #trust = new Map<string, Trust>();
   #compiler: { compiler: Compiler; frame: HTMLIFrameElement; id: string | undefined } | undefined;
   #styles: readonly string[];
+  /** Where compiled code is kept; `null` when nothing is. */
+  readonly #compiled: CompiledCache | null;
   /** `host` for the trusted components in the host's page, when the host gives one. */
   readonly #local: ReturnType<typeof localHost> | undefined;
   /** What sends an event to each permissive frame given `host`, while it is on the page. */
@@ -100,6 +108,7 @@ export class HostRuntime {
     this.#events = events;
     this.links = linkSchemes(options.linkSchemes ?? []);
     this.#styles = options.stylesheets ?? [];
+    this.#compiled = options.compiled === undefined ? cacheStorage() : options.compiled;
     this.#local = options.host ? localHost(options.host) : undefined;
     this.#mounts = new Mounts({
       here: "host",
@@ -231,7 +240,8 @@ export class HostRuntime {
     // naming a runtime still goes there, which says the frames have none for it.
     if (component.language === "js" && !component.runtime) return { name: component.name, level, binding: "plain", code: component.code, ...withLibraries };
     try {
-      const { code, css } = await this.#compilerFor().compile({ name: component.name, language: component.language, code: component.code, ...(component.runtime ? { runtime: component.runtime } : {}) });
+      const request = { name: component.name, language: component.language, code: component.code, ...(component.runtime ? { runtime: component.runtime } : {}) };
+      const { code, css } = await compiledWith(this.#compiled, request, (asked) => this.#compilerFor().compile(asked));
       return { name: component.name, level, binding: bindingOf(component.language), code, ...(css === undefined ? {} : { css }), ...withLibraries };
     } catch (error) {
       this.#fallback(component.name, "failed", messageOf(error));
