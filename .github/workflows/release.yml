@@ -1,6 +1,6 @@
 # A release of the implementation (docs/releases.md): a tag v<version> builds and checks the repository, then stages
-# @compmd/render, @compmd/processor, @compmd/sandbox, @compmd/registry, @compmd/devtools, @compmd/vite, @compmd/pack and
-# @compmd/create-pack on npm with trusted publishing, for the author to approve: GitHub proves to npm which repository
+# @compmd/render, @compmd/processor, @compmd/sandbox, @compmd/registry, @compmd/devtools, @compmd/vite, @compmd/pack,
+# @compmd/create-pack, @compmd/blog and @compmd/create-blog on npm with trusted publishing, for the author to approve: GitHub proves to npm which repository
 # and workflow publishes, so no npm token is stored, and each version carries its provenance. Then, once the author
 # approves it, it publishes the crates compmd-markdown, compmd and tauri-plugin-compmd on crates.io the same way. The Tauri check runs first,
 # and nothing is published unless it passes (docs/tauri-plugin.md, decision 10).
@@ -44,7 +44,7 @@ jobs:
       - name: The tag is every package's version
         run: |
           version="${GITHUB_REF_NAME#v}"
-          for package in render wasm sandbox registry devtools vite pack create-pack; do
+          for package in render wasm sandbox registry devtools vite pack create-pack blog create-blog; do
             written="$(node -p "require('./$package/package.json').version")"
             if [ "$written" != "$version" ]; then
               echo "::error::$package/package.json is $written, the tag $GITHUB_REF_NAME"
@@ -93,6 +93,8 @@ jobs:
           pnpm --dir vite pack --pack-destination "$RUNNER_TEMP/packages"
           pnpm --dir pack pack --pack-destination "$RUNNER_TEMP/packages"
           pnpm --dir create-pack pack --pack-destination "$RUNNER_TEMP/packages"
+          pnpm --dir blog pack --pack-destination "$RUNNER_TEMP/packages"
+          pnpm --dir create-blog pack --pack-destination "$RUNNER_TEMP/packages"
       # Trusted publishing needs npm 11.5.1 or newer, staged publishing 11.15.0.
       - run: npm install --global npm@11.21.1
       # Outside the repository, whose devEngines name pnpm; each package after those it depends on. Each is staged: it
@@ -119,6 +121,8 @@ jobs:
           publish ./compmd-vite-*.tgz
           publish ./compmd-pack-*.tgz
           publish ./compmd-create-pack-*.tgz
+          publish ./compmd-blog-*.tgz
+          publish ./compmd-create-blog-*.tgz
 
   # The crates, once the release's checks passed and its npm packages are staged. crates.io has no staging, and a
   # published version can only be yanked, so the job waits in the environment `crates-io` for its required reviewer,
