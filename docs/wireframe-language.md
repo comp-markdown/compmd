@@ -1,4 +1,6 @@
-# The wireframe language (proposed)
+# The wireframe language
+
+**Status: accepted (2026-11-17).**
 
 The language of a ```` ```wireframe ```` block, which [the wireframe pack](wireframe-pack.md) draws: a screen as an
 indented outline, one part per line. It is Wireloom's syntax, as Wireloom's documentation and examples show it on
