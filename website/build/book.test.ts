@@ -42,6 +42,14 @@ describe("bookPages", () => {
     expect(developers?.props.contents).toContain('href="#quick-start"');
   });
 
+  it("gives its title page what the book is for and the version it follows, and leaves its title out of the front matter", () => {
+    expect(developers?.props.purpose).toMatch(/^How to build with CompMD: documents people write as text/);
+    expect(developers?.props.purpose).not.toContain("…");
+    expect(developers?.props.version).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(developers?.props.online).toBe("https://compmd.dev/guides/developers/");
+    expect(developers?.props.contents).not.toContain("Developer's Guide</h1>");
+  });
+
   it("gives each chapter its title once, as the heading of its section", () => {
     const first = developers?.props.chapters[0] ?? "";
     expect(first).toMatch(/^<h2 id="introduction">1\. Introduction<a class="anchor"/);

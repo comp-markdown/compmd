@@ -3,7 +3,9 @@
 //
 // - Every page, light and dark, at a desktop's and a phone's width: no page errors, no failed requests, nothing wider
 //   than the window; and each painted styled before any script runs.
-// - The PDFs: each book's has every chapter in its outline, in order, and in its text; each spec page's, its sections.
+// - The PDFs: each book's has every chapter in its outline, in order, and in its text, its title page no number, and
+//   its contents each chapter's page, the one it opens on, and a picture for each example; each spec page's, its
+//   sections.
 // - The landing page: the hero goes live, its shelf picks the book clicked, again and again, with every title fitting
 //   its cover, and the page under it follows, stars from the data among it; the hero follows an edit; the plain toggle
 //   switches; the input example follows its input; the JSX, code renderer and table cell examples render in the site's
@@ -24,7 +26,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { join } from "node:path";
 import { gzipSync } from "node:zlib";
-import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
+import { getDocument, OPS } from "pdfjs-dist/legacy/build/pdf.mjs";
 import { chromium, type Browser, type Page } from "playwright-core";
 import { bookOf, writtenOf } from "../build/guide.ts";
 import { serveFolder } from "../build/static.ts";
@@ -92,26 +94,67 @@ async function firstPaint(browser: Browser): Promise<void> {
   }
 }
 
-/** A PDF's outline, every entry at every depth in order, its text with its white space as single spaces, and its pages. */
-async function readPdf(path: string): Promise<{ outline: string[]; text: string; pages: number }> {
+/** A run of a PDF page's text, and how high on the page it is (from the foot, in points). */
+interface PdfRun {
+  str: string;
+  y: number;
+}
+
+/**
+ * A PDF's outline, every entry at every depth in order, its text with its white space as single spaces, its pages'
+ * count, and each page's runs of text.
+ */
+async function readPdf(path: string): Promise<{ outline: string[]; text: string; pages: number; runs: PdfRun[][]; images: number }> {
   const loading = getDocument({ data: new Uint8Array(readFileSync(path)) });
   const pdf = await loading.promise;
   const outline: string[] = [];
   const walk = (items: { title: string; items: unknown[] }[] | null) => {
     for (const item of items ?? []) {
-      outline.push(item.title.replace(/\s+/g, " ").trim());
+      outline.push(item.title.normalize("NFKC").replace(/\s+/g, " ").trim());
       walk(item.items as typeof items);
     }
   };
   walk(await pdf.getOutline());
-  const texts: string[] = [];
+  const runs: PdfRun[][] = [];
+  let images = 0;
   for (let number = 1; number <= pdf.numPages; number++) {
-    const content = await (await pdf.getPage(number)).getTextContent();
-    texts.push(content.items.map((item) => ("str" in item ? item.str : "")).join(" "));
+    const page = await pdf.getPage(number);
+    const content = await page.getTextContent();
+    // NFKC: a ligature the font sets (the "fi" of "first") is its letters again.
+    runs.push(content.items.flatMap((item) => ("str" in item && item.str.trim() !== "" ? [{ str: item.str.normalize("NFKC").trim(), y: item.transform[5] as number }] : [])));
+    images += (await page.getOperatorList()).fnArray.filter((op) => op === OPS.paintImageXObject).length;
   }
   const pages = pdf.numPages;
   await loading.destroy();
-  return { outline, text: texts.join(" ").replace(/\s+/g, " "), pages };
+  const text = runs.map((page) => page.map(({ str }) => str).join(" ")).join(" ").replace(/\s+/g, " ");
+  return { outline, text, pages, runs, images };
+}
+
+/** The number printed at a page's foot: its lowest run, when that is a number (arabic or roman); else `undefined`. */
+function folio(page: readonly PdfRun[]): string | undefined {
+  const lowest = page.reduce<PdfRun | undefined>((low, run) => (low === undefined || run.y < low.y ? run : low), undefined);
+  return lowest && /^(\d+|[ivxlc]+)$/.test(lowest.str) ? lowest.str : undefined;
+}
+
+/**
+ * A book's PDF is typeset as a book: its title page has no number, and each chapter's page in the contents (the number
+ * after its title there) is the number printed on the page it opens on (the first with its numbered title, which the
+ * contents and the running heads after it don't have first).
+ */
+function checkBookPages(book: string, chapters: readonly { number: number; title: string }[], runs: readonly PdfRun[][]): void {
+  const bare = (text: string) => text.replace(/\s/g, "");
+  check(folio(runs[0] ?? []) === undefined, `the ${book} book's title page has a page number`);
+  for (const { number, title } of chapters) {
+    const numbered = `${String(number)}. ${title}`;
+    const opening = runs.findIndex((page) => page.some(({ str }) => bare(str) === bare(numbered)));
+    const contents = runs.findIndex((page) => page.some(({ str }) => bare(str) === bare(title)));
+    check(opening !== -1 && contents !== -1 && contents < opening, `the ${book} book's PDF lacks "${numbered}" in its contents or as a chapter's title`);
+    const page = runs[contents] ?? [];
+    const entry = page.findIndex(({ str }) => bare(str) === bare(title));
+    const listed = page.slice(entry + 1).find(({ str }) => /^\d+$/.test(str))?.str;
+    const printed = folio(runs[opening] ?? []);
+    check(listed !== undefined && listed === printed, `the ${book} book's contents put "${numbered}" on page ${String(listed)}, but it opens on the page numbered ${String(printed)}`);
+  }
 }
 
 /**
@@ -128,14 +171,19 @@ function missingInOrder(wanted: readonly string[], found: readonly string[]): st
 /** Each book's PDF has every chapter in its outline, in the contents' order, and in its text; each spec page's PDF has the page's sections. */
 async function pdfs(browser: Browser): Promise<void> {
   for (const book of ["authors", "developers"]) {
-    const chapters = writtenOf(bookOf(readFileSync(join(import.meta.dirname, `../../guides/${book}/README.md`), "utf8"))).map(({ number, title }) => `${String(number)}. ${title}`);
-    const { outline, text, pages } = await readPdf(join(DIST, "guides", book, guidePdf(book)));
+    const written = writtenOf(bookOf(readFileSync(join(import.meta.dirname, `../../guides/${book}/README.md`), "utf8")));
+    const chapters = written.map(({ number, title }) => `${String(number)}. ${title}`);
+    const { outline, text, pages, runs, images } = await readPdf(join(DIST, "guides", book, guidePdf(book)));
     const missing = missingInOrder(chapters, outline);
     check(missing === undefined, `the ${book} book's PDF lacks "${String(missing)}" in its outline, or has it out of order; its outline starts ${outline.slice(0, 8).join(" | ")}`);
     // Without white space, as for the outline: pdf.js gives the text in runs, with or without the spaces between them.
     const bare = text.replace(/\s/g, "");
     for (const chapter of chapters) check(bare.includes(chapter.replace(/\s/g, "")), `the ${book} book's PDF lacks "${chapter}" in its text`);
-    console.log(`ok: the ${book} book's PDF, ${String(pages)} pages, its ${String(chapters.length)} chapters in its outline`);
+    checkBookPages(book, written, runs);
+    // Every example a chapter links to the playground has its picture (`build/previews.ts`).
+    const examples = written.reduce((count, { file }) => count + (readFileSync(join(import.meta.dirname, `../../guides/${book}/${file}`), "utf8").match(/\]\(https:\/\/compmd\.dev\/playground\/\?doc=/g)?.length ?? 0), 0);
+    check(images >= examples, `the ${book} book's PDF has ${String(images)} pictures for its ${String(examples)} examples`);
+    console.log(`ok: the ${book} book's PDF, ${String(pages)} pages, its ${String(chapters.length)} chapters in its outline and its contents, at the pages they open on, and a picture for each of its ${String(examples)} examples`);
   }
   const tags = execFileSync("git", ["tag", "--list", "spec-v*"], { cwd: join(import.meta.dirname, "../.."), encoding: "utf8" }).split("\n").filter(Boolean);
   for (const { folder } of specPages(tags)) {

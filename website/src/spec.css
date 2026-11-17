@@ -525,11 +525,6 @@
     break-inside: avoid;
   }
 
-  .book-print .edition {
-    color: var(--ink-secondary);
-    font-size: 0.9em;
-  }
-
   /* Each chapter starts a page. Its heading keeps the look of every section's: Chrome named a chapter's heading twice
      in the PDF's outline when the print styles gave it a look of its own. */
   .book-print .chapter {

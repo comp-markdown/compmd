@@ -14,3 +14,8 @@ packages:
   - packs/mermaid
   - examples/tauri
   - website
+
+# Install scripts that never run: Paged.js's old dependencies print banners from them, and need nothing built.
+allowBuilds:
+  core-js: false
+  es5-ext: false

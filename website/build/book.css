@@ -1,0 +1,309 @@
+/* A book's typesetting, for its PDF only: `print.ts` adds it to a book's page or the spec's, then Paged.js lays the
+   page out in pages by it (CSS Paged Media), and Chrome prints them. The site's own print styles still apply under it.
+
+   A trade paperback's trim, 7 × 10 in, with margins mirrored for binding: a title page with no number, the front matter
+   (the contents) numbered i, ii, …, then the chapters from 1, each opening a right-hand page, with the book's title
+   as the left-hand pages' running head and the chapter's as the right-hand ones'.
+
+   Paged.js's CSS parser is from 2022: no `:is()` here, and no range media queries. */
+
+@page {
+  size: 7in 10in;
+  margin: 0.75in 0.6in 0.8in 0.85in;
+
+  @bottom-center {
+    content: counter(page);
+    font: 8.5pt var(--serif);
+    color: #444;
+  }
+}
+
+@page :left {
+  margin-left: 0.6in;
+  margin-right: 0.85in;
+
+  @top-left {
+    content: string(book);
+    font: italic 8.5pt var(--serif);
+    color: #444;
+  }
+}
+
+@page :right {
+  margin-left: 0.85in;
+  margin-right: 0.6in;
+
+  /* Not on the page a chapter opens on. */
+  @top-right {
+    content: string(chapter, first-except);
+    font: italic 8.5pt var(--serif);
+    color: #444;
+  }
+}
+
+@page cover {
+  @top-left {
+    content: none;
+  }
+  @top-right {
+    content: none;
+  }
+  @bottom-center {
+    content: none;
+  }
+}
+
+@page front {
+  @top-left {
+    content: none;
+  }
+  @top-right {
+    content: none;
+  }
+  @bottom-center {
+    content: counter(page, lower-roman);
+  }
+}
+
+/* A page left blank so a chapter opens on the right: nothing on it. */
+@page :blank {
+  @top-left {
+    content: none;
+  }
+  @top-right {
+    content: none;
+  }
+  @bottom-center {
+    content: none;
+  }
+}
+
+/* No ligatures: the serif's ("fi" in "first") have no text in the PDF, so a search or a copy lost their letters. */
+body {
+  font-family: var(--serif);
+  font-size: 10pt;
+  line-height: 1.45;
+  hyphens: auto;
+  font-variant-ligatures: no-common-ligatures;
+}
+
+.spec {
+  max-inline-size: none;
+}
+
+.spec p {
+  text-align: justify;
+  widows: 2;
+  orphans: 2;
+}
+
+/* Headings break between words only: a hyphen would also change their titles in the PDF's outline. */
+h1,
+h2,
+h3,
+h4,
+.cover .title {
+  hyphens: manual;
+}
+
+.spec pre,
+.spec code,
+.spec kbd {
+  font-size: 8.5pt;
+}
+
+/* A code block breaks between its lines: each of Shiki's lines a block a line high, the line breaks between them taken
+   out by `print.ts` (Paged.js drops them where it splits a block, which ran the lines after together). */
+.spec pre {
+  break-inside: auto;
+}
+
+.spec pre code,
+.spec pre code .line {
+  display: block;
+  min-block-size: 1lh;
+}
+
+/* The title page: the book's name, what it is for, the version it follows, and where its online edition is. */
+.cover {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-sizing: border-box;
+  block-size: 8in;
+  margin: 0;
+  padding: 0;
+  page: cover;
+}
+
+.cover .title {
+  margin: 1.2in 0 0;
+  font-size: 28pt;
+  font-weight: 600;
+  line-height: 1.15;
+  string-set: book content(text);
+}
+
+.cover .purpose {
+  margin-block-start: 0.35in;
+  font-size: 12pt;
+  font-style: italic;
+  text-align: start;
+}
+
+.cover .imprint {
+  font-size: 9pt;
+  text-align: start;
+}
+
+/* What an example renders, after its code (`previews.ts`): the page as a host shows it, framed, captioned. */
+figure.preview {
+  margin: 0.15in 0 0.2in;
+  break-inside: avoid;
+}
+
+figure.preview img {
+  display: block;
+  box-sizing: border-box;
+  inline-size: auto;
+  block-size: auto;
+  max-inline-size: 100%;
+  max-block-size: 6in;
+  object-fit: contain;
+  margin-inline: auto;
+  border: 0.5pt solid #c9d1da;
+}
+
+figure.preview figcaption {
+  margin-block-start: 0.06in;
+  color: #555;
+  font-size: 8pt;
+  font-style: italic;
+  text-align: center;
+}
+
+/* The front matter: a book's contents page, and what comes before its first chapter. */
+.front {
+  page: front;
+  break-before: right;
+}
+
+/* Its first paragraph, what the book is for, is on the title page. */
+.front > p:first-child {
+  display: none;
+}
+
+/* The contents, a book's chapter list or the spec's: each entry its title, a dotted leader and its page number, as a
+   link. */
+.front ol > li > a[href^="#"],
+.toc li > a[href^="#"] {
+  display: flex;
+  align-items: baseline;
+  color: inherit;
+  text-decoration: none;
+}
+
+.front ol > li > a[href^="#"]::before,
+.toc li > a[href^="#"]::before {
+  content: "";
+  order: 1;
+  flex: 1;
+  margin-inline: 0.4em;
+  border-block-end: 1px dotted currentcolor;
+}
+
+.front ol > li > a[href^="#"]::after,
+.toc li > a[href^="#"]::after {
+  content: target-counter(attr(data-page-of), page);
+  order: 2;
+}
+
+/* A chapter opens a right-hand page, its numbered title set low as an opener, and its title is the running head after.
+   (Its title is the chapter's first heading, an `h2` in a book's page.) */
+.chapter {
+  break-before: right;
+}
+
+.chapter.first {
+  counter-reset: page 1;
+}
+
+.chapter > h2:first-child {
+  margin-block: 1.2in 0.45in;
+  padding: 0;
+  border: 0;
+  font-size: 22pt;
+}
+
+/* The running head's chapter: a book's chapter title, or a spec's section title, as `print.ts` gives it. One rule for
+   both, as Paged.js keeps one selector for each string. */
+.chapter > h2:first-child,
+.reading .spec > h2 {
+  string-set: chapter attr(data-title);
+}
+
+.spec figure,
+.spec tr,
+.spec img,
+.spec blockquote {
+  break-inside: avoid;
+}
+
+/* The spec's page (the only page printed with `.reading`): its title page, its contents as the front matter, then its
+   text from page 1, each section opening a page, their titles the running heads. */
+/* The break is the wrapper's, which would start on the title page's verso otherwise and keep it from being blank. */
+.reading {
+  page: front;
+  break-before: right;
+}
+
+.reading .toc {
+  display: block;
+  position: static;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  font-size: 9.5pt;
+}
+
+.reading .toc::before {
+  content: "Contents";
+  display: block;
+  margin-block-end: 0.3in;
+  font-size: 18pt;
+}
+
+.reading .toc ol {
+  max-block-size: none;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.reading .toc a {
+  padding: 1px 0;
+  border: 0;
+  color: inherit;
+}
+
+.reading .toc li.level-3 a {
+  padding-inline-start: 1.5em;
+}
+
+.reading .toc li.level-4,
+.reading .onpage {
+  display: none;
+}
+
+.reading .text {
+  page: text;
+  counter-reset: page 1;
+  break-before: right;
+}
+
+.reading .spec > h2 {
+  break-before: page;
+}

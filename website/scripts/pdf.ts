@@ -29,7 +29,7 @@ await new Promise<void>((resolve) => server.listen(PORT, resolve));
 const browser = await chromium.launch({ channel: "chrome" });
 try {
   const page = await browser.newPage({ colorScheme: "light" });
-  for (const job of jobs) writeFileSync(join(DIST, job.pdf), await printPdf(page, `http://localhost:${String(PORT)}/${job.page}`));
+  for (const job of jobs) writeFileSync(join(DIST, job.pdf), await printPdf(page, `http://localhost:${String(PORT)}/${job.page}`, { previews: true }));
 } finally {
   await browser.close();
   server.close();

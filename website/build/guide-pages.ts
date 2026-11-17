@@ -10,7 +10,7 @@ import { SITE } from "../src/site.ts";
 import processor from "../../wasm/package.json" with { type: "json" };
 
 /** The version of the `@compmd` packages, released together: the guides say which they are written for. */
-const VERSION = processor.version;
+export const VERSION = processor.version;
 
 /** The books, in the order the site lists them: their folders in `guides/`. */
 export const BOOKS = ["authors", "developers"] as const;
@@ -33,23 +33,34 @@ const titleOf = (markdown: string): string => /^# (.+)$/m.exec(markdown)?.[1] ??
 const DESCRIBED = 200;
 
 /**
- * A page's description, for its head: its first paragraph of prose, as plain text, cut at a word to about
- * {@link DESCRIBED} characters. Headings, lists, tables, quotes, code and HTML are passed over.
+ * A document's first paragraph of prose, as plain text. Headings, lists, tables, quotes, code and HTML are passed over.
+ *
+ * @example
+ * paragraphOf("# Quick start\n\nRender a **document** in [a page](./page.md).\n");
+ * // "Render a document in a page."
+ */
+export function paragraphOf(markdown: string): string {
+  const paragraph = markdown
+    .split(/\n\s*\n/)
+    .map((block) => block.trim())
+    .find((block) => block !== "" && !/^(#|[-*+] |\d+\. |\||>|```|~~~|<|:::)/.test(block));
+  return (paragraph ?? "")
+    .replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/[*_`]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * A page's description, for its head: its first paragraph of prose ({@link paragraphOf}), cut at a word to about
+ * {@link DESCRIBED} characters.
  *
  * @example
  * descriptionOf("# Quick start\n\nRender a **document** in [a page](./page.md).\n");
  * // "Render a document in a page."
  */
 export function descriptionOf(markdown: string): string {
-  const paragraph = markdown
-    .split(/\n\s*\n/)
-    .map((block) => block.trim())
-    .find((block) => block !== "" && !/^(#|[-*+] |\d+\. |\||>|```|~~~|<|:::)/.test(block));
-  const text = (paragraph ?? "")
-    .replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1")
-    .replace(/[*_`]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
+  const text = paragraphOf(markdown);
   if (text.length <= DESCRIBED) return text;
   const cut = text.lastIndexOf(" ", DESCRIBED);
   return `${text.slice(0, cut > 0 ? cut : DESCRIBED)}…`;

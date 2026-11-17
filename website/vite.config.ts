@@ -159,7 +159,8 @@ function guideInDev(): Plugin {
 
 /**
  * In the dev server, a PDF asked for (the books' and the draft spec's), printed from the working tree's page when it is
- * asked for, as the build prints it (`build/print.ts`): a few seconds, in the installed Chrome.
+ * asked for, as the build prints it (`build/print.ts`) but for the examples' pictures: a few seconds, in the installed
+ * Chrome.
  */
 function pdfInDev(): Plugin {
   let browser: Promise<Browser> | undefined;
@@ -179,7 +180,8 @@ function pdfInDev(): Plugin {
           const page = await (await browser).newPage({ colorScheme: "light" });
           try {
             const origin = server.resolvedUrls?.local[0] ?? `http://localhost:${String(server.config.server.port)}/`;
-            const pdf = await printPdf(page, new URL(job.page, origin).href);
+            // Without the examples' pictures: the dev server's playground is another server's, which may not be running.
+            const pdf = await printPdf(page, new URL(job.page, origin).href, { previews: false });
             response.setHeader("Content-Type", "application/pdf");
             response.end(pdf);
           } finally {

@@ -4,7 +4,7 @@
 import { Window } from "happy-dom";
 import { SITE } from "../src/site.ts";
 import { bookOf, guideLink, slugOf, writtenOf } from "./guide.ts";
-import { BOOKS } from "./guide-pages.ts";
+import { BOOKS, paragraphOf, VERSION } from "./guide-pages.ts";
 import { PRINT } from "./print.ts";
 import { renderMarkdown } from "./spec.ts";
 
@@ -12,9 +12,13 @@ import { renderMarkdown } from "./spec.ts";
 export interface BookProps {
   /** The book's title. */
   title: string;
-  /** Its contents page, as HTML. */
+  /** What it is for: its contents' first paragraph, as text. */
+  purpose: string;
+  /** The version of the `@compmd` packages it is written for. */
+  version: string;
+  /** Its front matter, as HTML: its contents page, without the title, which is on its title page. */
   contents: string;
-  /** Its chapters, in order, as HTML. */
+  /** Its chapters, in order, as HTML, each titled with its number. */
   chapters: string[];
   /** Its address on the site. */
   online: string;
@@ -59,16 +63,18 @@ export async function bookPages(read: (path: string) => string, blob: string): P
   const pages: BookPage[] = [];
   for (const book of BOOKS) {
     const markdown = read(`${book}/README.md`);
+    const title = /^# (.+)$/m.exec(markdown)?.[1] ?? "";
     const link = (href: string) => bookLink(book, href);
-    const contents = await renderMarkdown(markdown, { blob: `${blob}guides/`, path: `${book}/README.md` }, { rules: false, link });
+    const front = markdown.replace(/^# .+\n/m, "");
+    const contents = await renderMarkdown(front, { blob: `${blob}guides/`, path: `${book}/README.md` }, { rules: false, link });
     const chapters = [];
     for (const chapter of writtenOf(bookOf(markdown))) {
       const path = `${book}/${chapter.file}`;
       chapters.push((await renderMarkdown(read(path), { blob: `${blob}guides/`, path }, { rules: false, link, section: chapter.slug })).html);
     }
     checkIds(book, [contents.html, ...chapters].join("\n"));
-    const title = /^# (.+)$/m.exec(markdown)?.[1] ?? "";
-    pages.push({ book, folder: `guides/${book}/${PRINT}`, root: "../../../", props: { title, contents: contents.html, chapters, online: `${SITE}guides/${book}/` } });
+    const props = { title, purpose: paragraphOf(markdown), version: VERSION, contents: contents.html, chapters, online: `${SITE}guides/${book}/` };
+    pages.push({ book, folder: `guides/${book}/${PRINT}`, root: "../../../", props });
   }
   return pages;
 }

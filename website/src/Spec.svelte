@@ -14,7 +14,7 @@
   import Footer from "./Footer.svelte";
   import Header from "./Header.svelte";
   import Meta from "./Meta.svelte";
-  import { specPdf } from "./site.ts";
+  import { SITE, specPdf } from "./site.ts";
 
   interface Props {
     /** The spec as HTML, from `renderSpec`. */
@@ -30,6 +30,7 @@
 
   let { html, toc, root, version, versions }: Props = $props();
   const title = $derived(version === undefined ? "CompMD specification, version 1 (draft)" : `CompMD specification, version ${version}`);
+  const description = "The CompMD specification: Markdown with components, data, inputs and layout, readable as text in any Markdown renderer.";
 
   /** Each section with its subsections, for "On this page": `spec.ts` shows the one being read. */
   const sections = $derived(
@@ -46,7 +47,19 @@
   <title>{title}</title>
 </svelte:head>
 
-<Meta {title} description="The CompMD specification: Markdown with components, data, inputs and layout, readable as text in any Markdown renderer." />
+<Meta {title} {description} />
+
+<!-- The PDF's title page, which only its typesetting shows (`build/book.css`): first, so it is the PDF's first page. -->
+<header class="cover" hidden>
+  <div>
+    <p class="title">{title}</p>
+    <p class="purpose">{description}</p>
+  </div>
+  <p class="imprint">
+    {version === undefined ? "The editor's draft, which changes as the spec does." : `Version ${version}, released and never changed after.`}<br />
+    Online: <a href="{SITE}spec/">{SITE}spec/</a>
+  </p>
+</header>
 
 <Header {root} current="spec" />
 
