@@ -55,25 +55,31 @@ function filesOf(folder: string): Record<string, string> {
 const PINNED: Record<string, string> = { "0.1.1": "sha512-EwevqkkUdxOsFLHV85W74wEL+LoyZhaZkmnj8bJax3zLG48uuiGrezFTixCdlS6VQC/GHVU8Ra0vVXjeFftc7Q==" };
 
 /**
- * The packs a chapter's documents import from npm, as a host that fetches them gives them: the Mermaid pack at this
- * repository's version (`packs/mermaid/`) and at each version the chapters pin, which npm keeps once published, each
- * with the integrity npm publishes for it. Every release has the repository's files, with its own version.
+ * The packs a chapter's documents import from npm, as a host that fetches them gives them: each of this repository's
+ * packs (`packs/<name>/`) at its version, and the Mermaid pack at each version the chapters pin too, which npm keeps
+ * once published, with the integrity npm publishes for it. Every release has the repository's files, with its own
+ * version.
  */
 function registryPacks(): Record<string, PackRelease[]> {
-  const folder = join(GUIDES, "../packs/mermaid");
-  const manifest = readFileSync(join(folder, "package.json"), "utf8");
-  const { name, version: current } = JSON.parse(manifest) as { name: string; version: string };
-  const document = readFileSync(join(folder, "index.comp.md"), "utf8");
-  const release = (version: string): PackRelease => ({
-    version,
-    integrity: PINNED[version] ?? "sha512-from-the-repository",
-    files: {
-      "package.json": manifest.replace(`"version": "${current}"`, `"version": "${version}"`),
-      "index.comp.md": document.replace(`version: "${current}"`, `version: "${version}"`),
-      "dist/mermaid.js": "",
-    },
-  });
-  return { [name]: [...new Set([current, ...Object.keys(PINNED)])].map(release) };
+  return Object.fromEntries(
+    ["mermaid", "wireframe"].map((pack) => {
+      const folder = join(GUIDES, "../packs", pack);
+      const manifest = readFileSync(join(folder, "package.json"), "utf8");
+      const { name, version: current } = JSON.parse(manifest) as { name: string; version: string };
+      const document = readFileSync(join(folder, "index.comp.md"), "utf8");
+      const release = (version: string): PackRelease => ({
+        version,
+        integrity: PINNED[version] ?? "sha512-from-the-repository",
+        files: {
+          "package.json": manifest.replace(`"version": "${current}"`, `"version": "${version}"`),
+          "index.comp.md": document.replace(`version: "${current}"`, `version: "${version}"`),
+          [`dist/${pack}.js`]: "",
+        },
+      });
+      const pinned = pack === "mermaid" ? Object.keys(PINNED) : [];
+      return [name, [...new Set([current, ...pinned])].map(release)];
+    }),
+  );
 }
 
 describe.each(BOOKS)("the %s' guide", (book) => {

@@ -50,6 +50,14 @@ describe("the test page", () => {
   });
 });
 
+describe("the Author's Guide", () => {
+  it("has a sketch that is valid", async () => {
+    const guide = await readFile(join(import.meta.dirname, "../../../guides/authors/examples/code-blocks/booking.comp.md"), "utf8");
+    const blocks = [...guide.matchAll(/```wireframe[^\n]*\n([\s\S]*?)\n```/g)].map((match) => parse(match[1] ?? ""));
+    expect(blocks.map((parsed) => parsed.errors.map(String))).toEqual([[]]);
+  });
+});
+
 describe("failureOf", () => {
   it("says the first error, and how many more there are", () => {
     expect(failureOf([new Error("one")])).toBe("one");

@@ -133,4 +133,49 @@ Giving a code renderer another name with `as` (chapter 16) renames the leaf only
 
 A code renderer can also be written in CompMD itself, as a definition whose signature says which language it renders; the [spec's section on code renderers](https://compmd.dev/spec/#77-code-renderers) has the details.
 
+## Wireframes
+
+Another pack, `@comp-markdown/wireframe`, draws sketches of screens: the newsletter shows the plot booking the garden is building before anyone writes a line of it.
+
+````md snippet=code-blocks/booking.comp.md
+---
+md:
+  version: 1
+  import:
+    - from: "@comp-markdown/wireframe@0"
+      names: [wireframe]
+title: Elm Street Garden
+---
+
+# Booking a plot online
+
+From March you can book a plot from your phone. This is the first sketch of the screen: tell us at the next work day what is missing.
+
+```wireframe {alt="The booking screen on a phone: a half or a full plot, the month you start, a key to the tool shed, and a Book button"}
+window "Book a plot" device=phone:
+  header:
+    text "Elm Street Garden" bold
+  section "Your plot":
+    radio "Half plot" group="size" selected
+    radio "Full plot" group="size"
+    combo "Starting" value="March" options="March, April, May"
+  checkbox "A key to the tool shed" label-right
+  button "Book" primary id=book
+annotation "You get an email to confirm" target="book" position=bottom
+```
+
+The paper list by the gate stays until everyone who wants a plot has one.
+````
+
+A ` ```wireframe ` block is a screen written as an outline, one part per line:
+
+- **`window`** is the screen, its title in quotes; `device=phone`, `tablet` or `browser` draws it as one, a desktop window without.
+- **A line ending in `:`** holds the lines indented under it, by two or four spaces: `header`, `footer`, `panel`, `section "Title"`, `row` and `col` lay the parts out, `grid` places `cell`s by row and column.
+- **Controls** are drawn as what they stand for: `button "Book" primary`, `input placeholder="Email"`, `combo`, `checkbox`, `radio`, `toggle`, `tabs`, `list`, `tree`, `menubar`, `progress`, `image`, `icon` and `text`. A control's flags come after its text: `selected`, `checked`, `on`, `disabled`.
+- **`annotation`**, after the window, puts a numbered note beside it, pointing at the part with that `id`.
+
+The whole language, with every part and what it takes, is the pack's [`LANGUAGE.md`](https://github.com/comp-markdown/compmd/blob/main/packs/wireframe/LANGUAGE.md). It is Wireloom's syntax, with a few additions that page marks, such as `device`: a sketch written for Wireloom reads here as it is.
+
+The sketch is drawn in greys, light or dark as the page is, and its words are text a reader can select. `alt` says what the screen shows, as for a diagram. A line the pack can't read shows the block's code, and the app reports `W118` with where the mistake is, `line 4, column 5: no part \`butn\`: did you mean \`button\`?`. With `render=both`, the block shows its outline above the sketch, for a post that explains how it is written.
+
 Next: [components in code, in brief](18-components-in-code-in-brief.md), for what a component written in JSX, Svelte or JavaScript looks like to the document that uses it.
