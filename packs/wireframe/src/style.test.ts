@@ -20,6 +20,6 @@ describe("the style", () => {
   it("follows the page's scheme, keeps a drawing whole on paper, and takes a page's hand-written font", () => {
     expect(STYLE).toContain('[data-scheme="dark"] { color-scheme: dark; }');
     expect(STYLE).toMatch(/\.wf-wireframe \{[^}]*break-inside: avoid/);
-    expect(STYLE).toContain("var(--compmd-wireframe-font, inherit)");
+    expect(STYLE).toContain("var(--compmd-wireframe-font, ui-sans-serif, system-ui, sans-serif)");
   });
 });

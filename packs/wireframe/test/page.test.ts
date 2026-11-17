@@ -90,6 +90,11 @@ describe.each(BROWSERS)("the test page in %s", (_name, type, options) => {
     expect(await textsIn(page, STEPS, ".wf-tab")).toEqual(["Basket", "Address", "Payment"]);
     expect(await textsIn(page, FILES, ".wf-menu-title")).toEqual(["File", "Edit"]);
     expect(await textsIn(page, SIGN_UP, ".wf-named .wf-name")).toEqual(["chip"]);
+    // `render=both`: each block shows its code once, above its drawing, even the one with a mistake.
+    const both = page.locator(".compmd-both");
+    expect(await both.count()).toBe(5);
+    expect(await both.evaluateAll((all) => all.map((box) => box.querySelectorAll("pre").length))).toEqual([1, 1, 1, 1, 1]);
+    for (const frame of page.frames().slice(1)) expect(await frame.locator("pre").count()).toBe(0);
     expect(problems).toEqual([]);
   }, 60_000);
 

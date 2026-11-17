@@ -1,6 +1,7 @@
 // The sketch look (LANGUAGE.md, decision 5): greys from the host's tokens (spec §9.4), which are built from the
 // text colour and so suit light and dark; borders a little uneven; a page's hand-written font when it sets one
-// (`--compmd-wireframe-font`); printed as it shows.
+// (`--compmd-wireframe-font`), else the system's sans-serif, since a frame doesn't get the page's font; printed as it
+// shows.
 
 const LINE = "var(--compmd-border-strong, 1px solid color-mix(in srgb, currentColor 45%, transparent))";
 const FAINT = "var(--compmd-border-subtle, 1px solid color-mix(in srgb, currentColor 20%, transparent))";
@@ -12,7 +13,7 @@ const UNEVEN = "6px 3px 7px 2px / 2px 7px 3px 6px";
 
 /** The stylesheet for what `draw` makes. */
 export const STYLE = `
-.wf-wireframe { display: grid; grid-template: "top top top" auto "left window right" auto "bottom bottom bottom" auto / auto minmax(0, 1fr) auto; gap: ${SPACE}; font-family: var(--compmd-wireframe-font, inherit); font-size: 0.9em; line-height: 1.4; break-inside: avoid; print-color-adjust: exact; }
+.wf-wireframe { display: grid; grid-template: "top top top" auto "left window right" auto "bottom bottom bottom" auto / auto minmax(0, 1fr) auto; gap: ${SPACE}; font-family: var(--compmd-wireframe-font, ui-sans-serif, system-ui, sans-serif); font-size: 0.9em; line-height: 1.4; break-inside: avoid; print-color-adjust: exact; }
 .wf-wireframe[data-scheme="dark"] { color-scheme: dark; }
 .wf-wireframe[data-scheme="light"] { color-scheme: light; }
 .wf-wireframe * { box-sizing: border-box; }
@@ -57,7 +58,8 @@ export const STYLE = `
 .wf-mark { display: inline-block; flex: none; width: 1em; height: 1em; border: ${LINE}; border-radius: 2px 3px 2px 3px; }
 .wf-radio-mark { border-radius: 50%; }
 .wf-mark.wf-on { background: radial-gradient(currentColor 0 35%, transparent 40%); }
-.wf-checkbox-mark.wf-on { background: linear-gradient(45deg, transparent 40%, currentColor 40% 55%, transparent 55%), linear-gradient(-45deg, transparent 40%, currentColor 40% 55%, transparent 55%); }
+.wf-checkbox-mark.wf-on { display: inline-flex; align-items: center; justify-content: center; background: none; }
+.wf-checkbox-mark.wf-on::after { content: "✓"; font-size: 0.85em; line-height: 1; }
 .wf-toggle-mark { width: 2em; border-radius: 1em; background: radial-gradient(circle at 25% 50%, currentColor 0 22%, transparent 26%); }
 .wf-toggle-mark.wf-on { background: ${STRONG} radial-gradient(circle at 75% 50%, currentColor 0 22%, transparent 26%); }
 .wf-progress { display: flex; flex-direction: column; gap: 0.2em; }

@@ -15,7 +15,7 @@ one splits checkout into three steps, each a screen of its own, with the step yo
 
 The basket first: what you are buying, and a way out at every step.
 
-```wireframe {alt="The basket on a phone: two items, step 2 of 3, and a Pay now button that stays disabled until an address is chosen"}
+```wireframe {render=both alt="The basket on a phone: two items, step 2 of 3, and a Pay now button that stays disabled until an address is chosen"}
 window "Order" device=phone:
   header:
     text "Your basket" bold
@@ -31,7 +31,7 @@ annotation "Disabled until an address is chosen" target="pay" position=bottom
 
 Shop owners choose which emails go out, and the theme. Everything they change is saved with one button.
 
-```wireframe {alt="The settings window: General, Privacy and Advanced tabs; notification toggles; a theme chosen with radio buttons; Cancel and Save"}
+```wireframe {render=both alt="The settings window: General, Privacy and Advanced tabs; notification toggles; a theme chosen with radio buttons; Cancel and Save"}
 window "Settings":
   tabs:
     tab "General" active
@@ -60,7 +60,7 @@ The step tabs come from the plan's list, so the sketch follows when a step is ad
 
 What the pack draws, for checking it:
 
-```wireframe {alt="A file manager: a menu bar, a folder tree and a grid of files"}
+```wireframe {render=both alt="A file manager: a menu bar, a folder tree and a grid of files"}
 window "Files":
   menubar:
     menu "File":
@@ -82,7 +82,7 @@ window "Files":
         cell "photo.png" row=1 col=3
 ```
 
-```wireframe {alt="A sign-up form on a tablet: fields, a country, an avatar placeholder and a note on the email field"}
+```wireframe {render=both alt="A sign-up form on a tablet: fields, a country, an avatar placeholder and a note on the email field"}
 window "Sign up" device=tablet:
   panel:
     text "Create an account" size=large weight=semibold
@@ -107,7 +107,7 @@ annotation "Shown before the form is sent" target="email" position=left
 
 Its code shows, and the host reports where the mistake is:
 
-```wireframe {alt="A screen with a mistake"}
+```wireframe {render=both alt="A screen with a mistake"}
 window "Broken":
   butn "Go"
 ```
