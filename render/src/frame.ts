@@ -52,6 +52,8 @@ export interface SpliceOptions {
 export type FrameMessage =
   | { type: "ready"; version: number }
   | { type: "set"; input: string; value: unknown }
+  /** An input of example `example` changed (spec §7.8): the example's, never the document's of the same name. */
+  | { type: "exampleSet"; example: number; input: string; value: unknown }
   | { type: "error"; reason: RenderError["reason"]; component?: string; use?: string; message: string }
   /** A use that failed draws again, by the `use` its `error` named. */
   | { type: "recovered"; component: string; use: string }
@@ -67,7 +69,7 @@ export type FrameMessage =
   /** The page has drawn (`Page.drawn`) after the first `seen` renders and splices the frame took. */
   | { type: "drawn"; seen: number };
 
-export interface FrameOptions extends Omit<PageOptions, "onSet" | "onError" | "onRecovered"> {
+export interface FrameOptions extends Omit<PageOptions, "onSet" | "onSetExample" | "onError" | "onRecovered"> {
   /** Where the page renders, inside the frame. */
   container: HTMLElement;
   /** Host-language components by name; component code stays in the frame, since modules can't be posted. */
@@ -123,6 +125,9 @@ export function serveFrame(port: Port, options: FrameOptions): { page: Page; clo
     ...options,
     onSet: (input, value) => {
       post({ type: "set", input, value });
+    },
+    onSetExample: (example, input, value) => {
+      post({ type: "exampleSet", example, input, value });
     },
     onError: (error) => {
       if ("component" in error) post({ type: "error", reason: error.reason, component: error.component, ...(error.use === undefined ? {} : { use: error.use }), message: messageOf(error.error) });
@@ -297,7 +302,7 @@ type Answer = Extract<FrameMessage, { type: "lines" }>;
  * frame.render(tree);
  */
 export function connectFrame(port: Port): FrameConnection {
-  const listeners: Listeners = { ready: [], set: [], error: [], recovered: [], rendered: [], rects: [], pointed: [], lines: [], layout: [], drawn: [] };
+  const listeners: Listeners = { ready: [], set: [], exampleSet: [], error: [], recovered: [], rendered: [], rects: [], pointed: [], lines: [], layout: [], drawn: [] };
   let waiting: HostMessage[] | undefined = [];
   const send = (message: HostMessage) => {
     if (waiting) waiting.push(message);

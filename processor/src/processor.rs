@@ -55,6 +55,7 @@ use crate::resolve::{self, Ambient, Store};
 pub use crate::resolve::{HostComponent, LibraryModule, Module};
 use crate::tree::Move;
 use crate::{expand, tree, validate};
+use std::collections::HashMap;
 use std::rc::Rc;
 
 mod edit;
@@ -144,6 +145,8 @@ struct RenderInputs {
     context: RenderContext,
     fetch: Rc<dyn Fetch>,
     data: Rc<dyn Data>,
+    /// The values given for each example's inputs (spec §7.8), by its number; an example not here has its defaults.
+    examples: HashMap<usize, serde_json::Map<String, serde_json::Value>>,
 }
 
 impl RenderInputs {
@@ -152,6 +155,7 @@ impl RenderInputs {
             context,
             fetch: Rc::new(fetch),
             data: Rc::new(data),
+            examples: HashMap::new(),
         }
     }
 }

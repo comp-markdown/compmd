@@ -53,6 +53,9 @@ struct Request {
     /// The values given for the document's inputs, by name.
     #[serde(default)]
     inputs: Map<String, Json>,
+    /// The values given for each example's inputs (spec §7.8), by its number, then by name.
+    #[serde(default)]
+    example_inputs: HashMap<usize, Map<String, Json>>,
     /// Whether expanded nodes carry their origins (spec §12.3).
     #[serde(default)]
     origins: bool,
@@ -100,6 +103,8 @@ pub(crate) struct Prepared {
     remote: WithPending<HashMap<String, Fetched>>,
     host: WithPending<HashMap<String, Json>>,
     options: Options,
+    /// The values given for each example's inputs, by its number.
+    example_inputs: HashMap<usize, Map<String, Json>>,
 }
 
 /// Why a request can't be processed.
@@ -210,16 +215,23 @@ impl Request {
                 mode: self.mode,
                 ..Options::default()
             },
+            example_inputs: self.example_inputs,
         })
     }
 }
 
 impl Prepared {
-    /// Stages 4a and 4b.
+    /// Stages 4a and 4b, with each example's input values given.
     pub(crate) fn expand(self) -> Processor<Expanded> {
-        self.validated
+        let processor = self
+            .validated
             .load(self.context, self.remote, self.host)
-            .expand(&self.options)
+            .expand(&self.options);
+        self.example_inputs
+            .into_iter()
+            .fold(processor, |processor, (example, inputs)| {
+                processor.example_inputs(example, inputs)
+            })
     }
 }
 
@@ -349,6 +361,33 @@ mod tests {
         let defaults = self::request(&json!({ "path": "a", "now": "2026-10-22T09:00:00Z" }));
         assert_eq!(defaults.tz, "UTC");
         assert!(!defaults.origins);
+    }
+
+    #[test]
+    fn an_examples_input_values_are_its_own() {
+        let text = "---\nmd:\n  inputs:\n    live: boolean = false\n---\n\nLive: {{md.input.live}}.\n\n```compmd {render=output}\n---\nmd:\n  inputs:\n    live: boolean = false\n---\nLive: {{md.input.live}}.\n```\n";
+        let processed = process(
+            &json!({
+                "path": "a.comp.md",
+                "files": { "a.comp.md": text },
+                "now": "2026-10-22T09:00:00Z",
+                "exampleInputs": { "1": { "live": true } }
+            })
+            .to_string(),
+            Rc::new(()),
+        )
+        .expect("processed");
+        let processed: Json = serde_json::from_str(&processed).expect("JSON");
+        let children = &processed["expanded"]["children"];
+        assert_eq!(
+            children[0]["children"][0]["value"], "Live: false.",
+            "the document's own"
+        );
+        assert_eq!(
+            children[1]["document"]["children"][0]["children"][0]["value"],
+            "Live: true."
+        );
+        assert_eq!(children[1]["document"]["inputs"]["live"]["value"], true);
     }
 
     #[test]

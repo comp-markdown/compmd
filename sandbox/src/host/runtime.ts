@@ -73,6 +73,8 @@ export interface HostRuntimeOptions {
 /** What a document's components do that the host hears of. */
 export interface HostEvents {
   set(input: string, value: unknown): void;
+  /** A framed use in example `example` set one of the example's inputs (spec §7.8). */
+  exampleSet?(example: number, input: string, value: unknown): void;
   /** A link a reader clicked in a frame; the host shows its URL before it opens (spec §15 rule 4). */
   link(url: string): void;
   /** A component shows its fallback; `use` names the use, when it has one, for a later `recovered`. */
@@ -392,8 +394,10 @@ export class HostRuntime {
       ping: { every: 1000, timeout: this.#options.timeout ?? 5000 },
       ...(this.#options.observer ? { observer: this.#options.observer } : {}),
       on: {
+        // A use in an example sets the example's input, never the document's of the same name (spec §7.8).
         set: ({ input, value }) => {
-          this.#events.set(input, value);
+          if (component.example === undefined) this.#events.set(input, value);
+          else this.#events.exampleSet?.(component.example, input, value);
         },
         link: ({ url }) => {
           this.#events.link(url);

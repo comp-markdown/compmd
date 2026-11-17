@@ -235,17 +235,23 @@ impl Examples {
         self.0.is_empty()
     }
 
-    /// Stage 4a for each example, with `render`'s context and data, but the example's own inputs at their defaults.
+    /// Stage 4a for each example, with `render`'s context and data, but the example's own inputs: the values `render`
+    /// gives for its number, or else their defaults.
     pub(super) fn load(&mut self, render: &RenderInputs, diagnostics: &mut Vec<Diagnostic>) {
         for example in &mut self.0 {
             if let Some(Stage::Validated(processor)) = example.stage.take() {
                 let inputs = RenderInputs {
                     context: RenderContext {
-                        inputs: serde_json::Map::new(),
+                        inputs: render
+                            .examples
+                            .get(&example.number)
+                            .cloned()
+                            .unwrap_or_default(),
                         ..render.context.clone()
                     },
                     fetch: Rc::clone(&render.fetch),
                     data: Rc::clone(&render.data),
+                    examples: HashMap::new(),
                 };
                 example.stage = Some(Stage::Loaded(Box::new(processor.load_with(inputs))));
             }

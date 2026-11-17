@@ -50,6 +50,11 @@ export interface Request {
   tz?: string;
   /** The values given for the document's inputs, by name. */
   inputs?: Record<string, unknown>;
+  /**
+   * The values given for each example's inputs (spec §7.8), by its number as its expanded root gives it, then by name:
+   * what a reader set in an example, which the document's own inputs never are.
+   */
+  exampleInputs?: Record<number, Record<string, unknown>>;
   /** Whether expanded nodes carry their origins (spec §12.3), as a live preview needs. */
   origins?: boolean;
   /**

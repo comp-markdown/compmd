@@ -65,6 +65,9 @@ export function hostPage(container: HTMLElement, runtime: HostRuntime, options: 
     onSet: (input, value) => {
       emit("set", { input, value });
     },
+    onSetExample: (example, input, value) => {
+      emit("exampleSet", { example, input, value });
+    },
     onError: (error) => {
       if (!("component" in error)) return;
       const message = error.error instanceof Error ? error.error.message : "";
@@ -186,6 +189,11 @@ export function framePage(container: HTMLElement, runtime: HostRuntime, options:
   });
   child.on("loaded", (event) => {
     emit("loaded", event);
+  });
+  // An example's input (spec §7.8): only the example's, which the processor gives no value that doesn't fit its type.
+  // Its splices may come as JSON text this end doesn't read, so it checks the message's shape, not the example's inputs.
+  frame.on("exampleSet", ({ example, input, value }) => {
+    if (Number.isInteger(example) && typeof input === "string") emit("exampleSet", { example, input, value });
   });
   frame.on("pointed", ({ source }) => {
     emit("pointed", { source });

@@ -241,6 +241,58 @@ impl Processor<Expanded> {
         processor
     }
 
+    /// Loads and expands again with `inputs` as the values of example `example`'s inputs (spec §7.8), its number as its
+    /// expanded root gives it: what a host does when the reader changes one of an example's inputs. The document's own
+    /// inputs, and the other examples', keep their values. Values for an example the document doesn't have are kept,
+    /// and used by none.
+    ///
+    /// ```
+    /// use compmd::context::RenderContext;
+    /// use compmd::{Ambient, ParseOptions, Processor};
+    /// use std::rc::Rc;
+    ///
+    /// let text = "```compmd {render=output}\n---\nmd:\n  inputs:\n    live: boolean = false\n---\nLive: {{md.input.live}}.\n```\n";
+    /// let context = RenderContext { now: 0, tz: "UTC".into(), time: Rc::new(()), inputs: Default::default() };
+    /// let processor = Processor::new("a.comp.md", text)
+    ///     .parse(&ParseOptions::default())
+    ///     .resolve((), (), &Ambient::default())
+    ///     .validate(&[])
+    ///     .load(context, (), ())
+    ///     .expand(&Default::default());
+    /// let live = |processor: &Processor<_>| serde_json::to_value(processor.expanded()).unwrap()["children"][0]["document"]["children"][0]["children"][0]["value"].clone();
+    /// assert_eq!(live(&processor), "Live: false.");
+    /// let set = processor.example_inputs(1, serde_json::json!({ "live": true }).as_object().unwrap().clone());
+    /// assert_eq!(live(&set), "Live: true.");
+    /// ```
+    #[must_use]
+    pub fn example_inputs(
+        self,
+        example: usize,
+        inputs: serde_json::Map<String, serde_json::Value>,
+    ) -> Processor<Expanded> {
+        let Processor {
+            mut diagnostics,
+            state,
+        } = self;
+        let Expanded {
+            validated,
+            mut render,
+            options,
+            result,
+            ..
+        } = state;
+        render.examples.insert(example, inputs);
+        let validated = back(validated, &mut diagnostics);
+        let mut processor = Processor {
+            diagnostics,
+            state: validated,
+        }
+        .load_with(render)
+        .expand(&options);
+        processor.state.replaced.nodes = 0..result.root.children.len();
+        processor
+    }
+
     /// The host-language components the expanded tree can name, with their code, by name: what a renderer that
     /// runs them needs, since the tree names a component but doesn't hold its code (spec §7.4, §12.3). Those of an
     /// example (spec §7.8) come after the document's, each with its example's number. Only those

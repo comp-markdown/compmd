@@ -30,6 +30,11 @@ export type FoundOptions = Omit<SandboxOptions, "modules"> & { base: string; mod
 
 export interface ViewEvents {
   set: { input: string; value: unknown };
+  /**
+   * The reader changed an input of example `example` (spec §7.8): the host processes the document again with it in
+   * the request's `exampleInputs`, never in the document's own `inputs`.
+   */
+  exampleSet: { example: number; input: string; value: unknown };
   /** A reader clicked a link in the page; the host shows its URL before it opens (spec §15 rule 4). */
   link: { url: string };
   /**
@@ -193,7 +198,7 @@ export function createSandbox(given: SandboxOptions): Sandbox {
   const options: FoundOptions = found(given);
   return {
     open(container, { components }) {
-      const listeners: Listeners = { set: [], link: [], error: [], recovered: [], rendered: [], loaded: [], pointed: [], layout: [], settled: [] };
+      const listeners: Listeners = { set: [], exampleSet: [], link: [], error: [], recovered: [], rendered: [], loaded: [], pointed: [], layout: [], settled: [] };
       /** What the page shows changed or moved: it isn't settled until it settles again. */
       let changed: () => void = () => undefined;
       const emit = <T extends keyof ViewEvents>(type: T, event: ViewEvents[T]) => {
@@ -213,6 +218,9 @@ export function createSandbox(given: SandboxOptions): Sandbox {
         {
           set: (input, value) => {
             emit("set", { input, value });
+          },
+          exampleSet: (example, input, value) => {
+            emit("exampleSet", { example, input, value });
           },
           link: (url) => {
             emit("link", { url });

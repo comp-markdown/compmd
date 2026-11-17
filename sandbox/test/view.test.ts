@@ -54,9 +54,9 @@ function open(mode: "frame" | "host", components: HostComponent[] = [label()], o
   areas.push(area);
   const view = createSandbox({ base: frames, page: mode, ...options }).open(area, { components });
   views.push(view);
-  const events: { [T in keyof ViewEvents]: ViewEvents[T][] } = { set: [], link: [], error: [], recovered: [], rendered: [], loaded: [], pointed: [], layout: [], settled: [] };
+  const events: { [T in keyof ViewEvents]: ViewEvents[T][] } = { set: [], exampleSet: [], link: [], error: [], recovered: [], rendered: [], loaded: [], pointed: [], layout: [], settled: [] };
   const waiting: (() => void)[] = [];
-  for (const type of ["set", "link", "error", "recovered", "rendered", "loaded", "layout", "settled"] as const) {
+  for (const type of ["set", "exampleSet", "link", "error", "recovered", "rendered", "loaded", "layout", "settled"] as const) {
     view.on(type, (event) => {
       (events[type] as unknown[]).push(event);
       for (const check of waiting) check();
@@ -104,6 +104,19 @@ describe("render and splice", () => {
       await view.settled();
       const missing = events.error.filter(({ component, reason }) => component === "card" && reason === "missing");
       expect(missing, "the document's `card` only: the example has its own").toHaveLength(1);
+    });
+  }
+
+  for (const mode of MODES) {
+    it(`reports an example's input as the example's, never the document's (${mode} mode)`, async () => {
+      const { view, events, until } = open(mode, [{ ...label("in the example: "), example: 1 }]);
+      view.render({
+        type: "root",
+        children: [{ type: "code", lang: "compmd", meta: null, value: ":: label[x]", render: "output", document: { type: "root", children: [use("one")], inputs: RESULT, example: 1 } }],
+      });
+      await until(() => events.exampleSet.length > 0);
+      expect(events.exampleSet[0]).toEqual({ example: 1, input: "result", value: JSON.stringify("in the example: one") });
+      expect(events.set).toEqual([]);
     });
   }
 
