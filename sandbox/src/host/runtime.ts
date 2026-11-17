@@ -4,7 +4,7 @@
 // components and to permissive frames of packs given it, sends them the host's events, and stops a frame that stops answering.
 
 import type { HostComponent, Trust } from "@compmd/processor";
-import { createRegion, linkSchemes, type ExpandedInput, type ExpandedUse, type Mount } from "@compmd/render";
+import { createRegion, ownSchemes, type ExpandedInput, type ExpandedUse, type Mount } from "@compmd/render";
 import { localHost, serveHost, type HostApi, type HostClient } from "../host-api.ts";
 import { codeFor, Mounts } from "../mounts.ts";
 import type { Observer } from "../observer.ts";
@@ -39,11 +39,18 @@ export interface HostRuntimeOptions {
   /** The host's stylesheets, which every frame loads; served from the frames' origin. */
   stylesheets?: readonly string[];
   /**
-   * The host's own link schemes, such as `app` for links to its own pages (spec §15): the page's links and wiki links
-   * may use them, in the host's page and in every frame. A click on one comes as `link`, as on any link.
-   * `javascript`, `vbscript`, `data`, `blob` and `file` can never be named.
+   * The host's own URL schemes, such as `app` for its own pages and files (spec §15): the page's links, wiki links and
+   * images may use them, in the host's page and in every frame. A click on such a link comes as `link`, as on any link;
+   * such an image loads through `ownImages`. `javascript`, `vbscript`, `data`, `blob` and `file` can never be named.
    */
-  linkSchemes?: readonly string[];
+  ownSchemes?: readonly string[];
+  /**
+   * The file of an image of one of the host's own schemes (`ownSchemes`), by its `src` as the document has it, or
+   * `undefined` when there is none: its alt text shows then. The page's frame shows it without ever seeing the scheme,
+   * and the host's page shows it from a `blob:` URL. Without it, such an image shows only its alt text in a frame, and
+   * loads from its `src` in the host's page.
+   */
+  ownImages?: (src: string) => Promise<Blob | undefined>;
   /**
    * Where compiled code is kept, by its source, so a component isn't compiled again in another document or view
    * (docs/hosting.md, decision 6): the page's Cache Storage by default (`cacheStorage`); `null` keeps nothing.
@@ -99,14 +106,14 @@ export class HostRuntime {
   readonly #local: ReturnType<typeof localHost> | undefined;
   /** What sends an event to each permissive frame given `host`, while it is on the page. */
   readonly #frameEvents = new Set<(event: string, data: unknown) => void>();
-  /** The host's own link schemes, checked. */
-  readonly links: readonly string[];
+  /** The host's own URL schemes, checked. */
+  readonly schemes: readonly string[];
 
-  /** @throws Error when `options.linkSchemes` names something that isn't a scheme, or one a host can't name. */
+  /** @throws Error when `options.ownSchemes` names something that isn't a scheme, or one a host can't name. */
   constructor(options: HostRuntimeOptions, events: HostEvents) {
     this.#options = options;
     this.#events = events;
-    this.links = linkSchemes(options.linkSchemes ?? []);
+    this.schemes = ownSchemes(options.ownSchemes ?? []);
     this.#styles = options.stylesheets ?? [];
     this.#compiled = options.compiled === undefined ? cacheStorage() : options.compiled;
     this.#local = options.host ? localHost(options.host) : undefined;
@@ -170,7 +177,7 @@ export class HostRuntime {
       onRecovered: ({ component, use }) => {
         this.#events.recovered?.(component, use);
       },
-      linkSchemes: this.links,
+      ownSchemes: this.schemes,
       ...(this.#local ? { host: this.#local.client } : {}),
     });
     region.render([node], { inputs: { ...inputs } });
@@ -344,7 +351,7 @@ export class HostRuntime {
           }
         : {}),
       styles: this.#styles,
-      links: this.links,
+      schemes: this.schemes,
       ping: { every: 1000, timeout: this.#options.timeout ?? 5000 },
       ...(this.#options.observer ? { observer: this.#options.observer } : {}),
       on: {

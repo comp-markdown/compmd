@@ -101,7 +101,8 @@ const sandbox = createSandbox({
   trusted: { stars: react(Stars) },           // the host's own components; host mode only
   host: { rating: (product) => ratings.get(product) },   // what trusted components, and permissive packs given `host`, can call
   modules: (module) => ({ url: `/packs/${module.pack}@${module.version}/${module.path}`, integrity: hashes[module.path] }),
-  linkSchemes: ["app"],                       // the app's own links, `[Books](app:item/7)`; a click comes as `link` (spec §15)
+  ownSchemes: ["app"],                        // the app's own links and images, `[Books](app:item/7)`, `![Cover](app:file/3)` (spec §15)
+  ownImages: (src) => files.image(src),       // the file of an `app:` image, a Blob; a click on an `app:` link comes as `link`
   compiled: cacheStorage(),                   // where compiled code is kept by its source (the default); `null` keeps none
 });
 

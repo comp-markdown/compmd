@@ -174,7 +174,7 @@ export class Blocks {
     this.#released = [];
     for (const segment of segments) {
       const group = segment[0]?.group;
-      const nodes = () => withHtml(segment.flatMap((block) => shown(block).nodes));
+      const nodes = () => withHtml(segment.flatMap((block) => shown(block).nodes), this.#surface.ownSchemes);
       const summaries = segment.map((block) => shown(block).summary);
       if (!group) {
         const made: Group = { blocks: segment, views: viewsFor(this.#surface, released, nodes(), passOf(segment)) };

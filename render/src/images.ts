@@ -11,17 +11,19 @@ export type ImageSource = (src: string) => Promise<string | undefined>;
 
 /**
  * The `src` of every image `nodes` can show, as the renderer asks an {@link ImageSource} for it: Markdown images, link
- * reference definitions (which images may name), and images in raw HTML.
+ * reference definitions (which images may name), and images in raw HTML; with `schemes`, the host's own schemes, as
+ * the renderer has them (`ownSchemes`).
  *
  * @example
  * imageSources(tree.children); // ["./logo.png", "https://example.com/photo.png"]
+ * imageSources(tree.children, ["app"]); // ["./logo.png", "app:file/7"]
  */
-export function imageSources(nodes: readonly ExpandedNode[]): string[] {
+export function imageSources(nodes: readonly ExpandedNode[], schemes: readonly string[] = []): string[] {
   const sources: string[] = [];
   walk(nodes, (node) => {
-    if (node.type === "html") sources.push(...htmlImageSources(textOf(node.value)));
+    if (node.type === "html") sources.push(...htmlImageSources(textOf(node.value), schemes));
     if (node.type !== "image" && node.type !== "definition") return;
-    const src = safeUrl(textOf(node.url));
+    const src = safeUrl(textOf(node.url), schemes);
     if (src !== undefined) sources.push(src);
   });
   return sources;

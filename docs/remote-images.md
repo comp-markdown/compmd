@@ -1,4 +1,4 @@
-# Remote images, asked about (proposed)
+# Remote images, asked about
 
 A document's images with a remote URL are fetches at view time (spec §15): a processor asks the reader about the
 image's origin, with the same answer as for data, and shows the alt text until the origin is allowed, with a way to
@@ -8,9 +8,9 @@ allow it. This is how `@compmd/render` and `@compmd/sandbox` do it, in frame mod
 
 1. **One gate, the image source.** Every image the renderer draws already goes through an `ImageSource`
    (`render/src/images.ts`): the URL to show for a `src`, or `undefined`, and the alt text shows meanwhile. The sandbox
-   gives one in both modes now: in host mode too, where the page loads images itself today. A relative `src` and one
-   of a configured origin pass as they are; a remote one of an origin the reader allowed passes; any other is asked
-   about first.
+   gives one in both modes now: in host mode too, where the page loads images itself today. A relative `src`, one of
+   the host's own schemes (`ownSchemes`, loaded through `ownImages`, spec §15) and one of a configured origin pass as
+   they are; a remote one of an origin the reader allowed passes; any other is asked about first.
 2. **The answers are the data's.** The gate uses `origins.ts` as it is: `OriginAnswers` (by default `localStorage`,
    under `compmd-origins`), `AskOrigin` (by default the host page's `<dialog>`), the open questions shared by origin,
    so a page that needs one origin for data and for three images asks once. A host passes the same `answers`, `ask`
@@ -38,6 +38,8 @@ allow it. This is how `@compmd/render` and `@compmd/sandbox` do it, in frame mod
 9. **No reader, no question.** A host that renders without a reader (a build, a server) passes an `ask` that refuses,
    as for `loadData`: its pages show remote images only from configured origins. A host that wants them at build time
    configures their origins.
+10. **A host that never fetches data still asks about images**, by default, as the spec says. One that doesn't want the
+    dialog configures the origins, or passes its own `ask`.
 
 ## Changes
 
@@ -52,8 +54,3 @@ allow it. This is how `@compmd/render` and `@compmd/sandbox` do it, in frame mod
 - Tests: both modes, an image of an unasked origin asks, refused shows the alt text and the button, allowed shows the
   image, a configured origin and a relative image never ask, a frame can't ask about an origin it wasn't sent.
 - Docs: the sandbox README, `guides/developers/08` (trust) and the author's guide's images note.
-
-## Open
-
-- Whether a host that never fetches data still gets the dialog by default for images (proposed: yes, as the spec
-  says; a host that doesn't want it configures origins or passes its own `ask`).

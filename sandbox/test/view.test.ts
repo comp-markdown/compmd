@@ -409,7 +409,7 @@ describe("code blocks", () => {
   }
 });
 
-describe("the host's link schemes", () => {
+describe("the host's own schemes", () => {
   /** A paragraph linking to `app:item/7` and to `other:x`. */
   const links: ExpandedRoot["children"][number] = {
     type: "paragraph",
@@ -422,22 +422,76 @@ describe("the host's link schemes", () => {
   const looking: HostComponent = { name: "label", language: "js", code: probeCode("async () => [...document.querySelectorAll('p a')].map((a) => a.getAttribute('href'))"), trust: { level: "strict" } };
 
   it("are links in the page's frame, other schemes' links its text (frame mode)", async () => {
-    const { view, until, values } = open("frame", [looking], { linkSchemes: ["app"] });
+    const { view, until, values } = open("frame", [looking], { ownSchemes: ["app"] });
     view.render({ type: "root", children: [links, use("one")], inputs: RESULT });
     await until(() => values().length > 0);
     expect(values()[0]).toEqual(["app:item/7"]);
   });
 
   it("are links in the host's page, other schemes' links its text (host mode)", async () => {
-    const { area, view } = open("host", [], { linkSchemes: ["app"] });
+    const { area, view } = open("host", [], { ownSchemes: ["app"] });
     view.render({ type: "root", children: [links] });
     await view.settled();
     expect([...area.querySelectorAll("p a")].map((a) => a.getAttribute("href"))).toEqual(["app:item/7"]);
     expect(area.querySelector("p")?.textContent).toBe("BooksOther");
   });
 
+  /** A paragraph with an image of `app:file/3` and one of `other:x`. */
+  const pictures: ExpandedRoot["children"][number] = {
+    type: "paragraph",
+    children: [
+      { type: "image", url: "app:file/3", alt: "Cover", title: null },
+      { type: "image", url: "other:x", alt: "Other", title: null },
+    ],
+  };
+  /** The host's file of each image of its own scheme it has: `app:file/3` only. */
+  const ownImages = (src: string) => Promise.resolve(src === "app:file/3" ? new Blob(["x"], { type: "image/png" }) : undefined);
+  /** A strict component in the page's frame, which reports its page's images once one shows, or after a second: each `image:` with its URL's scheme, or `alt:` with its text. */
+  const seeing: HostComponent = {
+    name: "label",
+    language: "js",
+    code: probeCode(`async () => {
+      for (let i = 0; i < 50 && !document.querySelector("p img"); i++) await new Promise((resolve) => setTimeout(resolve, 20));
+      return [...document.querySelectorAll("p img, p .compmd-image-alt")].map((e) => (e.tagName === "IMG" ? "image:" + e.getAttribute("src").split(":")[0] : "alt:" + e.textContent));
+    }`),
+    trust: { level: "strict" },
+  };
+
+  it("are images in the page's frame, from the host's files, other schemes' images their alt text (frame mode)", async () => {
+    const { view, until, values } = open("frame", [seeing], { ownSchemes: ["app"], ownImages });
+    view.render({ type: "root", children: [pictures, use("one")], inputs: RESULT });
+    await until(() => values().length > 0);
+    expect(values()[0]).toEqual(["image:blob", "alt:Other"]);
+  });
+
+  it("are their alt text in the page's frame without the host's files (frame mode)", async () => {
+    const { view, until, values } = open("frame", [seeing], { ownSchemes: ["app"] });
+    view.render({ type: "root", children: [pictures, use("one")], inputs: RESULT });
+    await until(() => values().length > 0);
+    expect(values()[0]).toEqual(["alt:Cover", "alt:Other"]);
+  });
+
+  it("are images in the host's page, from the host's files, other schemes' images their alt text (host mode)", async () => {
+    const { area, view } = open("host", [], { ownSchemes: ["app"], ownImages });
+    view.render({ type: "root", children: [pictures] });
+    const shown = await new Promise<HTMLImageElement | null>((resolve) => {
+      const look = (tries: number) => {
+        const image = area.querySelector<HTMLImageElement>("p img");
+        if (image || tries === 0) resolve(image);
+        else
+          setTimeout(() => {
+            look(tries - 1);
+          }, 20);
+      };
+      look(50);
+    });
+    expect(shown?.getAttribute("src")?.startsWith("blob:")).toBe(true);
+    expect(shown?.alt).toBe("Cover");
+    expect(area.querySelector("p .compmd-image-alt")?.textContent).toBe("Other");
+  });
+
   it("can't be one that runs code", () => {
-    expect(() => createSandbox({ base: frames, linkSchemes: ["javascript"] }).open(document.createElement("div"), { components: [] })).toThrow(/can't be a host's link scheme/);
+    expect(() => createSandbox({ base: frames, ownSchemes: ["javascript"] }).open(document.createElement("div"), { components: [] })).toThrow(/can't be a host's own scheme/);
   });
 });
 

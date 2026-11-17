@@ -5,7 +5,7 @@ import { createPage, reveal, type Change, type ExpandedInput, type ExpandedRoot,
 import { connectFrame, type FrameConnection } from "@compmd/render/frame";
 import { framesHighlight, framesMath } from "./from-frames.ts";
 import { frameUrl, type HostRuntime } from "./host/runtime.ts";
-import { PageImages } from "./images.ts";
+import { hostImages, PageImages } from "./images.ts";
 import { codeFor } from "./mounts.ts";
 import type { Observer } from "./observer.ts";
 import { diagnosticOf, HELLO, SANDBOX_VERSION, type ErrorReason, type Scheme } from "./protocol/messages.ts";
@@ -54,7 +54,9 @@ export function hostPage(container: HTMLElement, runtime: HostRuntime, options: 
     // ships one copy of each, which this page and its frames share.
     math: framesMath(options.base),
     highlight: framesHighlight(options.base),
-    linkSchemes: runtime.links,
+    ownSchemes: runtime.schemes,
+    // Images of the host's own schemes from the host's files; every other image loads from its `src`, as this page's do.
+    ...(options.ownImages ? { images: hostImages(runtime.schemes, options.ownImages) } : {}),
     // The trusted components in this page get `host` as the runtime gives it; framed ones get theirs from their frame.
     ...(runtime.host ? { host: runtime.host } : {}),
     onSet: (input, value) => {
@@ -139,13 +141,13 @@ export function framePage(container: HTMLElement, runtime: HostRuntime, options:
   iframe.style.cssText = "border: 0; width: 100%; height: 100%; display: block;";
   /** The document's inputs, which its page may set, from the last tree or splice. */
   let inputs: Readonly<Record<string, ExpandedInput>> = {};
-  const images = new PageImages(fetch, document.baseURI);
+  const images = new PageImages(fetch, document.baseURI, { schemes: runtime.schemes, file: options.ownImages });
   const { port1, port2 } = new MessageChannel();
   const id = observer.frame("strict", { kind: "page" });
   const port = observer.port(id, port1);
   const child: ChildEnd = connectChild(port, {
     level: "strict",
-    ...(runtime.links.length ? { links: runtime.links } : {}),
+    ...(runtime.schemes.length ? { schemes: runtime.schemes } : {}),
     binds: (input) => input in inputs,
     ping: { every: 1000, timeout: options.timeout ?? 5000 },
     image: (url) => images.file(url),

@@ -74,8 +74,8 @@ export interface Surface {
   highlight?: CodeHighlighter | undefined;
   /** Where a wiki link points (spec §2.3); without an answer it renders its label as text. */
   wikiLink?: ((target: string) => string | undefined) | undefined;
-  /** The host's own link schemes, checked: links and wiki links may use them (spec §15). */
-  linkSchemes: readonly string[];
+  /** The host's own URL schemes, checked: links, wiki links and images may use them (spec §15). */
+  ownSchemes: readonly string[];
   /** Where images come from; without it, each loads from its `src`. */
   images?: ImageSource | undefined;
   /** The views drawn for each node with an origin. */
@@ -195,7 +195,7 @@ export function discard(views: readonly View[]): void {
  */
 export function patch(surface: Surface, parent: Node, views: readonly View[], nodes: readonly ExpandedNode[], pass: Pass): View[] {
   const matcher = new Matcher(views, (view) => view);
-  const next = viewsFor(surface, matcher, withHtml(nodes), pass);
+  const next = viewsFor(surface, matcher, withHtml(nodes, surface.ownSchemes), pass);
   discard(matcher.rest());
   arrange(parent, next.map((view) => view.dom));
   return next;

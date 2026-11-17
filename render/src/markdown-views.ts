@@ -45,8 +45,8 @@ function linkOrText(url: string, title: unknown, children: readonly ExpandedNode
   return { tag: "a", attributes: { href, ...(typeof title === "string" && title ? { title } : {}) }, children };
 }
 
-function image(url: string, alt: unknown, title: unknown): Rendering {
-  const src = safeUrl(url);
+function image(url: string, alt: unknown, title: unknown, schemes: readonly string[]): Rendering {
+  const src = safeUrl(url, schemes);
   return { tag: "img", attributes: { ...(src === undefined ? {} : { src }), alt: textOf(alt), ...(typeof title === "string" && title ? { title } : {}) } };
 }
 
@@ -100,16 +100,16 @@ function renderingOf(surface: Surface, node: MarkdownNode, pass: Pass): Renderin
       return { tag: "li", attributes: { class: "compmd-task" }, children: [box, ...children] };
     }
     case "link":
-      return linkOrText(textOf(node.url), node.title, children, surface.linkSchemes);
+      return linkOrText(textOf(node.url), node.title, children, surface.ownSchemes);
     case "image":
-      return image(textOf(node.url), node.alt, node.title);
+      return image(textOf(node.url), node.alt, node.title, surface.ownSchemes);
     case "linkReference": {
       const definition = pass.definitions.get(textOf(node.identifier));
-      return definition ? linkOrText(definition.url, definition.title, children, surface.linkSchemes) : plain("span");
+      return definition ? linkOrText(definition.url, definition.title, children, surface.ownSchemes) : plain("span");
     }
     case "imageReference": {
       const definition = pass.definitions.get(textOf(node.identifier));
-      return definition ? image(definition.url, node.alt, definition.title) : { tag: "span", attributes: {}, text: textOf(node.alt) };
+      return definition ? image(definition.url, node.alt, definition.title, surface.ownSchemes) : { tag: "span", attributes: {}, text: textOf(node.alt) };
     }
     case "table":
       return table(node);
@@ -124,7 +124,7 @@ function renderingOf(surface: Surface, node: MarkdownNode, pass: Pass): Renderin
     case "wikiLink": {
       const label = textOf(node.label ?? node.target);
       const href = surface.wikiLink?.(textOf(node.target));
-      const safe = href === undefined ? undefined : safeUrl(href, surface.linkSchemes);
+      const safe = href === undefined ? undefined : safeUrl(href, surface.ownSchemes);
       return safe === undefined ? { tag: "span", attributes: {}, text: label } : { tag: "a", attributes: { href: safe }, text: label };
     }
     case "compmdElement":

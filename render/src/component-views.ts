@@ -378,7 +378,7 @@ export class ComponentView implements View {
   }
 
   #patchItems(matcher: Matcher<ItemView>, nodes: readonly ExpandedNode[], pass: Pass): ItemView[] {
-    return withHtml(nodes).map((node) => {
+    return withHtml(nodes, this.#surface.ownSchemes).map((node) => {
       const itemPass: Pass = { ...pass, parent: "block" };
       const old = matcher.take(node, pass);
       const item = old ?? this.#createItem(node, itemPass);

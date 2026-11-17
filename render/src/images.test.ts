@@ -52,6 +52,16 @@ describe("imageSources", () => {
     ];
     expect(imageSources(nodes)).toEqual(["./logo.png", "https://example.com/photo.png", "https://example.com/raw.png", "in-slot.png", "footer.png", "fallback.png"]);
   });
+
+  it("lists images of the host's own schemes only when given them", () => {
+    const nodes: ExpandedNode[] = [
+      paragraph(image("app:file/3", "Cover"), image("other:x", "Other")),
+      { type: "definition", identifier: "map", url: "app:file/4" },
+      { type: "html", value: '<img src="app:file/5" alt="Raw">' },
+    ];
+    expect(imageSources(nodes)).toEqual([]);
+    expect(imageSources(nodes, ["app"])).toEqual(["app:file/3", "app:file/4", "app:file/5"]);
+  });
 });
 
 describe("images from a source", () => {

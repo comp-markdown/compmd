@@ -11,7 +11,7 @@ The designs behind the spec and its implementation. Each starts with its status 
 - [Handling pack loading states](handling-pack-loading-states.md): a placeholder, for telling a pack on its way from one that won't load.
 - [Content languages in editors](content-languages.md): proposed, a pack's grammars (and, when trusted, a language server) for the language its code renderer renders, so editors highlight it.
 - [A tree-sitter grammar](tree-sitter.md): proposed, `tree-sitter-compmd` for editors, two grammars on tree-sitter-markdown's, with CEL injected and tests from the spec.
-- [Remote images, asked about](remote-images.md): proposed, how the renderer and the sandbox ask the reader before a document's remote images, in both modes, with the data's answers.
+- [Remote images, asked about](remote-images.md): how the renderer and the sandbox ask the reader before a document's remote images, in both modes, with the data's answers.
 - [Printing a document](printing.md): proposed, what a document looks like on paper: its components, its colours, its page breaks, and what a processor without a browser prints.
 - [Hosting CompMD](hosting.md): what every host does (the configuration, the bundle, the pack store, serving, the page's configuration, the check), which of it is shared code, and the adapter a platform writes.
 

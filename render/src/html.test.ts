@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { linkSchemes, safeUrl, withHtml } from "./html.ts";
+import { htmlImageSources, ownSchemes, safeUrl, urlScheme, withHtml } from "./html.ts";
 import type { ExpandedNode } from "./tree.ts";
 
 const html = (value: string): ExpandedNode => ({ type: "html", value });
@@ -20,6 +20,17 @@ describe("withHtml", () => {
     expect(withHtml([html('<a href="https://x.dev" onclick="evil()">'), text("x"), html("</a>")])[0]).toMatchObject({ attributes: { href: "https://x.dev" } });
     expect(withHtml([html('<a href="javascript:alert(1)">')])[0]).toMatchObject({ attributes: {} });
     expect(withHtml([html('<img src="a.png" alt="A" style="x">')])[0]).toMatchObject({ tag: "img", attributes: { src: "a.png", alt: "A" }, children: [] });
+  });
+
+  it("keeps links and images of the host's own schemes, and only with them", () => {
+    const nodes = [html('<a href="app:item/7">'), text("Books"), html('</a><img src="app:file/3" alt="Cover"><img src="other:x" alt="Other">')];
+    expect(withHtml(nodes, ["app"])).toMatchObject([
+      { tag: "a", attributes: { href: "app:item/7" } },
+      { tag: "img", attributes: { src: "app:file/3", alt: "Cover" } },
+      { tag: "img", attributes: { alt: "Other" } },
+    ]);
+    expect(withHtml(nodes)).toMatchObject([{ tag: "a", attributes: {} }, { tag: "img", attributes: { alt: "Cover" } }, { tag: "img", attributes: { alt: "Other" } }]);
+    expect(htmlImageSources('<img src="app:file/3"><img src="other:x">', ["app"])).toEqual(["app:file/3"]);
   });
 
   it("shows tags outside the allowlist, and tags that don't pair, as text; drops comments", () => {
@@ -51,13 +62,21 @@ describe("safeUrl", () => {
   });
 });
 
-describe("linkSchemes", () => {
+describe("urlScheme", () => {
+  it("gives a URL's scheme in lower case, however it is disguised, and none for a relative one", () => {
+    expect(urlScheme("App:item/7")).toBe("app");
+    expect(urlScheme(" java\tscript:x")).toBe("javascript");
+    for (const url of ["./logo.png", "page.md", "#top", "/a"]) expect(urlScheme(url)).toBeUndefined();
+  });
+});
+
+describe("ownSchemes", () => {
   it("gives the host's schemes as safeUrl takes them", () => {
-    expect(linkSchemes(["App", "fig:", "x-my.app+1"])).toEqual(["app", "fig", "x-my.app+1"]);
+    expect(ownSchemes(["App", "fig:", "x-my.app+1"])).toEqual(["app", "fig", "x-my.app+1"]);
   });
 
   it("refuses a scheme that runs code or carries content of its own, and what isn't a scheme", () => {
-    for (const scheme of ["javascript", "VBScript", "data:", "blob", "file"]) expect(() => linkSchemes([scheme])).toThrow(/can't be a host's link scheme/);
-    for (const scheme of ["", "1app", "app/x", "a b"]) expect(() => linkSchemes([scheme])).toThrow(/isn't a link scheme/);
+    for (const scheme of ["javascript", "VBScript", "data:", "blob", "file"]) expect(() => ownSchemes([scheme])).toThrow(/can't be a host's own scheme/);
+    for (const scheme of ["", "1app", "app/x", "a b"]) expect(() => ownSchemes([scheme])).toThrow(/isn't a URL scheme/);
   });
 });

@@ -24,15 +24,28 @@ const ALLOWED: Record<string, readonly string[]> = {
 const VOID = new Set(["br", "img"]);
 const URL_ATTRIBUTES = new Set(["href", "src"]);
 
-/** The schemes every link may use (spec §15). */
+/** The schemes every link and image may use (spec §15). */
 const SAFE_SCHEMES: readonly string[] = ["http", "https", "mailto"];
 
 /** Schemes a host can never name as its own: they run code, or carry content of their own (spec §15). */
 const NEVER: readonly string[] = ["javascript", "vbscript", "data", "blob", "file"];
 
 /**
- * `url` if it is safe to follow: relative, a fragment, `http:`, `https:` or `mailto:`, or one of `schemes`, the host's
- * own link schemes, which {@link linkSchemes} has checked.
+ * The scheme of `url`, in lower case and without its `:`, or `undefined` when it has none (a relative URL).
+ *
+ * @example
+ * urlScheme("App:item/7"); // "app"
+ * urlScheme("./logo.png"); // undefined
+ */
+export function urlScheme(url: string): string | undefined {
+  // Browsers ignore control characters and whitespace in a scheme, so they don't hide one here either.
+  // eslint-disable-next-line no-control-regex
+  return /^([a-z][a-z0-9+.-]*):/i.exec(url.replace(/[\u0000- ]/g, ""))?.[1]?.toLowerCase();
+}
+
+/**
+ * `url` if a link may follow it or an image show it: relative, a fragment, `http:`, `https:` or `mailto:`, or one of
+ * `schemes`, the host's own, which {@link ownSchemes} has checked.
  *
  * @example
  * safeUrl("https://example.com"); // "https://example.com"
@@ -40,25 +53,23 @@ const NEVER: readonly string[] = ["javascript", "vbscript", "data", "blob", "fil
  * safeUrl("app:page/1", ["app"]); // "app:page/1"
  */
 export function safeUrl(url: string, schemes: readonly string[] = []): string | undefined {
-  // Browsers ignore control characters and whitespace in a scheme, so they don't hide one here either.
-  // eslint-disable-next-line no-control-regex
-  const scheme = /^([a-z][a-z0-9+.-]*):/i.exec(url.replace(/[\u0000- ]/g, ""))?.[1]?.toLowerCase();
+  const scheme = urlScheme(url);
   return scheme === undefined || SAFE_SCHEMES.includes(scheme) || schemes.includes(scheme) ? url : undefined;
 }
 
 /**
- * The host's own link schemes, as {@link safeUrl} takes them: names without their `:`, in lower case.
+ * The host's own URL schemes, as {@link safeUrl} takes them: names without their `:`, in lower case.
  *
  * @throws Error when one isn't a scheme, or is one a host can never name: `javascript`, `vbscript`, `data`, `blob`
  * or `file`.
  * @example
- * linkSchemes(["App", "fig"]); // ["app", "fig"]
+ * ownSchemes(["App", "fig"]); // ["app", "fig"]
  */
-export function linkSchemes(schemes: readonly string[]): readonly string[] {
+export function ownSchemes(schemes: readonly string[]): readonly string[] {
   return schemes.map((given) => {
     const scheme = given.replace(/:$/, "").toLowerCase();
-    if (!/^[a-z][a-z0-9+.-]*$/.test(scheme)) throw new Error(`\`${given}\` isn't a link scheme`);
-    if (NEVER.includes(scheme)) throw new Error(`\`${scheme}:\` can't be a host's link scheme: it runs code or carries content of its own`);
+    if (!/^[a-z][a-z0-9+.-]*$/.test(scheme)) throw new Error(`\`${given}\` isn't a URL scheme`);
+    if (NEVER.includes(scheme)) throw new Error(`\`${scheme}:\` can't be a host's own scheme: it runs code or carries content of its own`);
     return scheme;
   });
 }
@@ -72,20 +83,21 @@ type Token =
 const TAG = /<!--[\s\S]*?-->|<(\/?)([a-zA-Z][a-zA-Z0-9-]*)((?:\s+[^\s"'>/=]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'=<>`]+))?)*)\s*\/?>/g;
 const ATTRIBUTE = /([^\s"'>/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
 
-function attributesOf(source: string, tag: string): Record<string, string> {
+function attributesOf(source: string, tag: string, schemes: readonly string[]): Record<string, string> {
   const allowed = ALLOWED[tag] ?? [];
   const attributes: Record<string, string> = {};
   for (const match of source.matchAll(ATTRIBUTE)) {
     const name = (match[1] ?? "").toLowerCase();
     const value = match[2] ?? match[3] ?? match[4] ?? "";
     if (!allowed.includes(name)) continue;
-    if (URL_ATTRIBUTES.has(name) && safeUrl(value) === undefined) continue;
+    if (URL_ATTRIBUTES.has(name) && safeUrl(value, schemes) === undefined) continue;
     attributes[name] = value;
   }
   return attributes;
 }
 
-function tokensOf(html: string): Token[] {
+/** The tokens of `html`, its links and images keeping a URL only when {@link safeUrl} does, with `schemes`. */
+function tokensOf(html: string, schemes: readonly string[]): Token[] {
   const tokens: Token[] = [];
   let at = 0;
   for (const match of html.matchAll(TAG)) {
@@ -95,15 +107,15 @@ function tokensOf(html: string): Token[] {
     if (tag === undefined) continue; // a comment
     if (!(tag in ALLOWED)) tokens.push({ kind: "text", value: match[0] });
     else if (match[1] === "/") tokens.push({ kind: "close", tag, source: match[0] });
-    else tokens.push({ kind: "open", tag, attributes: attributesOf(match[3] ?? "", tag) });
+    else tokens.push({ kind: "open", tag, attributes: attributesOf(match[3] ?? "", tag, schemes) });
   }
   if (at < html.length) tokens.push({ kind: "text", value: html.slice(at) });
   return tokens;
 }
 
-/** The `src` of each image of raw HTML that renders, as {@link withHtml} keeps it. */
-export function htmlImageSources(html: string): string[] {
-  return tokensOf(html).flatMap((token) => (token.kind === "open" && token.tag === "img" && token.attributes.src !== undefined ? [token.attributes.src] : []));
+/** The `src` of each image of raw HTML that renders, as {@link withHtml} keeps it with the host's own `schemes`. */
+export function htmlImageSources(html: string, schemes: readonly string[] = []): string[] {
+  return tokensOf(html, schemes).flatMap((token) => (token.kind === "open" && token.tag === "img" && token.attributes.src !== undefined ? [token.attributes.src] : []));
 }
 
 /** An allowed tag of raw HTML that can pair across siblings: an opener of an element that isn't void, or a closer. */
@@ -116,7 +128,7 @@ export interface Tag {
 export function tagsOf(nodes: readonly ExpandedNode[]): Tag[] {
   return nodes
     .filter((node) => node.type === "html")
-    .flatMap((node) => tokensOf(String((node as MarkdownNode).value)))
+    .flatMap((node) => tokensOf(String((node as MarkdownNode).value), []))
     .flatMap((token): Tag[] => (token.kind === "close" ? [{ open: false, tag: token.tag }] : token.kind === "open" && !VOID.has(token.tag) ? [{ open: true, tag: token.tag }] : []));
 }
 
@@ -132,14 +144,15 @@ export function stillOpen(open: readonly string[], tags: readonly Tag[]): string
 
 /**
  * `nodes` with their raw HTML made safe: allowed tags become elements holding what's between them, everything else
- * text. A list without `html` nodes comes back as it is.
+ * text. Links and images keep their URL when {@link safeUrl} does, with the host's own `schemes`. A list without
+ * `html` nodes comes back as it is.
  *
  * @example
  * withHtml([html("<kbd>"), text("Ctrl"), html("</kbd>")]); // [{ type: "compmdHtml", tag: "kbd", children: [text("Ctrl")] }]
  */
-export function withHtml(nodes: readonly ExpandedNode[]): readonly ExpandedNode[] {
+export function withHtml(nodes: readonly ExpandedNode[], schemes: readonly string[] = []): readonly ExpandedNode[] {
   if (!nodes.some((node) => node.type === "html")) return nodes;
-  const tokens = nodes.flatMap((node): Token[] => (node.type === "html" ? tokensOf(String(node.value)) : [{ kind: "node", node }]));
+  const tokens = nodes.flatMap((node): Token[] => (node.type === "html" ? tokensOf(String(node.value), schemes) : [{ kind: "node", node }]));
   const root: ExpandedNode[] = [];
   const open: HtmlElementNode[] = [];
   const append = (node: ExpandedNode) => (open.at(-1)?.children ?? root).push(node);

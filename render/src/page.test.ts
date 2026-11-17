@@ -151,12 +151,42 @@ describe("Markdown", () => {
     page({ wikiLink }).render(nodes);
     expect(root.querySelector("p")?.innerHTML).toBe("<span>Books</span><span>Trip</span><span>home</span><span>Other</span>");
     root.remove();
-    page({ wikiLink, linkSchemes: ["app"] }).render(nodes);
+    page({ wikiLink, ownSchemes: ["app"] }).render(nodes);
     expect(root.querySelector("p")?.innerHTML).toBe('<a href="app:item/7">Books</a><a href="app:item/8">Trip</a><a href="app:page/Home">home</a><span>Other</span>');
   });
 
-  it("refuses link schemes a host can never name", () => {
-    expect(() => page({ linkSchemes: ["javascript"] })).toThrow(/can't be a host's link scheme/);
+  it("shows images of the host's own schemes, in Markdown and raw HTML, and other schemes' images as their alt text", () => {
+    const nodes = tree(
+      paragraph(
+        { type: "image", url: "app:file/3", alt: "Cover", title: null },
+        { type: "imageReference", identifier: "map", referenceType: "full", alt: "Map" },
+        { type: "html", value: '<img src="app:file/5" alt="Raw">' },
+        { type: "image", url: "other:x", alt: "Other", title: null },
+      ),
+      { type: "definition", identifier: "map", url: "app:file/4", title: null },
+    );
+    const sources = () => [...root.querySelectorAll("img")].map((image) => [image.getAttribute("alt"), image.getAttribute("src")]);
+    page().render(nodes);
+    expect(sources()).toEqual([["Cover", null], ["Map", null], ["Raw", null], ["Other", null]]);
+    root.remove();
+    page({ ownSchemes: ["app"] }).render(nodes);
+    expect(sources()).toEqual([["Cover", "app:file/3"], ["Map", "app:file/4"], ["Raw", "app:file/5"], ["Other", null]]);
+  });
+
+  it("asks its image source for images of the host's own schemes", async () => {
+    const asked: string[] = [];
+    const images = (src: string) => {
+      asked.push(src);
+      return Promise.resolve(`blob:${src}`);
+    };
+    page({ ownSchemes: ["app"], images }).render(tree(paragraph({ type: "image", url: "app:file/3", alt: "Cover", title: null }, { type: "image", url: "other:x", alt: "Other", title: null })));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(asked).toEqual(["app:file/3"]);
+    expect(root.querySelector("img")?.getAttribute("src")).toBe("blob:app:file/3");
+  });
+
+  it("refuses schemes a host can never name", () => {
+    expect(() => page({ ownSchemes: ["javascript"] })).toThrow(/can't be a host's own scheme/);
   });
 });
 
