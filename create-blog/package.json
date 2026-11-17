@@ -1,0 +1,48 @@
+{
+  "name": "@compmd/create-blog",
+  "version": "0.7.1",
+  "description": "Writes a blog in CompMD: its configuration and a first post, built with @compmd/blog. npm create @compmd/blog <folder>",
+  "keywords": [
+    "compmd",
+    "markdown",
+    "blog",
+    "create",
+    "template"
+  ],
+  "homepage": "https://compmd.dev/",
+  "bugs": "https://github.com/comp-markdown/compmd/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/comp-markdown/compmd.git",
+    "directory": "create-blog"
+  },
+  "author": "Hakan Serce",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "create-blog": "./dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/create.d.ts",
+      "default": "./dist/create.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "lint": "eslint . && tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@compmd/blog": "workspace:*",
+    "@eslint/js": "10.0.1",
+    "@types/node": "26.6.5",
+    "eslint": "10.13.0",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.0",
+    "vitest": "5.0.5"
+  }
+}

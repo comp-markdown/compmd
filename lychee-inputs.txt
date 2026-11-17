@@ -30,5 +30,7 @@ devtools/README.md
 devtools/src
 blog/README.md
 blog/src
+create-blog/README.md
+create-blog/src
 packs/mermaid/README.md
 packs/mermaid/src

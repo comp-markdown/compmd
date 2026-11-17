@@ -9,6 +9,7 @@ packages:
   - pack
   - create-pack
   - blog
+  - create-blog
   - guides
   - wasm
   - editor
