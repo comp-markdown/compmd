@@ -1,4 +1,6 @@
-# Wireframes in CompMD (proposed)
+# Wireframes in CompMD
+
+**Status: accepted (2026-11-17), option B.**
 
 A writer sketching a screen in a design note, an issue or a spec wants a **wireframe**: the screen's boxes, its
 buttons, inputs and images, and notes on them, drawn roughly enough that nobody mistakes it for the design. Mermaid,
@@ -113,28 +115,28 @@ A is about two (the spec change, then the pack of `compmd` definitions).
   pack, a drawing the reader draws in the document, is work of its own. Its scenes can't be read in a plain renderer.
 - **E, a service**, can't run in a strict frame and sends the document's text to someone else.
 
-## Recommendation
+## Decision
 
-**Either A or B, drawn as HTML; B if the shorter text is worth about three more tasks.** With B drawn as HTML and CSS,
-the browser does its layout, so B is a language and a small renderer, not a drawing engine: about five tasks against
-A's two. B gives writers the short text they know from Mermaid and a grammar of our own that renderers can comply
-with; A needs no frame, renders and prints everywhere, and shows what CompMD's own layout can do. A's one gap, labels
-written twice, is a small spec change of its own (`{{md.fallback}}`), worth making either way.
+**B, a code renderer for a wireframe language of our own, drawn as HTML and CSS** (decided 2026-11-17). Writers get
+the short text they know from Mermaid, renderers a grammar they can comply with, and the browser does the layout. It
+is built in the five steps of *What B takes*, each a task.
 
-## What A would be
+## What B is
 
-- `@comp-markdown/wireframe`, in `packs/wireframe/`, written with `npm create @compmd/pack`, as
-  [the Mermaid pack](mermaid-pack.md) is, released on its own tag.
-- Components, each a `compmd` definition: `wf-screen` (`device`: `phone`, `tablet`, `window`, `browser`; `title`),
-  `wf-heading`, `wf-text` (lines of placeholder text, `lines=3`), `wf-button` (`variant`: `default`, `primary`,
-  `link`), `wf-input` (`type`, `placeholder`), `wf-select`, `wf-checkbox`, `wf-image` (a crossed box, `height`),
-  `wf-icon`, `wf-list` (`items`), `wf-tabs` (`items`, `selected`), `wf-note` (a note in the margin, numbered).
-- The look: dashed and solid borders, greys from the host's tokens, light and dark by the page's scheme, a
-  sketch font only if the host offers one.
-- Tests: each component on the pack's test page, light and dark, printed, and in a plain renderer.
+- `@comp-markdown/wireframe`, in `packs/wireframe/`, written with `npm create @compmd/pack -- --renders wireframe`, as
+  [the Mermaid pack](mermaid-pack.md) is, released on its own tag: a code renderer of ```` ```wireframe ```` blocks
+  (spec §7.7), with `alt` for its text alternative.
+- Its parts, as its grammar will name them: a `screen` (`phone`, `tablet`, `window`, `browser`; a title), `row`,
+  `column` and `grid`, `heading`, `text` (lines of placeholder text), `button` (`primary`, `link`), `input`
+  (`password`, `placeholder`), `select`, `checkbox`, `image` (a crossed box), `icon`, `list`, `tabs` and `note` (a
+  note pointing at a part, numbered). The language's design settles them.
+- The look: borders a little uneven, greys from the host's tokens, light and dark by the page's scheme, a hand-written
+  font only if the host offers one.
+- Tests: the grammar's examples parsed, broken input with its errors' places, each part drawn on the pack's test page
+  in Chrome and WebKit, light and dark, printed, and the block as a plain renderer shows it.
 
-## Open
+## Not in this change
 
-- Whether to make the spec change (`{{md.fallback}}` in a `compmd` body) first, so labels are written once.
-- The names: `wf-` as a prefix (proposed), so they don't clash with a document's own `button` or `note`; a document
-  that wants shorter ones renames them on import (`{name: wf-button, as: button}`).
+- A Salt-compatible subset (C): later, if writers ask for it, with its limit said plainly.
+- `{{md.fallback}}`, a `compmd` component reading its leaf's fallback text: a spec change of its own, for any
+  `compmd` component with a label, which B doesn't need.

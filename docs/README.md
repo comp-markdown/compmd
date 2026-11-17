@@ -15,7 +15,7 @@ The designs behind the spec and its implementation. Each starts with its status 
 - [Remote images, asked about](remote-images.md): how the renderer and the sandbox ask the reader before a document's remote images, in both modes, with the data's answers.
 - [Reading CompMD with pandoc](pandoc.md): proposed, the processor's expanded tree written as pandoc's JSON, each component as it prints, by a `compmd-pandoc` command and a pandoc reader in a repository of their own, so pandoc turns documents into PDF, Word and EPUB.
 - [A blog in CompMD](blog-tool.md): `@compmd/blog`, the command `cblo`, a folder of CompMD documents made a static blog (posts, tags, a feed, comments), which the website's blog uses.
-- [Wireframes in CompMD](wireframe-pack.md): proposed, the ways a pack could draw wireframes (CompMD components, a small language of its own, Salt, Excalidraw, a service), with CompMD components recommended.
+- [Wireframes in CompMD](wireframe-pack.md): the ways a pack could draw wireframes (CompMD components, a small language of its own, Salt, Excalidraw, a service), and the one chosen: a wireframe language of our own, drawn as HTML and CSS by a code renderer pack.
 - [Printing a document](printing.md): proposed, what a document looks like on paper: its components, its colours, its page breaks, and what a processor without a browser prints.
 - [Hosting CompMD](hosting.md): what every host does (the configuration, the bundle, the pack store, serving, the page's configuration, the check), which of it is shared code, and the adapter a platform writes.
 
