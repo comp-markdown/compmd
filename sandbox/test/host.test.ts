@@ -196,8 +196,8 @@ export default function Chart({ compmd }) {
   it("says so when its frames never load their runtime, missing or refused by their policy, and shows the fallback", { timeout: 30_000 }, async () => {
     for (const base of [missing, refused]) {
       const { runtime, area, errors } = setup({ base });
-      // The compile frame is the first to need its runtime: the component's code never comes.
-      await runtime.set([plain("chart", { level: "strict" }, "async () => 'drawn'")]);
+      // The compile frame is the first to need its runtime: the component's code, TypeScript, never comes.
+      await runtime.set([{ ...plain("chart", { level: "strict" }, "async () => 'drawn'"), language: "ts" }]);
       expect(errors, base).toEqual([["chart", "failed", expect.stringContaining(`the compile frame didn't load its runtime from ${base}strict.html`)]]);
       runtime.mountUse(area, use("chart"), { chart: { type: "string", value: "" } });
       expect(area.textContent).toBe("chart's fallback");

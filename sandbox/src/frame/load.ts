@@ -2,11 +2,10 @@
 // binding (spec §7.6): React's for JSX and TSX, Svelte's for Svelte, and a plain component's default export is its
 // mount. Compiled text and a built module the host's page holds load as `blob:` modules, their imports of library
 // packs written as the URLs of the libraries' own `blob:` modules (docs/sharing-library-packs.md); a built module, or
-// a pack's source component the host compiled ahead, by its URL, checked against its file's hash.
+// a pack's source component the host compiled ahead, by its URL, checked against its file's hash. A binding loads only
+// when a component needs it, so a frame of plain components never loads React or Svelte.
 
 import type { Mount } from "@compmd/render";
-import { react } from "@compmd/render/react";
-import { svelte } from "@compmd/render/svelte";
 import type { ComponentType } from "react";
 import type { Component } from "svelte";
 import type { Libraries, LibraryCode, Runnable } from "../protocol/messages.ts";
@@ -98,10 +97,14 @@ export async function load(component: Runnable): Promise<Loaded> {
   if (binding === "plain" && "module" in component) return { mount: exported as Mount };
   const css = cssOf(component, module);
   switch (binding) {
-    case "react":
+    case "react": {
+      const { react } = await import("@compmd/render/react");
       return { mount: react(exported as ComponentType<Record<string, unknown>>), ...css };
-    case "svelte":
+    }
+    case "svelte": {
+      const { svelte } = await import("@compmd/render/svelte");
       return { mount: svelte(exported as Component<Record<string, unknown>>), ...css };
+    }
     case "plain":
       return { mount: exported as Mount, ...css };
   }

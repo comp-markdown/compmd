@@ -580,10 +580,18 @@ describe("when the page has settled", () => {
 });
 
 describe("the compile frame", () => {
+  it("is never made for plain JavaScript, which compiles to itself", async () => {
+    const { view, until, values } = open("host");
+    view.render(page("one"));
+    await until(() => values().includes("one"));
+    expect(document.querySelector('iframe[title="compile"]')).toBeNull();
+  });
+
   it("stays hidden whatever the host's page styles iframes with", async () => {
     const style = document.head.appendChild(Object.assign(document.createElement("style"), { textContent: "iframe { display: block; height: 100%; }" }));
     try {
-      const { view, until, values } = open("host");
+      // TypeScript, which the compile frame compiles.
+      const { view, until, values } = open("host", [{ ...label(), language: "ts" }]);
       view.render(page("one"));
       await until(() => values().includes("one"));
       const compiler = document.querySelector<HTMLIFrameElement>('iframe[title="compile"]');

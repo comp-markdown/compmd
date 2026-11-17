@@ -32,7 +32,8 @@ const probing = (name: string, trust: HostComponent["trust"], body = "async () =
 
 /** A permissive map that shows its slot, with a strict legend in it, beside a strict chart and the host's stars. */
 const nested: HostComponent[] = [
-  probing("chart", { level: "strict" }),
+  // TypeScript, so the document has a compile frame to see.
+  { ...probing("chart", { level: "strict" }), language: "ts" },
   { name: "map", language: "js", code: "export default (target, { slots }) => { for (const item of slots.default) target.append(item.element); }", trust: { level: "permissive", network: [], host: false } },
   probing("legend", { level: "strict" }),
   { name: "stars", language: "js", code: "", trust: { level: "trusted" } },

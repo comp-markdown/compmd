@@ -11,7 +11,8 @@
     "preview": "node scripts/serve.ts",
     "lint": "eslint . && tsc --noEmit && svelte-check --tsconfig ./tsconfig.json --fail-on-warnings --output machine",
     "test": "vitest run",
-    "check": "node scripts/check.ts"
+    "check": "node scripts/check.ts",
+    "measure": "node scripts/measure.ts"
   },
   "dependencies": {
     "@compmd/processor": "workspace:*",

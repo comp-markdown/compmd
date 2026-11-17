@@ -216,6 +216,9 @@ export class HostRuntime {
       const binding = bindingOf(component.language);
       return { name: component.name, level, module: compiled, ...(binding === "plain" ? {} : { binding }) };
     }
+    // Plain JavaScript compiles to itself: it skips the compile frame, which would only boot to give it back. One
+    // naming a runtime still goes there, which says the frames have none for it.
+    if (component.language === "js" && !component.runtime) return { name: component.name, level, binding: "plain", code: component.code, ...withLibraries };
     try {
       const { code, css } = await this.#compilerFor().compile({ name: component.name, language: component.language, code: component.code, ...(component.runtime ? { runtime: component.runtime } : {}) });
       return { name: component.name, level, binding: bindingOf(component.language), code, ...(css === undefined ? {} : { css }), ...withLibraries };
