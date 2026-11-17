@@ -7,7 +7,7 @@ use super::{Converter, Labels};
 use crate::diagnostic::{Code, Location};
 use crate::tree::{
     Declaration, DeclaredType, DefaultValue, Definition, DefinitionBody, Headings, Node, Param,
-    Point, Position, Signature, SignatureFence, SlotDeclaration, TypeName,
+    Point, Position, Signature, SignatureFence, SlotDeclaration, TypeName, Unquoted,
 };
 use markdown::mdast;
 use serde_json::Value;
@@ -194,6 +194,7 @@ fn code_declaration() -> Declaration {
         doc: None,
         unknown_at: None,
         type_at: None,
+        unquoted: None,
     }
 }
 
@@ -251,9 +252,18 @@ fn slots(value: Option<&Value>) -> Option<Vec<SlotDeclaration>> {
 /// type's text starts in the document, when known.
 pub(crate) fn declaration(name: &str, written: &Value, type_at: Option<Location>) -> Declaration {
     if let Some(short) = written.as_str() {
-        let (type_text, default) = match split_default(short) {
-            Some((type_text, default)) => (type_text, short_default(default.trim())),
-            None => (short, None),
+        let (type_text, default, unquoted) = match split_default(short) {
+            Some((type_text, written)) => {
+                let text = written.trim();
+                let (default, cut) = short_default(text);
+                let start = short.len() - written.trim_start().len();
+                let unquoted = cut
+                    .then_some(type_at)
+                    .flatten()
+                    .map(|at| unquoted(short, start, text, at));
+                (type_text, default, unquoted)
+            }
+            None => (short, None, None),
         };
         let (declared, optional) = type_of(type_text);
         let unknown_at = unknown_at(&declared, type_text, type_at);
@@ -265,6 +275,7 @@ pub(crate) fn declaration(name: &str, written: &Value, type_at: Option<Location>
             doc: None,
             unknown_at,
             type_at,
+            unquoted,
         };
     }
     let type_text = written.get("type").and_then(Value::as_str).unwrap_or("");
@@ -276,6 +287,7 @@ pub(crate) fn declaration(name: &str, written: &Value, type_at: Option<Location>
         declared,
         optional,
         default: written.get("default").cloned().map(DefaultValue::Yaml),
+        unquoted: None,
         doc: written
             .get("doc")
             .and_then(Value::as_str)
@@ -307,13 +319,28 @@ fn split_default(short: &str) -> Option<(&str, &str)> {
     Some((&short[..equals], &short[equals + 1..]))
 }
 
-/// A short form's default, read as a param value.
-fn short_default(text: &str) -> Option<DefaultValue> {
+/// A short form's default, read as a param value, and whether it was cut at a white space with more after it, as an
+/// unquoted value with spaces is (spec §3.1).
+fn short_default(text: &str) -> (Option<DefaultValue>, bool) {
     let chars: Vec<char> = format!("d={text}").chars().collect();
     let list = params::unbraced(&chars, 0);
+    let cut = list.params.len() > 1;
     match (list.broke_at, list.params.into_iter().next()) {
-        (None, Some(param)) => Some(DefaultValue::Param(param.value)),
-        _ => None,
+        (None, Some(param)) => (Some(DefaultValue::Param(param.value)), cut),
+        _ => (None, false),
+    }
+}
+
+/// The default `text`, at byte `start` of the short form `short`, which starts at `type_at`: where it is, and where
+/// what its first white space leaves out starts.
+fn unquoted(short: &str, start: usize, text: &str, type_at: Location) -> Unquoted {
+    let column = |byte: usize| type_at.column + short[..byte].chars().count();
+    let first = text.find(char::is_whitespace).unwrap_or(text.len());
+    let rest = first + (text.len() - first - text[first..].trim_start().len());
+    Unquoted {
+        at: Location::new(type_at.line, column(start)),
+        text: text.to_string(),
+        rest_at: Location::new(type_at.line, column(start + rest)),
     }
 }
 

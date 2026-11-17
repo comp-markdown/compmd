@@ -198,6 +198,7 @@ impl Loader<'_, '_> {
     /// F037 for a declaration whose type isn't a type name (spec §7.3), with the nearest one and the fix that writes
     /// it. The declaration is kept: its type takes any value.
     fn check_type(&mut self, id: DocumentId, declaration: &Declaration) {
+        self.check_unquoted(id, declaration);
         let (Some(at), Some(written)) = (declaration.unknown_at, declaration.declared.unknown())
         else {
             return;
@@ -222,5 +223,24 @@ impl Loader<'_, '_> {
             ),
             fix,
         );
+    }
+
+    /// F011 for a short form's default written unquoted with spaces: a bare value ends at its first white space
+    /// (spec §3.1, §7.3), so the rest would be left out without a word. The fix quotes the whole default; the
+    /// default is kept as far as its first white space.
+    fn check_unquoted(&mut self, id: DocumentId, declaration: &Declaration) {
+        let Some(unquoted) = &declaration.unquoted else {
+            return;
+        };
+        let quoted = format!(
+            "\"{}\"",
+            unquoted.text.replace('\\', "\\\\").replace('"', "\\\"")
+        );
+        let message = format!(
+            "`{}`'s default ends at its first space, so the rest isn't part of it: quote it, {quoted}",
+            declaration.name
+        );
+        let fix = Fix::replacing(unquoted.at, &unquoted.text, quoted);
+        self.report_fixed(id, Code::F011, unquoted.rest_at, message, Some(fix));
     }
 }

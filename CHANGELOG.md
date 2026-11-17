@@ -6,6 +6,7 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
 
 ### 2026-11-17
 
+- **Text after a short-form default (§7.3, §10.2).** A declaration's short-form default is one param value, so an unquoted one ends at its first white space, and text after it is F011, with a fix that quotes the default. Before, the spec didn't say, and `string = Klara and the Sun` silently gave the default `Klara`. Breaking for such documents only, which now get F011 where they got a cut default.
 - **A host's own link schemes (§15).** A link, a link reference or a wiki link renders as a link when its URL is relative or uses `https:`, `http:` or `mailto:`, or a scheme the host names as its own (an application's `app:` for links to its own pages); any other renders its text. A host can't name `javascript:`, `vbscript:`, `data:`, `blob:` or `file:`. Before, the spec restricted schemes only in interpolated URLs (§8.1), and a host had no way to link to its own pages from a document. Not breaking: a host that names none renders links as before.
 
 ### 2026-11-12

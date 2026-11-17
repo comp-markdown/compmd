@@ -181,6 +181,10 @@ impl Shift for Signature {
             }
             declaration.unknown_at.shift(by);
             declaration.type_at.shift(by);
+            if let Some(unquoted) = &mut declaration.unquoted {
+                unquoted.at.shift(by);
+                unquoted.rest_at.shift(by);
+            }
         }
     }
 }

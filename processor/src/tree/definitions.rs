@@ -139,6 +139,21 @@ pub struct Declaration {
     /// Where its type is written, in the document that declares it, when known.
     #[serde(skip)]
     pub(crate) type_at: Option<Location>,
+    /// A short form's unquoted default with more after its first white space, which the default leaves out (F011).
+    #[serde(skip)]
+    pub(crate) unquoted: Option<Unquoted>,
+}
+
+/// A short form's default written unquoted with spaces in it (`string = Klara and the Sun`), which ends at its first
+/// white space (spec §7.3), in the document that declares it.
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct Unquoted {
+    /// Where the default starts.
+    pub(crate) at: Location,
+    /// The default as written, all of it.
+    pub(crate) text: String,
+    /// Where what it leaves out starts.
+    pub(crate) rest_at: Location,
 }
 
 named! {

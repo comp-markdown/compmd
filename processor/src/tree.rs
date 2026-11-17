@@ -8,6 +8,7 @@ mod definitions;
 mod shift;
 
 pub use components::{Container, Interpolation, Leaf, Param, ParamValue, Slot, StringPart};
+pub(crate) use definitions::Unquoted;
 pub use definitions::{
     Declaration, DeclaredType, DefaultValue, Definition, DefinitionBody, Headings, Signature,
     SignatureFence, SlotDeclaration, TypeName,

@@ -93,6 +93,38 @@ fn enum_alone_and_a_name_nothing_is_close_to_are_unknown_types() {
 }
 
 #[test]
+fn an_unquoted_default_with_spaces_is_f011_with_the_fix_that_quotes_it() {
+    let cut = one(
+        "---\nmd:\n  inputs:\n    book: string = Klara and the Sun\n---\n",
+        Code::F011,
+    );
+    assert_eq!(
+        cut.message,
+        "`book`'s default ends at its first space, so the rest isn't part of it: quote it, \"Klara and the Sun\""
+    );
+    // At `and`, the first word left out.
+    assert_eq!(cut.range.start, Location::new(4, 26));
+    assert_eq!(
+        fix(&cut),
+        Some((
+            Location::new(4, 20),
+            Location::new(4, 37),
+            "\"Klara and the Sun\"".into()
+        ))
+    );
+    // A signature's short form too, and a quoted default or one without spaces is fine.
+    let signature = one(
+        "```compmd component=chip\nparams:\n  label: string = two words\n---\nChip.\n```\n",
+        Code::F011,
+    );
+    assert_eq!(signature.range.start, Location::new(3, 23));
+    let fine = validated(
+        "---\nmd:\n  inputs:\n    book: string = \"Klara and the Sun\"\n    count: number = 3\n---\n",
+    );
+    assert!(fine.iter().all(|d| d.code != Code::F011), "{fine:?}");
+}
+
+#[test]
 fn a_common_param_says_what_it_takes() {
     let refused = one("::: box {padding=huge}\nx\n::: /box\n", Code::F009);
     assert_eq!(
