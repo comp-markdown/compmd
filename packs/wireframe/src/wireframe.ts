@@ -1,39 +1,36 @@
-// `wireframe`: draws a ```wireframe block, its text in `code`, in the page's colour scheme. Replace the drawing
-// with yours, a library's rendering of the language, say: what it imports is bundled in. A library that draws
-// asynchronously is simpler with `draw` from `@compmd/pack/component`.
-import { component } from "@compmd/pack/component";
+// `wireframe`: draws a ```wireframe block, its text in `code`, as HTML and CSS (LANGUAGE.md), in the page's colour
+// scheme. A source that isn't valid draws nothing and fails with its first error, which the host reports (W118), and
+// the reader sees the code.
+import { draw } from "@compmd/pack/component";
+import { draw as drawWireframe } from "./draw.ts";
+import { parse } from "./parse.ts";
+import { STYLE } from "./style.ts";
 
 /** The params, as the signature in `index.comp.md` declares them. */
 export interface Params {
-  /** The code block's text. */
+  /** The block's text, or the leaf's param. */
   code: string;
 }
 
-export default component<Params>((target, context) => {
-  const figure = document.createElement("figure");
-  figure.setAttribute("role", "img");
-  // The block's `alt`, or a leaf's fallback: the text alternative of what is drawn.
-  figure.setAttribute("aria-label", context.fallback.text);
-  figure.style.cssText = "margin: 0; padding: 1em; border-radius: 8px; font: 14px/1.5 ui-monospace, monospace;";
-  target.append(figure);
-  const draw = ({ code }: Params) => {
-    // The scheme is the page's, which may not be the reader's preference; a change of it comes as an update.
-    const dark = context.scheme === "dark";
-    figure.style.background = dark ? "#1f2328" : "#f6f8fa";
-    figure.style.color = dark ? "#f6f8fa" : "#1f2328";
-    figure.replaceChildren(
-      ...code.split("\n").map((line, i) => {
-        const row = document.createElement("div");
-        row.textContent = `${String(i + 1).padStart(2)}  ${line}`;
-        return row;
-      }),
-    );
-  };
-  draw(context.params);
-  return {
-    update: draw,
-    destroy: () => {
-      figure.remove();
-    },
-  };
-});
+/** What a source's errors say: the first, with how many more there are. */
+export function failureOf(errors: readonly Error[]): string {
+  const [first] = errors;
+  const more = errors.length - 1;
+  return `${first?.message ?? "nothing to draw"}${more > 0 ? ` (and ${String(more)} more)` : ""}`;
+}
+
+// The stylesheet goes with each drawing: a host may show each use in a frame of its own.
+export default draw<Params>(
+  ({ code }, { scheme }) => {
+    const { wireframe, errors } = parse(code);
+    if (!wireframe) throw new Error(failureOf(errors));
+    const drawing = drawWireframe(wireframe, document);
+    drawing.dataset.scheme = scheme;
+    const style = document.createElement("style");
+    style.textContent = STYLE;
+    const holder = document.createElement("div");
+    holder.append(style, drawing);
+    return holder;
+  },
+  { role: "img" },
+);

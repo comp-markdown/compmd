@@ -3,15 +3,111 @@ md:
   import:
     - from: "@comp-markdown/wireframe@0"
       names: [wireframe]
+tabs: [Basket, Address, Payment]
 ---
 
-# wireframe
+# Checkout, the second draft
 
-```wireframe {alt="Two lines of wireframe"}
-first line
-second line
+The first draft put everything on one long page, and half the people we watched never scrolled to the button. This
+one splits checkout into three steps, each a screen of its own, with the step you are on at the top.
+
+## On a phone
+
+The basket first: what you are buying, and a way out at every step.
+
+```wireframe {alt="The basket on a phone: two items, step 2 of 3, and a Pay now button that stays disabled until an address is chosen"}
+window "Order" device=phone:
+  header:
+    text "Your basket" bold
+  list:
+    item "Coffee beans, 1 kg" chevron
+    item "Filter papers" chevron
+  progress value=2 max=3 label="Step 2 of 3"
+  button "Pay now" primary id=pay
+annotation "Disabled until an address is chosen" target="pay" position=bottom
 ```
 
-The same component as a leaf, its code a param:
+## In the shop's settings
 
-:: wireframe[One line of wireframe] {code="one line"}
+Shop owners choose which emails go out, and the theme. Everything they change is saved with one button.
+
+```wireframe {alt="The settings window: General, Privacy and Advanced tabs; notification toggles; a theme chosen with radio buttons; Cancel and Save"}
+window "Settings":
+  tabs:
+    tab "General" active
+    tab "Privacy"
+    tab "Advanced"
+  section "Notifications":
+    toggle "Email me about replies" on
+    checkbox "Weekly summary" checked
+  section "Theme":
+    radio "Light" group="theme"
+    radio "Dark" group="theme" selected
+    radio "Follow the system" group="theme"
+  footer:
+    row justify=end:
+      button "Cancel"
+      button "Save" primary
+```
+
+## The steps, from the plan
+
+The step tabs come from the plan's list, so the sketch follows when a step is added:
+
+:: wireframe[The checkout's steps as tabs: Basket, Address, Payment] {code=("window \"Checkout\" device=browser:\n  tabs:\n" + md.doc.tabs.map(t, "    tab \"" + t + "\"").join("\n"))}
+
+## Every part
+
+What the pack draws, for checking it:
+
+```wireframe {alt="A file manager: a menu bar, a folder tree and a grid of files"}
+window "Files":
+  menubar:
+    menu "File":
+      menuitem "New folder" shortcut="⌘N"
+      separator
+      menuitem "Close" shortcut="⌘W"
+    menu "Edit"
+  row:
+    col 220:
+      tree:
+        node "Documents" selected:
+          node "Reports"
+          node "Drafts" collapsed
+        node "Pictures"
+    col fill:
+      grid cols=3 rows=2:
+        cell "report.pdf" row=1 col=1
+        cell "notes.txt" row=1 col=2
+        cell "photo.png" row=1 col=3
+```
+
+```wireframe {alt="A sign-up form on a tablet: fields, a country, an avatar placeholder and a note on the email field"}
+window "Sign up" device=tablet:
+  panel:
+    text "Create an account" size=large weight=semibold
+    text "It takes a minute." muted italic
+    input placeholder="Email" id=email
+    input placeholder="Password" type=password
+    combo "Country" options="Spain, Japan, Brazil"
+    row align=center:
+      image width=64 height=64 label="Photo"
+      icon name="camera"
+      spacer
+      button "Upload" icon=upload badge="1"
+    divider
+    checkbox "I agree to the terms" label-right
+    button "Create account" primary disabled
+  chip "Beta"
+annotation "Checked while you type" target="email" position=right
+annotation "Shown before the form is sent" target="email" position=left
+```
+
+## A source with a mistake
+
+Its code shows, and the host reports where the mistake is:
+
+```wireframe {alt="A screen with a mistake"}
+window "Broken":
+  butn "Go"
+```
