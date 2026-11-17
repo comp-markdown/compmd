@@ -289,6 +289,8 @@ pub(crate) struct Info {
     pub(crate) params: Vec<Param>,
     /// The `alt` param as written, whose interpolations are filled in where the block renders (spec §8.1).
     pub(crate) alt: Option<Param>,
+    /// What it shows, `render`.
+    pub(crate) render: crate::render::Render,
     pub(crate) problems: Vec<Diagnostic>,
 }
 

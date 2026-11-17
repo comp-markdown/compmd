@@ -180,8 +180,9 @@ export function ownParams(params: readonly ExpandedParam[]): Record<string, unkn
 }
 
 /**
- * Rules every document needs once: the boxes the renderer makes, the containers breakpoints query, and the look of
- * what Markdown has no CSS for. A box's padding is its own: the margins of its first and last child are trimmed, as
+ * Rules every document needs once: the boxes the renderer makes (`render=both`'s stacked, which a host's
+ * `.compmd-both` rule can set side by side), the containers breakpoints query, and the look of what Markdown has no
+ * CSS for. A box's padding is its own: the margins of its first and last child are trimmed, as
  * `margin-trim: block` would, at the specificity of `:first-child`, so a host's own rules still win.
  *
  * On paper (docs/printing.md): the page is light, a component that prints its fallback shows it instead of itself, a
@@ -193,6 +194,7 @@ const BASE_RULES = `
 .compmd-box, .compmd-item, .compmd-component { position: relative; box-sizing: border-box; min-inline-size: 0; }
 .compmd-container { container-type: inline-size; }
 .compmd-fills { display: flex; flex-direction: column; }
+:where(.compmd-both) { display: flex; flex-direction: column; gap: var(--compmd-space-s, 0.5rem); }
 :where(.compmd-box, .compmd-item, .compmd-component) > :first-child { margin-block-start: 0; }
 :where(.compmd-box, .compmd-item, .compmd-component) > :last-child { margin-block-end: 0; }
 .compmd-alert { border-inline-start: 0.25em solid var(--compmd-border-strong, color-mix(in srgb, currentColor 45%, transparent)); padding-inline-start: 1em; }

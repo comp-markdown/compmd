@@ -80,6 +80,8 @@ export interface ExpandedCode extends MarkdownNode {
   value: string;
   component?: { name: string; params: ExpandedParam[] };
   alt?: string;
+  /** What a rendered block shows (spec §7.7); a `source` block has no `component`. */
+  render?: "output" | "source" | "both";
 }
 
 /**

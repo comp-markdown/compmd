@@ -267,13 +267,17 @@ impl<'r> Expander<'r> {
                 position: None,
             }),
             Node::Break(_) => Content::Break(tree::Void::default()),
-            Node::Code(code) => {
-                if let Some(name) = self.renderer(code, env) {
+            Node::Code(code) => match (self.renderer(code, env), code.info.as_ref()) {
+                (Some(_), Some(info)) if !info.render.draws() => Content::Code(expanded::Code {
+                    render: Some(info.render),
+                    ..plain_code(code)
+                }),
+                (Some(name), _) => {
                     let invocation = components::Invocation::code(node, code, name);
                     return self.component(invocation, env, out);
                 }
-                Content::Code(plain_code(code))
-            }
+                (None, _) => Content::Code(plain_code(code)),
+            },
             Node::Definition(definition) => {
                 Content::Definition(self.definition(definition, node, env))
             }
@@ -475,5 +479,6 @@ fn plain_code(code: &tree::Code) -> expanded::Code {
         value: code.value.clone(),
         component: None,
         alt: None,
+        render: None,
     }
 }

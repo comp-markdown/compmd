@@ -6,6 +6,7 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
 
 ### Unreleased
 
+- **What a rendered block shows (§5.1, §7.7, §10.2, §12.3, §14).** A code block a code renderer renders takes `render`: `output` (what the component draws, the default), `source` (the code block alone, the component not run, no `alt` needed) or `both` (the code, then the drawing, in one box). It is bare only (F009 otherwise), the processor's (the component never gets it), and on the expanded tree's `code` node; plain renderers and plain text show the code, printing what shows. A signature that declares `class` or `id`, or a code renderer's that declares `alt` or `render`, is F013: those names are the processor's. Breaking only for a signature that declares one of them.
 - **A container's plain text (§14).** The plain-text paragraph says that a container's fallback is its slots, so the components in them, nested containers among them, give their fallbacks at any depth, and an `if` gives both its branches, as §4.5 has it. Not breaking.
 
 ### 1.0-draft.13, 2026-11-17

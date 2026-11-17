@@ -57,6 +57,7 @@ Params go on the block's first line, in braces after the language, written as a 
 | --- | --- |
 | `theme` | the Mermaid pack's own param: `auto`, the default, follows the page, Mermaid's dark theme on a dark page; `default`, `dark`, `neutral` and `forest` are Mermaid's themes |
 | `alt` | the drawing's text alternative, below; every drawn block takes it |
+| `render` | what shows: `output`, the drawing (the default); `source`, the code alone; `both`, the code, then the drawing; every drawn block takes it, below |
 | `width`, `padding`, `border`, … | the common params of chapter 3, for the box the drawing is in: `width=50%` |
 | `.name`, `#name` | a class and an id, as on any component |
 
@@ -69,6 +70,20 @@ CompMD reads the braces only when a code renderer draws the block. On a block no
 A drawing can't be read aloud. `alt` is what a screen reader says in its place, as a leaf's fallback is (chapter 3): write in it what the diagram shows, in a sentence. A drawn block without `alt` is `W101`, at its first line.
 
 The diagram's text is no help here: `Bin --> Heap` means something to Mermaid, not to a listener. Write `alt` as you would tell someone what the picture shows.
+
+## The code beside the drawing
+
+A page that explains a diagram wants its code shown too. `render=both` shows the block's code, then the drawing, in one box, so the code is written once:
+
+````md
+```mermaid {render=both alt="Scraps go in the bin, then on the heap"}
+graph LR; Scraps --> Bin --> Heap
+```
+````
+
+`render=source` shows the code alone, as if nothing drew it: the drawing isn't made, and the block needs no `alt`. The block's other params are still checked, so changing it back to `render=output`, or leaving `render` out, brings no surprises. `render` is written bare, as these three words: `render="both"` and `render=(…)` are `F009`, since what a block shows is chosen as you write it.
+
+Wherever the drawing can't be made, a `both` block shows its code once, not twice. A plain Markdown viewer shows the code block, whatever `render` says.
 
 ## A block or a leaf
 

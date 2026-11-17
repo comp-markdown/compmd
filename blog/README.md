@@ -72,7 +72,14 @@ cblo build                   # the blog as a static site, in dist/ (--out), with
   `compmd/`, with a `_headers` file giving them the headers they are served with, for a static host that reads one.
 
 A post with an error fails the build, with its line and column. Its code blocks are highlighted by
-[Shiki](https://shiki.style), light and dark.
+[Shiki](https://shiki.style), light and dark. A post that explains a block a pack draws, a diagram say, shows its code
+and its drawing together with `render=both` on the block, so the code is written once:
+
+````md
+```mermaid {render=both alt="Draft, then review, then published"}
+graph LR; Draft --> Review --> Published
+```
+````
 
 ## Licence
 

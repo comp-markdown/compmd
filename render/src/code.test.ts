@@ -82,6 +82,40 @@ describe("a code block a code renderer renders", () => {
   });
 });
 
+describe("a rendered block with `render=both`", () => {
+  const both = (value: string): ExpandedNode => ({ ...rendered(value, "A, then B"), render: "both" });
+  const mermaid: Mount = (target, context) => {
+    target.textContent = `drawn: ${String(context.params.code)}`;
+    return { update: (params) => (target.textContent = `drawn: ${String(params.code)}`) };
+  };
+
+  it("shows its code, then the drawing, in one box that takes the common params", () => {
+    const page = createPage(area, { components: { mermaid } });
+    page.render({ type: "root", children: [both("A --> B")] });
+    const box = area.querySelector<HTMLElement>(".compmd-both");
+    expect([...(box?.children ?? [])].map((child) => child.textContent)).toEqual(["A --> B", "drawn: A --> B"]);
+    expect(getComputedStyle(box as HTMLElement).width).toBe("50%");
+    expect(getComputedStyle(box?.querySelector(".compmd-component") as HTMLElement).width).not.toBe("50%");
+    page.render({ type: "root", children: [both("A --> C")] });
+    expect(area.querySelector(".compmd-both")).toBe(box);
+    expect(box?.textContent).toBe("A --> Cdrawn: A --> C");
+  });
+
+  it("shows its code once when the renderer isn't here", () => {
+    const page = createPage(area, { onError: () => undefined });
+    page.render({ type: "root", children: [both("A --> B")] });
+    expect(area.querySelectorAll("pre code.language-mermaid")).toHaveLength(1);
+  });
+
+  it("is a view apart from the same block drawn alone", () => {
+    const page = createPage(area, { components: { mermaid } });
+    page.render({ type: "root", children: [both("A --> B")] });
+    page.render({ type: "root", children: [rendered("A --> B", "A, then B")] });
+    expect(area.querySelector(".compmd-both")).toBeNull();
+    expect(area.querySelector(".compmd-component")?.textContent).toBe("drawn: A --> B");
+  });
+});
+
 describe("a code block that shows as code", () => {
   const block = (value: string, lang: string | null = "js"): ExpandedNode => ({ type: "code", lang, meta: null, value });
 

@@ -146,6 +146,7 @@ Osaka,7
 - **The block's text is `code`**, as written: a code block is never interpolated.
 - **The info string's param list**, after the language, gives the other params: `{header=false}`. It is read only when a code renderer renders the block; otherwise the info string stays as written, for other tools.
 - **`alt` is the text alternative**, which every rendered block takes, as every component takes `class` and `id`: it is the component's `fallback.text`. Write what the block shows.
+- **`render` is what shows**, which every rendered block takes too: `output`, what the component draws (the default); `source`, the code block alone, the component never mounted; `both`, the code block, then the component, in one box. The component never gets `render` or `alt` as params, so a code renderer's signature can't declare them (F013), as no signature can declare `class` or `id`. In the expanded tree the `code` node says it in `render`; a `source` node has no `component`.
 - **The block is the fallback**: a reader without the pack, a plain renderer, or a host where the component fails sees the code block.
 - **The leaf** is the same component, its source the `code` param, for source made from data or inputs: `code=(…)` computes it, as `:: csv` does here. Its fallback is its text in `[…]`, as for any leaf.
 - **A box**: a rendered block has an outer box, as a leaf has, so the common params apply: ```` ```csv {alt="…" max-width=30rem} ````.

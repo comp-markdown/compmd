@@ -333,6 +333,12 @@ impl<'r> Expander<'r> {
             Kind::Code(code) => Content::Code(expanded::Code {
                 component: Some(expanded::Rendered { name, params }),
                 alt: self.alt(code, env),
+                render: Some(
+                    code.info
+                        .as_ref()
+                        .map(|info| info.render)
+                        .unwrap_or_default(),
+                ),
                 ..super::plain_code(code)
             }),
         };

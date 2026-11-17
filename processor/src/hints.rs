@@ -14,6 +14,7 @@ pub use expression::{FunctionHint, NameHint};
 use crate::components;
 use crate::diagnostic::{Diagnostic, Location, Range};
 use crate::parse::CODE;
+use crate::render::Render;
 use crate::resolve::{Component, Document, Resolved};
 use crate::settings::Input;
 use crate::tree::{
@@ -392,7 +393,7 @@ impl Place<'_> {
     }
 
     /// The params a code block the code renderer `name` renders takes on its info string (spec §7.7): the
-    /// renderer's, but `code`, which is the block's text, and `alt`.
+    /// renderer's, but `code`, which is the block's text, and `alt` and `render`.
     fn block_params(&self, name: &str) -> Vec<ParameterHint> {
         let mut params: Vec<ParameterHint> = self
             .params(name)
@@ -406,6 +407,15 @@ impl Place<'_> {
             required: false,
             default: None,
             doc: Some("The text alternative for screen readers.".to_string()),
+            breakpoints: false,
+        });
+        params.push(ParameterHint {
+            name: "render".to_string(),
+            origin: ParamOrigin::Attribute,
+            takes: KindHint::of(&Kind::one_of(&Render::NAMES[..])),
+            required: false,
+            default: Some("output".to_string()),
+            doc: Some("What shows: the drawing (`output`), the code (`source`), or the code, then the drawing (`both`).".to_string()),
             breakpoints: false,
         });
         params

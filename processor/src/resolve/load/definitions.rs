@@ -117,8 +117,8 @@ impl Loader<'_, '_> {
     }
 
     /// F013 for a signature's params and slots: two whose names differ only in `-` and `_`, which paths and
-    /// expressions can't tell apart (spec §5.1), and, for a `compmd` definition, a param name expressions can't use (a
-    /// `name` param binds a name and is never read).
+    /// expressions can't tell apart (spec §5.1); a name the processor keeps for itself; and, for a `compmd` definition,
+    /// a param name expressions can't use (a `name` param binds a name and is never read).
     fn check_params(&mut self, id: DocumentId, signature: &Signature, at: Location, compmd: bool) {
         let mut slots: HashMap<String, &str> = HashMap::new();
         for slot in signature.slots.iter().flatten() {
@@ -148,6 +148,9 @@ impl Loader<'_, '_> {
                 reserved::as_variable(&param.name).filter(|_| compmd && !binds_a_name)
             {
                 self.report(id, Code::F013, at, why);
+            }
+            if let Some(why) = processors_name(&param.name, signature.renders.is_some()) {
+                self.report(id, Code::F013, param.type_at.unwrap_or(at), why);
             }
             self.check_type(id, param);
         }
@@ -262,5 +265,19 @@ impl Loader<'_, '_> {
         );
         let fix = Fix::replacing(unquoted.at, &unquoted.text, quoted);
         self.report_fixed(id, Code::F011, unquoted.rest_at, message, Some(fix));
+    }
+}
+
+/// Why a signature can't declare `name`, when the processor keeps it (spec §5.1): `class` and `id` style any
+/// component's box, and a code renderer's block takes `alt` and `render` for itself, so the component never gets them.
+fn processors_name(name: &str, renders: bool) -> Option<String> {
+    match name {
+        "class" | "id" => Some(format!(
+            "`{name}` is every component's own, for its box, so a signature can't declare it"
+        )),
+        "alt" | "render" if renders => Some(format!(
+            "`{name}` is a rendered block's own, read by the processor, so a code renderer can't declare it"
+        )),
+        _ => None,
     }
 }

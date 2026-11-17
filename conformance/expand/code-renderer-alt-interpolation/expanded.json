@@ -16,7 +16,8 @@
           }
         ]
       },
-      "alt": "Draft, then review"
+      "alt": "Draft, then review",
+      "render": "output"
     }
   ]
 }

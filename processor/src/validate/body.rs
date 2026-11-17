@@ -92,7 +92,7 @@ impl<'r> Checker<'r, '_> {
     }
 
     /// A code block a code renderer renders (spec §7.7): F023 when two at one level render its language; otherwise
-    /// what is wrong with its info string, its params as a leaf's, and W101 without `alt`.
+    /// what is wrong with its info string, its params as a leaf's, and W101 without `alt` unless it is `render=source`.
     fn code_block(&mut self, code: &'r CodeBlock, scope: &Scope<'r>) {
         let resolved = self.resolved;
         let renderers = &resolved.document(self.id).renderers;
@@ -130,7 +130,7 @@ impl<'r> Checker<'r, '_> {
                 {
                     self.string_paths(parts, value_at(alt), scope);
                 }
-                if info.alt.is_none() {
+                if info.alt.is_none() && info.render.draws() {
                     self.report(
                         Code::W101,
                         at,

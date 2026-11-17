@@ -300,6 +300,10 @@
         { "if": { "properties": { "type": { "enum": ["componentLeaf", "componentInline"] } } }, "then": { "$ref": "#/$defs/expandedLeaf" } },
         { "if": { "properties": { "type": { "const": "componentSlot" } } }, "then": { "$ref": "#/$defs/expandedSlot" } },
         { "if": { "properties": { "type": { "const": "code" } }, "required": ["component"] }, "then": { "$ref": "#/$defs/renderedCode" } },
+        {
+          "if": { "properties": { "type": { "const": "code" } }, "required": ["render"], "not": { "required": ["component"] } },
+          "then": { "properties": { "render": { "const": "source" } } }
+        },
         { "if": { "properties": { "type": { "const": "componentPending" } } }, "then": { "$ref": "#/$defs/pendingUse" } },
         {
           "if": { "properties": { "type": { "not": { "enum": ["componentContainer", "componentLeaf", "componentInline", "componentSlot"] } } } },
@@ -371,8 +375,8 @@
       "additionalProperties": false
     },
     "renderedCode": {
-      "description": "A code block a code renderer renders (§7.7, §12.3): the mdast code node, with the component and its params, and its text alternative.",
-      "required": ["value", "component"],
+      "description": "A code block a code renderer renders (§7.7, §12.3): the mdast code node, with the component and its params, its text alternative, and what it shows (a `source` block has no component).",
+      "required": ["value", "component", "render"],
       "properties": {
         "type": true,
         "position": true,
@@ -389,7 +393,8 @@
           },
           "additionalProperties": false
         },
-        "alt": { "type": "string" }
+        "alt": { "type": "string" },
+        "render": { "enum": ["output", "both"] }
       },
       "additionalProperties": false
     },

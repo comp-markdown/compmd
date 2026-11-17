@@ -38,7 +38,8 @@
           }
         ]
       },
-      "alt": "Draft, then review"
+      "alt": "Draft, then review",
+      "render": "output"
     },
     {
       "type": "code",
@@ -55,7 +56,8 @@
           }
         ]
       },
-      "alt": "A, then B"
+      "alt": "A, then B",
+      "render": "output"
     },
     {
       "type": "componentLeaf",

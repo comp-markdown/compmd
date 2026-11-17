@@ -94,7 +94,8 @@
           }
         ]
       },
-      "alt": "Three"
+      "alt": "Three",
+      "render": "output"
     }
   ]
 }

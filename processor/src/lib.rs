@@ -39,6 +39,7 @@ mod parse;
 pub mod plain;
 pub mod policy;
 pub mod processor;
+pub mod render;
 mod reserved;
 mod resolve;
 mod settings;

@@ -1,0 +1,42 @@
+[
+  {
+    "code": "F013",
+    "line": 4,
+    "column": 11
+  },
+  {
+    "code": "F013",
+    "line": 5,
+    "column": 8
+  },
+  {
+    "code": "F013",
+    "line": 12,
+    "column": 10
+  },
+  {
+    "code": "F013",
+    "line": 13,
+    "column": 7
+  },
+  {
+    "code": "W101",
+    "line": 23,
+    "column": 1
+  },
+  {
+    "code": "F009",
+    "line": 27,
+    "column": 11
+  },
+  {
+    "code": "F009",
+    "line": 31,
+    "column": 11
+  },
+  {
+    "code": "F009",
+    "line": 35,
+    "column": 11
+  }
+]

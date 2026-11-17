@@ -9,7 +9,7 @@ import { CodeBlockView } from "./markdown-views.ts";
 import { nodesMountOf, runnable } from "./nodes.ts";
 import { PaperFallback } from "./paper.ts";
 import { createView, destroyAll, Matcher, patch, shapeOf, type Pass, type Surface, type View } from "./render.ts";
-import { fills, layoutOf, ownParams, usesBreakpoints, type ParentLayout } from "./styles.ts";
+import { BOX_PARAMS, fills, layoutOf, ownParams, usesBreakpoints, type ParentLayout } from "./styles.ts";
 import { contentOf, isComponent, rendererOf, textOf, type ExpandedCode, type ExpandedComponent, type ExpandedInstance, type ExpandedNode, type MarkdownNode } from "./tree.ts";
 
 /** The input components, by name, with the kind of control each is (spec §8.7). */
@@ -17,7 +17,8 @@ export const INPUTS: Record<string, string> = { "date-input": "date", "number-in
 
 /**
  * A code block a code renderer draws (spec §7.7): the renderer's component in its box, the block's text among its
- * params as `code` and `alt` as its fallback text; the code block is its fallback.
+ * params as `code` and `alt` as its fallback text; the code block is its fallback. With `render=both`, the box is
+ * `both`'s, holding the code block, then the component in a box of its own without the common params.
  */
 export class RenderedCodeView implements View {
   readonly shape: string;
@@ -25,6 +26,8 @@ export class RenderedCodeView implements View {
   readonly #surface: Surface;
   readonly #handle: ComponentHandle;
   readonly #code: View;
+  /** `render=both`'s box, which holds the code block and the component's box. */
+  readonly #both: HTMLElement | undefined;
   /** The use a mount that renders it itself gets: the code block, whose `alt` and code a sandbox's frame needs too. */
   #current: { node: ExpandedCode; inputs: Pass["inputs"] };
 
@@ -33,25 +36,32 @@ export class RenderedCodeView implements View {
     this.key = key;
     this.#current = { node: node as ExpandedCode, inputs: pass.inputs };
     this.#code = new CodeBlockView(surface, plainCode(node), undefined);
-    const fallback = surface.document.createElement("div");
-    fallback.appendChild(this.#code.dom);
     this.#surface = surface;
+    const both = (node as ExpandedCode).render === "both";
+    // `both` shows its code already, so its fallback adds nothing: the code shows once (spec §7.7).
+    const fallback = surface.document.createElement("div");
+    if (both) {
+      this.#both = surface.document.createElement("div");
+      this.#both.classList.add("compmd-component", "compmd-both");
+      this.#both.appendChild(this.#code.dom);
+      applyBox(this.#both, renderer.params, pass.parent, surface.stylesheet);
+    } else fallback.appendChild(this.#code.dom);
     const mount = surface.components[renderer.name];
     // The component layer appends the box to its target; the region places it, so it starts in a fragment.
-    this.#handle = mountComponent(surface.document.createDocumentFragment(), renderer, {
+    this.#handle = mountComponent(this.#both ?? surface.document.createDocumentFragment(), this.#drawn(renderer), {
       ...fromSurface(surface),
       mount: runnable(mount, () => this.#current),
       slots: {},
       fallback: { text: textOf((node as ExpandedCode).alt), element: fallback },
       headingLevel: Math.min(6, pass.heading.level + 1),
-      parent: pass.parent,
+      parent: this.#both ? "block" : pass.parent,
       later: surface.pending.later,
     });
     followScheme(surface, this.#handle, mount);
   }
 
   get dom(): Node {
-    return this.#handle.element;
+    return this.#both ?? this.#handle.element;
   }
 
   update(node: ExpandedNode, pass: Pass): void {
@@ -59,13 +69,23 @@ export class RenderedCodeView implements View {
     const renderer = rendererOf(node);
     if (!renderer) return;
     this.#current = { node: node as ExpandedCode, inputs: pass.inputs };
-    this.#handle.update(renderer, { slots: {}, parent: pass.parent });
+    if (this.#both) applyBox(this.#both, renderer.params, pass.parent, this.#surface.stylesheet);
+    this.#handle.update(this.#drawn(renderer), { slots: {}, parent: this.#both ? "block" : pass.parent });
   }
 
   destroy(): void {
     this.#surface.schemes.unfollow(this.#handle);
     this.#handle.destroy();
     this.#code.destroy();
+    if (this.#both) {
+      this.#surface.stylesheet.forget(this.#both);
+      this.#both.remove();
+    }
+  }
+
+  /** The component as its box gets it: with `both`, the common params, `class` and `id` are `both`'s box's instead. */
+  #drawn(renderer: ExpandedComponent): ExpandedComponent {
+    return this.#both ? { ...renderer, params: renderer.params.filter((param) => !BOX_PARAMS.has(param.key)) } : renderer;
   }
 }
 

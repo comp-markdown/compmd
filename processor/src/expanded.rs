@@ -329,6 +329,9 @@ pub struct Code {
     /// Its text alternative, `alt`, when a code renderer renders it.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub alt: Option<String>,
+    /// What it shows, when a code renderer renders it; a `source` block has no `component`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub render: Option<crate::render::Render>,
 }
 
 /// The code renderer of a code block, with its params, the block's text as `code` (spec §7.7).

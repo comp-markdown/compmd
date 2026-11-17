@@ -40,8 +40,12 @@ fn a_rendered_code_blocks_language_and_params_are_its_renderers() {
     assert_eq!(key["subject"]["param"]["name"], "loud");
     assert_eq!(key["range"], range(9, 11, 15));
     let keys = texts(&key);
-    assert!(keys.contains(&"alt") && keys.contains(&"width"));
+    assert!(keys.contains(&"alt") && keys.contains(&"render") && keys.contains(&"width"));
     assert!(!keys.contains(&"code"), "the block's text is `code`");
+    let render = hint(&format!(
+        "{shout}```shout {{render=b{CARET}oth}}\nhi\n```\n"
+    ));
+    assert_eq!(texts(&render), ["output", "source", "both"]);
     let alt = hint(&format!("{shout}```shout {{al{CARET}t=\"Hi\"}}\nhi\n```\n"));
     assert_eq!(alt["subject"]["param"]["origin"], "attribute");
     let before = hint(&format!("{shout}```shout {CARET}{{loud}}\nhi\n```\n"));

@@ -120,7 +120,8 @@ export function shapeOf(node: ExpandedNode): string {
   if (type === "list") return `list:${String(node.ordered === true)}`;
   if (type === "code") {
     const renderer = rendererOf(node);
-    return renderer ? `code:${textOf(node.lang)}:${renderer.name}` : `code:${textOf(node.lang)}`;
+    if (!renderer) return `code:${textOf(node.lang)}`;
+    return `code:${textOf(node.lang)}:${renderer.name}${node.render === "both" ? ":both" : ""}`;
   }
   if (type === "compmdElement" || type === "compmdHtml") return `${type}:${textOf(node.tag)}`;
   if (type === "componentPending") return `${type}:${pendingTag(node.children ?? [])}`;

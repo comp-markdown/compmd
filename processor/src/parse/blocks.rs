@@ -9,6 +9,7 @@ use super::definitions::CODE;
 use super::params;
 use super::source::right;
 use crate::diagnostic::{Code, Diagnostic, Location};
+use crate::render::Render;
 use crate::tree::{
     Alert, Align, Blockquote, Code as CodeBlock, Container, FootnoteDefinition, Heading, Info,
     Interpolation, Leaf, LinkDefinition, List as ListNode, ListItem, Literal, Math, Node, Param,
@@ -19,6 +20,8 @@ use std::collections::HashSet;
 
 /// The text alternative a rendered code block takes (spec §7.7).
 const ALT: &str = "alt";
+/// What a rendered code block shows (spec §7.7).
+const RENDER: &str = "render";
 
 /// Where a param starts.
 fn param_start(param: &Param) -> Location {
@@ -399,7 +402,7 @@ impl Converter<'_, '_> {
     }
 
     /// The block at `position`, whose text is `text`, as a code renderer's invocation (spec §7.7): its text as `code`,
-    /// the param list after its language, and `alt`. What is wrong with them is kept, not reported: the block is
+    /// the param list after its language, `alt` and `render`. What is wrong with them is kept, not reported: the block is
     /// content unless a code renderer renders it.
     fn info(&mut self, text: &str, position: Option<Position>) -> Info {
         let before = self.diagnostics.len();
@@ -413,6 +416,7 @@ impl Converter<'_, '_> {
         }
         let mut problems = self.diagnostics.split_off(before);
         let mut alt = None;
+        let mut render = Render::default();
         params.retain(|param| match param.key.as_deref() {
             Some(CODE) => {
                 problems.push(Diagnostic::new(
@@ -429,6 +433,19 @@ impl Converter<'_, '_> {
                         Code::F009,
                         param_start(param),
                         "`alt` is text: write it bare or quoted; ignored",
+                    )),
+                }
+                false
+            }
+            Some(RENDER) => {
+                match &param.value {
+                    ParamValue::Bare(name) if let Some(value) = Render::from_name(name) => {
+                        render = value;
+                    }
+                    _ => problems.push(Diagnostic::new(
+                        Code::F009,
+                        param_start(param),
+                        "`render` is `output`, `source` or `both`, written bare; ignored",
                     )),
                 }
                 false
@@ -450,6 +467,7 @@ impl Converter<'_, '_> {
         Info {
             params,
             alt,
+            render,
             problems,
         }
     }

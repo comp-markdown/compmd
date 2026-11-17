@@ -1,0 +1,71 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "code",
+      "lang": "mermaid",
+      "meta": "{alt=\"A, then B\"}",
+      "value": "graph LR; A --> B",
+      "component": {
+        "name": "mermaid",
+        "params": [
+          {
+            "key": "code",
+            "breakpoint": null,
+            "value": "graph LR; A --> B"
+          }
+        ]
+      },
+      "alt": "A, then B",
+      "render": "output"
+    },
+    {
+      "type": "code",
+      "lang": "mermaid",
+      "meta": "{render=output alt=\"A, then B\"}",
+      "value": "graph LR; A --> B",
+      "component": {
+        "name": "mermaid",
+        "params": [
+          {
+            "key": "code",
+            "breakpoint": null,
+            "value": "graph LR; A --> B"
+          }
+        ]
+      },
+      "alt": "A, then B",
+      "render": "output"
+    },
+    {
+      "type": "code",
+      "lang": "mermaid",
+      "meta": "{render=source}",
+      "value": "graph LR; A --> B",
+      "render": "source"
+    },
+    {
+      "type": "code",
+      "lang": "mermaid",
+      "meta": "{render=both theme=dark alt=\"A, then B\"}",
+      "value": "graph LR; A --> B",
+      "component": {
+        "name": "mermaid",
+        "params": [
+          {
+            "key": "code",
+            "breakpoint": null,
+            "value": "graph LR; A --> B"
+          },
+          {
+            "key": "theme",
+            "breakpoint": null,
+            "value": "dark"
+          }
+        ]
+      },
+      "alt": "A, then B",
+      "render": "both"
+    }
+  ]
+}
