@@ -4,7 +4,8 @@ CompMD for the editors writers use: VS Code, Neovim, Helix, Zed and Emacs. Each 
 by structure from a grammar, and the processor's own help (its diagnostics, completion, exact highlighting) from a
 language server. The text of other languages a document holds, a renderer's blocks, gets the same help as a file of that
 language, as [content languages in editors](content-languages.md) decided. This design covers three things and what
-they share: a tree-sitter grammar, a TextMate grammar and a language server.
+they share: a tree-sitter grammar, a TextMate grammar and a language server; and a preview in the browser that every
+editor opens.
 
 ## Who uses what
 
@@ -99,7 +100,29 @@ Shiki reads TextMate grammars too, so the site, the guides, the playground and t
      diagnostics inside it to the server the writer has for that language: VS Code by a virtual document per block (its
      embedded-language pattern), the other editors where they support it, and not at all where they don't.
 
-8. **Where they live:**
+8. **A preview in the browser, from every editor.** The playground without its editor side: a page that shows the
+   document the writer has open, as it renders, with its folder's files and packs, updated as they type.
+   - **The language server serves it**, as a host of its own ([hosting CompMD](hosting.md)): it has the document's text as it
+     changes, and the processor and `compmd-host` are already its crates, so it serves the page, the bundle, the pack
+     store and the frames by `compmd-host`'s routes and headers, as every host does. The page is on one port of
+     `127.0.0.1` and the frames on another, so the frames have an origin of their own, as the sandbox needs.
+   - **The page is the playground's preview**, built from `editor/` as a page of its own (the renderer, the sandbox and
+     the host's stylesheet, without the editor, the menu or the Developer Tools), and compiled into the server's
+     binary, as `tauri-plugin-compmd` compiles the bundle into an app. It processes the text with the processor's
+     WebAssembly, as the playground does, so the preview is exactly what the playground shows.
+   - **How the text reaches it:** the server sends each change, the document's text and the line being edited, to the
+     page as server-sent events; the page renders it and scrolls to the block that holds that line (the renderer marks
+     each block with the line it starts on, from the processor's positions).
+   - **How it opens:** the server offers it as a command (`compmd.preview`) and a code action (*Open preview*) on any
+     line, and opens the system browser at the page; so every editor with a language server client has it, Helix too.
+     An editor package adds a button or a key where its editor has one (VS Code's title bar, Emacs's key).
+   - **What it trusts:** the page and the frames are the document's host, with the trust its configuration gives
+     (`compmd.config.json`: its packs, its registry, its allowed origins), remote images and data asked about as any
+     host asks ([remote images](remote-images.md)). Only the writer's machine reaches it: it listens on `127.0.0.1` alone, on a port
+     chosen when it starts, at a path with a random token the server opens the browser at, and it refuses a request
+     whose `Host` isn't its own (so a web page can't reach it by renaming a domain to `127.0.0.1`).
+
+9. **Where they live:**
    - `comp-markdown/compmd-grammars`: both grammars, `tree-sitter-cel` and what they share (`syntax/`, `tests/`). The
      tree-sitter grammar is in `tree-sitter/`; Helix, Zed and nvim-treesitter each take a grammar from a folder of a
      repository. Published as `tree-sitter-compmd` on npm and crates.io (with the bindings `tree-sitter generate`
@@ -117,9 +140,11 @@ Shiki reads TextMate grammars too, so the site, the guides, the playground and t
 - Dependencies, in `compmd-grammars`: `tree-sitter-cli` (to generate and test), `@tree-sitter-grammars/tree-sitter-markdown`
   (the grammars it extends), the bindings' own (`node-gyp-build`, the `cc` and `tree-sitter-language` crates), and
   `vscode-textmate` with `vscode-oniguruma` for the TextMate tests. In the language server: `lsp-server` and `lsp-types`
-  (rust-analyzer's, synchronous, with no async runtime). In the VS Code extension: `vscode-languageclient` and
+  (rust-analyzer's, synchronous, with no async runtime), and for the preview a small HTTP server crate (`tiny_http`,
+  synchronous as well). In the VS Code extension: `vscode-languageclient` and
   `vscode-textmate`.
-- In this repository: the processor's blocks (content languages, decision 3) and the language server.
+- In this repository: the processor's blocks (content languages, decision 3), the language server, the preview's page
+  in `editor/`, and the renderer's line on each block.
 - In packs: `compmd.languages`, checked (content languages, decision 2).
 - CI in `compmd-grammars`: generate, check the generated parser is committed (tree-sitter grammars commit
   `src/parser.c`), and run the test set on both grammars and the released server.
@@ -127,7 +152,8 @@ Shiki reads TextMate grammars too, so the site, the guides, the playground and t
 ## The order
 
 The shared `syntax/` and `tests/` first, then the tree-sitter grammar and the TextMate grammar (either order), the
-processor's blocks and the language server, then the editor packages, each needing its grammar and the server.
+processor's blocks and the language server, then the preview, then the editor packages, each needing its grammar, the
+server and the preview.
 
 ## Open
 
