@@ -1,6 +1,7 @@
 <!-- A printed book's first pages, which only its typesetting shows (`build/book.css`): the cover, the title page, and
      the copyright page on its back. The guides' books and the spec's PDF open with them. -->
 <script lang="ts">
+  import logo from "../../logo/compmd-dark.svg?raw";
   import { AUTHOR } from "./site.ts";
 
   interface Props {
@@ -27,7 +28,8 @@
 
 <div class="front-matter" hidden>
   <section class="cover">
-    <p class="series">CompMD</p>
+    <!-- The logo for a dark ground, inlined, so the cover needs no file of the site's when it is printed. -->
+    <div class="series">{@html logo}</div>
     <div class="cover-title">
       <p class="title">{title}</p>
       <p class="subtitle">{tagline}</p>

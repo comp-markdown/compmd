@@ -13,7 +13,7 @@
 
   @bottom-center {
     content: counter(page);
-    font: 8.5pt var(--serif);
+    font: 7.5pt var(--serif);
     color: #444;
   }
 }
@@ -24,7 +24,7 @@
 
   @top-left {
     content: string(book);
-    font: italic 8.5pt var(--serif);
+    font: italic 7.5pt var(--serif);
     color: #444;
   }
 }
@@ -36,7 +36,7 @@
   /* Not on the page a chapter opens on. */
   @top-right {
     content: string(chapter, first-except);
-    font: italic 8.5pt var(--serif);
+    font: italic 7.5pt var(--serif);
     color: #444;
   }
 }
@@ -94,16 +94,16 @@
   }
 }
 
-/* A technical book's type: the text 10 pt on 13.5 pt, headings a step or two up, code 8.5 pt; about forty lines a page.
+/* A technical book's type: the text 9 pt on 12 pt, headings a step or two up, code 7.5 pt; about fifty lines a page.
    The site's sizes are for a screen, in `rem` and with a screen's leading, so each is set here in points.
    No ligatures: the serif's ("fi" in "first") have no text in the PDF, so a search or a copy lost their letters. */
 :root {
-  font-size: 10pt;
+  font-size: 9pt;
 }
 
 body {
   font-family: var(--serif);
-  font-size: 10pt;
+  font-size: 9pt;
   line-height: 1.35;
   hyphens: auto;
   font-variant-ligatures: no-common-ligatures;
@@ -111,7 +111,7 @@ body {
 
 .spec {
   max-inline-size: none;
-  font-size: 10pt;
+  font-size: 9pt;
   line-height: 1.35;
 }
 
@@ -126,19 +126,19 @@ body {
   margin: 1.5em 0 0.45em;
   padding: 0;
   border: 0;
-  font-size: 15pt;
+  font-size: 14pt;
   line-height: 1.2;
 }
 
 .spec h3 {
   margin: 1.3em 0 0.35em;
-  font-size: 12pt;
+  font-size: 11pt;
   line-height: 1.25;
 }
 
 .spec h4 {
   margin: 1.1em 0 0.3em;
-  font-size: 10.5pt;
+  font-size: 9.5pt;
 }
 
 .spec li + li {
@@ -152,7 +152,7 @@ body {
 
 .spec table {
   margin-block: 0.8em;
-  font-size: 9pt;
+  font-size: 8pt;
   line-height: 1.3;
 }
 
@@ -172,7 +172,7 @@ h4 {
 .spec pre,
 .spec code,
 .spec kbd {
-  font-size: 8.5pt;
+  font-size: 7.5pt;
 }
 
 /* A code block breaks between its lines: each of Shiki's lines a block a line high, the line breaks between them taken
@@ -220,12 +220,14 @@ h4 {
 }
 
 .cover .series {
-  padding-block-end: 0.12in;
+  padding-block-end: 0.18in;
   border-block-end: 1.5pt solid #9db4f2;
-  font-size: 11pt;
-  font-weight: 600;
-  letter-spacing: 0.25em;
-  text-transform: uppercase;
+}
+
+.cover .series svg {
+  display: block;
+  inline-size: 2.2in;
+  block-size: auto;
 }
 
 .cover .cover-title {
@@ -295,7 +297,7 @@ h4 {
   justify-content: flex-end;
   gap: 0.6em;
   block-size: 8.4in;
-  font-size: 8.5pt;
+  font-size: 7.5pt;
   line-height: 1.4;
   page: cover;
   break-before: page;
@@ -327,7 +329,7 @@ figure.preview img {
 figure.preview figcaption {
   margin-block-start: 0.06in;
   color: #555;
-  font-size: 8pt;
+  font-size: 7pt;
   font-style: italic;
   text-align: center;
 }
@@ -382,7 +384,7 @@ figure.preview figcaption {
   margin-block: 1.2in 0.45in;
   padding: 0;
   border: 0;
-  font-size: 22pt;
+  font-size: 20pt;
 }
 
 /* The running head's chapter: a book's chapter title, or a spec's section title, as `print.ts` gives it. One rule for
@@ -414,14 +416,14 @@ figure.preview figcaption {
   border: 0;
   background: none;
   box-shadow: none;
-  font-size: 9.5pt;
+  font-size: 8.5pt;
 }
 
 .reading .toc::before {
   content: "Contents";
   display: block;
   margin-block-end: 0.3in;
-  font-size: 18pt;
+  font-size: 16pt;
 }
 
 .reading .toc ol {
