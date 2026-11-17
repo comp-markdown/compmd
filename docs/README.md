@@ -9,6 +9,7 @@ The designs behind the spec and its implementation. Each starts with its status 
 - [What component code may import](what-component-code-may-import.md): what a bare import in a component resolves to: a runtime, a library the host offers, or a library pack.
 - [Code renderers](code-renderers.md): a component that also draws the code blocks of one language (spec §7.7).
 - [Handling pack loading states](handling-pack-loading-states.md): a placeholder, for telling a pack on its way from one that won't load.
+- [Remote images, asked about](remote-images.md): proposed, how the renderer and the sandbox ask the reader before a document's remote images, in both modes, with the data's answers.
 - [Printing a document](printing.md): proposed, what a document looks like on paper: its components, its colours, its page breaks, and what a processor without a browser prints.
 - [Hosting CompMD](hosting.md): what every host does (the configuration, the bundle, the pack store, serving, the page's configuration, the check), which of it is shared code, and the adapter a platform writes.
 
