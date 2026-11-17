@@ -108,8 +108,11 @@ function reportSize(parent: FrameEnd): () => void {
   const body = document.body;
   let reported = "";
   const report = () => {
-    const width = Math.ceil(body.scrollWidth);
-    const height = Math.ceil(body.scrollHeight);
+    // `scrollHeight` is rounded, so a body 282.4px high would get a frame of 282 and a scrollbar: its box, rounded up,
+    // is what the frame needs.
+    const box = body.getBoundingClientRect();
+    const width = Math.max(body.scrollWidth, Math.ceil(box.width));
+    const height = Math.max(body.scrollHeight, Math.ceil(box.height));
     if (`${String(width)}x${String(height)}` === reported) return;
     reported = `${String(width)}x${String(height)}`;
     parent.size(width, height);
@@ -277,6 +280,7 @@ function start(port: MessagePort): void {
   const printsFallback = (name: string) => components.some((component) => component.name === name && component.print === "fallback");
   const regionFor = (target: HTMLElement): Region =>
     createRegion(target, {
+      part: true,
       printsFallback,
       components: mounts.mounts,
       math,

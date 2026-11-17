@@ -227,6 +227,15 @@ describe("a use's frame size (host mode)", () => {
     const frame = area.querySelector("iframe");
     await expect.poll(() => frame?.getBoundingClientRect().height, { timeout: 5000 }).toBe(120);
   });
+
+  it("rounds a height that isn't a whole number of pixels up, so the frame never scrolls", async () => {
+    const fractional: HostComponent = { ...late, code: late.code.replace("height: 120px", "height: 120.4px") };
+    const { area, view, until, values } = open("host", [fractional]);
+    view.render(page("one"));
+    await until(() => values().includes("drawn"));
+    const frame = area.querySelector("iframe");
+    await expect.poll(() => frame?.getBoundingClientRect().height, { timeout: 5000 }).toBe(121);
+  });
 });
 
 describe("which inputs a page may set (frame mode)", () => {
