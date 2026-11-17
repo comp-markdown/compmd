@@ -124,7 +124,14 @@ Run them from this repository's root, where its tags are. Git won't remove a wor
 
 3. The Pages workflow deploys the site with the version at `/spec/1.0/`, frozen. `/spec/` shows the latest release, and `/spec/draft/` the draft.
 
-**A draft's revision** (`1.0-draft.N`, spec §1) is tagged when it is pushed, on the last commit of its dated changelog entry, after the commits it is on: `git tag spec-v1.0-draft.13`, then `git push origin spec-v1.0-draft.13`. The Pages workflow skips draft tags: the push to `main` deployed the draft already.
+**A draft's revision** (`1.0-draft.N`, spec §1), before a push of spec changes: their changelog entries are under `### Unreleased`, then
+
+```sh
+cargo make spec-revision     # the next revision: headers, the changelog's heading, a commit and its tag
+git push --follow-tags       # the commits and the revision's tag
+```
+
+CI's `spec-revision` job fails a push to `main` whose spec isn't its revision, as `cargo make spec-check` does. The Pages workflow skips draft tags: the push to `main` deployed the draft already.
 
 ## Prerequisites, once per package
 

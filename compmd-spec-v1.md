@@ -17,7 +17,7 @@ CompMD (Component Markdown) is a Markdown flavor that adds components, container
 
 This is a working draft of CompMD version 1. It specifies document format only; parser and renderer implementations are out of scope.
 
-**Its versions.** The spec is versioned on its own, apart from any implementation's: `MAJOR.MINOR`, as a document's `md.version` is (section 2.1), where a minor version only adds and a breaking change is a new major version. On the way to a version, each revision is a draft, `1.0-draft.N`, with N going up by one with each dated entry of the changelog; a revision is tagged `spec-v1.0-draft.N` in the repository, and a release `spec-v1.0`. Its companion, [*CompMD packs on a registry*](compmd-registry-v1.md), shares its versions. An implementation states the version of the spec it implements, such as `1.0-draft.13`.
+**Its versions.** The spec is versioned on its own, apart from any implementation's: `MAJOR.MINOR`, as a document's `md.version` is (section 2.1), where a minor version only adds and a breaking change is a new major version. On the way to a version, each revision is a draft, `1.0-draft.N`, with N going up by one with each revision; the changelog lists the revisions, each with its date, and the changes not in one yet under "Unreleased". A revision is tagged `spec-v1.0-draft.N` in the repository, and a release `spec-v1.0`. Its companion, [*CompMD packs on a registry*](compmd-registry-v1.md), shares its versions. An implementation states the version of the spec it implements, such as `1.0-draft.13`.
 
 - The key words MUST, MUST NOT, SHOULD and MAY are used as in RFC 2119.
 - Terms are defined where they are introduced, and listed in section 1.1.

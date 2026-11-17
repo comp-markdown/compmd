@@ -34,6 +34,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
+          # The tags, for the spec's revision.
+          fetch-depth: 0
       - uses: ./.github/actions/setup
       - run: pnpm install --frozen-lockfile
       # The sandbox's, the registry's, the Vite plugin's and create-pack's browser tests run in the runner's Chrome and in Playwright's WebKit.
@@ -61,9 +63,12 @@ jobs:
             echo "::error::tauri/Cargo.toml is $written, the tag $GITHUB_REF_NAME"
             exit 1
           fi
-      # The release implements the spec as it is at this commit (docs/releases.md, decision 3): between releases the
-      # spec may move ahead of the code, but no release names an older revision than the one it ships beside. The
-      # tests keep @compmd/processor's SPEC_VERSION and the READMEs the same as the crate's.
+      # The release implements the spec as it is at this commit (docs/releases.md, decisions 1 and 3): a revision, cut
+      # and tagged, with nothing unreleased; between releases the spec may move ahead of the code, but no release names
+      # another revision than the one it ships beside. The tests keep @compmd/processor's SPEC_VERSION and the READMEs
+      # the same as the crate's.
+      - name: The spec is a revision
+        run: node scripts/spec-revision.ts check
       - name: The release implements the spec's revision
         run: |
           spec="$(sed -n 's/^\*\*Version \([0-9][0-9.a-z-]*\)\. .*/\1/p' compmd-spec-v1.md)"

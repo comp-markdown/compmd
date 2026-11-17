@@ -121,7 +121,25 @@ script = [
   "examples/tauri/src-tauri/target/debug/compmd-tauri-example --check-broken",
 ]
 
+[tasks.scripts]
+description = "Test the repository's own tools in `scripts/`, with Node's test runner"
+clear = true
+command = "node"
+args = ["--test", "scripts/spec-revision.test.ts"]
+
+[tasks.spec-revision]
+description = "Cut the spec's next revision (docs/releases.md, decision 1): the changelog's `### Unreleased` becomes `1.0-draft.N`, with today's date, in the spec's header and its companion's; commits the three files and tags `spec-v1.0-draft.N`, which `git push --follow-tags` pushes with it. Before a push of spec changes"
+clear = true
+command = "node"
+args = ["scripts/spec-revision.ts", "cut"]
+
+[tasks.spec-check]
+description = "Fail while the spec is dirty: changed since its revision's tag, the tag missing, or entries under `### Unreleased`. Not part of `ci`, so a spec change can be checked before its revision is cut; CI runs it on pushes to `main`, and the release workflow before a release"
+clear = true
+command = "node"
+args = ["scripts/spec-revision.ts", "check"]
+
 [tasks.ci]
 description = "Every check CI runs; coverage runs the tests, the conformance set's among them, so `test` isn't run again"
 clear = true
-dependencies = ["fmt", "clippy", "coverage", "doctest", "docs", "wasm", "deny", "packages"]
+dependencies = ["fmt", "clippy", "coverage", "doctest", "docs", "wasm", "deny", "packages", "scripts"]

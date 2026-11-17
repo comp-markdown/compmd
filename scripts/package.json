@@ -1,0 +1,5 @@
+{
+  "private": true,
+  "description": "The repository's own tools, run by Node as they are (TypeScript, its types stripped): not a workspace package.",
+  "type": "module"
+}
