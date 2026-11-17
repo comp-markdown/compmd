@@ -18,7 +18,9 @@ editor opens.
 | Emacs (29 and later) | tree-sitter (built in) | Eglot | `compmd-ts-mode`, on MELPA |
 
 Shiki reads TextMate grammars too, so the site, the guides, the playground and the Developer Tools highlight CompMD
-(a ```` ```compmd ```` block) with the same grammar VS Code uses.
+(a ```` ```compmd ```` block) with the same grammar VS Code uses: the site's and the guides' examples at build time,
+the playground's and the Developer Tools' source in the frames' Shiki, and the books (PDF) as the site's pages are.
+A CompMD document's own ```` ```compmd ```` blocks are highlighted the same way, by the sandbox's code highlighting.
 
 ## Decisions
 
@@ -76,7 +78,18 @@ Shiki reads TextMate grammars too, so the site, the guides, the playground and t
    - **the content-language blocks**: each block a renderer draws, its language `id` and range (content languages,
      decision 3), as a custom request (`compmd/blocks`), so an editor package forwards requests inside a block to the
      writer's server for that language;
-   - **document symbols and folding**: headings, components and definitions, for an outline.
+   - **document symbols and folding**: headings, components and definitions, for an outline;
+   - **templates**: snippets in completion and code actions that insert a construct ready to fill: a container, a
+     multi-column `row`, a leaf or inline component with its signature's params, a slot, a component definition, and a
+     signature block for a host-language component (in its fence's language). They are the server's, so every editor
+     has the same ones, and an editor package adds none of its own;
+   - **formatting**: the document formatted to one canonical form (a component line's params, a continuation's
+     indentation, a table's columns), as `textDocument/formatting` and for a range; its rules are written first, as a
+     part of the formatter's task, and leave Markdown's own text as the writer wrote it;
+   - **refactorings**, as code actions: extract a component's definition into a file of its own (and import it), inline
+     a `compmd` component's use as what it expands to, extract a selection into a new component, rename a component
+     across the document and the files that import it, and turn a leaf into a container (and back) where its slots
+     allow.
    It works on the document's files and installed packs as any processor does (the configuration, `@compmd/vite`'s
    packs); a registry pack's signature comes from `@compmd/registry`'s cache, and a pack it can't load is a diagnostic,
    not a failure. It processes as the user types with the processor's incremental processing
@@ -122,15 +135,30 @@ Shiki reads TextMate grammars too, so the site, the guides, the playground and t
      chosen when it starts, at a path with a random token the server opens the browser at, and it refuses a request
      whose `Host` isn't its own (so a web page can't reach it by renaming a domain to `127.0.0.1`).
 
-9. **Where they live:**
+9. **The language server installs itself, as other language servers do.** A writer installs the editor's package,
+   and the server comes with it or is offered:
+   - **released** from this repository for macOS, Linux and Windows, on x64 and arm64: binaries on each GitHub
+     release with their SHA-256 sums, `compmd-lsp` on crates.io (`cargo install`), and `@compmd/lsp` on npm, with a
+     package per platform as an optional dependency (as esbuild and Biome ship theirs), so `npm i -g @compmd/lsp`
+     works and an installer that reads npm finds it;
+   - **VS Code**: the extension is published once per platform with the binary in it, so it works on install;
+   - **Neovim**: an entry in mason.nvim's registry, so `:MasonInstall compmd-lsp` (or mason-lspconfig's
+     `ensure_installed`) installs it, after the writer asks for it;
+   - **Zed**: the extension downloads the release binary for the platform the first time a document opens, as Zed's
+     language extensions do, and checks its sum;
+   - **Emacs**: `compmd-ts-mode` asks, when the server isn't found, whether to download it, and downloads the release
+     binary for the platform and checks its sum, as lsp-mode does for its servers;
+   - **Helix**: has no installer; its entry names `compmd-lsp`, and the guide says how to install it (npm, cargo or
+     the release binary).
+
+10. **Where they live:**
    - `comp-markdown/compmd-grammars`: both grammars, `tree-sitter-cel` and what they share (`syntax/`, `tests/`). The
      tree-sitter grammar is in `tree-sitter/`; Helix, Zed and nvim-treesitter each take a grammar from a folder of a
      repository. Published as `tree-sitter-compmd` on npm and crates.io (with the bindings `tree-sitter generate`
      writes), and the TextMate grammar as `@compmd/textmate` on npm, for Shiki and the VS Code extension. Its tests
      take the spec's examples and the conformance set from this repository at a release's tag, and the language
      server's semantic tokens from its release.
-   - `comp-markdown/compmd`, this repository: the language server, `compmd-lsp`, on crates.io and as release binaries
-     for macOS, Linux and Windows.
+   - `comp-markdown/compmd`, this repository: the language server, `compmd-lsp`, released as decision 9 says.
    - `comp-markdown/vscode-compmd`, `comp-markdown/zed-compmd`, `comp-markdown/compmd-ts-mode`: the editor packages,
      each in its own repository, as their stores expect.
    Each grammar names the spec version it parses (a grammar for version 1).
@@ -143,8 +171,9 @@ Shiki reads TextMate grammars too, so the site, the guides, the playground and t
   (rust-analyzer's, synchronous, with no async runtime), and for the preview a small HTTP server crate (`tiny_http`,
   synchronous as well). In the VS Code extension: `vscode-languageclient` and
   `vscode-textmate`.
-- In this repository: the processor's blocks (content languages, decision 3), the language server, the preview's page
-  in `editor/`, and the renderer's line on each block.
+- In this repository: the processor's blocks (content languages, decision 3), the language server and its release
+  (binaries and npm packages per platform, in `release.yml`), the preview's page in `editor/`, the renderer's line on
+  each block, and the CompMD grammar in the frames' Shiki and the site's build.
 - In packs: `compmd.languages`, checked (content languages, decision 2).
 - CI in `compmd-grammars`: generate, check the generated parser is committed (tree-sitter grammars commit
   `src/parser.c`), and run the test set on both grammars and the released server.
@@ -153,13 +182,7 @@ Shiki reads TextMate grammars too, so the site, the guides, the playground and t
 
 The shared `syntax/` and `tests/` first, then the tree-sitter grammar and the TextMate grammar (either order), the
 processor's blocks and the language server, then the preview, then the editor packages, each needing its grammar, the
-server and the preview.
-
-## Open
-
-- The language server's packages beyond crates.io and release binaries: an npm package with the binaries (as other
-  servers ship them for editors that install from npm), proposed only once an editor package needs it.
-- Whether the language server also formats documents (a param list, a table's columns), proposed: later, in a design
-  of its own.
+server and the preview. CompMD's highlighting with Shiki follows the TextMate grammar; the server's release, its
+templates, the formatter and the refactorings follow the server, each a task of its own.
 
 [tree-sitter-markdown]: https://github.com/tree-sitter-grammars/tree-sitter-markdown
