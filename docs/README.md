@@ -41,3 +41,4 @@ The processor's own designs are next to it, in [`processor/docs/`](../processor/
 
 - [CI on GitHub](ci.md): the checks every push and pull request runs.
 - [Releases](releases.md): what is released, how it is versioned, and what a release does.
+- How code is written here: [Rust](code/rust.md), [Svelte and the TypeScript packages](code/svelte.md), [Playwright](code/playwright.md); the overall rules are in [AGENTS.md](../AGENTS.md).

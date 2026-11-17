@@ -1,0 +1,159 @@
+diff --git a/guides/authors/17-code-blocks-a-pack-draws.md b/guides/authors/17-code-blocks-a-pack-draws.md
+index 70a448b..0ffe083 100644
+--- a/guides/authors/17-code-blocks-a-pack-draws.md
++++ b/guides/authors/17-code-blocks-a-pack-draws.md
+@@ -133,4 +133,49 @@ Giving a code renderer another name with `as` (chapter 16) renames the leaf only
+ 
+ A code renderer can also be written in CompMD itself, as a definition whose signature says which language it renders; the [spec's section on code renderers](https://compmd.dev/spec/#77-code-renderers) has the details.
+ 
++## Wireframes
++
++Another pack, `@comp-markdown/wireframe`, draws sketches of screens: the newsletter shows the plot booking the garden is building before anyone writes a line of it.
++
++````md snippet=code-blocks/booking.comp.md
++---
++md:
++  version: 1
++  import:
++    - from: "@comp-markdown/wireframe@0"
++      names: [wireframe]
++title: Elm Street Garden
++---
++
++# Booking a plot online
++
++From March you can book a plot from your phone. This is the first sketch of the screen: tell us at the next work day what is missing.
++
++```wireframe {alt="The booking screen on a phone: a half or a full plot, the month you start, a key to the tool shed, and a Book button"}
++window "Book a plot" device=phone:
++  header:
++    text "Elm Street Garden" bold
++  section "Your plot":
++    radio "Half plot" group="size" selected
++    radio "Full plot" group="size"
++    combo "Starting" value="March" options="March, April, May"
++  checkbox "A key to the tool shed" label-right
++  button "Book" primary id=book
++annotation "You get an email to confirm" target="book" position=bottom
++```
++
++The paper list by the gate stays until everyone who wants a plot has one.
++````
++
++A ` ```wireframe ` block is a screen written as an outline, one part per line:
++
++- **`window`** is the screen, its title in quotes; `device=phone`, `tablet` or `browser` draws it as one, a desktop window without.
++- **A line ending in `:`** holds the lines indented under it, by two or four spaces: `header`, `footer`, `panel`, `section "Title"`, `row` and `col` lay the parts out, `grid` places `cell`s by row and column.
++- **Controls** are drawn as what they stand for: `button "Book" primary`, `input placeholder="Email"`, `combo`, `checkbox`, `radio`, `toggle`, `tabs`, `list`, `tree`, `menubar`, `progress`, `image`, `icon` and `text`. A control's flags come after its text: `selected`, `checked`, `on`, `disabled`.
++- **`annotation`**, after the window, puts a numbered note beside it, pointing at the part with that `id`.
++
++The whole language, with every part and what it takes, is the pack's [`LANGUAGE.md`](https://github.com/comp-markdown/compmd/blob/main/packs/wireframe/LANGUAGE.md). It is Wireloom's syntax, with a few additions that page marks, such as `device`: a sketch written for Wireloom reads here as it is.
++
++The sketch is drawn in greys, light or dark as the page is, and its words are text a reader can select. `alt` says what the screen shows, as for a diagram. A line the pack can't read shows the block's code, and the app reports `W118` with where the mistake is, `line 4, column 5: no part \`butn\`: did you mean \`button\`?`. With `render=both`, the block shows its outline above the sketch, for a post that explains how it is written.
++
+ Next: [components in code, in brief](18-components-in-code-in-brief.md), for what a component written in JSX, Svelte or JavaScript looks like to the document that uses it.
+diff --git a/guides/authors/examples/code-blocks/booking.comp.md b/guides/authors/examples/code-blocks/booking.comp.md
+new file mode 100644
+index 0000000..23f2ba8
+--- /dev/null
++++ b/guides/authors/examples/code-blocks/booking.comp.md
+@@ -0,0 +1,27 @@
++---
++md:
++  version: 1
++  import:
++    - from: "@comp-markdown/wireframe@0"
++      names: [wireframe]
++title: Elm Street Garden
++---
++
++# Booking a plot online
++
++From March you can book a plot from your phone. This is the first sketch of the screen: tell us at the next work day what is missing.
++
++```wireframe {alt="The booking screen on a phone: a half or a full plot, the month you start, a key to the tool shed, and a Book button"}
++window "Book a plot" device=phone:
++  header:
++    text "Elm Street Garden" bold
++  section "Your plot":
++    radio "Half plot" group="size" selected
++    radio "Full plot" group="size"
++    combo "Starting" value="March" options="March, April, May"
++  checkbox "A key to the tool shed" label-right
++  button "Book" primary id=book
++annotation "You get an email to confirm" target="book" position=bottom
++```
++
++The paper list by the gate stays until everyone who wants a plot has one.
+diff --git a/guides/test/guide.test.ts b/guides/test/guide.test.ts
+index daad0db..f0fae96 100644
+--- a/guides/test/guide.test.ts
++++ b/guides/test/guide.test.ts
+@@ -55,25 +55,31 @@ function filesOf(folder: string): Record<string, string> {
+ const PINNED: Record<string, string> = { "0.1.1": "sha512-EwevqkkUdxOsFLHV85W74wEL+LoyZhaZkmnj8bJax3zLG48uuiGrezFTixCdlS6VQC/GHVU8Ra0vVXjeFftc7Q==" };
+ 
+ /**
+- * The packs a chapter's documents import from npm, as a host that fetches them gives them: the Mermaid pack at this
+- * repository's version (`packs/mermaid/`) and at each version the chapters pin, which npm keeps once published, each
+- * with the integrity npm publishes for it. Every release has the repository's files, with its own version.
++ * The packs a chapter's documents import from npm, as a host that fetches them gives them: each of this repository's
++ * packs (`packs/<name>/`) at its version, and the Mermaid pack at each version the chapters pin too, which npm keeps
++ * once published, with the integrity npm publishes for it. Every release has the repository's files, with its own
++ * version.
+  */
+ function registryPacks(): Record<string, PackRelease[]> {
+-  const folder = join(GUIDES, "../packs/mermaid");
+-  const manifest = readFileSync(join(folder, "package.json"), "utf8");
+-  const { name, version: current } = JSON.parse(manifest) as { name: string; version: string };
+-  const document = readFileSync(join(folder, "index.comp.md"), "utf8");
+-  const release = (version: string): PackRelease => ({
+-    version,
+-    integrity: PINNED[version] ?? "sha512-from-the-repository",
+-    files: {
+-      "package.json": manifest.replace(`"version": "${current}"`, `"version": "${version}"`),
+-      "index.comp.md": document.replace(`version: "${current}"`, `version: "${version}"`),
+-      "dist/mermaid.js": "",
+-    },
+-  });
+-  return { [name]: [...new Set([current, ...Object.keys(PINNED)])].map(release) };
++  return Object.fromEntries(
++    ["mermaid", "wireframe"].map((pack) => {
++      const folder = join(GUIDES, "../packs", pack);
++      const manifest = readFileSync(join(folder, "package.json"), "utf8");
++      const { name, version: current } = JSON.parse(manifest) as { name: string; version: string };
++      const document = readFileSync(join(folder, "index.comp.md"), "utf8");
++      const release = (version: string): PackRelease => ({
++        version,
++        integrity: PINNED[version] ?? "sha512-from-the-repository",
++        files: {
++          "package.json": manifest.replace(`"version": "${current}"`, `"version": "${version}"`),
++          "index.comp.md": document.replace(`version: "${current}"`, `version: "${version}"`),
++          [`dist/${pack}.js`]: "",
++        },
++      });
++      const pinned = pack === "mermaid" ? Object.keys(PINNED) : [];
++      return [name, [...new Set([current, ...pinned])].map(release)];
++    }),
++  );
+ }
+ 
+ describe.each(BOOKS)("the %s' guide", (book) => {
+diff --git a/packs/wireframe/src/wireframe.test.ts b/packs/wireframe/src/wireframe.test.ts
+index 85b103c..8cb2707 100644
+--- a/packs/wireframe/src/wireframe.test.ts
++++ b/packs/wireframe/src/wireframe.test.ts
+@@ -50,6 +50,14 @@ describe("the test page", () => {
+   });
+ });
+ 
++describe("the Author's Guide", () => {
++  it("has a sketch that is valid", async () => {
++    const guide = await readFile(join(import.meta.dirname, "../../../guides/authors/examples/code-blocks/booking.comp.md"), "utf8");
++    const blocks = [...guide.matchAll(/```wireframe[^\n]*\n([\s\S]*?)\n```/g)].map((match) => parse(match[1] ?? ""));
++    expect(blocks.map((parsed) => parsed.errors.map(String))).toEqual([[]]);
++  });
++});
++
+ describe("failureOf", () => {
+   it("says the first error, and how many more there are", () => {
+     expect(failureOf([new Error("one")])).toBe("one");

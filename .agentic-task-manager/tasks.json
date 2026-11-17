@@ -1,0 +1,1099 @@
+{
+  "meta": {
+    "created": "2026-11-17",
+    "project": "CompMD",
+    "description": "Markdown with components: the spec, its processor, renderer, sandbox, packs, guides and website",
+    "key": "CMD",
+    "review": "async",
+    "format": 2,
+    "next_number": 38,
+    "id": "0bd2033e",
+    "repository": "https://github.com/comp-markdown/compmd",
+    "workflow": {
+      "type": "direct",
+      "base": "main"
+    },
+    "sprints": [
+      {
+        "id": "Packs and website",
+        "state": "active",
+        "goal": "Wrapping an npm package as a pack takes one command; a first set of packs, shown on the website with a playground; Safety higher on the landing page, components shown without delay, and a blog.",
+        "start": "2026-11-17T22:51:32Z"
+      },
+      {
+        "id": "Editor support",
+        "state": "planned",
+        "goal": "CompMD in VS Code, Neovim, Helix, Zed and Emacs: a tree-sitter grammar, a TextMate grammar and a language server"
+      }
+    ]
+  },
+  "tasks": [
+    {
+      "id": "01a1ebb5-4120-7007-85a3-68deb860634d",
+      "name": "Smaller packages: only the locale data a reader needs",
+      "type": "feature",
+      "priority": "P3",
+      "description": "Asked by the user (2026-10-30): don't carry locale data a reader never uses; keep the packages as small as they can be.\n\n**Today.** The processor formats by CLDR (`md.date`, `md.number`, `md.currency`, …, for `md.lang`) with ICU4X's compiled data for every locale (`icu` 2.4.0 in `processor/Cargo.toml`), so every language formats offline. All of it is inside `@compmd/processor`'s WebAssembly: 808 KB gzipped, a tarball of 844 KB.\n\n**First, measure** how much of the WebAssembly is locale data (a build with only `en`, against today's), so the choice rests on numbers.\n\n**The alternatives to weigh, then settle with the user:**\n\n1. **Two builds**: a small one with a few locales (`en`, `tr` and the most used few more, the list to settle), and a full one with all of CLDR, for example `@compmd/processor` and `@compmd/processor-full`, or a Cargo feature for the crate.\n2. **Locale data as separate packages**: one processor without locale data (or with `en` only), and the data for other locales loaded when a document's `md.lang` needs it (ICU4X's blob data, per locale or per group, for example `@compmd/locale-tr`), cached like any module.\n3. A mix: the small build with its locales compiled in, and the others loadable.\n\nFor each: the sizes (gzipped, the WebAssembly and the tarball), what a host does to use it, what a document in a locale that isn't there shows (a fallback locale and a diagnostic, which may need a change to the spec's formatting functions), offline use, the crate's features, and what the release workflow publishes.\n\n**Then** implement the chosen one: the build, the packages, the website and playground on the right build, READMEs and `RELEASING.md`, tests for a missing locale, sizes in the bench.\n\n## From earlier work\n\n- The WebAssembly is about 946 KB gzipped now.\n- The measurement needs an English-only build of ICU4X's data, made with ICU4X's `icu4x-datagen` tool (`cargo install icu4x-datagen`), used only to generate the data for the measurement, nothing added to the project. The user put the task in the backlog (2026-11-17) before it was installed: ask for the go to install it when the task is taken again, then bring the numbers and the three options for the user to choose from.\n",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "processor/Cargo.toml",
+        "wasm/package.json",
+        ".github/workflows/release.yml",
+        "RELEASING.md"
+      ],
+      "created_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-17T22:51:26Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "number": 1,
+      "key_final": false
+    },
+    {
+      "id": "01a1ebb5-4120-7007-85a3-68df443abb7a",
+      "name": "Any npm package as published, through a module loader (K2)",
+      "type": "docs",
+      "priority": "P3",
+      "description": "Later work from the accepted design of packs from a registry (`docs/packs-from-a-registry.md`, R7 K2, R9 *Why not any npm package as it is published?*). The user would rather shared libraries were plain npm packages than library packs. That needs a module loader in the frames resolving Node's rules (`exports`, `module`, bare imports between packages) over a package's whole dependency tree, with no WebAssembly under the strict policy; CommonJS packages refused. Pack chunks (R7) come with the same loader.\n\n**First a design doc**, reviewed with the user, with a spike if the loader's cost is unclear (d3 7.9: more than 31 packages on a first visit). Then the spec and implementation tasks.\n\n## From earlier work\n\nA draft design is committed, not yet approved: `docs/npm-packages.md` (compmd `3f30a02`). It proposes ES module packages named in `peerDependencies`, the registry resolving the tree with the policy, bundled once in the compile frame (Rollup browser build) instead of a loader in every frame (K2), cached by integrities; CommonJS refused (W121). A spike first (d3, a chart's part, Mermaid); after approval, the spike, then the spec and build tasks. The user put the task in the backlog (2026-11-17); start from the draft when it is taken again.\n",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [],
+      "created_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-17T22:51:26Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "number": 2,
+      "key_final": false
+    },
+    {
+      "id": "01a1ebb5-4120-7007-85a3-68e08cff6758",
+      "name": "A pandoc reader, so pandoc turns CompMD documents into PDF, Word, EPUB",
+      "type": "feature",
+      "priority": "P3",
+      "description": "A way for pandoc to read CompMD documents, so authors and hosts turn them into anything pandoc writes: PDF (through LaTeX or Typst), Word, EPUB, HTML. Proposed by the user on 2026-11-02, while the site's PDFs were being made, as something wanted for the future anyway.\n\n## Background\n- The guides and the spec are plain GitHub Markdown, not CompMD: pandoc's own `gfm` reader already reads them, so the site's PDFs don't need this. They are printed with Chrome, which keeps the site's look; pandoc would give book typography and page numbers in the contents instead.\n- A CompMD document needs the processor: imports, definitions, `if`/`each`, interpolation and layout only mean something after it expands them (spec §12.3).\n\n## Design first (a design document, reviewed with the user, before code)\nNever reimplement the syntax (no Lua parser of CompMD): build on the processor, so pandoc gets what the spec says.\n- **The bridge:** the processor's expanded tree, translated to pandoc's JSON AST. Where it lives: a small CLI (`compmd pandoc doc.comp.md | pandoc -f json -o doc.pdf`, from the Rust crate), and/or a pandoc custom reader in Lua that calls it (`pandoc -f compmd.lua doc.comp.md -o doc.pdf`), and/or the wasm package for JS hosts.\n- **The mapping:** mdast nodes to pandoc's (most map one to one: headings, lists, tables, code, math, footnotes, alerts as Divs); `box` and the layout built-ins as pandoc Divs with their params as attributes, so a pandoc filter or a template styles them; host-language components as their fallback (spec §4.5), since pandoc runs no code; inputs as their current value, as a processor that isn't interactive shows them (spec §8.7); a rendered code block (spec §7.7) as its code block, or its `alt`.\n- **What the request carries:** the document's files, data and packs, as for any processor (`process` and its request); the inputs from the command line.\n- **Diagnostics:** printed as the processor's, with a strict mode that fails on an F (spec §10.1).\n- **Testing:** the conformance set's expanded trees through the bridge, and a few documents to PDF and DOCX in CI (pandoc and Typst are small to install; LaTeX is large).\n\n## Not in this task\nUsing it for the site's own PDFs; layout fidelity beyond what pandoc's Divs and a template can give.\n\n## From earlier work\n\nA draft design is committed, not yet approved: `docs/pandoc.md` (compmd `8f1d683`, revised in `83a25eb` after the user's review: components as they print, use cases, its own repository `comp-markdown/compmd-pandoc`). It proposes the expanded tree written as pandoc JSON by a new `compmd-pandoc` crate; a `compmd pandoc` command (a new `compmd-cli`) and a Lua reader; the mapping (boxes as Divs, host components as fallbacks, inputs as values, frontmatter as metadata); packs, data and inputs from flags; tests over the conformance set and PDF/DOCX via Typst. The user put the task in the backlog (2026-11-17); start from the draft when it is taken again, and build after approval.\n",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "docs",
+        "processor/src"
+      ],
+      "created_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-17T22:51:26Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "number": 3,
+      "key_final": false
+    },
+    {
+      "id": "01a1ebb5-4120-7007-85a3-68e1a89013a8",
+      "name": "Developer Tools: completions in the Console's input",
+      "type": "feature",
+      "priority": "P3",
+      "description": "Completions as a developer types an expression in the Console (it has none today): the names in the document's scope (`md.doc`'s keys, `md.data`'s sources, the inputs, the profile's functions), as the positional hints give them in the document's text. Needs a hint over an expression that isn't in the document, in the processor, the WebAssembly binding and `OpenDocument`.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "processor/src/processor.rs",
+        "wasm/src/document.rs",
+        "devtools/src/ConsoleView.svelte"
+      ],
+      "created_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-17T22:51:26Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "number": 4,
+      "key_final": false
+    },
+    {
+      "id": "01a1ebb5-4120-7007-85a3-68e2b7a9ca57",
+      "name": "Developer Tools: a layout like a browser's developer tools",
+      "type": "feature",
+      "priority": "P3",
+      "description": "Organize the Developer Tools better than tabs: panes, as a browser's developer tools have them (the trees beside the data, the messages under the sandbox, panes docked and resized, the Console at the bottom of any). To settle with the user first: which views go together, what a developer sees first, and how the layout is kept.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "devtools/src/Panes.svelte",
+        "devtools/src/Split.svelte"
+      ],
+      "created_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-17T22:51:26Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "number": 5,
+      "key_final": false
+    },
+    {
+      "id": "01a1ebb5-4120-7007-85a3-68e3a6c54ad2",
+      "name": "Find unused dependencies and exports, with a tool",
+      "type": "refactor",
+      "labels": [
+        "refactor"
+      ],
+      "description": "Found in an earlier scan of the repository (2026-11-06): two of its checks couldn't be done well by reading files one by one.\n\n## What is left\n- **Unused dependencies** in the `package.json` files of create-pack, devtools, editor, editor/packs/minimermaid, guides, pack, packs/mermaid, registry, render, sandbox, vite, wasm, website and website/app, and in the `Cargo.toml` files of `processor` and `wasm`. (The root `package.json` has none.)\n- **Unused TypeScript exports**: exported functions, classes and types that nothing imports and that aren't part of a package's public entry. (Rust needs no such check: clippy's `dead_code` already fails on unused crate-private items.)\n\n## Why it needs a decision\nBoth need a tool that sees the whole repository: [knip](https://knip.dev) for the TypeScript packages, [cargo-machete](https://github.com/bnjbvr/cargo-machete) or `cargo udeps` for the crates. Running one, even once through `pnpm dlx`, runs code from outside the repository, which the session's permissions refused. To decide:\n1. Add knip (and cargo-machete) as dev tools, perhaps run in `cargo make ci` so the debt doesn't come back; or\n2. Run them once by hand, outside an agent session, and file what they find; or\n3. Drop the check.\n\n## Then\nRemove what is unused, with no change in behaviour; `cargo make ci` and `pnpm -r lint` green.\n",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [],
+      "created_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-17T22:51:26Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "with": "user",
+      "number": 6,
+      "key_final": false
+    },
+    {
+      "id": "01a1ebb5-4120-7007-85a3-68e49113138d",
+      "name": "Make a table's rows from data (analyse the options first)",
+      "type": "feature",
+      "priority": "P3",
+      "labels": [
+        "spec"
+      ],
+      "description": "Found while writing the website's table example (2026-11-06): a document can't make a table's rows from data. The author wanted each city's row of a GFM table made by an `each` over a data file; today the rows have to be written out.\n\n## Why it can't today\n- `each` joins what its body makes with `join=list` (a one-item list body, the copies one list) or `join=inline` (one line, with `sep=` and `last=`). Neither makes a table.\n- A table row is a line of a GFM table, and a component line can't stand among a table's lines, so an `each` can't sit between the rows either.\n\n## To analyse, before deciding\nOptions and their trade-offs, each tried on real documents (a table of cities, a changelog table, a price list), in CompMD and in a plain renderer:\n- `join=table` on `each`: the body a one-row table, header included; the copies become one table, the header once. How headers that differ are reported, what `:: #empty` gives, alignment rows.\n- A built-in table component (`::: table {rows=(…)}` with columns declared), and how it degrades.\n- A template slot of a container that makes rows.\n- Leaving tables to host-language components, and saying so.\n\n## Then\nThe chosen option settled with the user, written into the spec with conformance cases, implemented in the processor, and the website's table example (`website/content/weather.comp.md`) made from data with it.\n",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [],
+      "created_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-17T22:51:26Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "number": 7,
+      "key_final": false
+    },
+    {
+      "id": "01a1ebb5-4120-7007-85a3-68e5ebcaa0da",
+      "name": "Wrapping an npm package as a pack, the design",
+      "type": "docs",
+      "priority": "P1",
+      "labels": [
+        "packs"
+      ],
+      "description": "Asked by the user (2026-11-08): wrapping an existing npm package (a React, Svelte or plain JS/TS component) as a CompMD pack should be extremely easy.\n\n## The design note\nIn `docs/`, decisions first, reviewed with the user before anything is built:\n- **The least repetition in a pack,** so that updating to the package's next version is a version bump and little else: what a pack must state (signatures, fallbacks, demos) and what can be derived from the package itself (its TypeScript prop types, its `package.json`, its exports).\n- **One command to generate a pack** from a package name, if it can be done (for example `npm create @compmd/pack --from <package>`): what it writes, what it asks, what it can't infer.\n- How it fits `create-pack`'s templates (`leaf`, `renderer`, `library`), [writing a pack](docs/writing-a-pack.md), [packs from a registry](docs/packs-from-a-registry.md) and CMD-2 (any npm package through a module loader).\n- Try it on three real packages of different kinds before the review, and list the gaps.\n\nEach push needs the user's go.\n\n## From earlier work\n\nNot started: it is left for a session with the user, since its design is reviewed together.\n",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "docs/wrapping-an-npm-package.md"
+      ],
+      "created_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-17T22:51:26Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "with": "user",
+      "number": 8,
+      "key_final": false
+    },
+    {
+      "id": "01a1ebb5-4120-7007-85a3-68e63c5137a7",
+      "name": "Wrap an npm package as a pack in one command",
+      "type": "feature",
+      "priority": "P1",
+      "labels": [
+        "packs"
+      ],
+      "description": "Implement the design approved in CMD-8 (`docs/wrapping-an-npm-package.md`) in `create-pack`.\n\n- The command and what it generates, with unit tests and a test that wraps a real package and renders its demo.\n- Update `docs/create-pack.md`, `docs/writing-a-pack.md` and `create-pack/README.md`.\n- Same checks as the rest of the repository (`pnpm lint`, `pnpm test`).\n\nEach push needs the user's go.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68e5ebcaa0da"
+      ],
+      "files": [
+        "create-pack/src/",
+        "docs/create-pack.md",
+        "docs/writing-a-pack.md"
+      ],
+      "created_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-17T22:51:26Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Packs and website",
+          "from": "2026-11-17T22:51:26Z"
+        }
+      ],
+      "sprint": "Packs and website",
+      "number": 9,
+      "key_final": false
+    },
+    {
+      "id": "01a1ebb5-4120-7007-85a3-68e7d6fc0e9a",
+      "name": "Research which components authors expect first",
+      "type": "docs",
+      "priority": "P1",
+      "labels": [
+        "packs"
+      ],
+      "description": "Asked by the user (2026-11-08): a research of existing components, to define the first list CompMD should have soon to be attractive to authors.\n\n## Research\n- **MDX:** the components docs frameworks ship and authors use most (Docusaurus, Nextra, Starlight, Mintlify, Fumadocs and others: tabs, callouts, cards, steps, code groups, file trees, embeds…).\n- **React, Svelte and plain JS/TS:** widely used component packages that make sense in a document (charts, maps, diagrams, media, data tables, timelines, math, code playgrounds…), with their weekly downloads and licences.\n- What CompMD covers already (`@compmd/core`, layout, callouts, code renderers, Mermaid), so the list holds only what is missing.\n\n## Result\nA document in `docs/` with sources, and a ranked first list: each component's name, the package it wraps (or written in CompMD), its binding, and why it is on the list. Reviewed with the user.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "docs/first-components.md"
+      ],
+      "created_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-17T22:51:26Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "with": "user",
+      "number": 10,
+      "key_final": false
+    },
+    {
+      "id": "01a1ebb5-4120-7007-85a3-68e81c39ce10",
+      "name": "The first component packs",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "packs"
+      ],
+      "description": "Build the packs on the list approved in CMD-10, with the command from CMD-9, under `packs/` as `packs/mermaid` is: each with its signature, fallbacks, a demo, tests and a README.\n\nIf the list is longer than a few packs, first split this task into one task per pack (through `/atm-create-tasks`), in this sprint, and do them in the list's order.\n\nEach push needs the user's go.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68e63c5137a7",
+        "01a1ebb5-4120-7007-85a3-68e7d6fc0e9a"
+      ],
+      "files": [
+        "packs/"
+      ],
+      "created_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-17T22:51:26Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Packs and website",
+          "from": "2026-11-17T22:51:26Z"
+        }
+      ],
+      "sprint": "Packs and website",
+      "number": 11,
+      "key_final": false
+    },
+    {
+      "id": "01a1ebb5-4120-7007-85a3-68e96cefc8f6",
+      "name": "Website: a section of the components there are",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "website"
+      ],
+      "description": "Asked by the user (2026-11-08): a section of the website listing the components that exist, showing them, and letting readers try them in the playground.\n\n- **First, with the user:** its name (Library, Discover, Components, …), where it sits in the header, and a sketch of the list and of one component's page.\n- Each component drawn live from its pack's demo, with its signature, the package it wraps, its licence and how to import it; a *Try it* that opens the demo in the playground.\n- The list is built from the packs (`packs/`, and what CMD-11 adds), not written by hand.\n- The site's budgets, its checks and the site check after the work (it isn't in local ci).\n\nEach push needs the user's go.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68e63c5137a7"
+      ],
+      "files": [
+        "website/src/",
+        "website/build/"
+      ],
+      "created_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-17T22:51:26Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Packs and website",
+          "from": "2026-11-17T22:51:26Z"
+        }
+      ],
+      "sprint": "Packs and website",
+      "with": "user",
+      "number": 12,
+      "key_final": false
+    },
+    {
+      "id": "01a1ebb5-4120-7007-85a3-68ea9d5906c3",
+      "name": "Website: a blog section",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "website"
+      ],
+      "description": "Asked by the user (2026-11-08): a blog on the CompMD website.\n\n- **First, a design shown to the user:** where it sits, the list of posts and a post's page, dates and authors, a feed (RSS or Atom), and how a post is written (a CompMD document in the repository, prerendered like the guides).\n- Then build it with tests, the site's budgets, its checks, the sitemap and search, and run the site check after the work.\n\nEach push needs the user's go.\n\n## From earlier work\n\nThe design is approved: `website/docs/blog.md` (compmd `5ad391e`, `6ef1899`, `c71b41c`, `7718ec5`). Posts are CompMD documents rendered at build, with a list, a page per post and an Atom feed, in the header, the sitemap and search, within the landing page's budgets. Build it on `@compmd/blog` (made earlier), with giscus for comments, and tags from the start.\n",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "website/src/",
+        "website/build/",
+        "website/blog/"
+      ],
+      "created_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-17T22:51:26Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Packs and website",
+          "from": "2026-11-17T22:51:26Z"
+        }
+      ],
+      "sprint": "Packs and website",
+      "with": "user",
+      "number": 13,
+      "key_final": false
+    },
+    {
+      "id": "01a1ebb5-4120-7007-85a3-68ebbb96493c",
+      "name": "Blog: Why CompMD",
+      "type": "docs",
+      "priority": "P2",
+      "labels": [
+        "website"
+      ],
+      "description": "The first post: why CompMD exists, what it gives authors that plain Markdown doesn't, and what it keeps (a document that reads well anywhere). Written as a CompMD document, in plain wording, drafted and reviewed with the user before it is published.\n\nPublishing (the push) needs the user's go.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68ea9d5906c3"
+      ],
+      "files": [
+        "website/blog/"
+      ],
+      "created_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-17T22:51:26Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Packs and website",
+          "from": "2026-11-17T22:51:26Z"
+        }
+      ],
+      "sprint": "Packs and website",
+      "with": "user",
+      "number": 14,
+      "key_final": false
+    },
+    {
+      "id": "01a1ebb5-4120-7007-85a3-68ecc9cfcfc3",
+      "name": "Blog: Where CompMD is, and its roadmap",
+      "type": "docs",
+      "priority": "P2",
+      "labels": [
+        "website"
+      ],
+      "description": "A post on where CompMD stands (the spec, the processor, the renderer, the sandbox, the editor, packs) and what comes next. Written as a CompMD document, drafted and reviewed with the user; what comes next is settled with the user, not assumed.\n\nPublishing (the push) needs the user's go.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68ea9d5906c3"
+      ],
+      "files": [
+        "website/blog/"
+      ],
+      "created_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-17T22:51:26Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Packs and website",
+          "from": "2026-11-17T22:51:26Z"
+        }
+      ],
+      "sprint": "Packs and website",
+      "with": "user",
+      "number": 15,
+      "key_final": false
+    },
+    {
+      "id": "01a1ebb5-4120-7007-85a3-68ed0184b787",
+      "name": "Blog: MDX and CompMD",
+      "type": "docs",
+      "priority": "P2",
+      "labels": [
+        "website"
+      ],
+      "description": "A post comparing MDX and CompMD fairly, with the same document written in both: syntax, how each degrades in a plain renderer, security (code in the document against the sandbox), frameworks, and when MDX is the better choice. Written as a CompMD document, drafted and reviewed with the user.\n\nPublishing (the push) needs the user's go.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68ea9d5906c3"
+      ],
+      "files": [
+        "website/blog/"
+      ],
+      "created_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-17T22:51:26Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Packs and website",
+          "from": "2026-11-17T22:51:26Z"
+        }
+      ],
+      "sprint": "Packs and website",
+      "with": "user",
+      "number": 16,
+      "key_final": false
+    },
+    {
+      "id": "01a1ebb5-4120-7007-85a3-68ee6b325353",
+      "name": "State a component keeps, the design (and the spec)",
+      "type": "docs",
+      "priority": "P2",
+      "labels": [
+        "spec"
+      ],
+      "description": "Asked by the user, 2026-11-10. An interactive drawing in a document (an Excalidraw diagram the reader draws in place) has **state the component itself manages**: the drawing, which isn't a param the author writes and isn't an input (spec §8.7: values of a few types the document reads). Today a component only gets params and slots and can `set` its bound inputs (spec §7.4), so a drawing has nowhere to live.\n\n## Questions to settle, with examples\n- **Where the state lives:** in the document (a fenced block the component owns, the way a signature fence belongs to a component), beside it (a file, like an image the document links), or in the host's storage, named from the document.\n- **The likeness to attachments:** a drawing is a file the document owns, as an image is; can one mechanism serve both (a component's own files, which a host stores the way it stores a document's images and attachments)?\n- **The host contract:** what the component gets (its state, a way to save it, size limits), when it saves (debounced, on close), and conflicts when two people draw at once.\n- **Trust and safety:** a strict component may write only its own state, never other content; what a plain Markdown renderer shows (spec §14: a fallback image or text).\n- **Full screen:** whether a component may ask the host to show it full screen, and how the host keeps it a document's content (spec §15).\n\n## Do\nA topic design in `docs/`, with real example documents and the spec change it needs (§7.4, §8.7, §14, §15, with a CHANGELOG entry), reviewed with the user. How an application that hosts CompMD stores such state is that application's own decision, once CompMD's design is accepted.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "docs/component-state.md",
+        "compmd-spec-v1.md",
+        "CHANGELOG.md",
+        "docs/README.md"
+      ],
+      "created_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-17T22:51:26Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "with": "user",
+      "number": 17,
+      "key_final": false
+    },
+    {
+      "id": "01a1ebb5-4120-7007-85a3-68efa9d8fbb8",
+      "name": "An Excalidraw pack, a drawing the reader draws in the document",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "packs"
+      ],
+      "description": "Asked by the user, 2026-11-10: a component that embeds an **interactive Excalidraw diagram** in a document: the reader draws on it in place, opens it full screen, and the drawing is kept as the component's state (the design it depends on, CMD-17). An npm package in `packs/`, built like [the Mermaid pack](docs/mermaid-pack.md) (`@compmd/pack`, one built module under the size cap, its licences published, light and dark following the page).\n\n## Check first\n- Excalidraw's licence (MIT), its size as one module, whether it runs in a strict frame (no network: its fonts and assets bundled), and its React version against the frames' runtime.\n- What a plain renderer and a host without the state feature show: the fallback the design chose (an exported image or text).\n\n## Tests\nThe pack's tests and test page: drawing, saving and reloading the state, full screen, the fallback.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68ee6b325353"
+      ],
+      "files": [
+        "packs/excalidraw/package.json",
+        "packs/excalidraw/src/",
+        "docs/excalidraw-pack.md"
+      ],
+      "created_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-17T22:51:26Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Packs and website",
+          "from": "2026-11-17T22:51:26Z"
+        }
+      ],
+      "sprint": "Packs and website",
+      "number": 18,
+      "key_final": false
+    },
+    {
+      "id": "01a1ebb5-4120-7007-85a3-68f0d62886dc",
+      "name": "The registry rules in compmd-host, used by @compmd/registry as WebAssembly",
+      "type": "refactor",
+      "priority": "P2",
+      "description": "[Hosting](docs/hosting.md) H1, option (c): one implementation of the registry rules, in Rust. The resolver's loop, ranges as the processor matches them, the policy before any download, the integrity checks and the tar reader move into `compmd-host` (an HTTP client and a cache from its host, as traits), with a WebAssembly build that `@compmd/registry` uses; `@compmd/registry` keeps `fetch`, Cache Storage, the proxy and its API. Then the Tauri plugin's `registry/` proxy for apps that process in the page ([its decision 11](docs/tauri-plugin.md)).\n\n## Tests\n`@compmd/registry`'s tests run unchanged against the WebAssembly build; the crate's own tests share their fixtures.\n\n## From earlier work\n\nThe user put the task in the backlog (2026-11-17); two points are settled with the user when it is taken again:\n\n- **New Rust dependencies:** `miniz_oxide` (gunzip, pure Rust), `sha2` and `base64` (integrity), and for the WebAssembly build `wasm-bindgen`, `wasm-bindgen-futures` and `js-sys` (the async resolver over the host's `fetch`). The tar reader written by hand, as `registry/src/tar.ts` is.\n- **The split:** it is three pieces of work: (1) the rules in `compmd-host` with HTTP and cache traits and shared fixtures, (2) the WebAssembly build and `@compmd/registry` on it, (3) the Tauri plugin's `registry/` proxy. Split into three tasks in that order (recommended), or keep one.\n",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "host/src/",
+        "registry/src/",
+        "tauri/src/"
+      ],
+      "created_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-17T22:51:26Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "number": 19,
+      "key_final": false
+    },
+    {
+      "id": "01a1ebb5-4120-7007-85a3-68f1c63d6537",
+      "name": "A tree-sitter grammar",
+      "type": "feature",
+      "priority": "P2",
+      "description": "Asked by the user (2026-11-16): a tree-sitter grammar for CompMD, so editors can highlight and fold it.\n\n## First, a design shown to the user\n\n- How it sits on a Markdown grammar (CompMD is CommonMark + GFM): its own grammar, or injections on an existing tree-sitter Markdown grammar.\n- What it covers: frontmatter and the `md` key, blocks (`:::`), inline components, interpolation (`{{…}}`) with CEL inside, the fences of component definitions with their languages injected, and the opt-in syntax.\n- Where it lives and how it's published (npm and crates.io, as tree-sitter grammars are), and which editors to try it in.\n\n## Then\n\nBuild it, with tests from the spec's examples and test suite, so it parses what the spec says.\n\n## Notes\n\nEach push needs the user's go.\n\n## From earlier work\n\n- A first design (`docs/tree-sitter.md`, compmd `b8809c7`: two grammars extending tree-sitter-markdown's by inheritance, its C scanner copied with CompMD's lines, CEL injected from a small tree-sitter-cel, queries for highlight, fold, inject and textobjects, tests from the spec and the conformance set, in `tree-sitter/`, published to npm and crates.io) was replaced by the combined editor-support design, `docs/editor-support.md`. Build what that design says.\n- Editors: VS Code, Neovim, Helix, Zed and Emacs, as the editor-support design decides.\n- From CMD-37: a ` ```compmd ` block with `render=output` or `both` is an example (spec §7.8), a CompMD document of its own: inject CompMD into its text, as into a definition fence's. Its param list is a rendered block's (`render`, the common params, `class`, `id`).\n",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [],
+      "created_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-17T22:51:26Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Editor support",
+          "from": "2026-11-17T22:51:26Z"
+        }
+      ],
+      "sprint": "Editor support",
+      "number": 20,
+      "key_final": false
+    },
+    {
+      "id": "01a1ebb5-4120-7007-85a3-68f25533b0bc",
+      "name": "A TextMate grammar",
+      "type": "feature",
+      "priority": "P2",
+      "description": "Asked by the user (2026-11-17): a TextMate grammar for CompMD, for VS Code (and Shiki, which reads the same grammars), beside the tree-sitter grammar (CMD-20) for Neovim, Helix, Zed and Emacs.\n\n## First, the combined design\n\nOne design for both grammars, shown to the user before either is built (CMD-20's design, widened; it is now `docs/editor-support.md`): what they share (the syntax's tokens, the scope and capture names, the injected languages, the tests from the spec and conformance set), what each does on its own, and where they live and are published.\n\n## Then\n\nBuild it, extending a Markdown TextMate grammar, with tests from the shared set, so it highlights what the spec says.\n\n## Notes\n\nEach push needs the user's go.\n\n## From earlier work\n\nFrom CMD-37: a ` ```compmd ` block's text is CompMD (an example, spec §7.8, when it has `render=output` or `both`): embed the grammar in it, and highlight its param list as a rendered block's.\n",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [],
+      "created_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-17T22:51:26Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Editor support",
+          "from": "2026-11-17T22:51:26Z"
+        }
+      ],
+      "sprint": "Editor support",
+      "number": 21,
+      "key_final": false
+    },
+    {
+      "id": "01a1ebb5-4120-7007-85a3-68f3362597b7",
+      "name": "A pack's content languages in its manifest, checked",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "packs"
+      ],
+      "description": "A part of [content-languages.md](docs/content-languages.md), decisions 2 and 3: `compmd.languages` in a pack's `package.json` (its `id`, `textmate`, `treeSitter`, and the optional `aliases`, `languageId`, `extensions`), checked by `compmd-pack check` (each grammar parses; its `id` is a language the pack's renderers `renders`). The Mermaid pack ships a Mermaid grammar as the first.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "pack/"
+      ],
+      "created_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-17T22:51:26Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Editor support",
+          "from": "2026-11-17T22:51:26Z"
+        }
+      ],
+      "sprint": "Editor support",
+      "number": 22,
+      "key_final": false
+    },
+    {
+      "id": "01a1ebb5-4120-7007-85a3-68f4dc43b1c6",
+      "name": "The processor gives each rendered code block's language and range",
+      "type": "feature",
+      "priority": "P2",
+      "description": "A part of [content-languages.md](docs/content-languages.md), decision 3: for each code block a renderer draws, its language `id` and its content's range in the document, from the processor's positions, so the language server and editor packages hand the requests inside it to the writer's server for that language. Its shape as the editor-support design (`docs/editor-support.md`) says.\n",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "processor/"
+      ],
+      "created_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-17T22:51:26Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Editor support",
+          "from": "2026-11-17T22:51:26Z"
+        }
+      ],
+      "sprint": "Editor support",
+      "number": 23,
+      "key_final": false
+    },
+    {
+      "id": "01a1ebb5-4120-7007-85a3-68f5234f8107",
+      "name": "A language server",
+      "type": "feature",
+      "priority": "P2",
+      "description": "Asked by the user (2026-11-17): a CompMD language server on the processor, for every editor: semantic tokens by the token names it shares with the grammars, the processor’s diagnostics, and what the editor-support design (`docs/editor-support.md`) puts in it (completion, hover, the content-language blocks). Where it lives and how it is published, as the design says.\n\nEach push needs the user’s go.\n\n## From earlier work\n\nFrom CMD-37: complete `render` (`output`, `source`, `both`) and the common params on a ` ```compmd ` block’s param list, an example (spec §7.8). The processor’s hints do it for a code renderer’s block only: `hints/invocation.rs` builds the hint around a component, which an example has none of.\n",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68f4dc43b1c6"
+      ],
+      "files": [],
+      "created_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-17T22:51:26Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Editor support",
+          "from": "2026-11-17T22:51:26Z"
+        }
+      ],
+      "sprint": "Editor support",
+      "number": 24,
+      "key_final": false
+    },
+    {
+      "id": "01a1ebb5-4120-7007-85a3-68f60d5336b0",
+      "name": "A VS Code extension",
+      "type": "feature",
+      "priority": "P2",
+      "description": "Asked by the user (2026-11-17), and a part of [content-languages.md](docs/content-languages.md), decision 4: `vscode-compmd`, with the TextMate grammar (CMD-21), each imported pack's grammar embedded for its renderer's blocks, and the language server's client. In its own repository, as the editor-support design (`docs/editor-support.md`) says; published to the VS Code Marketplace and Open VSX with the user's go.\n\nThe browser preview (CMD-30) from the editor: a button in the editor's title bar and a command, beside VS Code's own Markdown preview.\n\nThe language server (CMD-32's release) comes in the extension: published once per platform with the binary in it.\n",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68f25533b0bc",
+        "01a1ebb5-4120-7007-85a3-68f3362597b7",
+        "01a1ebb5-4120-7007-85a3-68f5234f8107",
+        "01a1ebb5-4120-7007-85a3-68fba28f75de",
+        "01a1ebb5-4120-7007-85a3-68fdcd069437"
+      ],
+      "files": [],
+      "created_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-17T22:51:26Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Editor support",
+          "from": "2026-11-17T22:51:26Z"
+        }
+      ],
+      "sprint": "Editor support",
+      "number": 25,
+      "key_final": false
+    },
+    {
+      "id": "01a1ebb5-4120-7007-85a3-68f7e63b4bc7",
+      "name": "Neovim support",
+      "type": "feature",
+      "priority": "P2",
+      "description": "Asked by the user (2026-11-17): CompMD in Neovim, the tree-sitter grammar (CMD-20) with its queries and the language server, as the editor-support design (`docs/editor-support.md`) says (an nvim-treesitter parser entry and an nvim-lspconfig entry, upstream, each with the user's go).\n\nThe browser preview (CMD-30) through the language server's command and code action; a `:CompmdPreview` command in the lspconfig entry if it takes one.\n\nThe language server (CMD-32's release) installed through an entry in mason.nvim's registry (`:MasonInstall compmd-lsp`, or mason-lspconfig's `ensure_installed`), with the user's go for the upstream entry.\n",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68f1c63d6537",
+        "01a1ebb5-4120-7007-85a3-68f5234f8107",
+        "01a1ebb5-4120-7007-85a3-68fba28f75de",
+        "01a1ebb5-4120-7007-85a3-68fdcd069437"
+      ],
+      "files": [],
+      "created_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-17T22:51:26Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Editor support",
+          "from": "2026-11-17T22:51:26Z"
+        }
+      ],
+      "sprint": "Editor support",
+      "number": 26,
+      "key_final": false
+    },
+    {
+      "id": "01a1ebb5-4120-7007-85a3-68f88dfb60a2",
+      "name": "Helix support",
+      "type": "feature",
+      "priority": "P2",
+      "description": "Asked by the user (2026-11-17): CompMD in Helix, the tree-sitter grammar (CMD-20) with its queries and the language server, as the editor-support design (`docs/editor-support.md`) says (Helix's `languages.toml` entry and queries, upstream, with the user's go).\n\nThe browser preview (CMD-30) through the language server's code action (Helix has no plugins to add a command).\n\nHelix has no installer: its entry names `compmd-lsp` (CMD-32's release), and the guide says how to install it.\n",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68f1c63d6537",
+        "01a1ebb5-4120-7007-85a3-68f5234f8107",
+        "01a1ebb5-4120-7007-85a3-68fba28f75de",
+        "01a1ebb5-4120-7007-85a3-68fdcd069437"
+      ],
+      "files": [],
+      "created_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-17T22:51:26Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Editor support",
+          "from": "2026-11-17T22:51:26Z"
+        }
+      ],
+      "sprint": "Editor support",
+      "number": 27,
+      "key_final": false
+    },
+    {
+      "id": "01a1ebb5-4120-7007-85a3-68f99f7e17b0",
+      "name": "A Zed extension",
+      "type": "feature",
+      "priority": "P2",
+      "description": "Asked by the user (2026-11-17): `zed-compmd`, the tree-sitter grammar (CMD-20) with its queries and the language server, in its own repository as the editor-support design (`docs/editor-support.md`) says, listed in Zed's extensions with the user's go.\n\nThe browser preview (CMD-30) through the language server's code action, and a command where Zed's extensions can add one.\n\nThe language server (CMD-32's release) downloaded by the extension for the platform the first time a document opens, its sum checked.\n",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68f1c63d6537",
+        "01a1ebb5-4120-7007-85a3-68f5234f8107",
+        "01a1ebb5-4120-7007-85a3-68fba28f75de",
+        "01a1ebb5-4120-7007-85a3-68fdcd069437"
+      ],
+      "files": [],
+      "created_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-17T22:51:26Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Editor support",
+          "from": "2026-11-17T22:51:26Z"
+        }
+      ],
+      "sprint": "Editor support",
+      "number": 28,
+      "key_final": false
+    },
+    {
+      "id": "01a1ebb5-4120-7007-85a3-68fa0ba359f5",
+      "name": "An Emacs mode",
+      "type": "feature",
+      "priority": "P2",
+      "description": "Asked by the user (2026-11-17): `compmd-ts-mode`, a major mode on Emacs 29's built-in tree-sitter with the grammar (CMD-20) and the language server through Eglot, in its own repository as the editor-support design (`docs/editor-support.md`) says, published to MELPA with the user's go.\n\nThe browser preview (CMD-30): a `compmd-preview` command and key in the mode, through the language server's command.\n\nThe language server (CMD-32's release): when it isn't found, the mode asks whether to download it, then downloads the binary for the platform and checks its sum.\n",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68f1c63d6537",
+        "01a1ebb5-4120-7007-85a3-68f5234f8107",
+        "01a1ebb5-4120-7007-85a3-68fba28f75de",
+        "01a1ebb5-4120-7007-85a3-68fdcd069437"
+      ],
+      "files": [],
+      "created_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-17T22:51:26Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Editor support",
+          "from": "2026-11-17T22:51:26Z"
+        }
+      ],
+      "sprint": "Editor support",
+      "number": 29,
+      "key_final": false
+    },
+    {
+      "id": "01a1ebb5-4120-7007-85a3-68fba28f75de",
+      "name": "A browser preview for editors",
+      "type": "feature",
+      "priority": "P2",
+      "description": "Asked by the user (2026-11-17): the playground without its editor side, a page in the browser that shows one document as it renders, opened from each editor.\n\n## What it is\n\n- The playground's preview alone: the renderer and the sandbox on the document the writer has open, with its folder's files and packs, updated as they type.\n- Served on `localhost` by the language server (CMD-24), which has the document's text as it changes; the server offers it as a command and a code action (*Open preview*), so it works in every editor with a language server client, Helix too, and an editor package adds a button or a key where its editor has one.\n- Follows the writer: the preview scrolls to the part being edited.\n\n## First\n\nIts design goes in the editor-support design (`docs/editor-support.md`): what serves it, how the text reaches it, what it trusts (its packs at the trust the document's host gives them), and what of the playground and the Developer Tools it reuses.\n\nEach push needs the user's go.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68f5234f8107"
+      ],
+      "files": [],
+      "created_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-17T22:51:26Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Editor support",
+          "from": "2026-11-17T22:51:26Z"
+        }
+      ],
+      "sprint": "Editor support",
+      "number": 30,
+      "key_final": false
+    },
+    {
+      "id": "01a1ebb5-4120-7007-85a3-68fc858593ce",
+      "name": "Highlighting CompMD with Shiki, on the site, the guides, the playground and the Developer Tools",
+      "type": "feature",
+      "priority": "P1",
+      "labels": [
+        "website"
+      ],
+      "description": "Asked by the user in the editor-support review (2026-11-17), [editor-support.md](docs/editor-support.md#who-uses-what): the TextMate grammar (CMD-21) in Shiki wherever CompMD is shown as code.\n\n- The site's and the guides' examples, at build time, and the books (PDF) with them.\n- The playground's and the Developer Tools' source, in the frames' Shiki.\n- A document's own ```` ```compmd ```` blocks, by the sandbox's code highlighting.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68f25533b0bc"
+      ],
+      "files": [
+        "website/",
+        "sandbox/",
+        "editor/",
+        "devtools/"
+      ],
+      "created_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-17T22:51:26Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Editor support",
+          "from": "2026-11-17T22:51:26Z"
+        }
+      ],
+      "sprint": "Editor support",
+      "number": 31,
+      "key_final": false
+    },
+    {
+      "id": "01a1ebb5-4120-7007-85a3-68fdcd069437",
+      "name": "The language server's release, for editors to install",
+      "type": "infra",
+      "priority": "P2",
+      "description": "Asked by the user in the editor-support review (2026-11-17), [editor-support.md](docs/editor-support.md) decision 9: `compmd-lsp` released for macOS, Linux and Windows on x64 and arm64: binaries on each GitHub release with their SHA-256 sums, crates.io, and `@compmd/lsp` on npm with a package per platform as optional dependencies. In `release.yml`, and in `docs/releases.md`. Each editor package installs from it (CMD-25 to CMD-29).\n\nEach publish needs the user's go.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68f5234f8107"
+      ],
+      "files": [
+        ".github/workflows/release.yml",
+        "docs/releases.md"
+      ],
+      "created_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-17T22:51:26Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Editor support",
+          "from": "2026-11-17T22:51:26Z"
+        }
+      ],
+      "sprint": "Editor support",
+      "number": 32,
+      "key_final": false
+    },
+    {
+      "id": "01a1ebb5-4120-7007-85a3-68feb5c241b6",
+      "name": "Templates in the language server",
+      "type": "feature",
+      "priority": "P2",
+      "description": "Asked by the user in the editor-support review (2026-11-17), [editor-support.md](docs/editor-support.md) decision 5: snippets in completion and code actions that insert a construct ready to fill: a container, a multi-column `row`, a leaf or inline component with its signature's params, a slot, a component definition, and a signature block for a host-language component.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68f5234f8107"
+      ],
+      "files": [],
+      "created_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-17T22:51:26Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Editor support",
+          "from": "2026-11-17T22:51:26Z"
+        }
+      ],
+      "sprint": "Editor support",
+      "number": 33,
+      "key_final": false
+    },
+    {
+      "id": "01a1ebb5-4120-7007-85a3-68ff5f211bc8",
+      "name": "A formatter, in the language server",
+      "type": "feature",
+      "priority": "P2",
+      "description": "Asked by the user in the editor-support review (2026-11-17), [editor-support.md](docs/editor-support.md) decision 5: the document formatted to one canonical form (a component line's params, a continuation's indentation, a table's columns), for the document and a range.\n\n## First\n\nThe formatting rules, written and shown to the user before they are built; they leave Markdown's own text as the writer wrote it.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68f5234f8107"
+      ],
+      "files": [],
+      "created_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-17T22:51:26Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Editor support",
+          "from": "2026-11-17T22:51:26Z"
+        }
+      ],
+      "sprint": "Editor support",
+      "number": 34,
+      "key_final": false
+    },
+    {
+      "id": "01a1ebb5-4120-7007-85a3-6900be5dd164",
+      "name": "Refactorings in the language server",
+      "type": "feature",
+      "priority": "P2",
+      "description": "Asked by the user in the editor-support review (2026-11-17), [editor-support.md](docs/editor-support.md) decision 5, as code actions:\n\n- extract a component's definition into a file of its own, and import it;\n- inline a `compmd` component's use as what it expands to;\n- extract a selection into a new component;\n- rename a component across the document and the files that import it;\n- turn a leaf into a container, and back, where its slots allow.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68f5234f8107"
+      ],
+      "files": [],
+      "created_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-17T22:51:26Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Editor support",
+          "from": "2026-11-17T22:51:26Z"
+        }
+      ],
+      "sprint": "Editor support",
+      "number": 35,
+      "key_final": false
+    },
+    {
+      "id": "01a1ebb5-4120-7007-85a3-6901086800fe",
+      "name": "Wireframes in the Author's Guide",
+      "type": "docs",
+      "priority": "P2",
+      "labels": [
+        "packs"
+      ],
+      "description": "Step 5 of [B in the wireframes design](docs/wireframe-pack.md#what-b-takes): a section of the Author's Guide on drawing wireframes with the pack, with its examples tested as the guide's are.\n\n## From earlier work\n\nBuilt and in review: commit `55c581b`. Check chapter 17's *Wireframes* section and its example (`guides/authors/examples/code-blocks/booking.comp.md`). No playground link yet: the playground gets packs from npm, and the pack is published with the end-of-sprint release; add the link then.\n",
+      "requirements": [],
+      "use_cases": [],
+      "status": "in_review",
+      "dependencies": [],
+      "files": [
+        "guides/authors/"
+      ],
+      "created_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-17T22:51:53Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "claude:e2fd71c2",
+      "sprint_history": [
+        {
+          "sprint": "Packs and website",
+          "from": "2026-11-17T22:51:26Z"
+        }
+      ],
+      "sprint": "Packs and website",
+      "number": 36,
+      "key_final": false,
+      "started_at": "2026-11-17T22:51:33Z",
+      "started_by": "claude:e2fd71c2",
+      "code_reviews": [
+        {
+          "id": "01a1ebb5-a711-7023-808f-7961c6012036",
+          "ref": "CR-2"
+        }
+      ],
+      "review_requested_at": "2026-11-17T22:51:53Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-17T22:51:53Z",
+          "kind": "review",
+          "text": "CR-2: Wireframes in the Author’s Guide",
+          "by": "claude:e2fd71c2"
+        }
+      ]
+    },
+    {
+      "id": "01a1ebb5-4120-7007-85a3-69024798fbed",
+      "name": "`render=source|output|both` on code fences",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "spec"
+      ],
+      "description": "Asked by the user (2026-11-17): a code block a code renderer draws (spec §7.7) can say what shows: `render=source` (the code, as a plain code block), `render=output` (what the renderer draws, today's behaviour and the default), or `render=both` (the code and what it draws, together). `both` is what a blog post or a guide needs when it explains what a block does, as the guides' examples do today by hand.\n\n```md\n```mermaid {render=both alt=\"Our process\"}\ngraph LR; draft --> review --> published\n```\n```\n\n## First, a design shown to the user\n\n- The spec: where `render` is read (the fence's param list, beside `alt`), its values and default, what `both` lays out (code above, output below; side by side on a wide page?), how it prints and degrades (spec §14), and its diagnostics.\n- Whether a `compmd` block takes it too, to show CompMD source beside what it renders (the guides' and the blog's examples).\n- The processor's expanded tree, `@compmd/render` and the sandbox, the guides and the blog.\n\nSpec changes and each push need the user's go.\n\n## From earlier work\n\nThe design is `docs/code-and-output.md`. Decisions settled with the user:\n\n- Decisions 1 to 7 approved.\n- `both` is stacked by default; side by side only by a stylesheet on `compmd-both`.\n- `compmd` examples are part of this task (decision 8).\n- F013 covers a declared `render`, `alt` (code renderer), `class` and `id` together, in this change.\n- Examples, option (a): an example's component nodes name their example, and the host's component list gives each example its own components.\n\nBuilt and in review. Commits in compmd: `6d95eea` (render), `445885e` (both in a frame), `456c35f` (examples in the spec and processor), `69b33ed` (render), `8132016` (sandbox, option (a)), `da4a466` (example inputs), `f443e76` (hosts, guides), `8e0fb53` (design record). Check: §7.8 and §12.3; `processor/examples.rs`; per-example components in the sandbox. Not here: the website's `Example.svelte` stays (a Svelte page); the editor grammars and the language server are their own tasks (notes on CMD-20, CMD-21 and CMD-24).\n",
+      "requirements": [],
+      "use_cases": [],
+      "status": "in_review",
+      "dependencies": [],
+      "files": [
+        "compmd-spec-v1.md",
+        "processor/src/",
+        "render/src/"
+      ],
+      "created_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-17T22:51:52Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "claude:e2fd71c2",
+      "sprint_history": [
+        {
+          "sprint": "Packs and website",
+          "from": "2026-11-17T22:51:26Z"
+        }
+      ],
+      "sprint": "Packs and website",
+      "number": 37,
+      "key_final": false,
+      "started_at": "2026-11-17T22:51:33Z",
+      "started_by": "claude:e2fd71c2",
+      "code_reviews": [
+        {
+          "id": "01a1ebb5-a58c-75f5-8c8c-53967aa61be8",
+          "ref": "CR-1"
+        }
+      ],
+      "review_requested_at": "2026-11-17T22:51:52Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-17T22:51:52Z",
+          "kind": "review",
+          "text": "CR-1: `render=source|output|both`, and examples",
+          "by": "claude:e2fd71c2"
+        }
+      ]
+    }
+  ]
+}
