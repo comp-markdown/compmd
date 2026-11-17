@@ -181,12 +181,18 @@ importers:
       '@compmd/sandbox':
         specifier: workspace:^
         version: link:../sandbox
+      '@compmd/vite':
+        specifier: workspace:^
+        version: link:../vite
       happy-dom:
         specifier: 21.0.3
         version: 21.0.3
       shiki:
         specifier: 4.5.0
         version: 4.5.0
+      vite:
+        specifier: 8.3.4
+        version: 8.3.4(@types/node@26.6.5)(yaml@2.9.1)
     devDependencies:
       '@eslint/js':
         specifier: 10.0.1

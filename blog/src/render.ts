@@ -2,7 +2,7 @@
 // error fails the build, and rendered to static HTML by `@compmd/render` in happy-dom's DOM, with its code highlighted.
 // A host-language component shows its fallback here; the page's script mounts it live.
 
-import { process, type Diagnostic, type Request } from "@compmd/processor";
+import { OpenDocument, process, type Diagnostic, type Request } from "@compmd/processor";
 import { createPage } from "@compmd/render";
 import { Window } from "happy-dom";
 import { BlogError } from "./config.ts";
@@ -18,6 +18,8 @@ export interface Rendered {
   css: string;
   /** Its warnings, as lines of the build's output. */
   warnings: string[];
+  /** Whether it has host-language components, which the page's script mounts live. */
+  live: boolean;
 }
 
 /** What the blog gives its posts besides their files: its packs, as `@compmd/vite` reads them. */
@@ -51,9 +53,13 @@ function rebase(root: HTMLElement, up: string): void {
  */
 export async function renderPost(post: Post, now: string, highlight: Highlight, given: Given = {}, up = ""): Promise<Rendered> {
   loadProcessor();
-  const { expanded, diagnostics, failed } = process({ ...given, path: post.path, files: post.files, now, mode: "strict" });
+  const request: Request = { ...given, path: post.path, files: post.files, now, mode: "strict" };
+  const { expanded, diagnostics, failed } = process(request);
   const errors = diagnostics.filter(({ severity }) => severity === "error");
   if (failed || errors.length > 0) throw new BlogError(`${POSTS}/${post.path} has errors:\n${errors.map((error) => `- ${lineOf(post, error)}`).join("\n")}`);
+  const open = new OpenDocument(request);
+  const live = open.components.length > 0;
+  open.free();
   await highlight.load(languagesOf(post.files[post.path] ?? ""));
   const window = new Window();
   try {
@@ -67,7 +73,7 @@ export async function renderPost(post: Post, now: string, highlight: Highlight, 
       else input.setAttribute("value", input.value);
     }
     rebase(root, up);
-    return { html: root.innerHTML, css: page.stylesheet.text, warnings: diagnostics.map((diagnostic) => lineOf(post, diagnostic)) };
+    return { html: root.innerHTML, css: page.stylesheet.text, warnings: diagnostics.map((diagnostic) => lineOf(post, diagnostic)), live };
   } finally {
     window.close();
   }

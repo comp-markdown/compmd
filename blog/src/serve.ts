@@ -4,6 +4,7 @@
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { createServer, type Server } from "node:http";
 import { dirname, extname, join } from "node:path";
+import { CONTRACT_HEADERS } from "@compmd/vite";
 import { readConfig } from "./config.ts";
 import { buildSite, type BuildOptions, type Site } from "./build.ts";
 
@@ -31,6 +32,8 @@ const TYPES: Record<string, string> = {
   ".gif": "image/gif",
   ".webp": "image/webp",
   ".csv": "text/csv; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".wasm": "application/wasm",
 };
 
 /** The file of `site` a request's path asks for, under the blog's own path `base`: a folder's `index.html`. */
@@ -49,7 +52,7 @@ export async function serve(dir: string, port: number, options: BuildOptions): P
   const base = new URL((await readConfig(dir)).url).pathname;
   const server = createServer((request, response) => {
     const pathname = new URL(request.url ?? "/", "http://localhost").pathname;
-    buildSite(dir, options).then(
+    buildSite(dir, { ...options, reuseClient: true }).then(
       (site) => {
         const file = fileFor(site, base, pathname);
         if (file === undefined) {
@@ -57,7 +60,9 @@ export async function serve(dir: string, port: number, options: BuildOptions): P
           response.end(pathname === "/" ? "" : `Not in the blog: ${pathname}`);
           return;
         }
-        response.writeHead(200, { "content-type": TYPES[extname(file)] ?? "application/octet-stream" });
+        // The sandbox's frames and packs, as every host serves them (docs/hosting.md, decision 8).
+        const contract = file.startsWith("compmd/frames/") || file.startsWith("compmd/packs/") ? CONTRACT_HEADERS : {};
+        response.writeHead(200, { "content-type": TYPES[extname(file)] ?? "application/octet-stream", ...contract });
         response.end(site.files.get(file));
       },
       (error: unknown) => {

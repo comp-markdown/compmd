@@ -24,8 +24,9 @@ describe("readPosts", () => {
     try {
       expect((await readPosts(dir, CONFIG, { drafts: false })).map(({ slug }) => slug)).toEqual(["second", "first"]);
       expect((await readPosts(dir, CONFIG, { drafts: true })).map(({ slug }) => slug)).toEqual(["draft", "second", "first"]);
-      const [second] = await readPosts(dir, CONFIG, { drafts: false });
-      expect(Object.keys(second!.files).sort()).toEqual(["draft.comp.md", "first.comp.md", "first/photo.svg", "second.comp.md"]);
+      const [second, first] = await readPosts(dir, CONFIG, { drafts: false });
+      expect(Object.keys(second!.files)).toEqual(["second.comp.md"]);
+      expect(Object.keys(first!.files).sort()).toEqual(["first.comp.md", "first/photo.svg"]);
       await expect(readPosts(`${dir}/none`, CONFIG, { drafts: false })).rejects.toThrow(/has no posts\/ folder/);
     } finally {
       await rm(dir, { recursive: true, force: true });

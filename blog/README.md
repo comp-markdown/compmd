@@ -4,8 +4,10 @@ A blog in [CompMD](https://compmd.dev/): a folder of CompMD documents made a sta
 an Atom feed and comments. Every post is rendered by CompMD when the blog is built, so it reads as a page before any
 script runs. The design is [docs/blog-tool.md](https://github.com/comp-markdown/compmd/blob/main/docs/blog-tool.md).
 
-**Status: in development.** Posts render with CompMD's built-in components and their own `compmd` definitions;
-components from packs, live in the page, come next.
+**Status: in development.** A post's host-language components, its own or from the blog's packs (`compmd.config.json`,
+as any app's, read by [`@compmd/vite`](https://github.com/comp-markdown/compmd/tree/main/vite)), show their fallback in
+the page as it was built, and are drawn live once its script loads, through the sandbox; a post without them loads no
+script. Checks in a browser come next.
 
 ## A blog
 
@@ -15,6 +17,7 @@ my-blog/
   posts/
     why-compmd.comp.md      # a post: its slug is its file's name
     why-compmd/             # its own files: images, data
+  compmd.config.json        # optional: the packs its posts use, as any app's
   theme.css                 # optional: the blog's look, after the default's
   layout.html               # optional: its own page, with <!-- content --> where each page goes
 ```
@@ -63,7 +66,9 @@ cblo build                   # the blog as a static site, in dist/ (--out), with
 
 - `/`, the posts, newest first; `/<slug>/`, each post; `/tags/` and `/tags/<tag>/`, the tags and their posts;
 - `feed.xml`, an Atom feed of the latest 20 posts, with their HTML; `posts.json`, the posts as data, for a site to
-  show the latest elsewhere; `sitemap.xml`; and each post's own files beside its page.
+  show the latest elsewhere; `sitemap.xml`; and each post's own files beside its page;
+- when a post has host-language components, the page's script, and the sandbox's frames and the blog's packs under
+  `compmd/`, with a `_headers` file giving them the headers they are served with, for a static host that reads one.
 
 A post with an error fails the build, with its line and column. Its code blocks are highlighted by
 [Shiki](https://shiki.style), light and dark.

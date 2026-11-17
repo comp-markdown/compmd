@@ -27,7 +27,7 @@ export interface Post {
   author: string;
   tags: string[];
   draft: boolean;
-  /** Every file of the posts' folder, by its `/`-separated path there: the post's document and what it reads. */
+  /** Its files, by their `/`-separated paths in the posts' folder: its document, and those of its own folder (`<slug>/`). */
   files: Record<string, string>;
 }
 
@@ -91,8 +91,13 @@ export async function readPosts(dir: string, config: BlogConfig, { drafts }: { d
   } catch {
     throw new BlogError(`${dir} has no ${POSTS}/ folder for its posts`);
   }
+  /** A post's own files: its document, and its folder's. */
+  const own = (path: string): Record<string, string> => {
+    const folder = `${path.slice(0, -EXTENSION.length)}/`;
+    return Object.fromEntries(Object.entries(files).filter(([file]) => file === path || file.startsWith(folder)));
+  };
   const posts = Object.keys(files)
     .filter((path) => path.endsWith(EXTENSION) && !path.includes("/"))
-    .map((path) => postOf(path, files, config));
+    .map((path) => postOf(path, own(path), config));
   return posts.filter((post) => drafts || !post.draft).sort((a, b) => b.date.localeCompare(a.date) || a.slug.localeCompare(b.slug));
 }

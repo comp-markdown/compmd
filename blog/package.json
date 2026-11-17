@@ -42,8 +42,10 @@
     "@compmd/processor": "workspace:^",
     "@compmd/render": "workspace:^",
     "@compmd/sandbox": "workspace:^",
+    "@compmd/vite": "workspace:^",
     "happy-dom": "21.0.3",
-    "shiki": "4.5.0"
+    "shiki": "4.5.0",
+    "vite": "8.3.4"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

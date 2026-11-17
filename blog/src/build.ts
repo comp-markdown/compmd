@@ -10,7 +10,9 @@ import { highlighter } from "./highlight.ts";
 import { escape } from "./html.ts";
 import { applyLayout, defaultLayout, LAYOUT } from "./layout.ts";
 import { addressOf, listPage, postPage, tagPage, tagsIn, tagsPage, type Page } from "./pages.ts";
-import { EXTENSION, POSTS, readPosts } from "./posts.ts";
+import { POST_DATA } from "./client-data.ts";
+import { buildClient, packsOf, type Client } from "./live.ts";
+import { EXTENSION, POSTS, readPosts, type Post } from "./posts.ts";
 import { renderPost } from "./render.ts";
 
 /** A blog's own stylesheet's file, after the default's. */
@@ -22,6 +24,8 @@ export interface BuildOptions {
   drafts: boolean;
   /** The render time, RFC 3339: now when not given. */
   now?: string;
+  /** Whether the page's script, once built, is kept for the next build of the same blog: `cblo dev`'s. */
+  reuseClient?: boolean;
 }
 
 /** A blog built: each file by its path in the site, and the build's warnings. */
@@ -64,26 +68,49 @@ async function postFiles(dir: string): Promise<Map<string, Uint8Array>> {
   return files;
 }
 
+/** The page's script, built once for each blog while a `cblo dev` runs. */
+const clients = new Map<string, Promise<Client>>();
+
+/** What a live post's page adds: its document and files for the script, as JSON, and the script. */
+function liveOf(post: Post, script: string): string {
+  // `<` written as `<`, so nothing in the post's text ends the element.
+  const data = JSON.stringify({ path: post.path, files: post.files }).replace(/</g, "\\u003c");
+  return `<script type="application/json" id="${POST_DATA}">${data}</script><script type="module" src="${escape(script)}"></script>`;
+}
+
 /** The blog in `dir`, built. @throws BlogError for what is wrong with it, a post's errors among them. */
-export async function buildSite(dir: string, { drafts, now = new Date().toISOString() }: BuildOptions): Promise<Site> {
+export async function buildSite(dir: string, { drafts, now = new Date().toISOString(), reuseClient = false }: BuildOptions): Promise<Site> {
   const config = await readConfig(dir);
   const posts = await readPosts(dir, config, { drafts });
   const layout = existsSync(join(dir, LAYOUT)) ? await readFile(join(dir, LAYOUT), "utf8") : defaultLayout(config);
   const theme = [await readFile(DEFAULT_THEME, "utf8"), existsSync(join(dir, THEME)) ? await readFile(join(dir, THEME), "utf8") : ""].join("\n");
   const highlight = await highlighter();
+  const given = await packsOf(dir);
+  const base = new URL(config.url).pathname;
   const warnings: string[] = [];
   const html = new Map<string, string>();
   const pages: Page[] = [listPage(config, posts)];
+  const files = new Map<string, string | Uint8Array>(await postFiles(dir));
+  let client: Client | undefined;
   for (const [i, post] of posts.entries()) {
     // A post's page is a folder below the posts', so its relative links take one `../` more.
-    const rendered = await renderPost(post, now, highlight, {}, "../");
+    const rendered = await renderPost(post, now, highlight, given, "../");
     warnings.push(...rendered.warnings);
     html.set(post.slug, rendered.html);
-    pages.push(postPage(config, post, rendered, posts[i - 1], posts[i + 1]));
+    const page = postPage(config, post, rendered, posts[i - 1], posts[i + 1]);
+    if (rendered.live) {
+      if (!client) {
+        const building = (reuseClient ? clients.get(dir) : undefined) ?? buildClient(dir, base);
+        if (reuseClient) clients.set(dir, building);
+        client = await building;
+        for (const [path, content] of client.files) files.set(path, content);
+      }
+      page.content += liveOf(post, `${base}${client.script}`);
+    }
+    pages.push(page);
   }
   const tags = tagsIn(posts);
   if (tags.size > 0) pages.push(tagsPage(config, tags), ...[...tags].map(([tag, tagged]) => tagPage(config, tag, tagged)));
-  const files = new Map<string, string | Uint8Array>(await postFiles(dir));
   for (const page of pages) files.set(`${page.path}index.html`, applyLayout(layout, { head: headOf(config, page), content: page.content }));
   files.set("style.css", theme);
   files.set("feed.xml", atom(config, posts, html));
