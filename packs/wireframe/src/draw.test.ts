@@ -1,64 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { DRAW, draw } from "./draw.ts";
-import { parse } from "./parse.ts";
-import { STYLE } from "./style.ts";
-
-/** `source` drawn, or a failure naming its errors. */
-function drawn(source: string): HTMLElement {
-  const { wireframe, errors } = parse(source);
-  if (!wireframe) throw new Error(errors.map(String).join("\n"));
-  return draw(wireframe, document);
-}
-
-const texts = (root: HTMLElement, selector: string) => [...root.querySelectorAll(selector)].map((found) => found.textContent);
-
-// LANGUAGE.md's examples.
-const SETTINGS = `window "Settings":
-  tabs:
-    tab "General" active
-    tab "Privacy"
-    tab "Advanced"
-  section "Notifications":
-    toggle "Email me about replies" on
-    checkbox "Weekly summary" checked
-  section "Theme":
-    radio "Light" group="theme"
-    radio "Dark" group="theme" selected
-    radio "Follow the system" group="theme"
-  footer:
-    row justify=end:
-      button "Cancel"
-      button "Save" primary`;
-
-const FILES = `window "Files":
-  menubar:
-    menu "File":
-      menuitem "New folder" shortcut="⌘N"
-      separator
-      menuitem "Close" shortcut="⌘W"
-    menu "Edit"
-  row:
-    col 220:
-      tree:
-        node "Documents" selected:
-          node "Reports"
-          node "Drafts" collapsed
-        node "Pictures"
-    col fill:
-      grid cols=3 rows=2:
-        cell "report.pdf" row=1 col=1
-        cell "notes.txt" row=1 col=2
-        cell "photo.png" row=1 col=3`;
-
-const ORDER = `window "Order" device=phone:
-  header:
-    text "Your basket" bold
-  list:
-    item "Coffee beans, 1 kg" chevron
-    item "Filter papers" chevron
-  progress value=2 max=3 label="Step 2 of 3"
-  button "Pay now" primary id=pay
-annotation "Disabled until an address is chosen" target="pay" position=bottom`;
+import { DRAW } from "./draw.ts";
+import { PARTS } from "./parts.ts";
+import { drawn, FILES, ORDER, SETTINGS, texts } from "./testing.ts";
 
 describe("the settings example", () => {
   const root = drawn(SETTINGS);
@@ -148,39 +91,18 @@ describe("the order example", () => {
   });
 });
 
-describe("the other parts", () => {
-  it("draws a part the pack doesn't draw yet as a box with its name and label", () => {
-    const root = drawn('window:\n  chip "New"');
-    expect(texts(root, ".wf-named .wf-name")).toEqual(["chip"]);
-    expect(texts(root, ".wf-named .wf-label")).toEqual(["New"]);
+describe("the parts", () => {
+  it("draws each part by its own function, and draws only parts the language has", () => {
+    expect(Object.keys(DRAW).filter((name) => !(name in PARTS))).toEqual([]);
+    const root = drawn('window:\n  row:\n    button "Go"\n    spacer');
+    expect(texts(root, ".wf-row > .wf-button")).toEqual(["Go"]);
   });
 
-  it("draws a password as dots, and a placeholder as it is", () => {
-    const root = drawn('window:\n  input placeholder="Email"\n  input placeholder="Password" type=password');
-    expect(texts(root, ".wf-input")).toEqual(["Email", "••••••••"]);
-  });
-
-  it("places a row by align when it has no justify", () => {
-    const root = drawn("window:\n  row align=center:\n    button");
-    expect(root.querySelector<HTMLElement>(".wf-row")?.style.justifyContent).toBe("center");
-  });
-
-  it("puts the label on the other side with label-right", () => {
-    const root = drawn('window:\n  checkbox "Remember me" label-right');
-    expect(root.querySelector(".wf-checkbox")?.firstElementChild?.classList.contains("wf-mark")).toBe(true);
-  });
-
-  it("draws a combo's label, then its value or first option", () => {
-    const root = drawn('window:\n  combo "Size" options="S, M, L"');
-    expect(texts(root, ".wf-combo .wf-label")).toEqual(["Size"]);
-    expect(texts(root, ".wf-combo .wf-value")).toEqual(["S"]);
-  });
-
-  it("draws an icon as its first letter, and an image of its size", () => {
-    const root = drawn('window:\n  icon name="search"\n  image width=120 height=80 label="Hero"');
-    expect(texts(root, ".wf-icon")).toEqual(["S"]);
-    const image = root.querySelector<HTMLElement>(".wf-image");
-    expect([image?.style.width, image?.style.height, image?.textContent]).toEqual(["120px", "80px", "Hero"]);
+  it("draws a part the pack doesn't draw yet as a box with its name and label, holding its children", () => {
+    const root = drawn('window:\n  chip "New"\n  navbar:\n    leading:\n      backbutton');
+    expect(texts(root, ".wf-named > .wf-name")).toEqual(["chip", "navbar", "leading", "backbutton"]);
+    expect(texts(root, ".wf-named > .wf-label")).toEqual(["New"]);
+    expect(root.querySelectorAll(".wf-named .wf-named .wf-named")).toHaveLength(1);
   });
 
   it("keeps every text as text", () => {
@@ -188,17 +110,15 @@ describe("the other parts", () => {
   });
 });
 
-describe("the style", () => {
-  it("styles every class the drawing makes, but those that only name a part", () => {
-    const classes = new Set([SETTINGS, FILES, ORDER, 'window:\n  chip "x"'].flatMap((source) => [...drawn(source).querySelectorAll("*"), drawn(source)].flatMap((found) => [...found.classList])));
-    const named = (name: string) => name.slice("wf-".length) in DRAW;
-    const missing = [...classes].filter((name) => !named(name) && !new RegExp(`\\.${name}(?![\\w-])`).test(STYLE));
-    expect(missing).toEqual([]);
+describe("annotations", () => {
+  it("numbers each in the order written, on its side, the same number at its target", () => {
+    const root = drawn('window:\n  button "A" id=a\n  button "B" id=b\nannotation "First" target="b" position=left\nannotation "Second" target="a" position=top');
+    expect(texts(root, ".wf-notes-left .wf-note")).toEqual(["1First"]);
+    expect(texts(root, ".wf-notes-top .wf-note")).toEqual(["2Second"]);
+    expect(texts(root, ".wf-button")).toEqual(["A2", "B1"]);
   });
 
-  it("takes its greys from the host's tokens, and follows the page's scheme", () => {
-    expect(STYLE).toContain("var(--compmd-border-strong");
-    expect(STYLE).toContain("var(--compmd-surface-subtle");
-    expect(STYLE).toContain('[data-scheme="dark"]');
+  it("draws no side without notes", () => {
+    expect(drawn("window:\n  panel").querySelector(".wf-notes")).toBeNull();
   });
 });
