@@ -9,6 +9,7 @@ The designs behind the spec and its implementation. Each starts with its status 
 - [Any npm package, as published](npm-packages.md): proposed, a package's ES module tree resolved by the registry and bundled once in the compile frame, so a pack imports `d3` by its own name.
 - [What component code may import](what-component-code-may-import.md): what a bare import in a component resolves to: a runtime, a library the host offers, or a library pack.
 - [Code renderers](code-renderers.md): a component that also draws the code blocks of one language (spec §7.7).
+- [Code and what it draws](code-and-output.md): proposed, `render=source|output|both` on a rendered code block, so a post shows a block's code beside its drawing; and, later, `compmd` blocks rendered the same way.
 - [Handling pack loading states](handling-pack-loading-states.md): a placeholder, for telling a pack on its way from one that won't load.
 - [Content languages in editors](content-languages.md): a pack's grammars for the languages its code renderers read, and each block's language and range, so editors highlight them and choose a language server for them.
 - [CompMD in editors](editor-support.md): a tree-sitter grammar, a TextMate grammar and a language server, with what they share (the syntax's pieces, the token names, the injections, one test set), and a preview in the browser, for VS Code, Neovim, Helix, Zed and Emacs.
