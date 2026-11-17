@@ -1,4 +1,6 @@
-# A blog in CompMD (proposed)
+# A blog in CompMD
+
+**Status: accepted (2026-11-17).**
 
 A small tool that turns a folder of CompMD documents into a blog, a static site anyone can host: a list of posts, a
 page per post, tags and a feed, with every post rendered by CompMD at build time and its components live in the page.

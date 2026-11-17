@@ -1,11 +1,11 @@
 # The CompMD blog
 
-**Status: proposed (2026-11-17).** A blog on [the website](design.md), at `/blog/`, for what doesn't fit the spec or
+**Status: accepted (2026-11-17).** A blog on [the website](design.md), at `/blog/`, for what doesn't fit the spec or
 the guides: why CompMD is as it is, where it is going, how it compares with what else there is, and what each release
 brings. Its first posts are *Why CompMD*, *Where CompMD is, and its roadmap*, and *MDX and CompMD*. It is built with
 [`@compmd/blog`](../../docs/blog-tool.md), CompMD's blog tool, as its first user.
 
-## Proposed decisions
+## Decisions
 
 1. **The blog is a folder of the website, `website/blog/`, as `@compmd/blog` reads one**: its posts in `posts/`, each a
    CompMD document (`why-compmd.comp.md`), its `blog.config.json` (the title "The CompMD blog", the address
