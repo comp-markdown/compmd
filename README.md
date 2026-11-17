@@ -25,7 +25,7 @@ CompMD (Component Markdown) is a Markdown flavor that adds components, container
 | [wasm/](wasm/README.md) | `@compmd/processor`: the processor as WebAssembly for the browser, one typed call from text to trees |
 | [render/](render/README.md) | `@compmd/render`: an expanded tree as a live page, with the host contract's bindings; the reference rendering of the built-ins |
 | [sandbox/](sandbox/README.md) | `@compmd/sandbox`: runs components at the spec's trust levels, in strict and permissive frames or trusted in the page, so no host writes a sandbox policy itself |
-| [host-js/](host-js/README.md) | `@compmd/host`: the serving contract over the Fetch API, `respond(request)`, for workers, Node and dev servers; `compmd-host` is the same in Rust |
+| [host-js/](host-js/README.md) | `@compmd/host`: the serving contract over the Fetch API, `respond(request)`, for workers, Node and dev servers; what to serve is `compmd-host`'s decision, compiled to WebAssembly |
 | [registry/](registry/README.md) | `@compmd/registry`: packs from an npm registry, resolved as the processor asks, the host's policy applied before any download, each tarball checked against its integrity, cached; a proxy for hosts that keep readers private |
 | [vite/](vite/README.md) | `@compmd/vite`: a Vite plugin that reads `compmd.config.json`, gives the processor the app's packs, serves the sandbox and the packs' modules, and builds the app's own components with it |
 | [pack/](pack/README.md) | `@compmd/pack`: `compmd-pack` builds, checks, tests and serves a pack's test page, so packs copy none of it; helpers for components that draw asynchronously, and a kit to test them |

@@ -1,8 +1,9 @@
 // The serving contract (docs/hosting.md, decision 8) over the Fetch API: a bundle's frames and the packs the bundle or
-// the store holds, with the headers that sandbox them, and a refusal, saying why, for anything else. compmd-host's
-// `respond` answers the same, over `http` types; both run the contract's cases (`host/fixtures/respond/`).
+// the store holds, with the headers that sandbox them, and a refusal, saying why, for anything else. What a request
+// asks for, and the headers, are compmd-host's decision, as WebAssembly (`src/lib.rs`), so both answer alike; this
+// reads the file and makes the Response. Both run the contract's cases (`host/fixtures/respond/`).
 
-import { contentType } from "./content-type.ts";
+import init, { notServed, route } from "../pkg/compmd_host_wasm.js";
 
 /** A pack file's place, as the contract's paths name it: its release, `@kit/mermaid@1.2.0`, and its path in it. */
 export interface Place {
@@ -26,24 +27,14 @@ export interface Store {
   file(place: Place): Promise<Uint8Array | undefined>;
 }
 
-/** The headers every served file has. */
-export const SERVED_HEADERS: Readonly<Record<string, string>> = {
-  // Sandboxed even when a frame document is opened outside a frame.
-  "content-security-policy": "sandbox allow-scripts",
-  // A frame's module scripts come from an opaque origin, so they are cross-origin requests.
-  "access-control-allow-origin": "*",
-  // A page that checks how its frames are served (a host's check) reads these headers.
-  "access-control-expose-headers": "*",
-  "x-content-type-options": "nosniff",
-  // A frame's path names its build, a pack's its version, so what it serves never changes.
-  "cache-control": "max-age=31536000, immutable",
-};
+/** What compmd-host decides for a request (`route` in `src/lib.rs`). */
+type Answer =
+  | { kind: "frame"; path: string; headers: Record<string, string> }
+  | { kind: "pack"; release: string; path: string; headers: Record<string, string> }
+  | { kind: "refused"; status: number; why: string; headers: Record<string, string> };
 
-/** Why a request that isn't for a file the host serves is refused. */
-const NOT_SERVED = "not a file of the frames or packs this host serves";
-
-/** Why a request with another method is refused. */
-const ONLY_GET = "the frames and packs are only read, with GET";
+/** The module, loaded once: from its file next to this one, unless the host loaded it already (`init`, `initSync`). */
+let loading: Promise<unknown> | undefined;
 
 /**
  * The answer to `request`: the frames' file or pack file it names, from `bundle` or, for a pack the bundle doesn't
@@ -51,55 +42,27 @@ const ONLY_GET = "the frames and packs are only read, with GET";
  * plain text, readable from any origin.
  *
  * The paths it answers are `/frames/<hash>/<path>`, with the bundle's hash, and `/packs/<release>/<path>`, where a
- * path has no empty, `.` or `..` part, so it can't leave its folder. A host mounted under a prefix strips it first.
+ * path can't leave its folder. A host mounted under a prefix strips it first. In Node, import `@compmd/host/node`,
+ * which loads the WebAssembly from its file; a worker that bundles it gives it with `initSync({ module })` first.
  *
  * @example
  * // a worker
  * export default { fetch: (request) => respond(request, bundle, store) };
  */
 export async function respond(request: Request, bundle: Bundle, store?: Store): Promise<Response> {
-  if (request.method !== "GET") return refused(405, ONLY_GET);
-  const path = new URL(request.url).pathname;
-  const found = await fileOf(bundle, store, path);
-  return found ? served(found.path, found.body) : refused(404, NOT_SERVED);
+  await (loading ??= init());
+  const answer = JSON.parse(route(request.method, new URL(request.url).pathname, bundle.hash)) as Answer;
+  if (answer.kind === "refused") return refused(answer);
+  const body = answer.kind === "frame" ? await bundle.frameFile(answer.path) : await packFile(bundle, store, { release: answer.release, path: answer.path });
+  return body ? new Response(body as Uint8Array<ArrayBuffer>, { status: 200, headers: answer.headers }) : refused(JSON.parse(notServed()) as Answer & { kind: "refused" });
 }
 
-/** The bytes of the file `path` names, with the path its type comes from. */
-async function fileOf(bundle: Bundle, store: Store | undefined, path: string): Promise<{ body: Uint8Array; path: string } | undefined> {
-  if (!path.startsWith("/")) return undefined;
-  const [folder, ...parts] = path.slice(1).split("/");
-  if (folder === "frames") {
-    const [hash, ...file] = parts;
-    if (hash !== bundle.hash || !isFilePath(file)) return undefined;
-    const body = await bundle.frameFile(file.join("/"));
-    return body && { body, path: file.join("/") };
-  }
-  if (folder === "packs") {
-    const [scope, named, ...file] = parts;
-    const release = `${scope ?? ""}/${named ?? ""}`;
-    if (!isRelease(release) || !isFilePath(file)) return undefined;
-    const place = { release, path: file.join("/") };
-    const body = (await bundle.packFile(place)) ?? (await store?.file(place));
-    return body && { body, path: place.path };
-  }
-  return undefined;
+/** A pack's file: the bundle's, or the store's for a pack the bundle doesn't hold. */
+async function packFile(bundle: Bundle, store: Store | undefined, place: Place): Promise<Uint8Array | undefined> {
+  return (await bundle.packFile(place)) ?? (await store?.file(place));
 }
 
-/** Whether `parts` is a file's path in its folder: at least one part, none empty, `.` or `..`. */
-const isFilePath = (parts: readonly string[]): boolean => parts.length > 0 && parts.every((part) => part !== "" && part !== "." && part !== "..");
-
-/**
- * Whether `release` has a release's form, `@scope/name@version`. Only one the bundle or the store holds is served, so
- * its name and version are theirs to know.
- */
-const isRelease = (release: string): boolean => /^@[^/@]+\/[^/@]+@[^/@]+$/.test(release);
-
-/** `body`, the file at `path`, with its type and the headers. */
-function served(path: string, body: Uint8Array): Response {
-  return new Response(body as Uint8Array<ArrayBuffer>, { status: 200, headers: { ...SERVED_HEADERS, "content-type": contentType(path) } });
-}
-
-/** A refusal with `status`, saying `why` in plain text, to any origin. */
-function refused(status: number, why: string): Response {
-  return new Response(why, { status, headers: { "content-type": "text/plain; charset=utf-8", "access-control-allow-origin": "*" } });
+/** A refusal, saying why in plain text, to any origin. */
+function refused({ status, why, headers }: Answer & { kind: "refused" }): Response {
+  return new Response(why, { status, headers });
 }

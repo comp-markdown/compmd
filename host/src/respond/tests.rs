@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use compmd_pack::PackName;
+use compmd_pack::{PackName, Place};
 use http::{Request, Response};
 use serde::Deserialize;
 

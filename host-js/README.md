@@ -1,10 +1,9 @@
 # @compmd/host
 
-The serving contract of a [CompMD](https://compmd.dev/) host over the Fetch API: `respond(request)` answers with a bundle's frames and the packs the bundle or a store holds, with the headers that sandbox them, and refuses anything else, saying why. For workers, Node, and dev servers: `@compmd/vite`'s dev server serves its bundle with it. `compmd-host` is the same contract in Rust, over `http` types, and both run [the same cases](https://github.com/comp-markdown/compmd/tree/main/host/fixtures/respond) ([hosting](https://github.com/comp-markdown/compmd/blob/main/docs/hosting.md), decisions 1 and 8).
+The serving contract of a [CompMD](https://compmd.dev/) host over the Fetch API: `respond(request)` answers with a bundle's frames and the packs the bundle or a store holds, with the headers that sandbox them, and refuses anything else, saying why. For workers, Node, and dev servers: `@compmd/vite`'s dev server serves its bundle with it. What a request asks for, and the headers, are decided by `compmd-host`, the same contract in Rust, compiled to WebAssembly (77 KB): this package only reads the file and makes the `Response`, so the two can't drift, and both run [the same cases](https://github.com/comp-markdown/compmd/tree/main/host/fixtures/respond) ([hosting](https://github.com/comp-markdown/compmd/blob/main/docs/hosting.md), decisions 1 and 8).
 
 ```ts
-import { respond } from "@compmd/host";
-import { folderBundle } from "@compmd/host/node";
+import { folderBundle, respond } from "@compmd/host/node"; // in Node: loads the WebAssembly from its file
 
 const bundle = await folderBundle("dist/compmd"); // what @compmd/vite or buildBundle wrote
 // on the bundle's origin, with any prefix it is mounted under stripped first
@@ -17,9 +16,11 @@ const answer = await respond(request, bundle);   // a Response
 - `/frames/<hash>/<path>`, with the bundle's hash, and `/packs/<release>/<path>` (`/packs/@kit/mermaid@1.2.0/dist/mermaid.js`) of a pack the bundle's manifest lists or `store` holds, where a path has no empty, `.` or `..` part; anything else, the manifest included, is `404`, with why; every refusal readable from any origin (`Access-Control-Allow-Origin: *`);
 - each file with `Content-Security-Policy: sandbox allow-scripts`, `Access-Control-Allow-Origin: *` (frames are opaque origins), `Access-Control-Expose-Headers: *`, `X-Content-Type-Options: nosniff`, its type by extension, and `Cache-Control: max-age=31536000, immutable` (a frame's path names its build, a pack's its version).
 
+**The WebAssembly** loads once, by itself, on the first `respond`: from its file next to the package's code, which a browser or a worker that serves the package's files fetches. In Node, import from `@compmd/host/node`, which reads it from its file as it is imported (Node's `fetch` reads no `file:` URL). A worker that bundles its modules imports `@compmd/host/compmd_host_wasm_bg.wasm` and gives it with `initSync({ module })` before the first request.
+
 **A bundle elsewhere** (a worker's assets, a key-value store) is any `Bundle`: its frames' `hash`, `frameFile(path)` and `packFile(place)`, the files of packs it holds. **A store** of packs fetched later, such as from a registry, is a `Store`, `file(place)`, asked when the bundle hasn't the pack.
 
 It shares its version with the other `@compmd` packages ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
 
 **Versions:**
-- **0.7.1:** first version.
+- **0.7.1:** first version: `compmd-host`'s decision as WebAssembly, with `init` and `initSync`.

@@ -355,6 +355,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "compmd-host-wasm"
+version = "0.0.1"
+dependencies = [
+ "compmd-host",
+ "http",
+ "serde",
+ "serde_json",
+ "wasm-bindgen",
+]
+
+[[package]]
 name = "compmd-markdown"
 version = "0.1.0"
 dependencies = [

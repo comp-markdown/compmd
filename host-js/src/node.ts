@@ -1,9 +1,16 @@
-// A bundle in a folder, for Node: what `@compmd/vite` and `buildBundle` write (`manifest.json`, `frames/<hash>/`,
-// `packs/<release>/`).
+// For Node: the WebAssembly `respond` decides with, loaded from its file as this module is imported (Node's `fetch`
+// reads no `file:` URL), and a bundle in a folder, what `@compmd/vite` and `buildBundle` write (`manifest.json`,
+// `frames/<hash>/`, `packs/<release>/`).
 
+import { readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { initSync } from "../pkg/compmd_host_wasm.js";
 import type { Bundle, Place } from "./respond.ts";
+
+initSync({ module: readFileSync(new URL("../pkg/compmd_host_wasm_bg.wasm", import.meta.url)) });
+
+export { respond, type Bundle, type Place, type Store } from "./respond.ts";
 
 /** What `folderBundle` reads of a bundle's manifest. */
 interface Manifest {

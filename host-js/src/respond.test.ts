@@ -2,7 +2,6 @@ import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { contentType } from "./content-type.ts";
 import { folderBundle } from "./node.ts";
 import { respond, type Store } from "./respond.ts";
 
@@ -35,15 +34,6 @@ describe("respond", () => {
       if (each.type !== undefined) expect(response.headers.get("content-type"), label).toBe(each.type);
       for (const [name, value] of Object.entries(cases.headers[each.answer] ?? {})) expect(response.headers.get(name), `${label}: ${name}`).toBe(value);
     }
-  });
-});
-
-describe("contentType", () => {
-  it("gives each kind of file its type, by extension", () => {
-    expect(contentType("a.js.map")).toBe("application/json");
-    expect(contentType("fonts/a.woff2")).toBe("font/woff2");
-    expect(contentType("chunks/.js")).toBe("application/octet-stream");
-    expect(contentType("a")).toBe("application/octet-stream");
   });
 });
 

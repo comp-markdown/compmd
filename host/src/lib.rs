@@ -35,11 +35,14 @@ mod content_type;
 mod files;
 mod folder_store;
 mod frames_hash;
+mod headers;
 mod manifest;
 mod manifest_error;
 #[cfg(feature = "processor")]
 mod packs;
+mod refusal;
 mod respond;
+mod route;
 mod store;
 
 pub use bundle::{Bundle, MANIFEST};
@@ -48,9 +51,12 @@ pub use content_type::content_type;
 pub use files::Files;
 pub use folder_store::FolderStore;
 pub use frames_hash::FramesHash;
+pub use headers::{refusal_headers, served_headers};
 pub use manifest::{BundledPack, FORMAT, Frames, Library, Manifest, Trust};
 pub use manifest_error::ManifestError;
 #[cfg(feature = "processor")]
 pub use packs::HostPacks;
+pub use refusal::Refusal;
 pub use respond::respond;
+pub use route::{Route, route};
 pub use store::{NoStore, Store, StoredRelease};
