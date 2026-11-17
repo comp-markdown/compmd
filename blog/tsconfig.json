@@ -15,5 +15,5 @@
     "noEmit": true,
     "skipLibCheck": true
   },
-  "include": ["src", "*.ts", "*.js"]
+  "include": ["src", "test", "*.ts", "*.js"]
 }

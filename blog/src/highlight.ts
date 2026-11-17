@@ -29,8 +29,19 @@ function parts(shiki: Highlighter, code: string, lang: string): { style: string;
   return { style: /<pre[^>]*style="([^"]*)"/.exec(html)?.[1] ?? "", lines: /<code>([\s\S]*)<\/code>/.exec(html)?.[1] ?? "" };
 }
 
-/** The highlighter; it loads Markdown's grammars once, and each other language when a post first needs it. */
-export async function highlighter(): Promise<Highlight> {
+let shared: Promise<Highlight> | undefined;
+
+/**
+ * The highlighter, one for every build in the process (`cblo dev` builds for each request); it loads Markdown's
+ * grammars once, and each other language when a post first needs it.
+ */
+export function highlighter(): Promise<Highlight> {
+  shared ??= create();
+  return shared;
+}
+
+/** A new highlighter. */
+async function create(): Promise<Highlight> {
   const [markdown, others] = await Promise.all([
     createHighlighter({ themes: ["github-light", "github-dark"], langs: ["markdown", COMPMD] }),
     createHighlighter({ themes: ["github-light", "github-dark"], langs: ["yaml"] }),

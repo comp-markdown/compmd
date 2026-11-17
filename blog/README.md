@@ -7,7 +7,7 @@ script runs. The design is [docs/blog-tool.md](https://github.com/comp-markdown/
 **Status: in development.** A post's host-language components, its own or from the blog's packs (`compmd.config.json`,
 as any app's, read by [`@compmd/vite`](https://github.com/comp-markdown/compmd/tree/main/vite)), show their fallback in
 the page as it was built, and are drawn live once its script loads, through the sandbox; a post without them loads no
-script. Checks in a browser come next.
+script. Its tests open a live post in Chrome and WebKit.
 
 ## A blog
 
