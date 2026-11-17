@@ -76,26 +76,50 @@ screen phone "Sign in"
 ```
 ````
 
-- **Gives:** short, readable source, as Mermaid's is; a real sketch look (wobbly lines, a hand font as paths); one
-  block that copies between documents; in a plain renderer, an indented outline.
-- **Costs:** a language to design, document and keep (its grammar, its errors, W118 with the line); a layout engine
-  of our own for rows, columns and sizes; and it is code in a frame, so it waits for the frame like any renderer.
+- **Gives:** short, readable source, as Mermaid's is; a sketch look; one block that copies between documents; in a
+  plain renderer, an indented outline.
+- **Costs:** a language to design, document and keep (its grammar, its errors, W118 with the line), and it is code in
+  a frame, so it waits for the frame like any renderer.
+- **Drawn as HTML, not SVG.** The renderer turns the parsed outline into HTML elements laid out with CSS (a `row` is a
+  flex row, a `grid` a CSS grid, a screen a sized box), so the browser does the layout, wraps text and sizes each part,
+  and there is no layout engine of our own to write. The sketch look is CSS too: borders a little uneven, a hand-written
+  font when the page has one, greys from the host's tokens; Rough.js (MIT, about 9 KB) can add wobbly lines later, over
+  the same boxes. Drawing to SVG instead would need our own layout engine, its largest part by far.
+
+#### What B takes
+
+With the HTML drawing, about five tasks, each reviewed:
+
+1. **The language, designed**: its grammar in ABNF (an outline: one part per line, its children indented), its parts
+   and their attributes, its errors, with real example documents; reviewed first.
+2. **The parser**: text to an outline, with each error's line and column, tested on the grammar's examples and on
+   broken input.
+3. **The drawing**: the outline to HTML and CSS, each part a small function, light and dark, printed.
+4. **The pack**: `@comp-markdown/wireframe` with `npm create @compmd/pack -- --renders wireframe`, its signature, its
+   test page, its tests in Chrome and WebKit; released on its own tag, as the Mermaid pack is.
+5. **The guide**: a chapter section in the Author's Guide, and its examples.
+
+A is about two (the spec change, then the pack of `compmd` definitions).
 
 ### C to E
 
 - **C, Salt**, is the format people know, but nothing runs it in a page: PlantUML is Java, and its browser builds are
-  megabytes and experimental. A Salt-compatible subset in B's renderer is possible later, if writers ask for Salt.
+  megabytes and experimental. Salt has no specification or published grammar to follow: PlantUML's documentation
+  describes it by examples, and its Java implementation is what defines it. So no renderer can claim to comply with
+  Salt in full; it could only match PlantUML on the documented examples, and follow it as it changes. A
+  Salt-compatible subset in B's renderer is possible later, if writers ask for Salt, with that limit said plainly; B's
+  own grammar, written in ABNF, is one a renderer can comply with.
 - **D, Excalidraw**, draws wireframes well, but by hand, not from text: its scenes are JSON no one writes. An Excalidraw
   pack, a drawing the reader draws in the document, is work of its own. Its scenes can't be read in a plain renderer.
 - **E, a service**, can't run in a strict frame and sends the document's text to someone else.
 
 ## Recommendation
 
-**A, CompMD components, now; B later, if writers want the shorter text.** A is the one that needs nothing from a
-frame, renders and prints everywhere, and shows what CompMD's own layout can do, which is what a showcase pack should.
-Its one gap, labels written twice, is a small spec change that helps every `compmd` component with a label:
-proposed as a change of its own, made first, and A built on it. B is a bigger project (a language), worth it only once A shows
-writers want wireframes and find the components long.
+**Either A or B, drawn as HTML; B if the shorter text is worth about three more tasks.** With B drawn as HTML and CSS,
+the browser does its layout, so B is a language and a small renderer, not a drawing engine: about five tasks against
+A's two. B gives writers the short text they know from Mermaid and a grammar of our own that renderers can comply
+with; A needs no frame, renders and prints everywhere, and shows what CompMD's own layout can do. A's one gap, labels
+written twice, is a small spec change of its own (`{{md.fallback}}`), worth making either way.
 
 ## What A would be
 
