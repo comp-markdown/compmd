@@ -21,7 +21,9 @@ export {
   type LoadedData,
   type OriginAnswer,
   type OriginAnswers,
+  type OriginKind,
 } from "./origins.ts";
+export { ImageGate, type ImageDecision, type ImageGateOptions } from "./image-gate.ts";
 export { cacheStorage, COMPILER, compiledKey, type Compiled, type CompiledCache } from "./compiled-cache.ts";
 export { Observer } from "./observer.ts";
 export type { Observation, ObservedEvent } from "./observation.ts";

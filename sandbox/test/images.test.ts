@@ -1,12 +1,13 @@
 // A document's own images in both page modes. In host mode they load as any image of the host's page does; in frame
 // mode the page's frame has no network, so the host's page fetches each image of the trees it sent and gives the frame
-// its file, while the alt text shows until then and stays for an image it can't have.
+// its file, while the alt text shows until then and stays for an image it can't have. The remote origin here is
+// configured, so nothing is asked (asking is `remote-images.test.ts`'s).
 
 import type { HostComponent } from "@compmd/processor";
 import type { ExpandedNode, ExpandedRoot } from "@compmd/render";
 import { afterEach, describe, expect, it } from "vitest";
 import { createSandbox, type View } from "../src/index.ts";
-import { allowed, frames, hits, leaf, pause, probeCode, tagged } from "./harness.ts";
+import { allowed, frames, hits, leaf, memoryAnswers, pause, probeCode, tagged } from "./harness.ts";
 
 const views: View[] = [];
 const areas: HTMLElement[] = [];
@@ -50,11 +51,22 @@ const looking: HostComponent = {
   trust: { level: "strict" },
 };
 
+/** Asks about no origin: the other origin is configured, as a host that shows its images configures it (spec §15). */
+const asked: string[] = [];
+const origins = {
+  configured: [new URL(allowed).origin],
+  ask: (origin: string) => {
+    asked.push(origin);
+    return Promise.resolve("deny" as const);
+  },
+  answers: memoryAnswers(),
+};
+
 function open(mode: "frame" | "host", components: HostComponent[]) {
   const area = document.body.appendChild(document.createElement("div"));
   area.style.height = "300px";
   areas.push(area);
-  const view = createSandbox({ base: frames, page: mode }).open(area, { components });
+  const view = createSandbox({ base: frames, page: mode, origins }).open(area, { components });
   views.push(view);
   const values: unknown[] = [];
   view.on("set", ({ value }) => values.push(JSON.parse(value as string)));
@@ -75,6 +87,7 @@ describe("a document's own images", () => {
       alt: ["Not an image"],
     });
     expect(await hits(allowed, tag)).toEqual([`/${tag}/square.svg`, `/${tag}/page.txt`]);
+    expect(asked).toEqual([]);
   });
 
   it("loads them in host mode as the host's page loads any image", async () => {

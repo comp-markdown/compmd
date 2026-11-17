@@ -148,14 +148,15 @@ function recordingFallbacks(port: MessagePort, observer: Observer): RenderPort {
  * page shows it again, since it may have been fixed.
  */
 function imagesFrom(parent: FrameEnd): ImageSource {
-  const shown = new Map<string, Promise<string | undefined>>();
+  const shown = new Map<string, ReturnType<ImageSource>>();
   return (src) => {
     let url = shown.get(src);
     if (!url) {
       url = parent.image(src).then((file) => {
-        if (file) return URL.createObjectURL(file);
+        if (file instanceof Blob) return URL.createObjectURL(file);
+        // Refused, or none: asked for again when the page shows it again, or once its origin is allowed.
         shown.delete(src);
-        return undefined;
+        return file;
       });
       shown.set(src, url);
     }
@@ -300,7 +301,9 @@ function start(port: MessagePort): void {
       schemes = given;
       // A page frame (frame mode) renders the page through `@compmd/render`'s protocol, on the same port.
       const container = document.getElementById("page");
-      if (container) page = serveFrame(recordingFallbacks(port, observer), { container, components: mounts.mounts, math, highlight, images: imagesFrom(parent), onLayout: moved, ownSchemes: schemes, printsFallback }).page;
+      if (container) page = serveFrame(recordingFallbacks(port, observer), { container, components: mounts.mounts, math, highlight, images: imagesFrom(parent), allowOrigin: (origin) => {
+            parent.allowOrigin(origin);
+          }, onLayout: moved, ownSchemes: schemes, printsFallback }).page;
     },
     code: async (next) => {
       components = next;
@@ -339,6 +342,9 @@ function start(port: MessagePort): void {
       }
       observer.stop();
       reports.clear();
+    },
+    imagesAllowed: (origin) => {
+      page?.imagesAllowed(origin);
     },
     changed: moved,
   });

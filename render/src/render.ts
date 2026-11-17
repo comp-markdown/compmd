@@ -9,6 +9,7 @@ import type { LinkDefinition } from "./document.ts";
 import { withHtml } from "./html.ts";
 import type { ImageSource } from "./images.ts";
 import { CallbackView, CodeBlockView, ElementView, ImageView, isImage, textView } from "./markdown-views.ts";
+import type { RefusedImages } from "./refused-images.ts";
 import type { Schemes } from "./scheme.ts";
 import type { Drawn } from "./source.ts";
 import type { ParentLayout, Stylesheet } from "./styles.ts";
@@ -80,6 +81,10 @@ export interface Surface {
   printsFallback(name: string): boolean;
   /** Where images come from; without it, each loads from its `src`. */
   images?: ImageSource | undefined;
+  /** The reader asks to see the images of an origin the image source refused (spec §15). */
+  allowOrigin?: ((origin: string) => void) | undefined;
+  /** The images refused for their origin, asked for again once it is allowed. */
+  refused: RefusedImages;
   /** The views drawn for each node with an origin. */
   drawn: Drawn;
   /** What the components are still drawing (`context.busy`). */

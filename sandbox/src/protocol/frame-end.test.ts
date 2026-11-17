@@ -205,8 +205,13 @@ describe("the frame's end (serveParent)", () => {
     const file = new Blob(["x"], { type: "image/png" });
     parent.postMessage({ type: "fetched", url: "./logo.png", image: file });
     parent.postMessage({ type: "fetched", url: "./missing.png", image: "not a Blob" });
-    expect((await first)?.type).toBe("image/png");
-    expect((await second)?.type).toBe("image/png");
+    // Posting copies the file: the same type and bytes, not the same object.
+    expect(await first).toEqual(file);
+    expect(await second).toEqual(file);
     expect(await missing).toBeUndefined();
+    const refused = end.image("https://photos.example.com/a.png");
+    await settle();
+    parent.postMessage({ type: "fetched", url: "https://photos.example.com/a.png", refused: "https://photos.example.com" });
+    expect(await refused).toEqual({ refused: "https://photos.example.com" });
   });
 });

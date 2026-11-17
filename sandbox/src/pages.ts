@@ -56,8 +56,9 @@ export function hostPage(container: HTMLElement, runtime: HostRuntime, options: 
     highlight: framesHighlight(options.base),
     ownSchemes: runtime.schemes,
     printsFallback: (name) => runtime.printsFallback(name),
-    // Images of the host's own schemes from the host's files; every other image loads from its `src`, as this page's do.
-    ...(options.ownImages ? { images: hostImages(runtime.schemes, options.ownImages) } : {}),
+    // Images of the host's own schemes from the host's files; remote ones once the reader allows their origin (spec §15).
+    images: hostImages(runtime.schemes, options.ownImages, runtime.gate),
+    allowOrigin: (origin) => void runtime.gate.allow(origin),
     // The trusted components in this page get `host` as the runtime gives it; framed ones get theirs from their frame.
     ...(runtime.host ? { host: runtime.host } : {}),
     onSet: (input, value) => {
@@ -75,6 +76,9 @@ export function hostPage(container: HTMLElement, runtime: HostRuntime, options: 
     onLayout: () => {
       emit("layout", {});
     },
+  });
+  const unfollowAllowed = runtime.gate.onAllowed((origin) => {
+    page.imagesAllowed(origin);
   });
   // Captured, so a component that stops a click's propagation still has it reported, as in a page's frame.
   const pointed = (event: Event) => {
@@ -126,6 +130,7 @@ export function hostPage(container: HTMLElement, runtime: HostRuntime, options: 
     drawn: () => page.drawn(),
     frames: () => runtime.frames(),
     destroy: () => {
+      unfollowAllowed();
       container.removeEventListener("click", pointed, { capture: true });
       page.destroy();
     },
@@ -142,7 +147,7 @@ export function framePage(container: HTMLElement, runtime: HostRuntime, options:
   iframe.style.cssText = "border: 0; width: 100%; height: 100%; display: block;";
   /** The document's inputs, which its page may set, from the last tree or splice. */
   let inputs: Readonly<Record<string, ExpandedInput>> = {};
-  const images = new PageImages(fetch, document.baseURI, { schemes: runtime.schemes, file: options.ownImages });
+  const images = new PageImages(fetch, document.baseURI, { schemes: runtime.schemes, file: options.ownImages }, runtime.gate);
   const { port1, port2 } = new MessageChannel();
   const id = observer.frame("strict", { kind: "page" });
   const port = observer.port(id, port1);
@@ -152,6 +157,10 @@ export function framePage(container: HTMLElement, runtime: HostRuntime, options:
     binds: (input) => input in inputs,
     ping: { every: 1000, timeout: options.timeout ?? 5000 },
     image: (url) => images.file(url),
+    allowOrigin: (origin) => void images.allowOrigin(origin),
+  });
+  const unfollowAllowed = runtime.gate.onAllowed((origin) => {
+    child.imagesAllowed(origin);
   });
   observer.connected(id, child);
   child.on("refused", ({ input }) => {
@@ -247,6 +256,7 @@ export function framePage(container: HTMLElement, runtime: HostRuntime, options:
     drawn: () => Promise.resolve(),
     frames: () => [child],
     destroy: () => {
+      unfollowAllowed();
       frame.close();
       child.close();
       iframe.remove();

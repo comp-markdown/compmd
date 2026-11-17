@@ -104,6 +104,14 @@ export interface Page {
    * printButton.onclick = () => page.print();
    */
   print(): Promise<void>;
+  /**
+   * The reader allowed `origin` (spec §15): each image the page's image source refused for it asks again, and shows
+   * when it is given.
+   *
+   * @example
+   * gate.onAllowed((origin) => page.imagesAllowed(origin));
+   */
+  imagesAllowed(origin: string): void;
 }
 
 /**
@@ -168,6 +176,9 @@ export function createPage(root: HTMLElement, options: PageOptions = {}): Page {
     // Mounts run in the render itself, so what is left is what the components said they were drawing.
     drawn: () => surface.busy.idle(),
     print: () => printLight(root, schemes, () => surface.busy.idle()),
+    imagesAllowed: (origin) => {
+      surface.refused.allowed(origin);
+    },
     destroy() {
       layout?.destroy();
       schemes.destroy();

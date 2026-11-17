@@ -3,7 +3,7 @@
 
 import { init, process } from "@compmd/processor";
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
-import { allowOrigins, askWithDialog, loadData, localAnswers, type AskOrigin, type OriginAnswer } from "../src/index.ts";
+import { allowOrigins, askWithDialog, loadData, localAnswers, originQuestion, type AskOrigin, type OriginAnswer } from "../src/index.ts";
 import { allowed, denied, frames, hits, tagged } from "./harness.ts";
 
 beforeAll(async () => {
@@ -123,19 +123,25 @@ describe("loadData", () => {
 
 describe("askWithDialog", () => {
   it("asks in a dialog of the host's page, saying what the origin learns, and gives the button pressed", async () => {
-    const answer = askWithDialog("https://api.example.com", "a.comp.md");
+    const answer = askWithDialog("https://api.example.com", "a.comp.md", ["data"]);
     const dialog = document.querySelector<HTMLDialogElement>("dialog.compmd-origin-question");
     expect(dialog?.open).toBe(true);
     expect(dialog?.textContent).toContain("This document wants to load data from api.example.com. Allow?");
-    expect(dialog?.textContent).toContain("learns the values you picked");
+    expect(dialog?.textContent).toContain("the values you picked");
     const allow = [...(dialog?.querySelectorAll("button") ?? [])].find((button) => button.value === "allow");
     allow?.click();
     expect(await answer).toBe("allow");
     expect(document.querySelector("dialog.compmd-origin-question")).toBeNull();
   });
 
+  it("names images when the page needs the origin's images, and both when it needs both", () => {
+    expect(originQuestion("https://photos.example.com", ["images"]).question).toBe("This document wants to show images from photos.example.com. Allow?");
+    expect(originQuestion("https://photos.example.com", ["images"]).detail).toBe("That site learns that this page was opened, and when.");
+    expect(originQuestion("https://api.example.com", ["data", "images"]).question).toBe("This document wants to load data and show images from api.example.com. Allow?");
+  });
+
   it("is Don't allow when the reader closes it another way", async () => {
-    const answer = askWithDialog("https://api.example.com", "a.comp.md");
+    const answer = askWithDialog("https://api.example.com", "a.comp.md", ["data"]);
     document.querySelector<HTMLDialogElement>("dialog.compmd-origin-question")?.close();
     expect(await answer).toBe("deny");
   });

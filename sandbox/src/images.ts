@@ -3,7 +3,12 @@
 // the frame still loads nothing itself; and since that code could ask too, the host's page gives only those images.
 // An image of one of the host's own schemes (spec §15) is the host's to load: its file comes from the host, in both modes.
 
-import { imageSources, urlScheme, type ExpandedRoot, type ImageSource, type Splice } from "@compmd/render";
+import { imageSources, urlScheme, type ExpandedRoot, type ImageSource, type Refused, type Splice } from "@compmd/render";
+import { ImageGate } from "./image-gate.ts";
+import { originOf } from "./origins.ts";
+
+/** How long a frame may not ask about an origin again after the reader refused it, in ms (docs/remote-images.md, decision 6). */
+export const ASK_AGAIN_MS = 60_000;
 
 /** The host's own URL schemes, checked, and the file of an image of one of them (`ownImages`), when it gives them. */
 export interface OwnImages {
@@ -29,20 +34,24 @@ export class PageImages {
   readonly #fetch: typeof fetch;
   readonly #base: string;
   readonly #own: OwnImages;
+  readonly #gate: ImageGate;
   /** The images' `src`, as the frame asks for them. */
   #sources = new Set<string>();
   /** Splices as a processor's JSON text, read only once the frame asks for an image they may have. */
   #unread: string[] = [];
+  /** When the reader last refused an origin the frame asked about, by origin. */
+  readonly #refusedAt = new Map<string, number>();
 
   /**
-   * Fetches with `fetch`, a relative `src` against `base`, as an image in the host's page would load; an image of one of
-   * the host's own schemes comes from `own.file`, never fetched.
+   * Fetches with `fetch`, a relative `src` against `base`, as an image in the host's page would load, once `gate` lets
+   * it (spec §15); an image of one of the host's own schemes comes from `own.file`, never fetched.
    */
-  constructor(fetcher: typeof fetch, base: string, own: OwnImages = { schemes: [] }) {
+  constructor(fetcher: typeof fetch, base: string, own: OwnImages = { schemes: [] }, gate: ImageGate = new ImageGate()) {
     // Called on its own: the page's `fetch` throws when called on another object.
     this.#fetch = (input, init) => fetcher(input, init);
     this.#base = base;
     this.#own = own;
+    this.#gate = gate;
   }
 
   /** The frame renders `tree`: its images are the frame's now. */
@@ -60,17 +69,33 @@ export class PageImages {
   }
 
   /**
-   * The file of the image with `src`, or `undefined` when it isn't one of the frame's, can't be had, or isn't an image.
-   * One of the host's own schemes comes from the host; any other is fetched without credentials and without a `Referer`.
+   * The file of the image with `src`, `undefined` when it isn't one of the frame's, can't be had, or isn't an image, or
+   * `{ refused: origin }` when the reader hasn't allowed its origin (asked the first time). One of the host's own
+   * schemes comes from the host; any other is fetched without credentials and without a `Referer`.
    */
-  async file(src: string): Promise<Blob | undefined> {
+  async file(src: string): Promise<Blob | Refused | undefined> {
     if (!this.#has(src)) return undefined;
     try {
-      const file = isOwn(src, this.#own.schemes) ? await this.#own.file?.(src) : await this.#fetched(src);
-      return file?.type.startsWith("image/") ? file : undefined;
+      if (isOwn(src, this.#own.schemes)) return imageOnly(await this.#own.file?.(src));
+      const decision = await this.#gate.decide(src);
+      if ("refused" in decision) return decision;
+      return imageOnly(await this.#fetched(src));
     } catch {
       return undefined;
     }
+  }
+
+  /**
+   * The frame asks for the reader to be asked about `origin`, from the button beside a refused image. Code in the
+   * frame may have asked instead, so the reader is asked only about an origin of the frame's images, and not again
+   * within `ASK_AGAIN_MS` of refusing it.
+   */
+  async allowOrigin(origin: string, now: () => number = Date.now): Promise<void> {
+    this.#readSplices();
+    if (![...this.#sources].some((src) => originOf(src) === origin)) return;
+    const refused = this.#refusedAt.get(origin);
+    if (refused !== undefined && now() - refused < ASK_AGAIN_MS) return;
+    if (!(await this.#gate.allow(origin))) this.#refusedAt.set(origin, now());
   }
 
   async #fetched(src: string): Promise<Blob | undefined> {
@@ -80,9 +105,14 @@ export class PageImages {
 
   #has(src: string): boolean {
     if (this.#sources.has(src)) return true;
+    this.#readSplices();
+    return this.#sources.has(src);
+  }
+
+  /** Adds the images of the splices given as text, which were left unread until needed. */
+  #readSplices(): void {
     for (const splice of this.#unread) this.#add(JSON.parse(splice) as Splice);
     this.#unread = [];
-    return this.#sources.has(src);
   }
 
   #add(splice: Splice): void {
@@ -90,17 +120,25 @@ export class PageImages {
   }
 }
 
+/** `file` when it is an image; a file of another type isn't shown. */
+const imageOnly = (file: Blob | undefined): Blob | undefined => (file?.type.startsWith("image/") ? file : undefined);
+
 /**
  * Host mode's images: one of the host's own schemes from a `blob:` URL of the file `file` gives, asked for once while
- * it has one; any other from its `src`, as the host's page loads it.
+ * it has one, or from its `src` without `file`; any other from its `src`, as the host's page loads it, once `gate`
+ * lets it (spec §15).
  *
  * @example
- * createPage(container, { ownSchemes: ["app"], images: hostImages(["app"], (src) => attachment(src)) });
+ * createPage(container, { ownSchemes: ["app"], images: hostImages(["app"], (src) => attachment(src), gate) });
  */
-export function hostImages(schemes: readonly string[], file: (src: string) => Promise<Blob | undefined>): ImageSource {
+export function hostImages(schemes: readonly string[], file: ((src: string) => Promise<Blob | undefined>) | undefined, gate: ImageGate): ImageSource {
   const shown = new Map<string, Promise<string | undefined>>();
-  return (src) => {
-    if (!isOwn(src, schemes)) return Promise.resolve(src);
+  return async (src) => {
+    if (!isOwn(src, schemes)) {
+      const decision = await gate.decide(src);
+      return "refused" in decision ? decision : src;
+    }
+    if (!file) return src;
     let url = shown.get(src);
     if (!url) {
       url = file(src).then(

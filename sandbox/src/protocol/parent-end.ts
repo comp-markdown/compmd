@@ -20,10 +20,16 @@ export interface ChildOptions {
    */
   ping?: { every: number; timeout: number };
   /**
-   * The file of an image a page frame asks for by its `src`, or `undefined` for none. Strict code may have asked, so
-   * it gives only images of the page it sent. Without it, the frame gets no images.
+   * The file of an image a page frame asks for by its `src`, `undefined` for none, or `{ refused: origin }` when the
+   * reader hasn't allowed its origin (spec §15). Strict code may have asked, so it gives only images of the page it
+   * sent. Without it, the frame gets no images.
    */
-  image?(url: string): Promise<Blob | undefined>;
+  image?(url: string): Promise<Blob | { refused: string } | undefined>;
+  /**
+   * The frame asks for the reader to be asked about `origin`, from the button beside a refused image. Strict code may
+   * have asked, so the parent asks only about an origin of images it sent the frame.
+   */
+  allowOrigin?(origin: string): void;
 }
 
 /**
@@ -93,6 +99,8 @@ export interface ChildEnd {
   counting(port: Port): Port;
   /** Asks the frame to record what passes in it and report it (`observed`), or to stop. */
   observe(on: boolean): void;
+  /** Tells the frame the reader allowed `origin`: its images refused for it ask again. */
+  imagesAllowed(origin: string): void;
   /**
    * Resolves once the frame has settled after everything sent it so far (`settled` with that count), once it is
    * closed or stopped, or after `BUSY_MS`: a frame's code may never say it.
@@ -243,9 +251,17 @@ export function connectChild(port: Port, options: ChildOptions): ChildEnd {
         if (typeof url !== "string") break;
         void (options.image?.(url) ?? Promise.resolve(undefined))
           .catch(() => undefined)
-          .then((image) => {
-            if (!closed) port.postMessage({ type: "fetched", url, ...(image ? { image } : {}) } satisfies ToFrame);
+          .then((answer) => {
+            if (closed) return;
+            const given = answer instanceof Blob ? { image: answer } : answer ? { refused: answer.refused } : {};
+            port.postMessage({ type: "fetched", url, ...given } satisfies ToFrame);
           });
+        break;
+      }
+      case "allow-origin": {
+        // Strict code may have sent it: the origin is checked against the frame's images where it is asked about.
+        const { origin } = data as { origin: unknown };
+        if (typeof origin === "string") options.allowOrigin?.(origin);
         break;
       }
       case "settled":
@@ -306,6 +322,9 @@ export function connectChild(port: Port, options: ChildOptions): ChildEnd {
       if (on === observing) return;
       observing = on;
       post({ type: "observe", on } satisfies ToFrame);
+    },
+    imagesAllowed: (origin) => {
+      post({ type: "images-allowed", origin } satisfies ToFrame);
     },
     settled: () => {
       // Messages waiting for `ready` count once sent: until then the frame isn't settled.

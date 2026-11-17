@@ -23,6 +23,8 @@ export interface FrameHandlers {
   compile?(request: CompileRequest): Promise<{ code: string; css?: string }>;
   /** The parent asks the frame to record what passes in it and report it, or to stop. */
   observe?(on: boolean): void;
+  /** The reader allowed `origin`: the page's images refused for it ask again (spec §15). */
+  imagesAllowed?(origin: string): void;
   /**
    * A message that changes what the frame shows came (`CHANGES`), the sandbox's or `@compmd/render`'s, after its own
    * handler: the frame settles again.
@@ -42,8 +44,13 @@ export interface FrameEnd {
   size(width: number, height: number): void;
   /** Reports what the frame's observer recorded, once the parent asked. */
   observed(events: Observed[]): void;
-  /** Asks for an image of the frame's page by its `src`: its file, or `undefined` when the parent gives none. */
-  image(url: string): Promise<Blob | undefined>;
+  /**
+   * Asks for an image of the frame's page by its `src`: its file, `undefined` when the parent gives none, or
+   * `{ refused: origin }` when the reader hasn't allowed its origin (spec §15).
+   */
+  image(url: string): Promise<Blob | { refused: string } | undefined>;
+  /** The reader asks to see the images of `origin`: the parent asks them, never the frame. */
+  allowOrigin(origin: string): void;
   /** How many messages that change what the frame shows it has taken. */
   readonly seen: number;
   /** The frame has settled after the first `seen` of them. */
@@ -67,7 +74,7 @@ export function serveParent(port: Port, handlers: FrameHandlers): FrameEnd {
   };
   let level: Level | undefined;
   /** The images asked for and not answered yet, by URL. */
-  const images = new Map<string, ((image: Blob | undefined) => void)[]>();
+  const images = new Map<string, ((image: Blob | { refused: string } | undefined) => void)[]>();
   let seen = 0;
   /** Counts a change, `@compmd/render`'s too, which its own listener on the port handles after this one. */
   const counting = ({ data }: { data: unknown }) => {
@@ -128,9 +135,13 @@ export function serveParent(port: Port, handlers: FrameHandlers): FrameEnd {
       case "fetched": {
         const answered = images.get(data.url) ?? [];
         images.delete(data.url);
-        for (const resolve of answered) resolve(data.image instanceof Blob ? data.image : undefined);
+        const answer = data.image instanceof Blob ? data.image : typeof data.refused === "string" ? { refused: data.refused } : undefined;
+        for (const resolve of answered) resolve(answer);
         break;
       }
+      case "images-allowed":
+        if (typeof data.origin === "string") handlers.imagesAllowed?.(data.origin);
+        break;
     }
   };
   port.addEventListener("message", listener);
@@ -168,6 +179,9 @@ export function serveParent(port: Port, handlers: FrameHandlers): FrameEnd {
         images.set(url, [resolve]);
         post({ type: "image", url });
       }),
+    allowOrigin: (origin) => {
+      post({ type: "allow-origin", origin });
+    },
     get seen() {
       return seen;
     },

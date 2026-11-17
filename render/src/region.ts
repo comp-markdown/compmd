@@ -4,6 +4,7 @@ import { Busy } from "./busy.ts";
 import type { ComponentError, ComponentRecovered, Mount, RenderError } from "./contract.ts";
 import type { LinkDefinition } from "./document.ts";
 import { ownSchemes } from "./html.ts";
+import { RefusedImages } from "./refused-images.ts";
 import type { ImageSource } from "./images.ts";
 import type { KeyOf } from "./keys.ts";
 import { Layout } from "./layout.ts";
@@ -55,6 +56,11 @@ export interface SurfaceOptions {
   printsFallback?(name: string): boolean;
   /** Where images come from, for a page that can't load them itself; without it, each loads from its `src`. */
   images?: ImageSource;
+  /**
+   * The reader asks to see the images of `origin`, which `images` refused (spec §15): the button beside a refused
+   * image's alt text calls it. The host asks again, and when the origin is allowed tells the page (`imagesAllowed`).
+   */
+  allowOrigin?(origin: string): void;
   /**
    * What the page or region shows may have moved, so its `lines()` may have: after a render or splice is painted, when
    * its root or a block in it changes size, when fonts finish loading. At most once an animation frame.
@@ -125,6 +131,8 @@ export function surfaceOf(document: Document, stylesheet: Stylesheet, schemes: S
     ownSchemes: ownSchemes(options.ownSchemes ?? []),
     printsFallback: options.printsFallback?.bind(options) ?? (() => false),
     images: options.images,
+    allowOrigin: options.allowOrigin?.bind(options),
+    refused: new RefusedImages(),
     drawn: new Drawn(),
     busy: new Busy(),
   };

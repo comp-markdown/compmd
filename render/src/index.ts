@@ -12,7 +12,7 @@ export { BUSY_MS } from "./busy.ts";
 export type { Change, Diagnostic } from "./stable.ts";
 export { footnotesOf, definitionsOf, plainText, type Footnotes, type LinkDefinition } from "./document.ts";
 export type { CodeHighlighter, CodeRenderer, MathRenderer } from "./render.ts";
-export { imageSources, type ImageSource } from "./images.ts";
+export { imageSources, type ImageSource, type Refused } from "./images.ts";
 export { ownSchemes, urlScheme } from "./html.ts";
 export type * from "./contract.ts";
 export type * from "./tree.ts";

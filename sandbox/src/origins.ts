@@ -9,8 +9,11 @@ import type { Fetched } from "@compmd/processor";
 /** What the reader said about an origin. */
 export type OriginAnswer = "allow" | "deny";
 
-/** Asks the reader whether `document` may load data from `origin`. */
-export type AskOrigin = (origin: string, document: string) => Promise<OriginAnswer>;
+/** What a page needs of an origin: its data, its images, or both; one answer covers both (spec §15). */
+export type OriginKind = "data" | "images";
+
+/** Asks the reader whether `document` may load what it needs, `kinds`, from `origin`. */
+export type AskOrigin = (origin: string, document: string, kinds: readonly OriginKind[]) => Promise<OriginAnswer>;
 
 /** Where the reader's answers are kept, by origin; a host may keep them elsewhere, such as on its server. */
 export interface OriginAnswers {
@@ -71,11 +74,21 @@ function pageStorage(): Storage | undefined {
   }
 }
 
-/** The question's words for `origin`: what the reader is asked, and what the origin learns. */
-export function originQuestion(origin: string): { question: string; detail: string } {
+/**
+ * The question's words for `origin`, by what the page needs of it, `kinds`: what the reader is asked, and what the
+ * origin learns.
+ *
+ * @example
+ * originQuestion("https://photos.example.com", ["images"]).question; // "This document wants to show images from photos.example.com. Allow?"
+ */
+export function originQuestion(origin: string, kinds: readonly OriginKind[] = ["data"]): { question: string; detail: string } {
+  const data = kinds.includes("data");
+  const images = kinds.includes("images");
+  const what = data && images ? "load data and show images" : images ? "show images" : "load data";
+  const learns = data ? "that this page was opened, and the values you picked on it, since they are part of what it is asked for" : "that this page was opened, and when";
   return {
-    question: `This document wants to load data from ${new URL(origin).host}. Allow?`,
-    detail: "That site learns the values you picked on this page, since they are part of what it is asked for.",
+    question: `This document wants to ${what} from ${new URL(origin).host}. Allow?`,
+    detail: `That site learns ${learns}.`,
   };
 }
 
@@ -83,9 +96,9 @@ export function originQuestion(origin: string): { question: string; detail: stri
  * Asks with a plain `<dialog>` in the host's page, with the buttons Allow and Don't allow; closing it any other way is
  * Don't allow.
  */
-export const askWithDialog: AskOrigin = (origin) =>
+export const askWithDialog: AskOrigin = (origin, _document, kinds) =>
   new Promise((resolve) => {
-    const { question, detail } = originQuestion(origin);
+    const { question, detail } = originQuestion(origin, kinds);
     const dialog = document.createElement("dialog");
     dialog.className = "compmd-origin-question";
     const text = dialog.appendChild(document.createElement("p"));
@@ -125,6 +138,23 @@ export interface AllowOriginsOptions {
 const open = new Map<string, Promise<OriginAnswer>>();
 
 /**
+ * The reader's answer about `origin`: the one kept in `answers`, or theirs to `ask` now, about what the page needs of it
+ * (`kinds`), kept once given. A question already open for the origin, for data or images, is the one answered.
+ */
+export async function answerFor(origin: string, kinds: readonly OriginKind[], document: string, answers: OriginAnswers, ask: AskOrigin): Promise<OriginAnswer> {
+  const kept = answers.get(origin);
+  if (kept !== undefined) return kept;
+  let question = open.get(origin);
+  if (!question) {
+    question = ask(origin, document, kinds).finally(() => open.delete(origin));
+    open.set(origin, question);
+  }
+  const answer = await question;
+  answers.set(origin, answer);
+  return answer;
+}
+
+/**
  * The origins a render may fetch from: those the host configured, and those the reader allowed, asking about each
  * origin of `urls` (the remote URLs the processor's `sources` lists, `remote` and `disallowed`) the reader hasn't
  * decided on. For a host that fetches on its own; `loadData` also fetches. A host renders at once without them, then
@@ -141,17 +171,7 @@ export async function allowOrigins(urls: readonly string[], options: AllowOrigin
   const needed = [...new Set(urls.map(originOf).filter((origin): origin is string => origin !== undefined))];
   for (const origin of needed) {
     if (allowed.has(origin)) continue;
-    let answer = answers.get(origin);
-    if (answer === undefined) {
-      let question = open.get(origin);
-      if (!question) {
-        question = ask(origin, options.document).finally(() => open.delete(origin));
-        open.set(origin, question);
-      }
-      answer = await question;
-      answers.set(origin, answer);
-    }
-    if (answer === "allow") allowed.add(origin);
+    if ((await answerFor(origin, ["data"], options.document, answers, ask)) === "allow") allowed.add(origin);
   }
   return [...allowed];
 }
@@ -207,7 +227,7 @@ export async function loadData(urls: readonly string[], options: LoadDataOptions
 }
 
 /** The origin of `url`, as `allowedOrigins` writes it; `undefined` for text that isn't a URL. */
-function originOf(url: string): string | undefined {
+export function originOf(url: string): string | undefined {
   try {
     return new URL(url).origin;
   } catch {

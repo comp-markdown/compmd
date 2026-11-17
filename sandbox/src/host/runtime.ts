@@ -6,6 +6,7 @@
 import type { HostComponent, Trust } from "@compmd/processor";
 import { createRegion, ownSchemes, type ExpandedInput, type ExpandedUse, type Mount } from "@compmd/render";
 import { localHost, serveHost, type HostApi, type HostClient } from "../host-api.ts";
+import { ImageGate, type ImageGateOptions } from "../image-gate.ts";
 import { codeFor, Mounts } from "../mounts.ts";
 import type { Observer } from "../observer.ts";
 import { cacheStorage, compiledWith, type CompiledCache } from "../compiled-cache.ts";
@@ -51,6 +52,12 @@ export interface HostRuntimeOptions {
    * loads from its `src` in the host's page.
    */
   ownImages?: (src: string) => Promise<Blob | undefined>;
+  /**
+   * Who asks the reader about the origins of the document's remote images, and where the answers are kept (spec §15):
+   * the same as the host gives `loadData`, so one answer covers an origin's data and images. Each image of an origin
+   * not configured is asked about the first time it is drawn; a host without a reader gives an `ask` that refuses.
+   */
+  origins?: ImageGateOptions;
   /**
    * Where compiled code is kept, by its source, so a component isn't compiled again in another document or view
    * (docs/hosting.md, decision 6): the page's Cache Storage by default (`cacheStorage`); `null` keeps nothing.
@@ -114,12 +121,15 @@ export class HostRuntime {
   readonly schemes: readonly string[];
   /** The components whose uses print their fallback, as `set` last gave them. */
   #printing = new Set<string>();
+  /** The gate the document's images pass, in the host's page and its page frame (spec §15). */
+  readonly gate: ImageGate;
 
   /** @throws Error when `options.ownSchemes` names something that isn't a scheme, or one a host can't name. */
   constructor(options: HostRuntimeOptions, events: HostEvents) {
     this.#options = options;
     this.#events = events;
     this.schemes = ownSchemes(options.ownSchemes ?? []);
+    this.gate = new ImageGate(options.origins);
     this.#styles = options.stylesheets ?? [];
     this.#compiled = options.compiled === undefined ? cacheStorage() : options.compiled;
     this.#local = options.host ? localHost(options.host) : undefined;

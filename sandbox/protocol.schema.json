@@ -17,7 +17,8 @@
         { "$ref": "#/$defs/ping" },
         { "$ref": "#/$defs/compile" },
         { "$ref": "#/$defs/observe" },
-        { "$ref": "#/$defs/fetched" }
+        { "$ref": "#/$defs/fetched" },
+        { "$ref": "#/$defs/imagesAllowed" }
       ]
     },
     "fromFrame": {
@@ -36,6 +37,7 @@
         { "$ref": "#/$defs/failed" },
         { "$ref": "#/$defs/observed" },
         { "$ref": "#/$defs/image" },
+        { "$ref": "#/$defs/allowOrigin" },
         { "$ref": "#/$defs/settled" }
       ]
     },
@@ -308,10 +310,29 @@
       "additionalProperties": false
     },
     "fetched": {
-      "description": "The answer to `image`, with the URL it asked for: the image's file as a Blob, which JSON can't hold, or none when the parent can't or won't give it.",
+      "description": "The answer to `image`, with the URL it asked for: the image's file as a Blob, which JSON can't hold, none when the parent can't or won't give it, or `refused` with its origin when the reader hasn't allowed that origin (spec §15).",
       "type": "object",
-      "properties": { "type": { "const": "fetched" }, "url": { "type": "string" }, "image": { "description": "The image's file, a Blob." } },
+      "properties": {
+        "type": { "const": "fetched" },
+        "url": { "type": "string" },
+        "image": { "description": "The image's file, a Blob." },
+        "refused": { "description": "The origin the reader hasn't allowed.", "type": "string" }
+      },
       "required": ["type", "url"],
+      "additionalProperties": false
+    },
+    "allowOrigin": {
+      "description": "The reader asks, by the button beside a refused image, to see the images of `origin`. Code of the frame's level may have sent it: the parent asks the reader only about an origin of images it sent the frame, and not again within a minute of a refusal.",
+      "type": "object",
+      "properties": { "type": { "const": "allow-origin" }, "origin": { "type": "string" } },
+      "required": ["type", "origin"],
+      "additionalProperties": false
+    },
+    "imagesAllowed": {
+      "description": "The reader allowed `origin`: the frame's images refused for it ask again (spec §15).",
+      "type": "object",
+      "properties": { "type": { "const": "images-allowed" }, "origin": { "type": "string" } },
+      "required": ["type", "origin"],
       "additionalProperties": false
     },
     "frameId": { "description": "A frame by its path from the window that recorded it: empty for that window itself, `2` for its second frame, `2/1` for that frame's first.", "type": "string", "pattern": "^([0-9]+(/[0-9]+)*)?$" },

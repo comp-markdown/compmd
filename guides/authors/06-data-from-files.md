@@ -209,6 +209,8 @@ The reader's answer is kept for every document, so they are asked once per site.
 
 [Try it](https://compmd.dev/playground/?doc=remote) in the playground: a document that reads a pack's latest release from npm, a site the playground doesn't list. It shows its fallback, and the playground asks you.
 
+Pictures from another site are asked about the same way, with the same answer: a reader who allows a site for its data sees its pictures too, and the other way round. Until they allow it, a picture shows its alt text, with a button to show that site's pictures. So write alt text that says what the picture shows, and keep pictures in the document's own folder where you can: those are never asked about.
+
 So give remote data a `fallback`, kept up to date now and then, and the page reads well wherever it's opened, before the reader answers and after a no. The site you fetch from learns that the document was opened, and the values it asks with (chapter 7). A document carries no passwords: data that needs one comes through the app, below.
 
 ## Data from the app

@@ -1,5 +1,7 @@
 # Remote images, asked about
 
+- **Status:** Approved and built (2026-11-17): `ImageGate` and `originQuestion`'s kinds in `@compmd/sandbox`, the refused image and `imagesAllowed` in `@compmd/render`, `allow-origin` and `images-allowed` in the frame protocol.
+
 A document's images with a remote URL are fetches at view time (spec §15): a processor asks the reader about the
 image's origin, with the same answer as for data, and shows the alt text until the origin is allowed, with a way to
 allow it. This is how `@compmd/render` and `@compmd/sandbox` do it, in frame mode and in host mode.

@@ -224,7 +224,8 @@ export function isImage(node: MarkdownNode): boolean {
 
 /**
  * An image whose file the caller gives (`SurfaceOptions.images`): its alt text shows until the file comes, and stays
- * when it can't be had.
+ * when it can't be had. One the reader hasn't allowed the origin of shows its alt text with a button that asks to
+ * (spec §15), and asks for its file again once the origin is allowed.
  */
 export class ImageView implements View {
   readonly shape: string;
@@ -236,6 +237,8 @@ export class ImageView implements View {
   #alt = "";
   #title: string | undefined;
   #destroyed = false;
+  /** The origin its image was refused for, while it shows the button to allow it. */
+  #refused: string | undefined;
 
   constructor(surface: Surface, images: ImageSource, node: MarkdownNode, pass: Pass, key: string | undefined) {
     this.#surface = surface;
@@ -264,11 +267,22 @@ export class ImageView implements View {
 
   destroy(): void {
     this.#destroyed = true;
+    this.#surface.refused.remove(this);
+  }
+
+  /** Its origin was allowed: asks for its file again. */
+  retry(): void {
+    if (this.#destroyed || this.#src === undefined) return;
+    this.#show(this.#altText());
+    this.#describe();
+    this.#load(this.#src);
   }
 
   #altText(): HTMLElement {
     const span = this.#surface.document.createElement("span");
     span.className = "compmd-image-alt";
+    this.#refused = undefined;
+    this.#surface.refused.remove(this);
     return span;
   }
 
@@ -276,6 +290,10 @@ export class ImageView implements View {
     this.#images(src).then(
       (shown) => {
         if (this.#destroyed || this.#src !== src || shown === undefined) return;
+        if (typeof shown !== "string") {
+          this.#refuse(shown.refused);
+          return;
+        }
         const image = this.#surface.document.createElement("img");
         image.src = shown;
         this.#show(image);
@@ -285,6 +303,23 @@ export class ImageView implements View {
     );
   }
 
+  /** Its alt text, with a button that asks to see the images of `origin`. */
+  #refuse(origin: string): void {
+    const document = this.#surface.document;
+    const span = this.#altText();
+    span.classList.add("compmd-image-refused");
+    span.append(document.createElement("span"));
+    const button = span.appendChild(document.createElement("button"));
+    button.type = "button";
+    button.className = "compmd-image-allow";
+    button.textContent = `Show images from ${hostOf(origin)}`;
+    button.addEventListener("click", () => this.#surface.allowOrigin?.(origin));
+    this.#show(span);
+    this.#refused = origin;
+    this.#surface.refused.add(origin, this);
+    this.#describe();
+  }
+
   #show(element: HTMLElement): void {
     this.#dom.replaceWith(element);
     this.#dom = element;
@@ -292,10 +327,21 @@ export class ImageView implements View {
 
   #describe(): void {
     const dom = this.#dom;
+    // A refused image's alt text is in its first child, beside its button.
+    const text = this.#refused === undefined ? dom : dom.firstElementChild;
     if (dom.tagName === "IMG") dom.setAttribute("alt", this.#alt);
-    else if (dom.textContent !== this.#alt) dom.textContent = this.#alt;
+    else if (text && text.textContent !== this.#alt) text.textContent = this.#alt;
     if (this.#title) dom.title = this.#title;
     else dom.removeAttribute("title");
+  }
+}
+
+/** The host of `origin`, as a reader knows a site; the origin itself when it isn't a URL. */
+function hostOf(origin: string): string {
+  try {
+    return new URL(origin).host;
+  } catch {
+    return origin;
   }
 }
 

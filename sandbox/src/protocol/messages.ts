@@ -98,8 +98,13 @@ export type ToFrame =
   | ({ type: "compile" } & CompileRequest)
   /** Record what passes in the frame, and report it, or stop (docs/devtools.md, decision 6). */
   | { type: "observe"; on: boolean }
-  /** The answer to the frame's `image`: the image's file, or none when the parent can't or won't give it. */
-  | { type: "fetched"; url: string; image?: Blob };
+  /**
+   * The answer to the frame's `image`: the image's file, or none when the parent can't or won't give it, or `refused`
+   * with its origin when the reader hasn't allowed that origin (spec §15).
+   */
+  | { type: "fetched"; url: string; image?: Blob; refused?: string }
+  /** The reader allowed the origin `origin`: the frame's images refused for it ask again (spec §15). */
+  | { type: "images-allowed"; origin: string };
 
 /** Why a component shows its fallback: `@compmd/render`'s reasons, code that didn't load, a level the frame can't hold. */
 export type ErrorReason = "missing" | "threw" | "failed" | "not-here";
@@ -137,14 +142,19 @@ export type FromFrame =
   /** A page frame asks for an image of its page, by its `src`: it has no network. */
   | { type: "image"; url: string }
   /**
+   * The reader asks, by the button beside a refused image, to see the images of `origin`: the parent asks them, with
+   * its own question, and only about an origin of images it sent the frame (spec §15).
+   */
+  | { type: "allow-origin"; origin: string }
+  /**
    * The frame has settled after the first `seen` messages that change what it shows (`CHANGES`): its uses drawn, its
    * own frames settled and sized, its images and fonts loaded, then a frame with nothing moving.
    */
   | { type: "settled"; seen: number };
 
 /** Every message type, each way: what the schema (`protocol.schema.json`) has too. */
-export const TO_FRAME: readonly ToFrame["type"][] = ["level", "code", "part", "styles", "scheme", "host", "ping", "compile", "observe", "fetched"];
-export const FROM_FRAME: readonly FromFrame["type"][] = ["ready", "loaded", "set", "error", "recovered", "link", "rendered", "size", "pong", "compiled", "failed", "observed", "image", "settled"];
+export const TO_FRAME: readonly ToFrame["type"][] = ["level", "code", "part", "styles", "scheme", "host", "ping", "compile", "observe", "fetched", "images-allowed"];
+export const FROM_FRAME: readonly FromFrame["type"][] = ["ready", "loaded", "set", "error", "recovered", "link", "rendered", "size", "pong", "compiled", "failed", "observed", "image", "allow-origin", "settled"];
 
 /**
  * The messages that change what a frame shows, the sandbox's and `@compmd/render`'s: a parent counts those it sends, and

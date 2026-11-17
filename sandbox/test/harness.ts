@@ -3,6 +3,7 @@
 
 import type { ExpandedComponent } from "@compmd/render";
 import { inject } from "vitest";
+import type { OriginAnswer, OriginAnswers } from "../src/origins.ts";
 import type { ComponentCode, Level } from "../src/protocol/messages.ts";
 import { frameUse, type UseFrame, type UseFrameOptions } from "../src/use.ts";
 
@@ -28,6 +29,24 @@ export const pause = (ms: number) =>
   new Promise((resolve) => {
     setTimeout(resolve, ms);
   });
+
+/**
+ * A reader's answers about origins kept for one test only: `localAnswers()` keeps them in the page's `localStorage`,
+ * which every test of a run shares.
+ */
+export function memoryAnswers(): OriginAnswers {
+  const kept = new Map<string, OriginAnswer>();
+  return {
+    get: (origin) => kept.get(origin),
+    set: (origin, answer) => {
+      kept.set(origin, answer);
+    },
+    list: () => [...kept],
+    forget: (origin) => {
+      kept.delete(origin);
+    },
+  };
+}
 
 /** A leaf use of `name` whose `result` param is bound to the input `result`. */
 export const leaf = (name: string): ExpandedComponent => ({

@@ -1,9 +1,17 @@
-import type { ExpandedNode, Splice } from "@compmd/render";
+import type { ExpandedNode, Refused, Splice } from "@compmd/render";
 import { describe, expect, it } from "vitest";
+import { ImageGate } from "./image-gate.ts";
 import { hostImages, PageImages } from "./images.ts";
+import { localAnswers } from "./origins.ts";
 
 const image = (url: string): ExpandedNode => ({ type: "paragraph", children: [{ type: "image", url, alt: "" }] });
 const splice = (...nodes: ExpandedNode[]): Splice => ({ from: 0, to: 0, nodes, lines: 0, offset: 0 });
+
+/** A file's type, when it is a file. */
+const typeOf = (file: Blob | Refused | undefined): string | undefined => (file instanceof Blob ? file.type : undefined);
+
+/** A gate that lets the CDN's images through, as a host that configured it does, and asks about no other. */
+const cdnGate = () => new ImageGate({ configured: ["https://cdn.example.com"], ask: () => Promise.resolve("deny"), answers: localAnswers(undefined) });
 
 /** Page images over a fetch that answers every URL with `type`, recording each request. */
 function images(type = "image/png", status = 200) {
@@ -12,15 +20,15 @@ function images(type = "image/png", status = 200) {
     requests.push({ url: input instanceof Request ? input.url : input.toString(), init });
     return Promise.resolve(new Response(new Blob(["x"], { type }), { status }));
   };
-  return { images: new PageImages(fetcher, "https://docs.example.com/notes/"), requests };
+  return { images: new PageImages(fetcher, "https://docs.example.com/notes/", { schemes: [] }, cdnGate()), requests };
 }
 
 describe("PageImages", () => {
   it("fetches an image of the tree it was given, a relative one against its base, without credentials or a Referer", async () => {
     const { images: page, requests } = images();
     page.rendered({ type: "root", children: [image("./logo.png"), image("https://cdn.example.com/a.png")] });
-    expect((await page.file("./logo.png"))?.type).toBe("image/png");
-    expect((await page.file("https://cdn.example.com/a.png"))?.type).toBe("image/png");
+    expect(typeOf(await page.file("./logo.png"))).toBe("image/png");
+    expect(typeOf(await page.file("https://cdn.example.com/a.png"))).toBe("image/png");
     expect(requests).toEqual([
       { url: "https://docs.example.com/notes/logo.png", init: { credentials: "omit", referrerPolicy: "no-referrer" } },
       { url: "https://cdn.example.com/a.png", init: { credentials: "omit", referrerPolicy: "no-referrer" } },
@@ -76,7 +84,7 @@ describe("PageImages", () => {
     };
     const page = new PageImages(fetcher, "https://docs.example.com/", { schemes: ["app"], file });
     page.rendered({ type: "root", children: [image("app:file/3"), image("app:file/4"), image("other:x")] });
-    expect((await page.file("app:file/3"))?.type).toBe("image/png");
+    expect(typeOf(await page.file("app:file/3"))).toBe("image/png");
     expect(await page.file("app:file/4")).toBeUndefined();
     expect(await page.file("other:x")).toBeUndefined();
     expect(asked).toEqual(["app:file/3", "app:file/4"]);
@@ -97,12 +105,16 @@ describe("PageImages", () => {
 describe("hostImages", () => {
   it("shows an image of the host's own schemes from a blob: URL of its file, asked for once, and any other from its src", async () => {
     const asked: string[] = [];
-    const images = hostImages(["app"], (src) => {
-      asked.push(src);
-      return Promise.resolve(new Blob(["x"], { type: "image/png" }));
-    });
+    const images = hostImages(
+      ["app"],
+      (src) => {
+        asked.push(src);
+        return Promise.resolve(new Blob(["x"], { type: "image/png" }));
+      },
+      cdnGate(),
+    );
     const first = await images("app:file/3");
-    expect(first?.startsWith("blob:")).toBe(true);
+    expect(typeof first === "string" && first.startsWith("blob:")).toBe(true);
     expect(await images("app:file/3")).toBe(first);
     expect(await images("./logo.png")).toBe("./logo.png");
     expect(asked).toEqual(["app:file/3"]);
@@ -110,13 +122,75 @@ describe("hostImages", () => {
 
   it("asks again for an image the host had no file for, or failed to give", async () => {
     let calls = 0;
-    const images = hostImages(["app"], () => {
-      calls += 1;
-      return calls === 1 ? Promise.resolve(undefined) : Promise.reject(new Error("gone"));
-    });
+    const images = hostImages(
+      ["app"],
+      () => {
+        calls += 1;
+        return calls === 1 ? Promise.resolve(undefined) : Promise.reject(new Error("gone"));
+      },
+      cdnGate(),
+    );
     expect(await images("app:file/3")).toBeUndefined();
     expect(await images("app:file/3")).toBeUndefined();
     await images("app:file/3");
     expect(calls).toBe(3);
+  });
+
+  it("shows a remote image once its origin is configured or allowed, and refuses it otherwise", async () => {
+    const images = hostImages([], undefined, cdnGate());
+    expect(await images("https://cdn.example.com/a.png")).toBe("https://cdn.example.com/a.png");
+    expect(await images("https://photos.example.com/b.png")).toEqual({ refused: "https://photos.example.com" });
+    expect(await images("app:file/3")).toBe("app:file/3");
+  });
+});
+
+describe("remote images in a page frame (spec §15)", () => {
+  const PHOTOS = "https://photos.example.com";
+
+  /** Page images whose gate answers with `answers`, in order, recording what it asked about. */
+  function asking(...answers: ("allow" | "deny")[]) {
+    const asked: { origin: string; kinds: readonly string[] }[] = [];
+    const gate = new ImageGate({
+      ask: (origin, _document, kinds) => {
+        asked.push({ origin, kinds });
+        return Promise.resolve(answers.shift() ?? "deny");
+      },
+      answers: localAnswers(undefined),
+    });
+    const fetcher = () => Promise.resolve(new Response(new Blob(["x"], { type: "image/png" })));
+    const page = new PageImages(fetcher, "https://docs.example.com/", { schemes: [] }, gate);
+    page.rendered({ type: "root", children: [image(`${PHOTOS}/a.png`), image(`${PHOTOS}/b.png`)] });
+    return { page, gate, asked };
+  }
+
+  it("asks about an image's origin the first time, once, and refuses it when the reader does", async () => {
+    const { page, asked } = asking("deny");
+    expect(await page.file(`${PHOTOS}/a.png`)).toEqual({ refused: PHOTOS });
+    expect(await page.file(`${PHOTOS}/b.png`)).toEqual({ refused: PHOTOS });
+    expect(asked).toEqual([{ origin: PHOTOS, kinds: ["images"] }]);
+  });
+
+  it("fetches it once the reader allows its origin, from the button, and tells who listens", async () => {
+    const { page, gate, asked } = asking("deny", "allow");
+    expect(await page.file(`${PHOTOS}/a.png`)).toEqual({ refused: PHOTOS });
+    const allowed: string[] = [];
+    gate.onAllowed((origin) => allowed.push(origin));
+    await page.allowOrigin(PHOTOS);
+    expect(allowed).toEqual([PHOTOS]);
+    expect(typeOf(await page.file(`${PHOTOS}/a.png`))).toBe("image/png");
+    expect(asked).toHaveLength(2);
+  });
+
+  it("asks only about an origin of the frame's images, and not again within a minute of a refusal", async () => {
+    const { page, asked } = asking("deny", "deny", "allow");
+    await page.allowOrigin("https://tracker.example.com");
+    expect(asked).toEqual([]);
+    let now = 1000;
+    await page.allowOrigin(PHOTOS, () => now);
+    await page.allowOrigin(PHOTOS, () => now + 30_000);
+    expect(asked).toHaveLength(1);
+    now += 61_000;
+    await page.allowOrigin(PHOTOS, () => now);
+    expect(asked).toHaveLength(2);
   });
 });

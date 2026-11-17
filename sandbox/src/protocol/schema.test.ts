@@ -40,6 +40,7 @@ const MESSAGES: (ToFrame | FromFrame)[] = [
   { type: "compile", name: "chart", language: "jsx", code: "export default () => null" },
   { type: "observe", on: true },
   { type: "fetched", url: "./logo.png", image: new Blob([], { type: "image/png" }) },
+  { type: "images-allowed", origin: "https://photos.example.com" },
   { type: "ready", sandbox: 1 },
   { type: "loaded" },
   { type: "set", input: "region", value: "eu" },
@@ -67,6 +68,7 @@ const MESSAGES: (ToFrame | FromFrame)[] = [
     ],
   },
   { type: "image", url: "./logo.png" },
+  { type: "allow-origin", origin: "https://photos.example.com" },
   { type: "settled", seen: 3 },
 ];
 

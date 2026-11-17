@@ -103,6 +103,7 @@ const sandbox = createSandbox({
   modules: (module) => ({ url: `/packs/${module.pack}@${module.version}/${module.path}`, integrity: hashes[module.path] }),
   ownSchemes: ["app"],                        // the app's own links and images, `[Books](app:item/7)`, `![Cover](app:file/3)` (spec §15)
   ownImages: (src) => files.image(src),       // the file of an `app:` image, a Blob; a click on an `app:` link comes as `link`
+  origins: { configured: ["https://cdn.example.com"] }, // remote images of other origins are asked about first (spec §15)
   compiled: cacheStorage(),                   // where compiled code is kept by its source (the default); `null` keeps none
 });
 
@@ -205,6 +206,8 @@ A host that fetches on its own uses `allowOrigins(urls, options)`, which asks an
 - **Configured origins** are never asked about. Every other origin is asked about once, however many renders need it at once, and the answer, allow or deny, is kept per origin for every document: in `localStorage` by default (`localAnswers()`), or in a store the host gives (`answers`), such as one on its server.
 - **The question** is a plain `<dialog>` (`askWithDialog`): *This document wants to load data from api.example.com. Allow?*, with what the site learns, the values the reader picked, and the buttons *Allow* and *Don't allow*. A host asks in its own UI with `ask`, and `originQuestion(origin)` gives the words.
 - **Changing an answer:** `localAnswers().list()` gives every answer, and `forget(origin)` makes the next render ask again, for a page where the reader reviews them.
+
+**Images too** (spec §15, [docs/remote-images.md](https://github.com/comp-markdown/compmd/blob/main/docs/remote-images.md)). A document's remote images are fetches at view time as well, asked about with the same answers: one answer per origin covers its data and its images. The view's `origins` option takes what `loadData` takes (`configured`, `ask`, `answers`, `document`), and every image the page draws, in both modes, passes its gate (`ImageGate`): a relative one, one of the host's own schemes and one of a configured origin show; one of an origin the reader allowed shows; any other is asked about the first time it is drawn (*This document wants to show images from photos.example.com. Allow?*). Until its origin is allowed, it shows its alt text with a button, *Show images from photos.example.com*, which asks again; then every image of that origin shows. In frame mode the frame never draws the question: its button asks its parent, which asks only about an origin of images it sent that frame, and not again for a minute after a refusal. A host with no reader gives an `ask` that refuses: its pages show remote images only from configured origins.
 
 ## Observing a view
 

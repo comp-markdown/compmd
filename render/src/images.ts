@@ -5,9 +5,15 @@ import { textOf, walk, type ExpandedNode } from "./tree.ts";
 
 /**
  * Where a page's images come from: the URL to show for an image's `src`, as the document has it, or `undefined` when
- * it can't be had. Its alt text shows until then, and stays when it can't.
+ * it can't be had, or `{ refused: origin }` when the reader hasn't allowed its origin (spec §15). Its alt text shows
+ * until then, and stays when it can't; a refused one has a way to allow its origin (`SurfaceOptions.allowOrigin`).
  */
-export type ImageSource = (src: string) => Promise<string | undefined>;
+export type ImageSource = (src: string) => Promise<string | undefined | Refused>;
+
+/** An image whose origin the reader hasn't allowed (spec §15). */
+export interface Refused {
+  refused: string;
+}
 
 /**
  * The `src` of every image `nodes` can show, as the renderer asks an {@link ImageSource} for it: Markdown images, link
