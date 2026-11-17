@@ -1,6 +1,6 @@
 # compmd-pack
 
-The names CompMD packs and their files are known by (spec §6.4), each checked once, when it is made:
+The names [CompMD](https://compmd.dev/) packs and their files are known by (spec §6.4), each checked once, when it is made:
 
 - `PackName`: `@scope/name`, as npm names scoped packages; `is_reserved` for `@compmd/`.
 - `ReleaseId`: a pack at one version, `@kit/mermaid@1.2.0`.

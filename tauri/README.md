@@ -1,6 +1,6 @@
 # tauri-plugin-compmd
 
-Shows CompMD documents in a [Tauri](https://tauri.app) app. It is the Tauri adapter of CompMD's hosting: what every host does (the configuration, the bundle, the pack store, the serving contract) is shared, in `@compmd/vite` and `compmd-host`, and the plugin does what only Tauri can. It embeds the bundle in the app, serves it on a scheme of its own, gives the page the origin, and keeps the packs the app fetches in its data folder. The design, and why each rule is there, is [docs/tauri-plugin.md](https://github.com/comp-markdown/compmd/blob/main/docs/tauri-plugin.md), on [docs/hosting.md](https://github.com/comp-markdown/compmd/blob/main/docs/hosting.md).
+Shows [CompMD](https://compmd.dev/) documents in a [Tauri](https://tauri.app) app. It is the Tauri adapter of CompMD's hosting: what every host does (the configuration, the bundle, the pack store, the serving contract) is shared, in `@compmd/vite` and `compmd-host`, and the plugin does what only Tauri can. It embeds the bundle in the app, serves it on a scheme of its own, gives the page the origin, and keeps the packs the app fetches in its data folder. The design, and why each rule is there, is [docs/tauri-plugin.md](https://github.com/comp-markdown/compmd/blob/main/docs/tauri-plugin.md), on [docs/hosting.md](https://github.com/comp-markdown/compmd/blob/main/docs/hosting.md).
 
 It shares its version with the `@compmd` packages: use `@compmd/vite` and `@compmd/sandbox` of the same version.
 

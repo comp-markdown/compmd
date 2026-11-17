@@ -1,4 +1,5 @@
-//! `compmd-host`: what every host of CompMD documents shares, whatever its platform ([hosting], decision 1).
+//! `compmd-host`: what every host of [CompMD](https://compmd.dev/) documents shares, whatever its platform
+//! ([hosting], decision 1).
 //!
 //! A host builds a **bundle** before anyone reads (`@compmd/vite`, or `buildBundle`): the sandbox's frames under a
 //! content hash, the packs it installs by their place, and a `manifest.json` describing it all. This crate reads that

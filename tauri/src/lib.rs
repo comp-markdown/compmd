@@ -1,4 +1,5 @@
-//! `tauri-plugin-compmd`: the Tauri adapter of CompMD's hosting (docs/tauri-plugin.md, docs/hosting.md).
+//! `tauri-plugin-compmd`: the Tauri adapter of [CompMD](https://compmd.dev/)'s hosting (docs/tauri-plugin.md,
+//! docs/hosting.md).
 //!
 //! What every host does is shared: the configuration, the bundle `@compmd/vite` builds from the page's own
 //! `@compmd/sandbox`, the pack store and the serving contract (`compmd-host`). The plugin does the four things only

@@ -5,7 +5,7 @@
 
 # @compmd/vite
 
-A Vite plugin that gives a web app's CompMD documents their components with one line of configuration. It reads `compmd.config.json`, gives the processor every pack the app installs, serves the sandbox's frame documents and the packs' built modules from the app's own origin, and builds the app's own trusted components with the app. The design is [docs/vite.md](https://github.com/comp-markdown/compmd/blob/main/docs/vite.md).
+A Vite plugin that gives a web app's [CompMD](https://compmd.dev/) documents their components with one line of configuration. It reads `compmd.config.json`, gives the processor every pack the app installs, serves the sandbox's frame documents and the packs' built modules from the app's own origin, and builds the app's own trusted components with the app. The design is [docs/vite.md](https://github.com/comp-markdown/compmd/blob/main/docs/vite.md).
 
 **Website:** [compmd.dev](https://compmd.dev/), with the spec and a playground to try CompMD in.
 

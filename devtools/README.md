@@ -1,6 +1,6 @@
 # @compmd/devtools
 
-The CompMD Developer Tools as a part any page embeds ([the design](https://github.com/comp-markdown/compmd/blob/main/docs/devtools.md)): a document's text on the left, its page on the right, updated as you type, with the views of what the processor makes of it and of what its sandbox does. The [playground](https://github.com/comp-markdown/compmd/blob/main/editor/README.md) is a page that embeds it.
+The [CompMD](https://compmd.dev/) Developer Tools as a part any page embeds ([the design](https://github.com/comp-markdown/compmd/blob/main/docs/devtools.md)): a document's text on the left, its page on the right, updated as you type, with the views of what the processor makes of it and of what its sandbox does. The [playground](https://github.com/comp-markdown/compmd/blob/main/editor/README.md) is a page that embeds it.
 
 **Status: in development,** as the processor is; first released at 0.3.0, with the sandbox's observer it reads, and versioned with the other packages. Two ways to embed it (decision 3): the editor, below, and the inspector, attached to a view a host app already renders (*The inspector*).
 

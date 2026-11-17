@@ -1,6 +1,6 @@
-//! The CompMD processor: parses, validates and expands documents written in CompMD (Component Markdown), as the
-//! [CompMD specification](https://github.com/comp-markdown/compmd/blob/main/compmd-spec-v1.md) (version 1, draft)
-//! describes.
+//! The [CompMD](https://compmd.dev/) processor: parses, validates and expands documents written in CompMD (Component
+//! Markdown), as the [CompMD specification](https://github.com/comp-markdown/compmd/blob/main/compmd-spec-v1.md)
+//! (version 1, draft) describes.
 //!
 //! It implements stages 1 to 4b, everything up to rendering, as the states of a [`Processor`]: parsing gives a
 //! document's [tree], resolving loads its imports and binds every component name, validating checks it against the

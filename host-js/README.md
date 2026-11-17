@@ -1,6 +1,6 @@
 # @compmd/host
 
-The serving contract of a CompMD host over the Fetch API: `respond(request)` answers with a bundle's frames and the packs the bundle or a store holds, with the headers that sandbox them, and refuses anything else, saying why. For workers, Node, and dev servers: `@compmd/vite`'s dev server serves its bundle with it. `compmd-host` is the same contract in Rust, over `http` types, and both run [the same cases](https://github.com/comp-markdown/compmd/tree/main/host/fixtures/respond) ([hosting](https://github.com/comp-markdown/compmd/blob/main/docs/hosting.md), decisions 1 and 8).
+The serving contract of a [CompMD](https://compmd.dev/) host over the Fetch API: `respond(request)` answers with a bundle's frames and the packs the bundle or a store holds, with the headers that sandbox them, and refuses anything else, saying why. For workers, Node, and dev servers: `@compmd/vite`'s dev server serves its bundle with it. `compmd-host` is the same contract in Rust, over `http` types, and both run [the same cases](https://github.com/comp-markdown/compmd/tree/main/host/fixtures/respond) ([hosting](https://github.com/comp-markdown/compmd/blob/main/docs/hosting.md), decisions 1 and 8).
 
 ```ts
 import { respond } from "@compmd/host";

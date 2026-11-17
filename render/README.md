@@ -5,7 +5,7 @@
 
 # @compmd/render
 
-Renders a CompMD expanded tree ([spec §12.3](https://compmd.dev/spec/#123-the-expanded-tree)) as a live page: Markdown, layout, inputs, and host-language components through the host contract (§7.4), with the React, Svelte 5 and plain bindings (§7.6). A new tree updates the page in place, so components keep their instances and their state.
+Renders a [CompMD](https://compmd.dev/) expanded tree ([spec §12.3](https://compmd.dev/spec/#123-the-expanded-tree)) as a live page: Markdown, layout, inputs, and host-language components through the host contract (§7.4), with the React, Svelte 5 and plain bindings (§7.6). A new tree updates the page in place, so components keep their instances and their state.
 
 **Website:** [compmd.dev](https://compmd.dev/), with the spec and a playground to try CompMD in.
 

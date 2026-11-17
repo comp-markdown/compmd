@@ -1,5 +1,5 @@
-//! `compmd-pack`: the names CompMD packs and their files are known by (spec §6.4), each checked once, when it is
-//! made, so a name that could leave a folder, or isn't a pack's, can't exist.
+//! `compmd-pack`: the names [CompMD](https://compmd.dev/) packs and their files are known by (spec §6.4), each
+//! checked once, when it is made, so a name that could leave a folder, or isn't a pack's, can't exist.
 //!
 //! The processor (`compmd`, which re-exports this crate as `compmd::pack`) and every host's code (`compmd-host`) use
 //! the same types, so a pack's name, a release and a file's place mean one thing everywhere.

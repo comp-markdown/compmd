@@ -1,6 +1,6 @@
 # compmd-host
 
-What every host of CompMD documents shares, whatever its platform: the bundle a host builds before anyone reads (the sandbox's frames under a content hash, the packs it installs, and its `manifest.json`), the store of packs it gets later, and `respond`, the serving contract an adapter puts behind its origin. The design, and why each rule is there, is [hosting CompMD](https://github.com/comp-markdown/compmd/blob/main/docs/hosting.md).
+What every host of [CompMD](https://compmd.dev/) documents shares, whatever its platform: the bundle a host builds before anyone reads (the sandbox's frames under a content hash, the packs it installs, and its `manifest.json`), the store of packs it gets later, and `respond`, the serving contract an adapter puts behind its origin. The design, and why each rule is there, is [hosting CompMD](https://github.com/comp-markdown/compmd/blob/main/docs/hosting.md).
 
 ```rust
 use compmd_host::{respond, Bundle, FolderStore};

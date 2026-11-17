@@ -5,7 +5,7 @@
 
 # @compmd/processor
 
-The [CompMD processor](https://github.com/comp-markdown/compmd/blob/main/processor/README.md) as WebAssembly, for the browser: one call takes a document with everything it needs and gives its parse tree, its expanded tree and its diagnostics, typed. The expanded tree is what [`@compmd/render`](https://github.com/comp-markdown/compmd/blob/main/render/README.md) draws.
+The [CompMD](https://compmd.dev/) [processor](https://github.com/comp-markdown/compmd/blob/main/processor/README.md) as WebAssembly, for the browser: one call takes a document with everything it needs and gives its parse tree, its expanded tree and its diagnostics, typed. The expanded tree is what [`@compmd/render`](https://github.com/comp-markdown/compmd/blob/main/render/README.md) draws.
 
 **Website:** [compmd.dev](https://compmd.dev/), with the spec and a playground to try CompMD in.
 

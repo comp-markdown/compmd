@@ -5,7 +5,7 @@
 
 # @compmd/create-pack
 
-Writes a CompMD pack: a component as one built ES module, with every library it uses bundled in, its signature, a test page that renders it in the strict sandbox as a host does, and the steps to publish it. The design is [docs/create-pack.md](https://github.com/comp-markdown/compmd/blob/main/docs/create-pack.md).
+Writes a [CompMD](https://compmd.dev/) pack: a component as one built ES module, with every library it uses bundled in, its signature, a test page that renders it in the strict sandbox as a host does, and the steps to publish it. The design is [docs/create-pack.md](https://github.com/comp-markdown/compmd/blob/main/docs/create-pack.md).
 
 **Website:** [compmd.dev](https://compmd.dev/), with the spec and a playground to try CompMD in.
 

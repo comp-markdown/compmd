@@ -5,7 +5,7 @@
 
 # @compmd/sandbox
 
-Runs a CompMD document's components in a browser at the trust levels of [spec §15](https://compmd.dev/spec/#15-security): strict code in frames with no network, permissive code in frames that reach only their pack's origins, and the host's own trusted code in its page. A host gives it trees and its configuration; it never writes a frame or a content security policy itself. The design is [running components in the sandbox](https://github.com/comp-markdown/compmd/blob/main/docs/running-components-in-the-sandbox.md), its messages [docs/sandbox-protocol.md](https://github.com/comp-markdown/compmd/blob/main/docs/sandbox-protocol.md).
+Runs a [CompMD](https://compmd.dev/) document's components in a browser at the trust levels of [spec §15](https://compmd.dev/spec/#15-security): strict code in frames with no network, permissive code in frames that reach only their pack's origins, and the host's own trusted code in its page. A host gives it trees and its configuration; it never writes a frame or a content security policy itself. The design is [running components in the sandbox](https://github.com/comp-markdown/compmd/blob/main/docs/running-components-in-the-sandbox.md), its messages [docs/sandbox-protocol.md](https://github.com/comp-markdown/compmd/blob/main/docs/sandbox-protocol.md).
 
 **Website:** [compmd.dev](https://compmd.dev/), with the spec and a playground to try CompMD in.
 
