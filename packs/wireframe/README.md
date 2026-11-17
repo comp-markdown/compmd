@@ -2,7 +2,8 @@
 
 A [CompMD](https://compmd.dev/) pack that draws wireframes from ```` ```wireframe ```` blocks, as HTML and CSS, in the
 host's strict sandbox: a screen as an indented outline, one part per line
-([the language](https://github.com/comp-markdown/compmd/blob/main/docs/wireframe-language.md)).
+([the language](https://github.com/comp-markdown/compmd/blob/main/packs/wireframe/LANGUAGE.md), published with the
+pack as `LANGUAGE.md`).
 
 **Status: in development, not published.** The language's parser is here; the drawing and the pack's component come
 next ([the design](https://github.com/comp-markdown/compmd/blob/main/docs/wireframe-pack.md)).

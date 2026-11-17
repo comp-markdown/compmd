@@ -1,4 +1,4 @@
-// An error in a ```wireframe block (docs/wireframe-language.md, decision 6): where it is, in the block's lines and
+// An error in a ```wireframe block (LANGUAGE.md, decision 6): where it is, in the block's lines and
 // columns from 1, and what to write instead.
 
 /** What is wrong in a source, and where. */

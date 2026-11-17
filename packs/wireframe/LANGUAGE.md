@@ -2,7 +2,8 @@
 
 **Status: accepted (2026-11-17).**
 
-The language of a ```` ```wireframe ```` block, which [the wireframe pack](wireframe-pack.md) draws: a screen as an
+The language of a ```` ```wireframe ```` block, which this pack draws
+([its design](https://github.com/comp-markdown/compmd/blob/main/docs/wireframe-pack.md)): a screen as an
 indented outline, one part per line. It is Wireloom's syntax, as Wireloom's documentation and examples show it on
 2026-11-17 ([StardockCorp/Wireloom](https://github.com/StardockCorp/Wireloom), MIT), written down here as a grammar of
 our own, with the parts the pack draws first, how each is drawn in HTML and CSS, and its errors.

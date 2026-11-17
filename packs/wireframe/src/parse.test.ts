@@ -10,7 +10,7 @@ const shape = (part: Part): unknown => {
 /** The errors of `source`, as their messages. */
 const errorsOf = (source: string): string[] => parse(source).errors.map((error) => error.message);
 
-// The language's examples (docs/wireframe-language.md).
+// The language's examples (LANGUAGE.md).
 const SIGN_IN = `window "Sign in":
   header:
     text "Welcome back" bold

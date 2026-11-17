@@ -1,4 +1,4 @@
-// One line of a ```wireframe block, read as the grammar has it (docs/wireframe-language.md, Grammar): its indentation,
+// One line of a ```wireframe block, read as the grammar has it (LANGUAGE.md, Grammar): its indentation,
 // its part's name, its arguments (strings, numbers, attributes, flags) and whether it ends in `:`.
 
 import { WireframeError } from "./errors.ts";

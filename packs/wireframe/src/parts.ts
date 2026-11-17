@@ -1,4 +1,4 @@
-// What each part takes (docs/wireframe-language.md, decision 4): its children, its positional arguments, its
+// What each part takes (LANGUAGE.md, decision 4): its children, its positional arguments, its
 // attributes and flags, and where it may be. Every part of Wireloom's syntax is here, the parts drawn first and the
 // rest, so a source that uses any of them is checked the same way.
 

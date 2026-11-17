@@ -2,7 +2,7 @@
 
 **Status: accepted (2026-11-17), option B with F2's language.** B's code renderer drawn as HTML and CSS, its language
 Wireloom's syntax written down as a grammar of our own (Appendix C), in ```` ```wireframe ```` blocks: [the
-wireframe language](wireframe-language.md).
+wireframe language](../packs/wireframe/LANGUAGE.md), which lives in the pack, published with it.
 
 A writer sketching a screen in a design note, an issue or a spec wants a **wireframe**: the screen's boxes, its
 buttons, inputs and images, and notes on them, drawn roughly enough that nobody mistakes it for the design. Mermaid,

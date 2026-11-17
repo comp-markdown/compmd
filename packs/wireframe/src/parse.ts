@@ -1,4 +1,4 @@
-// A ```wireframe block's text as an outline of parts (docs/wireframe-language.md, decisions 2 to 6): the lines read,
+// A ```wireframe block's text as an outline of parts (LANGUAGE.md, decisions 2 to 6): the lines read,
 // nested by their indentation, and each part checked against its rules; every error, each with its line and column.
 
 import { suggestion, WireframeError } from "./errors.ts";
