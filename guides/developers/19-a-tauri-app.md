@@ -207,6 +207,16 @@ A desktop app's webview is the browser that matters, so the app checks itself in
 
 `webkitIpc: "guarded"` says WebKit's handler is there and the host guards it, as above. The page sends the report to the app through a command, and the app prints it and exits `0` when it passed and `1` when it didn't, so CI runs the app as a test: `cargo make tauri-check` in the repository runs it twice, with `--check` and with `--check-broken`, which serves a bundle whose frames' runtime is missing and expects the sandbox to say so. On Linux, run it under a virtual display (`xvfb-run`).
 
+## Behind the scenes
+
+What the plugin and the bundle do for you, and why, in case something in a webview surprises you. None of it needs code of yours.
+
+- **The frames' own origin.** The bundle is served on `compmd://localhost` (`http://compmd.localhost` on Windows and Android), apart from the app's page. Each frame is an `iframe` with `sandbox="allow-scripts"`, so its code runs in an opaque origin, `null`, with no storage, no cookies and nothing of the app's page. Its document is served with `Content-Security-Policy: sandbox allow-scripts` too, so it is opaque even when opened on its own, outside its `iframe`.
+- **WebKit's `'self'`.** In a sandboxed frame on a scheme other than http and https, WebKit (macOS, Linux) matches `'self'` to nothing, so a policy of `script-src 'self'` would load no script at all. That is why the bundle is built with `source` (above): the frames' policies name `compmd://localhost/frames/…` itself.
+- **Folders named by their content.** The frames are served from `frames/<hash>/`, a hash of their files, and packs from `packs/<place>`, their name, version and path. Every file is served with `Cache-Control: max-age=31536000, immutable`. WebKit keeps custom-scheme responses in its cache, so a file that changed under the same path could be served stale; a new bundle has a new hash, so a new version always comes from a new folder.
+- **The headers every file gets**, from `compmd-host`'s `respond`, as every host serves them ([chapter 18](18-other-hosts.md)): `Content-Security-Policy: sandbox allow-scripts`; `Access-Control-Allow-Origin: *`, since a frame is an opaque origin and asks for its modules with CORS; `Access-Control-Expose-Headers: *`, so the check can read them; `X-Content-Type-Options: nosniff`; and the type by the file's extension. Anything outside the frames and the packs is `404`. The check compares the headers exactly, so a change by Tauri or WebKit shows in CI.
+- **The app's commands.** A frame can't call them because it has no invoke key, which Tauri puts in the main frame only; a capability alone doesn't keep it out ([above](#keeping-frames-from-the-apps-commands), and [the plugin's design](../../docs/tauri-plugin.md), decision 8).
+
 ## Run it
 
 From the repository's root, after `pnpm install`:
