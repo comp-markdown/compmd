@@ -1,11 +1,12 @@
 # CompMD spec changelog
 
-Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*CompMD packs on a registry*](compmd-registry-v1.md), newest first. Every change to either adds an entry here, naming the sections it touches. Version 1 is a draft until it is published; until then, a change can break documents written against an earlier draft, and its entry says so.
+Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*CompMD packs on a registry*](compmd-registry-v1.md), newest first. Every change to either adds an entry here, naming the sections it touches. Version 1 is a draft until it is published; until then, a change can break documents written against an earlier draft, and its entry says so. Each dated entry is a revision of both, `1.0-draft.N` (spec §1), tagged `spec-v1.0-draft.N`.
 
 ## Version 1 (draft)
 
-### 2026-11-17
+### 1.0-draft.13, 2026-11-17
 
+- **Version numbers (§1).** The spec and its companion are versioned on their own, apart from any implementation's: `MAJOR.MINOR`, with drafts `1.0-draft.N`, one for each dated entry here, numbered from the first; each revision is tagged `spec-v1.0-draft.N`, and an implementation states the version it implements. Before, the spec said only "version 1, draft" and a date. Not breaking.
 - **A document's plain text (§14).** An informative paragraph says what a processor gives as a document's text as a reader reads it, for a search index or a preview: one line per block, without syntax markers, URLs, raw HTML, the frontmatter, component lines or definitions, with labels, alt text, code, math and components' fallbacks kept. Not breaking.
 - **Printing (§7.3, §10.2, §12.3, §14).** A host-language component's signature may say `print: fallback`: on paper, each use of the component shows its fallback (§4.5), for a component that means nothing there, an interactive map or a video; the default, `drawn`, prints it as drawn. Any other value, or `print` in a `compmd` definition, is W122. The signature in the tree has `print: "fallback"` when it says so. §14 says, informatively, how a processor prints: the document as it renders it, light on paper unless the host says otherwise, after its components have drawn. Not breaking.
 - **TOML frontmatter (§2.1, §10.2, §12.2).** Frontmatter may be TOML between `+++` lines as well as YAML between `---` lines, and says the same: dates and times as strings, numbers, booleans, tables as mappings in order, arrays of tables as lists of mappings. Text that isn't TOML, a duplicate key among it, is F033, as is one over the size cap; the tree has it as a `toml` node with `parsed`. Before, `+++` was ordinary text. Breaking only for a document that starts with a `+++` block meant as text, which is now its frontmatter.
@@ -13,15 +14,15 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
 - **Text after a short-form default (§7.3, §10.2).** A declaration's short-form default is one param value, so an unquoted one ends at its first white space, and text after it is F011, with a fix that quotes the default. Before, the spec didn't say, and `string = Klara and the Sun` silently gave the default `Klara`. Breaking for such documents only, which now get F011 where they got a cut default.
 - **A host's own URL schemes (§15).** A link, a link reference, a wiki link or an image, in Markdown or raw HTML, renders when its URL is relative or uses `https:`, `http:` or `mailto:`, or a scheme the host names as its own (an application's `app:` for its own pages and files); a link with any other renders its text, an image its alt text. The host resolves its own schemes: it handles a click on such a link, and loads such an image, which is never asked about as a remote image is. A host can't name `javascript:`, `vbscript:`, `data:`, `blob:` or `file:`. Before, the spec restricted schemes only in interpolated URLs (§8.1), and a host had no way to link to its own pages, or show its own files, from a document. Not breaking: a host that names none renders links and images as before.
 
-### 2026-11-12
+### 1.0-draft.12, 2026-11-12
 
 - **A pack's source compiled ahead (§6.4).** A processor may compile a pack's source component file once, before a document needs it, and load the result by the file's place, as it may a built module: the same code, at the same trust. Before, the spec said nothing of where a source component is compiled. Not breaking.
 
-### 2026-11-10
+### 1.0-draft.11, 2026-11-10
 
 - **A registry pack however it was got (§6.4).** A pack a host installed with an application, keeps in its own store of published versions, or fetched while a reader views the document is a registry pack all the same: checked against its integrity, at the trust its configuration gives it and never trusted, and cacheable by its place. Before, the spec said this only of packs fetched from a registry, and a host could read an installed or marketplace pack as its own. Not breaking.
 
-### 2026-11-03
+### 1.0-draft.10, 2026-11-03
 
 - **A component still drawing (§7.4, §7.6).** The context gains `busy(work)`, which a component calls with a promise of a drawing it makes after `mount` or `update` returned, and the React and Svelte bindings pass it in the `compmd` prop. A processor that waits for its page to settle (to print, to scroll to a link's target, in a test) waits until those promises have settled, or as long as it chooses; nothing shows differently meanwhile. Before, a processor had no way to know when such a component had drawn. Not breaking: a component that never calls it has drawn when `mount` or `update` returns.
 - **Pending packs and data (§4.5, §6.4, §7.4, §8.6, §10.2, §11, §12.3, §13.2).** A host that gets packs or data while a reader views the document may name those it is still getting as pending. A pending import reports nothing, and its names' uses render their fallbacks marked as pending, as a new expanded node, `componentPending` (in the tree schema too), which a renderer shows as loading and which a slot item's `component` marks with `pending: true`. Pending data loads its `fallback` or `null`, without F026. The host, never the processor, decides when a pending source has failed; it is then F026, as before. Before, a pack or data source on its way was F026, as if it couldn't be had. Not breaking: a processor that never fetches while it renders has no pending sources.
@@ -29,14 +30,14 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
 - **`host` for trusted components too (§7.4, §15).** A processor may give `host` to components of trusted packs as well as permissive ones, the same at both levels, so a component written against it works whichever level its pack is given. Before, `host` was for permissive components alone, though a trusted one reaches more anyway. Not breaking.
 - **Slot names with `-` (§5.1, §7.6, §8.1, §10.2).** A slot named with `-`, as the naming convention suggests (`:: #side-panel`), is placed in a `compmd` body with `_` in its path, `{{md.slot.side_panel}}`, as a param is read, and is the camelCase prop or snippet in the React and Svelte bindings (`sidePanel`). Two slots of one component whose names differ only in `-` and `_` are F013, as two params are. Before, such a slot could be declared and filled but never placed. Not breaking: no document could place one.
 
-### 2026-11-02
+### 1.0-draft.9, 2026-11-02
 
 - **The colour scheme and a late failure, in the host contract (§7.4, §7.6, §10.2).** The context gains `scheme`, `"light"` or `"dark"`, the scheme the processor shows the component in; when it changes, the processor calls `update` with the same params. It also gains `fail(message)`, for a component that finds after `mount` or `update` returned that it can't draw what it was given: W118 with the message, and the fallback until the next `update`. A throw in `update` is now treated as `fail`, so the component is updated again at the next change; before, a component that threw was never updated again. The React and Svelte bindings pass both in the `compmd` prop. Not breaking: a component that ignores both works as before.
 - **Where host metadata's diagnostics are (§2.1).** A diagnostic about a host's metadata, which has no place in the text, is at line 1. Before, the spec didn't say. Not breaking.
 - **Library packs (companion, section 5).** A library pack's own libraries are its `peerDependencies`. For a library that can't have two copies, the first pack to ask, in the order the document's imports resolve, decides its version. A library that can't be had (denied, refused, not allowed, no version matching, not a library pack, or in a cycle of libraries) is W121 on the import of the pack that names it, saying why. Before, the companion didn't say which pack decides or what a missing library is. Not breaking.
 - **Recursion through code blocks (§7.3, §10.2).** A code block a code renderer renders invokes it, so a `compmd` code renderer whose body leads back to it through such a block is F019, at the block's language, and the block shows its fallback. Before, the spec didn't say whether a rendered block counts as an invocation. Not breaking: such a document never rendered.
 
-### 2026-11-01
+### 1.0-draft.8, 2026-11-01
 
 - **Packs on a registry, a companion (§6.4).** New: [*CompMD packs on a registry*](compmd-registry-v1.md), versioned with the spec, for pack authors and for hosts that fetch packs from a registry. It says what a pack on an npm registry must be (the `compmd` field, the keyword `compmd-pack`, built modules as one file, `files`, its size against the host's cap), how a host reads one (policy before any download, the tarball checked against the registry's integrity), who fetches, and what a library pack is: a library packs share through `peerDependencies`, one version per document, with W121 for a second version of one that can't have two copies. §6.4 links to it.
 - **A reader's browser may fetch packs, when the host says so (§6.4, §15 *Privacy*).** A processor's configuration may let the reader's browser fetch packs from the registries it names, as a static site with no server needs to; the processor should then tell its readers, since the registry learns the reader's address and the packs' names, never the document. A document can never choose it. Before, packs were always fetched by the processor. Not breaking.
@@ -48,7 +49,7 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
 - **W121 (§10.2, §11).** New: component code that can't load (an import it may not make, a compile error, a built module that doesn't match its file, or a pack's `peerDependencies` the processor can't meet); its fallback renders. Before, the spec had no diagnostic for these.
 - **§15 rule 2.** A strict component's code comes from its pack, its binding's runtime and the libraries the processor provides it, as it always did in practice; the informative note's policy says so too.
 
-### 2026-10-30
+### 1.0-draft.7, 2026-10-30
 
 - **Defaults for host-language components (§7.4).** A host-language component's `params` hold the defaults of the declared params its caller doesn't give, as a `compmd` definition's body sees them, and so does the expanded tree. Before, the spec didn't say, and this implementation gave only the params written. Not breaking for documents; a component that supplied its own defaults still works. New case `expand/host-defaults`.
 - **Code renderers (§1.1, §2.3, §3, §4.5, §5.1, §6.3, §7, §7.3, §7.7, §10.2, §11, §12.1, §12.3, §17).** A leaf whose signature has `renders: mermaid` (or a list of names of one language) also renders the code blocks of that language, the block's text as its `code` param, which the signature needn't declare: ` ```mermaid ` in a document that imports a `mermaid` code renderer is drawn, and stays a code block in plain renderers and elsewhere. Params go on the info string after the language, read only for rendered blocks; `alt` is the text alternative (W101 without it); two renderers of one language at one level are F023; the `code` param on the info string is F017, and declaring `code` as anything but a required `string` is F009. The expanded tree's `code` node gains `component` and `alt`, in the tree schema too. `component=` defines a component only in a definition language. Not breaking: a code block renders differently only in a document that imports a code renderer. Conformance cases come with the processor's support.
@@ -59,11 +60,11 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
 - **Unknown type names are F037 (§7.3, §10.2).** A declaration whose type isn't in the grammar, such as `count: numbr`, in a signature, an input or a data `schema`, is F037 at the type name, with the nearest type name. The declaration is kept and takes any value. Before, such a type was accepted silently and checked nothing. Breaking for documents with a misspelt type, which now have an error.
 - **Website.** The spec links to the CompMD website, which has the spec as a page and a playground. The spec itself is unchanged.
 
-### 2026-10-29
+### 1.0-draft.6, 2026-10-29
 
 - **Links to a passage (§2.3).** A link to a text fragment (`#:~:text=…`) names a passage of the document by its text; a tool that shows the source, such as an editor beside its preview, may select the passage there. No new syntax: they are ordinary links, and the spec says how such tools may read them.
 
-### 2026-10-27
+### 1.0-draft.5, 2026-10-27
 
 - **Timestamp and duration getters (§8.2).** The profile's timestamp and duration operations include CEL's getters, `getFullYear` to `getMilliseconds`, so a document can show the time of day. A timestamp's getters take a time zone and, unlike CEL's, use `md.tz` without one. Before, the getters weren't named, and a processor could leave them out.
 - **Numbers as text (§8.1, §8.2).** Interpolation and `string()` write a number as JavaScript's `String(n)` does: plain from 10⁻⁶ up to 10²¹, with an exponent outside (`1e+21`, `1.5e-7`), and `NaN`, `Infinity` and `-Infinity`. Before, the form of very large and very small numbers wasn't said.
@@ -75,7 +76,7 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
 - **W114 wherever a box's width comes from its content (§9.3, §10.2).** A box whose blocks use breakpoints shrinks to nothing wherever its width would come from its content. W114 was only for a box in a `row`; it now also covers a box in a `stack` that isn't stretched across it, a box in a `grid` with `justify-self`, and a positioned box without both inline insets. A document may now have W114 where it had none. New cases: `expand/column-child-width-W114`, `expand/grid-child-width-W114`, `expand/positioned-width-W114`, and `expand/block-child-width` with none.
 - **Slot items and their width (§7.4).** A host-language component that lays its items out by their content gives an item a width when the block in it uses breakpoints.
 
-### 2026-10-24
+### 1.0-draft.4, 2026-10-24
 
 - **The reference rendering (§13.1).** The informative HTML and CSS rendering of the built-ins is `@compmd/render`'s, in [`render/`](render/README.md#the-reference-rendering-of-the-built-ins). The spec itself is unchanged.
 - **Breakpoints follow the parent's width (§9.3, §10.2; W114).** Every param of a block, its layout among them, follows its parent's width; before, a block's own layout followed its own width, which CSS can't express (an element's styles follow an ancestor's width, not its own). The two differ only for a block much narrower than its parent: `::: grid {width=40% md:grid-template-columns="1fr 1fr"}` on a wide page now has two columns. W114 is for a block in a `row` whose *children* use breakpoints, as §9.3 said; a block whose own layout uses breakpoints no longer gets it. Case `expand/row-child-width-W114` is updated.
@@ -83,7 +84,7 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
 - **Record keys, an open issue (§17).** `each` iterations and template slot instances are told apart by index, not by record, so state shown for one record moves to another when records are added in front. A record key is to be decided.
 - **Author.** The spec names its author.
 
-### 2026-10-23
+### 1.0-draft.3, 2026-10-23
 
 - **The AI authoring guide.** [`llms.txt`](llms.txt) is what an AI agent reads before writing CompMD. Measured with Claude Sonnet and Haiku on 12 tasks: 12 of 12 valid on the first try for each, against 0 of 12 without it (see the [README](README.md#the-ai-authoring-guide)). The spec itself is unchanged.
 - **Tree schema (§12.4).** [`conformance/compmd-tree.schema.json`](conformance/compmd-tree.schema.json) defines the parse tree and the expanded tree; every expected tree in the conformance set fits it.
@@ -97,7 +98,7 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
   - Other renames: the `compmd` field in `package.json`, the `compmd` prop of the React and Svelte bindings, the `--compmd-*` CSS custom properties, "component line" and "CompMD processor".
   - Diagnostic codes are unchanged.
 
-### 2026-10-22
+### 1.0-draft.2, 2026-10-22
 
 - **A component is one box (§7, §7.2, §9, §9.1, §9.2, §12.1, §12.3; F036, W120).** Breaking: definitions that wrapped their body in `::: box {…}` now get two boxes.
   - Every block component is one box, styled by a param list on its definition fence and overridden by the caller's params as a later CSS cascade layer.
@@ -109,7 +110,7 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
 - **Findings from the parser, the processor and the examples.** `input<enum>`, missing imports and bad breakpoints; expansion of definitions, control flow and data; list functions, reserved names and the changelog example.
 - **Open issues settled:** base syntax, raw HTML and extensions; host-language components; template slots; the CEL profile; data imports and host data; layout and visual styling; security and packages; accessibility and text direction; smaller points.
 
-### 2026-10-21
+### 1.0-draft.1, 2026-10-21
 
 - **Open issues settled:** GitHub READMEs and live documents; conformance, the document tree and the test format; grammar precision; frontmatter and versions; names; diagnostics, recovery and fallbacks.
 - **The conformance set**, pass 1 (stage 1).

@@ -13,7 +13,7 @@ Packs for [CompMD](https://compmd.dev/) documents from an npm registry. A docume
 npm install @compmd/registry @compmd/processor
 ```
 
-It implements the draft of the [CompMD specification](https://compmd.dev/spec/), version 1, and shares its version with the other `@compmd/` packages ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
+It implements version **1.0-draft.13** of the [CompMD specification](https://compmd.dev/spec/) and its companion on registries, which are versioned on their own, and shares its version with the other `@compmd/` packages ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
 
 **Versions:**
 - **0.4.0:** `timeout`, after which `resolvePacks` stops waiting for a pack and lists it in `problems`, for a host that renders with its packs pending meanwhile.

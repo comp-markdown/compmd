@@ -65,8 +65,8 @@ function specInDev(): Plugin {
         if (!server || !filename.endsWith(join("spec", "index.html"))) return html;
         const { renderSpecPage: renderPage } = (await server.ssrLoadModule("/src/server.ts")) as { renderSpecPage: (props: object) => Rendered };
         rendered ??= renderSpecPage((path) => readFileSync(join(REPO, path), "utf8"), "https://github.com/comp-markdown/compmd/blob/main/");
-        const { html: text, toc } = await rendered;
-        return prerendered(html, devStylesheets(renderPage({ html: text, toc, root: "../", versions: [] })), () => "");
+        const { html: text, toc, draft } = await rendered;
+        return prerendered(html, devStylesheets(renderPage({ html: text, toc, root: "../", draft, versions: [] })), () => "");
       },
     },
   };

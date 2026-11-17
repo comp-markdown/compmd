@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import { changelog, completeExample, completeJson, longBody } from "../bench/requests.ts";
-import { componentsOf, frontmatterOf, initSync, newestMatching, OpenDocument, OpenDocumentJson, plainHtml, process, sources, type Request } from "./index.ts";
+import { componentsOf, frontmatterOf, initSync, newestMatching, OpenDocument, OpenDocumentJson, plainHtml, process, sources, SPEC_VERSION, type Request } from "./index.ts";
 
 /** `value` without positions, as the conformance case compares it. */
 function withoutPositions(value: unknown): unknown {
@@ -17,6 +17,15 @@ function withoutPositions(value: unknown): unknown {
 
 beforeAll(() => {
   initSync({ module: readFileSync(join(import.meta.dirname, "../pkg/compmd_wasm_bg.wasm")) });
+});
+
+describe("SPEC_VERSION", () => {
+  const read = (path: string) => readFileSync(join(import.meta.dirname, "../..", path), "utf8");
+
+  it("is the crate's, and the version each implementing package's README names", () => {
+    expect(/pub const SPEC_VERSION: &str = "([^"]+)";/.exec(read("processor/src/lib.rs"))?.[1]).toBe(SPEC_VERSION);
+    for (const readme of ["wasm/README.md", "render/README.md", "sandbox/README.md", "registry/README.md"]) expect(read(readme), readme).toContain(SPEC_VERSION);
+  });
 });
 
 describe("process", () => {

@@ -27,17 +27,34 @@ export function betweenThem(href: string): string | undefined {
 }
 
 /**
+ * The draft a version of the spec is, from its header (`**Version 1.0-draft.13.`, spec §1); `undefined` for a release,
+ * and for a version from before drafts were numbered.
+ *
+ * @example
+ * draftOf("**Version 1.0-draft.13. Last changed 2026-11-17.**"); // "1.0-draft.13"
+ */
+export const draftOf = (spec: string): string | undefined => /^\*\*Version (\d+\.\d+-draft\.\d+)\./m.exec(spec)?.[1];
+
+/** The spec's page, rendered, and the draft it is (`draftOf`). */
+export interface SpecPage extends RenderedSpec {
+  draft: string | undefined;
+}
+
+/**
  * The spec's page: the spec, then its companion as a section of it, each from `read` (a file of the repository by its
  * path, at one version: `undefined` when that version has none), with their contents together. `blob` is the
  * repository's file URL at that version, ending in `/`, which each heading's source link starts with.
  */
-export async function renderSpecPage(read: (path: string) => string | undefined, blob: string): Promise<RenderedSpec> {
-  const spec = await renderMarkdown(read(SPEC) ?? "", { blob, path: SPEC }, { rules: true, link: betweenThem });
+export async function renderSpecPage(read: (path: string) => string | undefined, blob: string): Promise<SpecPage> {
+  const text = read(SPEC) ?? "";
+  const spec = await renderMarkdown(text, { blob, path: SPEC }, { rules: true, link: betweenThem });
+  const draft = draftOf(text);
   const written = read(COMPANION);
-  if (written === undefined) return spec;
+  if (written === undefined) return { ...spec, draft };
   const companion = await renderMarkdown(written, { blob, path: COMPANION }, { rules: true, link: betweenThem, section: COMPANION_SECTION });
   return {
     html: `${spec.html}<section class="companion" aria-labelledby="${COMPANION_SECTION}">${companion.html}</section>`,
     toc: [...spec.toc, ...companion.toc],
+    draft,
   };
 }

@@ -17,6 +17,13 @@ export { OpenDocument, OpenDocumentJson } from "./open-document.ts";
 export type * from "./parse-tree.ts";
 export type { ExpandedInput, ExpandedRoot, Splice, TextEdit } from "@compmd/render";
 
+/**
+ * The version of the CompMD specification this processor implements (spec §1), the crate's `compmd::SPEC_VERSION`: a
+ * draft, `1.0-draft.N`, until the spec's version 1 is released. The spec is versioned on its own, apart from this
+ * package.
+ */
+export const SPEC_VERSION = "1.0-draft.13";
+
 /** A document to process, with everything it needs. Only `path` and `now` are required. */
 export interface Request {
   /** The processed document's path in `files`. */

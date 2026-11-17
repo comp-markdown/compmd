@@ -55,13 +55,14 @@ for (const page of pages) {
   const root = rootOf(page.folder);
   const blob = `${REPOSITORY}/blob/${page.ref ?? "main"}/`;
   // The spec and its companion, at the page's version; one released before the companion has the spec alone.
-  const { html, toc } = await renderSpecPage((path) => fileAt(page.ref, path), blob);
+  const { html, toc, draft } = await renderSpecPage((path) => fileAt(page.ref, path), blob);
   if (page.folder === "spec/") specAtSpec = html;
   const rendered = server.renderSpecPage({
     html,
     toc,
     root,
     version: page.version,
+    draft: page.version === undefined ? draft : undefined,
     versions: versions.map((other) => ({ label: other.version ?? "Draft", href: `${root}${other.folder}`, current: other.version === page.version })),
   });
   mkdirSync(join(DIST, page.folder), { recursive: true });

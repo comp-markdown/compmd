@@ -1,6 +1,6 @@
 //! The [CompMD](https://compmd.dev/) processor: parses, validates and expands documents written in CompMD (Component
 //! Markdown), as the [CompMD specification](https://github.com/comp-markdown/compmd/blob/main/compmd-spec-v1.md)
-//! (version 1, draft) describes.
+//! describes, at the version [`SPEC_VERSION`] names.
 //!
 //! It implements stages 1 to 4b, everything up to rendering, as the states of a [`Processor`]: parsing gives a
 //! document's [tree], resolving loads its imports and binds every component name, validating checks it against the
@@ -51,3 +51,19 @@ pub use compmd_pack as pack;
 pub use parse::{ParseOptions, TextEdit};
 pub use processor::Processor;
 pub use resolve::{Ambient, Language};
+
+/// The version of the CompMD specification this processor implements (spec §1): a draft, `1.0-draft.N`, until the
+/// spec's version 1 is released. The spec is versioned on its own, apart from this crate.
+///
+/// ```
+/// assert!(compmd::SPEC_VERSION.starts_with("1.0"));
+/// ```
+pub const SPEC_VERSION: &str = "1.0-draft.13";
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn the_readme_names_the_spec_version_implemented() {
+        assert!(include_str!("../README.md").contains(super::SPEC_VERSION));
+    }
+}

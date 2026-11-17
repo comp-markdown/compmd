@@ -25,11 +25,13 @@
     root: string;
     /** Its version, `1.0`; absent for the draft. */
     version?: string | undefined;
+    /** For the draft, the revision it is, `1.0-draft.13`, when its header numbers it. */
+    draft?: string | undefined;
     /** Every version of the spec, this one among them. */
     versions: VersionLink[];
   }
 
-  let { html, toc, root, version, versions }: Props = $props();
+  let { html, toc, root, version, draft, versions }: Props = $props();
   const title = $derived(version === undefined ? "CompMD specification, version 1 (draft)" : `CompMD specification, version ${version}`);
   const description = "The CompMD specification: Markdown with components, data, inputs and layout, readable as text in any Markdown renderer.";
   /** The month it was printed in, for the draft's edition. */
@@ -56,7 +58,7 @@
 <FrontMatter
   {title}
   subtitle="Markdown with components, data, inputs and layout, readable as text in any Markdown renderer."
-  edition={version === undefined ? `The editor's draft of ${month}, which changes as the spec does.` : `Version ${version}, released and never changed after.`}
+  edition={version === undefined ? `The editor's draft${draft === undefined ? "" : `, ${draft},`} of ${month}, which changes as the spec does.` : `Version ${version}, released and never changed after.`}
   online="{SITE}spec/"
   license={{ text: "The specification text is licensed under CC BY 4.0; its conformance set and any code, under the MIT license. The terms:", url: "https://creativecommons.org/licenses/by/4.0/" }}
 />
@@ -67,7 +69,7 @@
   <div class="wrap">
     <p>
       {#if version === undefined}
-        <strong>Draft.</strong> This is the editor's draft from <code>main</code>: it changes as the spec does, and a change can still break documents.
+        <strong>Draft{draft === undefined ? "" : ` ${draft}`}.</strong> This is the editor's draft from <code>main</code>: it changes as the spec does, and a change can still break documents.
       {:else}
         <strong>Version {version}.</strong> Released, and never changed after.
       {/if}

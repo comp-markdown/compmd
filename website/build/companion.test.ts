@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { betweenThem, renderSpecPage } from "./companion.ts";
+import { betweenThem, draftOf, renderSpecPage } from "./companion.ts";
 
 const BLOB = "https://github.com/comp-markdown/compmd/blob/main/";
 
@@ -69,6 +69,13 @@ describe("renderSpecPage", () => {
     expect(html).toContain('href="#">CompMD specification</a>');
     expect(html).toContain('href="#64-packages-and-the-registry">§6.4</a>');
     expect(html).toContain(`href="${BLOB}CHANGELOG.md"`);
+  });
+
+  it("says which draft the spec is, from its header, and none for a release or an unnumbered draft", async () => {
+    expect(draftOf("# CompMD\n\n**Version 1.0-draft.13. Last changed 2026-11-17.**\n")).toBe("1.0-draft.13");
+    expect(draftOf("**Version 1, draft. Last changed 2026-11-03.**")).toBeUndefined();
+    expect(draftOf("**Version 1.0.**")).toBeUndefined();
+    expect((await renderSpecPage((path) => FILES[path], BLOB)).draft).toBe(draftOf(FILES["compmd-spec-v1.md"] ?? ""));
   });
 
   it("is the spec alone for a version that has no companion", async () => {

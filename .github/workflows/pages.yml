@@ -20,8 +20,9 @@ on:
       - Cargo.lock
       - .github/workflows/pages.yml
       - .github/actions/setup/**
-    # A released version of the spec (docs/releases.md) adds its own page.
-    tags: ["spec-v*"]
+    # A released version of the spec (docs/releases.md) adds its own page; a draft's tag (`spec-v1.0-draft.13`) adds
+    # none, and the push of its commit to main deploys it already.
+    tags: ["spec-v*", "!spec-v*-draft.*"]
   workflow_dispatch:
 
 permissions:
