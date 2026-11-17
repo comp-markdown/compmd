@@ -268,6 +268,7 @@ const TRIGGERS: Record<string, Trigger> = {
     policy: { runtimes: [{ name: "svelte", version: "5.40.0" }] } satisfies Policy,
   },
   W122: { text: "```compmd component=note\nprint: sideways\n---\nN.\n```\n" },
+  W123: { text: "````compmd {render=output}\n```compmd {render=output}\nInner.\n```\n````\n" },
 };
 
 describe("chapter 22, the diagnostics", () => {

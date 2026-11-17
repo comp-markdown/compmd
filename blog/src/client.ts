@@ -13,7 +13,9 @@ import { POST_DATA } from "./client-data.ts";
 async function live(body: HTMLElement, { path, files }: { path: string; files: Record<string, string> }): Promise<void> {
   await init();
   let inputs: Record<string, unknown> = {};
-  const open = () => new OpenDocument({ ...request, path, files, now: new Date().toISOString(), inputs });
+  /** What the reader set in each example (spec §7.8), by its number: the example's own, never the post's inputs. */
+  let exampleInputs: Record<number, Record<string, unknown>> = {};
+  const open = () => new OpenDocument({ ...request, path, files, now: new Date().toISOString(), inputs, exampleInputs });
   let document_ = open();
   // Laid out, so the components size themselves, but out of sight until they have drawn.
   const target = document.createElement("div");
@@ -36,11 +38,18 @@ async function live(body: HTMLElement, { path, files }: { path: string; files: R
     rendered = true;
     show();
   });
-  view.on("set", ({ input, value }) => {
-    inputs = { ...inputs, [input]: value };
+  const reopen = () => {
     document_.free();
     document_ = open();
     view.render(document_.expanded);
+  };
+  view.on("set", ({ input, value }) => {
+    inputs = { ...inputs, [input]: value };
+    reopen();
+  });
+  view.on("exampleSet", ({ example, input, value }) => {
+    exampleInputs = { ...exampleInputs, [example]: { ...exampleInputs[example], [input]: value } };
+    reopen();
   });
   view.render(document_.expanded);
 }

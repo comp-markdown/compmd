@@ -81,6 +81,9 @@ graph LR; Draft --> Review --> Published
 ```
 ````
 
+A post about CompMD shows CompMD and what it makes the same way, with ```` ```compmd {render=both} ````: the block is
+a document of its own, whose inputs the reader can change.
+
 ## Licence
 
 MIT.

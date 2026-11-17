@@ -85,6 +85,21 @@ graph LR; Scraps --> Bin --> Heap
 
 Wherever the drawing can't be made, a `both` block shows its code once, not twice. A plain Markdown viewer shows the code block, whatever `render` says.
 
+## CompMD beside what it makes
+
+A post about CompMD itself does the same with a ` ```compmd ` block: `render=both` shows the CompMD, then what it makes.
+
+````md
+```compmd {render=both}
+---
+rating: 4
+---
+Rated :value[4 of 5]{of=(string(md.doc.rating) + " of 5")}.
+```
+````
+
+Such a block is an *example*: a little document of its own. Its frontmatter, imports, inputs and components are its own, and nothing of the post reaches into it, so `md.doc.rating` here is the example's 4, whatever the post's frontmatter says. Its mistakes show where they are written, in the block. A ` ```compmd ` block is code unless it says `render=output` or `render=both`, so the CompMD you show as code stays code; and an example inside an example shows its code only (`W123`).
+
 ## A block or a leaf
 
 The rotation's diagram, from chapter 16, is the same `mermaid` component as a leaf. Which to write depends on where the diagram's text comes from:

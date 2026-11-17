@@ -100,5 +100,6 @@ When something in a document isn't right, CompMD says so with a *diagnostic*: a 
 | `W113` | a component from a pack the app itself provides, which other apps don't have; there, it shows its fallback | nothing, for a document only that app shows; for others, import a published pack instead |
 | `W118` | a component in code failed to draw what it was given, such as a diagram Mermaid can't read; a leaf shows its fallback, and a code block its code | correct its params, or the block's text; the message says what the component found |
 | `W121` | a component in code can't load: it needs a library or framework the app doesn't have, or its code doesn't compile; it shows its fallback | use the component in an app that has what it needs, or tell the component's author |
+| `W123` | a ` ```compmd ` block that would render is inside an example (chapter 17); it shows its code | leave it as code (drop `render`), or show it in a document of its own |
 
 [Back to the contents](README.md)

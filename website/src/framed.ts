@@ -29,7 +29,9 @@ export async function renderInFrame(container: HTMLElement, path: string, text: 
 export async function keepInSandbox(container: HTMLElement, path: string, text: string, files: Record<string, string>, onShown: () => void, page: "frame" | "host" = "host"): Promise<Live> {
   await init();
   let inputs: Record<string, unknown> = {};
-  const open = () => new OpenDocument({ ...request, path, files: { ...files, [path]: text }, now: new Date().toISOString(), inputs });
+  /** What the reader set in each example (spec §7.8), by its number: the example's own, never the document's inputs. */
+  let exampleInputs: Record<number, Record<string, unknown>> = {};
+  const open = () => new OpenDocument({ ...request, path, files: { ...files, [path]: text }, now: new Date().toISOString(), inputs, exampleInputs });
   let document = open();
   const view = createSandbox({ ...sandbox, page, stylesheets: [`${PLAYGROUND}frame.css?host=reference`] }).open(container, {
     components: document.components,
@@ -47,11 +49,18 @@ export async function keepInSandbox(container: HTMLElement, path: string, text: 
     rendered = true;
     showIfReady();
   });
-  view.on("set", ({ input, value }) => {
-    inputs = { ...inputs, [input]: value };
+  const reopen = () => {
     document.free();
     document = open();
     view.render(document.expanded);
+  };
+  view.on("set", ({ input, value }) => {
+    inputs = { ...inputs, [input]: value };
+    reopen();
+  });
+  view.on("exampleSet", ({ example, input, value }) => {
+    exampleInputs = { ...exampleInputs, [example]: { ...exampleInputs[example], [input]: value } };
+    reopen();
   });
   view.render(document.expanded);
   return {

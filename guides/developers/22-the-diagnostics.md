@@ -92,6 +92,7 @@ Every use against its signature, the paths, the expressions' types, the inputs a
 | W102 | warning | a use of a component whose definition language or runtime the processor doesn't run (`vue`, or a runtime the host's `policy.runtimes` doesn't have); its fallback is shown | writer, pack author, host | a supported language and runtime, or the runtime in the frames |
 | W103 | warning | an `each` whose default slot is one list item, with `join` unset | writer | `join=list` |
 | W120 | warning | a box param given to a `display=contents` component, which has no box; ignored | writer, pack author | removing it |
+| W123 | warning | a ` ```compmd ` block with `render=output` or `both` inside an example; it shows its source | writer | the inner block as source, or rendered where it is a document of its own |
 
 ## Stage 4a, `load`
 

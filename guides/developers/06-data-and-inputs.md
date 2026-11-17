@@ -147,6 +147,18 @@ view.on("set", ({ input, value }) => {
 
 Run it: the page lists Ada's and Grace's orders, *2 orders in all*, and the two delivery zones. Pick *shipped*, and it lists Edsger's, and the address ends in `?status=shipped`, so a reload, or a link, opens the same view.
 
+**An example's inputs** are its own ([spec §7.8](https://compmd.dev/spec/#78-examples)): a ` ```compmd {render=output} ` block in a document is processed as a document of its own, with its own inputs. A reader who changes one is `exampleSet`, with the example's number, never `set`; give the value back in the request's `exampleInputs`, by that number:
+
+```ts
+let exampleInputs: Record<number, Record<string, unknown>> = {};
+view.on("exampleSet", ({ example, input, value }) => {
+  exampleInputs = { ...exampleInputs, [example]: { ...exampleInputs[example], [input]: value } };
+  // Open again with `{ ...request, inputs, exampleInputs }`, as for `set`.
+});
+```
+
+A host that doesn't listen leaves its examples' inputs at their defaults, and its document's own never change.
+
 ## The host's data
 
 A `host:` source names data your app provides: the processor gives it nothing but the text after `host:`, here `orders?status=open`, and you decide what that means. It is the one way a document reads your app's own records, and it reads only what you answer.
