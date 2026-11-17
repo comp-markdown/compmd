@@ -29,12 +29,13 @@ my-blog/
   "author": "Ada Lovelace",
   "lang": "en",
   "description": "Things written down.",
-  "comments": { "repo": "ada/notes", "repoId": "R_…", "category": "Blog", "categoryId": "DIC_…" }
+  "comments": { "giscus": { "repo": "ada/notes", "repoId": "R_…", "category": "Blog", "categoryId": "DIC_…" } }
 }
 ```
 
-`comments` is optional: each post's comments are then a discussion of the repository's GitHub Discussions, through
-[giscus](https://giscus.app) (its page gives the ids), one per post, loaded when a reader scrolls to them.
+`comments` is optional, and names its provider: with `giscus`, the one there is so far, each post's comments are a
+discussion of the repository's GitHub Discussions, through [giscus](https://giscus.app) (its page gives the ids), one
+per post, loaded when a reader scrolls to them.
 
 A post's frontmatter:
 

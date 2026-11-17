@@ -8,13 +8,14 @@ import { slugOf } from "./slug.ts";
 describe("configOf", () => {
   it("takes a title, an address and an author, with English when no language is given", () => {
     expect(configOf({ title: "Notes", url: "https://example.com/blog/", author: "Ada" })).toEqual({ title: "Notes", url: "https://example.com/blog/", author: "Ada", lang: "en" });
-    const comments = { repo: "a/b", repoId: "R_1", category: "Blog", categoryId: "C_1" };
+    const comments = { giscus: { repo: "a/b", repoId: "R_1", category: "Blog", categoryId: "C_1" } };
     expect(configOf({ title: "N", url: "https://example.com/", author: "A", lang: "de", description: "D", comments })).toMatchObject({ lang: "de", description: "D", comments });
   });
 
   it("names every field that is missing or wrong", () => {
     expect(() => configOf({ url: "https://example.com/blog" })).toThrow(new BlogError("blog.config.json: `title` is missing; `author` is missing; `url` is an http(s) address ending in `/`"));
-    expect(() => configOf({ title: "N", url: "https://example.com/", author: "A", lang: 1, comments: { repo: "a/b" } })).toThrow(/`lang` is text; `comments` has `repo`, `repoId`/);
+    expect(() => configOf({ title: "N", url: "https://example.com/", author: "A", lang: 1, comments: { giscus: { repo: "a/b" } } })).toThrow(/`lang` is text; `comments.giscus` has `repo`, `repoId`/);
+    expect(() => configOf({ title: "N", url: "https://example.com/", author: "A", comments: { disqus: {} } })).toThrow(/`comments` names its provider: `giscus` is the one there is/);
     expect(() => configOf(null)).toThrow(/`title` is missing/);
   });
 });

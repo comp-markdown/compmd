@@ -60,13 +60,13 @@ export function listPage(config: BlogConfig, posts: readonly Post[]): Page {
 
 /** Where a post's comments go, when the blog has them: giscus's script loads when a reader scrolls near them. */
 function commentsOf(config: BlogConfig): string {
-  const { comments } = config;
-  if (!comments) return "";
+  const giscus = config.comments?.giscus;
+  if (!giscus) return "";
   const attributes: Record<string, string> = {
-    "data-repo": comments.repo,
-    "data-repo-id": comments.repoId,
-    "data-category": comments.category,
-    "data-category-id": comments.categoryId,
+    "data-repo": giscus.repo,
+    "data-repo-id": giscus.repoId,
+    "data-category": giscus.category,
+    "data-category-id": giscus.categoryId,
     "data-mapping": "pathname",
     "data-strict": "1",
     "data-reactions-enabled": "1",

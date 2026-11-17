@@ -98,7 +98,7 @@ describe("buildSite", () => {
   });
 
   it("builds drafts when asked, a blog's own layout and theme, and comments", async () => {
-    const config = { title: "N", url: "https://example.com/", author: "A", comments: { repo: "a/b", repoId: "R", category: "Blog", categoryId: "C" } };
+    const config = { title: "N", url: "https://example.com/", author: "A", comments: { giscus: { repo: "a/b", repoId: "R", category: "Blog", categoryId: "C" } } };
     const own = await writeBlog({ ...BLOG, "blog.config.json": JSON.stringify(config), "layout.html": "<html><head></head><body><nav>mine</nav><!-- content --></body></html>", "theme.css": ".mine {}" });
     try {
       const built = await buildSite(own, { drafts: true, now: NOW });

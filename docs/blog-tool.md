@@ -64,8 +64,8 @@ Anyone who writes in CompMD gets a blog from it in a few minutes; the CompMD web
    header and footer, with `layout.html`: an HTML page with `<!-- content -->` where the tool puts each page. No theme
    system or plugins: a blog that needs more is a site, not this tool's job.
 
-7. **Comments with giscus**, or none (the default): `blog.config.json`'s `comments` names a repository and a
-   Discussions category, and each post's comments are a discussion there, one per post (giscus's `pathname` mapping,
+7. **Comments with giscus**, or none (the default): `blog.config.json`'s `comments` names its provider, so another
+   is a key of its own later; under `giscus`, a repository and a Discussions category, and each post's comments are a discussion there, one per post (giscus's `pathname` mapping,
    strict), by a small open-source script with no tracking or ads; readers sign in with GitHub. The comments load only
    when a reader scrolls to them, so a post's page stays within its budget, and the page's content security policy
    names only giscus's origin.
