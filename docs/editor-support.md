@@ -1,4 +1,6 @@
-# CompMD in editors (proposed)
+# CompMD in editors
+
+- **Status:** Approved (2026-11-17). Its parts are built as tasks of their own, in the order below.
 
 CompMD for the editors writers use: VS Code, Neovim, Helix, Zed and Emacs. Each gets highlighting, folding and selection
 by structure from a grammar, and the processor's own help (its diagnostics, completion, exact highlighting) from a
