@@ -21,7 +21,7 @@ is the first example: `renders: mermaid` already says its blocks are Mermaid.)
 
 2. **What a pack ships: grammars, TextMate and tree-sitter, either or both.** A TextMate grammar (`.tmLanguage.json`) is
    what VS Code and Shiki read, so the playground, the Developer Tools and the site's highlighting use it at once; a
-   tree-sitter grammar (WebAssembly) is what Neovim, Helix and Zed read, and what [the CompMD grammar](tree-sitter.md)
+   tree-sitter grammar (WebAssembly) is what Neovim, Helix and Zed read, and what [the CompMD grammar](editor-support.md)
    injects. The pack declares them in its `package.json`, each a file of the pack:
 
    ```json
