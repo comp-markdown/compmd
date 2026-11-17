@@ -3,6 +3,7 @@
 // trust (docs/running-components-in-the-sandbox.md, decisions 1 and 4, Q2).
 
 import { rendersSlots, type ExpandedInput, type ExpandedUse, type Mount, type NodesMounted, type Params, type Slots } from "@compmd/render";
+import { MountSet } from "./mount-set.ts";
 import type { Observer } from "./observer.ts";
 import type { ComponentCode, ErrorReason, Level, Scheme } from "./protocol/messages.ts";
 
@@ -32,7 +33,7 @@ export interface Framed extends NodesMounted {
 export interface MountsOptions {
   here: Here;
   /** The mounts of components of this level: their loaded code, or the host's trusted components. */
-  inline: Readonly<Record<string, Mount>>;
+  inline: MountSet;
   /** Frames a use of a lower level in `target`. */
   frame(target: Element, node: ExpandedUse, inputs: Readonly<Record<string, ExpandedInput>>, component: ComponentCode): Framed;
   /**
@@ -77,7 +78,11 @@ function timed(name: string, mount: Mount, observer: Observer): Mount {
  * level of the rest, so it never holds code it can't run.
  */
 export function codeFor(components: readonly ComponentCode[], level: Level): ComponentCode[] {
-  return components.map((component) => (RANK[component.level] <= RANK[level] ? component : { name: component.name, level: component.level, ...(component.print ? { print: component.print } : {}) }));
+  return components.map((component) =>
+    RANK[component.level] <= RANK[level]
+      ? component
+      : { name: component.name, level: component.level, ...(component.print ? { print: component.print } : {}), ...(component.example === undefined ? {} : { example: component.example }) },
+  );
 }
 
 /** Why a component of `level` can't be in a part rendered `here`. */
@@ -97,7 +102,11 @@ function notHereMessage(name: string, level: ComponentCode["level"], here: Here)
  * createRegion(container, { components: mounts.mounts });
  */
 export class Mounts {
-  readonly mounts: Record<string, Mount> = {};
+  readonly #all = new MountSet();
+  /** The document's mounts by name, for the renderer's `components`. */
+  readonly mounts = this.#all.mounts;
+  /** Each example's mounts by its number (spec §7.8), for the renderer's `examples`. */
+  readonly examples = this.#all.examples;
   readonly #options: MountsOptions;
   /** The frames on the page, which get the document's code and theme again when they change. */
   readonly #frames = new Set<Framed>();
@@ -109,10 +118,10 @@ export class Mounts {
   }
 
   set(components: readonly ComponentCode[]): void {
-    for (const name of Object.keys(this.mounts)) Reflect.deleteProperty(this.mounts, name);
+    this.#all.clear();
     for (const component of components) {
       const mount = this.#mountOf(component);
-      if (mount) this.mounts[component.name] = mount;
+      if (mount) this.#all.put(component, mount);
     }
     for (const frame of this.#frames) frame.code(components);
   }
@@ -143,7 +152,7 @@ export class Mounts {
     const { here, inline, observer } = this.#options;
     const rank = RANK[component.level];
     if (rank === RANK[here]) {
-      const mount = inline[component.name];
+      const mount = inline.get(component);
       return mount && observer ? timed(component.name, mount, observer) : mount;
     }
     if (rank > RANK[here]) return this.#notHere(component);

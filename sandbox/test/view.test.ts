@@ -92,6 +92,21 @@ describe("render and splice", () => {
     });
   }
 
+  for (const mode of MODES) {
+    it(`runs an example's own components, never for the document's uses of the same name (${mode} mode)`, async () => {
+      const card: HostComponent = { ...label("example: "), name: "card", example: 1 };
+      const { view, events } = open(mode, [card]);
+      const cardUse = (text: string): ExpandedComponent => ({ ...use(text), name: "card", params: [{ key: "label", breakpoint: null, value: text }] });
+      view.render({
+        type: "root",
+        children: [cardUse("the document's"), { type: "code", lang: "compmd", meta: null, value: ":: card[x]", render: "output", document: { type: "root", children: [cardUse("the example's")], example: 1 } }],
+      });
+      await view.settled();
+      const missing = events.error.filter(({ component, reason }) => component === "card" && reason === "missing");
+      expect(missing, "the document's `card` only: the example has its own").toHaveLength(1);
+    });
+  }
+
   it("says so once when the page's frame never loads its runtime, missing or refused by its policy", { timeout: 30_000 }, async () => {
     for (const base of [missing, refused]) {
       const { view, events, until } = open("frame", [label()], { base });

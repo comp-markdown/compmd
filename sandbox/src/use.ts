@@ -20,6 +20,8 @@ export interface UseFrameOptions {
   code: readonly ComponentCode[];
   node: ExpandedUse;
   inputs: Readonly<Record<string, ExpandedInput>>;
+  /** The number of the example the use is in (spec §7.8); absent for the document's. */
+  example?: number;
   styles?: readonly string[];
   /** The host's own URL schemes, checked, which the links and images the frame renders may use (spec §15). */
   schemes?: readonly string[];
@@ -67,6 +69,8 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
   iframe.style.cssText = `border: 0; width: 100%; height: 1px; display: ${options.node.type === "componentInline" ? "inline-block" : "block"};`;
   let node = options.node;
   let inputs = options.inputs;
+  /** The example the use is in (spec §7.8), whose components the frame finds its node's in. */
+  const inExample = options.example === undefined ? {} : { example: options.example };
   let bound = boundInputs([node]);
   let code = options.code;
   let styles = options.styles ?? [];
@@ -124,7 +128,7 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
     if (scheme) end.scheme(scheme);
     end.code([...code]);
     if (tokens) end.send({ type: "theme", tokens: { ...tokens } });
-    end.part({ node, inputs: { ...inputs } });
+    end.part({ node, inputs: { ...inputs }, ...inExample });
     child = end;
     connected();
   };
@@ -137,7 +141,7 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
       node = next;
       inputs = nextInputs;
       bound = boundInputs([next]);
-      child?.part({ node, inputs: { ...inputs } });
+      child?.part({ node, inputs: { ...inputs }, ...inExample });
     },
     code: (next) => {
       code = next;

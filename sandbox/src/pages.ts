@@ -50,6 +50,7 @@ export type Emit = <T extends keyof ViewEvents>(type: T, event: ViewEvents[T]) =
 export function hostPage(container: HTMLElement, runtime: HostRuntime, options: FoundOptions, observer: Observer, emit: Emit): PageEnd {
   const page: Page = createPage(container, {
     components: runtime.mounts,
+    examples: runtime.examples,
     // The frames' own Temml and Shiki, from their files, so math and code look the same in both modes, and the app
     // ships one copy of each, which this page and its frames share.
     math: framesMath(options.base),

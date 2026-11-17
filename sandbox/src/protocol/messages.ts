@@ -33,7 +33,15 @@ export interface Named {
   name: string;
   level: Level | "trusted";
   print?: "fallback";
+  /** The number of the example it is a component of (spec §7.8); absent for the document's own. */
+  example?: number;
 }
+
+/**
+ * Where a component is kept beside the others: its name, with its example's number for an example's, since an
+ * example's `card` is not the document's.
+ */
+export const entryOf = ({ name, example }: Pick<Named, "name" | "example">): string => (example === undefined ? name : `${String(example)}:${name}`);
 
 /**
  * A component with its code. A built module the host's page holds is a `Blob`, whose bytes the frames share, with its
@@ -76,6 +84,8 @@ export const hasCode = (component: ComponentCode): component is Runnable => "cod
 export interface Part {
   node: ExpandedUse;
   inputs: Record<string, ExpandedInput>;
+  /** The number of the example the use is in (spec §7.8), whose components its node names; absent for the document. */
+  example?: number;
 }
 
 /** A source to compile, for the compile frame. */

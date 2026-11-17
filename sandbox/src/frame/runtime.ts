@@ -219,6 +219,7 @@ function start(port: MessagePort): void {
         code: codeFor(components, "strict"),
         node,
         inputs,
+        ...(component.example === undefined ? {} : { example: component.example }),
         styles: stylesheets,
         schemes,
         ping: { every: 1000, timeout: 5000 },
@@ -278,11 +279,12 @@ function start(port: MessagePort): void {
   let page: Page | undefined;
   /** Whether a component's uses print their fallback, as the code the parent sent says (spec §7.3, §14). */
   const printsFallback = (name: string) => components.some((component) => component.name === name && component.print === "fallback");
-  const regionFor = (target: HTMLElement): Region =>
+  /** The region a part renders in: with the components of the example its use is in, if it is in one (spec §7.8). */
+  const regionFor = (target: HTMLElement, example: number | undefined): Region =>
     createRegion(target, {
       part: true,
       printsFallback,
-      components: mounts.mounts,
+      components: example === undefined ? mounts.mounts : (mounts.examples[example] ??= {}),
       math,
       highlight,
       onSet: (input, value) => {
@@ -305,7 +307,7 @@ function start(port: MessagePort): void {
       schemes = given;
       // A page frame (frame mode) renders the page through `@compmd/render`'s protocol, on the same port.
       const container = document.getElementById("page");
-      if (container) page = serveFrame(recordingFallbacks(port, observer), { container, components: mounts.mounts, math, highlight, images: imagesFrom(parent), allowOrigin: (origin) => {
+      if (container) page = serveFrame(recordingFallbacks(port, observer), { container, components: mounts.mounts, examples: mounts.examples, math, highlight, images: imagesFrom(parent), allowOrigin: (origin) => {
             parent.allowOrigin(origin);
           }, onLayout: moved, ownSchemes: schemes, printsFallback }).page;
     },
@@ -316,10 +318,10 @@ function start(port: MessagePort): void {
       mounts.set(next);
       await loadingNow;
     },
-    part: ({ node, inputs }: Part) => {
+    part: ({ node, inputs, example }: Part) => {
       const target = document.getElementById("part");
       if (!target) return;
-      region ??= regionFor(target);
+      region ??= regionFor(target, example);
       region.render([node], { inputs });
     },
     styles: (urls) => {

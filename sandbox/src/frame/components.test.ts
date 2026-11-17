@@ -42,7 +42,7 @@ describe("Components", () => {
     const { components, log } = setup();
     const target = document.createElement("div");
     const loading = components.set([component("card", "one")]);
-    const handle = components.mounts.card?.(target, context(1));
+    const handle = components.mounts.mounts.card?.(target, context(1));
     expect(target.textContent).toBe("");
     await loading;
     expect(target.textContent).toBe("one 1");
@@ -69,7 +69,7 @@ describe("Components", () => {
     const components = new Components({ load, report: () => undefined, adopt: () => undefined });
     await components.set([component("card", "one")]);
     const live = context(1);
-    const handle = components.mounts.card?.(document.createElement("div"), live);
+    const handle = components.mounts.mounts.card?.(document.createElement("div"), live);
     await components.set([component("card", "two")]);
     live.scheme = "dark";
     handle?.update?.({ n: 1 }, {});
@@ -80,12 +80,12 @@ describe("Components", () => {
     const { components, reports } = setup();
     await components.set([component("card", "fail")]);
     const target = document.createElement("div");
-    components.mounts.card?.(target, context(1));
+    components.mounts.mounts.card?.(target, context(1));
     expect(target.textContent, "mounted after its code failed: no second report").toBe("fallback");
     const live = document.createElement("div");
     await components.set([component("card", "one")]);
     expect(target.textContent).toBe("one 1");
-    components.mounts.card?.(live, context(1));
+    components.mounts.mounts.card?.(live, context(1));
     await components.set([component("card", "fail")]);
     expect(live.textContent).toBe("fallback");
     await components.set([component("card", "one")]);
@@ -100,7 +100,7 @@ describe("Components", () => {
     const { components, reports } = setup();
     await components.set([component("card", "one")]);
     const target = document.createElement("div");
-    components.mounts.card?.(target, context(1));
+    components.mounts.mounts.card?.(target, context(1));
     await components.set([component("card", "throw")]);
     expect(target.textContent).toBe("fallback");
     expect(reports).toEqual([["card", "threw", "throws"]]);
@@ -109,13 +109,29 @@ describe("Components", () => {
   it("drops names no longer given, with their styles, and adopts each component's CSS", async () => {
     const { components, adopted } = setup();
     await components.set([component("a", "styled"), component("b", "plain")]);
-    expect(Object.keys(components.mounts)).toEqual(["a", "b"]);
+    expect(Object.keys(components.mounts.mounts)).toEqual(["a", "b"]);
     await components.set([component("b", "plain")]);
-    expect(Object.keys(components.mounts)).toEqual(["b"]);
+    expect(Object.keys(components.mounts.mounts)).toEqual(["b"]);
     expect(adopted).toEqual([
       ["a", "b {}"],
       ["b", undefined],
       ["a", undefined],
+    ]);
+  });
+
+  it("keeps an example's component apart from the document's of the same name (spec §7.8)", async () => {
+    const { components, adopted } = setup();
+    await components.set([component("card", "styled document's"), { ...component("card", "styled example's"), example: 2 }]);
+    const [ours, theirs] = [document.createElement("div"), document.createElement("div")];
+    components.mounts.mounts.card?.(ours, context(1));
+    components.mounts.examples[2]?.card?.(theirs, context(1));
+    expect([ours.textContent, theirs.textContent]).toEqual(["styled document's 1", "styled example's 1"]);
+    await components.set([component("card", "styled document's")]);
+    expect(components.mounts.examples[2]?.card).toBeUndefined();
+    expect(adopted).toEqual([
+      ["card", "b {}"],
+      ["2:card", "b {}"],
+      ["2:card", undefined],
     ]);
   });
 
@@ -178,7 +194,7 @@ describe("Components", () => {
     const { components } = setup();
     const target = document.createElement("div");
     const first = components.set([component("card", "one")]);
-    components.mounts.card?.(target, context(1));
+    components.mounts.mounts.card?.(target, context(1));
     const second = components.set([component("card", "two")]);
     await Promise.all([second, first]);
     expect(target.textContent).toBe("two 1");

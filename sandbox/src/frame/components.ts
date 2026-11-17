@@ -1,9 +1,10 @@
-// A frame's host-language components, by name, for the renderer. Each name's mount goes through one of these
+// A frame's host-language components, by name (an example's by its number too, spec §7.8), for the renderer. Each name's mount goes through one of these
 // entries, so when its code changes, the instances on the page are mounted again with the new code and their last
 // params and slots, and the rest of the page keeps its state. Code that doesn't load shows each instance's fallback.
 
 import type { Mount, Mounted, MountContext, Params, Slots } from "@compmd/render";
-import type { Libraries, Runnable } from "../protocol/messages.ts";
+import { MountSet } from "../mount-set.ts";
+import { entryOf, type Libraries, type Runnable } from "../protocol/messages.ts";
 
 /** A component's code, compiled and loaded: its mount, and a Svelte component's CSS. */
 export interface Loaded {
@@ -15,7 +16,7 @@ export interface ComponentsOptions {
   load: (component: Runnable) => Promise<Loaded>;
   /** A component's code couldn't be loaded (`failed`), or threw when mounted again (`threw`). */
   report: (component: string, reason: "failed" | "threw", message: string) => void;
-  /** A component's CSS, or none, in place of what it had. */
+  /** A component's CSS, or none, in place of what it had; the component as `entryOf` names it. */
   adopt: (component: string, css: string | undefined) => void;
 }
 
@@ -65,9 +66,10 @@ function librariesKey(libraries: Libraries | undefined): string {
 const messageOf = (error: unknown): string => (error instanceof Error ? error.message : String(error));
 
 export class Components {
-  /** The mounts by name, for the renderer; the object stays the same as names come and go. */
-  readonly mounts: Record<string, Mount> = {};
-  readonly #entries = new Map<string, Entry>();
+  /** The mounts by name, and each example's, for the renderer; the objects stay the same as names come and go. */
+  readonly mounts = new MountSet();
+  /** By where each component is kept (`entryOf`): its name, with its example's number for an example's. */
+  readonly #entries = new Map<string, Entry & { component: Runnable }>();
   readonly #options: ComponentsOptions;
 
   constructor(options: ComponentsOptions) {
@@ -76,30 +78,31 @@ export class Components {
 
   /** The components are now `components`; resolves once each changed one is loaded, or has failed. */
   async set(components: readonly Runnable[]): Promise<void> {
-    const names = new Set(components.map((component) => component.name));
-    for (const name of this.#entries.keys()) {
-      if (names.has(name)) continue;
-      this.#entries.delete(name);
-      Reflect.deleteProperty(this.mounts, name);
-      this.#options.adopt(name, undefined);
+    const kept = new Set(components.map(entryOf));
+    for (const [at, { component }] of this.#entries) {
+      if (kept.has(at)) continue;
+      this.#entries.delete(at);
+      this.mounts.remove(component);
+      this.#options.adopt(at, undefined);
     }
     await Promise.all(components.map((component) => this.#update(component)));
   }
 
   async #update(component: Runnable): Promise<void> {
     const key = keyOf(component);
-    let entry = this.#entries.get(component.name);
+    const at = entryOf(component);
+    let entry = this.#entries.get(at);
     if (entry?.key === key) return;
     if (!entry) {
-      entry = { key, instances: new Set() };
-      this.#entries.set(component.name, entry);
-      this.mounts[component.name] = this.#indirect(entry);
+      entry = { key, instances: new Set(), component };
+      this.#entries.set(at, entry);
+      this.mounts.put(component, this.#indirect(entry));
     }
     entry.key = key;
     try {
       const loaded = await this.#options.load(component);
       if (entry.key !== key) return;
-      this.#options.adopt(component.name, loaded.css);
+      this.#options.adopt(at, loaded.css);
       entry.mount = loaded.mount;
       delete entry.failed;
     } catch (error) {

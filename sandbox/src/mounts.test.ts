@@ -3,6 +3,7 @@
 // part's level runs there, one of a lower level gets a frame of its own, one of a higher level shows its fallback.
 import { createRegion, type ExpandedComponent, type ExpandedInput, type Mount } from "@compmd/render";
 import { describe, expect, it } from "vitest";
+import { MountSet } from "./mount-set.ts";
 import { codeFor, Mounts, type Framed, type Here } from "./mounts.ts";
 import type { ComponentCode } from "./protocol/messages.ts";
 
@@ -13,6 +14,10 @@ const trusted: ComponentCode = { name: "stars", level: "trusted" };
 describe("codeFor: what a frame of a level is sent", () => {
   it("a strict frame gets the code of strict components only, and the rest by name and level", () => {
     expect(codeFor([strict, permissive, trusted], "strict")).toEqual([strict, { name: "map", level: "permissive" }, { name: "stars", level: "trusted" }]);
+  });
+
+  it("keeps an example's number on a component it sends without code (spec §7.8)", () => {
+    expect(codeFor([{ ...trusted, example: 2 }], "strict")).toEqual([{ name: "stars", level: "trusted", example: 2 }]);
   });
 
   it("a permissive frame gets its own and its strict children's code, never trusted code", () => {
@@ -31,7 +36,7 @@ function setup(here: Here, inline: Record<string, Mount> = {}) {
   const failures = new Map<string, (message: string, reason: "threw" | "failed") => void>();
   const mounts = new Mounts({
     here,
-    inline,
+    inline: MountSet.of(inline),
     frame: (_target: Element, node: ExpandedComponent, _inputs: Readonly<Record<string, ExpandedInput>>, component: ComponentCode): Framed => {
       framed.push(`${node.name} in a ${component.level} frame`);
       return {
@@ -113,6 +118,20 @@ describe("Mounts: where each use runs", () => {
     mounts.set([permissive]);
     expect(mounts.mounts).toBe(before);
     expect(Object.keys(mounts.mounts)).toEqual(["map"]);
+  });
+
+  it("keeps an example's components apart, by its number (spec §7.8)", () => {
+    const chart: Mount = (target) => {
+      target.textContent = "the document's chart";
+    };
+    const { mounts, framed } = setup("strict", { chart });
+    mounts.set([strict, { ...strict, example: 1 }]);
+    expect(use(mounts, "chart").textContent).toBe("the document's chart");
+    expect(mounts.examples[1]?.chart, "the example's chart isn't the document's: none is given here").toBeUndefined();
+    mounts.set([{ ...permissive, example: 1 }]);
+    expect(framed).toEqual([]);
+    expect(Object.keys(mounts.mounts)).toEqual([]);
+    expect(Object.keys(mounts.examples[1] ?? {})).toEqual(["map"]);
   });
 });
 

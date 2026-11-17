@@ -7,6 +7,7 @@ import type { HostComponent, Trust } from "@compmd/processor";
 import { createRegion, ownSchemes, type ExpandedInput, type ExpandedUse, type Mount } from "@compmd/render";
 import { localHost, serveHost, type HostApi, type HostClient } from "../host-api.ts";
 import { ImageGate, type ImageGateOptions } from "../image-gate.ts";
+import { MountSet } from "../mount-set.ts";
 import { codeFor, Mounts } from "../mounts.ts";
 import type { Observer } from "../observer.ts";
 import { cacheStorage, compiledWith, type CompiledCache } from "../compiled-cache.ts";
@@ -88,9 +89,16 @@ const messageOf = (error: unknown): string => (error instanceof Error ? error.me
  */
 export const frameUrl = (base: string, name: "strict.html" | "permissive.html" | "highlight.js" | "math.js"): string => new URL(name, new URL(base, location.href)).href;
 
-/** `code` with its component's `print`, which the frames read to print its uses' fallbacks (spec §7.3). */
+/**
+ * `code` with its component's `print`, which the frames read to print its uses' fallbacks (spec §7.3), and its
+ * example's number, which the renderers find an example's components by (spec §7.8).
+ */
 const withPrint = (code: ComponentCode | undefined, component: HostComponent): ComponentCode | undefined =>
-  code && component.print === "fallback" ? { ...code, print: "fallback" } : code;
+  code && {
+    ...code,
+    ...(component.print === "fallback" ? { print: "fallback" as const } : {}),
+    ...(component.example === undefined ? {} : { example: component.example }),
+  };
 
 /** A level as a frame has it; a trusted component never runs in one. */
 const levelOf = (trust: Trust): Level | "trusted" => trust.level;
@@ -135,7 +143,7 @@ export class HostRuntime {
     this.#local = options.host ? localHost(options.host) : undefined;
     this.#mounts = new Mounts({
       here: "host",
-      inline: options.trusted ?? {},
+      inline: MountSet.of(options.trusted ?? {}),
       frame: (target, node, inputs, component) => this.#frame(target, node, inputs, component),
       report: (component, reason, message) => {
         this.#fallback(component, reason, message);
@@ -147,6 +155,11 @@ export class HostRuntime {
   /** The components for a renderer in the host's page, the same object as they change. */
   get mounts(): Record<string, Mount> {
     return this.#mounts.mounts;
+  }
+
+  /** Each example's components (spec §7.8), by its number, for a renderer's `examples`; the same object as they change. */
+  get examples(): Record<number, Record<string, Mount>> {
+    return this.#mounts.examples;
   }
 
   /** What each frame of the document runs, as `set` last made it. */
@@ -361,6 +374,7 @@ export class HostRuntime {
       code: codeFor(this.#code, level),
       node,
       inputs,
+      ...(component.example === undefined ? {} : { example: component.example }),
       ...(permissive ? { network: permissive.network } : {}),
       ...(permissive?.host && api
         ? {
