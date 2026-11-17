@@ -165,6 +165,37 @@ A component in code needs something to run it: an app that shows CompMD in a bro
 
 So the fallback should say what the component shows, as a sentence: *Beans 42 kg, leeks 25 kg, kale 18 kg* tells a reader everything the bars do. A component that draws a picture also gets the fallback as text for screen readers, as both components above use it.
 
+## On paper
+
+A document prints as it shows, with a few differences a writer can count on:
+
+- **Paper is light.** Whatever the screen shows, the page and its components print in their light colours.
+- **Blocks stay whole.** A component, a table, a code block or a picture moves to the next page rather than split, when it fits on one; a heading stays with what follows it. Only something taller than a page breaks.
+- **Layout follows the paper's width.** A printed page is narrower than most screens, so breakpoints (chapter 10) apply as they would on a window that wide.
+- **Links print their text.** A reader of paper can't click, so write link text that says where it goes: *the plot rules on the garden's site*, not *here*.
+- **Inputs print as they are.** A slider prints its knob, not its number. Where the value matters on paper, say it in the text too: `{{md.input.rows}} rows`.
+- **An app's own Print button waits** for every component to finish drawing; the browser's own Print, ⌘P, prints at once.
+
+A component that means nothing on paper, a map you pan or a video, can print its fallback instead. Its signature says so, with `print: fallback`:
+
+````md
+```jsx component=plot-map runtime=react@19
+export default function PlotMap({ plot }) {
+  return <iframe title={`Plot ${plot} on the garden map`} src={`https://maps.example.com/garden?plot=${plot}`} />;
+}
+```
+
+```compmd component=plot-map signature
+params:
+  plot: number
+print: fallback
+```
+
+:: plot-map[Plot 4 is by the gate, the second bed on the left] {plot=4}
+````
+
+On screen the map shows; on paper, the sentence. A container that prints its fallback prints its slots in order, as plain Markdown, so a set of tabs prints every tab. So write the fallback for the reader of paper as well: it is all they get. `print: drawn`, the default, prints the component as it draws itself; any other value is `W122`. `print` is for components in code: one written in CompMD prints its Markdown as it shows, so `print` in its signature is `W122` too.
+
 ## What code in a document can do
 
 A component in code runs in a *sandbox*, as a pack's does (chapter 16). How much it may do is its *trust level*, which only the app that shows the document sets, never the document:

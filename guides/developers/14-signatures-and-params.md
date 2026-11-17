@@ -328,7 +328,55 @@ Every use has a fallback, which the component gets as `fallback`: a leaf's or an
 
 The fallback is in a document's hands, so don't rely on it for anything but text.
 
-A component that means nothing on paper, an interactive map or a video, can print its fallback instead: `print: fallback` in its signature fence. On screen it draws itself; printed, each use shows its fallback, a container's slots as Markdown, so tabs print every tab. Leave it out, or write `print: drawn`, for a component that prints as it draws; any other value is W122.
+## On paper
+
+A page prints as it renders ([the design](https://github.com/comp-markdown/compmd/blob/main/docs/printing.md)): light, each component as it draws itself, kept whole on a page where it fits, frames included, since the sandbox sizes each frame to what it shows. A component prints well when it does four things:
+
+- **It follows `scheme`.** Paper is light: when printing starts, the renderer sets `context.scheme` to `light` and calls `update`, and sets it back after. A component that picks its colours from the scheme prints in its light ones.
+- **It says when it is still drawing.** A host's `view.print()` (chapter 7) waits for the page to settle, so a drawing that finishes after `mount` or `update` returned goes through `context.busy(work)`, or it prints half drawn. The browser's own ⌘P can't wait: it prints what is there.
+- **It shows all it has.** Its box grows to what it draws; content in a scrolling area of its own prints only the part in view.
+- **It hides what paper can't use.** Buttons, a zoom control, a hover hint: its own `@media print` styles hide them.
+
+````md
+```js component=meter
+export default function mount(target, context) {
+  const draw = (params) => {
+    target.textContent = `${String(params.value)} %`;
+    target.style.color = context.scheme === "dark" ? "#e4e9ef" : "#1b2430";
+  };
+  draw(context.params);
+  return { update: (params) => draw(params) };
+}
+```
+
+```compmd component=meter signature
+params:
+  value: number
+```
+
+:: meter[Done: 40 %] {value=40}
+````
+
+A component that means nothing on paper, an interactive map or a video, prints its fallback instead, with `print: fallback` in its signature fence:
+
+````md
+```js component=route-map
+export default function mount(target, { params }) {
+  target.textContent = `A map of ${params.from} to ${params.to}`;
+}
+```
+
+```compmd component=route-map signature
+params:
+  from: string
+  to: string
+print: fallback
+```
+
+:: route-map[The walk from the station to the garden, ten minutes along the canal] {from=station to=garden}
+````
+
+On screen it draws itself; printed, each use shows its fallback: a leaf's text, a container's slots as plain Markdown, so tabs print every tab. The renderer keeps that fallback beside the component's box and swaps them on paper; a container's slots are rendered a second time for it, so components inside them mount twice. `print: drawn`, the default, prints the component as it draws; any other value is W122, and so is `print` in a `compmd` definition, whose Markdown prints as it renders.
 
 ## How a use is checked
 
