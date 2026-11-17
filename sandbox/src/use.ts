@@ -21,6 +21,8 @@ export interface UseFrameOptions {
   node: ExpandedUse;
   inputs: Readonly<Record<string, ExpandedInput>>;
   styles?: readonly string[];
+  /** The host's own link schemes, checked, which the links the frame renders may use (spec §15). */
+  links?: readonly string[];
   ping?: { every: number; timeout: number };
   on: { [T in keyof ChildEvents]?: (event: ChildEvents[T]) => void };
   /** The observer of the window the frame is made in, which records the frame and the messages on its port. */
@@ -86,6 +88,7 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
     const end = connectChild(observer && id !== undefined ? observer.port(id, port1) : port1, {
       level: options.level,
       ...(options.network ? { policy: networkPolicy(options.network) } : {}),
+      ...(options.links?.length ? { links: options.links } : {}),
       binds: (input) => bound.has(input),
       ...(options.host ? { host: options.host() } : {}),
       ...(options.ping ? { ping: options.ping } : {}),

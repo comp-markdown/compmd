@@ -8,6 +8,8 @@ export interface ChildOptions {
   level: Level;
   /** A permissive frame's second policy, with its pack's origins. */
   policy?: string;
+  /** The host's own link schemes, checked, which the links the frame renders may use (spec §15). */
+  links?: readonly string[];
   /** Whether a component in the frame may set `input`: one of the frame's uses binds a param to it. */
   binds(input: string): boolean;
   /** The port for `host`, for a permissive frame of a pack given `host`. */
@@ -180,7 +182,12 @@ export function connectChild(port: Port, options: ChildOptions): ChildEnd {
         stop({ reason: "version", version: data.sandbox });
         return;
       }
-      port.postMessage({ type: "level", level: options.level, ...(options.policy === undefined ? {} : { policy: options.policy }) } satisfies ToFrame);
+      port.postMessage({
+        type: "level",
+        level: options.level,
+        ...(options.policy === undefined ? {} : { policy: options.policy }),
+        ...(options.links?.length ? { links: [...options.links] } : {}),
+      } satisfies ToFrame);
       if (options.host) port.postMessage({ type: "host" } satisfies ToFrame, [options.host]);
       const queued = waiting;
       waiting = undefined;

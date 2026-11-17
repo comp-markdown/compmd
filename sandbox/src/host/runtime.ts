@@ -4,7 +4,7 @@
 // components and to permissive frames of packs given it, sends them the host's events, and stops a frame that stops answering.
 
 import type { HostComponent, Trust } from "@compmd/processor";
-import { createRegion, type ExpandedInput, type ExpandedUse, type Mount } from "@compmd/render";
+import { createRegion, linkSchemes, type ExpandedInput, type ExpandedUse, type Mount } from "@compmd/render";
 import { localHost, serveHost, type HostApi, type HostClient } from "../host-api.ts";
 import { codeFor, Mounts } from "../mounts.ts";
 import type { Observer } from "../observer.ts";
@@ -37,6 +37,12 @@ export interface HostRuntimeOptions {
   modules?: ModuleSource;
   /** The host's stylesheets, which every frame loads; served from the frames' origin. */
   stylesheets?: readonly string[];
+  /**
+   * The host's own link schemes, such as `app` for links to its own pages (spec §15): the page's links and wiki links
+   * may use them, in the host's page and in every frame. A click on one comes as `link`, as on any link.
+   * `javascript`, `vbscript`, `data`, `blob` and `file` can never be named.
+   */
+  linkSchemes?: readonly string[];
   /** How long a frame may not answer before it is stopped, in ms (default 5000). */
   timeout?: number;
   /** The observer of the host's page, which records the document's frames, their messages and its components. */
@@ -85,10 +91,14 @@ export class HostRuntime {
   readonly #local: ReturnType<typeof localHost> | undefined;
   /** What sends an event to each permissive frame given `host`, while it is on the page. */
   readonly #frameEvents = new Set<(event: string, data: unknown) => void>();
+  /** The host's own link schemes, checked. */
+  readonly links: readonly string[];
 
+  /** @throws Error when `options.linkSchemes` names something that isn't a scheme, or one a host can't name. */
   constructor(options: HostRuntimeOptions, events: HostEvents) {
     this.#options = options;
     this.#events = events;
+    this.links = linkSchemes(options.linkSchemes ?? []);
     this.#styles = options.stylesheets ?? [];
     this.#local = options.host ? localHost(options.host) : undefined;
     this.#mounts = new Mounts({
@@ -151,6 +161,7 @@ export class HostRuntime {
       onRecovered: ({ component, use }) => {
         this.#events.recovered?.(component, use);
       },
+      linkSchemes: this.links,
       ...(this.#local ? { host: this.#local.client } : {}),
     });
     region.render([node], { inputs: { ...inputs } });
@@ -323,6 +334,7 @@ export class HostRuntime {
           }
         : {}),
       styles: this.#styles,
+      links: this.links,
       ping: { every: 1000, timeout: this.#options.timeout ?? 5000 },
       ...(this.#options.observer ? { observer: this.#options.observer } : {}),
       on: {

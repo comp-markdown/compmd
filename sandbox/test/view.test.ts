@@ -409,6 +409,38 @@ describe("code blocks", () => {
   }
 });
 
+describe("the host's link schemes", () => {
+  /** A paragraph linking to `app:item/7` and to `other:x`. */
+  const links: ExpandedRoot["children"][number] = {
+    type: "paragraph",
+    children: [
+      { type: "link", url: "app:item/7", title: null, children: [{ type: "text", value: "Books" }] },
+      { type: "link", url: "other:x", title: null, children: [{ type: "text", value: "Other" }] },
+    ],
+  };
+  /** A strict component in the page's frame, which reports the links the frame's page shows. */
+  const looking: HostComponent = { name: "label", language: "js", code: probeCode("async () => [...document.querySelectorAll('p a')].map((a) => a.getAttribute('href'))"), trust: { level: "strict" } };
+
+  it("are links in the page's frame, other schemes' links its text (frame mode)", async () => {
+    const { view, until, values } = open("frame", [looking], { linkSchemes: ["app"] });
+    view.render({ type: "root", children: [links, use("one")], inputs: RESULT });
+    await until(() => values().length > 0);
+    expect(values()[0]).toEqual(["app:item/7"]);
+  });
+
+  it("are links in the host's page, other schemes' links its text (host mode)", async () => {
+    const { area, view } = open("host", [], { linkSchemes: ["app"] });
+    view.render({ type: "root", children: [links] });
+    await view.settled();
+    expect([...area.querySelectorAll("p a")].map((a) => a.getAttribute("href"))).toEqual(["app:item/7"]);
+    expect(area.querySelector("p")?.textContent).toBe("BooksOther");
+  });
+
+  it("can't be one that runs code", () => {
+    expect(() => createSandbox({ base: frames, linkSchemes: ["javascript"] }).open(document.createElement("div"), { components: [] })).toThrow(/can't be a host's link scheme/);
+  });
+});
+
 describe("theme and styles", () => {
   /** A component that sets `result` to the page's `--compmd-accent` and the host's stylesheets its frame has. */
   const looking: HostComponent = {

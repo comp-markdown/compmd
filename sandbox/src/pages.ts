@@ -54,6 +54,7 @@ export function hostPage(container: HTMLElement, runtime: HostRuntime, options: 
     // ships one copy of each, which this page and its frames share.
     math: framesMath(options.base),
     highlight: framesHighlight(options.base),
+    linkSchemes: runtime.links,
     // The trusted components in this page get `host` as the runtime gives it; framed ones get theirs from their frame.
     ...(runtime.host ? { host: runtime.host } : {}),
     onSet: (input, value) => {
@@ -144,6 +145,7 @@ export function framePage(container: HTMLElement, runtime: HostRuntime, options:
   const port = observer.port(id, port1);
   const child: ChildEnd = connectChild(port, {
     level: "strict",
+    ...(runtime.links.length ? { links: runtime.links } : {}),
     binds: (input) => input in inputs,
     ping: { every: 1000, timeout: options.timeout ?? 5000 },
     image: (url) => images.file(url),

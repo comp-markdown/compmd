@@ -136,6 +136,28 @@ describe("Markdown", () => {
     page({ wikiLink: (target) => `/wiki/${target}` }).render(nodes);
     expect(root.querySelector("p")?.innerHTML).toBe('<a href="https://d.dev">Docs</a><a href="/wiki/Home">home</a>');
   });
+
+  it("links with the host's own schemes, and shows other schemes' links as text", () => {
+    const nodes = tree(
+      paragraph(
+        { type: "link", url: "app:item/7", title: null, children: [text("Books")] },
+        { type: "linkReference", identifier: "trip", referenceType: "full", children: [text("Trip")] },
+        { type: "wikiLink", target: "Home", label: "home" },
+        { type: "link", url: "other:x", title: null, children: [text("Other")] },
+      ),
+      { type: "definition", identifier: "trip", url: "app:item/8", title: null },
+    );
+    const wikiLink = (target: string) => `app:page/${target}`;
+    page({ wikiLink }).render(nodes);
+    expect(root.querySelector("p")?.innerHTML).toBe("<span>Books</span><span>Trip</span><span>home</span><span>Other</span>");
+    root.remove();
+    page({ wikiLink, linkSchemes: ["app"] }).render(nodes);
+    expect(root.querySelector("p")?.innerHTML).toBe('<a href="app:item/7">Books</a><a href="app:item/8">Trip</a><a href="app:page/Home">home</a><span>Other</span>');
+  });
+
+  it("refuses link schemes a host can never name", () => {
+    expect(() => page({ linkSchemes: ["javascript"] })).toThrow(/can't be a host's link scheme/);
+  });
 });
 
 describe("the page", () => {

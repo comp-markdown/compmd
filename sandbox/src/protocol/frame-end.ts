@@ -6,8 +6,11 @@ import type { Observed } from "./observed.ts";
 
 /** What the frame does with each message; the frame runtime implements it. */
 export interface FrameHandlers {
-  /** The frame's level and, for a permissive frame, its second policy: applied before this returns. */
-  level(level: Level, policy: string | undefined): void;
+  /**
+   * The frame's level and, for a permissive frame, its second policy: applied before this returns. `links` are the
+   * host's own link schemes, which the links it renders may use; the frame checks them again (spec §15).
+   */
+  level(level: Level, policy: string | undefined, links: readonly string[]): void;
   /** Loads the components' code; resolves once each is loaded, or shows its fallback. */
   code?(components: ComponentCode[]): Promise<void>;
   part?(part: Part): void;
@@ -78,7 +81,7 @@ export function serveParent(port: Port, handlers: FrameHandlers): FrameEnd {
     if (!isMessage<ToFrame>(data, TO_FRAME)) return;
     if (data.type === "level") {
       if (level !== undefined) return;
-      handlers.level(data.level, data.policy);
+      handlers.level(data.level, data.policy, Array.isArray(data.links) ? data.links.filter((link) => typeof link === "string") : []);
       level = data.level;
       return;
     }

@@ -24,18 +24,43 @@ const ALLOWED: Record<string, readonly string[]> = {
 const VOID = new Set(["br", "img"]);
 const URL_ATTRIBUTES = new Set(["href", "src"]);
 
+/** The schemes every link may use (spec §15). */
+const SAFE_SCHEMES: readonly string[] = ["http", "https", "mailto"];
+
+/** Schemes a host can never name as its own: they run code, or carry content of their own (spec §15). */
+const NEVER: readonly string[] = ["javascript", "vbscript", "data", "blob", "file"];
+
 /**
- * `url` if it is safe to follow: relative, a fragment, or `http:`, `https:` or `mailto:`.
+ * `url` if it is safe to follow: relative, a fragment, `http:`, `https:` or `mailto:`, or one of `schemes`, the host's
+ * own link schemes, which {@link linkSchemes} has checked.
  *
  * @example
  * safeUrl("https://example.com"); // "https://example.com"
  * safeUrl("javascript:alert(1)"); // undefined
+ * safeUrl("app:page/1", ["app"]); // "app:page/1"
  */
-export function safeUrl(url: string): string | undefined {
+export function safeUrl(url: string, schemes: readonly string[] = []): string | undefined {
   // Browsers ignore control characters and whitespace in a scheme, so they don't hide one here either.
   // eslint-disable-next-line no-control-regex
   const scheme = /^([a-z][a-z0-9+.-]*):/i.exec(url.replace(/[\u0000- ]/g, ""))?.[1]?.toLowerCase();
-  return scheme === undefined || ["http", "https", "mailto"].includes(scheme) ? url : undefined;
+  return scheme === undefined || SAFE_SCHEMES.includes(scheme) || schemes.includes(scheme) ? url : undefined;
+}
+
+/**
+ * The host's own link schemes, as {@link safeUrl} takes them: names without their `:`, in lower case.
+ *
+ * @throws Error when one isn't a scheme, or is one a host can never name: `javascript`, `vbscript`, `data`, `blob`
+ * or `file`.
+ * @example
+ * linkSchemes(["App", "fig"]); // ["app", "fig"]
+ */
+export function linkSchemes(schemes: readonly string[]): readonly string[] {
+  return schemes.map((given) => {
+    const scheme = given.replace(/:$/, "").toLowerCase();
+    if (!/^[a-z][a-z0-9+.-]*$/.test(scheme)) throw new Error(`\`${given}\` isn't a link scheme`);
+    if (NEVER.includes(scheme)) throw new Error(`\`${scheme}:\` can't be a host's link scheme: it runs code or carries content of its own`);
+    return scheme;
+  });
 }
 
 type Token =

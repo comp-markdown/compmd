@@ -3,6 +3,7 @@
 import { Busy } from "./busy.ts";
 import type { ComponentError, ComponentRecovered, Mount, RenderError } from "./contract.ts";
 import type { LinkDefinition } from "./document.ts";
+import { linkSchemes } from "./html.ts";
 import type { ImageSource } from "./images.ts";
 import type { KeyOf } from "./keys.ts";
 import { Layout } from "./layout.ts";
@@ -40,6 +41,12 @@ export interface SurfaceOptions {
   highlight?: CodeHighlighter;
   /** Where a wiki link points; without an answer it shows its label. */
   wikiLink?(target: string): string | undefined;
+  /**
+   * The host's own link schemes, such as `app` for links to its own pages (spec §15): links and wiki links may use them
+   * as well as `https:`, `http:` and `mailto:`. A click on one is the host's to handle, as a click on any link is.
+   * `javascript`, `vbscript`, `data`, `blob` and `file` can never be named.
+   */
+  linkSchemes?: readonly string[];
   /** Where images come from, for a page that can't load them itself; without it, each loads from its `src`. */
   images?: ImageSource;
   /**
@@ -109,6 +116,7 @@ export function surfaceOf(document: Document, stylesheet: Stylesheet, schemes: S
     math: options.math,
     highlight: options.highlight,
     wikiLink: options.wikiLink?.bind(options),
+    linkSchemes: linkSchemes(options.linkSchemes ?? []),
     images: options.images,
     drawn: new Drawn(),
     busy: new Busy(),

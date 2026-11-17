@@ -101,6 +101,7 @@ const sandbox = createSandbox({
   trusted: { stars: react(Stars) },           // the host's own components; host mode only
   host: { rating: (product) => ratings.get(product) },   // what trusted components, and permissive packs given `host`, can call
   modules: (module) => ({ url: `/packs/${module.pack}@${module.version}/${module.path}`, integrity: hashes[module.path] }),
+  linkSchemes: ["app"],                       // the app's own links, `[Books](app:item/7)`; a click comes as `link` (spec §15)
 });
 
 const view = sandbox.open(container, { components: processed.hostComponents });

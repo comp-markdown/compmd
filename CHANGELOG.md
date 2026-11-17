@@ -4,6 +4,10 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
 
 ## Version 1 (draft)
 
+### 2026-11-17
+
+- **A host's own link schemes (§15).** A link, a link reference or a wiki link renders as a link when its URL is relative or uses `https:`, `http:` or `mailto:`, or a scheme the host names as its own (an application's `app:` for links to its own pages); any other renders its text. A host can't name `javascript:`, `vbscript:`, `data:`, `blob:` or `file:`. Before, the spec restricted schemes only in interpolated URLs (§8.1), and a host had no way to link to its own pages from a document. Not breaking: a host that names none renders links as before.
+
 ### 2026-11-12
 
 - **A pack's source compiled ahead (§6.4).** A processor may compile a pack's source component file once, before a document needs it, and load the result by the file's place, as it may a built module: the same code, at the same trust. Before, the spec said nothing of where a source component is compiled. Not breaking.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { safeUrl, withHtml } from "./html.ts";
+import { linkSchemes, safeUrl, withHtml } from "./html.ts";
 import type { ExpandedNode } from "./tree.ts";
 
 const html = (value: string): ExpandedNode => ({ type: "html", value });
@@ -40,5 +40,24 @@ describe("safeUrl", () => {
 
   it("refuses other schemes, however they are disguised", () => {
     for (const url of ["javascript:x", "JavaScript:x", " java\tscript:x", "data:text/html,x", "vbscript:x"]) expect(safeUrl(url)).toBeUndefined();
+  });
+
+  it("allows the host's own schemes too, and only those", () => {
+    expect(safeUrl("app:page/1", ["app"])).toBe("app:page/1");
+    expect(safeUrl("APP:page/1", ["app"])).toBe("APP:page/1");
+    expect(safeUrl("app:page/1")).toBeUndefined();
+    expect(safeUrl("other:x", ["app"])).toBeUndefined();
+    expect(safeUrl("javascript:x", ["app"])).toBeUndefined();
+  });
+});
+
+describe("linkSchemes", () => {
+  it("gives the host's schemes as safeUrl takes them", () => {
+    expect(linkSchemes(["App", "fig:", "x-my.app+1"])).toEqual(["app", "fig", "x-my.app+1"]);
+  });
+
+  it("refuses a scheme that runs code or carries content of its own, and what isn't a scheme", () => {
+    for (const scheme of ["javascript", "VBScript", "data:", "blob", "file"]) expect(() => linkSchemes([scheme])).toThrow(/can't be a host's link scheme/);
+    for (const scheme of ["", "1app", "app/x", "a b"]) expect(() => linkSchemes([scheme])).toThrow(/isn't a link scheme/);
   });
 });

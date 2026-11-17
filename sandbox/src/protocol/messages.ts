@@ -78,7 +78,7 @@ export interface CompileRequest {
 
 /** Messages from a parent to its frame, on the frame's port. `host` carries its port in the message's ports. */
 export type ToFrame =
-  | { type: "level"; level: Level; policy?: string }
+  | { type: "level"; level: Level; policy?: string; links?: readonly string[] }
   | { type: "code"; components: ComponentCode[] }
   | { type: "part"; part: Part }
   | { type: "styles"; urls: string[] }

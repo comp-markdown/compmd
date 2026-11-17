@@ -216,6 +216,7 @@ function start(port: MessagePort): void {
         node,
         inputs,
         styles: stylesheets,
+        links,
         ping: { every: 1000, timeout: 5000 },
         observer,
         on: {
@@ -266,6 +267,8 @@ function start(port: MessagePort): void {
   });
   /** What a permissive frame's components get as `host`, when the parent gives it, before the first part. */
   let host: HostClient | undefined;
+  /** The host's own link schemes, which the parent gives with the level: the links this frame renders may use them. */
+  let links: readonly string[] = [];
   /** What the frame renders: one use (`part`), or the page (frame mode). */
   let region: Region | undefined;
   let page: Page | undefined;
@@ -284,15 +287,17 @@ function start(port: MessagePort): void {
         parent.recovered(component, use);
       },
       onLayout: moved,
+      linkSchemes: links,
       ...(host ? { host } : {}),
     });
   const parent: FrameEnd = serveParent(port, {
-    level: (asked, network) => {
+    level: (asked, network, given) => {
       level = own === "permissive" && asked === "permissive" ? "permissive" : "strict";
       if (own === "permissive") narrow(network ?? networkPolicy([]));
+      links = given;
       // A page frame (frame mode) renders the page through `@compmd/render`'s protocol, on the same port.
       const container = document.getElementById("page");
-      if (container) page = serveFrame(recordingFallbacks(port, observer), { container, components: mounts.mounts, math, highlight, images: imagesFrom(parent), onLayout: moved }).page;
+      if (container) page = serveFrame(recordingFallbacks(port, observer), { container, components: mounts.mounts, math, highlight, images: imagesFrom(parent), onLayout: moved, linkSchemes: links }).page;
     },
     code: async (next) => {
       components = next;

@@ -39,8 +39,8 @@ interface Rendering {
 
 const ALERT_TITLES: Record<string, string> = { note: "Note", tip: "Tip", important: "Important", warning: "Warning", caution: "Caution" };
 
-function linkOrText(url: string, title: unknown, children: readonly ExpandedNode[]): Rendering {
-  const href = safeUrl(url);
+function linkOrText(url: string, title: unknown, children: readonly ExpandedNode[], schemes: readonly string[]): Rendering {
+  const href = safeUrl(url, schemes);
   if (href === undefined) return { tag: "span", attributes: {}, children };
   return { tag: "a", attributes: { href, ...(typeof title === "string" && title ? { title } : {}) }, children };
 }
@@ -100,12 +100,12 @@ function renderingOf(surface: Surface, node: MarkdownNode, pass: Pass): Renderin
       return { tag: "li", attributes: { class: "compmd-task" }, children: [box, ...children] };
     }
     case "link":
-      return linkOrText(textOf(node.url), node.title, children);
+      return linkOrText(textOf(node.url), node.title, children, surface.linkSchemes);
     case "image":
       return image(textOf(node.url), node.alt, node.title);
     case "linkReference": {
       const definition = pass.definitions.get(textOf(node.identifier));
-      return definition ? linkOrText(definition.url, definition.title, children) : plain("span");
+      return definition ? linkOrText(definition.url, definition.title, children, surface.linkSchemes) : plain("span");
     }
     case "imageReference": {
       const definition = pass.definitions.get(textOf(node.identifier));
@@ -124,7 +124,7 @@ function renderingOf(surface: Surface, node: MarkdownNode, pass: Pass): Renderin
     case "wikiLink": {
       const label = textOf(node.label ?? node.target);
       const href = surface.wikiLink?.(textOf(node.target));
-      const safe = href === undefined ? undefined : safeUrl(href);
+      const safe = href === undefined ? undefined : safeUrl(href, surface.linkSchemes);
       return safe === undefined ? { tag: "span", attributes: {}, text: label } : { tag: "a", attributes: { href: safe }, text: label };
     }
     case "compmdElement":
