@@ -16,10 +16,10 @@
     { id: "top", label: "CompMD" },
     { id: "why", label: "Why CompMD" },
     { id: "what", label: "What it adds" },
+    { id: "safe", label: "Safe to open" },
     { id: "plain", label: "Still Markdown" },
     { id: "markdown", label: "Plain Markdown too" },
     { id: "use", label: "Use it in your app" },
-    { id: "safe", label: "Safe to open" },
     { id: "hood", label: "Under the hood" },
     { id: "next", label: "Where next" },
   ];
@@ -152,6 +152,37 @@
     </div>
   </section>
 
+  <section id="safe">
+    <div class="wrap">
+      <h2>Safe to open</h2>
+      <p class="lede">A CompMD document can come from anyone. Opening one can't run code in your page, reach your data, or call home.</p>
+      <div class="columns">
+        <div>
+          <h3>The threat</h3>
+          <p>A document from a stranger, or a pack it imports, that tries to run code in the reader's page, read the reader's data or session, send data out, run forever, or act in the reader's name.</p>
+        </div>
+        <div>
+          <h3>What stops it</h3>
+          <ul>
+            <li>Components written in CompMD run no code at all: only Markdown, params and slots.</li>
+            <li>Code in JSX, Svelte or JavaScript runs sandboxed. It sees only its params and slots, with no network, no storage or cookies, no navigation, and it is stopped when it runs too long.</li>
+            <li>Data comes only from origins the reader or the host allows, never ones a document grants itself.</li>
+            <li>Text is escaped, and raw HTML is limited to a short list of safe tags.</li>
+            <li>Expressions run within a work budget, and expansion within a size limit, so no document can hang the page.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>How this implementation builds it</h3>
+          <ul>
+            <li>The playground renders in a sandboxed frame with an opaque origin, under a content security policy that allows only its own files.</li>
+            <li>The processor counts the work of each expression, limits the size of the expansion, and refuses recursion.</li>
+          </ul>
+          <p><a href={SPEC_SECURITY}>The spec's section 15</a> says what every implementation must do.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section id="plain">
     <div class="wrap">
       <h2>Still Markdown</h2>
@@ -196,37 +227,6 @@
         <Example name="rating.comp.md" snapshot={snapshots.rating} live="host" />
       </div>
       <p class="actions"><a class="button primary" href="guides/developers/">Read the Developer's Guide</a></p>
-    </div>
-  </section>
-
-  <section id="safe">
-    <div class="wrap">
-      <h2>Safe to open</h2>
-      <p class="lede">A CompMD document can come from anyone. Opening one can't run code in your page, reach your data, or call home.</p>
-      <div class="columns">
-        <div>
-          <h3>The threat</h3>
-          <p>A document from a stranger, or a pack it imports, that tries to run code in the reader's page, read the reader's data or session, send data out, run forever, or act in the reader's name.</p>
-        </div>
-        <div>
-          <h3>What stops it</h3>
-          <ul>
-            <li>Components written in CompMD run no code at all: only Markdown, params and slots.</li>
-            <li>Code in JSX, Svelte or JavaScript runs sandboxed. It sees only its params and slots, with no network, no storage or cookies, no navigation, and it is stopped when it runs too long.</li>
-            <li>Data comes only from origins the reader or the host allows, never ones a document grants itself.</li>
-            <li>Text is escaped, and raw HTML is limited to a short list of safe tags.</li>
-            <li>Expressions run within a work budget, and expansion within a size limit, so no document can hang the page.</li>
-          </ul>
-        </div>
-        <div>
-          <h3>How this implementation builds it</h3>
-          <ul>
-            <li>The playground renders in a sandboxed frame with an opaque origin, under a content security policy that allows only its own files.</li>
-            <li>The processor counts the work of each expression, limits the size of the expansion, and refuses recursion.</li>
-          </ul>
-          <p><a href={SPEC_SECURITY}>The spec's section 15</a> says what every implementation must do.</p>
-        </div>
-      </div>
     </div>
   </section>
 

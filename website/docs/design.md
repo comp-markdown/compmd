@@ -62,15 +62,15 @@ One column of sections, each a single idea with something to look at; nothing hi
 │  components · data · inputs · layout · your own components   │  data, inputs, layout,
 │                                                              │  host components
 ├──────────────────────────────────────────────────────────────┤
+│ Safe to open: a document from anyone can't run code in       │  security: the threat,
+│ your page, reach your data, or call home                     │  what stops it, how
+├──────────────────────────────────────────────────────────────┤
 │ Still Markdown: the same file in a plain renderer            │  degradation (spec §14):
 │  (GitHub, an editor) reads fine — the fallbacks              │  a toggle, CompMD / plain
 ├──────────────────────────────────────────────────────────────┤
 │ Great for plain Markdown too: no components needed           │  plain Markdown, rendered
 ├──────────────────────────────────────────────────────────────┤
 │ Use it in your app: [Page] [Editor] [React/Svelte]  + code   │  snippets, install line
-├──────────────────────────────────────────────────────────────┤
-│ Safe to open: a document from anyone can't run code in       │  security: the threat,
-│ your page, reach your data, or call home                     │  what stops it, how
 ├──────────────────────────────────────────────────────────────┤
 │ Under the hood: Rust · WebAssembly · incremental · CEL ·     │  how it is built, with
 │ diagnostics and hints · conformance                          │  numbers and links
@@ -85,10 +85,10 @@ One column of sections, each a single idea with something to look at; nothing hi
 - **Why.** The problem in three beats, each a sentence and a small figure: Markdown can't place a chart or a card; the usual way out (MDX, templates) turns the text into code; CompMD adds components that read as text and degrade to plain Markdown.
 - **What.** One row per feature (components and slots, data, inputs, layout, components of your own in JSX or Svelte), each a few lines of source beside what they render, processed by the processor at build time. The inputs row goes live, so the reader can change its input; the JSX row runs in the playground's sandboxed frame, loaded from the playground beside the page.
 - **What, continued.** After the code renderers, an inline component in each row of a table, a sparkline drawn by a file beside the document: what no other Markdown renderer can put in a table cell.
+- **Safe to open.** Decision 10's three parts, as three columns on a wide screen: the threat, what stops it, how this implementation builds it. A small figure of the sandbox: the page, the frame inside it, and the component inside the frame with nothing leading out. It comes right after *What*, whose last rows run code in a sandbox: the sandbox is one of CompMD's biggest differences, so the reader meets it while the features are fresh, before the page turns to plain Markdown and to apps (moved up 2026-11-17).
 - **Still Markdown.** A team's offsite note, a heading, prose, a grid of its two days, a callout and a note, that reads well both ways. The same document twice, switched by a toggle: as CompMD renders it, and as GitHub or any Markdown renderer shows it, fallbacks and all (spec §14). This is CompMD's strongest point, and one the formats it is compared with (`existing-specs-comparison.md`) mostly give up, so it gets room: a file written in CompMD stays a good Markdown file for every tool that already reads Markdown.
 - **Great for plain Markdown too.** A document with no components at all is a CompMD document, and gets what the processor and the renderer give every document: CommonMark and GFM as GitHub renders them, with alerts and math; a live preview that renders only the blocks an edit changed, and keeps the rest of the page as it was; every rendered block knowing the lines it came from, so a click on the page finds its source; links to a passage of the text; and diagnostics for broken links, footnotes and frontmatter. Each claim is checked against the processors the comparison covers before it goes on the page, and written as what CompMD does, not as what others don't.
 - **Use it in your app.** The install line, three tabs of code (a Vite app, your own components, an editor), the site's own `stars` live, and a button to [the developer guide](guide.md), which replaced decision 7's snippets.
-- **Safe to open.** Decision 10's three parts, as three columns on a wide screen: the threat, what stops it, how this implementation builds it. A small figure of the sandbox: the page, the frame inside it, and the component inside the frame with nothing leading out.
 - **Under the hood.** The points of decision 9, each a short paragraph with a number or a figure, and a link to its documentation.
 - **Where next.** The spec, the playground, the conformance set, GitHub, and npm, each a card with one line on what it is for.
 
