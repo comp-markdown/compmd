@@ -1,6 +1,6 @@
 # Code and what it draws
 
-- **Status:** Proposed (2026-11-17).
+- **Status:** Accepted (2026-11-17).
 - **Decides:** what a code block that a code renderer draws (spec §7.7) shows: its code, what the renderer draws, or both together; and how a `compmd` block shows the CompMD it holds beside what that renders.
 - **Related:** spec §7.7 (code renderers), §12.3 (the expanded tree), §14 (degradation, printing, plain text), [code renderers](code-renderers.md), [printing a document](printing.md), [a blog in CompMD](blog-tool.md).
 
@@ -68,8 +68,6 @@
 - **The blog and the guides:** the blog's guide shows `render=both` in a post, and an example; the website's guide on code renderers gets an example. The website's `Example.svelte` is replaced by ` ```compmd {render=both} ` blocks where its examples are static; where it shows a component live in the host's page (`live="host"`), it stays.
 - **Editors** ([CompMD in editors](editor-support.md)): the grammars already highlight a fence's param list, and highlight a ` ```compmd ` block's text as CompMD; the language server completes `render`'s three values and reports an example's diagnostics at their place.
 
-## Open questions
+## Decided in review
 
-Decided in review (2026-11-17): `both` is stacked by default (decision 3), and `compmd` examples are part of this change (decision 8); F013 covers a declared `render`, `alt` (on a code renderer), `class` and `id` together, in this change (decision 1).
-
-1. **An example's inputs** (decision 8): reader-changeable and kept per example, as proposed, or fixed at their defaults (simpler: no API for an example's values, input components shown with their values but a change does nothing)?
+(2026-11-17) `both` is stacked by default (decision 3); `compmd` examples are part of this change (decision 8); F013 covers a declared `render`, `alt` (on a code renderer), `class` and `id` together, in this change (decision 1). The design was approved with an example's inputs as proposed: the reader can change them, and each example keeps its own (decision 8).
