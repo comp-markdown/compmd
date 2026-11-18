@@ -8469,7 +8469,7 @@
         "npm-packages/sandbox/src/sandbox.ts"
       ],
       "created_at": "2026-11-18T07:51:14Z",
-      "updated_at": "2026-11-18T20:55:01Z",
+      "updated_at": "2026-11-18T21:40:46Z",
       "created_by": "claude:0f56a916",
       "updated_by": "claude:79612601",
       "number": 250,
@@ -8488,7 +8488,7 @@
           "text": "lease expired (claude:79612601)"
         }
       ],
-      "commit": "9a115a8a9a048f1c5c0a09a33dfaa32414cb1db7",
+      "commit": "5d57d4f48b968cf675b6ec1f28fc891a0267c232",
       "code_reviews": [
         {
           "id": "01a1f03c-ac29-708f-be97-bb0ccb911a3b",
