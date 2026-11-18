@@ -4,7 +4,7 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
 
 ## Version 1 (draft)
 
-### Unreleased
+### 1.0-draft.15, 2026-11-18
 
 - **The spec's folder.** The spec, its companion, this changelog and `llms.txt` are in the repository's `spec/` folder, with the complete example in `spec/examples/complete/`; the spec's links to the repository's files follow. The spec itself is unchanged.
 
