@@ -1,0 +1,81 @@
+diff --git a/editor/src/documents.test.ts b/editor/src/documents.test.ts
+index dd6183c..cca1e05 100644
+--- a/editor/src/documents.test.ts
++++ b/editor/src/documents.test.ts
+@@ -59,6 +59,13 @@ describe("EXAMPLES", () => {
+     expect(exampleIndex(null)).toBe(0);
+   });
+ 
++  // The menu is keyed by name and `?doc=` finds by id: a guide's example folder with two documents would repeat both.
++  it("each have a name and an id no other has", () => {
++    const repeated = (values: string[]) => values.filter((value, i) => values.indexOf(value) !== i);
++    expect(repeated(EXAMPLES.map(({ id }) => id))).toEqual([]);
++    expect(repeated(EXAMPLES.map(({ name }) => name))).toEqual([]);
++  });
++
+   for (const example of EXAMPLES.filter(({ id }) => id !== "diagnostics")) {
+     it(`${example.name} renders without diagnostics`, () => {
+       const processed = process(withNpmAllowed(withRegistryPacks(example.request)));
+diff --git a/editor/src/documents.ts b/editor/src/documents.ts
+index d596640..00c3f3a 100644
+--- a/editor/src/documents.ts
++++ b/editor/src/documents.ts
+@@ -35,13 +35,21 @@ const bundled = {
+   // configuration brings too.
+   club: import.meta.glob(["../../website/content/hero.comp.md", "../../website/content/club.csv", "../../website/content/shelf.js"], { query: "?raw", import: "default", eager: true }),
+   // The guides' documents, which their **Try it** links open (`?doc=guides/<book>/<example>`); but a pack's own
+-  // document, `index.comp.md`, which imports its built module and renders only where the pack is built, and the
+-  // document of an app's own components, which only that app has.
+-  guides: import.meta.glob(["../../guides/*/examples/*/*.comp.md", "!../../guides/*/examples/*/index.comp.md", "!../../guides/developers/examples/own-components/*.comp.md"], {
+-    query: "?raw",
+-    import: "default",
+-    eager: true,
+-  }),
++  // document, `index.comp.md`, which imports its built module and renders only where the pack is built, the
++  // document of an app's own components, which only that app has, and the wireframes, whose pack isn't on npm yet.
++  guides: import.meta.glob(
++    [
++      "../../guides/*/examples/*/*.comp.md",
++      "!../../guides/*/examples/*/index.comp.md",
++      "!../../guides/developers/examples/own-components/*.comp.md",
++      "!../../guides/authors/examples/wireframes/*.comp.md",
++    ],
++    {
++      query: "?raw",
++      import: "default",
++      eager: true,
++    },
++  ),
+   // What a guide's document reads in its folder: its data beside it, the documents it imports in a folder below, and,
+   // in the Author's Guide, the components it imports. Not an app's own files (its code, its page, its configuration),
+   // which the playground has no use for.
+diff --git a/guides/authors/17-code-blocks-a-pack-draws.md b/guides/authors/17-code-blocks-a-pack-draws.md
+index 0ffe083..2601a2a 100644
+--- a/guides/authors/17-code-blocks-a-pack-draws.md
++++ b/guides/authors/17-code-blocks-a-pack-draws.md
+@@ -137,7 +137,7 @@ A code renderer can also be written in CompMD itself, as a definition whose sign
+ 
+ Another pack, `@comp-markdown/wireframe`, draws sketches of screens: the newsletter shows the plot booking the garden is building before anyone writes a line of it.
+ 
+-````md snippet=code-blocks/booking.comp.md
++````md snippet=wireframes/booking.comp.md
+ ---
+ md:
+   version: 1
+diff --git a/guides/authors/examples/code-blocks/booking.comp.md b/guides/authors/examples/wireframes/booking.comp.md
+similarity index 100%
+rename from guides/authors/examples/code-blocks/booking.comp.md
+rename to guides/authors/examples/wireframes/booking.comp.md
+diff --git a/packs/wireframe/src/wireframe.test.ts b/packs/wireframe/src/wireframe.test.ts
+index 8cb2707..381a5df 100644
+--- a/packs/wireframe/src/wireframe.test.ts
++++ b/packs/wireframe/src/wireframe.test.ts
+@@ -52,7 +52,7 @@ describe("the test page", () => {
+ 
+ describe("the Author's Guide", () => {
+   it("has a sketch that is valid", async () => {
+-    const guide = await readFile(join(import.meta.dirname, "../../../guides/authors/examples/code-blocks/booking.comp.md"), "utf8");
++    const guide = await readFile(join(import.meta.dirname, "../../../guides/authors/examples/wireframes/booking.comp.md"), "utf8");
+     const blocks = [...guide.matchAll(/```wireframe[^\n]*\n([\s\S]*?)\n```/g)].map((match) => parse(match[1] ?? ""));
+     expect(blocks.map((parsed) => parsed.errors.map(String))).toEqual([[]]);
+   });

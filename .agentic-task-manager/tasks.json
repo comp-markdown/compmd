@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 246,
+    "next_number": 248,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -1029,13 +1029,14 @@
       "use_cases": [],
       "status": "todo",
       "dependencies": [
-        "01a1ebb5-4120-7007-85a3-68f5234f8107"
+        "01a1ebb5-4120-7007-85a3-68f5234f8107",
+        "01a1ebe8-7d85-70a4-9ef9-61a0377c13e1"
       ],
       "files": [],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-17T23:53:08Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "sprint_history": [
         {
           "sprint": "Editor support",
@@ -1203,15 +1204,15 @@
       "description": "Step 5 of [B in the wireframes design](docs/wireframe-pack.md#what-b-takes): a section of the Author's Guide on drawing wireframes with the pack, with its examples tested as the guide's are.\n\n## From earlier work\n\nBuilt and in review: commit `55c581b`. Check chapter 17's *Wireframes* section and its example (`guides/authors/examples/code-blocks/booking.comp.md`). No playground link yet: the playground gets packs from npm, and the pack is published with the end-of-sprint release; add the link then.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [],
       "files": [
         "guides/authors/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-17T22:51:53Z",
+      "updated_at": "2026-11-18T00:27:26Z",
       "created_by": "Hakan Serce",
-      "updated_by": "claude:e2fd71c2",
+      "updated_by": "claude:79612601",
       "sprint_history": [
         {
           "sprint": "Packs and website",
@@ -1227,18 +1228,42 @@
         {
           "id": "01a1ebb5-a711-7023-808f-7961c6012036",
           "ref": "CR-2"
+        },
+        {
+          "id": "01a1ec07-9082-77c8-aa11-726a52702a55",
+          "ref": "CR-3"
         }
       ],
       "review_requested_at": "2026-11-17T22:51:53Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-17T22:51:53Z",
           "kind": "review",
           "text": "CR-2: Wireframes in the Author’s Guide",
           "by": "claude:e2fd71c2"
+        },
+        {
+          "at": "2026-11-18T00:27:21Z",
+          "kind": "note",
+          "text": "Approved: CR-2 and CR-3 approved",
+          "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-18T00:27:26Z",
+          "kind": "outcome",
+          "text": "The Author's Guide's Wireframes section, with the booking screen in its own example folder; CR-2 and CR-3 approved.",
+          "by": "claude:79612601"
         }
-      ]
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-17T22:51:53Z",
+          "to": "2026-11-18T00:27:21Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-18T00:27:26Z",
+      "completed_by": "claude:79612601"
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-69024798fbed",
@@ -1251,7 +1276,7 @@
       "description": "Asked by the user (2026-11-17): a code block a code renderer draws (spec §7.7) can say what shows: `render=source` (the code, as a plain code block), `render=output` (what the renderer draws, today's behaviour and the default), or `render=both` (the code and what it draws, together). `both` is what a blog post or a guide needs when it explains what a block does, as the guides' examples do today by hand.\n\n```md\n```mermaid {render=both alt=\"Our process\"}\ngraph LR; draft --> review --> published\n```\n```\n\n## First, a design shown to the user\n\n- The spec: where `render` is read (the fence's param list, beside `alt`), its values and default, what `both` lays out (code above, output below; side by side on a wide page?), how it prints and degrades (spec §14), and its diagnostics.\n- Whether a `compmd` block takes it too, to show CompMD source beside what it renders (the guides' and the blog's examples).\n- The processor's expanded tree, `@compmd/render` and the sandbox, the guides and the blog.\n\nSpec changes and each push need the user's go.\n\n## From earlier work\n\nThe design is `docs/code-and-output.md`. Decisions settled with the user:\n\n- Decisions 1 to 7 approved.\n- `both` is stacked by default; side by side only by a stylesheet on `compmd-both`.\n- `compmd` examples are part of this task (decision 8).\n- F013 covers a declared `render`, `alt` (code renderer), `class` and `id` together, in this change.\n- Examples, option (a): an example's component nodes name their example, and the host's component list gives each example its own components.\n\nBuilt and in review. Commits in compmd: `6d95eea` (render), `445885e` (both in a frame), `456c35f` (examples in the spec and processor), `69b33ed` (render), `8132016` (sandbox, option (a)), `da4a466` (example inputs), `f443e76` (hosts, guides), `8e0fb53` (design record). Check: §7.8 and §12.3; `processor/examples.rs`; per-example components in the sandbox. Not here: the website's `Example.svelte` stays (a Svelte page); the editor grammars and the language server are their own tasks (notes on CMD-20, CMD-21 and CMD-24).\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [],
       "files": [
         "compmd-spec-v1.md",
@@ -1259,9 +1284,9 @@
         "render/src/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-17T22:51:52Z",
+      "updated_at": "2026-11-18T00:37:59Z",
       "created_by": "Hakan Serce",
-      "updated_by": "claude:e2fd71c2",
+      "updated_by": "claude:79612601",
       "sprint_history": [
         {
           "sprint": "Packs and website",
@@ -1280,15 +1305,35 @@
         }
       ],
       "review_requested_at": "2026-11-17T22:51:52Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-17T22:51:52Z",
           "kind": "review",
           "text": "CR-1: `render=source|output|both`, and examples",
           "by": "claude:e2fd71c2"
+        },
+        {
+          "at": "2026-11-18T00:37:55Z",
+          "kind": "note",
+          "text": "Approved: CR-1 approved",
+          "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-18T00:37:59Z",
+          "kind": "outcome",
+          "text": "render=source|output|both on rendered code blocks, and examples (spec §7.7, §7.8); CR-1 approved.",
+          "by": "claude:79612601"
         }
-      ]
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-17T22:51:52Z",
+          "to": "2026-11-18T00:37:55Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-18T00:37:59Z",
+      "completed_by": "claude:79612601"
     },
     {
       "id": "14fb0014-1501-800e-ab58-a93bc2621b7f",
@@ -8185,6 +8230,83 @@
       ],
       "completed_at": "2026-11-17T20:41:24Z",
       "completed_by": "claude:e2fd71c2"
+    },
+    {
+      "id": "01a1ebe8-7d85-70a4-9ef9-619fdc07a1bc",
+      "name": "Organize the repository's top-level folders",
+      "type": "refactor",
+      "priority": "P2",
+      "labels": [
+        "refactor"
+      ],
+      "description": "Asked by the user (2026-11-17): group the repository's folders by what they hold, instead of every crate, package and pack at the top level. Moves and path updates only: nothing behaves differently.\n\n## The layout\n\n| Folder | What goes there |\n|---|---|\n| `spec/` | `compmd-spec-v1.md`, `compmd-registry-v1.md`, `CHANGELOG.md`, `llms.txt`, `examples/complete` |\n| `crates/` | `processor`, `host`, `pack-types`, `tauri`, and the `markdown-rs` submodule |\n| `crates/tauri/examples/tauri-app/` | the Tauri example app, from `examples/tauri` (where `tauri plugin new` puts a plugin's app) |\n| `npm-packages/` | `render`, `sandbox`, `devtools`, `registry`, `vite` (with `vite/example`), `pack`, `create-pack`, `blog`, `create-blog`, `editor` (with `editor/packs/minimermaid`, its name unchanged), and the two that are a crate as well as a package: `wasm` (`@compmd/processor`) and `host-js` (`@compmd/host`) |\n| `compmd-packs/` | `mermaid`, `wireframe`, from `packs/` |\n| `docs/` | gains `existing-specs-comparison.md` |\n| `branding/` | from `logo/` |\n| `tools/` | `linux-ci/` from `docker/` (the container like CI's Linux runner), `spec-revision/` from `scripts/` |\n| unchanged | `conformance/`, `guides/`, `website/`, `.github/` |\n| at the root | `README.md`, `AGENTS.md`, `RELEASING.md`, the license files, the Cargo, pnpm and lint configuration |\n\n## Change\n\n- Move each folder with `git mv`, so its history follows it. The submodule moves in `.gitmodules` too.\n- Update every path that names a moved folder: the Cargo workspace (`members`, `exclude`), `pnpm-workspace.yaml`, `Makefile.toml`, the CI and release workflows, `lychee.toml` and `lychee-inputs.txt`, the Linux container's scripts, each package's and crate's manifest (`repository.directory`, relative paths), the website's build (the spec, `llms.txt`, the guides' sources), the READMEs, the designs in `docs/`, the guides and `AGENTS.md`.\n- Links read away from the repository (the READMEs and API docs on npmjs.com, crates.io and docs.rs) are absolute links to GitHub: update them to the new paths. The URLs the website serves (`/spec/`, `/llms.txt`) stay as they are.\n- The README's table of files becomes a section on the project's layout that explains each top-level folder, and says that `wasm` and `host-js` are a Rust crate and an npm package both.\n- Update the `files` and descriptions of every task that isn't finished (this sprint, Editor support, the backlog) to the new paths, with `atm task edit`. Finished and archived tasks stay as they are, as history.\n\n## Done when\n\n`cargo make ci`, `cargo make site`, `cargo make links` and `cargo make tauri-check` pass, and `cargo make linux` passes the checks that differ on CI's Linux runner. Each push needs the user's go.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "Cargo.toml",
+        "pnpm-workspace.yaml",
+        ".gitmodules",
+        "Makefile.toml",
+        ".github/workflows/",
+        "lychee.toml",
+        "lychee-inputs.txt",
+        "README.md",
+        "AGENTS.md",
+        "RELEASING.md",
+        "docs/",
+        "guides/",
+        "website/"
+      ],
+      "created_at": "2026-11-17T23:47:24Z",
+      "updated_at": "2026-11-17T23:47:24Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Packs and website",
+          "from": "2026-11-17T23:47:24Z"
+        }
+      ],
+      "sprint": "Packs and website",
+      "with": "user",
+      "number": 246,
+      "key_final": false
+    },
+    {
+      "id": "01a1ebe8-7d85-70a4-9ef9-61a0377c13e1",
+      "name": "Split the editor from the Playground",
+      "type": "refactor",
+      "priority": "P2",
+      "labels": [
+        "refactor"
+      ],
+      "description": "Asked by the user (2026-11-17): `@compmd/editor` is today the Playground, the website's page. Separate the two, so the editor is a part that both the Playground and the browser preview for editors (CMD-30) reuse.\n\n## Change\n\n- `npm-packages/editor/`, `@compmd/editor`: the reusable editor, a document's text with its page, with no menu of documents and no site around it.\n- `website/playground/`: the Playground page on the editor, with its menu of documents, the host's stylesheets to try, and its demo pack `minimermaid` (from `npm-packages/editor/packs/minimermaid`).\n\n## First\n\nWhat the editor's API is and what stays with the Playground, shown to the user before the code moves, and written into a design in `docs/` (and in the editor-support design, `docs/editor-support.md`, where the preview reuses it).\n\n## Done when\n\nThe Playground works as before, its browser tests pass in Chrome and WebKit, and `cargo make ci` and `cargo make site` pass.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebe8-7d85-70a4-9ef9-619fdc07a1bc"
+      ],
+      "files": [
+        "npm-packages/editor/",
+        "website/playground/",
+        "docs/editor-support.md"
+      ],
+      "created_at": "2026-11-17T23:47:24Z",
+      "updated_at": "2026-11-17T23:53:05Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
+      "number": 247,
+      "key_final": false,
+      "sprint_history": [
+        {
+          "sprint": "Editor support",
+          "from": "2026-11-17T23:53:05Z"
+        }
+      ],
+      "sprint": "Editor support"
     }
   ]
 }

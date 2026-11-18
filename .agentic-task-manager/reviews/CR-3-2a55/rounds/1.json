@@ -1,0 +1,41 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "0d77b389562b0279936fa62426ac39104de56fea",
+    "head": "e542fb466b9a094b936a4bd513f050230d16f89f"
+  },
+  "files": [
+    {
+      "path": "editor/src/documents.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "editor/src/documents.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/authors/17-code-blocks-a-pack-draws.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/authors/examples/wireframes/booking.comp.md",
+      "status": {
+        "renamed": {
+          "from": "guides/authors/examples/code-blocks/booking.comp.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "packs/wireframe/src/wireframe.test.ts",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-18T00:21:21Z"
+}

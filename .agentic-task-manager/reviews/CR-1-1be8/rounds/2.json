@@ -1,0 +1,482 @@
+{
+  "number": 2,
+  "kind": {
+    "kind": "range",
+    "base": "c0e817e2b318fee378339dd5d17c8fd05b0cfd3a",
+    "head": "8c7f0636a632781e2630e8156c3f6e0e8f337137"
+  },
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "blog/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "blog/src/client.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "compmd-spec-v1.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "conformance/compmd-tree.schema.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/code-renderer-alt-interpolation/expanded.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/code-renderer-render/case.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/code-renderer-render/context.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/code-renderer-render/diagrams/index.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/code-renderer-render/diagrams/package.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/code-renderer-render/expanded.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/code-renderer-render/input.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/code-renderer/expanded.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/example/case.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/example/expanded.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/example/input.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/host-defaults/expanded.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "conformance/validate/code-renderer-render-F009-F013-W101/case.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/validate/code-renderer-render-F009-F013-W101/diagnostics.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/validate/code-renderer-render-F009-F013-W101/input.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/validate/example-F008-F009-W123/case.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/validate/example-F008-F009-W123/diagnostics.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/validate/example-F008-F009-W123/input.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "docs/code-and-output.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/authors/17-code-blocks-a-pack-draws.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/authors/20-the-diagnostics-and-their-fixes.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/developers/06-data-and-inputs.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/developers/16-code-renderers.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/developers/22-the-diagnostics.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/test/part-5.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "packs/wireframe/LICENSE",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "packs/wireframe/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "packs/wireframe/demo.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "packs/wireframe/index.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "packs/wireframe/package.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "packs/wireframe/src/containers.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "packs/wireframe/src/controls.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "packs/wireframe/src/dom.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "packs/wireframe/src/draw.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "packs/wireframe/src/style.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "packs/wireframe/src/style.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "packs/wireframe/src/testing.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "packs/wireframe/src/wireframe.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "packs/wireframe/src/wireframe.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "packs/wireframe/test/page.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "packs/wireframe/tsconfig.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "processor/src/diagnostic.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "processor/src/expand.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "processor/src/expand/blocks.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "processor/src/expand/components.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "processor/src/expanded.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "processor/src/hints.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "processor/src/hints/tests/names.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "processor/src/lib.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "processor/src/lines.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "processor/src/load.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "processor/src/parse/blocks.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "processor/src/processor.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "processor/src/processor/edit.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "processor/src/processor/examples.rs",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "processor/src/processor/outputs.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "processor/src/render.rs",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "processor/src/resolve.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "processor/src/resolve/load/definitions.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "processor/src/tree.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "processor/src/validate/body.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "processor/src/validate/params.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "processor/tests/examples.rs",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "render/src/code.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "render/src/component-views.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "render/src/example-view.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "render/src/example-view.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "render/src/frame.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "render/src/region.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "render/src/render.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "render/src/styles.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "render/src/tree.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "sandbox/src/frame/components.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "sandbox/src/frame/components.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "sandbox/src/frame/runtime.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "sandbox/src/host/runtime.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "sandbox/src/mount-set.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "sandbox/src/mounts.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "sandbox/src/mounts.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "sandbox/src/pages.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "sandbox/src/protocol/messages.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "sandbox/src/sandbox.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "sandbox/src/use.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "sandbox/test/sandbox.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "sandbox/test/view.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "wasm/src/index.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "wasm/src/request.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "website/src/framed.ts",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:e2fd71c2",
+  "at": "2026-11-18T00:21:05Z"
+}

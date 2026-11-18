@@ -2,12 +2,12 @@
 id = "01a1ebb5-a58c-75f5-8c8c-53967aa61be8"
 number = 1
 title = "`render=source|output|both`, and examples"
-status = "open"
+status = "approved"
 tasks = ["~CMD-37"]
 author = "claude:e2fd71c2"
 reviewers = []
 created = 2026-11-17T22:51:52Z
-updated = 2026-11-17T22:51:52Z
+updated = 2026-11-18T00:37:11Z
 +++
 
 The build of the accepted design `docs/code-and-output.md`: `render=output|source|both` on rendered code blocks (spec §7.7), and examples, ` ```compmd ` blocks that render as documents of their own (spec §7.8).

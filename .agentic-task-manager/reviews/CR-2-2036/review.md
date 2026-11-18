@@ -2,12 +2,12 @@
 id = "01a1ebb5-a711-7023-808f-7961c6012036"
 number = 2
 title = "Wireframes in the Author’s Guide"
-status = "open"
+status = "approved"
 tasks = ["~CMD-36"]
 author = "claude:e2fd71c2"
 reviewers = []
 created = 2026-11-17T22:51:52Z
-updated = 2026-11-17T22:51:52Z
+updated = 2026-11-18T00:11:36Z
 +++
 
 The Author's Guide's chapter 17 gets a **Wireframes** section: the garden newsletter sketches its plot-booking screen with `@comp-markdown/wireframe`.
