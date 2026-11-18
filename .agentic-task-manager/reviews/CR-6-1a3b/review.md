@@ -2,12 +2,12 @@
 id = "01a1f03c-ac29-708f-be97-bb0ccb911a3b"
 number = 6
 title = "A code block's lines, an element each, numbered"
-status = "open"
+status = "approved"
 tasks = ["~CMD-250"]
 author = "claude:79612601"
 reviewers = []
 created = 2026-11-18T19:57:50Z
-updated = 2026-11-18T21:40:51Z
+updated = 2026-11-18T21:41:30Z
 +++
 
 A code block's lines, each an element of its own, numbered with their lines in the text, so a host can size a line: atm's diff keeps its two sides level when a line wraps (ATM-588). Option 1 of the three discussed: document lines, renumbered when an edit moves a block.
