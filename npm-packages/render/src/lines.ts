@@ -2,6 +2,7 @@
 // A line's place is where what is drawn from it shows: its text, found in the page's text nodes by their `\n`s, a code
 // block's line in its `<pre>`, or, for a line with no text of its own on the page, the box of what its range drew.
 // The index reads only the DOM's text; each line is measured when the generator reaches it.
+import { codeOf } from "./code-lines.ts";
 import type { Placed } from "./source.ts";
 
 /** A box, in CSS pixels from the page root's top left corner: as `getBoundingClientRect()` gives it, moved there. */
@@ -97,14 +98,9 @@ function drawnByLine(placed: Iterable<Placed>): Map<number, Drew> {
       }
     } else if (dom.nodeType === 1 /* Node.ELEMENT_NODE */) {
       const element = dom as Element;
-      const code = node.type === "code" && element.nodeName === "PRE" ? element.firstElementChild : null;
-      if (code) {
-        // A fenced block's code starts on the line after its fence; an indented one's, on its first line.
-        const fenced = end.line - start.line + 1 > lineStarts(code.textContent).length;
-        codeSegments(code, start.line + (fenced ? 1 : 0), order, add);
-      } else {
-        drew(start.line).elements.push({ element, length: (end.offset ?? 0) - (start.offset ?? 0) });
-      }
+      const code = codeOf({ dom, source, node, kept });
+      if (code) codeSegments(code.code, code.first, order, add);
+      else drew(start.line).elements.push({ element, length: (end.offset ?? 0) - (start.offset ?? 0) });
     }
   }
   for (const found of lines.values()) found.elements.sort((a, b) => a.length - b.length);
@@ -127,13 +123,18 @@ function drawings(segments: readonly Segment[]): Segment[][] {
   return runs;
 }
 
-/** Boxes on one visual line merged into one, those whose spans overlap vertically; empty boxes left out. */
+/**
+ * Boxes on one visual line merged into one, those that overlap vertically by more than half the shorter's height;
+ * empty boxes left out. Not any overlap: WebKit's text boxes are a little taller than their lines are apart (15.13px
+ * every 15px), so each visual line's box overlaps the next one's.
+ */
 function byVisualLine(boxes: readonly Rect[]): Rect[] {
   const lines: { left: number; top: number; right: number; bottom: number }[] = [];
   for (const { x, y, width, height } of boxes) {
     if (width === 0 && height === 0) continue;
     const box = { left: x, top: y, right: x + width, bottom: y + height };
-    const line = lines.find((other) => box.top < other.bottom && other.top < box.bottom);
+    const sameLine = (other: (typeof lines)[number]) => Math.min(box.bottom, other.bottom) - Math.max(box.top, other.top) > Math.min(box.bottom - box.top, other.bottom - other.top) / 2;
+    const line = lines.find(sameLine);
     if (!line) {
       lines.push(box);
       continue;

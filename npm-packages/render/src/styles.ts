@@ -181,8 +181,8 @@ export function ownParams(params: readonly ExpandedParam[]): Record<string, unkn
 
 /**
  * Rules every document needs once: the boxes the renderer makes (`render=both`'s stacked, which a host's
- * `.compmd-both` rule can set side by side), the containers breakpoints query, and the look of what Markdown has no
- * CSS for. A box's padding is its own: the margins of its first and last child are trimmed, as
+ * `.compmd-both` rule can set side by side), the containers breakpoints query, a code block's lines as blocks (so a
+ * host can size one: `.compmd-line { min-height }`), and the look of what Markdown has no CSS for. A box's padding is its own: the margins of its first and last child are trimmed, as
  * `margin-trim: block` would, at the specificity of `:first-child`, so a host's own rules still win.
  *
  * On paper (docs/printing.md): the page is light, a component that prints its fallback shows it instead of itself, a
@@ -210,6 +210,7 @@ const BASE_RULES = `
 .compmd-align-left { text-align: start; }
 .compmd-align-center { text-align: center; }
 .compmd-align-right { text-align: end; }
+.compmd-line { display: block; }
 .compmd-print-wrap { display: contents; }
 .compmd-print-paper { display: none; }
 @media print {

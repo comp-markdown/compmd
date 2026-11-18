@@ -4,7 +4,7 @@
 // shows. Each token's colour is `light-dark(light, dark)`, set through the CSSOM, which a frame's policy allows, and
 // which follows the `color-scheme` a frame takes from the page around it.
 
-import type { CodeHighlighter } from "@compmd/render";
+import { CODE_LINE, type CodeHighlighter } from "@compmd/render";
 import type { HighlighterCore, LanguageRegistration, ThemedTokenWithVariants } from "@shikijs/core";
 import { COMPMD, splitYaml } from "./grammar.ts";
 import { grammarOf, languageOf } from "./languages.ts";
@@ -97,14 +97,17 @@ export function highlightWith(load: () => Promise<Shikis>): CodeHighlighter {
   };
 }
 
-/** Puts `lines` in `target` as spans, unless they aren't `code`'s text: then it keeps the text. */
+/**
+ * Puts `lines` in `target` as spans, each line's in its line's element (`CODE_LINE`), which keeps its attributes,
+ * unless they aren't `code`'s text, or `target` hasn't an element for each line: then it keeps the text.
+ */
 function draw(lines: Lines, code: string, target: HTMLElement): void {
   if (lines.map((line) => line.map(({ content }) => content).join("")).join("\n") !== code) return;
+  const elements = [...target.children].filter((child) => child.classList.contains(CODE_LINE));
+  if (elements.length !== lines.length) return;
   const document = target.ownerDocument;
-  const parts: Node[] = [];
   for (const [i, line] of lines.entries()) {
-    if (i > 0) parts.push(document.createTextNode("\n"));
-    for (const { content, variants } of line) {
+    const parts: Node[] = line.map(({ content, variants }) => {
       const span = document.createElement("span");
       span.textContent = content;
       const { light, dark } = variants;
@@ -113,8 +116,9 @@ function draw(lines: Lines, code: string, target: HTMLElement): void {
       if (style & ITALIC) span.style.setProperty("font-style", "italic");
       if (style & BOLD) span.style.setProperty("font-weight", "bold");
       if (style & UNDERLINE) span.style.setProperty("text-decoration", "underline");
-      parts.push(span);
-    }
+      return span;
+    });
+    if (i < lines.length - 1) parts.push(document.createTextNode("\n"));
+    elements[i]?.replaceChildren(...parts);
   }
-  target.replaceChildren(...parts);
 }

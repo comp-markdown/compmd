@@ -1,5 +1,6 @@
 // The views of Markdown nodes (CommonMark and GFM, with alerts and math; spec §2.3): text, elements, code blocks that
 // show as code, images whose files the caller gives, and code or math the caller's renderer draws.
+import { drawCodeLines } from "./code-lines.ts";
 import type { ImageSource } from "./images.ts";
 import { safeUrl } from "./html.ts";
 import { destroyAll, patch, pendingTag, shapeOf, type Pass, type Surface, type View } from "./render.ts";
@@ -179,8 +180,9 @@ export class ElementView implements View {
 }
 
 /**
- * A code block that shows as code, `<pre><code class="language-…">`: one no code renderer draws, or a code renderer's
- * fallback. The caller's highlighter, if any, highlights it, again only when its text or language changes.
+ * A code block that shows as code, `<pre><code class="language-…">`, each line an element of its own (`code-lines.ts`):
+ * one no code renderer draws, or a code renderer's fallback. The caller's highlighter, if any, highlights it, again
+ * only when its text or language changes.
  */
 export class CodeBlockView implements View {
   readonly shape: string;
@@ -208,7 +210,7 @@ export class CodeBlockView implements View {
     this.#shown = shown;
     if (language) this.#code.className = `language-${language}`;
     else this.#code.removeAttribute("class");
-    this.#code.textContent = code;
+    drawCodeLines(this.#code, code);
     this.#surface.highlight?.(code, language, this.#code);
   }
 

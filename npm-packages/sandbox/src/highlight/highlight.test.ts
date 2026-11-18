@@ -1,12 +1,19 @@
 // @vitest-environment happy-dom
+import { CODE_LINE } from "@compmd/render";
 import { describe, expect, it, vi } from "vitest";
 import { highlightWith, shikiHighlight, type Shikis } from "./highlight.ts";
 import { LANGUAGE_NAMES } from "./languages.ts";
 
+/** `target` holding `text` as the renderer draws it: an element per line, each with its line break but the last. */
+function drawLines(target: HTMLElement, text: string): HTMLElement {
+  const lines = text.split("\n");
+  target.replaceChildren(...lines.map((line, i) => Object.assign(document.createElement("span"), { className: CODE_LINE, textContent: i < lines.length - 1 ? `${line}\n` : line })));
+  return target;
+}
 /** A block's `<code>`, holding its text, as the renderer gives it. */
-const codeOf = (text: string) => Object.assign(document.createElement("code"), { textContent: text });
-/** The texts of `target`'s tokens. */
-const tokens = (target: HTMLElement) => [...target.querySelectorAll("span")].map((span) => span.textContent);
+const codeOf = (text: string) => drawLines(document.createElement("code"), text);
+/** The texts of `target`'s tokens, the spans in its lines. */
+const tokens = (target: HTMLElement) => [...target.querySelectorAll(`.${CODE_LINE} > span`)].map((span) => span.textContent);
 
 /**
  * How long to wait for Shiki and a grammar to load: well under a second alone, but many seconds while every package's
@@ -51,7 +58,27 @@ describe("shikiHighlight", () => {
     highlight("DISPLAY 'HI'.", "cobol", cobol);
     highlight("plain", "", none);
     await new Promise((resolve) => setTimeout(resolve, 100));
-    expect([cobol.innerHTML, none.innerHTML]).toEqual(["DISPLAY 'HI'.", "plain"]);
+    expect([tokens(cobol), tokens(none)]).toEqual([[], []]);
+    expect([cobol.textContent, none.textContent]).toEqual(["DISPLAY 'HI'.", "plain"]);
+  });
+
+  it("puts each line's tokens in its line's element, which keeps its attributes, a blank line's too", TEST, async () => {
+    const highlight = shikiHighlight();
+    const text = "const a = 1;\n\nconst b = 2;";
+    const target = codeOf(text);
+    for (const [i, line] of [...target.children].entries()) line.setAttribute("data-line", String(4 + i));
+    const lines = [...target.children];
+    highlight(text, "js", target);
+    await vi.waitFor(() => {
+      expect(tokens(target)).toContain("const");
+    }, LOADED);
+    expect([...target.children]).toEqual(lines);
+    expect(lines.map((line) => [line.getAttribute("data-line"), line.textContent])).toEqual([
+      ["4", "const a = 1;\n"],
+      ["5", "\n"],
+      ["6", "const b = 2;"],
+    ]);
+    expect(target.textContent).toBe(text);
   });
 
   it("loads and draws every language it lists, with the JavaScript engine", { timeout: 30_000 }, async () => {
@@ -60,7 +87,7 @@ describe("shikiHighlight", () => {
     for (const [name, target] of blocks) highlight("x = 1\ny", name, target);
     await vi.waitFor(
       () => {
-        expect(blocks.filter(([, target]) => target.querySelector("span") === null).map(([name]) => name)).toEqual([]);
+        expect(blocks.filter(([, target]) => tokens(target).length === 0).map(([name]) => name)).toEqual([]);
       },
       { timeout: 25_000 },
     );
@@ -74,7 +101,7 @@ describe("highlightWith", () => {
     const target = codeOf("let older = 1;");
     // TypeScript's grammar loads after JavaScript's, so the older block's tokens could come last.
     highlight("let older = 1;", "ts", target);
-    target.textContent = "let newer = 2;";
+    drawLines(target, "let newer = 2;");
     highlight("let newer = 2;", "js", target);
     await vi.waitFor(() => {
       expect(tokens(target).some((token) => token.includes("newer"))).toBe(true);
@@ -88,6 +115,18 @@ describe("highlightWith", () => {
     const target = codeOf("const a = 1;");
     highlight("const a = 1;", "js", target);
     await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(target.innerHTML).toBe(`<span class="${CODE_LINE}">const a = 1;</span>`);
+  });
+
+  it("keeps a block's text when its lines aren't an element each, as another renderer's are", TEST, async () => {
+    const highlight = shikiHighlight();
+    const target = Object.assign(document.createElement("code"), { textContent: "const a = 1;" });
+    const other = codeOf("const b = 2;");
+    highlight("const a = 1;", "js", target);
+    highlight("const b = 2;", "js", other);
+    await vi.waitFor(() => {
+      expect(tokens(other)).toContain("const");
+    }, LOADED);
     expect(target.innerHTML).toBe("const a = 1;");
   });
 });

@@ -74,7 +74,7 @@ describe("Markdown", () => {
         '<ol start="3"><li><p>three</p></li></ol>' +
         '<ul class="compmd-tight"><li class="compmd-task"><input type="checkbox" disabled="" checked=""><p>done</p></li></ul>' +
         '<blockquote class="compmd-quote"><p>quoted</p></blockquote><hr>' +
-        '<pre><code class="language-js">let a;</code></pre>',
+        '<pre><code class="language-js"><span class="compmd-line">let a;</span></code></pre>',
     );
   });
 

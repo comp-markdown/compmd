@@ -167,7 +167,8 @@ export async function runCheck(options: CheckOptions): Promise<CheckReport> {
   view.render(tree);
 
   const mounted = (name: string) => observation.events.some((event) => event.type === "mounted" && event.component === name && event.frame !== "");
-  const highlighted = () => (options.container.querySelector("pre code.language-rust")?.querySelectorAll("span").length ?? 0) > 1;
+  // Tokens inside the block's lines: each line is a span (`.compmd-line`) before it is highlighted too.
+  const highlighted = () => (options.container.querySelector("pre code.language-rust")?.querySelectorAll(".compmd-line > span").length ?? 0) > 1;
   await until(() => (seenValue !== undefined && highlighted() && packs.every((_pack, i) => mounted(`pack-${String(i)}`))) || errors.length > 0, ms);
 
   const frames = [...options.container.querySelectorAll("iframe")].map((frame) => frame.src);

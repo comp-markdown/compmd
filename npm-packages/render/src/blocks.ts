@@ -4,6 +4,7 @@
 // whole document has changed for them: footnote numbers, link definitions, the inputs. What only the whole document
 // has comes from each block's summary, so a render costs what the blocks it renders cost, plus a little per block.
 import { footnotesFrom, linksFrom, notesOf, type Footnotes, type LinkDefinition, type Notes } from "./document.ts";
+import { numberCodeLines } from "./code-lines.ts";
 import { stillOpen, tagsOf, withHtml, type Tag } from "./html.ts";
 import { Keys, type Edit, type KeyOf, type Keyed } from "./keys.ts";
 import { placedIn } from "./component-views.ts";
@@ -23,6 +24,8 @@ interface Summary {
   fills: boolean;
   /** The tags of its raw HTML, which can pair with other blocks'. */
   tags: Tag[];
+  /** Whether it has a code block, whose lines are numbered (`code-lines.ts`). */
+  code: boolean;
 }
 
 /** What a block shows (its node, or what the rules for invalid text say), with keys, and its node's ids. */
@@ -39,6 +42,8 @@ interface Block {
   shown?: Shown;
   /** Absent until a render renders it, and after a change to the blocks it renders with. */
   group?: Group;
+  /** The `lines` its code blocks' lines were numbered at; absent until they are, and after its views render again. */
+  numbered?: number;
 }
 
 /** Blocks rendered together, with their views: one block, or those whose raw HTML pairs across them. */
@@ -47,14 +52,16 @@ interface Group {
   views: View[];
 }
 
-const NOTHING: Shown = { nodes: [], kept: false, ids: new Map(), keys: new Map(), summary: { notes: notesOf([]), heading: undefined, container: false, fills: false, tags: [] } };
+const NOTHING: Shown = { nodes: [], kept: false, ids: new Map(), keys: new Map(), summary: { notes: notesOf([]), heading: undefined, container: false, fills: false, tags: [], code: false } };
 
 const shown = (block: Block): Shown => block.shown ?? NOTHING;
 
 function summaryOf(nodes: readonly ExpandedNode[]): Summary {
   let heading: number | undefined;
+  let code = false;
   walk(nodes, (node) => {
     if (node.type === "heading") heading = Number(node.depth);
+    if (node.type === "code") code = true;
   });
   const placed = placedIn(nodes);
   return {
@@ -63,6 +70,7 @@ function summaryOf(nodes: readonly ExpandedNode[]): Summary {
     container: placed.some((child) => usesBreakpoints(child.params)),
     fills: placed.some((child) => fills(child.params)),
     tags: tagsOf(nodes),
+    code,
   };
 }
 
@@ -178,11 +186,15 @@ export class Blocks {
       const summaries = segment.map((block) => shown(block).summary);
       if (!group) {
         const made: Group = { blocks: segment, views: viewsFor(this.#surface, released, nodes(), passOf(segment)) };
-        for (const block of segment) block.group = made;
+        for (const block of segment) {
+          block.group = made;
+          delete block.numbered;
+        }
       } else if (this.#inputsChanged || (renumbered && summaries.some((s) => s.notes.references.length > 0)) || (relinked && summaries.some((s) => s.notes.usesLinks))) {
         const own = new Matcher(group.views, (view) => view);
         group.views = viewsFor(this.#surface, own, nodes(), passOf(segment));
         discard(own.rest());
+        for (const block of segment) delete block.numbered;
       } else {
         for (const summary of summaries) if (summary.heading !== undefined) heading.level = summary.heading;
       }
@@ -196,6 +208,12 @@ export class Blocks {
       discard(own.rest());
     }
     this.#place(segments);
+    // Only blocks drawn again, or moved by what changed before them: a kept block's lines are as they were.
+    for (const block of this.#blocks) {
+      if (block.numbered === block.lines) continue;
+      if (shown(block).summary.code) numberCodeLines(this.#placedOf(block));
+      block.numbered = block.lines;
+    }
     this.#keys.settle();
     this.#good.clear();
     this.#root.classList.toggle("compmd-container", this.#blocks.some((block) => shown(block).summary.container));
@@ -207,12 +225,7 @@ export class Blocks {
    * block since it came. A kept render (rule 3 of `stable.ts`) is an older text's, so all of it has its block's range.
    */
   placed(): Placed[] {
-    return this.#blocks.flatMap((block) => {
-      const { nodes, kept } = shown(block);
-      const at = ({ start, end }: Origin): Source => ({ start: moved(start, block.lines, block.shift), end: moved(end, block.lines, block.shift) });
-      const own = block.node.origin;
-      return placedOf(nodes, this.#surface.drawn, this.#root, kept && own ? () => at(own) : at, kept);
-    });
+    return this.#blocks.flatMap((block) => this.#placedOf(block));
   }
 
   destroy(): void {
@@ -220,6 +233,14 @@ export class Blocks {
     destroyAll(this.#released);
     destroyAll(this.#footnoteViews);
     this.#root.replaceChildren();
+  }
+
+  /** What `block` drew, with its ranges in the current text (`placed`). */
+  #placedOf(block: Block): Placed[] {
+    const { nodes, kept } = shown(block);
+    const at = ({ start, end }: Origin): Source => ({ start: moved(start, block.lines, block.shift), end: moved(end, block.lines, block.shift) });
+    const own = block.node.origin;
+    return placedOf(nodes, this.#surface.drawn, this.#root, kept && own ? () => at(own) : at, kept);
   }
 
   #show(block: Block, rules: Rules): Shown {

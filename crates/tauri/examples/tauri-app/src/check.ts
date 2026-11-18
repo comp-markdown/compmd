@@ -67,7 +67,8 @@ export async function check(mode: Exclude<Mode, "show">, drawn: Drawn): Promise<
   // Waiting for the page to settle is a courtesy, not a check: `settled` waits for an animation frame, which WebKit may
   // hold back for a window that isn't on screen. Each check below waits for what it looks at.
   await Promise.race([drawn.view.settled(), new Promise((resolve) => setTimeout(resolve, 5000))]);
-  const highlighted = () => (container.querySelector("pre code.language-rust")?.querySelectorAll("span").length ?? 0) > 1;
+  // Tokens inside the block's lines: each line is a span (`.compmd-line`) before it is highlighted too.
+  const highlighted = () => (container.querySelector("pre code.language-rust")?.querySelectorAll(".compmd-line > span").length ?? 0) > 1;
   const origin = () => sets.find(({ input }) => input === "origin");
   await until(() => (mounted(observation, "mermaid") && mounted(observation, "probe") && highlighted() && origin() !== undefined) || errors.length > 0);
   if (drawn.diagnostics.length > 0) failed.push(`diagnostics: ${JSON.stringify(drawn.diagnostics)}`);

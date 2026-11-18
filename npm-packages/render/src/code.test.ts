@@ -157,6 +157,6 @@ describe("a code block that shows as code", () => {
 
   it("is plain without a highlighter", () => {
     createPage(area).render({ type: "root", children: [block("let a;")] });
-    expect(area.innerHTML).toBe('<pre><code class="language-js">let a;</code></pre>');
+    expect(area.innerHTML).toBe('<pre><code class="language-js"><span class="compmd-line">let a;</span></code></pre>');
   });
 });

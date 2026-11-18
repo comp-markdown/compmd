@@ -92,6 +92,26 @@ describe("lines", () => {
     expect(measured).toEqual(["let a = 1;", "let b;"]);
   });
 
+  it("gives a wrapped line a box per visual line, though WebKit's boxes of one overlap the next's a little", () => {
+    // As WebKit measured a wrapped code line: 15.13px high, 15px apart; and a shorter box on the first visual line.
+    vi.spyOn(Range.prototype, "getClientRects").mockImplementation(
+      () =>
+        [
+          { x: 0, y: 42.93, width: 230, height: 15.13 },
+          { x: 230, y: 45, width: 8, height: 10 },
+          { x: 0, y: 57.93, width: 200, height: 15.13 },
+        ] as unknown as DOMRectList,
+    );
+    const p = page();
+    p.render(tree(node("code", span(1, 0, 3, 20), [], { lang: "js", meta: null, value: "let a;" })));
+    const [line] = [...p.lines()];
+    expect(line?.rects).toHaveLength(2);
+    expect(line?.rects[0]?.y).toBeCloseTo(42.93);
+    expect(line?.rects[0]?.height).toBeCloseTo(15.13);
+    expect(line?.rects[0]?.width).toBeCloseTo(238);
+    expect(line?.rects[1]?.y).toBeCloseTo(57.93);
+  });
+
   it("places a line with no text of its own by the box of what its range drew, and nothing inside it after", () => {
     const chart: Mount = (target) => {
       target.appendChild(document.createElement("svg"));

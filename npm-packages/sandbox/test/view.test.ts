@@ -409,11 +409,15 @@ describe("code blocks", () => {
     { type: "code", lang: "mermaid", meta: null, value: "graph LR; A --> B", component: { name: "mermaid", params: [{ key: "code", breakpoint: null, value: "graph LR; A --> B" }] } },
   ];
 
-  /** Each code block's language, how many tokens it shows, and its first token's colour, once all are highlighted. */
+  /**
+   * Each code block's language, how many tokens it shows, and its first token's colour, once all are highlighted: the
+   * tokens are the spans in its lines (`.compmd-line`), written out since this runs in the frame too.
+   */
   const shown = async (root: ParentNode) => {
     const codes = () => [...root.querySelectorAll("pre code")];
-    for (let tries = 0; tries < 200 && (codes().length < 2 || codes().some((code) => !code.querySelector("span"))); tries++) await new Promise((done) => setTimeout(done, 20));
-    return codes().map((code) => ({ language: code.className, tokens: code.querySelectorAll("span").length, text: code.textContent, color: getComputedStyle(code.querySelector("span") ?? code).color }));
+    const tokensOf = (code: Element) => code.querySelectorAll(".compmd-line > span");
+    for (let tries = 0; tries < 200 && (codes().length < 2 || codes().some((code) => tokensOf(code).length === 0)); tries++) await new Promise((done) => setTimeout(done, 20));
+    return codes().map((code) => ({ language: code.className, tokens: tokensOf(code).length, text: code.textContent, color: getComputedStyle(tokensOf(code)[0] ?? code).color }));
   };
 
   /** A strict component in the page's frame, which reports what the frame's page shows of its code blocks. */
@@ -660,6 +664,37 @@ describe("where each line is", () => {
       expect(lines.every(({ rects }) => rects.every(({ width, height }) => width > 0 && height > 0))).toBe(true);
     });
   }
+
+  // In host mode, where the test can look into the page. A host that wraps long lines, as a diff's two sides do.
+  it("draws a code block's lines an element each, numbered, which copy as the code and keep their boxes, a wrapped line's several (host mode)", async () => {
+    const long = `let wrapped = ${Array.from({ length: 24 }, (_, i) => `word${String(i)}`).join(" + ")};`;
+    const value = `let a;\n\n${long}`;
+    const wrapping = document.head.appendChild(Object.assign(document.createElement("style"), { textContent: "pre { white-space: pre-wrap; }" }));
+    try {
+      const { area, view, events, until } = open("host", []);
+      area.style.width = "240px";
+      // "```js\nlet a;\n\n<long>\n```": the block from line 1 to line 5, its code on lines 2 to 4.
+      view.render({ type: "root", children: [{ type: "code", lang: "js", meta: null, value, origin: range([1, 0], [5, 30 + long.length]) }] });
+      await until(() => events.layout.length > 0);
+      const pre = area.querySelector("pre");
+      const elements = [...(pre?.querySelectorAll<HTMLElement>("code > .compmd-line") ?? [])];
+      expect(elements.map((line) => line.dataset.line)).toEqual(["2", "3", "4"]);
+      // Each line break is in its line's element, so none makes a line of its own: the lines' heights are the block's.
+      const heights = elements.map((line) => line.getBoundingClientRect().height);
+      expect(heights[1]).toBeGreaterThan(0);
+      expect(Math.abs(heights.reduce((sum, height) => sum + height, 0) - (pre?.getBoundingClientRect().height ?? 0))).toBeLessThan(1);
+      const selection = getSelection();
+      if (pre) selection?.selectAllChildren(pre);
+      expect(selection?.toString()).toBe(value);
+      selection?.removeAllRanges();
+      const lines = [];
+      for await (const line of view.lines()) lines.push(line);
+      expect(lines.map(({ line }) => line)).toEqual([2, 3, 4]);
+      expect(lines[2]?.rects.length).toBeGreaterThan(1);
+    } finally {
+      wrapping.remove();
+    }
+  });
 });
 
 describe("when the page has settled", () => {

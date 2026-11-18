@@ -22,8 +22,10 @@ export type CodeRenderer = (source: string, target: HTMLElement) => void;
 export type MathRenderer = (tex: string, options: { display: boolean }, target: HTMLElement) => void;
 /**
  * Highlights a code block that shows as code: `code`, written in the fence language `language` (`""` for none), into
- * `target`, the block's `<code>`, which holds `code` as text until then. It may do so later, once what it needs has
- * loaded; it is called again only when the block's text or language changes.
+ * `target`, the block's `<code>`, which holds one element per line until then, each `.compmd-line` (`CODE_LINE`)
+ * with its text and its line break. It puts each line's tokens in that line's element, keeping the element and its
+ * attributes (`data-line`), so a host's styles for a line stay. It may do so later, once what it needs has loaded; it
+ * is called again only when the block's text or language changes.
  */
 export type CodeHighlighter = (code: string, language: string, target: HTMLElement) => void;
 
