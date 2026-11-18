@@ -8360,13 +8360,13 @@
       "description": "Since the push of 46131b2, CI's `ci` job fails `compmd-packs/mermaid/test/page.test.ts` in WebKit, twice in a row: the first diagrams draw, then one never appears within the 30 seconds `frameWith` waits (37.6 s in all), and the two later WebKit tests fail with it, since they share the page. The last green run, on 49269de, drew them all in 7.7 s.\n\nIt doesn't fail elsewhere: alone in the Linux container (`tools/linux-ci`), beside the wireframe pack's page test, in the container's whole `cargo make ci`, and on macOS.\n\n## Change\n\n1. **The failure says what happened:** on a timeout, `frameWith` names the selector it waited for, and the test lists the page's errors and the frames' console messages, so the next failure on CI says which diagram stalled and why. Nothing is weakened: the same waits, the same assertions.\n2. With that on CI, find the cause and fix it; a timeout isn't raised to make it pass.\n\n## Done when\n\nCI's `ci` job passes the Mermaid pack's tests on `main`.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [],
       "files": [
         "compmd-packs/mermaid/test/page.test.ts"
       ],
       "created_at": "2026-11-18T02:49:59Z",
-      "updated_at": "2026-11-18T07:57:37Z",
+      "updated_at": "2026-11-18T08:05:42Z",
       "created_by": "claude:79612601",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -8398,6 +8398,18 @@
           "kind": "review",
           "text": "CR-5: The Mermaid page test says which diagram stalled",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-18T08:05:42Z",
+          "kind": "note",
+          "text": "Approved: CR-5 approved.",
+          "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-18T08:05:42Z",
+          "kind": "outcome",
+          "text": "The Mermaid page test passes on CI again (df13810), in WebKit in 4.7 s, on the first run with WebKit freshly downloaded. Cause not proven: likely WebKit and its libraries restored from a cache another runner image saved. The test now names a stalled diagram, the frames and what the page logged (58f5297). CR-5 approved.",
+          "by": "claude:79612601"
         }
       ],
       "started_at": "2026-11-18T07:57:13Z",
@@ -8409,7 +8421,15 @@
         }
       ],
       "review_requested_at": "2026-11-18T07:57:37Z",
-      "review_state": "waiting"
+      "reviews": [
+        {
+          "from": "2026-11-18T07:57:37Z",
+          "to": "2026-11-18T08:05:42Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-18T08:05:42Z",
+      "completed_by": "claude:79612601"
     },
     {
       "id": "01a1ecbd-e0a0-77c1-ac79-47fffc282c89",
@@ -8437,11 +8457,11 @@
       "description": "Asked from atm (ATM-588, 2026-11-18). A highlighted code block is drawn as token spans between newline text nodes (`sandbox/highlight/highlight.js` `draw`), and the view's `lines()` reports no boxes for a code block's lines (only a Markdown document's).\n\natm's diff viewer shows a file's two sides as two code blocks side by side, and wraps long lines. To keep the two sides' lines level when one wraps, the host needs to make a line as tall as its counterpart, which it can't do with no element per line.\n\n## Change\n- Draw each line of a code block as an element of its own (`<span class=\"line\" data-line=\"N\">`, `display: block`, its tokens inside), the same text and colours, the newlines kept for copying. A host can then style a line (`min-height`).\n- The view's `lines()` gives a code block's lines their boxes too (a wrapped line, one box per visual line), as it does a Markdown document's.\n\n## Tests\n- The drawn block's text and copied text are unchanged, and there is one element per line, a blank line included.\n- `lines()` reports a wrapped code line with several boxes, and a blank line.\n- Unhighlighted blocks (a language not highlighted, or tokens not loaded yet) the same.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [],
       "created_at": "2026-11-18T07:51:14Z",
-      "updated_at": "2026-11-18T07:57:13Z",
+      "updated_at": "2026-11-18T08:04:39Z",
       "created_by": "claude:0f56a916",
       "updated_by": "claude:79612601",
       "number": 250,
@@ -8452,7 +8472,9 @@
           "from": "2026-11-18T07:57:13Z"
         }
       ],
-      "sprint": "Packs and website"
+      "sprint": "Packs and website",
+      "started_at": "2026-11-18T08:04:39Z",
+      "started_by": "claude:79612601"
     }
   ]
 }
