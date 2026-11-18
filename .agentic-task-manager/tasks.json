@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 248,
+    "next_number": 249,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -8242,7 +8242,7 @@
       "description": "Asked by the user (2026-11-17): group the repository's folders by what they hold, instead of every crate, package and pack at the top level. Moves and path updates only: nothing behaves differently.\n\n## The layout\n\n| Folder | What goes there |\n|---|---|\n| `spec/` | `compmd-spec-v1.md`, `compmd-registry-v1.md`, `CHANGELOG.md`, `llms.txt`, `examples/complete` |\n| `crates/` | `processor`, `host`, `pack-types`, `tauri`, and the `markdown-rs` submodule |\n| `crates/tauri/examples/tauri-app/` | the Tauri example app, from `examples/tauri` (where `tauri plugin new` puts a plugin's app) |\n| `npm-packages/` | `render`, `sandbox`, `devtools`, `registry`, `vite` (with `vite/example`), `pack`, `create-pack`, `blog`, `create-blog`, `editor` (with `editor/packs/minimermaid`, its name unchanged), and the two that are a crate as well as a package: `wasm` (`@compmd/processor`) and `host-js` (`@compmd/host`) |\n| `compmd-packs/` | `mermaid`, `wireframe`, from `packs/` |\n| `docs/` | gains `existing-specs-comparison.md` |\n| `branding/` | from `logo/` |\n| `tools/` | `linux-ci/` from `docker/` (the container like CI's Linux runner), `spec-revision/` from `scripts/` |\n| unchanged | `conformance/`, `guides/`, `website/`, `.github/` |\n| at the root | `README.md`, `AGENTS.md`, `RELEASING.md`, the license files, the Cargo, pnpm and lint configuration |\n\n## Change\n\n- Move each folder with `git mv`, so its history follows it. The submodule moves in `.gitmodules` too.\n- Update every path that names a moved folder: the Cargo workspace (`members`, `exclude`), `pnpm-workspace.yaml`, `Makefile.toml`, the CI and release workflows, `lychee.toml` and `lychee-inputs.txt`, the Linux container's scripts, each package's and crate's manifest (`repository.directory`, relative paths), the website's build (the spec, `llms.txt`, the guides' sources), the READMEs, the designs in `docs/`, the guides and `AGENTS.md`.\n- Links read away from the repository (the READMEs and API docs on npmjs.com, crates.io and docs.rs) are absolute links to GitHub: update them to the new paths. The URLs the website serves (`/spec/`, `/llms.txt`) stay as they are.\n- The README's table of files becomes a section on the project's layout that explains each top-level folder, and says that `wasm` and `host-js` are a Rust crate and an npm package both.\n- Update the `files` and descriptions of every task that isn't finished (this sprint, Editor support, the backlog) to the new paths, with `atm task edit`. Finished and archived tasks stay as they are, as history.\n\n## Done when\n\n`cargo make ci`, `cargo make site`, `cargo make links` and `cargo make tauri-check` pass, and `cargo make linux` passes the checks that differ on CI's Linux runner. Each push needs the user's go.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [],
       "files": [
         "Cargo.toml",
@@ -8260,7 +8260,7 @@
         "website/"
       ],
       "created_at": "2026-11-17T23:47:24Z",
-      "updated_at": "2026-11-18T00:53:10Z",
+      "updated_at": "2026-11-18T01:38:02Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -8274,7 +8274,23 @@
       "number": 246,
       "key_final": true,
       "started_at": "2026-11-18T00:53:10Z",
-      "started_by": "claude:79612601"
+      "started_by": "claude:79612601",
+      "code_reviews": [
+        {
+          "id": "01a1ec4d-c700-7679-8832-ad6bdff158a1",
+          "ref": "CR-4"
+        }
+      ],
+      "review_requested_at": "2026-11-18T01:38:02Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-18T01:38:02Z",
+          "kind": "review",
+          "text": "CR-4: The repository's top-level folders, organized",
+          "by": "claude:79612601"
+        }
+      ]
     },
     {
       "id": "01a1ebe8-7d85-70a4-9ef9-61a0377c13e1",
@@ -8309,6 +8325,35 @@
         }
       ],
       "sprint": "Editor support"
+    },
+    {
+      "id": "01a1ec8f-a4a9-7227-a145-bb45fdfe91ce",
+      "name": "The Mermaid pack's page test fails in WebKit on CI's Linux runner",
+      "type": "bugfix",
+      "priority": "P1",
+      "description": "Since the push of 46131b2, CI's `ci` job fails `compmd-packs/mermaid/test/page.test.ts` in WebKit, twice in a row: the first diagrams draw, then one never appears within the 30 seconds `frameWith` waits (37.6 s in all), and the two later WebKit tests fail with it, since they share the page. The last green run, on 49269de, drew them all in 7.7 s.\n\nIt doesn't fail elsewhere: alone in the Linux container (`tools/linux-ci`), beside the wireframe pack's page test, in the container's whole `cargo make ci`, and on macOS.\n\n## Change\n\n1. **The failure says what happened:** on a timeout, `frameWith` names the selector it waited for, and the test lists the page's errors and the frames' console messages, so the next failure on CI says which diagram stalled and why. Nothing is weakened: the same waits, the same assertions.\n2. With that on CI, find the cause and fix it; a timeout isn't raised to make it pass.\n\n## Done when\n\nCI's `ci` job passes the Mermaid pack's tests on `main`.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "in_progress",
+      "dependencies": [],
+      "files": [
+        "compmd-packs/mermaid/test/page.test.ts"
+      ],
+      "created_at": "2026-11-18T02:49:59Z",
+      "updated_at": "2026-11-18T02:50:01Z",
+      "created_by": "claude:79612601",
+      "updated_by": "claude:79612601",
+      "sprint_history": [
+        {
+          "sprint": "Packs and website",
+          "from": "2026-11-18T02:49:59Z"
+        }
+      ],
+      "sprint": "Packs and website",
+      "number": 248,
+      "key_final": false,
+      "started_at": "2026-11-18T02:50:01Z",
+      "started_by": "claude:79612601"
     }
   ]
 }
