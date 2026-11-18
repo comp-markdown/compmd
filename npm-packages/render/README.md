@@ -1,6 +1,6 @@
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/comp-markdown/compmd/main/logo/compmd-dark.svg">
-  <img src="https://raw.githubusercontent.com/comp-markdown/compmd/main/logo/compmd-light.svg" alt="CompMD" width="200">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/comp-markdown/compmd/main/branding/compmd-dark.svg">
+  <img src="https://raw.githubusercontent.com/comp-markdown/compmd/main/branding/compmd-light.svg" alt="CompMD" width="200">
 </picture>
 
 # @compmd/render
