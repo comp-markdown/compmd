@@ -4,7 +4,7 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
 
 ## Version 1 (draft)
 
-### Unreleased
+### 1.0-draft.14, 2026-11-18
 
 - **Examples (§6.3, §7.8, §8.7, §10.2, §12.3).** A ` ```compmd ` block with `render=output` or `render=both` is an example: its text is processed as a document of its own (its own frontmatter, imports, data, inputs and definitions, resolved from the document's place, with its permissions), and what it renders shows in its place, after the code with `both`. Its param list takes `render`, the common params, `class` and `id` (F008 otherwise); its diagnostics are at their places in the document; a ` ```compmd ` block inside it shows its source (W123, new). The expanded `code` node has `params` and `document`, the example's root, numbered by `example`, and an example's host-language components are listed with its number. `render` on a ` ```compmd ` block is `source` by default, so no document changes. Not breaking.
 - **What a rendered block shows (§5.1, §7.7, §10.2, §12.3, §14).** A code block a code renderer renders takes `render`: `output` (what the component draws, the default), `source` (the code block alone, the component not run, no `alt` needed) or `both` (the code, then the drawing, in one box). It is bare only (F009 otherwise), the processor's (the component never gets it), and on the expanded tree's `code` node; plain renderers and plain text show the code, printing what shows. A signature that declares `class` or `id`, or a code renderer's that declares `alt` or `render`, is F013: those names are the processor's. Breaking only for a signature that declares one of them.
