@@ -20,7 +20,7 @@ const { splice, diagnostics, components } = opened.edit(6, 11, "there");
 
 Give the open document the editor's own text, `textarea.value` or CodeMirror's `state.doc.toString()`, not the file it was read from: a text area turns line endings into LF, and both must count the same text.
 
-For an edit inside one block, a keystroke takes about 0.1 ms in a 52 KB document and 0.3 ms in a 500 KB one ([incremental processing](../../processor/docs/incremental.md) has how, and what an edit to the frontmatter or a definition redoes).
+For an edit inside one block, a keystroke takes about 0.1 ms in a 52 KB document and 0.3 ms in a 500 KB one ([incremental processing](../../crates/processor/docs/incremental.md) has how, and what an edit to the frontmatter or a definition redoes).
 
 ## Splices
 
@@ -238,7 +238,7 @@ The page knows which text made each thing it shows, from the origins (`origins: 
 
 Offsets count code points, as the processor's do, and a text area's count UTF-16 units: an emoji is one code point and two units. `codePointOffset(text, utf16)` and `utf16Offset(text, codePoint)`, from `@compmd/render`, convert one to the other in the text the page shows (`shown` here).
 
-What a click gives follows the origins: a word in `*em*` gives the emphasis, text a `value` made the node holding it, anything a `compmd` component's body drew the line that uses the component, and a host-language component's own drawing the component. An offset gives the innermost thing that came from there, all of them for an `each`, whose items share their template's text. [`@compmd/render`'s README](../../render/README.md#where-the-page-came-from) has the whole table, and `page.sourceOf(node)` and `page.elementsAt(offset)`, the same for a page you render yourself; [where each line is](../../render/README.md#where-each-line-is) has the rules for lines, and `page.lines()` with `onLayout`.
+What a click gives follows the origins: a word in `*em*` gives the emphasis, text a `value` made the node holding it, anything a `compmd` component's body drew the line that uses the component, and a host-language component's own drawing the component. An offset gives the innermost thing that came from there, all of them for an `each`, whose items share their template's text. [`@compmd/render`'s README](../../npm-packages/render/README.md#where-the-page-came-from) has the whole table, and `page.sourceOf(node)` and `page.elementsAt(offset)`, the same for a page you render yourself; [where each line is](../../npm-packages/render/README.md#where-each-line-is) has the rules for lines, and `page.lines()` with `onLayout`.
 
 The example reveals on a click in the text only. The playground reveals on every move of the caret the reader makes, by keys too, but not while they type, where the outline would follow every key press.
 
@@ -252,7 +252,7 @@ A diagnostic's fix is an edit too. Its range is in lines and code point columns,
 
 ## Hints at the caret
 
-`hintAt(offset)` says what is at a UTF-16 position of the text as the last change left it ([positional hints](../../processor/docs/positional-hints.md)), or `undefined` in plain prose:
+`hintAt(offset)` says what is at a UTF-16 position of the text as the last change left it ([positional hints](../../crates/processor/docs/positional-hints.md)), or `undefined` in plain prose:
 
 | Field | What it is |
 | --- | --- |

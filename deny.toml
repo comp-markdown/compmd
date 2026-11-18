@@ -4,7 +4,7 @@
 # Vulnerabilities and unmaintained crates fail the check; yanked versions too.
 yanked = "deny"
 # Ignored only because the crates they name come through `cel`, the dev-dependency the processor's CEL tests use as an
-# oracle (`processor/src/cel/tests/differential.rs`), never in anything released: its `chrono` feature, for the
+# oracle (`crates/processor/src/cel/tests/differential.rs`), never in anything released: its `chrono` feature, for the
 # timestamp and duration expressions they compare. `[bans]` below keeps both crates to `cel`, so a dependency that
 # brings them in anywhere else fails the check.
 ignore = [

@@ -4,8 +4,8 @@
 
 ## Decisions
 
-1. **A library the sandbox loads is built once, by the frames' build** (`sandbox/scripts/frames.ts`), into `dist/frames/`, which `buildFrames` and `@compmd/vite` copy into each app's `compmd/`. The app's own bundler never bundles it.
-2. **The host's page loads the frames' copy, never its own.** Code that runs in the host's page (`hostPage` in `sandbox/src/sandbox.ts`, `sandbox/src/host/runtime.ts`) doesn't import the library, statically or dynamically: a bundler that sees `import("temml")` in a package the app imports bundles a copy into the app's `assets/`. It imports an entry of the frames' build by its URL, where the host serves the frames (`frameUrl(base, …)`), the first time a page needs it (`sandbox/src/from-frames.ts`).
+1. **A library the sandbox loads is built once, by the frames' build** (`npm-packages/sandbox/scripts/frames.ts`), into `dist/frames/`, which `buildFrames` and `@compmd/vite` copy into each app's `compmd/`. The app's own bundler never bundles it.
+2. **The host's page loads the frames' copy, never its own.** Code that runs in the host's page (`hostPage` in `npm-packages/sandbox/src/sandbox.ts`, `npm-packages/sandbox/src/host/runtime.ts`) doesn't import the library, statically or dynamically: a bundler that sees `import("temml")` in a package the app imports bundles a copy into the app's `assets/`. It imports an entry of the frames' build by its URL, where the host serves the frames (`frameUrl(base, …)`), the first time a page needs it (`npm-packages/sandbox/src/from-frames.ts`).
 3. **The other way round can't work:** the frames are sandboxed, with an opaque origin and a policy that loads scripts from `compmd/` only, so they never load the app's files. The app's page may load `compmd/`, its own deploy, served with `Access-Control-Allow-Origin: *`.
 4. **Loaded when first needed,** in every window: a page without math loads no Temml. Until it loads, what it draws shows as text (code, TeX).
 5. **Runtimes component code imports** (React, React DOM, Svelte) are another case, already shared: `libs/` and the frames' import map (`buildLibraries`, `RUNTIMES`), one copy for every frame (spec §7.6).
@@ -22,9 +22,9 @@ flowchart TB
 
 ## Adding one
 
-1. **Use it in the frames:** import it lazily (`await import("…")`) where the frame runtime needs it, behind a small renderer, as `sandbox/src/math.ts` and `sandbox/src/highlight/highlight.ts` are.
-2. **If a host-mode page needs it too,** add an entry with a fixed name to the frames' build, `input` in `sandbox/scripts/frames.ts` (`highlight` and `math` are there), exporting the renderer; add its name to `frameUrl`'s; and give `hostPage` a renderer from `from-frames.ts` that imports it by its URL (`import(/* @vite-ignore */ url)`), as `framesHighlight` and `framesMath` do.
-3. **Check one copy:** add the library's chunk names to the two checks that an app's bundle has none (`vite/test/example.test.ts`, *has Shiki and Temml once*; `website/scripts/check.ts`, `oneCopy`, for the site and the playground), and its entry to what they expect in `compmd/`.
+1. **Use it in the frames:** import it lazily (`await import("…")`) where the frame runtime needs it, behind a small renderer, as `npm-packages/sandbox/src/math.ts` and `npm-packages/sandbox/src/highlight/highlight.ts` are.
+2. **If a host-mode page needs it too,** add an entry with a fixed name to the frames' build, `input` in `npm-packages/sandbox/scripts/frames.ts` (`highlight` and `math` are there), exporting the renderer; add its name to `frameUrl`'s; and give `hostPage` a renderer from `from-frames.ts` that imports it by its URL (`import(/* @vite-ignore */ url)`), as `framesHighlight` and `framesMath` do.
+3. **Check one copy:** add the library's chunk names to the two checks that an app's bundle has none (`npm-packages/vite/test/example.test.ts`, *has Shiki and Temml once*; `website/scripts/check.ts`, `oneCopy`, for the site and the playground), and its entry to what they expect in `compmd/`.
 4. **Measure it** on the frames' build, gzipped, and write the numbers where the sandbox README describes the library, as *Code blocks* has Shiki's.
 5. **Say so:** the sandbox README's table of what each page mode does, and *What the frames load* in guides chapter 11, list the entry.
 

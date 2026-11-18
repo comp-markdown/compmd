@@ -215,7 +215,7 @@ describe("csv", () => {
 
 ## A real one: the Mermaid pack
 
-[`@comp-markdown/mermaid`](../../packs/mermaid/README.md) draws Mermaid diagrams in any document that imports it, with no support from the host. Its signature, in [its document](../../packs/mermaid/index.comp.md):
+[`@comp-markdown/mermaid`](../../compmd-packs/mermaid/README.md) draws Mermaid diagrams in any document that imports it, with no support from the host. Its signature, in [its document](../../compmd-packs/mermaid/index.comp.md):
 
 ```text
 renders: [mermaid, mmd]
@@ -223,7 +223,7 @@ params:
   theme: auto | default | dark | neutral | forest = auto
 ```
 
-Its component, [`src/mermaid.ts`](../../packs/mermaid/src/mermaid.ts), is written with `draw` ([chapter 15](15-react-svelte-and-libraries.md#drawing-asynchronously)):
+Its component, [`src/mermaid.ts`](../../compmd-packs/mermaid/src/mermaid.ts), is written with `draw` ([chapter 15](15-react-svelte-and-libraries.md#drawing-asynchronously)):
 
 - **Mermaid is bundled in**, pinned at 12.2.0, with everything it loads: one module of 5.2 MB minified, under the 10 MB a host takes.
 - **One draw at a time** (`oneAtATime`), since Mermaid's configuration is global: each draw calls `mermaid.initialize` with its theme, then `mermaid.render`.

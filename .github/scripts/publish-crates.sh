@@ -12,7 +12,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")/../.."
 dry_run=false
 [ "${1:-}" = "--dry-run" ] && dry_run=true
 
-# The version of the package `$1` in the manifest `$2`, read without a lock file: the fork, `markdown-rs/`, is a
+# The version of the package `$1` in the manifest `$2`, read without a lock file: the fork, `crates/markdown-rs/`, is a
 # workspace of its own, whose checkout has none, and `cargo pkgid` needs one.
 version_of() {
   cargo metadata --no-deps --format-version 1 --manifest-path "$2" | jq -r --arg name "$1" '.packages[] | select(.name == $name) | .version'
@@ -38,10 +38,10 @@ publish() {
   fi
 }
 
-publish compmd-markdown markdown-rs/Cargo.toml
+publish compmd-markdown crates/markdown-rs/Cargo.toml
 publish compmd-pack Cargo.toml
 publish compmd Cargo.toml
 publish compmd-host Cargo.toml
 # Not built again here: building Tauri on Linux needs WebKitGTK, and the Tauri check built and tested this commit
 # before the release went on (release.yml).
-publish tauri-plugin-compmd tauri/Cargo.toml --no-verify
+publish tauri-plugin-compmd crates/tauri/Cargo.toml --no-verify

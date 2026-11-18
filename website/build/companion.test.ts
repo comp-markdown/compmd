@@ -5,7 +5,7 @@ const BLOB = "https://github.com/comp-markdown/compmd/blob/main/";
 
 /** A spec and a companion that link to each other, as the real ones do. */
 const FILES: Record<string, string> = {
-  "compmd-spec-v1.md": [
+  "spec/compmd-spec-v1.md": [
     "# CompMD specification",
     "",
     "## 1. Introduction",
@@ -18,7 +18,7 @@ const FILES: Record<string, string> = {
     "",
     "A processor MAY cap a pack's size. [The changelog](CHANGELOG.md).",
   ].join("\n"),
-  "compmd-registry-v1.md": [
+  "spec/compmd-registry-v1.md": [
     "# CompMD packs on a registry, version 1 (draft)",
     "",
     "A companion to the [CompMD specification](compmd-spec-v1.md), for [§6.4](compmd-spec-v1.md#64-packages-and-the-registry).",
@@ -58,7 +58,7 @@ describe("renderSpecPage", () => {
     expect(html).toContain('<section class="companion" aria-labelledby="registry"><h2 id="registry">CompMD packs on a registry, version 1 (draft)');
     expect(html).toContain('<h4 id="registry-by-default">');
     // Each of the companion's headings links to its own file.
-    expect(html).toContain(`href="${BLOB}compmd-registry-v1.md#L9"`);
+    expect(html).toContain(`href="${BLOB}spec/compmd-registry-v1.md#L9"`);
     expect(html).toContain('<em class="rule">MUST</em>');
   });
 
@@ -68,18 +68,18 @@ describe("renderSpecPage", () => {
     expect(html).toContain('href="#registry-4-who-fetches">who fetches</a>');
     expect(html).toContain('href="#">CompMD specification</a>');
     expect(html).toContain('href="#64-packages-and-the-registry">§6.4</a>');
-    expect(html).toContain(`href="${BLOB}CHANGELOG.md"`);
+    expect(html).toContain(`href="${BLOB}spec/CHANGELOG.md"`);
   });
 
   it("says which draft the spec is, from its header, and none for a release or an unnumbered draft", async () => {
     expect(draftOf("# CompMD\n\n**Version 1.0-draft.13. Last changed 2026-11-17.**\n")).toBe("1.0-draft.13");
     expect(draftOf("**Version 1, draft. Last changed 2026-11-03.**")).toBeUndefined();
     expect(draftOf("**Version 1.0.**")).toBeUndefined();
-    expect((await renderSpecPage((path) => FILES[path], BLOB)).draft).toBe(draftOf(FILES["compmd-spec-v1.md"] ?? ""));
+    expect((await renderSpecPage((path) => FILES[path], BLOB)).draft).toBe(draftOf(FILES["spec/compmd-spec-v1.md"] ?? ""));
   });
 
   it("is the spec alone for a version that has no companion", async () => {
-    const { html, toc } = await renderSpecPage((path) => (path === "compmd-spec-v1.md" ? FILES[path] : undefined), BLOB);
+    const { html, toc } = await renderSpecPage((path) => (path === "spec/compmd-spec-v1.md" ? FILES[path] : undefined), BLOB);
     expect(html).not.toContain("companion");
     expect(toc.map(({ id }) => id)).toEqual(["1-introduction", "6-imports-and-exports", "64-packages-and-the-registry"]);
   });

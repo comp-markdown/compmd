@@ -1,7 +1,7 @@
 <!-- A printed book's first pages, which only its typesetting shows (`build/book.css`): the cover, the title page, and
      the copyright page on its back. The guides' books and the spec's PDF open with them. -->
 <script lang="ts">
-  import logo from "../../logo/compmd-dark.svg?raw";
+  import logo from "../../branding/compmd-dark.svg?raw";
   import { AUTHOR } from "./site.ts";
 
   interface Props {

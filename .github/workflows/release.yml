@@ -45,9 +45,9 @@ jobs:
         run: |
           version="${GITHUB_REF_NAME#v}"
           for package in render wasm sandbox registry devtools vite pack create-pack blog create-blog; do
-            written="$(node -p "require('./$package/package.json').version")"
+            written="$(node -p "require('./npm-packages/$package/package.json').version")"
             if [ "$written" != "$version" ]; then
-              echo "::error::$package/package.json is $written, the tag $GITHUB_REF_NAME"
+              echo "::error::npm-packages/$package/package.json is $written, the tag $GITHUB_REF_NAME"
               exit 1
             fi
           done
@@ -58,9 +58,9 @@ jobs:
               exit 1
             fi
           done
-          written="$(cargo metadata --no-deps --format-version 1 --manifest-path tauri/Cargo.toml | jq -r '.packages[0].version')"
+          written="$(cargo metadata --no-deps --format-version 1 --manifest-path crates/tauri/Cargo.toml | jq -r '.packages[0].version')"
           if [ "$written" != "$version" ]; then
-            echo "::error::tauri/Cargo.toml is $written, the tag $GITHUB_REF_NAME"
+            echo "::error::crates/tauri/Cargo.toml is $written, the tag $GITHUB_REF_NAME"
             exit 1
           fi
       # The release implements the spec as it is at this commit (docs/releases.md, decisions 1 and 3): a revision, cut
@@ -68,11 +68,11 @@ jobs:
       # another revision than the one it ships beside. The tests keep @compmd/processor's SPEC_VERSION and the READMEs
       # the same as the crate's.
       - name: The spec is a revision
-        run: node scripts/spec-revision.ts check
+        run: node tools/spec-revision/spec-revision.ts check
       - name: The release implements the spec's revision
         run: |
-          spec="$(sed -n 's/^\*\*Version \([0-9][0-9.a-z-]*\)\. .*/\1/p' compmd-spec-v1.md)"
-          implemented="$(sed -n 's/^pub const SPEC_VERSION: &str = "\(.*\)";$/\1/p' processor/src/lib.rs)"
+          spec="$(sed -n 's/^\*\*Version \([0-9][0-9.a-z-]*\)\. .*/\1/p' spec/compmd-spec-v1.md)"
+          implemented="$(sed -n 's/^pub const SPEC_VERSION: &str = "\(.*\)";$/\1/p' crates/processor/src/lib.rs)"
           if [ -z "$spec" ] || [ "$spec" != "$implemented" ]; then
             echo "::error::compmd::SPEC_VERSION is ${implemented:-missing}, the spec's header ${spec:-has none}: implement the revision, then set SPEC_VERSION"
             exit 1
@@ -85,16 +85,16 @@ jobs:
       # pnpm writes the version `workspace:*` stands for into the packages' dependencies on each other.
       - name: Pack
         run: |
-          pnpm --dir render pack --pack-destination "$RUNNER_TEMP/packages"
-          pnpm --dir wasm pack --pack-destination "$RUNNER_TEMP/packages"
-          pnpm --dir sandbox pack --pack-destination "$RUNNER_TEMP/packages"
-          pnpm --dir registry pack --pack-destination "$RUNNER_TEMP/packages"
-          pnpm --dir devtools pack --pack-destination "$RUNNER_TEMP/packages"
-          pnpm --dir vite pack --pack-destination "$RUNNER_TEMP/packages"
-          pnpm --dir pack pack --pack-destination "$RUNNER_TEMP/packages"
-          pnpm --dir create-pack pack --pack-destination "$RUNNER_TEMP/packages"
-          pnpm --dir blog pack --pack-destination "$RUNNER_TEMP/packages"
-          pnpm --dir create-blog pack --pack-destination "$RUNNER_TEMP/packages"
+          pnpm --dir npm-packages/render pack --pack-destination "$RUNNER_TEMP/packages"
+          pnpm --dir npm-packages/wasm pack --pack-destination "$RUNNER_TEMP/packages"
+          pnpm --dir npm-packages/sandbox pack --pack-destination "$RUNNER_TEMP/packages"
+          pnpm --dir npm-packages/registry pack --pack-destination "$RUNNER_TEMP/packages"
+          pnpm --dir npm-packages/devtools pack --pack-destination "$RUNNER_TEMP/packages"
+          pnpm --dir npm-packages/vite pack --pack-destination "$RUNNER_TEMP/packages"
+          pnpm --dir npm-packages/pack pack --pack-destination "$RUNNER_TEMP/packages"
+          pnpm --dir npm-packages/create-pack pack --pack-destination "$RUNNER_TEMP/packages"
+          pnpm --dir npm-packages/blog pack --pack-destination "$RUNNER_TEMP/packages"
+          pnpm --dir npm-packages/create-blog pack --pack-destination "$RUNNER_TEMP/packages"
       # Trusted publishing needs npm 11.5.1 or newer, staged publishing 11.15.0.
       - run: npm install --global npm@11.21.1
       # Outside the repository, whose devEngines name pnpm; each package after those it depends on. Each is staged: it

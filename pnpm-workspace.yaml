@@ -1,22 +1,22 @@
 packages:
-  - render
-  - sandbox
-  - devtools
-  - registry
-  - host-js
-  - vite
-  - vite/example
-  - pack
-  - create-pack
-  - blog
-  - create-blog
+  - npm-packages/render
+  - npm-packages/sandbox
+  - npm-packages/devtools
+  - npm-packages/registry
+  - npm-packages/host-js
+  - npm-packages/vite
+  - npm-packages/vite/example
+  - npm-packages/pack
+  - npm-packages/create-pack
+  - npm-packages/blog
+  - npm-packages/create-blog
+  - npm-packages/wasm
+  - npm-packages/editor
+  - npm-packages/editor/packs/minimermaid
+  - compmd-packs/mermaid
+  - compmd-packs/wireframe
+  - crates/tauri/examples/tauri-app
   - guides
-  - wasm
-  - editor
-  - editor/packs/minimermaid
-  - packs/mermaid
-  - packs/wireframe
-  - examples/tauri
   - website
 
 # Install scripts that never run: Paged.js's old dependencies print banners from them, and need nothing built.

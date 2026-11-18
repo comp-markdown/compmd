@@ -9,16 +9,15 @@ on:
   push:
     branches: [main]
     paths:
-      - "sandbox/**"
-      - "render/**"
-      - "processor/**"
-      - "pack-types/**"
-      - "host/**"
-      - "vite/**"
-      - "registry/**"
-      - "packs/mermaid/**"
-      - "tauri/**"
-      - "examples/tauri/**"
+      - "npm-packages/sandbox/**"
+      - "npm-packages/render/**"
+      - "crates/processor/**"
+      - "crates/pack-types/**"
+      - "crates/host/**"
+      - "npm-packages/vite/**"
+      - "npm-packages/registry/**"
+      - "compmd-packs/mermaid/**"
+      - "crates/tauri/**"
       - "Makefile.toml"
       - "pnpm-lock.yaml"
       - ".github/workflows/tauri.yml"
@@ -26,16 +25,15 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - "sandbox/**"
-      - "render/**"
-      - "processor/**"
-      - "pack-types/**"
-      - "host/**"
-      - "vite/**"
-      - "registry/**"
-      - "packs/mermaid/**"
-      - "tauri/**"
-      - "examples/tauri/**"
+      - "npm-packages/sandbox/**"
+      - "npm-packages/render/**"
+      - "crates/processor/**"
+      - "crates/pack-types/**"
+      - "crates/host/**"
+      - "npm-packages/vite/**"
+      - "npm-packages/registry/**"
+      - "compmd-packs/mermaid/**"
+      - "crates/tauri/**"
       - "Makefile.toml"
       - "pnpm-lock.yaml"
       - ".github/workflows/tauri.yml"
@@ -67,8 +65,8 @@ jobs:
         with:
           key: tauri
           workspaces: |
-            tauri -> target
-            examples/tauri/src-tauri -> target
+            crates/tauri -> target
+            crates/tauri/examples/tauri-app/src-tauri -> target
       # What Tauri needs on Ubuntu (its prerequisites), and a virtual display for the app's window.
       - name: WebKitGTK, GTK and a virtual display
         timeout-minutes: 10

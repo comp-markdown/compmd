@@ -11,7 +11,7 @@ const DIST = join(import.meta.dirname, "../dist");
 const browser = await chromium.launch({ channel: "chrome" });
 try {
   const page = await browser.newPage({ viewport: CARD, colorScheme: "light" });
-  await page.setContent(cardHtml(readFileSync(join(REPO, "logo/compmd-light.svg"), "utf8")), { waitUntil: "load" });
+  await page.setContent(cardHtml(readFileSync(join(REPO, "branding/compmd-light.svg"), "utf8")), { waitUntil: "load" });
   await page.screenshot({ path: join(DIST, CARD_FILE), type: "png" });
 } finally {
   await browser.close();

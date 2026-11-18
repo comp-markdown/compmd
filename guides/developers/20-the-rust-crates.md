@@ -1,6 +1,6 @@
 # 20. The Rust crates
 
-The processor is a Rust crate, `compmd`; `@compmd/processor` is that crate compiled to WebAssembly. In Rust, it processes documents outside a browser: in a build, a server, a native app, or CI. This chapter shows its stages, what a host gives it, its diagnostics, and a program that checks a folder's documents and fails on an error. Then the crates beside it: `compmd-host`, what a host in Rust serves its readers, and the Rust crate `compmd-pack`, the names packs and their files are known by. [The crate's README](../../processor/README.md) and its API documentation go further.
+The processor is a Rust crate, `compmd`; `@compmd/processor` is that crate compiled to WebAssembly. In Rust, it processes documents outside a browser: in a build, a server, a native app, or CI. This chapter shows its stages, what a host gives it, its diagnostics, and a program that checks a folder's documents and fails on an error. Then the crates beside it: `compmd-host`, what a host in Rust serves its readers, and the Rust crate `compmd-pack`, the names packs and their files are known by. [The crate's README](../../crates/processor/README.md) and its API documentation go further.
 
 ## Getting it
 
@@ -12,7 +12,7 @@ cargo add compmd serde_json
 
 Its parser, a fork of markdown-rs, comes with it as the crate `compmd-markdown`.
 
-**Versions.** The crates share their version with the npm packages, and each release publishes them all ([RELEASING.md](../../RELEASING.md)): this chapter is written for 0.7.0, as the rest of the guide is. Its source is the folder `processor/` of [the repository](https://github.com/comp-markdown/compmd), and its API documentation is on [docs.rs](https://docs.rs/compmd).
+**Versions.** The crates share their version with the npm packages, and each release publishes them all ([RELEASING.md](../../RELEASING.md)): this chapter is written for 0.7.0, as the rest of the guide is. Its source is the folder `crates/processor/` of [the repository](https://github.com/comp-markdown/compmd), and its API documentation is on [docs.rs](https://docs.rs/compmd).
 
 ## The stages
 
@@ -51,7 +51,7 @@ assert_eq!(json["children"][0]["children"][0]["value"], "Ana, Kenji");
 
 `RenderContext` is the render: `now` in nanoseconds since 1970 (`compmd::context::parse_time` gives it from RFC 3339 text), the processor's time zone `tz`, the host's time zones `time`, and the values given for the document's `inputs`, as JSON by name.
 
-Each state gives what its stage made: `tree()` after parsing (the parse tree, spec §12.1), `inputs()` after loading, and after expanding `expanded()` (the expanded tree), `host_components()` (each host-language component with its code, for a renderer), `failed()` (whether strict mode failed), `cache_keys()` (each data import's final URL or path, which a host keys its cached copies by), `frontmatter()`, `components()` and `hint_at(offset)` for editors. Every tree serializes, with serde, to the spec's JSON. From the expanded state, `reload(context, fetch, data)` renders again for other inputs or data without the first three stages, and `edit(&TextEdit)` takes an edit of the text and redoes only the blocks it touches, with `splice()` saying what changed. [The README](../../processor/README.md) lists them all.
+Each state gives what its stage made: `tree()` after parsing (the parse tree, spec §12.1), `inputs()` after loading, and after expanding `expanded()` (the expanded tree), `host_components()` (each host-language component with its code, for a renderer), `failed()` (whether strict mode failed), `cache_keys()` (each data import's final URL or path, which a host keys its cached copies by), `frontmatter()`, `components()` and `hint_at(offset)` for editors. Every tree serializes, with serde, to the spec's JSON. From the expanded state, `reload(context, fetch, data)` renders again for other inputs or data without the first three stages, and `edit(&TextEdit)` takes an edit of the text and redoes only the blocks it touches, with `splice()` saying what changed. [The README](../../crates/processor/README.md) lists them all.
 
 ## What the host gives
 

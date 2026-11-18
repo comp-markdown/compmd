@@ -1,5 +1,5 @@
 {
-  "$schema": "../vite/compmd.config.schema.json",
+  "$schema": "../npm-packages/vite/compmd.config.schema.json",
   "packs": {
     "./app": { "trust": "trusted", "ambient": true }
   },

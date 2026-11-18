@@ -1,0 +1,134 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/comp-markdown/compmd/main/logo/compmd-dark.svg">
+  <img src="https://raw.githubusercontent.com/comp-markdown/compmd/main/logo/compmd-light.svg" alt="CompMD" width="200">
+</picture>
+
+# @compmd/processor
+
+The [CompMD](https://compmd.dev/) [processor](https://github.com/comp-markdown/compmd/blob/main/crates/processor/README.md) as WebAssembly, for the browser: one call takes a document with everything it needs and gives its parse tree, its expanded tree and its diagnostics, typed. The expanded tree is what [`@compmd/render`](https://github.com/comp-markdown/compmd/blob/main/npm-packages/render/README.md) draws.
+
+**Website:** [compmd.dev](https://compmd.dev/), with the spec and a playground to try CompMD in.
+
+```sh
+npm install @compmd/processor @compmd/render
+```
+
+It implements version **1.0-draft.13** of the [CompMD specification](https://compmd.dev/spec/) (`SPEC_VERSION`), as the crate [`compmd`](https://crates.io/crates/compmd) does; the spec is versioned on its own. Its versions are `0.x` until the spec's version 1 is published, and it shares its version with `@compmd/render` ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
+
+**Versions:**
+- **0.7.1:** the same as 0.7.0; its homepage and links name the website's new address, [compmd.dev](https://compmd.dev/).
+- **0.7.0:** the spec's draft as of 2026-11-12 ([its changelog](https://github.com/comp-markdown/compmd/blob/main/spec/CHANGELOG.md)): a pack a host installed or keeps is a registry pack all the same, and a pack's source may be compiled ahead; a pack's source component in `hostComponents` names its `place`, by which a host gives the module it compiled ahead. Released with CompMD's hosting: `@compmd/vite`'s bundle, the sandbox on it, and `tauri-plugin-compmd` as the Tauri adapter.
+- **0.6.0:** the same processor as 0.5.0, whose `hostComponents` are now the crate's own serialization, with the same JSON. Released with `@compmd/sandbox`'s frames on a host's own scheme and the first version of `tauri-plugin-compmd`.
+- **0.5.0:** the same processor as 0.4.0; the spec's draft gains `busy` in the host contract (§7.4), which is the renderer's. Released with `@compmd/render`'s line map and `@compmd/sandbox`'s `settled`.
+- **0.4.0:** the spec's draft as of 2026-11-03 ([its changelog](https://github.com/comp-markdown/compmd/blob/main/spec/CHANGELOG.md)): `pending` packs and data, whose uses render as `componentPending` with no F026; strict and lenient `mode`, with `failed`; `cacheKeys`, for a document and an open one; `sources` gives the URLs of origins not allowed (`disallowed`); an open document's `evaluate`, an expression's value in the document's scope or its F024; slots named with `-`; `host` for trusted components; and the diagnostics 0.3.0 missed (undeclared slots, `grid-area` names, W105, W113 for `host:` sources, F010 for an input without a default).
+- **0.3.0:** the same processor as 0.2.2, released with `@compmd/sandbox`'s observer and the first version of `@compmd/devtools`.
+- **0.2.2:** the same as 0.2.1; the first version the release workflow stages and the author approves.
+- **0.2.1:** the same processor as 0.2.0, released with `@compmd/sandbox`'s fix for frames the browser doesn't render.
+- **0.2.0:** the spec's draft as of 2026-11-02 ([its changelog](https://github.com/comp-markdown/compmd/blob/main/spec/CHANGELOG.md)): among the changes, code renderers, packs from a registry (`sources`, a pack's `peerDependencies` and library packs), and what component code may import (W121). Released with the first versions of `@compmd/sandbox`, `@compmd/registry`, `@compmd/vite`, `@compmd/pack` and `@compmd/create-pack`.
+- **0.1.1:** the same as 0.1.0; the first version the release workflow publishes.
+- **0.1.0:** the first version.
+
+```ts
+import { init, process, sources } from "@compmd/processor";
+
+await init(); // loads the module, once
+
+const request = {
+  path: "notes.comp.md",
+  files: { "notes.comp.md": text, "team.yaml": team },
+  now: new Date().toISOString(),
+  tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  origins: true,
+};
+const { remote, host, packs, disallowed } = sources(request); // the URLs, host: sources and packs to get first, if any; and the URLs of origins not allowed
+const { parse, expanded, diagnostics, failed, cacheKeys } = process(request);
+```
+
+- **`mode`**, in the request, is `lenient` (the default) or `strict` (spec §10.1). Both report the same diagnostics and make the same trees; `failed` is true when strict mode failed on an `F` diagnostic, for CI and publishing.
+- **`pending`**, in the request, names what the host is still getting (spec §6.4, §8.6): `{packs, remote, host}`. A pending pack's uses render their fallbacks as `componentPending` nodes, which `@compmd/render` shows as loading, and pending data is its `fallback` or `null`; neither is F026. The result's `pending` is what the render treated as pending, for a host's "loading 1 pack". Once the host gives up on a source, it leaves it out, and the source is F026 as before. An open document takes `pending` the same way, its data's in `reload({remote, host, pending})`, and gives `pending()`.
+- **`cacheKeys`** gives each of the document's data imports with its final URL or path, the inputs filled in (`{as: "sales", key: "https://api.example.com/sales?region=eu"}`): a host that keeps fetched copies keys them by it (spec §8.6), so a copy is reused only for the same values.
+
+`sources` lists the packs the document, and the packs the request holds, import that `packs` has no matching release of, each once with its range as written and its pinned `integrity` (`{pack: "@kit/mermaid", range: "1"}`), for a host that gets packs from a registry: it fetches them, adds them to `packs`, and asks again, until none is missing. Packs the `policy` refuses aren't listed. The processor itself fetches nothing. [`@compmd/registry`](https://github.com/comp-markdown/compmd/blob/main/npm-packages/registry/README.md) does this loop. `newestMatching(range, versions)` picks a version for a range as the processor does, and a release a host found broken (its tarball doesn't match its integrity) is given with `broken: "<why>"`, which makes an import of it F035.
+
+A request holds the files of the document's root folder by path, the registry's packs with their files, the ambient packs, the host's `policy` for packs (those it lists with their trust, whether a document may import others, those it denies or left out; spec §6.4, §15), the origins remote data may come from, remote data fetched beforehand by URL (`{text, contentType}`), host data by source, the render time (RFC 3339), the time zone, the inputs' values, whether expanded nodes carry origins, and the mode. `process` throws when the request isn't valid or its document isn't one of its files; everything wrong with the document itself is a diagnostic.
+
+An editor keeps the document open instead, and sends each edit ([incremental processing](https://github.com/comp-markdown/compmd/blob/main/crates/processor/docs/incremental.md)):
+
+```ts
+import { init, OpenDocument } from "@compmd/processor";
+import { createPage } from "@compmd/render";
+
+await init();
+const document = new OpenDocument({ ...request, files: { ...request.files, "notes.comp.md": textarea.value } });
+const page = createPage(preview);
+page.render(document.expanded);
+
+// On each input: the range the selection had before it, and what was typed or pasted.
+const { splice } = document.edit(start, end, inserted);
+page.splice([splice], { text: textarea.value });
+
+// Only a host that fetches ahead: after an edit to the frontmatter, what it hasn't fetched yet.
+const { remote, host } = document.sources();
+document.reload({ remote: await fetchAll(remote), host: hostData(host) });
+```
+
+- **Positions are the editor's**, in UTF-16 units, as a JavaScript string counts them (`selectionStart`, CodeMirror's `from` and `to`). The module turns them into the code points the processor counts. Give it the editor's text (`textarea.value`, `state.doc.toString()`), so both count the same text.
+- **Each change gives a splice**, `{splice, diagnostics, components}`. In the splice, the top-level nodes `from..to` became `nodes`, and the nodes after them moved by `lines` and `offset`; it has the root's `inputs`, and for an edit the `edit` in code points, which a renderer's keys follow. `components` are the host-language components the tree can name, with their code, for a renderer that runs them; they come after opening, and after a change only when they changed. `OpenDocument.components` keeps the latest.
+- **`OpenDocument` keeps the tree:** it applies each splice, moving the origins of the nodes after it, so `expanded` is always the whole tree. Only its top-level array is new after a change; the nodes in it are updated in place.
+- **`OpenDocumentJson` keeps none:** it gives each change's inputs apart, and each splice as the module's JSON text, for a host that passes it on to where it renders without reading it, such as an editor's worker to the page's frame (`frame.splice` in `@compmd/render/frame`). Posted text is copied in one piece, and the renderer parses it once.
+- For an edit inside one block, neither the processing nor the splice grows with the document. Moving the origins after the edit does: it is a pass over those nodes.
+- **`hintAt(offset)`** gives what is at a UTF-16 position of the text as the last change left it ([positional hints](https://github.com/comp-markdown/compmd/blob/main/crates/processor/docs/positional-hints.md)): `{range, subject, completions, diagnostics}`, or `undefined` in plain prose. Its `range` is in lines and code point columns, as a diagnostic's `fix` is, and a completion replaces it.
+- **`evaluate(expression)`** evaluates a CEL expression of the profile (spec §8.2) in the scope the document's body sees at its top level, as the last change left it: `md.doc`, `md.data`, `md.input` with the inputs' values, the `md.` functions at the render's time. It is checked against the document's types, evaluated within the same work budget, and changes nothing: for a developer's console. It gives `{value}`, as JSON, or `{error}`, F024 with its message and its line and column in `expression`.
+- **`cacheKeys()`** gives each data import's cache key for the text and inputs as they are now, as `process` gives `cacheKeys`; it is computed when asked, not with each change.
+- `free()` releases the module's memory for the document.
+- **`frontmatterOf(request)`** gives what a document's frontmatter gives its render: its own fields, its settings, each data import with what was loaded, and its inputs.
+- **`componentsOf(request)`** gives the components a document can name, grouped by the file that defines them, each with its kind, its signature, where the document uses it and, for its own, where it defines it; and the names it uses that stand for none.
+- **`plainHtml(text)`** gives what a plain CommonMark and GFM renderer shows of a document (spec §14), as HTML, for a view of how it degrades.
+
+Time zone offsets come from the page's `Intl`, so the module carries no zone data. Formatting has all of ICU4X's locales.
+
+## How it is built
+
+- The Rust crate `compmd-wasm` in this folder is the binding: `process`, `sources`, `frontmatter`, `components` and the class `Document` take and give JSON text, through `wasm-bindgen`. The request (`src/request.rs`), the open document (`src/document.rs`) and the UTF-16 positions (`src/text.rs`) are tested natively, within the workspace's coverage gate; `src/lib.rs` only passes them through.
+- The text kept with an open document has each line's start in bytes, UTF-16 units and code points, so a position is found in its line. An edit that removes a leading byte order mark, or writes text before it, changes where the processor starts counting, so it is sent as an edit of the whole text.
+- It is built size-optimized: the workspace's `wasm` profile, with `opt-level = "z"`, LTO and one codegen unit.
+- `wasm-bindgen --target web` writes the JavaScript glue to `pkg/`. The `package.json` it writes there is removed, since it has no `"type": "module"`, which made TypeScript read the glue as CommonJS and `init` as no function.
+- `src/index.ts` parses both ways, gives the types, and keeps an open document's expanded tree (`OpenDocument`).
+  - The expanded tree's types are `@compmd/render`'s, the splice's too.
+  - The parse tree's types are in `src/parse-tree.ts`, following [the tree schema](https://github.com/comp-markdown/compmd/blob/main/conformance/compmd-tree.schema.json).
+
+## Commands
+
+These need the Rust toolchain of the workspace (with the `wasm32-unknown-unknown` target) and the `wasm-bindgen` CLI at the version `Cargo.toml` pins (`cargo install wasm-bindgen-cli --version 0.2.129`). `@compmd/render` must be built first (`pnpm -r build` from the root does both).
+
+```sh
+pnpm lint    # eslint and tsc
+pnpm build   # the module, then dist/
+pnpm test    # the binding: the spec's complete example as its conformance case expects, errors, Intl's zones, edits of open documents against processing from scratch
+pnpm bench   # size and speed against the budgets
+```
+
+## Budgets
+
+`pnpm bench` measures the module's size and times it in a worker in Chrome (the installed one) and WebKit (Playwright's; `pnpm exec playwright-core install webkit` once), with origins on and JSON in and out included. It fails when a budget is exceeded.
+
+- **`process`:** each run is a keystroke. The text changes, and the whole request is processed again.
+- **A keystroke in an open document:** a character typed into a paragraph in the middle of the body, then deleted, in turn. It is timed in the module alone (the processing, with the splice as JSON text), and through `OpenDocument`, which also parses the splice and moves the origins after it. The 500 KB body is the 52 KB one ten times.
+
+The module is 808 KB gzipped, against a budget of 1 MB. Times, p95:
+
+| Document | Budget | Chrome 156 | WebKit (Safari 27.2) |
+|---|---|---|---|
+| `process`: the spec's complete example (4 KB) | ≤ 14 ms | 3.0 ms | 2.4 ms |
+| `process`: a changelog of 12 releases and 128 changes | ≤ 48 ms | 4.0 ms | 3.4 ms |
+| `process`: a 52 KB body | ≤ 48 ms | 10.3 ms | 10.4 ms |
+| A keystroke in 52 KB, processing | ≤ 1 ms | 0.10 ms | 0.10 ms |
+| A keystroke in 52 KB, with the splice applied | | 0.15 ms | 0.16 ms |
+| A keystroke in 500 KB, processing | ≤ 1 ms | 0.30 ms | 0.28 ms |
+| A keystroke in 500 KB, with the splice applied | | 0.82 ms | 0.82 ms |
+
+The budgets for `process` are one frame (16 ms) from key press to paint for a short document and 50 ms for a long one, less the renderer's 2 ms. A keystroke's budget is the target of incremental processing. Measured on 2026-10-29 on an Apple M4, after the positional hints; loading the module takes 10 to 15 ms.
+
+## License
+
+[MIT](https://github.com/comp-markdown/compmd/blob/main/LICENSE-CODE). Copyright © 2026 Hakan Serce.

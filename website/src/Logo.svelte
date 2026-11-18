@@ -1,4 +1,4 @@
-<!-- The logo, `logo/compmd-light.svg` in the page's ink and accent, so it follows light and dark. Its styles are in
+<!-- The logo, `branding/compmd-light.svg` in the page's ink and accent, so it follows light and dark. Its styles are in
      `base.css`, since the spec page is rendered on the server only and never loads a component's own. -->
 <script lang="ts"></script>
 

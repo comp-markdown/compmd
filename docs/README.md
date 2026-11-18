@@ -17,7 +17,7 @@ The designs behind the spec and its implementation. Each starts with its status 
 - [Reading CompMD with pandoc](pandoc.md): proposed, the processor's expanded tree written as pandoc's JSON, each component as it prints, by a `compmd-pandoc` command and a pandoc reader in a repository of their own, so pandoc turns documents into PDF, Word and EPUB.
 - [A blog in CompMD](blog-tool.md): `@compmd/blog`, the command `cblo`, a folder of CompMD documents made a static blog (posts, tags, a feed, comments), which the website's blog uses.
 - [Wireframes in CompMD](wireframe-pack.md): the ways a pack could draw wireframes (CompMD components, a small language of its own, Salt, Excalidraw, a service), and the one chosen: Wireloom's syntax as a grammar of our own, drawn as HTML and CSS by a code renderer pack.
-  - [The wireframe language](../packs/wireframe/LANGUAGE.md), in the pack: its grammar in ABNF, the parts drawn first, how each is drawn, its errors and examples, and where it differs from Wireloom.
+  - [The wireframe language](../compmd-packs/wireframe/LANGUAGE.md), in the pack: its grammar in ABNF, the parts drawn first, how each is drawn, its errors and examples, and where it differs from Wireloom.
 - [Printing a document](printing.md): proposed, what a document looks like on paper: its components, its colours, its page breaks, and what a processor without a browser prints.
 - [Hosting CompMD](hosting.md): what every host does (the configuration, the bundle, the pack store, serving, the page's configuration, the check), which of it is shared code, and the adapter a platform writes.
 
@@ -31,11 +31,11 @@ The designs behind the spec and its implementation. Each starts with its status 
 - [`@compmd/create-pack`, the pack template](create-pack.md): `npm create @compmd/pack`; builds S2 of *components from apps and packs*.
 - [Resolving registry packs](resolving-registry-packs.md): how `@compmd/registry` resolves, fetches and checks packs; builds decisions 1 to 3 and 5 of *packs from a registry*.
 - [Sharing library packs](sharing-library-packs.md): how the processor, `@compmd/registry` and `@compmd/sandbox` let packs share a library pack; builds decision 8 of *packs from a registry*.
-- [Writing a pack](writing-a-pack.md): [`@compmd/pack`](../pack/README.md), which holds what every pack would otherwise copy (the build, the publish check, the test page, component helpers and a testing kit), and the host contract's `scheme` and `fail`.
+- [Writing a pack](writing-a-pack.md): [`@compmd/pack`](../npm-packages/pack/README.md), which holds what every pack would otherwise copy (the build, the publish check, the test page, component helpers and a testing kit), and the host contract's `scheme` and `fail`.
 - [The Developer Tools](devtools.md): `@compmd/devtools`, the playground's tools as a part any page embeds, with the sandbox's observer and tabs for its frames, a console and the messages.
 - [The Mermaid pack](mermaid-pack.md): `@comp-markdown/mermaid`, a code renderer as a registry pack; builds the Mermaid example of *code renderers*.
 
-The processor's own designs are next to it, in [`processor/docs/`](../processor/docs/): [incremental processing](../processor/docs/incremental.md), [param values](../processor/docs/param-values.md) and [positional hints](../processor/docs/positional-hints.md).
+The processor's own designs are next to it, in [`crates/processor/docs/`](../crates/processor/docs/): [incremental processing](../crates/processor/docs/incremental.md), [param values](../crates/processor/docs/param-values.md) and [positional hints](../crates/processor/docs/positional-hints.md).
 
 ## The repository
 

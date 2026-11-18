@@ -11,11 +11,11 @@ import { PRINT, printJobs, printPdf } from "./build/print.ts";
 import { specPages } from "./build/versions.ts";
 import { prerendered, relocated, type Rendered } from "./build/prerender.ts";
 import { sectionsOf, sitePages } from "./build/search.ts";
-import { COMPANION, renderSpecPage, SPEC } from "./build/companion.ts";
+import { COMPANION, renderSpecPage, SPEC, SPEC_FOLDER } from "./build/companion.ts";
 import { serveFolder } from "./build/static.ts";
 
 const REPO = join(import.meta.dirname, "..");
-const SPEC_FILES = [SPEC, COMPANION].map((file) => join(REPO, file));
+const SPEC_FILES = [SPEC, COMPANION].map((file) => join(REPO, SPEC_FOLDER, file));
 
 /**
  * In the dev server, what the spec's and the guides' pages link in their head: the stylesheets `src/spec.ts` imports,
@@ -28,13 +28,13 @@ const devStylesheets = (rendered: Rendered): Rendered => ({
 
 /**
  * In the dev server, what the build assembles into the site (`scripts/assemble.ts`): the logo, and the playground, from
- * its own dev server (`pnpm --dir editor dev`, at `PLAYGROUND`), so it changes as its source does.
+ * its own dev server (`pnpm --dir npm-packages/editor dev`, at `PLAYGROUND`), so it changes as its source does.
  */
 function assembled(): Plugin {
   return {
     name: "compmd-assembled",
     configureServer(server) {
-      server.middlewares.use(serveFolder("/logo/", join(import.meta.dirname, "../logo")));
+      server.middlewares.use(serveFolder("/logo/", join(import.meta.dirname, "../branding")));
     },
   };
 }

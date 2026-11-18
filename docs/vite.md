@@ -136,7 +136,7 @@ const view = createSandbox({ ...sandbox, page: "host", modules: (place) => resol
 
 ## The example and the tests
 
-- **`vite/example/`:** a small Vite app with `components/` as its app pack (`stars` in React, trusted and ambient), a document that uses `stars` and a code block of a strict pack from a folder installed as a dependency, rendered in host mode.
+- **`npm-packages/vite/example/`:** a small Vite app with `components/` as its app pack (`stars` in React, trusted and ambient), a document that uses `stars` and a code block of a strict pack from a folder installed as a dependency, rendered in host mode.
 - **Unit tests (Node):** reading and translating the configuration, with every error; finding packs; reading integrity from both lock files; the size limit.
 - **Registry tests:** an app with registries on the dev server and in a build under `vite preview`, against a local registry: with `host`, the proxy passes metadata and tarballs on and the page's registries are the proxy; with `direct`, they are the registries named, and there is no proxy; without registries, `registry` is `undefined`.
 - **Build tests:** the example built with the plugin; the output has the frames under their hash (`compmd/frames/<hash>/strict.html`), the pack files at their places with the hashes `modules` gives, `_headers`, no manifest, and the virtual module's contents; `buildBundle` writes the layout and the manifest `compmd-host` reads.

@@ -1,6 +1,6 @@
 # Sharing library packs
 
-**Status: accepted (2026-11-02).** How the processor, `@compmd/registry` and `@compmd/sandbox` let packs share a library pack: L2 of [packs from a registry](packs-from-a-registry.md) (decision 8, R9), as the companion [*CompMD packs on a registry*](../compmd-registry-v1.md) states it (section 5). A pack names `"@kit/three": "^0.170"` in `peerDependencies` and imports `@kit/three` in its components' code; the host fetches the library pack, chooses one version for the document, and the frame loads it once, for every pack there that imports it.
+**Status: accepted (2026-11-02).** How the processor, `@compmd/registry` and `@compmd/sandbox` let packs share a library pack: L2 of [packs from a registry](packs-from-a-registry.md) (decision 8, R9), as the companion [*CompMD packs on a registry*](../spec/compmd-registry-v1.md) states it (section 5). A pack names `"@kit/three": "^0.170"` in `peerDependencies` and imports `@kit/three` in its components' code; the host fetches the library pack, chooses one version for the document, and the frame loads it once, for every pack there that imports it.
 
 ## Proposed decisions
 

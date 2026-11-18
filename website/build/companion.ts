@@ -3,9 +3,12 @@
 
 import { renderMarkdown, type RenderedSpec } from "./spec.ts";
 
-/** The spec's file, and its companion's, in the repository. */
+/** The spec's file, and its companion's, by name: they link to each other by it. */
 export const SPEC = "compmd-spec-v1.md";
 export const COMPANION = "compmd-registry-v1.md";
+
+/** The folder of the repository both are in. */
+export const SPEC_FOLDER = "spec/";
 
 /** The id of the companion's section on the spec's page; its own ids are under it (`registry-4-who-fetches`). */
 export const COMPANION_SECTION = "registry";
@@ -46,12 +49,12 @@ export interface SpecPage extends RenderedSpec {
  * repository's file URL at that version, ending in `/`, which each heading's source link starts with.
  */
 export async function renderSpecPage(read: (path: string) => string | undefined, blob: string): Promise<SpecPage> {
-  const text = read(SPEC) ?? "";
-  const spec = await renderMarkdown(text, { blob, path: SPEC }, { rules: true, link: betweenThem });
+  const text = read(`${SPEC_FOLDER}${SPEC}`) ?? "";
+  const spec = await renderMarkdown(text, { blob, path: `${SPEC_FOLDER}${SPEC}` }, { rules: true, link: betweenThem });
   const draft = draftOf(text);
-  const written = read(COMPANION);
+  const written = read(`${SPEC_FOLDER}${COMPANION}`);
   if (written === undefined) return { ...spec, draft };
-  const companion = await renderMarkdown(written, { blob, path: COMPANION }, { rules: true, link: betweenThem, section: COMPANION_SECTION });
+  const companion = await renderMarkdown(written, { blob, path: `${SPEC_FOLDER}${COMPANION}` }, { rules: true, link: betweenThem, section: COMPANION_SECTION });
   return {
     html: `${spec.html}<section class="companion" aria-labelledby="${COMPANION_SECTION}">${companion.html}</section>`,
     toc: [...spec.toc, ...companion.toc],

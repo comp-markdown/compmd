@@ -1,12 +1,12 @@
 # The sandbox's frame protocol
 
-**Status: accepted (2026-10-30; revised the same day from a star, where every frame believed the host's page, to a tree).** The messages between the windows of [the sandbox](running-components-in-the-sandbox.md): who sends what to whom, and what each end checks. It builds on `@compmd/render`'s frame protocol ([render README, "In a frame"](../render/README.md#in-a-frame)) and replaces the playground's own messages (`editor/src/protocol.ts`).
+**Status: accepted (2026-10-30; revised the same day from a star, where every frame believed the host's page, to a tree).** The messages between the windows of [the sandbox](running-components-in-the-sandbox.md): who sends what to whom, and what each end checks. It builds on `@compmd/render`'s frame protocol ([render README, "In a frame"](../npm-packages/render/README.md#in-a-frame)) and replaces the playground's own messages (`editor/src/protocol.ts`).
 
 ## Proposed decisions
 
 1. **The protocol is a tree.** Each frame has one port, to its parent, the window that made it, and talks to nothing else. Everything it gets (its level, policy, code, part, `host`, pings) comes from its parent; everything it sends (`set`, links, errors, its size) goes to it. A parent passes on what concerns the windows above it.
 2. **A frame believes its parent only,** by its window (`event.source === window.parent`), never by its origin: the host's page may have an opaque origin itself. Parents are never less trusted than their children ([sandbox, decision 1](running-components-in-the-sandbox.md#proposed-decisions)), and the frame documents' policies make sure of it, so a message from a parent is one the frame may act on.
-3. **The protocol is a layer of its own, with no DOM.** The message types, with their version, and each end's rules as plain state machines over `@compmd/render`'s `Port`: a frame takes `code` only after `level`; a parent gives `host` only to children it was told to; `set` is checked against the use's node. It is tested in Node, apart from the browser, and its messages are published as a JSON Schema (`sandbox/protocol.schema.json`), so a frame runtime or host runtime written elsewhere, a host's own or a sandbox outside a browser, can check itself against it.
+3. **The protocol is a layer of its own, with no DOM.** The message types, with their version, and each end's rules as plain state machines over `@compmd/render`'s `Port`: a frame takes `code` only after `level`; a parent gives `host` only to children it was told to; `set` is checked against the use's node. It is tested in Node, apart from the browser, and its messages are published as a JSON Schema (`npm-packages/sandbox/protocol.schema.json`), so a frame runtime or host runtime written elsewhere, a host's own or a sandbox outside a browser, can check itself against it.
 4. **Two runtimes implement it,** the frame runtime (one end in each frame) and the host runtime (the other end, in the host's page and in every frame that has children). The browser's part, making frames, adding the policy, the ping timer, is theirs, not the protocol's.
 5. **`@compmd/render`'s protocol stays as it is,** for a page's tree: `render`, `splices`, `theme`, `ready`, `set`, `error`, `rendered`, from its version 3, where the page came from: `reveal`, `rects`, `point`, `pointed`; and from its version 4, where each line is and when the page has drawn: `lines`, `layout` and `drawn`. The sandbox's messages travel on the same port, with their own version, as the playground's do today.
 
@@ -80,7 +80,7 @@ For developer tools ([the Developer Tools](devtools.md), decisions 5 and 6, and 
 
 ## Settled
 
-For a host that waits until its page stops moving ([sandbox README, *When the page has settled*](../sandbox/README.md)). Each window settles bottom-up, and a parent counts what it asked for:
+For a host that waits until its page stops moving ([sandbox README, *When the page has settled*](../npm-packages/sandbox/README.md)). Each window settles bottom-up, and a parent counts what it asked for:
 
 - **A parent counts** each message it sends a frame that changes what the frame shows: `code`, `render`, `splices`, `part`, `scheme`, `theme`, `styles`. The frame counts what it takes, in the same order, since the port keeps it.
 - **A frame sends `settled {seen}`** each time it settles, with its count: its code loaded, its uses drawn (`@compmd/render`'s `drawn`), its own frames settled for everything it sent them and their sizes applied, its images and stylesheets loaded or failed, its fonts loaded, then an animation frame with nothing moving. It sends its last `size` before it.

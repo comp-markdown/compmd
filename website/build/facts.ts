@@ -24,5 +24,5 @@ export function gzippedKb(file: string): number {
 
 /** The facts of the repository at `repo`, its root. */
 export function factsOf(repo: string): Facts {
-  return { cases: casesIn(join(repo, "conformance")), wasmKb: gzippedKb(join(repo, "wasm/pkg/compmd_wasm_bg.wasm")) };
+  return { cases: casesIn(join(repo, "conformance")), wasmKb: gzippedKb(join(repo, "npm-packages/wasm/pkg/compmd_wasm_bg.wasm")) };
 }

@@ -1,6 +1,6 @@
 # CompMD Developer's Guide
 
-How to build with [CompMD](https://compmd.dev/): documents people write as text, rendered as pages in your application, with components of your own and from packs, and safe to open from anyone. The [spec](../../compmd-spec-v1.md) says what CompMD is; the package READMEs say what each package has; this guide shows how to build with them, from a first page to a published pack. Writing documents themselves is [the Author's Guide](../authors/README.md).
+How to build with [CompMD](https://compmd.dev/): documents people write as text, rendered as pages in your application, with components of your own and from packs, and safe to open from anyone. The [spec](../../spec/compmd-spec-v1.md) says what CompMD is; the package READMEs say what each package has; this guide shows how to build with them, from a first page to a published pack. Writing documents themselves is [the Author's Guide](../authors/README.md).
 
 It is written for the `@compmd` packages and the crates at version 0.7.0, and follows them as they change. On the website it is at [compmd.dev/guides/developers/](https://compmd.dev/guides/developers/).
 
@@ -55,4 +55,4 @@ If you write documents rather than code, [the Author's Guide](../authors/README.
 
 ## The examples
 
-Each chapter's code is a file in [`examples/`](examples), which the guides' tests type-check, build and run in Chrome and WebKit, and compare with the chapter's text, so the code you read is code that works. Chapter 19 shows the files of the repository's Tauri example, [`examples/tauri/`](../../examples/tauri), which its own check runs in a real webview.
+Each chapter's code is a file in [`examples/`](examples), which the guides' tests type-check, build and run in Chrome and WebKit, and compare with the chapter's text, so the code you read is code that works. Chapter 19 shows the files of the repository's Tauri example, [`crates/tauri/examples/tauri-app/`](../../crates/tauri/examples/tauri-app), which its own check runs in a real webview.

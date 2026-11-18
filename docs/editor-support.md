@@ -95,7 +95,7 @@ A CompMD document's own ```` ```compmd ```` blocks are highlighted the same way,
    It works on the document's files and installed packs as any processor does (the configuration, `@compmd/vite`'s
    packs); a registry pack's signature comes from `@compmd/registry`'s cache, and a pack it can't load is a diagnostic,
    not a failure. It processes as the user types with the processor's incremental processing
-   ([incremental.md](../processor/docs/incremental.md)).
+   ([incremental.md](../crates/processor/docs/incremental.md)).
 
 6. **The editor packages are thin.** Each wires the grammar, the language server and the file type (`.comp.md`) into
    one editor, and adds what only that editor needs: `compmd-ts-mode`'s major mode, `zed-compmd`'s manifest, the VS Code
@@ -121,7 +121,7 @@ A CompMD document's own ```` ```compmd ```` blocks are highlighted the same way,
      changes, and the processor and `compmd-host` are already its crates, so it serves the page, the bundle, the pack
      store and the frames by `compmd-host`'s routes and headers, as every host does. The page is on one port of
      `127.0.0.1` and the frames on another, so the frames have an origin of their own, as the sandbox needs.
-   - **The page is the playground's preview**, built from `editor/` as a page of its own (the renderer, the sandbox and
+   - **The page is the playground's preview**, built from `npm-packages/editor/` as a page of its own (the renderer, the sandbox and
      the host's stylesheet, without the editor, the menu or the Developer Tools), and compiled into the server's
      binary, as `tauri-plugin-compmd` compiles the bundle into an app. It processes the text with the processor's
      WebAssembly, as the playground does, so the preview is exactly what the playground shows.
@@ -174,7 +174,7 @@ A CompMD document's own ```` ```compmd ```` blocks are highlighted the same way,
   synchronous as well). In the VS Code extension: `vscode-languageclient` and
   `vscode-textmate`.
 - In this repository: the processor's blocks (content languages, decision 3), the language server and its release
-  (binaries and npm packages per platform, in `release.yml`), the preview's page in `editor/`, the renderer's line on
+  (binaries and npm packages per platform, in `release.yml`), the preview's page in `npm-packages/editor/`, the renderer's line on
   each block, and the CompMD grammar in the frames' Shiki and the site's build.
 - In packs: `compmd.languages`, checked (content languages, decision 2).
 - CI in `compmd-grammars`: generate, check the generated parser is committed (tree-sitter grammars commit

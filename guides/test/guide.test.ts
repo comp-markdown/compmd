@@ -63,7 +63,7 @@ const PINNED: Record<string, string> = { "0.1.1": "sha512-EwevqkkUdxOsFLHV85W74w
 function registryPacks(): Record<string, PackRelease[]> {
   return Object.fromEntries(
     ["mermaid", "wireframe"].map((pack) => {
-      const folder = join(GUIDES, "../packs", pack);
+      const folder = join(GUIDES, "../compmd-packs", pack);
       const manifest = readFileSync(join(folder, "package.json"), "utf8");
       const { name, version: current } = JSON.parse(manifest) as { name: string; version: string };
       const document = readFileSync(join(folder, "index.comp.md"), "utf8");
@@ -250,7 +250,7 @@ function unpackedSize(gzipped: Buffer): number {
 describe("the developers' packs from npm", () => {
   const root = join(GUIDES, "developers/examples/packs-from-npm");
   const out = join(import.meta.dirname, ".out/packs-from-npm");
-  const mermaid = join(GUIDES, "../packs/mermaid");
+  const mermaid = join(GUIDES, "../compmd-packs/mermaid");
   const port = 4202;
   const registryPort = 4203;
   let server: PreviewServer;

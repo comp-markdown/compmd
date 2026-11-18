@@ -147,7 +147,7 @@ import { NpmRegistry, registryProxy } from "@compmd/registry";
 export default { fetch: registryProxy({ registries: { "*": new NpmRegistry({ url: "https://registry.npmjs.org/" }) }, base: "/compmd/registry/" }) };
 ```
 
-It caches nothing itself, so put an HTTP cache or a CDN in front of it; [its README](../../registry/README.md) has the same for Node. A private registry's token stays on your server, in its `NpmRegistry`'s `headers`, never in the reader's browser.
+It caches nothing itself, so put an HTTP cache or a CDN in front of it; [its README](../../npm-packages/registry/README.md) has the same for Node. A private registry's token stays on your server, in its `NpmRegistry`'s `headers`, never in the reader's browser.
 
 An app with no server, such as a static site, can't proxy. With `"fetch": "direct"`, the reader's browser fetches from the registries you name, with no cookies or other credentials, and nothing from the document but the names and versions of its imports. The registry then learns the reader's address and which packs, at which versions, the document imports; never the document. Tell your readers.
 

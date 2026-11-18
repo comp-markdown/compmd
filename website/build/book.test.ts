@@ -26,7 +26,7 @@ describe("bookLink", () => {
   });
 
   it("leaves the rest for GitHub", () => {
-    expect(bookLink("developers", "../../compmd-spec-v1.md")).toBeUndefined();
+    expect(bookLink("developers", "../../spec/compmd-spec-v1.md")).toBeUndefined();
   });
 });
 

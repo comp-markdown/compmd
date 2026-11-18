@@ -38,7 +38,7 @@ hello/
   .gitignore           node_modules and dist
 ```
 
-There is no build configuration, no test page and no publish check in it. Those are [`@compmd/pack`](../../pack/README.md)'s, and the scripts run its command, `compmd-pack`, so upgrading `@compmd/pack` updates them in every pack made earlier:
+There is no build configuration, no test page and no publish check in it. Those are [`@compmd/pack`](../../npm-packages/pack/README.md)'s, and the scripts run its command, `compmd-pack`, so upgrading `@compmd/pack` updates them in every pack made earlier:
 
 ```json snippet=first-pack/package.json
 {

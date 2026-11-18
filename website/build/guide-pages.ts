@@ -7,7 +7,7 @@ import { bookOf, guideLink, writtenOf } from "./guide.ts";
 import type { IndexedPage } from "./search.ts";
 import { renderMarkdown } from "./spec.ts";
 import { SITE } from "../src/site.ts";
-import processor from "../../wasm/package.json" with { type: "json" };
+import processor from "../../npm-packages/wasm/package.json" with { type: "json" };
 
 /** The version of the `@compmd` packages, released together: the guides say which they are written for. */
 export const VERSION = processor.version;

@@ -45,7 +45,7 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
-      - run: node scripts/spec-revision.ts check
+      - run: node tools/spec-revision/spec-revision.ts check
 
   # The links in what npmjs.com, crates.io and docs.rs show of the published packages, with the network: on pushes to
   # `main` only, since a site that is down for a moment shouldn't fail a pull request (docs/ci.md, decision 14).

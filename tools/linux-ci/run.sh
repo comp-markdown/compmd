@@ -1,0 +1,64 @@
+#!/bin/bash
+# In the container of tools/linux-ci/Dockerfile: checks out a commit of the repository mounted at /git into /work, with the
+# markdown-rs submodule, installs the packages, and runs a command there, `cargo make ci` by default (docs/ci.md,
+# decision 12).
+#
+# Usage: compmd-linux [--ref <commit>] [site | tauri | command...]
+#   --ref <commit>  the commit to check out: a hash, tag or branch of the mounted repository; HEAD by default
+#   site            the site's build and check, as the Pages workflow runs them
+#   tauri           the Tauri check, with WebKitGTK under a virtual display, as the Tauri workflow runs it
+set -euo pipefail
+
+ref=HEAD
+if [ "${1:-}" = "--ref" ]; then
+  ref="$2"
+  shift 2
+fi
+
+# The mounted repository belongs to the host's user. As a submodule's or worktree's git folder, its config may name a
+# work tree on the host, so it is read with one that exists here.
+git config --global --add safe.directory '*'
+host() { git --git-dir=/git --work-tree=/ "$@"; }
+
+# Checks out `commit` in `folder` from the objects of the repository `source`, without copying them.
+checkout() {
+  local source="$1" folder="$2" commit="$3"
+  git init -q "$folder"
+  echo "$source/objects" > "$folder/.git/objects/info/alternates"
+  git -C "$folder" -c advice.detachedHead=false checkout -q --force "$commit"
+}
+
+commit="$(host rev-parse "$ref^{commit}")"
+checkout /git /work "$commit"
+# The site's build reads the spec's released versions from their tags; their objects come with the alternates.
+host for-each-ref --format='create %(refname) %(objectname)' refs/tags | git -C /work update-ref --stdin
+checkout /git/modules/markdown-rs /work/crates/markdown-rs "$(git -C /work rev-parse "HEAD:crates/markdown-rs")"
+echo "compmd-linux: $(git -C /work log -1 --format='%h %s')"
+
+cd /work
+pnpm install --frozen-lockfile --store-dir /cache/pnpm
+if [ "$#" -eq 0 ]; then
+  # CI's browser tests run in Chrome and in Playwright's WebKit.
+  pnpm --dir npm-packages/sandbox exec playwright install --with-deps webkit
+  set -- cargo make ci
+elif [ "$1" = site ]; then
+  # .github/workflows/pages.yml: the timing is measured on a contributor's machine.
+  pnpm -r build
+  set -- pnpm --dir website check --no-timing
+elif [ "$1" = tauri ]; then
+  # .github/workflows/tauri.yml: Tauri's prerequisites and a virtual display, then the check.
+  apt-get update -o Acquire::Retries=3
+  apt-get install -y -o Acquire::Retries=3 --no-install-recommends \
+    libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev libssl-dev xvfb xauth
+  export WEBKIT_DISABLE_DMABUF_RENDERER=1
+  # Not xvfb-run, as the workflow: emulated on an Arm Mac, the signal Xvfb sends once it is ready never reaches
+  # xvfb-run, which waits for it forever. The display is ready once its socket is there.
+  Xvfb :99 -screen 0 1280x1024x24 -nolisten tcp &
+  for _ in $(seq 100); do
+    [ -S /tmp/.X11-unix/X99 ] && break
+    sleep 0.1
+  done
+  export DISPLAY=:99
+  set -- cargo make tauri-check
+fi
+exec "$@"

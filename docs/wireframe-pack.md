@@ -2,7 +2,7 @@
 
 **Status: accepted (2026-11-17), option B with F2's language.** B's code renderer drawn as HTML and CSS, its language
 Wireloom's syntax written down as a grammar of our own (Appendix C), in ```` ```wireframe ```` blocks: [the
-wireframe language](../packs/wireframe/LANGUAGE.md), which lives in the pack, published with it.
+wireframe language](../compmd-packs/wireframe/LANGUAGE.md), which lives in the pack, published with it.
 
 A writer sketching a screen in a design note, an issue or a spec wants a **wireframe**: the screen's boxes, its
 buttons, inputs and images, and notes on them, drawn roughly enough that nobody mistakes it for the design. Mermaid,
@@ -133,7 +133,7 @@ doesn't use the Wireloom name for itself.
 
 ## What B is
 
-- `@comp-markdown/wireframe`, in `packs/wireframe/`, written with `npm create @compmd/pack -- --renders wireframe`, as
+- `@comp-markdown/wireframe`, in `compmd-packs/wireframe/`, written with `npm create @compmd/pack -- --renders wireframe`, as
   [the Mermaid pack](mermaid-pack.md) is, released on its own tag: a code renderer of ```` ```wireframe ```` blocks
   (spec §7.7), with `alt` for its text alternative.
 - Its parts, as Wireloom's syntax names them (`window`, `row`, `col`, `grid`, `panel`, `text`, `button`, `input`,

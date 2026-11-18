@@ -170,7 +170,158 @@ importers:
         specifier: runtime:24
         version: runtime:24.22.1
 
-  blog:
+  compmd-packs/mermaid:
+    devDependencies:
+      '@compmd/pack':
+        specifier: workspace:*
+        version: link:../../npm-packages/pack
+      '@compmd/processor':
+        specifier: workspace:*
+        version: link:../../npm-packages/wasm
+      '@compmd/registry':
+        specifier: workspace:*
+        version: link:../../npm-packages/registry
+      '@compmd/sandbox':
+        specifier: workspace:*
+        version: link:../../npm-packages/sandbox
+      '@compmd/vite':
+        specifier: workspace:*
+        version: link:../../npm-packages/vite
+      '@types/node':
+        specifier: 26.6.5
+        version: 26.6.5
+      happy-dom:
+        specifier: 21.0.3
+        version: 21.0.3
+      mermaid:
+        specifier: 12.2.0
+        version: 12.2.0
+      playwright:
+        specifier: 1.64.1
+        version: 1.64.1
+      typescript:
+        specifier: 6.0.3
+        version: 6.0.3
+      vite:
+        specifier: 8.3.4
+        version: 8.3.4(@types/node@26.6.5)(yaml@2.9.1)
+      vitest:
+        specifier: 5.0.5
+        version: 5.0.5(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
+
+  compmd-packs/wireframe:
+    devDependencies:
+      '@compmd/pack':
+        specifier: workspace:*
+        version: link:../../npm-packages/pack
+      '@types/node':
+        specifier: 26.6.5
+        version: 26.6.5
+      happy-dom:
+        specifier: 21.0.3
+        version: 21.0.3
+      playwright:
+        specifier: 1.64.1
+        version: 1.64.1
+      typescript:
+        specifier: 6.0.3
+        version: 6.0.3
+      vite:
+        specifier: 8.3.4
+        version: 8.3.4(@types/node@26.6.5)(yaml@2.9.1)
+      vitest:
+        specifier: 5.0.5
+        version: 5.0.5(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
+
+  crates/tauri/examples/tauri-app:
+    dependencies:
+      '@comp-markdown/mermaid':
+        specifier: workspace:*
+        version: link:../../../../compmd-packs/mermaid
+      '@compmd/sandbox':
+        specifier: workspace:*
+        version: link:../../../../npm-packages/sandbox
+      '@tauri-apps/api':
+        specifier: 2.12.4
+        version: 2.12.4
+    devDependencies:
+      '@compmd/vite':
+        specifier: workspace:*
+        version: link:../../../../npm-packages/vite
+      '@types/node':
+        specifier: 26.6.5
+        version: 26.6.5
+      typescript:
+        specifier: 6.0.3
+        version: 6.0.3
+      vite:
+        specifier: 8.3.4
+        version: 8.3.4(@types/node@26.6.5)(yaml@2.9.1)
+
+  guides:
+    devDependencies:
+      '@comp-markdown/mermaid':
+        specifier: workspace:*
+        version: link:../compmd-packs/mermaid
+      '@compmd/devtools':
+        specifier: workspace:*
+        version: link:../npm-packages/devtools
+      '@compmd/pack':
+        specifier: workspace:*
+        version: link:../npm-packages/pack
+      '@compmd/processor':
+        specifier: workspace:*
+        version: link:../npm-packages/wasm
+      '@compmd/registry':
+        specifier: workspace:*
+        version: link:../npm-packages/registry
+      '@compmd/render':
+        specifier: workspace:*
+        version: link:../npm-packages/render
+      '@compmd/sandbox':
+        specifier: workspace:*
+        version: link:../npm-packages/sandbox
+      '@compmd/vite':
+        specifier: workspace:*
+        version: link:../npm-packages/vite
+      '@sveltejs/vite-plugin-svelte':
+        specifier: 7.3.1
+        version: 7.3.1(svelte@5.57.2(@typescript-eslint/types@8.72.0))(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
+      '@types/node':
+        specifier: 26.6.5
+        version: 26.6.5
+      '@types/react':
+        specifier: 19.3.0
+        version: 19.3.0
+      '@types/react-dom':
+        specifier: 19.3.0
+        version: 19.3.0(@types/react@19.3.0)
+      happy-dom:
+        specifier: 21.0.3
+        version: 21.0.3
+      playwright:
+        specifier: 1.64.1
+        version: 1.64.1
+      react:
+        specifier: 19.3.0
+        version: 19.3.0
+      react-dom:
+        specifier: 19.3.0
+        version: 19.3.0(react@19.3.0)
+      svelte:
+        specifier: 5.57.2
+        version: 5.57.2(@typescript-eslint/types@8.72.0)
+      typescript:
+        specifier: 6.0.3
+        version: 6.0.3
+      vite:
+        specifier: 8.3.4
+        version: 8.3.4(@types/node@26.6.5)(yaml@2.9.1)
+      vitest:
+        specifier: 5.0.5
+        version: 5.0.5(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
+
+  npm-packages/blog:
     dependencies:
       '@compmd/processor':
         specifier: workspace:^
@@ -216,7 +367,7 @@ importers:
         specifier: 5.0.5
         version: 5.0.5(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
 
-  create-blog:
+  npm-packages/create-blog:
     devDependencies:
       '@compmd/blog':
         specifier: workspace:*
@@ -240,7 +391,7 @@ importers:
         specifier: 5.0.5
         version: 5.0.5(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
 
-  create-pack:
+  npm-packages/create-pack:
     devDependencies:
       '@compmd/pack':
         specifier: workspace:*
@@ -276,7 +427,7 @@ importers:
         specifier: 5.0.5
         version: 5.0.5(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
 
-  devtools:
+  npm-packages/devtools:
     dependencies:
       '@compmd/processor':
         specifier: workspace:^
@@ -328,7 +479,7 @@ importers:
         specifier: 5.0.5
         version: 5.0.5(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
 
-  editor:
+  npm-packages/editor:
     dependencies:
       '@compmd/devtools':
         specifier: workspace:*
@@ -401,7 +552,7 @@ importers:
         specifier: 5.0.5
         version: 5.0.5(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
 
-  editor/packs/minimermaid:
+  npm-packages/editor/packs/minimermaid:
     devDependencies:
       '@compmd/pack':
         specifier: workspace:*
@@ -416,95 +567,7 @@ importers:
         specifier: 5.0.5
         version: 5.0.5(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
 
-  examples/tauri:
-    dependencies:
-      '@comp-markdown/mermaid':
-        specifier: workspace:*
-        version: link:../../packs/mermaid
-      '@compmd/sandbox':
-        specifier: workspace:*
-        version: link:../../sandbox
-      '@tauri-apps/api':
-        specifier: 2.12.4
-        version: 2.12.4
-    devDependencies:
-      '@compmd/vite':
-        specifier: workspace:*
-        version: link:../../vite
-      '@types/node':
-        specifier: 26.6.5
-        version: 26.6.5
-      typescript:
-        specifier: 6.0.3
-        version: 6.0.3
-      vite:
-        specifier: 8.3.4
-        version: 8.3.4(@types/node@26.6.5)(yaml@2.9.1)
-
-  guides:
-    devDependencies:
-      '@comp-markdown/mermaid':
-        specifier: workspace:*
-        version: link:../packs/mermaid
-      '@compmd/devtools':
-        specifier: workspace:*
-        version: link:../devtools
-      '@compmd/pack':
-        specifier: workspace:*
-        version: link:../pack
-      '@compmd/processor':
-        specifier: workspace:*
-        version: link:../wasm
-      '@compmd/registry':
-        specifier: workspace:*
-        version: link:../registry
-      '@compmd/render':
-        specifier: workspace:*
-        version: link:../render
-      '@compmd/sandbox':
-        specifier: workspace:*
-        version: link:../sandbox
-      '@compmd/vite':
-        specifier: workspace:*
-        version: link:../vite
-      '@sveltejs/vite-plugin-svelte':
-        specifier: 7.3.1
-        version: 7.3.1(svelte@5.57.2(@typescript-eslint/types@8.72.0))(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
-      '@types/node':
-        specifier: 26.6.5
-        version: 26.6.5
-      '@types/react':
-        specifier: 19.3.0
-        version: 19.3.0
-      '@types/react-dom':
-        specifier: 19.3.0
-        version: 19.3.0(@types/react@19.3.0)
-      happy-dom:
-        specifier: 21.0.3
-        version: 21.0.3
-      playwright:
-        specifier: 1.64.1
-        version: 1.64.1
-      react:
-        specifier: 19.3.0
-        version: 19.3.0
-      react-dom:
-        specifier: 19.3.0
-        version: 19.3.0(react@19.3.0)
-      svelte:
-        specifier: 5.57.2
-        version: 5.57.2(@typescript-eslint/types@8.72.0)
-      typescript:
-        specifier: 6.0.3
-        version: 6.0.3
-      vite:
-        specifier: 8.3.4
-        version: 8.3.4(@types/node@26.6.5)(yaml@2.9.1)
-      vitest:
-        specifier: 5.0.5
-        version: 5.0.5(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
-
-  host-js:
+  npm-packages/host-js:
     devDependencies:
       '@eslint/js':
         specifier: 10.0.1
@@ -525,7 +588,7 @@ importers:
         specifier: 5.0.5
         version: 5.0.5(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
 
-  pack:
+  npm-packages/pack:
     dependencies:
       '@compmd/processor':
         specifier: workspace:^
@@ -571,70 +634,7 @@ importers:
         specifier: 8.72.0
         version: 8.72.0(eslint@10.13.0)(typescript@6.0.3)
 
-  packs/mermaid:
-    devDependencies:
-      '@compmd/pack':
-        specifier: workspace:*
-        version: link:../../pack
-      '@compmd/processor':
-        specifier: workspace:*
-        version: link:../../wasm
-      '@compmd/registry':
-        specifier: workspace:*
-        version: link:../../registry
-      '@compmd/sandbox':
-        specifier: workspace:*
-        version: link:../../sandbox
-      '@compmd/vite':
-        specifier: workspace:*
-        version: link:../../vite
-      '@types/node':
-        specifier: 26.6.5
-        version: 26.6.5
-      happy-dom:
-        specifier: 21.0.3
-        version: 21.0.3
-      mermaid:
-        specifier: 12.2.0
-        version: 12.2.0
-      playwright:
-        specifier: 1.64.1
-        version: 1.64.1
-      typescript:
-        specifier: 6.0.3
-        version: 6.0.3
-      vite:
-        specifier: 8.3.4
-        version: 8.3.4(@types/node@26.6.5)(yaml@2.9.1)
-      vitest:
-        specifier: 5.0.5
-        version: 5.0.5(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
-
-  packs/wireframe:
-    devDependencies:
-      '@compmd/pack':
-        specifier: workspace:*
-        version: link:../../pack
-      '@types/node':
-        specifier: 26.6.5
-        version: 26.6.5
-      happy-dom:
-        specifier: 21.0.3
-        version: 21.0.3
-      playwright:
-        specifier: 1.64.1
-        version: 1.64.1
-      typescript:
-        specifier: 6.0.3
-        version: 6.0.3
-      vite:
-        specifier: 8.3.4
-        version: 8.3.4(@types/node@26.6.5)(yaml@2.9.1)
-      vitest:
-        specifier: 5.0.5
-        version: 5.0.5(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
-
-  registry:
+  npm-packages/registry:
     devDependencies:
       '@compmd/processor':
         specifier: workspace:*
@@ -667,7 +667,7 @@ importers:
         specifier: 5.0.5
         version: 5.0.5(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
 
-  render:
+  npm-packages/render:
     devDependencies:
       '@eslint/js':
         specifier: 10.0.1
@@ -712,7 +712,7 @@ importers:
         specifier: 5.0.5
         version: 5.0.5(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
 
-  sandbox:
+  npm-packages/sandbox:
     dependencies:
       '@compmd/render':
         specifier: workspace:*
@@ -794,7 +794,7 @@ importers:
         specifier: 5.0.5
         version: 5.0.5(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
 
-  vite:
+  npm-packages/vite:
     dependencies:
       '@compmd/host':
         specifier: workspace:^
@@ -864,7 +864,7 @@ importers:
         specifier: 5.0.5
         version: 5.0.5(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
 
-  vite/example:
+  npm-packages/vite/example:
     dependencies:
       '@compmd/devtools':
         specifier: workspace:*
@@ -901,7 +901,7 @@ importers:
         specifier: 8.3.4
         version: 8.3.4(@types/node@26.6.5)(yaml@2.9.1)
 
-  wasm:
+  npm-packages/wasm:
     dependencies:
       '@compmd/render':
         specifier: workspace:*
@@ -933,13 +933,13 @@ importers:
     dependencies:
       '@compmd/processor':
         specifier: workspace:*
-        version: link:../wasm
+        version: link:../npm-packages/wasm
       '@compmd/render':
         specifier: workspace:*
-        version: link:../render
+        version: link:../npm-packages/render
       '@compmd/sandbox':
         specifier: workspace:*
-        version: link:../sandbox
+        version: link:../npm-packages/sandbox
       d3:
         specifier: 7.9.0
         version: 7.9.0
@@ -952,10 +952,10 @@ importers:
     devDependencies:
       '@compmd/editor':
         specifier: workspace:*
-        version: link:../editor
+        version: link:../npm-packages/editor
       '@compmd/vite':
         specifier: workspace:*
-        version: link:../vite
+        version: link:../npm-packages/vite
       '@eslint/js':
         specifier: 10.0.1
         version: 10.0.1(eslint@10.13.0)

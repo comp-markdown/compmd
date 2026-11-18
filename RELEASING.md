@@ -26,9 +26,9 @@ A release publishes only packages that npm and this repository's workflow alread
 - The [prerequisites](#prerequisites-once-per-package) hold for every package the release publishes.
 - `cargo make ci` is green on `main`.
 - Each package's README says what changed, until the implementation has a changelog of its own.
-- The code implements the spec as it is on `main`, and `SPEC_VERSION` in `processor/src/lib.rs` is the spec header's revision (`**Version 1.0-draft.N.**`), with `wasm/src/index.ts` and the READMEs the same (their tests say so). The workflow refuses a release otherwise.
-- The version, in one commit: `render/package.json`, `wasm/package.json`, `sandbox/package.json`, `registry/package.json`, `devtools/package.json`, `vite/package.json`, `pack/package.json`, `create-pack/package.json`, `blog/package.json`, `create-blog/package.json`, `processor/Cargo.toml`, `pack-types/Cargo.toml`, `host/Cargo.toml` and `tauri/Cargo.toml`, with the crates' dependencies on each other (`version = …` beside each `path`).
-- If the fork changed since its last release: its version in `markdown-rs/Cargo.toml` (on its `compmd` branch), and the same version in the `compmd-markdown` dependency of `processor/Cargo.toml` and `markdown-rs/mdast_util_to_markdown/Cargo.toml`.
+- The code implements the spec as it is on `main`, and `SPEC_VERSION` in `crates/processor/src/lib.rs` is the spec header's revision (`**Version 1.0-draft.N.**`), with `npm-packages/wasm/src/index.ts` and the READMEs the same (their tests say so). The workflow refuses a release otherwise.
+- The version, in one commit: `npm-packages/render/package.json`, `npm-packages/wasm/package.json`, `npm-packages/sandbox/package.json`, `npm-packages/registry/package.json`, `npm-packages/devtools/package.json`, `npm-packages/vite/package.json`, `npm-packages/pack/package.json`, `npm-packages/create-pack/package.json`, `npm-packages/blog/package.json`, `npm-packages/create-blog/package.json`, `crates/processor/Cargo.toml`, `crates/pack-types/Cargo.toml`, `crates/host/Cargo.toml` and `crates/tauri/Cargo.toml`, with the crates' dependencies on each other (`version = …` beside each `path`).
+- If the fork changed since its last release: its version in `markdown-rs/Cargo.toml` (on its `compmd` branch), and the same version in the `compmd-markdown` dependency of `crates/processor/Cargo.toml` and `markdown-rs/mdast_util_to_markdown/Cargo.toml`.
 - On Linux, once the version is committed: `cargo make linux` and `cargo make linux site` pass, so neither the release's checks nor its site deploy fail on the runner alone ([CI](docs/ci.md), decision 12).
 - Push: the fork first, then this repository.
 
@@ -40,7 +40,7 @@ git push origin v0.1.1
 ```
 
 The release workflow:
-1. checks the tag is the version in every package's `package.json` and in `processor/Cargo.toml`, and that `compmd::SPEC_VERSION` is the spec header's revision;
+1. checks the tag is the version in every package's `package.json` and in `crates/processor/Cargo.toml`, and that `compmd::SPEC_VERSION` is the spec header's revision;
 2. installs Playwright's WebKit, for the sandbox's, the registry's, the Vite plugin's, create-pack's and the blog's browser tests, and runs `cargo make ci`;
 3. packs the packages with pnpm, which writes the versions in place of their `workspace:*` dependencies on each other;
 4. stages them with npm's trusted publishing (`npm stage publish`): the renderer, then the processor, then the sandbox, which depends on both, then the registry, which needs the processor, then the Developer Tools, which depend on those four, then the Vite plugin, which depends on the first three, then `@compmd/pack`, which depends on all of those, then create-pack, whose packs pin it, then `@compmd/blog`, which depends on the processor, the renderer, the sandbox and the Vite plugin, then create-blog, whose blogs pin it. No token is stored; each version carries its provenance. A version npm already has is left as it is, so a package whose first version was published by hand at the release's version is skipped, and a release that failed halfway can run again; a version it staged and nobody approved or rejected yet can't be staged again, so settle those first.
@@ -97,10 +97,10 @@ Run them from this repository's root, where its tags are. Git won't remove a wor
 
 ## The Mermaid pack
 
-`@comp-markdown/mermaid` (`packs/mermaid/`) has a version of its own, for its component's params and forms ([its design](docs/mermaid-pack.md), decision 2).
+`@comp-markdown/mermaid` (`compmd-packs/mermaid/`) has a version of its own, for its component's params and forms ([its design](docs/mermaid-pack.md), decision 2).
 
-1. **Once, before its first release** (done for `0.1.0`, 2026-11-02): the `@comp-markdown` organization exists on npm, and the publishing account may publish to it. The first version is published by hand, from outside the repository, as for any new package (below, [prerequisites](#prerequisites-once-per-package)): `pnpm --dir packs/mermaid build`, `pnpm --dir packs/mermaid pack --pack-destination ../packages`, the tarball checked (`dist/mermaid.js`, `dist/LICENSES.md`, `index.comp.md`, the README and its MIT `LICENSE`), then `npm publish` it. Then its trusted publisher is set up for the workflow `release-mermaid.yml`.
-2. **Each release:** the version in `packs/mermaid/package.json` and in `index.comp.md`'s `export.version`, the same in both, in one commit, with what changed in its README; `cargo make ci` green.
+1. **Once, before its first release** (done for `0.1.0`, 2026-11-02): the `@comp-markdown` organization exists on npm, and the publishing account may publish to it. The first version is published by hand, from outside the repository, as for any new package (below, [prerequisites](#prerequisites-once-per-package)): `pnpm --dir compmd-packs/mermaid build`, `pnpm --dir compmd-packs/mermaid pack --pack-destination ../packages`, the tarball checked (`dist/mermaid.js`, `dist/LICENSES.md`, `index.comp.md`, the README and its MIT `LICENSE`), then `npm publish` it. Then its trusted publisher is set up for the workflow `release-mermaid.yml`.
+2. **Each release:** the version in `compmd-packs/mermaid/package.json` and in `index.comp.md`'s `export.version`, the same in both, in one commit, with what changed in its README; `cargo make ci` green.
 3. Tag and push the tag:
 
    ```sh

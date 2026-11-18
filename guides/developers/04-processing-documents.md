@@ -214,7 +214,7 @@ Two more functions take the same request:
 - **`frontmatterOf(request)`**: what the frontmatter gives the render: the author's own fields (`doc`), the settings under `md`, each data import with what was loaded (`null` when it failed), and the inputs with their values. An app's inputs panel or a document's properties come from it.
 - **`componentsOf(request)`**: the components the document can name, grouped by the file that defines them, each with its kind, its signature and where the document uses it; and the names it uses that stand for no component. A list of a document's components, or a "go to definition", comes from it.
 
-[The processor's README](../../wasm/README.md) has every type.
+[The processor's README](../../npm-packages/wasm/README.md) has every type.
 
 ## The processor's limits
 
@@ -225,7 +225,7 @@ The processor bounds what a document can make it do, whoever wrote it:
 
 Neither can be changed in `@compmd/processor`.
 
-How long processing takes is measured in a worker in Chrome and WebKit, against budgets: a 4 KB document in 14 ms, a 52 KB one in 48 ms, an edit to an open document in 1 ms ([the README's budgets](../../wasm/README.md#budgets)). On an Apple M4, `process` takes 2 to 10 ms for these, and an edit 0.1 to 0.3 ms.
+How long processing takes is measured in a worker in Chrome and WebKit, against budgets: a 4 KB document in 14 ms, a 52 KB one in 48 ms, an edit to an open document in 1 ms ([the README's budgets](../../npm-packages/wasm/README.md#budgets)). On an Apple M4, `process` takes 2 to 10 ms for these, and an edit 0.1 to 0.3 ms.
 
 ## In a worker
 

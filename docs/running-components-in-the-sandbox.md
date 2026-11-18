@@ -16,7 +16,7 @@
 
 ## Today
 
-The playground (`editor/`) renders each document in one iframe, `sandbox="allow-scripts"`, so its origin is opaque. Its content security policy allows scripts from the site, `blob:` modules and the import map by its hash, and no requests (`default-src 'none'`). The editor sends each host-language component's source on the frame's port; the frame compiles it (sucrase, Svelte's compiler), loads it as a `blob:` module and mounts it through its binding. Every component runs in this one frame, with no network, whatever its pack. There are no trust levels, no built modules and no `host`.
+The playground (`npm-packages/editor/`) renders each document in one iframe, `sandbox="allow-scripts"`, so its origin is opaque. Its content security policy allows scripts from the site, `blob:` modules and the import map by its hash, and no requests (`default-src 'none'`). The editor sends each host-language component's source on the frame's port; the frame compiles it (sucrase, Svelte's compiler), loads it as a `blob:` module and mounts it through its binding. Every component runs in this one frame, with no network, whatever its pack. There are no trust levels, no built modules and no `host`.
 
 ## Terms
 

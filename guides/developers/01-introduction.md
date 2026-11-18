@@ -36,14 +36,14 @@ This guide is for developers who put CompMD in an application: a notes app, a do
 
 | Package | What it does |
 |---|---|
-| [`@compmd/processor`](../../wasm/README.md) | Reads a document, with everything it needs, and gives its trees, its diagnostics and its components. The processor in Rust, as WebAssembly. |
-| [`@compmd/render`](../../render/README.md) | Renders the expanded tree as a live page, and updates it in place as the document changes. |
-| [`@compmd/sandbox`](../../sandbox/README.md) | Runs components at the trust their pack is given: in frames with no network, or your own in your page. |
-| [`@compmd/vite`](../../vite/README.md) | Reads `compmd.config.json`, gives the processor your packs, and builds the bundle (the sandbox's frames and the packs' files), which it serves from your app or writes for a desktop app. |
-| [`@compmd/registry`](../../registry/README.md) | Gets the packs a document imports that your app doesn't install, from npm or another registry, checked against their integrity. |
-| [`@compmd/devtools`](../../devtools/README.md) | The Developer Tools: a document's text, its page and what the processor and the sandbox make of it, as a part a page embeds. |
-| [`@compmd/pack`](../../pack/README.md) | `compmd-pack`, which builds a pack, checks it before it is published, runs its tests and serves its test page. |
-| [`@compmd/create-pack`](../../create-pack/README.md) | Writes a new pack: a component as one built module, its signature, and a test page. |
+| [`@compmd/processor`](../../npm-packages/wasm/README.md) | Reads a document, with everything it needs, and gives its trees, its diagnostics and its components. The processor in Rust, as WebAssembly. |
+| [`@compmd/render`](../../npm-packages/render/README.md) | Renders the expanded tree as a live page, and updates it in place as the document changes. |
+| [`@compmd/sandbox`](../../npm-packages/sandbox/README.md) | Runs components at the trust their pack is given: in frames with no network, or your own in your page. |
+| [`@compmd/vite`](../../npm-packages/vite/README.md) | Reads `compmd.config.json`, gives the processor your packs, and builds the bundle (the sandbox's frames and the packs' files), which it serves from your app or writes for a desktop app. |
+| [`@compmd/registry`](../../npm-packages/registry/README.md) | Gets the packs a document imports that your app doesn't install, from npm or another registry, checked against their integrity. |
+| [`@compmd/devtools`](../../npm-packages/devtools/README.md) | The Developer Tools: a document's text, its page and what the processor and the sandbox make of it, as a part a page embeds. |
+| [`@compmd/pack`](../../npm-packages/pack/README.md) | `compmd-pack`, which builds a pack, checks it before it is published, runs its tests and serves its test page. |
+| [`@compmd/create-pack`](../../npm-packages/create-pack/README.md) | Writes a new pack: a component as one built module, its signature, and a test page. |
 
 An app that shows documents uses the first four, and `@compmd/registry` when it fetches packs it doesn't install ([chapter 9](09-packs-from-npm.md)). The quick start installs `@compmd/processor`, `@compmd/sandbox` and `@compmd/vite`; `@compmd/render` comes with the sandbox. The last two are for writing packs, in Part IV.
 
@@ -51,10 +51,10 @@ In Rust, on crates.io:
 
 | Crate | What it does |
 |---|---|
-| [`compmd`](../../processor/README.md) | The processor itself, for a build, a server, a native app or CI ([chapter 20](20-the-rust-crates.md)). |
-| [`compmd-host`](../../host/README.md) | What a host in Rust serves: the bundle, a store for the packs it gets later, and the serving contract. |
-| [`compmd-pack`](../../pack-types/README.md) | The names packs and their files are known by, which the other crates share. Not the command of `@compmd/pack`, which only shares its name. |
-| [`tauri-plugin-compmd`](../../tauri/README.md) | Shows documents in a Tauri app: the bundle embedded in the app and served on a scheme of its own ([chapter 19](19-a-tauri-app.md)). |
+| [`compmd`](../../crates/processor/README.md) | The processor itself, for a build, a server, a native app or CI ([chapter 20](20-the-rust-crates.md)). |
+| [`compmd-host`](../../crates/host/README.md) | What a host in Rust serves: the bundle, a store for the packs it gets later, and the serving contract. |
+| [`compmd-pack`](../../crates/pack-types/README.md) | The names packs and their files are known by, which the other crates share. Not the command of `@compmd/pack`, which only shares its name. |
+| [`tauri-plugin-compmd`](../../crates/tauri/README.md) | Shows documents in a Tauri app: the bundle embedded in the app and served on a scheme of its own ([chapter 19](19-a-tauri-app.md)). |
 
 A document goes through them like this:
 

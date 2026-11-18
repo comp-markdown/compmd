@@ -4,12 +4,13 @@ Component Markdown: a Markdown flavor with components, containers, slots and lay
 
 ## Where things are
 
-- `compmd-spec-v1.md` and `compmd-registry-v1.md`: the spec and its companion. `CHANGELOG.md` records every change to them, under `### Unreleased` until a revision is cut (`cargo make spec-revision`, [docs/releases.md](docs/releases.md)).
+- `spec/`: the spec (`compmd-spec-v1.md`) and its companion (`compmd-registry-v1.md`). `spec/CHANGELOG.md` records every change to them, under `### Unreleased` until a revision is cut (`cargo make spec-revision`, [docs/releases.md](docs/releases.md)).
 - `docs/README.md`: the design documents, each leading with its status and decisions. Read the designs a change touches before changing code.
 - `docs/code/`: how code is written here: [Rust](docs/code/rust.md), [Svelte](docs/code/svelte.md), [Playwright](docs/code/playwright.md).
 - `conformance/`: the test cases any implementation runs (spec §13.2).
 - `guides/`: the Author's Guide and the Developer's Guide; their examples are tested.
-- `markdown-rs/`: a git submodule, the fork `comp-markdown/markdown-rs` (branch `compmd`), the processor's parser.
+- `crates/`: the Rust crates; `npm-packages/`: the npm packages (`wasm/` and `host-js/` are a crate as well); `compmd-packs/`: CompMD's own packs; `tools/`: the repository's own tools.
+- `crates/markdown-rs/`: a git submodule, the fork `comp-markdown/markdown-rs` (branch `compmd`), the processor's parser.
 - `.agentic-task-manager/`: the task list and the code reviews (atm). It is public, like the rest of the repository.
 
 ## The spec comes first

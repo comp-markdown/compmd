@@ -118,7 +118,7 @@ The spec already says a processor without a runtime reports W102 (§7). The Rust
 
 **`@compmd/vite`:** offered libraries passed to the processor, so W113 and Q6's check know them.
 
-**Docs:** [components from apps and packs](components-from-apps-and-packs.md) (Q3 and S1's *Spec* line, *Today*, *What would change*: the sandbox's code is in `sandbox/`, not the playground's); [running components in the sandbox](running-components-in-the-sandbox.md) (the import map paragraph, and its *Today*).
+**Docs:** [components from apps and packs](components-from-apps-and-packs.md) (Q3 and S1's *Spec* line, *Today*, *What would change*: the sandbox's code is in `npm-packages/sandbox/`, not the playground's); [running components in the sandbox](running-components-in-the-sandbox.md) (the import map paragraph, and its *Today*).
 
 ## Not in this change
 

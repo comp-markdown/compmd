@@ -71,7 +71,7 @@ describe("guideLink", () => {
   });
 
   it("leaves anything else to GitHub", () => {
-    expect(guideLink("../../wasm/README.md", "../")).toBeUndefined();
+    expect(guideLink("../../npm-packages/wasm/README.md", "../")).toBeUndefined();
     expect(guideLink("examples", "")).toBeUndefined();
     expect(guideLink("../compmd-spec-v1.md", undefined)).toBeUndefined();
   });

@@ -70,7 +70,7 @@ three/
 
 ## Questions, with proposed answers
 
-**C1. Where the template lives.** Proposed: as files under `create-pack/template/`, copied with the names filled in, so the template is readable and its own files are linted and type-checked in the repository; tests generate a pack from it.
+**C1. Where the template lives.** Proposed: as files under `npm-packages/create-pack/template/`, copied with the names filled in, so the template is readable and its own files are linted and type-checked in the repository; tests generate a pack from it.
 
 **C2. The versions it depends on.** Proposed: the generated `package.json` pins `@compmd/vite`, `@compmd/processor`, `@compmd/sandbox` and `vite` at the versions released with `create-pack`, written in at its build, so a pack made today builds the same next year.
 

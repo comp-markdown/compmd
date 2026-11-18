@@ -104,7 +104,7 @@ export default function Stars({ value, of, compmd }: Props): ReactElement {
 }
 ```
 
-The binding renders it into a React root in its box, and on an update renders it again into the same root, so React keeps its state. `compmd.fallback.text` is the text a reader without it sees, *3 of 5 stars*, which labels the group; `compmd.set("value", …)` changes the input `value` is bound to. It is [`@compmd/vite`'s example's `Stars`](../../vite/example/components/Stars.tsx), with its numbers kept in bounds (below).
+The binding renders it into a React root in its box, and on an update renders it again into the same root, so React keeps its state. `compmd.fallback.text` is the text a reader without it sees, *3 of 5 stars*, which labels the group; `compmd.set("value", …)` changes the input `value` is bound to. It is [`@compmd/vite`'s example's `Stars`](../../npm-packages/vite/example/components/Stars.tsx), with its numbers kept in bounds (below).
 
 `Spoiler.svelte` is a Svelte component, which hides its body until the reader asks:
 

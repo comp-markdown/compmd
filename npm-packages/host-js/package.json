@@ -1,0 +1,54 @@
+{
+  "name": "@compmd/host",
+  "version": "0.7.1",
+  "description": "The serving contract of a CompMD host over the Fetch API: a bundle's frames and the packs it or a store holds, with the headers that sandbox them, and a refusal saying why for anything else. For workers, Node and dev servers.",
+  "keywords": [
+    "compmd",
+    "markdown",
+    "components",
+    "sandbox",
+    "fetch"
+  ],
+  "homepage": "https://compmd.dev/",
+  "bugs": "https://github.com/comp-markdown/compmd/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/comp-markdown/compmd.git",
+    "directory": "host-js"
+  },
+  "author": "Hakan Serce",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": [
+    "./dist/node.js"
+  ],
+  "files": [
+    "dist",
+    "pkg"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./node": {
+      "types": "./dist/node.d.ts",
+      "default": "./dist/node.js"
+    },
+    "./compmd_host_wasm_bg.wasm": "./pkg/compmd_host_wasm_bg.wasm"
+  },
+  "scripts": {
+    "wasm": "cargo build --profile wasm --target wasm32-unknown-unknown -p compmd-host-wasm && wasm-bindgen --target web --out-dir pkg ../../target/wasm32-unknown-unknown/wasm/compmd_host_wasm.wasm && node -e \"require('node:fs').rmSync('pkg/package.json', { force: true })\"",
+    "build": "pnpm wasm && tsc -p tsconfig.build.json",
+    "lint": "pnpm wasm && eslint . && tsc --noEmit",
+    "test": "pnpm wasm && vitest run"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "26.6.5",
+    "eslint": "10.13.0",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.0",
+    "vitest": "5.0.5"
+  }
+}

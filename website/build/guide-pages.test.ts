@@ -36,7 +36,7 @@ describe("guidePages", () => {
 
   it("links a chapter's files on GitHub from the chapter's own folder", () => {
     const html = htmlOf("guides/developers/");
-    expect(html).toContain(`href="${BLOB}compmd-spec-v1.md"`);
+    expect(html).toContain(`href="${BLOB}spec/compmd-spec-v1.md"`);
     expect(html).toContain(`href="${BLOB}guides/developers/examples"`);
   });
 

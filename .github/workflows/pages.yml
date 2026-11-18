@@ -7,15 +7,15 @@ on:
     branches: [main]
     # Only what the site is built from. Path filters don't apply to tags: a release tag always deploys.
     paths:
-      - compmd-spec-v1.md
+      - spec/compmd-spec-v1.md
       - website/**
-      - editor/**
-      - render/**
+      - npm-packages/editor/**
+      - npm-packages/render/**
       - guides/**
-      - wasm/**
-      - processor/**
-      - markdown-rs
-      - logo/**
+      - npm-packages/wasm/**
+      - crates/processor/**
+      - crates/markdown-rs
+      - branding/**
       - pnpm-lock.yaml
       - Cargo.lock
       - .github/workflows/pages.yml

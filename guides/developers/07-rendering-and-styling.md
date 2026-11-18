@@ -4,7 +4,7 @@ A document's page should look like your app: its fonts, its colours, light or da
 
 ## Where the page is drawn
 
-`@compmd/render` draws an expanded tree as HTML and CSS, the reference rendering of the built-ins ([its README](../../render/README.md#the-reference-rendering-of-the-built-ins)): a `box` is a `<div class="compmd-box">` with its layout params as CSS, an input component a `<label>` with its control, an alert a `<div role="note">`. The sandbox uses it too: in frame mode the page is drawn by `@compmd/render` inside the strict frame, in host mode in your page.
+`@compmd/render` draws an expanded tree as HTML and CSS, the reference rendering of the built-ins ([its README](../../npm-packages/render/README.md#the-reference-rendering-of-the-built-ins)): a `box` is a `<div class="compmd-box">` with its layout params as CSS, an input component a `<label>` with its control, an alert a `<div role="note">`. The sandbox uses it too: in frame mode the page is drawn by `@compmd/render` inside the strict frame, in host mode in your page.
 
 So there are two places to style:
 
@@ -161,7 +161,7 @@ An app that switches its own theme, with a class or a style as the example does,
 
 ## Code blocks
 
-A code block shows as code when no renderer draws it: a language nothing renders, or a code renderer's block whose component is missing or fails, which shows its code block as its fallback. The sandbox highlights it, in both page modes, with Shiki in GitHub's light and dark themes, in about 60 popular languages, CompMD's own syntax in `md` and `compmd` blocks among them; any other language stays plain ([the sandbox's README](../../sandbox/README.md#code-blocks) lists them). Each language loads the first time a block of it shows, so a page without code blocks loads nothing of it. The colours follow the page's light or dark as frames do, with nothing more to call.
+A code block shows as code when no renderer draws it: a language nothing renders, or a code renderer's block whose component is missing or fails, which shows its code block as its fallback. The sandbox highlights it, in both page modes, with Shiki in GitHub's light and dark themes, in about 60 popular languages, CompMD's own syntax in `md` and `compmd` blocks among them; any other language stays plain ([the sandbox's README](../../npm-packages/sandbox/README.md#code-blocks) lists them). Each language loads the first time a block of it shows, so a page without code blocks loads nothing of it. The colours follow the page's light or dark as frames do, with nothing more to call.
 
 To style it, a stylesheet styles `pre` and `code` as it would any page's: the tokens are spans in the `<code>`, each with its colour.
 

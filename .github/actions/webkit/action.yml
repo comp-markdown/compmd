@@ -13,7 +13,7 @@ runs:
       id: key
       shell: bash
       run: |
-        version="$(pnpm --dir sandbox exec playwright --version)"
+        version="$(pnpm --dir npm-packages/sandbox exec playwright --version)"
         echo "key=webkit-$ImageOS-$ImageVersion-${version##* }" >> "$GITHUB_OUTPUT"
     - name: Cache
       id: cache
@@ -39,6 +39,6 @@ runs:
         printf '%s\n' 'APT::Keep-Downloaded-Packages "true";' 'Acquire::Retries "3";' 'Acquire::http::Timeout "30";' 'Acquire::https::Timeout "30";' \
           | sudo tee /etc/apt/apt.conf.d/99webkit > /dev/null
         sudo rm -f /var/cache/apt/archives/*.deb
-        pnpm --dir sandbox exec playwright install --with-deps webkit
+        pnpm --dir npm-packages/sandbox exec playwright install --with-deps webkit
         mkdir -p ~/.cache/webkit-debs
         find /var/cache/apt/archives -maxdepth 1 -name '*.deb' -exec cp -t ~/.cache/webkit-debs/ {} +

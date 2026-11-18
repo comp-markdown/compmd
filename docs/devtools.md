@@ -1,6 +1,6 @@
 # The Developer Tools
 
-**Status: accepted (2026-11-02).** The playground (`editor/`) already holds a document's developer tools: its text with the hint at the caret and the diagnostics, the rendered page, and views of what the processor makes of it (plain Markdown, the frontmatter's data, the components, the trees, the inputs). They live in one Svelte app that only the playground can use. This design makes them a part any page can embed, `@compmd/devtools`, with three new tabs on what the sandbox does: its frames, a console, and the messages between them. For those, `@compmd/sandbox` gains an observer, which is security-sensitive and has a threat model of its own.
+**Status: accepted (2026-11-02).** The playground (`npm-packages/editor/`) already holds a document's developer tools: its text with the hint at the caret and the diagnostics, the rendered page, and views of what the processor makes of it (plain Markdown, the frontmatter's data, the components, the trees, the inputs). They live in one Svelte app that only the playground can use. This design makes them a part any page can embed, `@compmd/devtools`, with three new tabs on what the sandbox does: its frames, a console, and the messages between them. For those, `@compmd/sandbox` gains an observer, which is security-sensitive and has a threat model of its own.
 
 ## Decisions
 
@@ -92,9 +92,9 @@ It is accepted because a lie reaches no decision (O6), and costs little: a paren
 
 ## What changes
 
-- **`@compmd/devtools`**, new: the editor, the views, the new tabs, `mountDevtools`; from `editor/src/` (the session, the worker, the processing, the views, the JSON tree, the split), moved, not copied.
+- **`@compmd/devtools`**, new: the editor, the views, the new tabs, `mountDevtools`; from `npm-packages/editor/src/` (the session, the worker, the processing, the views, the JSON tree, the split), moved, not copied.
 - **`@compmd/sandbox`**: the observer, its events and its browser tests; each frame's runtime observing its part and reporting it; `observe` and `observed` in [the frame protocol](sandbox-protocol.md) and its schema; the threat model above in [running components in the sandbox](running-components-in-the-sandbox.md).
-- **The playground** (`editor/`): the site's page, embedding the editor.
+- **The playground** (`npm-packages/editor/`): the site's page, embedding the editor.
 - **The guides**: nothing; their links open the playground as today.
 
 ## Not in this change

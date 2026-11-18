@@ -29,19 +29,19 @@ jobs:
       - uses: ./.github/actions/setup
       - run: pnpm install --frozen-lockfile
       # The browser tests run in the runner's Chrome and in Playwright's WebKit.
-      - run: pnpm --dir sandbox exec playwright install --with-deps webkit
+      - run: pnpm --dir npm-packages/sandbox exec playwright install --with-deps webkit
       - name: The tag is the pack's version
         run: |
           version="${GITHUB_REF_NAME#mermaid-v}"
-          written="$(node -p "require('./packs/mermaid/package.json').version")"
+          written="$(node -p "require('./compmd-packs/mermaid/package.json').version")"
           if [ "$written" != "$version" ]; then
-            echo "::error::packs/mermaid/package.json is $written, the tag $GITHUB_REF_NAME"
+            echo "::error::compmd-packs/mermaid/package.json is $written, the tag $GITHUB_REF_NAME"
             exit 1
           fi
       # Every check, the pack's tests and its build among them.
       - run: cargo make ci
       - name: Pack
-        run: pnpm --dir packs/mermaid pack --pack-destination "$RUNNER_TEMP/packages"
+        run: pnpm --dir compmd-packs/mermaid pack --pack-destination "$RUNNER_TEMP/packages"
       # Trusted publishing needs npm 11.5.1 or newer, staged publishing 11.15.0.
       - run: npm install --global npm@11.21.1
       # Outside the repository, whose devEngines name pnpm. Installable once the author approves it on npmjs.com.

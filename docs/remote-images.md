@@ -9,7 +9,7 @@ allow it. This is how `@compmd/render` and `@compmd/sandbox` do it, in frame mod
 ## Decisions
 
 1. **One gate, the image source.** Every image the renderer draws already goes through an `ImageSource`
-   (`render/src/images.ts`): the URL to show for a `src`, or `undefined`, and the alt text shows meanwhile. The sandbox
+   (`npm-packages/render/src/images.ts`): the URL to show for a `src`, or `undefined`, and the alt text shows meanwhile. The sandbox
    gives one in both modes now: in host mode too, where the page loads images itself today. A relative `src`, one of
    the host's own schemes (`ownSchemes`, loaded through `ownImages`, spec §15) and one of a configured origin pass as
    they are; a remote one of an origin the reader allowed passes; any other is asked about first.
@@ -47,8 +47,8 @@ allow it. This is how `@compmd/render` and `@compmd/sandbox` do it, in frame mod
 
 - `render`: `ImageSource` may answer `{ refused: origin }`; the image view draws the alt text and the allow button,
   and redraws when told an origin was allowed; the surface gains `allowOrigin`.
-- `sandbox/src/origins.ts`: the gate (`imageGate`), shared with `allowOrigins`, and `originQuestion` by kind.
-- `sandbox/src/images.ts`: `PageImages.file` goes through the gate; `allow-origin` from a frame, checked against the
+- `npm-packages/sandbox/src/origins.ts`: the gate (`imageGate`), shared with `allowOrigins`, and `originQuestion` by kind.
+- `npm-packages/sandbox/src/images.ts`: `PageImages.file` goes through the gate; `allow-origin` from a frame, checked against the
   frame's images.
 - `sandbox` host mode: `createRegion` gets the gate as its `images`.
 - The protocol: `allow-origin` (frame to parent) and `images-allowed` (parent to frame), in `messages.ts` and the

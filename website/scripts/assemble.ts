@@ -7,8 +7,8 @@ const REPO = join(import.meta.dirname, "../..");
 const DIST = join(import.meta.dirname, "../dist");
 
 const PARTS = [
-  { from: "editor/dist", to: "playground", what: "the playground's build: `pnpm --dir editor build`" },
-  { from: "logo", to: "logo", what: "the logo files" },
+  { from: "npm-packages/editor/dist", to: "playground", what: "the playground's build: `pnpm --dir npm-packages/editor build`" },
+  { from: "branding", to: "logo", what: "the logo files" },
 ];
 
 for (const { from, to, what } of PARTS) {

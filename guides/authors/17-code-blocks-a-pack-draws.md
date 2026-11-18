@@ -174,7 +174,7 @@ A ` ```wireframe ` block is a screen written as an outline, one part per line:
 - **Controls** are drawn as what they stand for: `button "Book" primary`, `input placeholder="Email"`, `combo`, `checkbox`, `radio`, `toggle`, `tabs`, `list`, `tree`, `menubar`, `progress`, `image`, `icon` and `text`. A control's flags come after its text: `selected`, `checked`, `on`, `disabled`.
 - **`annotation`**, after the window, puts a numbered note beside it, pointing at the part with that `id`.
 
-The whole language, with every part and what it takes, is the pack's [`LANGUAGE.md`](https://github.com/comp-markdown/compmd/blob/main/packs/wireframe/LANGUAGE.md). It is Wireloom's syntax, with a few additions that page marks, such as `device`: a sketch written for Wireloom reads here as it is.
+The whole language, with every part and what it takes, is the pack's [`LANGUAGE.md`](https://github.com/comp-markdown/compmd/blob/main/compmd-packs/wireframe/LANGUAGE.md). It is Wireloom's syntax, with a few additions that page marks, such as `device`: a sketch written for Wireloom reads here as it is.
 
 The sketch is drawn in greys, light or dark as the page is, and its words are text a reader can select. `alt` says what the screen shows, as for a diagram. A line the pack can't read shows the block's code, and the app reports `W118` with where the mistake is, `line 4, column 5: no part \`butn\`: did you mean \`button\`?`. With `render=both`, the block shows its outline above the sketch, for a post that explains how it is written.
 

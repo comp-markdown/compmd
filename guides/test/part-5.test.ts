@@ -21,7 +21,7 @@ const BOOK = join(GUIDES, "developers");
 const OUT = join(import.meta.dirname, ".out/part-5");
 const chapter = (file: string) => readFileSync(join(BOOK, file), "utf8");
 /** The version of the repository's Mermaid pack, which the guides' folder installs. */
-const MERMAID = (JSON.parse(readFileSync(join(GUIDES, "../packs/mermaid/package.json"), "utf8")) as { version: string }).version;
+const MERMAID = (JSON.parse(readFileSync(join(GUIDES, "../compmd-packs/mermaid/package.json"), "utf8")) as { version: string }).version;
 
 beforeAll(() => {
   initSync({ module: readFileSync(createRequire(import.meta.url).resolve("@compmd/processor/compmd_wasm_bg.wasm")) });
@@ -281,7 +281,7 @@ describe("chapter 22, the diagnostics", () => {
     const row = /^\| ([FW]\d{3}) \| (error|warning) \|/.exec(line);
     if (row?.[1] && row[2]) listed.push({ code: row[1], severity: row[2], stage });
   }
-  const catalogue = [...readFileSync(join(GUIDES, "../compmd-spec-v1.md"), "utf8").matchAll(/^\| ([FW]\d{3}) \|/gm)].map(([, code]) => code);
+  const catalogue = [...readFileSync(join(GUIDES, "../spec/compmd-spec-v1.md"), "utf8").matchAll(/^\| ([FW]\d{3}) \|/gm)].map(([, code]) => code);
 
   it("lists every code of the spec's catalogue once, with its severity", () => {
     expect(listed.map(({ code }) => code).sort()).toEqual([...new Set(catalogue)].sort());

@@ -1,8 +1,8 @@
 # 19. A Tauri app
 
-A desktop app shows documents the way a web app does, with one difference: its page has no server of its own to serve the bundle from. [`tauri-plugin-compmd`](../../tauri/README.md) is that server for a [Tauri](https://tauri.app) app. It embeds the bundle in the app's binary, serves it on a scheme of its own, gives the page the bundle's origin, and keeps the packs the app fetches later in its data folder. The page's side is what you know from Part II: `@compmd/vite`, `virtual:compmd` and `createSandbox`.
+A desktop app shows documents the way a web app does, with one difference: its page has no server of its own to serve the bundle from. [`tauri-plugin-compmd`](../../crates/tauri/README.md) is that server for a [Tauri](https://tauri.app) app. It embeds the bundle in the app's binary, serves it on a scheme of its own, gives the page the bundle's origin, and keeps the packs the app fetches later in its data folder. The page's side is what you know from Part II: `@compmd/vite`, `virtual:compmd` and `createSandbox`.
 
-This chapter walks through the repository's Tauri example, [`examples/tauri/`](../../examples/tauri). It is the smallest Tauri app that shows a CompMD document: a Mermaid diagram drawn by the `@comp-markdown/mermaid` pack, a code block highlighted by the frames' Shiki, and a JSX component the document defines, each component in a strict frame of its own. The code blocks here are its files, and its own check runs it in a real webview before every release.
+This chapter walks through the repository's Tauri example, [`crates/tauri/examples/tauri-app/`](../../crates/tauri/examples/tauri-app). It is the smallest Tauri app that shows a CompMD document: a Mermaid diagram drawn by the `@comp-markdown/mermaid` pack, a code block highlighted by the frames' Shiki, and a JSX component the document defines, each component in a strict frame of its own. The code blocks here are its files, and its own check runs it in a real webview before every release.
 
 ## What goes where
 
@@ -19,7 +19,7 @@ This chapter walks through the repository's Tauri example, [`examples/tauri/`](.
 
 The page's Vite configuration writes the bundle into the Rust project, for the scheme the plugin serves it on:
 
-```ts snippet=../../../examples/tauri/vite.config.ts
+```ts snippet=../../../crates/tauri/examples/tauri-app/vite.config.ts
 // The page's build, for Tauri: its dev server on the port `tauri.conf.json` names, a build into `dist/`, and the
 // bundle (the frames, the installed Mermaid pack, the manifest) into `src-tauri/compmd/`, built for the scheme the
 // plugin serves it on, which `src-tauri/build.rs` embeds in the app (docs/tauri-plugin.md, decision 3).
@@ -56,7 +56,7 @@ The `build` feature embeds the bundle; `processor` is for an app that processes 
 
 The app's `build.rs` embeds the bundle, before Tauri's own build step:
 
-```rust snippet=../../../examples/tauri/src-tauri/build.rs
+```rust snippet=../../../crates/tauri/examples/tauri-app/src-tauri/build.rs
 //! Tauri's build step: the bundle the page's build wrote into `compmd/`, embedded (docs/tauri-plugin.md, decision 3);
 //! the app's context from `tauri.conf.json`; and its commands, each with an allow permission its capability grants.
 //! An app must declare its commands: without them Tauri lets any page call every one, a page on the frames' scheme
@@ -74,7 +74,7 @@ fn main() {
 
 The app's `main` gives the embedded bundle to the plugin:
 
-```rust excerpt=../../../examples/tauri/src-tauri/src/mode.rs
+```rust excerpt=../../../crates/tauri/examples/tauri-app/src-tauri/src/mode.rs
                 tauri_plugin_compmd::init(tauri_plugin_compmd::include_bundle!())
 ```
 
@@ -88,7 +88,7 @@ The app's `main` gives the embedded bundle to the plugin:
 
 The page names nothing about where the frames are. `virtual:compmd`'s `sandbox` has the bundle's frames and modules, and `createSandbox` takes the origin the plugin gave the page:
 
-```ts snippet=../../../examples/tauri/src/main.ts
+```ts snippet=../../../crates/tauri/examples/tauri-app/src/main.ts
 // The page: the document the app processed, rendered by `@compmd/sandbox` in host mode, with what the page's own build
 // gives (`virtual:compmd`'s `sandbox`: the bundle's frames and modules) under the origin the plugin gives the page. With
 // `--check` or `--check-broken`, it checks what it drew and tells the app (`check.ts`).
@@ -137,14 +137,14 @@ Host mode puts the page in the app's own page, with each component in a frame of
 
 An app whose documents live on the Rust side processes them there, with the `compmd` crate ([chapter 20](20-the-rust-crates.md)). The plugin's `processor` feature gives the processor the same packs the frames load, the bundle's and then the store's, so what the processor checks is what the frames run:
 
-```rust excerpt=../../../examples/tauri/src-tauri/src/commands.rs
+```rust excerpt=../../../crates/tauri/examples/tauri-app/src-tauri/src/commands.rs
     match app.compmd().packs() {
         Some(packs) => crate::document::processed(now, packs),
         None => crate::document::processed(now, ()),
     }
 ```
 
-```rust excerpt=../../../examples/tauri/src-tauri/src/document.rs
+```rust excerpt=../../../crates/tauri/examples/tauri-app/src-tauri/src/document.rs
     let processor = Processor::new("document.comp.md", DOCUMENT)
         .parse(&ParseOptions::default())
         .resolve((), packs, &Ambient::default())
@@ -161,7 +161,7 @@ A frame's code must never reach the app: a strict component sees its params and 
 
 - **Declare the app's commands** (`tauri_build::AppManifest`, in `build.rs` above) and grant them in the capability, to the app's window only. Without the declaration, Tauri lets any page call every command.
 
-```json snippet=../../../examples/tauri/src-tauri/capabilities/main.json
+```json snippet=../../../crates/tauri/examples/tauri-app/src-tauri/capabilities/main.json
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "main",
@@ -175,7 +175,7 @@ A frame's code must never reach the app: a strict component sees its params and 
 
 **If the app sets a content security policy** (`app.security.csp`; Tauri's template sets none), it adds what `cspFor` from `@compmd/vite/config` gives, for both forms of the origin: `frame-src` the origin, `script-src` and `connect-src` its `frames/` (a host-mode page loads Shiki and Temml from there), never its `packs/`, and `frame-ancestors 'none'`:
 
-```json snippet=../../../examples/tauri/src-tauri/tauri.conf.json
+```json snippet=../../../crates/tauri/examples/tauri-app/src-tauri/tauri.conf.json
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "CompMD in Tauri",
@@ -201,7 +201,7 @@ A frame's code must never reach the app: a strict component sees its params and 
 
 A desktop app's webview is the browser that matters, so the app checks itself in it. With `--check`, the example's page checks what it drew (each component mounted in its frame, the code highlighted, the probe's frame opaque, with no Tauri in it), then runs the hosting check every host runs, with Tauri's globals as the host API a frame must not see:
 
-```ts excerpt=../../../examples/tauri/src/check.ts
+```ts excerpt=../../../crates/tauri/examples/tauri-app/src/check.ts
   const hosting = await runCheck({ container: drawn.hosting, frames: sandbox.frames, modules: sandbox.modules, hostApi: TAURI, webkitIpc: "guarded", packs });
 ```
 
@@ -223,9 +223,9 @@ From the repository's root, after `pnpm install`:
 
 ```sh
 pnpm --filter @compmd/tauri-example... build    # the page, and the bundle it writes into src-tauri/compmd/
-cd examples/tauri/src-tauri && cargo tauri dev
+cd crates/tauri/examples/tauri-app/src-tauri && cargo tauri dev
 ```
 
-The window shows the document: the heading, the diagram, the highlighted code, and the probe, which says it was drawn in a strict frame of the origin `null`, without Tauri. `cargo tauri dev` works from a checkout with no bundle too: Tauri runs `cargo` only once Vite's dev server answers, and the dev server writes the bundle as it starts. An app of your own uses the published `@compmd/vite`, `@compmd/sandbox` and `tauri-plugin-compmd`, all of the same version, as [the example's README](../../examples/tauri/README.md) says.
+The window shows the document: the heading, the diagram, the highlighted code, and the probe, which says it was drawn in a strict frame of the origin `null`, without Tauri. `cargo tauri dev` works from a checkout with no bundle too: Tauri runs `cargo` only once Vite's dev server answers, and the dev server writes the bundle as it starts. An app of your own uses the published `@compmd/vite`, `@compmd/sandbox` and `tauri-plugin-compmd`, all of the same version, as [the example's README](../../crates/tauri/examples/tauri-app/README.md) says.
 
 Next: [the Rust crates](20-the-rust-crates.md), processing documents outside a browser.

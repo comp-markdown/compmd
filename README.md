@@ -1,7 +1,7 @@
 <h1>
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="logo/compmd-dark.svg">
-    <img src="logo/compmd-light.svg" alt="CompMD" width="300">
+    <source media="(prefers-color-scheme: dark)" srcset="branding/compmd-dark.svg">
+    <img src="branding/compmd-light.svg" alt="CompMD" width="300">
   </picture>
 </h1>
 
@@ -9,34 +9,71 @@ CompMD (Component Markdown) is a Markdown flavor that adds components, container
 
 **[The website](https://compmd.dev/)** shows CompMD live, with [the playground](https://compmd.dev/playground/) and [the spec](https://compmd.dev/spec/) as a page.
 
-**Status: early draft.** CompMD is at an early stage. Until version 1 is released, the spec and the packages will change in ways that break documents and code written for an earlier draft; the [changelog](CHANGELOG.md) says when one does.
+**Status: early draft.** CompMD is at an early stage. Until version 1 is released, the spec and the packages will change in ways that break documents and code written for an earlier draft; the [changelog](spec/CHANGELOG.md) says when one does.
+
+## The repository's layout
+
+Each top-level folder holds one kind of thing.
+
+### `spec/`: the format
 
 | File | What it holds |
 |---|---|
-| [compmd-spec-v1.md](compmd-spec-v1.md) | The specification, version 1 (draft) |
-| [compmd-registry-v1.md](compmd-registry-v1.md) | *CompMD packs on a registry*, the spec's companion for pack authors and hosts: what a pack on npm must be, how a host reads one, library packs |
-| [CHANGELOG.md](CHANGELOG.md) | Every change to the spec and its companion, newest first |
-| [guides/](guides/README.md) | The CompMD guides: the Author's Guide, for writing documents, and the Developer's Guide, for building with CompMD, from a first page to a published pack; their examples are tested |
-| [llms.txt](llms.txt) | The AI authoring guide: what an AI agent reads before writing CompMD (measured below) |
-| [conformance/](conformance/README.md) | Test cases any implementation can run (spec §13.2) |
-| [examples/](examples/complete/release.comp.md) | A complete document that uses every construct, with its data files |
-| [processor/](processor/README.md) | `compmd`: the processor in Rust, which parses, validates and expands documents (in development) |
+| [compmd-spec-v1.md](spec/compmd-spec-v1.md) | The specification, version 1 (draft) |
+| [compmd-registry-v1.md](spec/compmd-registry-v1.md) | *CompMD packs on a registry*, the spec's companion for pack authors and hosts: what a pack on npm must be, how a host reads one, library packs |
+| [CHANGELOG.md](spec/CHANGELOG.md) | Every change to the spec and its companion, newest first |
+| [llms.txt](spec/llms.txt) | The AI authoring guide: what an AI agent reads before writing CompMD (measured below) |
+| [examples/complete/](spec/examples/complete/release.comp.md) | A complete document that uses every construct, with its data files |
+
+### `crates/`: the Rust crates
+
+| Folder | What it holds |
+|---|---|
+| [processor/](crates/processor/README.md) | `compmd`: the processor, which parses, validates and expands documents (in development) |
+| [host/](crates/host/README.md) | `compmd-host`: what every host shares: the bundle it builds, the store of packs it gets later, and `respond`, the serving contract |
+| [pack-types/](crates/pack-types/README.md) | `compmd-pack`: the names packs and their files are known by (spec §6.4), each checked once, when it is made |
+| [tauri/](crates/tauri/README.md) | `tauri-plugin-compmd`: CompMD in a Tauri app; its example app, the plugin's test in a real webview, is in `examples/tauri-app/` |
 | [markdown-rs/](https://github.com/comp-markdown/markdown-rs/tree/compmd) | The processor's parser: a fork of markdown-rs with CompMD's syntax, a git submodule (clone with `--recurse-submodules`) |
-| [wasm/](wasm/README.md) | `@compmd/processor`: the processor as WebAssembly for the browser, one typed call from text to trees |
-| [render/](render/README.md) | `@compmd/render`: an expanded tree as a live page, with the host contract's bindings; the reference rendering of the built-ins |
-| [sandbox/](sandbox/README.md) | `@compmd/sandbox`: runs components at the spec's trust levels, in strict and permissive frames or trusted in the page, so no host writes a sandbox policy itself |
-| [host-js/](host-js/README.md) | `@compmd/host`: the serving contract over the Fetch API, `respond(request)`, for workers, Node and dev servers; what to serve is `compmd-host`'s decision, compiled to WebAssembly |
-| [registry/](registry/README.md) | `@compmd/registry`: packs from an npm registry, resolved as the processor asks, the host's policy applied before any download, each tarball checked against its integrity, cached; a proxy for hosts that keep readers private |
-| [vite/](vite/README.md) | `@compmd/vite`: a Vite plugin that reads `compmd.config.json`, gives the processor the app's packs, serves the sandbox and the packs' modules, and builds the app's own components with it |
-| [pack/](pack/README.md) | `@compmd/pack`: `compmd-pack` builds, checks, tests and serves a pack's test page, so packs copy none of it; helpers for components that draw asynchronously, and a kit to test them |
-| [create-pack/](create-pack/README.md) | `@compmd/create-pack`: `npm create @compmd/pack` writes a pack on `@compmd/pack`, its component one built module, with a test page in the sandbox |
-| [devtools/](devtools/README.md) | `@compmd/devtools`: the Developer Tools as a part any page embeds: a document's text and its page side by side, the views of what the processor makes of it, and the sandbox's frames, a console and the messages between them |
-| [editor/](editor/README.md) | The CompMD Playground: the website's page that embeds the Developer Tools, with a menu of documents and the host's stylesheets to try; a static site that works offline once loaded |
-| [logo/](logo/README.md) | The CompMD logo: the mark and the name, light, dark and in one color, and the favicon |
+
+### `npm-packages/`: the npm packages
+
+`wasm/` and `host-js/` are a Rust crate and an npm package both: each compiles a crate of `crates/` to WebAssembly and publishes it with its JavaScript.
+
+| Folder | What it holds |
+|---|---|
+| [wasm/](npm-packages/wasm/README.md) | `@compmd/processor`: the processor as WebAssembly for the browser, one typed call from text to trees |
+| [render/](npm-packages/render/README.md) | `@compmd/render`: an expanded tree as a live page, with the host contract's bindings; the reference rendering of the built-ins |
+| [sandbox/](npm-packages/sandbox/README.md) | `@compmd/sandbox`: runs components at the spec's trust levels, in strict and permissive frames or trusted in the page, so no host writes a sandbox policy itself |
+| [host-js/](npm-packages/host-js/README.md) | `@compmd/host`: the serving contract over the Fetch API, `respond(request)`, for workers, Node and dev servers; what to serve is `compmd-host`'s decision, compiled to WebAssembly |
+| [registry/](npm-packages/registry/README.md) | `@compmd/registry`: packs from an npm registry, resolved as the processor asks, the host's policy applied before any download, each tarball checked against its integrity, cached; a proxy for hosts that keep readers private |
+| [vite/](npm-packages/vite/README.md) | `@compmd/vite`: a Vite plugin that reads `compmd.config.json`, gives the processor the app's packs, serves the sandbox and the packs' modules, and builds the app's own components with it |
+| [pack/](npm-packages/pack/README.md) | `@compmd/pack`: `compmd-pack` builds, checks, tests and serves a pack's test page, so packs copy none of it; helpers for components that draw asynchronously, and a kit to test them |
+| [create-pack/](npm-packages/create-pack/README.md) | `@compmd/create-pack`: `npm create @compmd/pack` writes a pack on `@compmd/pack`, its component one built module, with a test page in the sandbox |
+| [devtools/](npm-packages/devtools/README.md) | `@compmd/devtools`: the Developer Tools as a part any page embeds: a document's text and its page side by side, the views of what the processor makes of it, and the sandbox's frames, a console and the messages between them |
+| [blog/](npm-packages/blog/README.md) | `@compmd/blog`: a folder of CompMD documents made a static site, with a page per post |
+| [create-blog/](npm-packages/create-blog/README.md) | `@compmd/create-blog`: `npm create @compmd/blog` writes a blog on `@compmd/blog` |
+| [editor/](npm-packages/editor/README.md) | The CompMD Playground: the website's page that embeds the Developer Tools, with a menu of documents and the host's stylesheets to try; a static site that works offline once loaded |
+
+### `compmd-packs/`: CompMD's own packs
+
+| Folder | What it holds |
+|---|---|
+| [mermaid/](compmd-packs/mermaid/README.md) | `@comp-markdown/mermaid`: Mermaid diagrams, drawn from ` ```mermaid ` blocks and from the document's data |
+| [wireframe/](compmd-packs/wireframe/README.md) | `@comp-markdown/wireframe`: wireframes, drawn from ```` ```wireframe ```` blocks |
+
+### The other folders
+
+| Folder | What it holds |
+|---|---|
+| [conformance/](conformance/README.md) | Test cases any implementation can run (spec §13.2) |
+| [guides/](guides/README.md) | The CompMD guides: the Author's Guide, for writing documents, and the Developer's Guide, for building with CompMD, from a first page to a published pack; their examples are tested |
 | [website/](website/README.md) | [The CompMD website](https://compmd.dev/): the landing page, with the playground and the spec, published on GitHub Pages |
-| [docs/](docs/README.md) | The design documents, [indexed by kind](docs/README.md), and how the repository is run: [releases and versions](docs/releases.md), [CI on GitHub](docs/ci.md); designs: [components from apps and packs](docs/components-from-apps-and-packs.md), [code renderers](docs/code-renderers.md), [running components in the sandbox](docs/running-components-in-the-sandbox.md), [the configuration and `@compmd/vite`](docs/vite.md), [`@compmd/create-pack`](docs/create-pack.md), [packs from a registry](docs/packs-from-a-registry.md), [resolving registry packs](docs/resolving-registry-packs.md), [handling pack loading states](docs/handling-pack-loading-states.md), [the Developer Tools](docs/devtools.md) |
-| [RELEASING.md](RELEASING.md) | How to release the packages, the crates and the spec, step by step |
-| [existing-specs-comparison.md](existing-specs-comparison.md) | The spec compared with MDX, Markdoc, Nuxt MDC and Comark, MyST, Quarto, Livebook's Live Markdown and Active Markdown |
+| [docs/](docs/README.md) | The design documents, [indexed by kind](docs/README.md), and how the repository is run: [releases and versions](docs/releases.md), [CI on GitHub](docs/ci.md); the spec [compared with MDX, Markdoc, Nuxt MDC and others](docs/existing-specs-comparison.md) |
+| [branding/](branding/README.md) | The CompMD logo: the mark and the name, light, dark and in one color, and the favicon |
+| `tools/` | The repository's own tools: `linux-ci/`, a container like CI's Linux runner (`cargo make linux`), and `spec-revision/`, which cuts the spec's revisions (`cargo make spec-revision`) |
+| `.agentic-task-manager/` | The task list and the code reviews |
+
+At the root: [RELEASING.md](RELEASING.md), how to release the packages, the crates and the spec, step by step; [AGENTS.md](AGENTS.md), the instructions for agents working here; the license files; and the Cargo, pnpm and lint configuration.
 
 The spec is a document format of its own and doesn't depend on any application.
 
@@ -64,7 +101,7 @@ The spec is a document format of its own and doesn't depend on any application.
 
 ## The AI authoring guide
 
-AI models know MDX, Markdoc and MDC far better than CompMD, so [llms.txt](llms.txt) gives an agent everything it needs to write CompMD in one file: ten rules, the syntax by example, the `md.` namespace and the CEL profile, data, inputs, layout, definitions, the habits from other formats that go wrong here, and every diagnostic code with its fix. It summarizes the spec and is checked against it: every example in it passes a processor with no errors.
+AI models know MDX, Markdoc and MDC far better than CompMD, so [llms.txt](spec/llms.txt) gives an agent everything it needs to write CompMD in one file: ten rules, the syntax by example, the `md.` namespace and the CEL profile, data, inputs, layout, definitions, the habits from other formats that go wrong here, and every diagnostic code with its fix. It summarizes the spec and is checked against it: every example in it passes a processor with no errors.
 
 **How it was measured (2026-10-23).**
 
