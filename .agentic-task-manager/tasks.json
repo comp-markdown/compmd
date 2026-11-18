@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 249,
+    "next_number": 251,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -8360,13 +8360,13 @@
       "description": "Since the push of 46131b2, CI's `ci` job fails `compmd-packs/mermaid/test/page.test.ts` in WebKit, twice in a row: the first diagrams draw, then one never appears within the 30 seconds `frameWith` waits (37.6 s in all), and the two later WebKit tests fail with it, since they share the page. The last green run, on 49269de, drew them all in 7.7 s.\n\nIt doesn't fail elsewhere: alone in the Linux container (`tools/linux-ci`), beside the wireframe pack's page test, in the container's whole `cargo make ci`, and on macOS.\n\n## Change\n\n1. **The failure says what happened:** on a timeout, `frameWith` names the selector it waited for, and the test lists the page's errors and the frames' console messages, so the next failure on CI says which diagram stalled and why. Nothing is weakened: the same waits, the same assertions.\n2. With that on CI, find the cause and fix it; a timeout isn't raised to make it pass.\n\n## Done when\n\nCI's `ci` job passes the Mermaid pack's tests on `main`.",
       "requirements": [],
       "use_cases": [],
-      "status": "blocked",
+      "status": "in_review",
       "dependencies": [],
       "files": [
         "compmd-packs/mermaid/test/page.test.ts"
       ],
       "created_at": "2026-11-18T02:49:59Z",
-      "updated_at": "2026-11-18T03:09:12Z",
+      "updated_at": "2026-11-18T07:57:37Z",
       "created_by": "claude:79612601",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -8378,14 +8378,81 @@
       "sprint": "Packs and website",
       "number": 248,
       "key_final": false,
-      "started_at": "2026-11-18T02:50:01Z",
-      "started_by": "claude:79612601",
       "commit": "58f52970611fa800810b4df3d627376bf45e8fe0",
-      "waiting_on": "user",
-      "questions": [
-        "The test now says which diagram stalled and what the page logged (58f5297). May I push main (CMD-246 and its spec revision 1.0-draft.15, the blog fix, and this) so the next CI failure shows the cause?"
+      "blocks": [
+        {
+          "from": "2026-11-18T03:09:12Z",
+          "to": "2026-11-18T07:57:13Z",
+          "on": "user"
+        }
       ],
-      "blocked_at": "2026-11-18T03:09:12Z"
+      "notes": [
+        {
+          "at": "2026-11-18T07:57:13Z",
+          "kind": "answer",
+          "text": "The test now says which diagram stalled and what the page logged (58f5297). May I push main (CMD-246 and its spec revision 1.0-draft.15, the blog fix, and this) so the next CI failure shows the cause? → Pushed (09666fd to df13810); the test passes on CI.",
+          "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-18T07:57:37Z",
+          "kind": "review",
+          "text": "CR-5: The Mermaid page test says which diagram stalled",
+          "by": "claude:79612601"
+        }
+      ],
+      "started_at": "2026-11-18T07:57:13Z",
+      "started_by": "claude:79612601",
+      "code_reviews": [
+        {
+          "id": "01a1eda9-4c56-724b-a6a6-17863908b4db",
+          "ref": "CR-5"
+        }
+      ],
+      "review_requested_at": "2026-11-18T07:57:37Z",
+      "review_state": "waiting"
+    },
+    {
+      "id": "01a1ecbd-e0a0-77c1-ac79-47fffc282c89",
+      "name": "The first block of a language highlights without blocking the page in WebKit",
+      "type": "bugfix",
+      "priority": "P2",
+      "description": "In WebKit (Safari, and the atm app's WKWebView), the first code block of a language on a page takes about **1.3 to 1.5 s** to highlight, and the page is blocked meanwhile; Chromium takes a few ms. Found measuring a large review in the atm app (atm's ATM-587, CR-1 there): of every run highlighted, the first TypeScript one (662 characters) took 2.2 s to render; the rest a few ms each.\n\n## Likely cause\nShiki readying the TypeScript grammar's regular expressions with the Oniguruma (WASM) engine, which WebKit compiles slowly the first time. Confirm first: a page with one TypeScript block, in Safari, timed with and without the grammar already loaded.\n\n## What could change, in order of preference\n1. Highlight in a **Web Worker**, so a slow grammar never blocks the page: the block shows as written and is coloured when ready.\n2. Shiki's **JavaScript regex engine** for the grammars it supports, which starts without compiling WASM: measure whether it is faster in WebKit.\n3. Ready the grammars a page needs **in idle time**, before its first block needs them.\n\n## Done when\nThe first TypeScript block in WebKit blocks the page for under 100 ms, measured the same way.\n\n## To reproduce\natm's `dashboard/tests/e2e/real-review.spec.ts` measures a real review in WebKit and Chromium (its *opening* line names each long frame and when the grammars arrived).",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [],
+      "created_at": "2026-11-18T03:40:29Z",
+      "updated_at": "2026-11-18T03:40:29Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "number": 249,
+      "key_final": false
+    },
+    {
+      "id": "01a1eda3-72cc-74dd-9a87-b21dd98dd410",
+      "name": "Code blocks: each line an element, and its box in the view's lines()",
+      "type": "feature",
+      "priority": "P2",
+      "description": "Asked from atm (ATM-588, 2026-11-18). A highlighted code block is drawn as token spans between newline text nodes (`sandbox/highlight/highlight.js` `draw`), and the view's `lines()` reports no boxes for a code block's lines (only a Markdown document's).\n\natm's diff viewer shows a file's two sides as two code blocks side by side, and wraps long lines. To keep the two sides' lines level when one wraps, the host needs to make a line as tall as its counterpart, which it can't do with no element per line.\n\n## Change\n- Draw each line of a code block as an element of its own (`<span class=\"line\" data-line=\"N\">`, `display: block`, its tokens inside), the same text and colours, the newlines kept for copying. A host can then style a line (`min-height`).\n- The view's `lines()` gives a code block's lines their boxes too (a wrapped line, one box per visual line), as it does a Markdown document's.\n\n## Tests\n- The drawn block's text and copied text are unchanged, and there is one element per line, a blank line included.\n- `lines()` reports a wrapped code line with several boxes, and a blank line.\n- Unhighlighted blocks (a language not highlighted, or tokens not loaded yet) the same.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [],
+      "created_at": "2026-11-18T07:51:14Z",
+      "updated_at": "2026-11-18T07:57:13Z",
+      "created_by": "claude:0f56a916",
+      "updated_by": "claude:79612601",
+      "number": 250,
+      "key_final": false,
+      "sprint_history": [
+        {
+          "sprint": "Packs and website",
+          "from": "2026-11-18T07:57:13Z"
+        }
+      ],
+      "sprint": "Packs and website"
     }
   ]
 }
