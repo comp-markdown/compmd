@@ -4,6 +4,10 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
 
 ## Version 1 (draft)
 
+### Unreleased
+
+- **The spec's folder.** The spec, its companion, this changelog and `llms.txt` are in the repository's `spec/` folder, with the complete example in `spec/examples/complete/`; the spec's links to the repository's files follow. The spec itself is unchanged.
+
 ### 1.0-draft.14, 2026-11-18
 
 - **Examples (§6.3, §7.8, §8.7, §10.2, §12.3).** A ` ```compmd ` block with `render=output` or `render=both` is an example: its text is processed as a document of its own (its own frontmatter, imports, data, inputs and definitions, resolved from the document's place, with its permissions), and what it renders shows in its place, after the code with `both`. Its param list takes `render`, the common params, `class` and `id` (F008 otherwise); its diagnostics are at their places in the document; a ` ```compmd ` block inside it shows its source (W123, new). The expanded `code` node has `params` and `document`, the example's root, numbered by `example`, and an example's host-language components are listed with its number. `render` on a ` ```compmd ` block is `source` by default, so no document changes. Not breaking.
