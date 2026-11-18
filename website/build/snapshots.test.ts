@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { join } from "node:path";
 import { loadApp } from "@compmd/vite";
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { snapshot, snapshots } from "./snapshots.ts";
 
 const NOW = "2026-10-30T09:00:00Z";
@@ -35,8 +35,14 @@ describe("snapshot", () => {
 });
 
 describe("snapshots", () => {
-  it("renders every document of the site's content, each by its name, with the site's packs", async () => {
-    const { request } = await loadApp(join(import.meta.dirname, ".."));
+  // The site's app, loaded once: loading it is the slow part (under a second alone, several while every package's
+  // browser tests run beside it), and what the test checks is the rendering.
+  let request: Awaited<ReturnType<typeof loadApp>>["request"];
+  beforeAll(async () => {
+    ({ request } = await loadApp(join(import.meta.dirname, "..")));
+  });
+
+  it("renders every document of the site's content, each by its name, with the site's packs", () => {
     const all = snapshots(join(import.meta.dirname, "../content"), NOW, request);
     expect(Object.keys(all)).toEqual(expect.arrayContaining(["hero", "rating"]));
     for (const [name, shown] of Object.entries(all)) expect(shown.css, name).not.toMatch(/compmd-b\d/);
