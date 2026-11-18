@@ -44,6 +44,10 @@ runs:
         printf '%s\n' 'APT::Keep-Downloaded-Packages "true";' 'Acquire::Retries "3";' 'Acquire::http::Timeout "30";' 'Acquire::https::Timeout "30";' \
           | sudo tee /etc/apt/apt.conf.d/99webkit > /dev/null
         sudo rm -f /var/cache/apt/archives/*.deb
+        # Ubuntu's own archive first: the image lists its cloud's regional mirror first, which served packages at
+        # under 100 KB/s on 2026-11-18, so the download didn't finish in time and no cache was saved.
+        printf '%s\t%s\n' 'https://archive.ubuntu.com/ubuntu/' 'priority:1' 'https://security.ubuntu.com/ubuntu/' 'priority:2' \
+          | sudo tee /etc/apt/apt-mirrors.txt > /dev/null
         pnpm --dir npm-packages/sandbox exec playwright install --with-deps webkit
         mkdir -p ~/.cache/webkit-debs
         find /var/cache/apt/archives -maxdepth 1 -name '*.deb' -exec cp -t ~/.cache/webkit-debs/ {} +
