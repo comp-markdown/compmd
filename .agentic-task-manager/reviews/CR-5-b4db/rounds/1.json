@@ -1,0 +1,17 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "88f7cc111ac93bc1766233d73347778fc80612e0",
+    "head": "58f52970611fa800810b4df3d627376bf45e8fe0"
+  },
+  "files": [
+    {
+      "path": "compmd-packs/mermaid/test/page.test.ts",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-18T07:57:37Z"
+}

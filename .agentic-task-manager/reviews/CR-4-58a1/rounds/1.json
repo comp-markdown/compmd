@@ -1,0 +1,7719 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "46131b29893e2261531e108a80582d06f00c2c23",
+    "head": "4929619990abadad97bb1f28ac745fc142acae9f"
+  },
+  "files": [
+    {
+      "path": ".github/actions/webkit/action.yml",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": ".github/scripts/publish-crates.sh",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": ".github/workflows/pages.yml",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": ".github/workflows/release-mermaid.yml",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": ".github/workflows/release.yml",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": ".github/workflows/tauri.yml",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": ".gitignore",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": ".gitmodules",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "AGENTS.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "Cargo.toml",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "Makefile.toml",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "RELEASING.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "branding/README.md",
+      "status": {
+        "renamed": {
+          "from": "logo/README.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "branding/avatar.png",
+      "status": {
+        "renamed": {
+          "from": "logo/avatar.png"
+        }
+      },
+      "binary": true
+    },
+    {
+      "path": "branding/avatar.svg",
+      "status": {
+        "renamed": {
+          "from": "logo/avatar.svg"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "branding/compmd-dark.svg",
+      "status": {
+        "renamed": {
+          "from": "logo/compmd-dark.svg"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "branding/compmd-light.svg",
+      "status": {
+        "renamed": {
+          "from": "logo/compmd-light.svg"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "branding/icon.svg",
+      "status": {
+        "renamed": {
+          "from": "logo/icon.svg"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "branding/mark-dark.svg",
+      "status": {
+        "renamed": {
+          "from": "logo/mark-dark.svg"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "branding/mark-light.svg",
+      "status": {
+        "renamed": {
+          "from": "logo/mark-light.svg"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "branding/mark-mono.svg",
+      "status": {
+        "renamed": {
+          "from": "logo/mark-mono.svg"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/mermaid/.gitignore",
+      "status": {
+        "renamed": {
+          "from": "packs/mermaid/.gitignore"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/mermaid/LICENSE",
+      "status": {
+        "renamed": {
+          "from": "blog/LICENSE"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/mermaid/README.md",
+      "status": {
+        "renamed": {
+          "from": "packs/mermaid/README.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/mermaid/demo.comp.md",
+      "status": {
+        "renamed": {
+          "from": "packs/mermaid/demo.comp.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/mermaid/index.comp.md",
+      "status": {
+        "renamed": {
+          "from": "packs/mermaid/index.comp.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/mermaid/package.json",
+      "status": {
+        "renamed": {
+          "from": "packs/mermaid/package.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/mermaid/src/mermaid.test.ts",
+      "status": {
+        "renamed": {
+          "from": "packs/mermaid/src/mermaid.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/mermaid/src/mermaid.ts",
+      "status": {
+        "renamed": {
+          "from": "packs/mermaid/src/mermaid.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/mermaid/test/page.test.ts",
+      "status": {
+        "renamed": {
+          "from": "packs/mermaid/test/page.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/mermaid/test/registry-app/compmd.config.json",
+      "status": {
+        "renamed": {
+          "from": "packs/mermaid/test/registry-app/compmd.config.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/mermaid/test/registry-app/index.html",
+      "status": {
+        "renamed": {
+          "from": "packs/mermaid/test/registry-app/index.html"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/mermaid/test/registry-app/main.ts",
+      "status": {
+        "renamed": {
+          "from": "packs/mermaid/test/registry-app/main.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/mermaid/test/registry-app/package.json",
+      "status": {
+        "renamed": {
+          "from": "packs/mermaid/test/registry-app/package.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/mermaid/test/registry.test.ts",
+      "status": {
+        "renamed": {
+          "from": "packs/mermaid/test/registry.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/mermaid/tsconfig.json",
+      "status": {
+        "renamed": {
+          "from": "packs/mermaid/tsconfig.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/wireframe/.gitignore",
+      "status": {
+        "renamed": {
+          "from": "editor/packs/minimermaid/.gitignore"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/wireframe/LANGUAGE.md",
+      "status": {
+        "renamed": {
+          "from": "packs/wireframe/LANGUAGE.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/wireframe/LICENSE",
+      "status": {
+        "renamed": {
+          "from": "create-blog/LICENSE"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/wireframe/README.md",
+      "status": {
+        "renamed": {
+          "from": "packs/wireframe/README.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/wireframe/demo.comp.md",
+      "status": {
+        "renamed": {
+          "from": "packs/wireframe/demo.comp.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/wireframe/index.comp.md",
+      "status": {
+        "renamed": {
+          "from": "packs/wireframe/index.comp.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/wireframe/package.json",
+      "status": {
+        "renamed": {
+          "from": "packs/wireframe/package.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/wireframe/src/containers.test.ts",
+      "status": {
+        "renamed": {
+          "from": "packs/wireframe/src/containers.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/wireframe/src/containers.ts",
+      "status": {
+        "renamed": {
+          "from": "packs/wireframe/src/containers.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/wireframe/src/controls.test.ts",
+      "status": {
+        "renamed": {
+          "from": "packs/wireframe/src/controls.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/wireframe/src/controls.ts",
+      "status": {
+        "renamed": {
+          "from": "packs/wireframe/src/controls.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/wireframe/src/dom.test.ts",
+      "status": {
+        "renamed": {
+          "from": "packs/wireframe/src/dom.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/wireframe/src/dom.ts",
+      "status": {
+        "renamed": {
+          "from": "packs/wireframe/src/dom.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/wireframe/src/draw.test.ts",
+      "status": {
+        "renamed": {
+          "from": "packs/wireframe/src/draw.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/wireframe/src/draw.ts",
+      "status": {
+        "renamed": {
+          "from": "packs/wireframe/src/draw.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/wireframe/src/errors.ts",
+      "status": {
+        "renamed": {
+          "from": "packs/wireframe/src/errors.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/wireframe/src/lines.ts",
+      "status": {
+        "renamed": {
+          "from": "packs/wireframe/src/lines.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/wireframe/src/parse.test.ts",
+      "status": {
+        "renamed": {
+          "from": "packs/wireframe/src/parse.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/wireframe/src/parse.ts",
+      "status": {
+        "renamed": {
+          "from": "packs/wireframe/src/parse.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/wireframe/src/parts.ts",
+      "status": {
+        "renamed": {
+          "from": "packs/wireframe/src/parts.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/wireframe/src/style.test.ts",
+      "status": {
+        "renamed": {
+          "from": "packs/wireframe/src/style.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/wireframe/src/style.ts",
+      "status": {
+        "renamed": {
+          "from": "packs/wireframe/src/style.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/wireframe/src/testing.ts",
+      "status": {
+        "renamed": {
+          "from": "packs/wireframe/src/testing.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/wireframe/src/wireframe.test.ts",
+      "status": {
+        "renamed": {
+          "from": "packs/wireframe/src/wireframe.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/wireframe/src/wireframe.ts",
+      "status": {
+        "renamed": {
+          "from": "packs/wireframe/src/wireframe.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/wireframe/test/page.test.ts",
+      "status": {
+        "renamed": {
+          "from": "packs/wireframe/test/page.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "compmd-packs/wireframe/tsconfig.json",
+      "status": {
+        "renamed": {
+          "from": "packs/wireframe/tsconfig.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "conformance/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/host/Cargo.toml",
+      "status": {
+        "renamed": {
+          "from": "host/Cargo.toml"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/host/README.md",
+      "status": {
+        "renamed": {
+          "from": "host/README.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/host/fixtures/respond/bundle/frames/1df336e75685de8c/chunks/runtime.js",
+      "status": {
+        "renamed": {
+          "from": "host/fixtures/respond/bundle/frames/1df336e75685de8c/chunks/runtime.js"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/host/fixtures/respond/bundle/frames/1df336e75685de8c/strict.html",
+      "status": {
+        "renamed": {
+          "from": "host/fixtures/respond/bundle/frames/1df336e75685de8c/strict.html"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/host/fixtures/respond/bundle/manifest.json",
+      "status": {
+        "renamed": {
+          "from": "host/fixtures/respond/bundle/manifest.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/host/fixtures/respond/bundle/packs/@kit/mermaid@1.2.0/dist/mermaid.js",
+      "status": {
+        "renamed": {
+          "from": "host/fixtures/respond/bundle/packs/@kit/mermaid@1.2.0/dist/mermaid.js"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/host/fixtures/respond/bundle/packs/@kit/mermaid@1.2.0/package.json",
+      "status": {
+        "renamed": {
+          "from": "host/fixtures/respond/bundle/packs/@kit/mermaid@1.2.0/package.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/host/fixtures/respond/bundle/packs/@kit/other@1.0.0/index.js",
+      "status": {
+        "renamed": {
+          "from": "host/fixtures/respond/bundle/packs/@kit/other@1.0.0/index.js"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/host/fixtures/respond/bundle/secret.txt",
+      "status": {
+        "renamed": {
+          "from": "host/fixtures/respond/bundle/secret.txt"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/host/fixtures/respond/cases.json",
+      "status": {
+        "renamed": {
+          "from": "host/fixtures/respond/cases.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/host/src/bundle.rs",
+      "status": {
+        "renamed": {
+          "from": "host/src/bundle.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/host/src/bundle/tests.rs",
+      "status": {
+        "renamed": {
+          "from": "host/src/bundle/tests.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/host/src/bundle_error.rs",
+      "status": {
+        "renamed": {
+          "from": "host/src/bundle_error.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/host/src/content_type.rs",
+      "status": {
+        "renamed": {
+          "from": "host/src/content_type.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/host/src/files.rs",
+      "status": {
+        "renamed": {
+          "from": "host/src/files.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/host/src/folder_store.rs",
+      "status": {
+        "renamed": {
+          "from": "host/src/folder_store.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/host/src/folder_store/tests.rs",
+      "status": {
+        "renamed": {
+          "from": "host/src/folder_store/tests.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/host/src/frames_hash.rs",
+      "status": {
+        "renamed": {
+          "from": "host/src/frames_hash.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/host/src/headers.rs",
+      "status": {
+        "renamed": {
+          "from": "host/src/headers.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/host/src/lib.rs",
+      "status": {
+        "renamed": {
+          "from": "host/src/lib.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/host/src/manifest.rs",
+      "status": {
+        "renamed": {
+          "from": "host/src/manifest.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/host/src/manifest/tests.rs",
+      "status": {
+        "renamed": {
+          "from": "host/src/manifest/tests.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/host/src/manifest_error.rs",
+      "status": {
+        "renamed": {
+          "from": "host/src/manifest_error.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/host/src/packs.rs",
+      "status": {
+        "renamed": {
+          "from": "host/src/packs.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/host/src/refusal.rs",
+      "status": {
+        "renamed": {
+          "from": "host/src/refusal.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/host/src/respond.rs",
+      "status": {
+        "renamed": {
+          "from": "host/src/respond.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/host/src/respond/tests.rs",
+      "status": {
+        "renamed": {
+          "from": "host/src/respond/tests.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/host/src/route.rs",
+      "status": {
+        "renamed": {
+          "from": "host/src/route.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/host/src/store.rs",
+      "status": {
+        "renamed": {
+          "from": "host/src/store.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/markdown-rs",
+      "status": {
+        "renamed": {
+          "from": "markdown-rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/pack-types/Cargo.toml",
+      "status": {
+        "renamed": {
+          "from": "pack-types/Cargo.toml"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/pack-types/README.md",
+      "status": {
+        "renamed": {
+          "from": "pack-types/README.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/pack-types/src/file_path.rs",
+      "status": {
+        "renamed": {
+          "from": "pack-types/src/file_path.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/pack-types/src/integrity.rs",
+      "status": {
+        "renamed": {
+          "from": "pack-types/src/integrity.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/pack-types/src/invalid.rs",
+      "status": {
+        "renamed": {
+          "from": "pack-types/src/invalid.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/pack-types/src/lib.rs",
+      "status": {
+        "renamed": {
+          "from": "pack-types/src/lib.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/pack-types/src/name.rs",
+      "status": {
+        "renamed": {
+          "from": "pack-types/src/name.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/pack-types/src/place.rs",
+      "status": {
+        "renamed": {
+          "from": "pack-types/src/place.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/pack-types/src/release.rs",
+      "status": {
+        "renamed": {
+          "from": "pack-types/src/release.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/Cargo.toml",
+      "status": {
+        "renamed": {
+          "from": "processor/Cargo.toml"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/README.md",
+      "status": {
+        "renamed": {
+          "from": "processor/README.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/benches/edit.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/benches/edit.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/docs/incremental.md",
+      "status": {
+        "renamed": {
+          "from": "processor/docs/incremental.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/docs/param-values.md",
+      "status": {
+        "renamed": {
+          "from": "processor/docs/param-values.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/docs/positional-hints.md",
+      "status": {
+        "renamed": {
+          "from": "processor/docs/positional-hints.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/breakpoint.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/breakpoint.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/cel.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/cel.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/cel/ast.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/cel/ast.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/cel/check.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/cel/check.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/cel/eval.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/cel/eval.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/cel/functions.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/cel/functions.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/cel/getters.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/cel/getters.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/cel/lexer.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/cel/lexer.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/cel/ops.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/cel/ops.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/cel/overload.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/cel/overload.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/cel/parser.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/cel/parser.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/cel/strings.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/cel/strings.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/cel/tests.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/cel/tests.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/cel/tests/differential.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/cel/tests/differential.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/cel/tests/errors.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/cel/tests/errors.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/cel/tests/errors/functions.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/cel/tests/errors/functions.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/cel/tests/errors/operators.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/cel/tests/errors/operators.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/cel/tests/errors/structures.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/cel/tests/errors/structures.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/cel/tests/profile.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/cel/tests/profile.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/cel/time.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/cel/time.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/cel/types.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/cel/types.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/cel/value.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/cel/value.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/components.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/components.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/context.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/context.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/core.comp.md",
+      "status": {
+        "renamed": {
+          "from": "processor/src/core.comp.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/diagnostic.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/diagnostic.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/expand.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/expand.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/expand/blocks.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/expand/blocks.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/expand/components.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/expand/components.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/expand/components/compmd.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/expand/components/compmd.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/expand/env.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/expand/env.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/expand/flow.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/expand/flow.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/expand/layout.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/expand/layout.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/expand/origins.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/expand/origins.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/expand/params.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/expand/params.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/expand/text.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/expand/text.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/expanded.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/expanded.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/frontmatter.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/frontmatter.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/hints.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/hints.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/hints/expression.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/hints/expression.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/hints/expression/tests.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/hints/expression/tests.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/hints/frontmatter.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/hints/frontmatter.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/hints/invocation.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/hints/invocation.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/hints/tests.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/hints/tests.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/hints/tests/names.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/hints/tests/names.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/hints/tests/params.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/hints/tests/params.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/hints/tests/places.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/hints/tests/places.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/host.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/host.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/lib.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/lib.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/lines.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/lines.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/load.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/load.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/load/format.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/load/format.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/load/from.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/load/from.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/load/inputs.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/load/inputs.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/load/schema.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/load/schema.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/md.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/md.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/md/lists.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/md/lists.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/md/locale.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/md/locale.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/md/tests.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/md/tests.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/named.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/named.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/nearest.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/nearest.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/parse.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/parse.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/parse/blocks.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/parse/blocks.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/parse/blocks/component_lines.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/parse/blocks/component_lines.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/parse/definitions.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/parse/definitions.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/parse/edit.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/parse/edit.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/parse/edit/tests.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/parse/edit/tests.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/parse/frontmatter.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/parse/frontmatter.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/parse/inlines.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/parse/inlines.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/parse/line.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/parse/line.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/parse/params.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/parse/params.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/parse/source.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/parse/source.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/parse/toml.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/parse/toml.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/parse/yaml.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/parse/yaml.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/plain.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/plain.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/policy.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/policy.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/processor.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/processor.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/processor/edit.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/processor/edit.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/processor/evaluate.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/processor/evaluate.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/processor/examples.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/processor/examples.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/processor/outputs.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/processor/outputs.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/processor/tests.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/processor/tests.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/render.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/render.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/reserved.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/reserved.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/resolve.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/resolve.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/resolve/language.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/resolve/language.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/resolve/libraries.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/resolve/libraries.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/resolve/libraries/tests.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/resolve/libraries/tests.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/resolve/load.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/resolve/load.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/resolve/load/definitions.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/resolve/load/definitions.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/resolve/load/exports.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/resolve/load/exports.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/resolve/load/packs.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/resolve/load/packs.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/resolve/names.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/resolve/names.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/resolve/origin.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/resolve/origin.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/resolve/source.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/resolve/source.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/resolve/tests.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/resolve/tests.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/resolve/uses.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/resolve/uses.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/settings.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/settings.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/tree.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/tree.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/tree/components.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/tree/components.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/tree/definitions.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/tree/definitions.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/tree/print.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/tree/print.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/tree/shift.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/tree/shift.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/validate.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/validate.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/validate/body.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/validate/body.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/validate/data.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/validate/data.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/validate/params.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/validate/params.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/validate/params/fence.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/validate/params/fence.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/validate/params/slots.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/validate/params/slots.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/validate/scope.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/validate/scope.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/validate/universal.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/validate/universal.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/values.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/values.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/values/forms.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/values/forms.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/values/vocabulary.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/src/values/vocabulary.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/tests/common.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/tests/common.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/tests/conformance.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/tests/conformance.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/tests/edit.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/tests/edit.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/tests/evaluate.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/tests/evaluate.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/tests/examples.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/tests/examples.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/tests/expand/components.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/tests/expand/components.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/tests/expand/data.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/tests/expand/data.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/tests/expand/host_components.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/tests/expand/host_components.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/tests/expand/main.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/tests/expand/main.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/tests/expand/tree.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/tests/expand/tree.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/tests/host/diagnostics_and_their_stages.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/tests/host/diagnostics_and_their_stages.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/tests/host/edits_and_reloads.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/tests/host/edits_and_reloads.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/tests/host/main.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/tests/host/main.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/tests/host/packs.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/tests/host/packs.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/tests/host/policy.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/tests/host/policy.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/tests/host/the_render_context.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/tests/host/the_render_context.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/tests/host/what_the_processor_asks_the_host.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/tests/host/what_the_processor_asks_the_host.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/tests/messages.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/tests/messages.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/tests/parse.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/tests/parse.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/tests/stages.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/tests/stages.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/processor/tests/vocabulary.rs",
+      "status": {
+        "renamed": {
+          "from": "processor/tests/vocabulary.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/tauri/Cargo.lock",
+      "status": {
+        "renamed": {
+          "from": "examples/tauri/src-tauri/Cargo.lock"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/tauri/Cargo.toml",
+      "status": {
+        "renamed": {
+          "from": "tauri/Cargo.toml"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/tauri/README.md",
+      "status": {
+        "renamed": {
+          "from": "tauri/README.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/tauri/examples/tauri-app/.gitignore",
+      "status": {
+        "renamed": {
+          "from": "examples/tauri/.gitignore"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/tauri/examples/tauri-app/README.md",
+      "status": {
+        "renamed": {
+          "from": "examples/tauri/README.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/tauri/examples/tauri-app/index.html",
+      "status": {
+        "renamed": {
+          "from": "examples/tauri/index.html"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/tauri/examples/tauri-app/package.json",
+      "status": {
+        "renamed": {
+          "from": "examples/tauri/package.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/tauri/examples/tauri-app/scripts/broken.mts",
+      "status": {
+        "renamed": {
+          "from": "examples/tauri/scripts/broken.mts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/tauri/examples/tauri-app/src-tauri/Cargo.lock",
+      "status": {
+        "renamed": {
+          "from": "tauri/Cargo.lock"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/tauri/examples/tauri-app/src-tauri/Cargo.toml",
+      "status": {
+        "renamed": {
+          "from": "examples/tauri/src-tauri/Cargo.toml"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/tauri/examples/tauri-app/src-tauri/build.rs",
+      "status": {
+        "renamed": {
+          "from": "examples/tauri/src-tauri/build.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/tauri/examples/tauri-app/src-tauri/capabilities/main.json",
+      "status": {
+        "renamed": {
+          "from": "examples/tauri/src-tauri/capabilities/main.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/tauri/examples/tauri-app/src-tauri/document.comp.md",
+      "status": {
+        "renamed": {
+          "from": "examples/tauri/src-tauri/document.comp.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/tauri/examples/tauri-app/src-tauri/icons/icon.png",
+      "status": {
+        "renamed": {
+          "from": "examples/tauri/src-tauri/icons/icon.png"
+        }
+      },
+      "binary": true
+    },
+    {
+      "path": "crates/tauri/examples/tauri-app/src-tauri/src/commands.rs",
+      "status": {
+        "renamed": {
+          "from": "examples/tauri/src-tauri/src/commands.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/tauri/examples/tauri-app/src-tauri/src/document.rs",
+      "status": {
+        "renamed": {
+          "from": "examples/tauri/src-tauri/src/document.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/tauri/examples/tauri-app/src-tauri/src/main.rs",
+      "status": {
+        "renamed": {
+          "from": "examples/tauri/src-tauri/src/main.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/tauri/examples/tauri-app/src-tauri/src/mode.rs",
+      "status": {
+        "renamed": {
+          "from": "examples/tauri/src-tauri/src/mode.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/tauri/examples/tauri-app/src-tauri/src/tests.rs",
+      "status": {
+        "renamed": {
+          "from": "examples/tauri/src-tauri/src/tests.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/tauri/examples/tauri-app/src-tauri/tauri.conf.json",
+      "status": {
+        "renamed": {
+          "from": "examples/tauri/src-tauri/tauri.conf.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/tauri/examples/tauri-app/src/check.ts",
+      "status": {
+        "renamed": {
+          "from": "examples/tauri/src/check.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/tauri/examples/tauri-app/src/main.ts",
+      "status": {
+        "renamed": {
+          "from": "examples/tauri/src/main.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/tauri/examples/tauri-app/tsconfig.json",
+      "status": {
+        "renamed": {
+          "from": "examples/tauri/tsconfig.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/tauri/examples/tauri-app/vite.config.ts",
+      "status": {
+        "renamed": {
+          "from": "examples/tauri/vite.config.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/tauri/src/build.rs",
+      "status": {
+        "renamed": {
+          "from": "tauri/src/build.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/tauri/src/build/tests.rs",
+      "status": {
+        "renamed": {
+          "from": "tauri/src/build/tests.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/tauri/src/build_error.rs",
+      "status": {
+        "renamed": {
+          "from": "tauri/src/build_error.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/tauri/src/compmd.rs",
+      "status": {
+        "renamed": {
+          "from": "tauri/src/compmd.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/tauri/src/frames/tests.rs",
+      "status": {
+        "renamed": {
+          "from": "tauri/src/frames/tests.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/tauri/src/lib.rs",
+      "status": {
+        "renamed": {
+          "from": "tauri/src/lib.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/tauri/src/origin.rs",
+      "status": {
+        "renamed": {
+          "from": "tauri/src/origin.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/tauri/src/scheme.rs",
+      "status": {
+        "renamed": {
+          "from": "tauri/src/scheme.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "crates/tauri/src/tests.rs",
+      "status": {
+        "renamed": {
+          "from": "tauri/src/tests.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "deny.toml",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/ci.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/create-pack.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/devtools.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/editor-support.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/existing-specs-comparison.md",
+      "status": {
+        "renamed": {
+          "from": "existing-specs-comparison.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "docs/hosting.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/libraries-in-the-sandbox.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/mermaid-pack.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/releases.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/remote-images.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/resolving-registry-packs.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/running-components-in-the-sandbox.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/sandbox-protocol.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/sharing-library-packs.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/tauri-plugin.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/vite.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/what-component-code-may-import.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/wireframe-pack.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/authors/17-code-blocks-a-pack-draws.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/developers/01-introduction.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/developers/04-processing-documents.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/developers/05-live-editing.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/developers/07-rendering-and-styling.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/developers/09-packs-from-npm.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/developers/10-your-apps-own-components.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/developers/11-the-sandbox-closer.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/developers/13-your-first-pack.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/developers/16-code-renderers.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/developers/18-other-hosts.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/developers/19-a-tauri-app.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/developers/20-the-rust-crates.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/developers/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/test/guide.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/test/part-5.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "lychee-inputs.txt",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/LICENSE",
+      "status": {
+        "renamed": {
+          "from": "create-pack/LICENSE"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/README.md",
+      "status": {
+        "renamed": {
+          "from": "blog/README.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/eslint.config.js",
+      "status": {
+        "renamed": {
+          "from": "blog/eslint.config.js"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/package.json",
+      "status": {
+        "renamed": {
+          "from": "blog/package.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/budget.test.ts",
+      "status": {
+        "renamed": {
+          "from": "blog/src/budget.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/build.test.ts",
+      "status": {
+        "renamed": {
+          "from": "blog/src/build.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/build.ts",
+      "status": {
+        "renamed": {
+          "from": "blog/src/build.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/cli.test.ts",
+      "status": {
+        "renamed": {
+          "from": "blog/src/cli.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/cli.ts",
+      "status": {
+        "renamed": {
+          "from": "blog/src/cli.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/client-data.ts",
+      "status": {
+        "renamed": {
+          "from": "blog/src/client-data.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/client.ts",
+      "status": {
+        "renamed": {
+          "from": "blog/src/client.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/config.test.ts",
+      "status": {
+        "renamed": {
+          "from": "blog/src/config.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/config.ts",
+      "status": {
+        "renamed": {
+          "from": "blog/src/config.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/feeds.ts",
+      "status": {
+        "renamed": {
+          "from": "blog/src/feeds.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/highlight.ts",
+      "status": {
+        "renamed": {
+          "from": "blog/src/highlight.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/html.ts",
+      "status": {
+        "renamed": {
+          "from": "blog/src/html.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/index.ts",
+      "status": {
+        "renamed": {
+          "from": "blog/src/index.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/layout.ts",
+      "status": {
+        "renamed": {
+          "from": "blog/src/layout.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/live.test.ts",
+      "status": {
+        "renamed": {
+          "from": "blog/src/live.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/live.ts",
+      "status": {
+        "renamed": {
+          "from": "blog/src/live.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/new.ts",
+      "status": {
+        "renamed": {
+          "from": "blog/src/new.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/pages.ts",
+      "status": {
+        "renamed": {
+          "from": "blog/src/pages.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/posts.test.ts",
+      "status": {
+        "renamed": {
+          "from": "blog/src/posts.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/posts.ts",
+      "status": {
+        "renamed": {
+          "from": "blog/src/posts.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/processor.ts",
+      "status": {
+        "renamed": {
+          "from": "blog/src/processor.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/render.ts",
+      "status": {
+        "renamed": {
+          "from": "blog/src/render.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/serve.ts",
+      "status": {
+        "renamed": {
+          "from": "blog/src/serve.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/slug.ts",
+      "status": {
+        "renamed": {
+          "from": "blog/src/slug.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/test-blog.ts",
+      "status": {
+        "renamed": {
+          "from": "blog/src/test-blog.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/test/live.test.ts",
+      "status": {
+        "renamed": {
+          "from": "blog/test/live.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/theme/default.css",
+      "status": {
+        "renamed": {
+          "from": "blog/theme/default.css"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/tsconfig.build.json",
+      "status": {
+        "renamed": {
+          "from": "blog/tsconfig.build.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/tsconfig.json",
+      "status": {
+        "renamed": {
+          "from": "blog/tsconfig.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/vitest.config.ts",
+      "status": {
+        "renamed": {
+          "from": "blog/vitest.config.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-blog/LICENSE",
+      "status": {
+        "renamed": {
+          "from": "devtools/LICENSE"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-blog/README.md",
+      "status": {
+        "renamed": {
+          "from": "create-blog/README.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-blog/eslint.config.js",
+      "status": {
+        "renamed": {
+          "from": "create-blog/eslint.config.js"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-blog/package.json",
+      "status": {
+        "renamed": {
+          "from": "create-blog/package.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-blog/src/cli.ts",
+      "status": {
+        "renamed": {
+          "from": "create-blog/src/cli.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-blog/src/create.test.ts",
+      "status": {
+        "renamed": {
+          "from": "create-blog/src/create.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-blog/src/create.ts",
+      "status": {
+        "renamed": {
+          "from": "create-blog/src/create.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-blog/tsconfig.build.json",
+      "status": {
+        "renamed": {
+          "from": "create-blog/tsconfig.build.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-blog/tsconfig.json",
+      "status": {
+        "renamed": {
+          "from": "create-blog/tsconfig.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-blog/vitest.config.ts",
+      "status": {
+        "renamed": {
+          "from": "create-blog/vitest.config.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/.gitignore",
+      "status": {
+        "renamed": {
+          "from": "create-pack/.gitignore"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/LICENSE",
+      "status": {
+        "renamed": {
+          "from": "host-js/LICENSE"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/README.md",
+      "status": {
+        "renamed": {
+          "from": "create-pack/README.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/eslint.config.js",
+      "status": {
+        "renamed": {
+          "from": "create-pack/eslint.config.js"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/package.json",
+      "status": {
+        "renamed": {
+          "from": "create-pack/package.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/src/cli.test.ts",
+      "status": {
+        "renamed": {
+          "from": "create-pack/src/cli.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/src/cli.ts",
+      "status": {
+        "renamed": {
+          "from": "create-pack/src/cli.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/src/create.test.ts",
+      "status": {
+        "renamed": {
+          "from": "create-pack/src/create.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/src/create.ts",
+      "status": {
+        "renamed": {
+          "from": "create-pack/src/create.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/template/common/README.md",
+      "status": {
+        "renamed": {
+          "from": "create-pack/template/common/README.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/template/common/gitignore",
+      "status": {
+        "renamed": {
+          "from": "create-pack/template/common/gitignore"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/template/common/package.json",
+      "status": {
+        "renamed": {
+          "from": "create-pack/template/common/package.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/template/common/tsconfig.json",
+      "status": {
+        "renamed": {
+          "from": "create-pack/template/common/tsconfig.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/template/leaf/demo.comp.md",
+      "status": {
+        "renamed": {
+          "from": "create-pack/template/leaf/demo.comp.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/template/leaf/index.comp.md",
+      "status": {
+        "renamed": {
+          "from": "create-pack/template/leaf/index.comp.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/template/leaf/src/__component__.test.ts",
+      "status": {
+        "renamed": {
+          "from": "create-pack/template/leaf/src/__component__.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/template/leaf/src/__component__.ts",
+      "status": {
+        "renamed": {
+          "from": "create-pack/template/leaf/src/__component__.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/template/library/README.md",
+      "status": {
+        "renamed": {
+          "from": "create-pack/template/library/README.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/template/library/gitignore",
+      "status": {
+        "renamed": {
+          "from": "create-pack/template/library/gitignore"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/template/library/package.json",
+      "status": {
+        "renamed": {
+          "from": "create-pack/template/library/package.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/template/library/src/index.ts",
+      "status": {
+        "renamed": {
+          "from": "create-pack/template/library/src/index.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/template/library/tsconfig.json",
+      "status": {
+        "renamed": {
+          "from": "create-pack/template/library/tsconfig.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/template/renderer/demo.comp.md",
+      "status": {
+        "renamed": {
+          "from": "create-pack/template/renderer/demo.comp.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/template/renderer/index.comp.md",
+      "status": {
+        "renamed": {
+          "from": "create-pack/template/renderer/index.comp.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/template/renderer/src/__component__.test.ts",
+      "status": {
+        "renamed": {
+          "from": "create-pack/template/renderer/src/__component__.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/template/renderer/src/__component__.ts",
+      "status": {
+        "renamed": {
+          "from": "create-pack/template/renderer/src/__component__.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/test/pack.test.ts",
+      "status": {
+        "renamed": {
+          "from": "create-pack/test/pack.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/tsconfig.build.json",
+      "status": {
+        "renamed": {
+          "from": "create-pack/tsconfig.build.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/tsconfig.json",
+      "status": {
+        "renamed": {
+          "from": "create-pack/tsconfig.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/vitest.config.ts",
+      "status": {
+        "renamed": {
+          "from": "create-pack/vitest.config.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/LICENSE",
+      "status": {
+        "renamed": {
+          "from": "pack/LICENSE"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/README.md",
+      "status": {
+        "renamed": {
+          "from": "devtools/README.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/eslint.config.js",
+      "status": {
+        "renamed": {
+          "from": "devtools/eslint.config.js"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/package.json",
+      "status": {
+        "renamed": {
+          "from": "devtools/package.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/scripts/build.ts",
+      "status": {
+        "renamed": {
+          "from": "devtools/scripts/build.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/ComponentsView.svelte",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/ComponentsView.svelte"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/ConsoleView.svelte",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/ConsoleView.svelte"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/DataView.svelte",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/DataView.svelte"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/Devtools.svelte",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/Devtools.svelte"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/FrameTree.svelte",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/FrameTree.svelte"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/Inputs.svelte",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/Inputs.svelte"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/Inspector.svelte",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/Inspector.svelte"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/JsonTree.svelte",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/JsonTree.svelte"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/MessagesView.svelte",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/MessagesView.svelte"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/Panes.svelte",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/Panes.svelte"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/Place.svelte",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/Place.svelte"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/Reported.svelte",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/Reported.svelte"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/SandboxView.svelte",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/SandboxView.svelte"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/Split.svelte",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/Split.svelte"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/caret.ts",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/caret.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/components.test.ts",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/components.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/components.ts",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/components.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/console.test.ts",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/console.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/console.ts",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/console.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/console.view.test.ts",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/console.view.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/devtools.css",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/devtools.css"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/document.ts",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/document.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/drawer.test.ts",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/drawer.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/drawer.ts",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/drawer.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/edit.test.ts",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/edit.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/edit.ts",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/edit.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/editor.test.ts",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/editor.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/editor.ts",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/editor.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/fragment.test.ts",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/fragment.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/fragment.ts",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/fragment.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/frames.ts",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/frames.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/hint.test.ts",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/hint.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/hint.ts",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/hint.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/index.ts",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/index.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/json.test.ts",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/json.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/json.ts",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/json.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/labels.ts",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/labels.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/messages.ts",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/messages.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/observed.test.ts",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/observed.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/observed.views.test.ts",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/observed.views.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/panes.view.test.ts",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/panes.view.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/processing.registry.test.ts",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/processing.registry.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/processing.test.ts",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/processing.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/processing.ts",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/processing.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/protocol.ts",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/protocol.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/schedule.ts",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/schedule.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/session.test.ts",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/session.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/session.ts",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/session.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/split.test.ts",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/split.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/split.ts",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/split.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/tabs.ts",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/tabs.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/testing.ts",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/testing.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/timings.ts",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/timings.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/views-worker.ts",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/views-worker.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/views.test.ts",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/views.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/views.ts",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/views.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/worker.ts",
+      "status": {
+        "renamed": {
+          "from": "devtools/src/worker.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/tsconfig.build.json",
+      "status": {
+        "renamed": {
+          "from": "devtools/tsconfig.build.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/tsconfig.json",
+      "status": {
+        "renamed": {
+          "from": "devtools/tsconfig.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/vitest.config.ts",
+      "status": {
+        "renamed": {
+          "from": "devtools/vitest.config.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/.gitignore",
+      "status": {
+        "renamed": {
+          "from": "editor/.gitignore"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/README.md",
+      "status": {
+        "renamed": {
+          "from": "editor/README.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/bench/run.ts",
+      "status": {
+        "renamed": {
+          "from": "editor/bench/run.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/compmd.config.json",
+      "status": {
+        "renamed": {
+          "from": "editor/compmd.config.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/eslint.config.js",
+      "status": {
+        "renamed": {
+          "from": "editor/eslint.config.js"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/examples/charts/area-chart.jsx",
+      "status": {
+        "renamed": {
+          "from": "editor/examples/charts/area-chart.jsx"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/examples/charts/bar-chart.jsx",
+      "status": {
+        "renamed": {
+          "from": "editor/examples/charts/bar-chart.jsx"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/examples/charts/data-table.svelte",
+      "status": {
+        "renamed": {
+          "from": "editor/examples/charts/data-table.svelte"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/examples/charts/index.comp.md",
+      "status": {
+        "renamed": {
+          "from": "editor/examples/charts/index.comp.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/examples/charts/package.json",
+      "status": {
+        "renamed": {
+          "from": "editor/examples/charts/package.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/examples/charts/pie-chart.svelte",
+      "status": {
+        "renamed": {
+          "from": "editor/examples/charts/pie-chart.svelte"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/examples/charts/timeline.jsx",
+      "status": {
+        "renamed": {
+          "from": "editor/examples/charts/timeline.jsx"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/examples/dashboard/dashboard.comp.md",
+      "status": {
+        "renamed": {
+          "from": "editor/examples/dashboard/dashboard.comp.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/examples/dashboard/milestones.yaml",
+      "status": {
+        "renamed": {
+          "from": "editor/examples/dashboard/milestones.yaml"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/examples/dashboard/sales.csv",
+      "status": {
+        "renamed": {
+          "from": "editor/examples/dashboard/sales.csv"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/examples/definitions/definitions.comp.md",
+      "status": {
+        "renamed": {
+          "from": "editor/examples/definitions/definitions.comp.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/examples/diagnostics/diagnostics.comp.md",
+      "status": {
+        "renamed": {
+          "from": "editor/examples/diagnostics/diagnostics.comp.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/examples/diagrams/diagrams.comp.md",
+      "status": {
+        "renamed": {
+          "from": "editor/examples/diagrams/diagrams.comp.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/examples/inputs/planner.comp.md",
+      "status": {
+        "renamed": {
+          "from": "editor/examples/inputs/planner.comp.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/examples/kyoto/kyoto.comp.md",
+      "status": {
+        "renamed": {
+          "from": "editor/examples/kyoto/kyoto.comp.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/examples/npm/npm.comp.md",
+      "status": {
+        "renamed": {
+          "from": "editor/examples/npm/npm.comp.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/examples/remote/pack.json",
+      "status": {
+        "renamed": {
+          "from": "editor/examples/remote/pack.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/examples/remote/remote.comp.md",
+      "status": {
+        "renamed": {
+          "from": "editor/examples/remote/remote.comp.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/examples/tour/books.csv",
+      "status": {
+        "renamed": {
+          "from": "editor/examples/tour/books.csv"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/examples/tour/tour.comp.md",
+      "status": {
+        "renamed": {
+          "from": "editor/examples/tour/tour.comp.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/index.html",
+      "status": {
+        "renamed": {
+          "from": "editor/index.html"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/package.json",
+      "status": {
+        "renamed": {
+          "from": "editor/package.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/packs/minimermaid/.gitignore",
+      "status": {
+        "renamed": {
+          "from": "packs/wireframe/.gitignore"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/packs/minimermaid/README.md",
+      "status": {
+        "renamed": {
+          "from": "editor/packs/minimermaid/README.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/packs/minimermaid/demo.comp.md",
+      "status": {
+        "renamed": {
+          "from": "editor/packs/minimermaid/demo.comp.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/packs/minimermaid/index.comp.md",
+      "status": {
+        "renamed": {
+          "from": "editor/packs/minimermaid/index.comp.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/packs/minimermaid/package.json",
+      "status": {
+        "renamed": {
+          "from": "editor/packs/minimermaid/package.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/packs/minimermaid/src/minimermaid.test.ts",
+      "status": {
+        "renamed": {
+          "from": "editor/packs/minimermaid/src/minimermaid.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/packs/minimermaid/src/minimermaid.ts",
+      "status": {
+        "renamed": {
+          "from": "editor/packs/minimermaid/src/minimermaid.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/packs/minimermaid/tsconfig.json",
+      "status": {
+        "renamed": {
+          "from": "editor/packs/minimermaid/tsconfig.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/public/frame.css",
+      "status": {
+        "renamed": {
+          "from": "editor/public/frame.css"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/src/App.svelte",
+      "status": {
+        "renamed": {
+          "from": "editor/src/App.svelte"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/src/documents.processing.test.ts",
+      "status": {
+        "renamed": {
+          "from": "editor/src/documents.processing.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/src/documents.test.ts",
+      "status": {
+        "renamed": {
+          "from": "editor/src/documents.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/src/documents.ts",
+      "status": {
+        "renamed": {
+          "from": "editor/src/documents.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/src/editor.css",
+      "status": {
+        "renamed": {
+          "from": "editor/src/editor.css"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/src/main.ts",
+      "status": {
+        "renamed": {
+          "from": "editor/src/main.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/src/stored.test.ts",
+      "status": {
+        "renamed": {
+          "from": "editor/src/stored.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/src/stored.ts",
+      "status": {
+        "renamed": {
+          "from": "editor/src/stored.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/src/styles.ts",
+      "status": {
+        "renamed": {
+          "from": "editor/src/styles.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/test/diagnostics.test.ts",
+      "status": {
+        "renamed": {
+          "from": "editor/test/diagnostics.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/test/npm.test.ts",
+      "status": {
+        "renamed": {
+          "from": "editor/test/npm.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/tsconfig.json",
+      "status": {
+        "renamed": {
+          "from": "editor/tsconfig.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/vite.config.ts",
+      "status": {
+        "renamed": {
+          "from": "editor/vite.config.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/vitest.config.ts",
+      "status": {
+        "renamed": {
+          "from": "editor/vitest.config.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/host-js/Cargo.toml",
+      "status": {
+        "renamed": {
+          "from": "host-js/Cargo.toml"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/host-js/LICENSE",
+      "status": {
+        "renamed": {
+          "from": "packs/mermaid/LICENSE"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/host-js/README.md",
+      "status": {
+        "renamed": {
+          "from": "host-js/README.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/host-js/eslint.config.js",
+      "status": {
+        "renamed": {
+          "from": "host-js/eslint.config.js"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/host-js/package.json",
+      "status": {
+        "renamed": {
+          "from": "host-js/package.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/host-js/src/index.ts",
+      "status": {
+        "renamed": {
+          "from": "host-js/src/index.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/host-js/src/lib.rs",
+      "status": {
+        "renamed": {
+          "from": "host-js/src/lib.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/host-js/src/node.ts",
+      "status": {
+        "renamed": {
+          "from": "host-js/src/node.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/host-js/src/respond.test.ts",
+      "status": {
+        "renamed": {
+          "from": "host-js/src/respond.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/host-js/src/respond.ts",
+      "status": {
+        "renamed": {
+          "from": "host-js/src/respond.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/host-js/tsconfig.build.json",
+      "status": {
+        "renamed": {
+          "from": "host-js/tsconfig.build.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/host-js/tsconfig.json",
+      "status": {
+        "renamed": {
+          "from": "host-js/tsconfig.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/host-js/vitest.config.ts",
+      "status": {
+        "renamed": {
+          "from": "host-js/vitest.config.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/LICENSE",
+      "status": {
+        "renamed": {
+          "from": "packs/wireframe/LICENSE"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/README.md",
+      "status": {
+        "renamed": {
+          "from": "pack/README.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/eslint.config.js",
+      "status": {
+        "renamed": {
+          "from": "pack/eslint.config.js"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/package.json",
+      "status": {
+        "renamed": {
+          "from": "pack/package.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/build.test.ts",
+      "status": {
+        "renamed": {
+          "from": "pack/src/build.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/build.ts",
+      "status": {
+        "renamed": {
+          "from": "pack/src/build.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/check.test.ts",
+      "status": {
+        "renamed": {
+          "from": "pack/src/check.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/check.ts",
+      "status": {
+        "renamed": {
+          "from": "pack/src/check.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/cli.ts",
+      "status": {
+        "renamed": {
+          "from": "pack/src/cli.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/component.test.ts",
+      "status": {
+        "renamed": {
+          "from": "pack/src/component.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/component.ts",
+      "status": {
+        "renamed": {
+          "from": "pack/src/component.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/dev.test.ts",
+      "status": {
+        "renamed": {
+          "from": "pack/src/dev.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/dev.ts",
+      "status": {
+        "renamed": {
+          "from": "pack/src/dev.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/index.ts",
+      "status": {
+        "renamed": {
+          "from": "pack/src/index.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/pack.test.ts",
+      "status": {
+        "renamed": {
+          "from": "pack/src/pack.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/pack.ts",
+      "status": {
+        "renamed": {
+          "from": "pack/src/pack.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/test.ts",
+      "status": {
+        "renamed": {
+          "from": "pack/src/test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/testing.test.ts",
+      "status": {
+        "renamed": {
+          "from": "pack/src/testing.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/src/testing.ts",
+      "status": {
+        "renamed": {
+          "from": "pack/src/testing.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/test/folders.ts",
+      "status": {
+        "renamed": {
+          "from": "pack/test/folders.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/tsconfig.build.json",
+      "status": {
+        "renamed": {
+          "from": "pack/tsconfig.build.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/tsconfig.json",
+      "status": {
+        "renamed": {
+          "from": "pack/tsconfig.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/tsconfig.pack.json",
+      "status": {
+        "renamed": {
+          "from": "pack/tsconfig.pack.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/vitest.config.ts",
+      "status": {
+        "renamed": {
+          "from": "pack/vitest.config.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/LICENSE",
+      "status": {
+        "renamed": {
+          "from": "registry/LICENSE"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/README.md",
+      "status": {
+        "renamed": {
+          "from": "registry/README.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/eslint.config.js",
+      "status": {
+        "renamed": {
+          "from": "registry/eslint.config.js"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/package.json",
+      "status": {
+        "renamed": {
+          "from": "registry/package.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/src/cache.test.ts",
+      "status": {
+        "renamed": {
+          "from": "registry/src/cache.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/src/cache.ts",
+      "status": {
+        "renamed": {
+          "from": "registry/src/cache.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/src/index.ts",
+      "status": {
+        "renamed": {
+          "from": "registry/src/index.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/src/integrity.test.ts",
+      "status": {
+        "renamed": {
+          "from": "registry/src/integrity.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/src/integrity.ts",
+      "status": {
+        "renamed": {
+          "from": "registry/src/integrity.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/src/node.ts",
+      "status": {
+        "renamed": {
+          "from": "registry/src/node.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/src/proxy.test.ts",
+      "status": {
+        "renamed": {
+          "from": "registry/src/proxy.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/src/proxy.ts",
+      "status": {
+        "renamed": {
+          "from": "registry/src/proxy.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/src/registry.test.ts",
+      "status": {
+        "renamed": {
+          "from": "registry/src/registry.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/src/registry.ts",
+      "status": {
+        "renamed": {
+          "from": "registry/src/registry.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/src/resolve.test.ts",
+      "status": {
+        "renamed": {
+          "from": "registry/src/resolve.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/src/resolve.ts",
+      "status": {
+        "renamed": {
+          "from": "registry/src/resolve.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/src/tar.test.ts",
+      "status": {
+        "renamed": {
+          "from": "registry/src/tar.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/src/tar.ts",
+      "status": {
+        "renamed": {
+          "from": "registry/src/tar.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/test/browser.test.ts",
+      "status": {
+        "renamed": {
+          "from": "registry/test/browser.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/test/fixtures/packs/bars-1.0.0/dist/bars.js",
+      "status": {
+        "renamed": {
+          "from": "registry/test/fixtures/packs/bars-1.0.0/dist/bars.js"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/test/fixtures/packs/bars-1.0.0/index.comp.md",
+      "status": {
+        "renamed": {
+          "from": "registry/test/fixtures/packs/bars-1.0.0/index.comp.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/test/fixtures/packs/bars-1.0.0/package.json",
+      "status": {
+        "renamed": {
+          "from": "registry/test/fixtures/packs/bars-1.0.0/package.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/test/fixtures/packs/charts-1.0.0/data/a-folder-name-long-enough-for-the-ustar-prefix-field/and-another-one-to-pass-a-hundred-characters/points.json",
+      "status": {
+        "renamed": {
+          "from": "registry/test/fixtures/packs/charts-1.0.0/data/a-folder-name-long-enough-for-the-ustar-prefix-field/and-another-one-to-pass-a-hundred-characters/points.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/test/fixtures/packs/charts-1.0.0/dist/chart.js",
+      "status": {
+        "renamed": {
+          "from": "registry/test/fixtures/packs/charts-1.0.0/dist/chart.js"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/test/fixtures/packs/charts-1.0.0/index.comp.md",
+      "status": {
+        "renamed": {
+          "from": "registry/test/fixtures/packs/charts-1.0.0/index.comp.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/test/fixtures/packs/charts-1.0.0/package.json",
+      "status": {
+        "renamed": {
+          "from": "registry/test/fixtures/packs/charts-1.0.0/package.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/test/fixtures/packs/charts-1.1.0/dist/chart.js",
+      "status": {
+        "renamed": {
+          "from": "registry/test/fixtures/packs/charts-1.1.0/dist/chart.js"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/test/fixtures/packs/charts-1.1.0/index.comp.md",
+      "status": {
+        "renamed": {
+          "from": "registry/test/fixtures/packs/charts-1.1.0/index.comp.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/test/fixtures/packs/charts-1.1.0/package.json",
+      "status": {
+        "renamed": {
+          "from": "registry/test/fixtures/packs/charts-1.1.0/package.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/test/fixtures/packs/d3-7.12.0/dist/d3.js",
+      "status": {
+        "renamed": {
+          "from": "registry/test/fixtures/packs/d3-7.12.0/dist/d3.js"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/test/fixtures/packs/d3-7.12.0/package.json",
+      "status": {
+        "renamed": {
+          "from": "registry/test/fixtures/packs/d3-7.12.0/package.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/test/fixtures/packs/d3-7.9.5/dist/d3.js",
+      "status": {
+        "renamed": {
+          "from": "registry/test/fixtures/packs/d3-7.9.5/dist/d3.js"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/test/fixtures/packs/d3-7.9.5/package.json",
+      "status": {
+        "renamed": {
+          "from": "registry/test/fixtures/packs/d3-7.9.5/package.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/test/fixtures/packs/dashboard-1.0.0/index.comp.md",
+      "status": {
+        "renamed": {
+          "from": "registry/test/fixtures/packs/dashboard-1.0.0/index.comp.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/test/fixtures/packs/dashboard-1.0.0/package.json",
+      "status": {
+        "renamed": {
+          "from": "registry/test/fixtures/packs/dashboard-1.0.0/package.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/test/fixtures/packs/lines-1.0.0/dist/lines.js",
+      "status": {
+        "renamed": {
+          "from": "registry/test/fixtures/packs/lines-1.0.0/dist/lines.js"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/test/fixtures/packs/lines-1.0.0/index.comp.md",
+      "status": {
+        "renamed": {
+          "from": "registry/test/fixtures/packs/lines-1.0.0/index.comp.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/test/fixtures/packs/lines-1.0.0/package.json",
+      "status": {
+        "renamed": {
+          "from": "registry/test/fixtures/packs/lines-1.0.0/package.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/test/fixtures/packs/report-1.0.0/index.comp.md",
+      "status": {
+        "renamed": {
+          "from": "registry/test/fixtures/packs/report-1.0.0/index.comp.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/test/fixtures/packs/report-1.0.0/package.json",
+      "status": {
+        "renamed": {
+          "from": "registry/test/fixtures/packs/report-1.0.0/package.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/test/fixtures/tarballs/kit-bars-1.0.0.tgz",
+      "status": {
+        "renamed": {
+          "from": "registry/test/fixtures/tarballs/kit-bars-1.0.0.tgz"
+        }
+      },
+      "binary": true
+    },
+    {
+      "path": "npm-packages/registry/test/fixtures/tarballs/kit-charts-1.0.0.tgz",
+      "status": {
+        "renamed": {
+          "from": "registry/test/fixtures/tarballs/kit-charts-1.0.0.tgz"
+        }
+      },
+      "binary": true
+    },
+    {
+      "path": "npm-packages/registry/test/fixtures/tarballs/kit-charts-1.1.0.tgz",
+      "status": {
+        "renamed": {
+          "from": "registry/test/fixtures/tarballs/kit-charts-1.1.0.tgz"
+        }
+      },
+      "binary": true
+    },
+    {
+      "path": "npm-packages/registry/test/fixtures/tarballs/kit-d3-7.12.0.tgz",
+      "status": {
+        "renamed": {
+          "from": "registry/test/fixtures/tarballs/kit-d3-7.12.0.tgz"
+        }
+      },
+      "binary": true
+    },
+    {
+      "path": "npm-packages/registry/test/fixtures/tarballs/kit-d3-7.9.5.tgz",
+      "status": {
+        "renamed": {
+          "from": "registry/test/fixtures/tarballs/kit-d3-7.9.5.tgz"
+        }
+      },
+      "binary": true
+    },
+    {
+      "path": "npm-packages/registry/test/fixtures/tarballs/kit-dashboard-1.0.0.tgz",
+      "status": {
+        "renamed": {
+          "from": "registry/test/fixtures/tarballs/kit-dashboard-1.0.0.tgz"
+        }
+      },
+      "binary": true
+    },
+    {
+      "path": "npm-packages/registry/test/fixtures/tarballs/kit-lines-1.0.0.tgz",
+      "status": {
+        "renamed": {
+          "from": "registry/test/fixtures/tarballs/kit-lines-1.0.0.tgz"
+        }
+      },
+      "binary": true
+    },
+    {
+      "path": "npm-packages/registry/test/fixtures/tarballs/kit-report-1.0.0.tgz",
+      "status": {
+        "renamed": {
+          "from": "registry/test/fixtures/tarballs/kit-report-1.0.0.tgz"
+        }
+      },
+      "binary": true
+    },
+    {
+      "path": "npm-packages/registry/test/local-registry.ts",
+      "status": {
+        "renamed": {
+          "from": "registry/test/local-registry.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/test/setup.ts",
+      "status": {
+        "renamed": {
+          "from": "registry/test/setup.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/tsconfig.build.json",
+      "status": {
+        "renamed": {
+          "from": "registry/tsconfig.build.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/tsconfig.json",
+      "status": {
+        "renamed": {
+          "from": "registry/tsconfig.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/vitest.config.ts",
+      "status": {
+        "renamed": {
+          "from": "registry/vitest.config.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/LICENSE",
+      "status": {
+        "renamed": {
+          "from": "render/LICENSE"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/README.md",
+      "status": {
+        "renamed": {
+          "from": "render/README.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/eslint.config.js",
+      "status": {
+        "renamed": {
+          "from": "render/eslint.config.js"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/package.json",
+      "status": {
+        "renamed": {
+          "from": "render/package.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/bindings/place.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/bindings/place.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/bindings/react.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/bindings/react.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/bindings/svelte.svelte.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/bindings/svelte.svelte.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/blocks.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/blocks.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/box.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/box.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/busy.test.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/busy.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/busy.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/busy.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/code.test.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/code.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/component-views.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/component-views.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/component.test.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/component.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/component.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/component.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/contract.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/contract.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/document.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/document.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/example-view.test.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/example-view.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/example-view.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/example-view.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/frame.test.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/frame.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/frame.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/frame.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/html.test.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/html.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/html.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/html.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/images.test.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/images.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/images.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/images.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/index.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/index.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/keys.test.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/keys.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/keys.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/keys.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/layout.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/layout.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/lines.test.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/lines.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/lines.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/lines.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/markdown-views.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/markdown-views.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/nodes.test.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/nodes.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/nodes.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/nodes.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/page.test.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/page.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/page.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/page.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/paper.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/paper.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/pending.test.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/pending.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/print.test.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/print.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/print.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/print.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/refused-images.test.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/refused-images.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/refused-images.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/refused-images.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/region.test.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/region.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/region.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/region.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/render.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/render.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/scheme.test.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/scheme.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/scheme.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/scheme.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/source.test.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/source.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/source.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/source.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/stable.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/stable.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/styles.test.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/styles.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/styles.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/styles.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/tree.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/tree.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/vocabulary.test.ts",
+      "status": {
+        "renamed": {
+          "from": "render/src/vocabulary.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/test/Card.svelte",
+      "status": {
+        "renamed": {
+          "from": "render/test/Card.svelte"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/test/Plots.svelte",
+      "status": {
+        "renamed": {
+          "from": "render/test/Plots.svelte"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/test/bindings.test.ts",
+      "status": {
+        "renamed": {
+          "from": "render/test/bindings.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/test/conformance.test.ts",
+      "status": {
+        "renamed": {
+          "from": "render/test/conformance.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/test/fixtures/identity/add-a-block-above.json",
+      "status": {
+        "renamed": {
+          "from": "render/test/fixtures/identity/add-a-block-above.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/test/fixtures/identity/change-a-component-s-param.json",
+      "status": {
+        "renamed": {
+          "from": "render/test/fixtures/identity/change-a-component-s-param.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/test/fixtures/identity/edit-inside-an-each-template.json",
+      "status": {
+        "renamed": {
+          "from": "render/test/fixtures/identity/edit-inside-an-each-template.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/test/fixtures/identity/move-a-block-cut-then-paste.json",
+      "status": {
+        "renamed": {
+          "from": "render/test/fixtures/identity/move-a-block-cut-then-paste.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/test/fixtures/identity/paste-a-block-at-the-top.json",
+      "status": {
+        "renamed": {
+          "from": "render/test/fixtures/identity/paste-a-block-at-the-top.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/test/fixtures/identity/prepend-a-record-to-the-data.json",
+      "status": {
+        "renamed": {
+          "from": "render/test/fixtures/identity/prepend-a-record-to-the-data.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/test/fixtures/identity/remove-a-block-above.json",
+      "status": {
+        "renamed": {
+          "from": "render/test/fixtures/identity/remove-a-block-above.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/test/fixtures/identity/type-above-a-component.json",
+      "status": {
+        "renamed": {
+          "from": "render/test/fixtures/identity/type-above-a-component.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/test/fixtures/identity/type-inside-a-container-s-text.json",
+      "status": {
+        "renamed": {
+          "from": "render/test/fixtures/identity/type-inside-a-container-s-text.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/test/fixtures/identity/undo-an-added-block.json",
+      "status": {
+        "renamed": {
+          "from": "render/test/fixtures/identity/undo-an-added-block.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/test/fixtures/invalid/edit-the-frontmatter-broken-yaml-halfway.json",
+      "status": {
+        "renamed": {
+          "from": "render/test/fixtures/invalid/edit-the-frontmatter-broken-yaml-halfway.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/test/fixtures/invalid/retype-a-component-line-malformed-halfway.json",
+      "status": {
+        "renamed": {
+          "from": "render/test/fixtures/invalid/retype-a-component-line-malformed-halfway.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/test/fixtures/invalid/type-a-new-container-above-others-unclosed-until-its-closer-is-typed.json",
+      "status": {
+        "renamed": {
+          "from": "render/test/fixtures/invalid/type-a-new-container-above-others-unclosed-until-its-closer-is-typed.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/test/fixtures/invalid/type-an-expression-in-a-param-half-written-then-finished.json",
+      "status": {
+        "renamed": {
+          "from": "render/test/fixtures/invalid/type-an-expression-in-a-param-half-written-then-finished.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/test/identity.test.ts",
+      "status": {
+        "renamed": {
+          "from": "render/test/identity.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/test/invalid.test.ts",
+      "status": {
+        "renamed": {
+          "from": "render/test/invalid.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/test/seen.ts",
+      "status": {
+        "renamed": {
+          "from": "render/test/seen.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/test/source.test.ts",
+      "status": {
+        "renamed": {
+          "from": "render/test/source.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/test/support.ts",
+      "status": {
+        "renamed": {
+          "from": "render/test/support.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/tsconfig.build.json",
+      "status": {
+        "renamed": {
+          "from": "render/tsconfig.build.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/tsconfig.json",
+      "status": {
+        "renamed": {
+          "from": "render/tsconfig.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/vitest.config.ts",
+      "status": {
+        "renamed": {
+          "from": "render/vitest.config.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/.gitignore",
+      "status": {
+        "renamed": {
+          "from": "sandbox/.gitignore"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/LICENSE",
+      "status": {
+        "renamed": {
+          "from": "sandbox/LICENSE"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/README.md",
+      "status": {
+        "renamed": {
+          "from": "sandbox/README.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/eslint.config.js",
+      "status": {
+        "renamed": {
+          "from": "sandbox/eslint.config.js"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/package.json",
+      "status": {
+        "renamed": {
+          "from": "sandbox/package.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/protocol.schema.json",
+      "status": {
+        "renamed": {
+          "from": "sandbox/protocol.schema.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/scripts/frames.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/scripts/frames.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/build/build.test.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/build/build.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/build/frames.testing.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/build/frames.testing.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/build/frames.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/build/frames.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/build/hashed.test.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/build/hashed.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/build/hashed.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/build/hashed.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/build/index.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/build/index.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/build/libraries.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/build/libraries.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/build/policy.test.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/build/policy.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/build/policy.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/build/policy.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/check/check.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/check/check.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/check/contract.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/check/contract.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/check/index.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/check/index.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/check/probe.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/check/probe.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/compiled-cache.test.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/compiled-cache.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/compiled-cache.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/compiled-cache.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/found.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/found.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/frame/compile.test.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/frame/compile.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/frame/compile.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/frame/compile.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/frame/components.test.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/frame/components.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/frame/components.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/frame/components.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/frame/imports.test.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/frame/imports.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/frame/imports.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/frame/imports.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/frame/load.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/frame/load.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/frame/narrow.test.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/frame/narrow.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/frame/narrow.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/frame/narrow.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/frame/runtime.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/frame/runtime.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/frame/source.test.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/frame/source.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/frame/source.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/frame/source.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/from-frames.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/from-frames.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/given-origin.test.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/given-origin.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/given-origin.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/given-origin.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/highlight/grammar.test.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/highlight/grammar.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/highlight/grammar.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/highlight/grammar.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/highlight/highlight.test.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/highlight/highlight.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/highlight/highlight.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/highlight/highlight.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/highlight/languages.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/highlight/languages.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/host-api.test.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/host-api.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/host-api.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/host-api.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/host/runtime.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/host/runtime.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/image-gate.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/image-gate.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/images.test.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/images.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/images.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/images.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/index.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/index.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/math.test.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/math.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/math.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/math.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/mount-set.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/mount-set.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/mounts.test.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/mounts.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/mounts.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/mounts.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/observation.test.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/observation.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/observation.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/observation.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/observer.test.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/observer.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/observer.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/observer.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/origins.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/origins.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/pages.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/pages.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/print.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/print.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/channels.testing.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/protocol/channels.testing.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/compiler.test.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/protocol/compiler.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/compiler.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/protocol/compiler.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/frame-end.test.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/protocol/frame-end.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/frame-end.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/protocol/frame-end.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/index.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/protocol/index.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/inputs.test.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/protocol/inputs.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/inputs.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/protocol/inputs.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/messages.test.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/protocol/messages.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/messages.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/protocol/messages.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/observed.test.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/protocol/observed.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/observed.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/protocol/observed.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/parent-end.test.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/protocol/parent-end.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/parent-end.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/protocol/parent-end.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/schema.test.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/protocol/schema.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/sandbox.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/sandbox.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/settling.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/settling.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/use.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/src/use.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/check.test.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/test/check.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/fixtures/ahead.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/test/fixtures/ahead.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/fixtures/hosts.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/test/fixtures/hosts.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/fixtures/sandboxed-host.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/test/fixtures/sandboxed-host.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/fixtures/square.svg",
+      "status": {
+        "renamed": {
+          "from": "sandbox/test/fixtures/square.svg"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/harness.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/test/harness.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/host.test.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/test/host.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/images.test.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/test/images.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/modules.test.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/test/modules.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/observe.test.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/test/observe.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/origins.test.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/test/origins.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/permissive.test.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/test/permissive.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/print.test.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/test/print.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/remote-images.test.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/test/remote-images.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/sandbox.test.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/test/sandbox.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/setup.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/test/setup.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/strict.test.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/test/strict.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/view.test.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/test/view.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/tsconfig.build.json",
+      "status": {
+        "renamed": {
+          "from": "sandbox/tsconfig.build.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/tsconfig.json",
+      "status": {
+        "renamed": {
+          "from": "sandbox/tsconfig.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/vitest.config.ts",
+      "status": {
+        "renamed": {
+          "from": "sandbox/vitest.config.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/.gitignore",
+      "status": {
+        "renamed": {
+          "from": "vite/.gitignore"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/LICENSE",
+      "status": {
+        "renamed": {
+          "from": "vite/LICENSE"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/README.md",
+      "status": {
+        "renamed": {
+          "from": "vite/README.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/client.d.ts",
+      "status": {
+        "renamed": {
+          "from": "vite/client.d.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/compmd.config.schema.json",
+      "status": {
+        "renamed": {
+          "from": "vite/compmd.config.schema.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/eslint.config.js",
+      "status": {
+        "renamed": {
+          "from": "vite/eslint.config.js"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/example/compmd.config.json",
+      "status": {
+        "renamed": {
+          "from": "vite/example/compmd.config.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/example/components/Stars.tsx",
+      "status": {
+        "renamed": {
+          "from": "vite/example/components/Stars.tsx"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/example/components/index.comp.md",
+      "status": {
+        "renamed": {
+          "from": "vite/example/components/index.comp.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/example/components/package.json",
+      "status": {
+        "renamed": {
+          "from": "vite/example/components/package.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/example/index.html",
+      "status": {
+        "renamed": {
+          "from": "vite/example/index.html"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/example/notes.comp.md",
+      "status": {
+        "renamed": {
+          "from": "vite/example/notes.comp.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/example/package.json",
+      "status": {
+        "renamed": {
+          "from": "vite/example/package.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/example/packs/charts/Total.jsx",
+      "status": {
+        "renamed": {
+          "from": "vite/example/packs/charts/Total.jsx"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/example/packs/charts/charts.comp.md",
+      "status": {
+        "renamed": {
+          "from": "vite/example/packs/charts/charts.comp.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/example/packs/charts/dist/bar.js",
+      "status": {
+        "renamed": {
+          "from": "vite/example/packs/charts/dist/bar.js"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/example/packs/charts/package.json",
+      "status": {
+        "renamed": {
+          "from": "vite/example/packs/charts/package.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/example/packs/old/index.comp.md",
+      "status": {
+        "renamed": {
+          "from": "vite/example/packs/old/index.comp.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/example/packs/old/package.json",
+      "status": {
+        "renamed": {
+          "from": "vite/example/packs/old/package.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/example/src/env.d.ts",
+      "status": {
+        "renamed": {
+          "from": "vite/example/src/env.d.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/example/src/main.ts",
+      "status": {
+        "renamed": {
+          "from": "vite/example/src/main.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/example/tsconfig.json",
+      "status": {
+        "renamed": {
+          "from": "vite/example/tsconfig.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/example/vite.config.ts",
+      "status": {
+        "renamed": {
+          "from": "vite/example/vite.config.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/package.json",
+      "status": {
+        "renamed": {
+          "from": "vite/package.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/src/analysis.test.ts",
+      "status": {
+        "renamed": {
+          "from": "vite/src/analysis.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/src/analysis.ts",
+      "status": {
+        "renamed": {
+          "from": "vite/src/analysis.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/src/app.test.ts",
+      "status": {
+        "renamed": {
+          "from": "vite/src/app.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/src/app.ts",
+      "status": {
+        "renamed": {
+          "from": "vite/src/app.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/src/bundle.test.ts",
+      "status": {
+        "renamed": {
+          "from": "vite/src/bundle.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/src/bundle.ts",
+      "status": {
+        "renamed": {
+          "from": "vite/src/bundle.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/src/config.test.ts",
+      "status": {
+        "renamed": {
+          "from": "vite/src/config.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/src/config.ts",
+      "status": {
+        "renamed": {
+          "from": "vite/src/config.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/src/csp.test.ts",
+      "status": {
+        "renamed": {
+          "from": "vite/src/csp.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/src/csp.ts",
+      "status": {
+        "renamed": {
+          "from": "vite/src/csp.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/src/headers.test.ts",
+      "status": {
+        "renamed": {
+          "from": "vite/src/headers.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/src/headers.ts",
+      "status": {
+        "renamed": {
+          "from": "vite/src/headers.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/src/index.ts",
+      "status": {
+        "renamed": {
+          "from": "vite/src/index.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/src/packs.test.ts",
+      "status": {
+        "renamed": {
+          "from": "vite/src/packs.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/src/packs.ts",
+      "status": {
+        "renamed": {
+          "from": "vite/src/packs.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/src/plugin.test.ts",
+      "status": {
+        "renamed": {
+          "from": "vite/src/plugin.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/src/plugin.ts",
+      "status": {
+        "renamed": {
+          "from": "vite/src/plugin.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/src/props.test.ts",
+      "status": {
+        "renamed": {
+          "from": "vite/src/props.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/src/props.ts",
+      "status": {
+        "renamed": {
+          "from": "vite/src/props.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/src/react.ts",
+      "status": {
+        "renamed": {
+          "from": "vite/src/react.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/src/schema.test.ts",
+      "status": {
+        "renamed": {
+          "from": "vite/src/schema.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/src/svelte.ts",
+      "status": {
+        "renamed": {
+          "from": "vite/src/svelte.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/test/example.test.ts",
+      "status": {
+        "renamed": {
+          "from": "vite/test/example.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/test/registry.test.ts",
+      "status": {
+        "renamed": {
+          "from": "vite/test/registry.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/tsconfig.build.json",
+      "status": {
+        "renamed": {
+          "from": "vite/tsconfig.build.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/tsconfig.json",
+      "status": {
+        "renamed": {
+          "from": "vite/tsconfig.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/vitest.config.ts",
+      "status": {
+        "renamed": {
+          "from": "vite/vitest.config.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/wasm/Cargo.toml",
+      "status": {
+        "renamed": {
+          "from": "wasm/Cargo.toml"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/wasm/LICENSE",
+      "status": {
+        "renamed": {
+          "from": "wasm/LICENSE"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/wasm/README.md",
+      "status": {
+        "renamed": {
+          "from": "wasm/README.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/wasm/bench/fixtures/changelog/changelog.comp.md",
+      "status": {
+        "renamed": {
+          "from": "wasm/bench/fixtures/changelog/changelog.comp.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/wasm/bench/fixtures/changelog/changes.csv",
+      "status": {
+        "renamed": {
+          "from": "wasm/bench/fixtures/changelog/changes.csv"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/wasm/bench/fixtures/changelog/releases.csv",
+      "status": {
+        "renamed": {
+          "from": "wasm/bench/fixtures/changelog/releases.csv"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/wasm/bench/fixtures/notes/notes.comp.md",
+      "status": {
+        "renamed": {
+          "from": "wasm/bench/fixtures/notes/notes.comp.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/wasm/bench/fixtures/notes/preview-pack/index.comp.md",
+      "status": {
+        "renamed": {
+          "from": "wasm/bench/fixtures/notes/preview-pack/index.comp.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/wasm/bench/fixtures/notes/preview-pack/package.json",
+      "status": {
+        "renamed": {
+          "from": "wasm/bench/fixtures/notes/preview-pack/package.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/wasm/bench/index.html",
+      "status": {
+        "renamed": {
+          "from": "wasm/bench/index.html"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/wasm/bench/requests.ts",
+      "status": {
+        "renamed": {
+          "from": "wasm/bench/requests.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/wasm/bench/run.ts",
+      "status": {
+        "renamed": {
+          "from": "wasm/bench/run.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/wasm/bench/worker.js",
+      "status": {
+        "renamed": {
+          "from": "wasm/bench/worker.js"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/wasm/eslint.config.js",
+      "status": {
+        "renamed": {
+          "from": "wasm/eslint.config.js"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/wasm/package.json",
+      "status": {
+        "renamed": {
+          "from": "wasm/package.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/wasm/src/document.rs",
+      "status": {
+        "renamed": {
+          "from": "wasm/src/document.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/wasm/src/index.test.ts",
+      "status": {
+        "renamed": {
+          "from": "wasm/src/index.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/wasm/src/index.ts",
+      "status": {
+        "renamed": {
+          "from": "wasm/src/index.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/wasm/src/lib.rs",
+      "status": {
+        "renamed": {
+          "from": "wasm/src/lib.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/wasm/src/open-document.ts",
+      "status": {
+        "renamed": {
+          "from": "wasm/src/open-document.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/wasm/src/parse-tree.ts",
+      "status": {
+        "renamed": {
+          "from": "wasm/src/parse-tree.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/wasm/src/request.rs",
+      "status": {
+        "renamed": {
+          "from": "wasm/src/request.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/wasm/src/text.rs",
+      "status": {
+        "renamed": {
+          "from": "wasm/src/text.rs"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/wasm/src/zones.js",
+      "status": {
+        "renamed": {
+          "from": "wasm/src/zones.js"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/wasm/src/zones.test.ts",
+      "status": {
+        "renamed": {
+          "from": "wasm/src/zones.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/wasm/tsconfig.build.json",
+      "status": {
+        "renamed": {
+          "from": "wasm/tsconfig.build.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/wasm/tsconfig.json",
+      "status": {
+        "renamed": {
+          "from": "wasm/tsconfig.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "npm-packages/wasm/vitest.config.ts",
+      "status": {
+        "renamed": {
+          "from": "wasm/vitest.config.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "pnpm-workspace.yaml",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spec/CHANGELOG.md",
+      "status": {
+        "renamed": {
+          "from": "CHANGELOG.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "spec/compmd-registry-v1.md",
+      "status": {
+        "renamed": {
+          "from": "compmd-registry-v1.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "spec/compmd-spec-v1.md",
+      "status": {
+        "renamed": {
+          "from": "compmd-spec-v1.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "spec/examples/complete/board.jsx",
+      "status": {
+        "renamed": {
+          "from": "examples/complete/board.jsx"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "spec/examples/complete/installs.csv",
+      "status": {
+        "renamed": {
+          "from": "examples/complete/installs.csv"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "spec/examples/complete/release.comp.md",
+      "status": {
+        "renamed": {
+          "from": "examples/complete/release.comp.md"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "spec/examples/complete/status.json",
+      "status": {
+        "renamed": {
+          "from": "examples/complete/status.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "spec/examples/complete/team.yaml",
+      "status": {
+        "renamed": {
+          "from": "examples/complete/team.yaml"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "spec/llms.txt",
+      "status": {
+        "renamed": {
+          "from": "llms.txt"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "tools/linux-ci/Dockerfile",
+      "status": {
+        "renamed": {
+          "from": "docker/Dockerfile"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "tools/linux-ci/run.sh",
+      "status": {
+        "renamed": {
+          "from": "docker/run.sh"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "tools/spec-revision/package.json",
+      "status": {
+        "renamed": {
+          "from": "scripts/package.json"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "tools/spec-revision/spec-revision.test.ts",
+      "status": {
+        "renamed": {
+          "from": "scripts/spec-revision.test.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "tools/spec-revision/spec-revision.ts",
+      "status": {
+        "renamed": {
+          "from": "scripts/spec-revision.ts"
+        }
+      },
+      "binary": false
+    },
+    {
+      "path": "website/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "website/build/book.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "website/build/companion.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "website/build/companion.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "website/build/facts.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "website/build/guide-pages.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "website/build/guide-pages.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "website/build/guide.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "website/compmd.config.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "website/docs/design.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "website/scripts/assemble.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "website/scripts/card.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "website/src/FrontMatter.svelte",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "website/src/Logo.svelte",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "website/vite.config.ts",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-18T01:38:02Z"
+}

@@ -1,0 +1,63 @@
+diff --git a/compmd-packs/mermaid/test/page.test.ts b/compmd-packs/mermaid/test/page.test.ts
+index 5951087..ad748d9 100644
+--- a/compmd-packs/mermaid/test/page.test.ts
++++ b/compmd-packs/mermaid/test/page.test.ts
+@@ -34,18 +34,26 @@ afterAll(async () => {
+   await server.close();
+ });
+ 
+-/** The frame whose content matches `selector`, once there is one. */
+-async function frameWith(page: Page, selector: string): Promise<Frame> {
++/**
++ * The frame whose content matches `selector`, once there is one. On a timeout the error names `selector`, the page's
++ * frames and `log`, what the page said meanwhile, since a frame that never draws says nothing else.
++ */
++async function frameWith(page: Page, selector: string, log: readonly string[] = []): Promise<Frame> {
+   let found: Frame | undefined;
+-  await expect
+-    .poll(
+-      async () => {
+-        for (const frame of page.frames()) if ((await frame.locator(selector).count().catch(() => 0)) > 0) found = frame;
+-        return found !== undefined;
+-      },
+-      { timeout: 30_000 },
+-    )
+-    .toBe(true);
++  try {
++    await expect
++      .poll(
++        async () => {
++          for (const frame of page.frames()) if ((await frame.locator(selector).count().catch(() => 0)) > 0) found = frame;
++          return found !== undefined;
++        },
++        { timeout: 30_000 },
++      )
++      .toBe(true);
++  } catch (error) {
++    const frames = page.frames().map((frame) => frame.url());
++    throw new Error(`No frame has ${selector} after 30 s. The page's ${String(frames.length)} frames: ${frames.join(", ")}. What it logged: ${log.length > 0 ? log.join(" | ") : "nothing"}`, { cause: error });
++  }
+   return found as Frame;
+ }
+ 
+@@ -71,12 +79,18 @@ describe.each(BROWSERS)("the test page in %s", (_name, type, options) => {
+   async function open(scheme: "light" | "dark"): Promise<{ page: Page; problems: string[] }> {
+     const page = await browser.newPage({ colorScheme: scheme });
+     const problems: string[] = [];
+-    page.on("pageerror", (error) => problems.push(error.message));
++    // Everything the page says, for a diagram that never draws (`frameWith`).
++    const log: string[] = [];
++    page.on("pageerror", (error) => {
++      problems.push(error.message);
++      log.push(`pageerror: ${error.message}`);
++    });
+     page.on("console", (message) => {
+       if (/Content.Security.Policy|Refused to/i.test(message.text())) problems.push(message.text());
++      log.push(`${message.type()}: ${message.text()} (${message.location().url})`);
+     });
+     await page.goto(`http://localhost:${String(PORT)}/`);
+-    for (const label of LABELS) await frameWith(page, drawing(label));
++    for (const label of LABELS) await frameWith(page, drawing(label), log);
+     return { page, problems };
+   }
+ 

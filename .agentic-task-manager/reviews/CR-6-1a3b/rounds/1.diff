@@ -1,0 +1,695 @@
+diff --git a/crates/tauri/examples/tauri-app/src/check.ts b/crates/tauri/examples/tauri-app/src/check.ts
+index 5d379f1..ea7184e 100644
+--- a/crates/tauri/examples/tauri-app/src/check.ts
++++ b/crates/tauri/examples/tauri-app/src/check.ts
+@@ -67,7 +67,8 @@ export async function check(mode: Exclude<Mode, "show">, drawn: Drawn): Promise<
+   // Waiting for the page to settle is a courtesy, not a check: `settled` waits for an animation frame, which WebKit may
+   // hold back for a window that isn't on screen. Each check below waits for what it looks at.
+   await Promise.race([drawn.view.settled(), new Promise((resolve) => setTimeout(resolve, 5000))]);
+-  const highlighted = () => (container.querySelector("pre code.language-rust")?.querySelectorAll("span").length ?? 0) > 1;
++  // Tokens inside the block's lines: each line is a span (`.compmd-line`) before it is highlighted too.
++  const highlighted = () => (container.querySelector("pre code.language-rust")?.querySelectorAll(".compmd-line > span").length ?? 0) > 1;
+   const origin = () => sets.find(({ input }) => input === "origin");
+   await until(() => (mounted(observation, "mermaid") && mounted(observation, "probe") && highlighted() && origin() !== undefined) || errors.length > 0);
+   if (drawn.diagnostics.length > 0) failed.push(`diagnostics: ${JSON.stringify(drawn.diagnostics)}`);
+diff --git a/npm-packages/render/README.md b/npm-packages/render/README.md
+index aa54af2..638d668 100644
+--- a/npm-packages/render/README.md
++++ b/npm-packages/render/README.md
+@@ -87,7 +87,9 @@ for (const [pane, nodes] of [[left, before], [right, after]]) {
+ 
+ **Code blocks and math.** `code: { mermaid: (source, target) => … }` renders fenced code of a language, and `math: (tex, { display }, target) => …` renders math. Without them, code shows as a code block and math as its TeX source, as spec §2.3 says. A code block a document's code renderer renders (spec §7.7; the tree gives it `component` and `alt`) mounts that component from `components` in its box, as a leaf: the block's text is its `code` param, `alt` its `fallback.text`, and the code block its fallback. It takes the place of `code` for its language, since a document's import wins over the host's.
+ 
+-**Highlighting.** A code block that shows as code, `<pre><code class="language-…">`, is one no renderer draws, or a code renderer's fallback, when its component is missing or fails. `highlight: (code, language, target) => …` highlights it: `target` is the block's `<code>`, holding its text, which the highlighter replaces with its tokens, at once or once what it needs has loaded; `language` is the fence's, or `""`. It is called again only when the block's text or language changes. Without it, the text is plain. [`@compmd/sandbox`](https://github.com/comp-markdown/compmd/blob/main/npm-packages/sandbox/README.md#code-blocks) gives one by default, Shiki's (`shikiHighlight()`), which a page rendered with `createPage` can take too.
++**Highlighting.** A code block that shows as code, `<pre><code class="language-…">`, is one no renderer draws, or a code renderer's fallback, when its component is missing or fails. `highlight: (code, language, target) => …` highlights it: `target` is the block's `<code>`, holding an element per line (`.compmd-line`, `CODE_LINE`), each with its text and its line break; the highlighter puts each line's tokens in its line's element, keeping the element and its attributes, at once or once what it needs has loaded. `language` is the fence's, or `""`. It is called again only when the block's text or language changes. Without it, the text is plain, in its line elements.
++
++**A code block's lines.** Each line is `<span class="compmd-line" data-line="N">`, highlighted or not: N is its line in the current text, the numbering of `lines()` and the origins, and is renumbered when a change before the block moves it. The base styles make each line a block, so a host can size one, as a diff does to keep its two sides level (`.compmd-line { min-height: … }`). Copying the block gives its code as it is. A tree without origins gives lines without `data-line`. [`@compmd/sandbox`](https://github.com/comp-markdown/compmd/blob/main/npm-packages/sandbox/README.md#code-blocks) gives one by default, Shiki's (`shikiHighlight()`), which a page rendered with `createPage` can take too.
+ 
+ **Images from elsewhere.** A page that can't load images itself, such as one in a frame without the network, gives `images: (src) => …`, which resolves with the URL to show for an image's `src` (a `blob:` URL of a file its host fetched), or `undefined` when it can't be had. Markdown images, images by reference and raw HTML images then show their alt text, in `<span class="compmd-image-alt">`, until it resolves, and keep it when it can't. Without it, an image is an `<img>` loading from its `src`. `imageSources(nodes)` lists the `src` of every image a tree can show, for a host that fetches only those.
+ 
+@@ -247,7 +249,7 @@ The HTML and CSS this package writes for the built-ins is the reference renderin
+ | A tight list (`spread: false`) | `<ul class="compmd-tight">`, `<ol class="compmd-tight">` | its items' paragraphs without margins, as HTML renders a tight list without `<p>` |
+ | A task list item | `<li class="compmd-task">` with `<input type="checkbox" disabled>` first | no bullet; the box on its first paragraph's line |
+ | Footnotes | `<sup><a href="#compmd-fn-1" id="compmd-fnref-1">1</a></sup>`, and at the end `<section class="compmd-footnotes"><hr><ol><li id="compmd-fn-1">…</li></ol></section>` | smaller text |
+-| A code block that shows as code | `<pre><code class="language-js">`, without the class for a block of no language; with `highlight`, its tokens in the `<code>`, as the highlighter writes them | — |
++| A code block that shows as code | `<pre><code class="language-js">`, without the class for a block of no language, holding `<span class="compmd-line" data-line="N">` per line; with `highlight`, each line's tokens in its line, as the highlighter writes them | each line a block |
+ | Math without a renderer | `<code class="language-math math-inline">`, `<pre><code class="language-math math-display">` | — |
+ | A table | `<thead>` for the first row, alignment as `compmd-align-left`, `-center`, `-right` | `text-align` |
+ | Raw HTML | `details`, `summary`, `sub`, `sup`, `kbd`, `br`, `img` (`src`, `alt`) and `a` (`href`) with safe URLs; other tags show as text | — |
+diff --git a/npm-packages/render/src/blocks.ts b/npm-packages/render/src/blocks.ts
+index 573476a..b14e822 100644
+--- a/npm-packages/render/src/blocks.ts
++++ b/npm-packages/render/src/blocks.ts
+@@ -4,6 +4,7 @@
+ // whole document has changed for them: footnote numbers, link definitions, the inputs. What only the whole document
+ // has comes from each block's summary, so a render costs what the blocks it renders cost, plus a little per block.
+ import { footnotesFrom, linksFrom, notesOf, type Footnotes, type LinkDefinition, type Notes } from "./document.ts";
++import { numberCodeLines } from "./code-lines.ts";
+ import { stillOpen, tagsOf, withHtml, type Tag } from "./html.ts";
+ import { Keys, type Edit, type KeyOf, type Keyed } from "./keys.ts";
+ import { placedIn } from "./component-views.ts";
+@@ -23,6 +24,8 @@ interface Summary {
+   fills: boolean;
+   /** The tags of its raw HTML, which can pair with other blocks'. */
+   tags: Tag[];
++  /** Whether it has a code block, whose lines are numbered (`code-lines.ts`). */
++  code: boolean;
+ }
+ 
+ /** What a block shows (its node, or what the rules for invalid text say), with keys, and its node's ids. */
+@@ -39,6 +42,8 @@ interface Block {
+   shown?: Shown;
+   /** Absent until a render renders it, and after a change to the blocks it renders with. */
+   group?: Group;
++  /** The `lines` its code blocks' lines were numbered at; absent until they are, and after its views render again. */
++  numbered?: number;
+ }
+ 
+ /** Blocks rendered together, with their views: one block, or those whose raw HTML pairs across them. */
+@@ -47,14 +52,16 @@ interface Group {
+   views: View[];
+ }
+ 
+-const NOTHING: Shown = { nodes: [], kept: false, ids: new Map(), keys: new Map(), summary: { notes: notesOf([]), heading: undefined, container: false, fills: false, tags: [] } };
++const NOTHING: Shown = { nodes: [], kept: false, ids: new Map(), keys: new Map(), summary: { notes: notesOf([]), heading: undefined, container: false, fills: false, tags: [], code: false } };
+ 
+ const shown = (block: Block): Shown => block.shown ?? NOTHING;
+ 
+ function summaryOf(nodes: readonly ExpandedNode[]): Summary {
+   let heading: number | undefined;
++  let code = false;
+   walk(nodes, (node) => {
+     if (node.type === "heading") heading = Number(node.depth);
++    if (node.type === "code") code = true;
+   });
+   const placed = placedIn(nodes);
+   return {
+@@ -63,6 +70,7 @@ function summaryOf(nodes: readonly ExpandedNode[]): Summary {
+     container: placed.some((child) => usesBreakpoints(child.params)),
+     fills: placed.some((child) => fills(child.params)),
+     tags: tagsOf(nodes),
++    code,
+   };
+ }
+ 
+@@ -178,11 +186,15 @@ export class Blocks {
+       const summaries = segment.map((block) => shown(block).summary);
+       if (!group) {
+         const made: Group = { blocks: segment, views: viewsFor(this.#surface, released, nodes(), passOf(segment)) };
+-        for (const block of segment) block.group = made;
++        for (const block of segment) {
++          block.group = made;
++          delete block.numbered;
++        }
+       } else if (this.#inputsChanged || (renumbered && summaries.some((s) => s.notes.references.length > 0)) || (relinked && summaries.some((s) => s.notes.usesLinks))) {
+         const own = new Matcher(group.views, (view) => view);
+         group.views = viewsFor(this.#surface, own, nodes(), passOf(segment));
+         discard(own.rest());
++        for (const block of segment) delete block.numbered;
+       } else {
+         for (const summary of summaries) if (summary.heading !== undefined) heading.level = summary.heading;
+       }
+@@ -196,6 +208,12 @@ export class Blocks {
+       discard(own.rest());
+     }
+     this.#place(segments);
++    // Only blocks drawn again, or moved by what changed before them: a kept block's lines are as they were.
++    for (const block of this.#blocks) {
++      if (block.numbered === block.lines) continue;
++      if (shown(block).summary.code) numberCodeLines(this.#placedOf(block));
++      block.numbered = block.lines;
++    }
+     this.#keys.settle();
+     this.#good.clear();
+     this.#root.classList.toggle("compmd-container", this.#blocks.some((block) => shown(block).summary.container));
+@@ -207,12 +225,7 @@ export class Blocks {
+    * block since it came. A kept render (rule 3 of `stable.ts`) is an older text's, so all of it has its block's range.
+    */
+   placed(): Placed[] {
+-    return this.#blocks.flatMap((block) => {
+-      const { nodes, kept } = shown(block);
+-      const at = ({ start, end }: Origin): Source => ({ start: moved(start, block.lines, block.shift), end: moved(end, block.lines, block.shift) });
+-      const own = block.node.origin;
+-      return placedOf(nodes, this.#surface.drawn, this.#root, kept && own ? () => at(own) : at, kept);
+-    });
++    return this.#blocks.flatMap((block) => this.#placedOf(block));
+   }
+ 
+   destroy(): void {
+@@ -222,6 +235,14 @@ export class Blocks {
+     this.#root.replaceChildren();
+   }
+ 
++  /** What `block` drew, with its ranges in the current text (`placed`). */
++  #placedOf(block: Block): Placed[] {
++    const { nodes, kept } = shown(block);
++    const at = ({ start, end }: Origin): Source => ({ start: moved(start, block.lines, block.shift), end: moved(end, block.lines, block.shift) });
++    const own = block.node.origin;
++    return placedOf(nodes, this.#surface.drawn, this.#root, kept && own ? () => at(own) : at, kept);
++  }
++
+   #show(block: Block, rules: Rules): Shown {
+     const keyed = this.#keys.assign([block.node], block.shift);
+     const shownNodes = shownOf(block.node, block, keyed.keys, rules);
+diff --git a/npm-packages/render/src/code-lines.test.ts b/npm-packages/render/src/code-lines.test.ts
+new file mode 100644
+index 0000000..94fb3fd
+--- /dev/null
++++ b/npm-packages/render/src/code-lines.test.ts
+@@ -0,0 +1,54 @@
++import { afterEach, describe, expect, it } from "vitest";
++import { createPage, type Page } from "./page.ts";
++import type { ExpandedNode, Origin } from "./tree.ts";
++
++/** An origin from line `from` to line `to`, each at column 1, with no offsets. */
++const lines = (from: number, to: number): Origin => ({ start: { line: from, column: 1 }, end: { line: to, column: 1 }, occurrence: 0 });
++
++const code = (value: string, origin?: Origin): ExpandedNode => ({ type: "code", lang: "ts", meta: null, value, ...(origin ? { origin } : {}) });
++const paragraph = (value: string, origin: Origin): ExpandedNode => ({ type: "paragraph", children: [{ type: "text", value, origin }], origin });
++
++let root: HTMLElement;
++function page(): Page {
++  root = document.body.appendChild(document.createElement("main"));
++  return createPage(root);
++}
++afterEach(() => {
++  root.remove();
++});
++
++const lineElements = () => [...root.querySelectorAll("pre > code > .compmd-line")];
++
++describe("a code block's lines", () => {
++  it("are an element each, a blank line too, each with its line break, so the block's text is the code's", () => {
++    page().render({ type: "root", children: [code("let a;\n\nlet b;")] });
++    expect(root.innerHTML).toBe('<pre><code class="language-ts"><span class="compmd-line">let a;\n</span><span class="compmd-line">\n</span><span class="compmd-line">let b;</span></code></pre>');
++    expect(root.querySelector("code")?.textContent).toBe("let a;\n\nlet b;");
++  });
++
++  it("are numbered with their lines in the text: a fenced block's from the line after its fence", () => {
++    // "Intro.\n\n```ts\nconst a = 1;\nconst b = 2;\n```": the block from line 3 to line 6.
++    page().render({ type: "root", children: [paragraph("Intro.", lines(1, 1)), code("const a = 1;\nconst b = 2;", lines(3, 6))] });
++    expect(lineElements().map((line) => line.getAttribute("data-line"))).toEqual(["4", "5"]);
++  });
++
++  it("are numbered from the block's first line when it has no fence, as an indented block", () => {
++    page().render({ type: "root", children: [code("a\nb", lines(2, 3))] });
++    expect(lineElements().map((line) => line.getAttribute("data-line"))).toEqual(["2", "3"]);
++  });
++
++  it("are numbered again when a change before the block moves it, the same elements", () => {
++    const p = page();
++    p.render({ type: "root", children: [paragraph("Intro.", lines(1, 1)), code("const a = 1;\nconst b = 2;", lines(3, 6))] });
++    const [first] = lineElements();
++    // A line typed above the paragraph: the block, kept, is one line on.
++    p.splice([{ from: 0, to: 0, nodes: [paragraph("New line.", lines(1, 1))], lines: 1, offset: 10 }]);
++    expect(lineElements().map((line) => line.getAttribute("data-line"))).toEqual(["5", "6"]);
++    expect(lineElements()[0]).toBe(first);
++  });
++
++  it("have no numbers where the tree has no origins", () => {
++    page().render({ type: "root", children: [code("a\nb")] });
++    expect(lineElements().map((line) => line.hasAttribute("data-line"))).toEqual([false, false]);
++  });
++});
+diff --git a/npm-packages/render/src/code-lines.ts b/npm-packages/render/src/code-lines.ts
+new file mode 100644
+index 0000000..1f47c20
+--- /dev/null
++++ b/npm-packages/render/src/code-lines.ts
+@@ -0,0 +1,56 @@
++// A code block's lines, each an element of its own, so a host can style one (a diff's two sides kept level, a line
++// marked): `<span class="compmd-line" data-line="N">`, N its line in the current text, its newline inside it, so the
++// block's text, and what a reader copies, are the code's. The renderer draws them, numbers them again when what is
++// before the block moves them, and a highlighter fills them with its tokens.
++import type { Placed } from "./source.ts";
++
++/** The class of a code block's line. */
++export const CODE_LINE = "compmd-line";
++
++/** How many lines `text` has: one more than its line breaks. */
++export const lineCount = (text: string): number => text.split("\n").length;
++
++/**
++ * `code`'s text, `text`, drawn in `code` as one line element per line: each line's text, then its line break but the
++ * last's. A blank line is an element with its line break alone.
++ */
++export function drawCodeLines(code: HTMLElement, text: string): void {
++  const document = code.ownerDocument;
++  const lines = text.split("\n");
++  code.replaceChildren(
++    ...lines.map((line, i) => {
++      const element = document.createElement("span");
++      element.className = CODE_LINE;
++      element.textContent = i < lines.length - 1 ? `${line}\n` : line;
++      return element;
++    }),
++  );
++}
++
++/**
++ * The `<code>` of a code block `placed` drew, with the line its code starts on: a fenced block's starts on the line
++ * after its fence, an indented one's on its first line. None for anything else, or for a kept render, an older
++ * text's, whose lines aren't the current text's.
++ */
++export function codeOf({ dom, source, node, kept }: Placed): { code: Element; first: number } | undefined {
++  if (kept || node.type !== "code" || dom.nodeName !== "PRE") return undefined;
++  const code = (dom as Element).firstElementChild;
++  if (!code) return undefined;
++  const { start, end } = source;
++  const fenced = end.line - start.line + 1 > lineCount(code.textContent);
++  return { code, first: start.line + (fenced ? 1 : 0) };
++}
++
++/** Numbers the lines of each code block in `placed` with their lines in the current text, `data-line`. */
++export function numberCodeLines(placed: Iterable<Placed>): void {
++  for (const each of placed) {
++    const found = codeOf(each);
++    if (!found) continue;
++    let line = found.first;
++    for (const child of found.code.children) {
++      if (!child.classList.contains(CODE_LINE)) continue;
++      const number = String(line++);
++      if (child.getAttribute("data-line") !== number) child.setAttribute("data-line", number);
++    }
++  }
++}
+diff --git a/npm-packages/render/src/code.test.ts b/npm-packages/render/src/code.test.ts
+index f2ddc6e..42e49ee 100644
+--- a/npm-packages/render/src/code.test.ts
++++ b/npm-packages/render/src/code.test.ts
+@@ -157,6 +157,6 @@ describe("a code block that shows as code", () => {
+ 
+   it("is plain without a highlighter", () => {
+     createPage(area).render({ type: "root", children: [block("let a;")] });
+-    expect(area.innerHTML).toBe('<pre><code class="language-js">let a;</code></pre>');
++    expect(area.innerHTML).toBe('<pre><code class="language-js"><span class="compmd-line">let a;</span></code></pre>');
+   });
+ });
+diff --git a/npm-packages/render/src/index.ts b/npm-packages/render/src/index.ts
+index d1b15a9..6862ddb 100644
+--- a/npm-packages/render/src/index.ts
++++ b/npm-packages/render/src/index.ts
+@@ -8,6 +8,7 @@ export { schemeOf } from "./scheme.ts";
+ export { Keys, codePointOffset, utf16Offset, type EditRange, type KeyOf, type Keyed } from "./keys.ts";
+ export { reveal, REVEALED_MS, type Source } from "./source.ts";
+ export type { Line, Rect } from "./lines.ts";
++export { CODE_LINE } from "./code-lines.ts";
+ export { BUSY_MS } from "./busy.ts";
+ export type { Change, Diagnostic } from "./stable.ts";
+ export { footnotesOf, definitionsOf, plainText, type Footnotes, type LinkDefinition } from "./document.ts";
+diff --git a/npm-packages/render/src/lines.test.ts b/npm-packages/render/src/lines.test.ts
+index 9d4805f..207e0f2 100644
+--- a/npm-packages/render/src/lines.test.ts
++++ b/npm-packages/render/src/lines.test.ts
+@@ -92,6 +92,26 @@ describe("lines", () => {
+     expect(measured).toEqual(["let a = 1;", "let b;"]);
+   });
+ 
++  it("gives a wrapped line a box per visual line, though WebKit's boxes of one overlap the next's a little", () => {
++    // As WebKit measured a wrapped code line: 15.13px high, 15px apart; and a shorter box on the first visual line.
++    vi.spyOn(Range.prototype, "getClientRects").mockImplementation(
++      () =>
++        [
++          { x: 0, y: 42.93, width: 230, height: 15.13 },
++          { x: 230, y: 45, width: 8, height: 10 },
++          { x: 0, y: 57.93, width: 200, height: 15.13 },
++        ] as unknown as DOMRectList,
++    );
++    const p = page();
++    p.render(tree(node("code", span(1, 0, 3, 20), [], { lang: "js", meta: null, value: "let a;" })));
++    const [line] = [...p.lines()];
++    expect(line?.rects).toHaveLength(2);
++    expect(line?.rects[0]?.y).toBeCloseTo(42.93);
++    expect(line?.rects[0]?.height).toBeCloseTo(15.13);
++    expect(line?.rects[0]?.width).toBeCloseTo(238);
++    expect(line?.rects[1]?.y).toBeCloseTo(57.93);
++  });
++
+   it("places a line with no text of its own by the box of what its range drew, and nothing inside it after", () => {
+     const chart: Mount = (target) => {
+       target.appendChild(document.createElement("svg"));
+diff --git a/npm-packages/render/src/lines.ts b/npm-packages/render/src/lines.ts
+index 9a4c38a..8fbb69d 100644
+--- a/npm-packages/render/src/lines.ts
++++ b/npm-packages/render/src/lines.ts
+@@ -2,6 +2,7 @@
+ // A line's place is where what is drawn from it shows: its text, found in the page's text nodes by their `\n`s, a code
+ // block's line in its `<pre>`, or, for a line with no text of its own on the page, the box of what its range drew.
+ // The index reads only the DOM's text; each line is measured when the generator reaches it.
++import { codeOf } from "./code-lines.ts";
+ import type { Placed } from "./source.ts";
+ 
+ /** A box, in CSS pixels from the page root's top left corner: as `getBoundingClientRect()` gives it, moved there. */
+@@ -97,14 +98,9 @@ function drawnByLine(placed: Iterable<Placed>): Map<number, Drew> {
+       }
+     } else if (dom.nodeType === 1 /* Node.ELEMENT_NODE */) {
+       const element = dom as Element;
+-      const code = node.type === "code" && element.nodeName === "PRE" ? element.firstElementChild : null;
+-      if (code) {
+-        // A fenced block's code starts on the line after its fence; an indented one's, on its first line.
+-        const fenced = end.line - start.line + 1 > lineStarts(code.textContent).length;
+-        codeSegments(code, start.line + (fenced ? 1 : 0), order, add);
+-      } else {
+-        drew(start.line).elements.push({ element, length: (end.offset ?? 0) - (start.offset ?? 0) });
+-      }
++      const code = codeOf({ dom, source, node, kept });
++      if (code) codeSegments(code.code, code.first, order, add);
++      else drew(start.line).elements.push({ element, length: (end.offset ?? 0) - (start.offset ?? 0) });
+     }
+   }
+   for (const found of lines.values()) found.elements.sort((a, b) => a.length - b.length);
+@@ -127,13 +123,18 @@ function drawings(segments: readonly Segment[]): Segment[][] {
+   return runs;
+ }
+ 
+-/** Boxes on one visual line merged into one, those whose spans overlap vertically; empty boxes left out. */
++/**
++ * Boxes on one visual line merged into one, those that overlap vertically by more than half the shorter's height;
++ * empty boxes left out. Not any overlap: WebKit's text boxes are a little taller than their lines are apart (15.13px
++ * every 15px), so each visual line's box overlaps the next one's.
++ */
+ function byVisualLine(boxes: readonly Rect[]): Rect[] {
+   const lines: { left: number; top: number; right: number; bottom: number }[] = [];
+   for (const { x, y, width, height } of boxes) {
+     if (width === 0 && height === 0) continue;
+     const box = { left: x, top: y, right: x + width, bottom: y + height };
+-    const line = lines.find((other) => box.top < other.bottom && other.top < box.bottom);
++    const sameLine = (other: (typeof lines)[number]) => Math.min(box.bottom, other.bottom) - Math.max(box.top, other.top) > Math.min(box.bottom - box.top, other.bottom - other.top) / 2;
++    const line = lines.find(sameLine);
+     if (!line) {
+       lines.push(box);
+       continue;
+diff --git a/npm-packages/render/src/markdown-views.ts b/npm-packages/render/src/markdown-views.ts
+index 5e8b82e..150784f 100644
+--- a/npm-packages/render/src/markdown-views.ts
++++ b/npm-packages/render/src/markdown-views.ts
+@@ -1,5 +1,6 @@
+ // The views of Markdown nodes (CommonMark and GFM, with alerts and math; spec §2.3): text, elements, code blocks that
+ // show as code, images whose files the caller gives, and code or math the caller's renderer draws.
++import { drawCodeLines } from "./code-lines.ts";
+ import type { ImageSource } from "./images.ts";
+ import { safeUrl } from "./html.ts";
+ import { destroyAll, patch, pendingTag, shapeOf, type Pass, type Surface, type View } from "./render.ts";
+@@ -179,8 +180,9 @@ export class ElementView implements View {
+ }
+ 
+ /**
+- * A code block that shows as code, `<pre><code class="language-…">`: one no code renderer draws, or a code renderer's
+- * fallback. The caller's highlighter, if any, highlights it, again only when its text or language changes.
++ * A code block that shows as code, `<pre><code class="language-…">`, each line an element of its own (`code-lines.ts`):
++ * one no code renderer draws, or a code renderer's fallback. The caller's highlighter, if any, highlights it, again
++ * only when its text or language changes.
+  */
+ export class CodeBlockView implements View {
+   readonly shape: string;
+@@ -208,7 +210,7 @@ export class CodeBlockView implements View {
+     this.#shown = shown;
+     if (language) this.#code.className = `language-${language}`;
+     else this.#code.removeAttribute("class");
+-    this.#code.textContent = code;
++    drawCodeLines(this.#code, code);
+     this.#surface.highlight?.(code, language, this.#code);
+   }
+ 
+diff --git a/npm-packages/render/src/page.test.ts b/npm-packages/render/src/page.test.ts
+index a6df096..860903a 100644
+--- a/npm-packages/render/src/page.test.ts
++++ b/npm-packages/render/src/page.test.ts
+@@ -74,7 +74,7 @@ describe("Markdown", () => {
+         '<ol start="3"><li><p>three</p></li></ol>' +
+         '<ul class="compmd-tight"><li class="compmd-task"><input type="checkbox" disabled="" checked=""><p>done</p></li></ul>' +
+         '<blockquote class="compmd-quote"><p>quoted</p></blockquote><hr>' +
+-        '<pre><code class="language-js">let a;</code></pre>',
++        '<pre><code class="language-js"><span class="compmd-line">let a;</span></code></pre>',
+     );
+   });
+ 
+diff --git a/npm-packages/render/src/render.ts b/npm-packages/render/src/render.ts
+index fe233d7..da6fa14 100644
+--- a/npm-packages/render/src/render.ts
++++ b/npm-packages/render/src/render.ts
+@@ -22,8 +22,10 @@ export type CodeRenderer = (source: string, target: HTMLElement) => void;
+ export type MathRenderer = (tex: string, options: { display: boolean }, target: HTMLElement) => void;
+ /**
+  * Highlights a code block that shows as code: `code`, written in the fence language `language` (`""` for none), into
+- * `target`, the block's `<code>`, which holds `code` as text until then. It may do so later, once what it needs has
+- * loaded; it is called again only when the block's text or language changes.
++ * `target`, the block's `<code>`, which holds one element per line until then, each `.compmd-line` (`CODE_LINE`)
++ * with its text and its line break. It puts each line's tokens in that line's element, keeping the element and its
++ * attributes (`data-line`), so a host's styles for a line stay. It may do so later, once what it needs has loaded; it
++ * is called again only when the block's text or language changes.
+  */
+ export type CodeHighlighter = (code: string, language: string, target: HTMLElement) => void;
+ 
+diff --git a/npm-packages/render/src/styles.ts b/npm-packages/render/src/styles.ts
+index 97be7b7..1ec6b81 100644
+--- a/npm-packages/render/src/styles.ts
++++ b/npm-packages/render/src/styles.ts
+@@ -181,8 +181,8 @@ export function ownParams(params: readonly ExpandedParam[]): Record<string, unkn
+ 
+ /**
+  * Rules every document needs once: the boxes the renderer makes (`render=both`'s stacked, which a host's
+- * `.compmd-both` rule can set side by side), the containers breakpoints query, and the look of what Markdown has no
+- * CSS for. A box's padding is its own: the margins of its first and last child are trimmed, as
++ * `.compmd-both` rule can set side by side), the containers breakpoints query, a code block's lines as blocks (so a
++ * host can size one: `.compmd-line { min-height }`), and the look of what Markdown has no CSS for. A box's padding is its own: the margins of its first and last child are trimmed, as
+  * `margin-trim: block` would, at the specificity of `:first-child`, so a host's own rules still win.
+  *
+  * On paper (docs/printing.md): the page is light, a component that prints its fallback shows it instead of itself, a
+@@ -210,6 +210,7 @@ const BASE_RULES = `
+ .compmd-align-left { text-align: start; }
+ .compmd-align-center { text-align: center; }
+ .compmd-align-right { text-align: end; }
++.compmd-line { display: block; }
+ .compmd-print-wrap { display: contents; }
+ .compmd-print-paper { display: none; }
+ @media print {
+diff --git a/npm-packages/sandbox/README.md b/npm-packages/sandbox/README.md
+index 0882c63..1bc5465 100644
+--- a/npm-packages/sandbox/README.md
++++ b/npm-packages/sandbox/README.md
+@@ -179,7 +179,7 @@ view.on("settled", () => print());             // each time it settles again, af
+ 
+ Every code block that shows as code is highlighted, wherever a page renders (the page's frame, a use's frame, the host's page): one of a language no code renderer draws, and a code renderer's fallback, when its component is missing or fails (spec §7.7). It is `@compmd/render`'s `highlight`, given as `shikiHighlight()`, which a host that renders a page itself with `createPage` or `createRegion` can give too.
+ 
+-- **Shiki,** with its JavaScript regex engine, so a strict frame needs no WebAssembly and its policy stays as it is. Its core and engine load the first time a page has a code block; each language's grammar the first time a block of it shows. Until then, and for a block it can't highlight, the text shows as it is. A block is highlighted again only when its text changes.
++- **Shiki,** with its JavaScript regex engine, so a strict frame needs no WebAssembly and its policy stays as it is. Its core and engine load the first time a page has a code block; each language's grammar the first time a block of it shows. Until then, and for a block it can't highlight, the text shows as it is. A block is highlighted again only when its text changes. Each line's tokens go into that line's element, which `@compmd/render` draws (`.compmd-line`, with its `data-line`), so a host's styles for a line hold before and after the tokens come.
+ - **Light and dark:** GitHub's themes, as the website's spec page. Each token's colour is `light-dark(light, dark)`, set through the CSSOM, so it follows the `color-scheme` every frame takes from the page around it, with nothing drawn again when it changes.
+ - **CompMD's syntax** shows in `md`, `markdown` and `compmd` blocks: component lines, inline components, param lists and `{{paths}}`, by a grammar injected into Markdown's, with a document's frontmatter, or a `compmd` definition's signature, as YAML. The website's spec page uses the same grammar, `@compmd/sandbox/grammar`.
+ - **The languages, by the fence names that mean them:** C (`c`), C++ (`cpp`, `c++`), C# (`csharp`, `c#`, `cs`), Java, Kotlin (`kotlin`, `kt`, `kts`), Scala, Swift, Objective-C (`objective-c`, `objc`), Go, Rust (`rust`, `rs`), Zig, Dart; Python (`python`, `py`), Ruby (`ruby`, `rb`), PHP, Perl, Lua, R, Julia (`julia`, `jl`), PowerShell (`powershell`, `ps`, `ps1`, `pwsh`), shell (`shellscript`, `bash`, `sh`, `shell`, `zsh`), Batch (`bat`, `batch`, `cmd`); Haskell (`haskell`, `hs`), Elixir, Erlang (`erlang`, `erl`), Clojure (`clojure`, `clj`), F# (`fsharp`, `f#`, `fs`), OCaml; JavaScript (`javascript`, `js`, `cjs`, `mjs`), TypeScript (`typescript`, `ts`, `cts`, `mts`), JSX, TSX, HTML, CSS, SCSS, Less, Svelte, Vue, Astro, GraphQL (`graphql`, `gql`); JSON, JSONC, JSON5, YAML (`yaml`, `yml`), TOML, INI (`ini`, `properties`), XML, CSV, SQL, Protocol Buffers (`proto`, `protobuf`); Dockerfile (`docker`, `dockerfile`), Makefile (`make`, `makefile`), CMake, HCL, Nix, Nginx; Diff, Markdown (`markdown`, `md`), CompMD (`compmd`), LaTeX, Mermaid (`mermaid`, `mmd`), MATLAB, Groovy, Solidity. A name is any case; any other language stays plain.
+diff --git a/npm-packages/sandbox/src/check/check.ts b/npm-packages/sandbox/src/check/check.ts
+index 44f9ffe..3e8f00a 100644
+--- a/npm-packages/sandbox/src/check/check.ts
++++ b/npm-packages/sandbox/src/check/check.ts
+@@ -167,7 +167,8 @@ export async function runCheck(options: CheckOptions): Promise<CheckReport> {
+   view.render(tree);
+ 
+   const mounted = (name: string) => observation.events.some((event) => event.type === "mounted" && event.component === name && event.frame !== "");
+-  const highlighted = () => (options.container.querySelector("pre code.language-rust")?.querySelectorAll("span").length ?? 0) > 1;
++  // Tokens inside the block's lines: each line is a span (`.compmd-line`) before it is highlighted too.
++  const highlighted = () => (options.container.querySelector("pre code.language-rust")?.querySelectorAll(".compmd-line > span").length ?? 0) > 1;
+   await until(() => (seenValue !== undefined && highlighted() && packs.every((_pack, i) => mounted(`pack-${String(i)}`))) || errors.length > 0, ms);
+ 
+   const frames = [...options.container.querySelectorAll("iframe")].map((frame) => frame.src);
+diff --git a/npm-packages/sandbox/src/highlight/highlight.test.ts b/npm-packages/sandbox/src/highlight/highlight.test.ts
+index 3e13ecf..f67e81d 100644
+--- a/npm-packages/sandbox/src/highlight/highlight.test.ts
++++ b/npm-packages/sandbox/src/highlight/highlight.test.ts
+@@ -1,12 +1,19 @@
+ // @vitest-environment happy-dom
++import { CODE_LINE } from "@compmd/render";
+ import { describe, expect, it, vi } from "vitest";
+ import { highlightWith, shikiHighlight, type Shikis } from "./highlight.ts";
+ import { LANGUAGE_NAMES } from "./languages.ts";
+ 
++/** `target` holding `text` as the renderer draws it: an element per line, each with its line break but the last. */
++function drawLines(target: HTMLElement, text: string): HTMLElement {
++  const lines = text.split("\n");
++  target.replaceChildren(...lines.map((line, i) => Object.assign(document.createElement("span"), { className: CODE_LINE, textContent: i < lines.length - 1 ? `${line}\n` : line })));
++  return target;
++}
+ /** A block's `<code>`, holding its text, as the renderer gives it. */
+-const codeOf = (text: string) => Object.assign(document.createElement("code"), { textContent: text });
+-/** The texts of `target`'s tokens. */
+-const tokens = (target: HTMLElement) => [...target.querySelectorAll("span")].map((span) => span.textContent);
++const codeOf = (text: string) => drawLines(document.createElement("code"), text);
++/** The texts of `target`'s tokens, the spans in its lines. */
++const tokens = (target: HTMLElement) => [...target.querySelectorAll(`.${CODE_LINE} > span`)].map((span) => span.textContent);
+ 
+ /**
+  * How long to wait for Shiki and a grammar to load: well under a second alone, but many seconds while every package's
+@@ -51,7 +58,27 @@ describe("shikiHighlight", () => {
+     highlight("DISPLAY 'HI'.", "cobol", cobol);
+     highlight("plain", "", none);
+     await new Promise((resolve) => setTimeout(resolve, 100));
+-    expect([cobol.innerHTML, none.innerHTML]).toEqual(["DISPLAY 'HI'.", "plain"]);
++    expect([tokens(cobol), tokens(none)]).toEqual([[], []]);
++    expect([cobol.textContent, none.textContent]).toEqual(["DISPLAY 'HI'.", "plain"]);
++  });
++
++  it("puts each line's tokens in its line's element, which keeps its attributes, a blank line's too", TEST, async () => {
++    const highlight = shikiHighlight();
++    const text = "const a = 1;\n\nconst b = 2;";
++    const target = codeOf(text);
++    for (const [i, line] of [...target.children].entries()) line.setAttribute("data-line", String(4 + i));
++    const lines = [...target.children];
++    highlight(text, "js", target);
++    await vi.waitFor(() => {
++      expect(tokens(target)).toContain("const");
++    }, LOADED);
++    expect([...target.children]).toEqual(lines);
++    expect(lines.map((line) => [line.getAttribute("data-line"), line.textContent])).toEqual([
++      ["4", "const a = 1;\n"],
++      ["5", "\n"],
++      ["6", "const b = 2;"],
++    ]);
++    expect(target.textContent).toBe(text);
+   });
+ 
+   it("loads and draws every language it lists, with the JavaScript engine", { timeout: 30_000 }, async () => {
+@@ -60,7 +87,7 @@ describe("shikiHighlight", () => {
+     for (const [name, target] of blocks) highlight("x = 1\ny", name, target);
+     await vi.waitFor(
+       () => {
+-        expect(blocks.filter(([, target]) => target.querySelector("span") === null).map(([name]) => name)).toEqual([]);
++        expect(blocks.filter(([, target]) => tokens(target).length === 0).map(([name]) => name)).toEqual([]);
+       },
+       { timeout: 25_000 },
+     );
+@@ -74,7 +101,7 @@ describe("highlightWith", () => {
+     const target = codeOf("let older = 1;");
+     // TypeScript's grammar loads after JavaScript's, so the older block's tokens could come last.
+     highlight("let older = 1;", "ts", target);
+-    target.textContent = "let newer = 2;";
++    drawLines(target, "let newer = 2;");
+     highlight("let newer = 2;", "js", target);
+     await vi.waitFor(() => {
+       expect(tokens(target).some((token) => token.includes("newer"))).toBe(true);
+@@ -88,6 +115,18 @@ describe("highlightWith", () => {
+     const target = codeOf("const a = 1;");
+     highlight("const a = 1;", "js", target);
+     await new Promise((resolve) => setTimeout(resolve, 50));
++    expect(target.innerHTML).toBe(`<span class="${CODE_LINE}">const a = 1;</span>`);
++  });
++
++  it("keeps a block's text when its lines aren't an element each, as another renderer's are", TEST, async () => {
++    const highlight = shikiHighlight();
++    const target = Object.assign(document.createElement("code"), { textContent: "const a = 1;" });
++    const other = codeOf("const b = 2;");
++    highlight("const a = 1;", "js", target);
++    highlight("const b = 2;", "js", other);
++    await vi.waitFor(() => {
++      expect(tokens(other)).toContain("const");
++    }, LOADED);
+     expect(target.innerHTML).toBe("const a = 1;");
+   });
+ });
+diff --git a/npm-packages/sandbox/src/highlight/highlight.ts b/npm-packages/sandbox/src/highlight/highlight.ts
+index 528c9f4..73ee9e9 100644
+--- a/npm-packages/sandbox/src/highlight/highlight.ts
++++ b/npm-packages/sandbox/src/highlight/highlight.ts
+@@ -4,7 +4,7 @@
+ // shows. Each token's colour is `light-dark(light, dark)`, set through the CSSOM, which a frame's policy allows, and
+ // which follows the `color-scheme` a frame takes from the page around it.
+ 
+-import type { CodeHighlighter } from "@compmd/render";
++import { CODE_LINE, type CodeHighlighter } from "@compmd/render";
+ import type { HighlighterCore, LanguageRegistration, ThemedTokenWithVariants } from "@shikijs/core";
+ import { COMPMD, splitYaml } from "./grammar.ts";
+ import { grammarOf, languageOf } from "./languages.ts";
+@@ -97,14 +97,17 @@ export function highlightWith(load: () => Promise<Shikis>): CodeHighlighter {
+   };
+ }
+ 
+-/** Puts `lines` in `target` as spans, unless they aren't `code`'s text: then it keeps the text. */
++/**
++ * Puts `lines` in `target` as spans, each line's in its line's element (`CODE_LINE`), which keeps its attributes,
++ * unless they aren't `code`'s text, or `target` hasn't an element for each line: then it keeps the text.
++ */
+ function draw(lines: Lines, code: string, target: HTMLElement): void {
+   if (lines.map((line) => line.map(({ content }) => content).join("")).join("\n") !== code) return;
++  const elements = [...target.children].filter((child) => child.classList.contains(CODE_LINE));
++  if (elements.length !== lines.length) return;
+   const document = target.ownerDocument;
+-  const parts: Node[] = [];
+   for (const [i, line] of lines.entries()) {
+-    if (i > 0) parts.push(document.createTextNode("\n"));
+-    for (const { content, variants } of line) {
++    const parts: Node[] = line.map(({ content, variants }) => {
+       const span = document.createElement("span");
+       span.textContent = content;
+       const { light, dark } = variants;
+@@ -113,8 +116,9 @@ function draw(lines: Lines, code: string, target: HTMLElement): void {
+       if (style & ITALIC) span.style.setProperty("font-style", "italic");
+       if (style & BOLD) span.style.setProperty("font-weight", "bold");
+       if (style & UNDERLINE) span.style.setProperty("text-decoration", "underline");
+-      parts.push(span);
+-    }
++      return span;
++    });
++    if (i < lines.length - 1) parts.push(document.createTextNode("\n"));
++    elements[i]?.replaceChildren(...parts);
+   }
+-  target.replaceChildren(...parts);
+ }
+diff --git a/npm-packages/sandbox/test/view.test.ts b/npm-packages/sandbox/test/view.test.ts
+index f1b2e15..ac24d17 100644
+--- a/npm-packages/sandbox/test/view.test.ts
++++ b/npm-packages/sandbox/test/view.test.ts
+@@ -409,11 +409,15 @@ describe("code blocks", () => {
+     { type: "code", lang: "mermaid", meta: null, value: "graph LR; A --> B", component: { name: "mermaid", params: [{ key: "code", breakpoint: null, value: "graph LR; A --> B" }] } },
+   ];
+ 
+-  /** Each code block's language, how many tokens it shows, and its first token's colour, once all are highlighted. */
++  /**
++   * Each code block's language, how many tokens it shows, and its first token's colour, once all are highlighted: the
++   * tokens are the spans in its lines (`.compmd-line`), written out since this runs in the frame too.
++   */
+   const shown = async (root: ParentNode) => {
+     const codes = () => [...root.querySelectorAll("pre code")];
+-    for (let tries = 0; tries < 200 && (codes().length < 2 || codes().some((code) => !code.querySelector("span"))); tries++) await new Promise((done) => setTimeout(done, 20));
+-    return codes().map((code) => ({ language: code.className, tokens: code.querySelectorAll("span").length, text: code.textContent, color: getComputedStyle(code.querySelector("span") ?? code).color }));
++    const tokensOf = (code: Element) => code.querySelectorAll(".compmd-line > span");
++    for (let tries = 0; tries < 200 && (codes().length < 2 || codes().some((code) => tokensOf(code).length === 0)); tries++) await new Promise((done) => setTimeout(done, 20));
++    return codes().map((code) => ({ language: code.className, tokens: tokensOf(code).length, text: code.textContent, color: getComputedStyle(tokensOf(code)[0] ?? code).color }));
+   };
+ 
+   /** A strict component in the page's frame, which reports what the frame's page shows of its code blocks. */
+@@ -660,6 +664,37 @@ describe("where each line is", () => {
+       expect(lines.every(({ rects }) => rects.every(({ width, height }) => width > 0 && height > 0))).toBe(true);
+     });
+   }
++
++  // In host mode, where the test can look into the page. A host that wraps long lines, as a diff's two sides do.
++  it("draws a code block's lines an element each, numbered, which copy as the code and keep their boxes, a wrapped line's several (host mode)", async () => {
++    const long = `let wrapped = ${Array.from({ length: 24 }, (_, i) => `word${String(i)}`).join(" + ")};`;
++    const value = `let a;\n\n${long}`;
++    const wrapping = document.head.appendChild(Object.assign(document.createElement("style"), { textContent: "pre { white-space: pre-wrap; }" }));
++    try {
++      const { area, view, events, until } = open("host", []);
++      area.style.width = "240px";
++      // "```js\nlet a;\n\n<long>\n```": the block from line 1 to line 5, its code on lines 2 to 4.
++      view.render({ type: "root", children: [{ type: "code", lang: "js", meta: null, value, origin: range([1, 0], [5, 30 + long.length]) }] });
++      await until(() => events.layout.length > 0);
++      const pre = area.querySelector("pre");
++      const elements = [...(pre?.querySelectorAll<HTMLElement>("code > .compmd-line") ?? [])];
++      expect(elements.map((line) => line.dataset.line)).toEqual(["2", "3", "4"]);
++      // Each line break is in its line's element, so none makes a line of its own: the lines' heights are the block's.
++      const heights = elements.map((line) => line.getBoundingClientRect().height);
++      expect(heights[1]).toBeGreaterThan(0);
++      expect(Math.abs(heights.reduce((sum, height) => sum + height, 0) - (pre?.getBoundingClientRect().height ?? 0))).toBeLessThan(1);
++      const selection = getSelection();
++      if (pre) selection?.selectAllChildren(pre);
++      expect(selection?.toString()).toBe(value);
++      selection?.removeAllRanges();
++      const lines = [];
++      for await (const line of view.lines()) lines.push(line);
++      expect(lines.map(({ line }) => line)).toEqual([2, 3, 4]);
++      expect(lines[2]?.rects.length).toBeGreaterThan(1);
++    } finally {
++      wrapping.remove();
++    }
++  });
+ });
+ 
+ describe("when the page has settled", () => {

@@ -8466,7 +8466,7 @@
         "npm-packages/sandbox/src/highlight/highlight.ts"
       ],
       "created_at": "2026-11-18T07:51:14Z",
-      "updated_at": "2026-11-18T19:57:20Z",
+      "updated_at": "2026-11-18T19:57:31Z",
       "created_by": "claude:0f56a916",
       "updated_by": "claude:79612601",
       "number": 250,
@@ -8483,6 +8483,13 @@
           "at": "2026-11-18T19:44:57Z",
           "kind": "failure",
           "text": "lease expired (claude:79612601)"
+        }
+      ],
+      "commit": "8dbbb05f3138b927f217c3e9ffb8deef40bb0583",
+      "code_reviews": [
+        {
+          "id": "01a1f03c-ac29-708f-be97-bb0ccb911a3b",
+          "ref": "CR-6"
         }
       ]
     }
