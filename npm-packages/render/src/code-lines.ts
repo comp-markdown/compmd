@@ -1,10 +1,16 @@
-// A code block's lines, each an element of its own, so a host can style one (a diff's two sides kept level, a line
-// marked): `<span class="compmd-line" data-line="N">`, N its line in the current text, its newline inside it, so the
-// block's text, and what a reader copies, are the code's. The renderer draws them, numbers them again when what is
-// before the block moves them, and a highlighter fills them with its tokens.
+// A code block's lines, each an element of its own, so the page can size one for a host (`LineHeights`: a diff's two
+// sides kept level): `<span class="compmd-line" data-line="N">`, N its line in the current text, its newline inside
+// it, so the block's text, and what a reader copies, are the code's. The renderer draws them, numbers them again when
+// what is before the block moves them, and a highlighter fills them with its tokens. All of it is the renderer's own:
+// a host sizes lines by their line in the text (`Page.lineHeights`) and finds them with `Page.lines`, never by these
+// elements, so how they are drawn and numbered can change.
 import type { Placed } from "./source.ts";
 
-/** The class of a code block's line. */
+/**
+ * The class of a code block's line.
+ *
+ * @internal For `@compmd/sandbox`'s highlighter, which fills the lines; not for hosts.
+ */
 export const CODE_LINE = "compmd-line";
 
 /** How many lines `text` has: one more than its line breaks. */
@@ -39,6 +45,40 @@ export function codeOf({ dom, source, node, kept }: Placed): { code: Element; fi
   const { start, end } = source;
   const fenced = end.line - start.line + 1 > lineCount(code.textContent);
   return { code, first: start.line + (fenced ? 1 : 0) };
+}
+
+/**
+ * The heights a host gave code blocks' lines, by their line in the text: each such line is at least that tall, in
+ * CSS pixels. Kept, and given again after each render, so a line drawn again or numbered again keeps its height.
+ */
+export class LineHeights {
+  readonly #root: Element;
+  #heights: ReadonlyMap<number, number> = new Map();
+  /** The lines given a height, so the next call or render takes it back from those it no longer names. */
+  readonly #sized = new Set<HTMLElement>();
+
+  constructor(root: Element) {
+    this.#root = root;
+  }
+
+  /** Sizes the lines `heights` names, and only those. */
+  set(heights: ReadonlyMap<number, number>): void {
+    this.#heights = new Map(heights);
+    this.apply();
+  }
+
+  /** Sizes the lines again, as they are drawn now: after a render. */
+  apply(): void {
+    for (const line of this.#sized) line.style.removeProperty("min-height");
+    this.#sized.clear();
+    if (this.#heights.size === 0) return;
+    for (const line of this.#root.querySelectorAll<HTMLElement>(`.${CODE_LINE}[data-line]`)) {
+      const height = this.#heights.get(Number(line.dataset.line));
+      if (height === undefined) continue;
+      line.style.setProperty("min-height", `${String(height)}px`);
+      this.#sized.add(line);
+    }
+  }
 }
 
 /** Numbers the lines of each code block in `placed` with their lines in the current text, `data-line`. */

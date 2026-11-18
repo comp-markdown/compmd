@@ -11,7 +11,7 @@ import type { ExpandedRoot, Point, Splice } from "./tree.ts";
 export type { Line, Rect };
 
 /** The protocol's version, sent in `ready`; a host checks it, since a host page and its frame may be deployed apart. */
-export const PROTOCOL_VERSION = 4;
+export const PROTOCOL_VERSION = 5;
 
 /** How many lines a frame measures for one `lines` message. */
 export const LINES_BATCH = 200;
@@ -40,7 +40,9 @@ export type HostMessage =
   /** Report the source of what the reader clicks (`pointed`), or stop. */
   | { type: "point"; on: boolean }
   /** Up to `count` lines' places, from line `from`: the frame answers with `lines` and the same `id`. */
-  | { type: "lines"; id: number; from: number; count: number };
+  | { type: "lines"; id: number; from: number; count: number }
+  /** The heights of code blocks' lines, `[line, px]` each, as the page's `lineHeights`; the next replaces them. */
+  | { type: "lineHeights"; heights: [number, number][] };
 
 /** How a host sends splices. */
 export interface SpliceOptions {
@@ -95,6 +97,18 @@ const rectOf = (element: Element): Rect => {
   return { x, y, width, height };
 };
 
+/** The pairs of a `lineHeights` message that are a line, a whole number from 1, and a height, a number from 0. */
+function heightsOf(value: unknown): Map<number, number> {
+  const heights = new Map<number, number>();
+  if (!Array.isArray(value)) return heights;
+  for (const pair of value as unknown[]) {
+    if (!Array.isArray(pair)) continue;
+    const [line, height] = pair as unknown[];
+    if (Number.isInteger(line) && (line as number) >= 1 && typeof height === "number" && Number.isFinite(height) && height >= 0) heights.set(line as number, height);
+  }
+  return heights;
+}
+
 /** Up to `count` of `page`'s lines from line `from`, and whether there are no more. */
 function linesFrom(page: Page, from: number, count: number): { lines: Line[]; done: boolean } {
   const lines: Line[] = [];
@@ -110,8 +124,8 @@ function linesFrom(page: Page, from: number, count: number): { lines: Line[]; do
  * Runs the frame's end: renders what the host sends into `options.container`, and tells the host about `set` calls,
  * components that show their fallback, and each render once it is painted. It scrolls to and marks what a source
  * offset drew (`reveal`), gives its boxes (`rects`), and, once asked (`point`), the source of what the reader clicks.
- * It gives each line's place (`lines`, a batch at a time), says when they may have moved (`layout`), and when the
- * page has drawn after the renders and splices it took (`drawn`).
+ * It gives each line's place (`lines`, a batch at a time), sizes code blocks' lines (`lineHeights`), says when they
+ * may have moved (`layout`), and when the page has drawn after the renders and splices it took (`drawn`).
  *
  * @example
  * // inside the frame
@@ -178,6 +192,9 @@ export function serveFrame(port: Port, options: FrameOptions): { page: Page; clo
       case "lines":
         post({ type: "lines", id: message.id, ...linesFrom(page, message.from, Math.min(message.count, LINES_BATCH)) });
         return;
+      case "lineHeights":
+        page.lineHeights(heightsOf(message.heights));
+        return;
       case "render":
         page.render(message.tree, message.change);
         seen += 1;
@@ -242,6 +259,8 @@ export interface FrameConnection {
    * });
    */
   lines(from?: number): AsyncGenerator<Line>;
+  /** Sizes the code blocks' lines of the frame's page, by their line in the text, as a page's `lineHeights`. */
+  lineHeights(heights: ReadonlyMap<number, number>): void;
   /**
    * Listens for the frame's messages. A frame's code may be untrusted: `pointed` carries only a well-formed source,
    * `rects` and `lines` only boxes that are numbers and lines that are whole numbers from 1, and other messages are as
@@ -384,6 +403,9 @@ export function connectFrame(port: Port): FrameConnection {
         if (done || !last) return;
         next = last.line + 1;
       }
+    },
+    lineHeights(heights) {
+      send({ type: "lineHeights", heights: [...heights] });
     },
     render(tree, change) {
       send({ type: "render", tree, ...(change ? { change } : {}) });

@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 251,
+    "next_number": 252,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -8492,6 +8492,37 @@
           "ref": "CR-6"
         }
       ]
+    },
+    {
+      "id": "01a1f065-c028-7345-9484-b544d2ee9eab",
+      "name": "Highlighters give tokens, and the renderer draws them",
+      "type": "refactor",
+      "priority": "P2",
+      "description": "A highlighter (`CodeHighlighter`, `@compmd/render`) writes DOM into the renderer's `<code>`, so it has to know how the renderer draws a block: since CMD-250, that each line is an element of its own, whose attributes it must keep. That is the renderer's private detail (the line elements, `data-line`, how lines are numbered), which may change (CMD-250's option 3), and a host's own highlighter shouldn't break when it does.\n\n## Change\n\n- `CodeHighlighter` gives tokens instead of writing DOM: `(code, language) => Promise<lines | undefined>`, each line a list of tokens with their text and their style (a colour per theme, and the font style), `undefined` for a language it doesn't highlight.\n- The renderer draws them into its own line elements, after checking that they are the block's text, and drops tokens that come after a newer text (as `highlightWith` does today).\n- `@compmd/sandbox`'s Shiki highlighter (`shikiHighlight`, `highlightWith`) gives Shiki's tokens as they are; its `draw` moves into the renderer.\n- Nothing about lines is exported for highlighters (`CODE_LINE` is the renderer's own).\n- The READMEs give the new contract; the release notes name the break: a host's own highlighter returns tokens.\n\n## Tests\n\n- The renderer draws a highlighter's tokens into a block's lines, keeping the lines' numbers, and keeps the text when the tokens aren't its text or don't come.\n- Shiki's highlighter gives tokens for a language it highlights, and none for one it doesn't.\n- The browser tests of code blocks, in both page modes, light and dark, as today.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1eda3-72cc-74dd-9a87-b21dd98dd410"
+      ],
+      "files": [
+        "npm-packages/render/src/render.ts",
+        "npm-packages/render/src/code-lines.ts",
+        "npm-packages/sandbox/src/highlight/highlight.ts"
+      ],
+      "created_at": "2026-11-18T20:42:42Z",
+      "updated_at": "2026-11-18T20:42:42Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Packs and website",
+          "from": "2026-11-18T20:42:42Z"
+        }
+      ],
+      "sprint": "Packs and website",
+      "number": 251,
+      "key_final": false
     }
   ]
 }

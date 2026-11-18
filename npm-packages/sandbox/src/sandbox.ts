@@ -133,6 +133,20 @@ export interface View {
    */
   lines(from?: number): AsyncGenerator<Line>;
   /**
+   * Makes the code blocks' lines `heights` names at least that tall: by their line in the text, as `lines` numbers
+   * them, in CSS pixels; an empty map gives every line its own height back. Kept as later renders and splices draw and
+   * move the lines, until the next call. Lines that aren't a code block's are left as they are. In frame mode the frame
+   * sizes them. For a host that keeps two views' lines level, as a diff's two sides, from what `lines` measured of each.
+   * In order with renders and splices, as `reveal`.
+   *
+   * @example
+   * // each line as tall as the taller of its two sides
+   * const tallest = new Map([...left].map(([line, height]) => [line, Math.max(height, right.get(line) ?? 0)]));
+   * leftView.lineHeights(tallest);
+   * rightView.lineHeights(tallest);
+   */
+  lineHeights(heights: ReadonlyMap<number, number>): void;
+  /**
    * Resolves the next time the page has settled, at once when it has: after the latest render or splice, every use in
    * the host's page and in every frame at any depth mounted or showing its fallback, every drawing a component gave
    * `busy` settled (spec §7.4), every frame settled with its last size applied, the page's images loaded or failed and
@@ -327,6 +341,12 @@ export function createSandbox(given: SandboxOptions): Sandbox {
         lines: async function* (from) {
           await ready;
           yield* page.lines(from);
+        },
+        lineHeights: (heights) => {
+          const kept = new Map(heights);
+          void ready.then(() => {
+            page.lineHeights(kept);
+          });
         },
         settled: () => settling.whenSettled(),
         print: () =>

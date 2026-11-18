@@ -52,3 +52,38 @@ describe("a code block's lines", () => {
     expect(lineElements().map((line) => line.hasAttribute("data-line"))).toEqual([false, false]);
   });
 });
+
+describe("lineHeights", () => {
+  const minHeights = () => lineElements().map((line) => (line as HTMLElement).style.minHeight);
+  const document = () => ({ type: "root" as const, children: [paragraph("Intro.", lines(1, 1)), code("const a = 1;\nconst b = 2;", lines(3, 6))] });
+
+  it("makes the lines it names, by their line in the text, at least that tall, and only those", () => {
+    const p = page();
+    p.render(document());
+    p.lineHeights(new Map([[5, 45]]));
+    expect(minHeights()).toEqual(["", "45px"]);
+    p.lineHeights(new Map([[4, 30]]));
+    expect(minHeights()).toEqual(["30px", ""]);
+    p.lineHeights(new Map());
+    expect(minHeights()).toEqual(["", ""]);
+  });
+
+  it("keeps them as later renders draw the lines again, and gives them by line as a change moves the block", () => {
+    const p = page();
+    p.render(document());
+    p.lineHeights(new Map([[5, 45]]));
+    p.render({ type: "root", children: [paragraph("Intro.", lines(1, 1)), code("const a = 1;\nconst c = 3;", lines(3, 6))] });
+    expect(minHeights()).toEqual(["", "45px"]);
+    // A line typed above: line 5 is now the block's first line.
+    p.splice([{ from: 0, to: 0, nodes: [paragraph("New line.", lines(1, 1))], lines: 1, offset: 10 }]);
+    expect(minHeights()).toEqual(["45px", ""]);
+  });
+
+  it("leaves a line that isn't a code block's as it is", () => {
+    const p = page();
+    p.render(document());
+    p.lineHeights(new Map([[1, 45]]));
+    expect(root.querySelector("p")?.getAttribute("style")).toBeNull();
+    expect(minHeights()).toEqual(["", ""]);
+  });
+});

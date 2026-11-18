@@ -119,6 +119,25 @@ describe("the host and frame protocol", () => {
     container.remove();
   });
 
+  it("sizes the frame's code lines by their line in the text, taking only lines and heights that are numbers", async () => {
+    const [host, frame] = channel();
+    const container = document.body.appendChild(document.createElement("main"));
+    const served = serveFrame(frame, { container });
+    const connection = connectFrame(host);
+    const origin = { start: { line: 1, column: 1 }, end: { line: 4, column: 1 }, occurrence: 0 };
+    connection.render({ type: "root", children: [{ type: "code", lang: "js", meta: null, value: "a\nb", origin }] });
+    connection.lineHeights(new Map([[3, 40]]));
+    await settle();
+    const minHeights = () => [...container.querySelectorAll<HTMLElement>(".compmd-line")].map((line) => line.style.minHeight);
+    expect(minHeights()).toEqual(["", "40px"]);
+    // A frame takes messages from anything on its port: what isn't a line and a height is dropped.
+    host.postMessage({ type: "lineHeights", heights: [[2, 30], [0, 10], [3, -1], ["2", 5], 7] });
+    await settle();
+    expect(minHeights()).toEqual(["30px", ""]);
+    served.close();
+    container.remove();
+  });
+
   it("reveals and measures what a source offset drew, and reports the source of a click once asked", async () => {
     const [host, frame] = channel();
     const container = document.body.appendChild(document.createElement("main"));

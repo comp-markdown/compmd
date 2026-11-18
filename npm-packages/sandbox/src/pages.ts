@@ -36,6 +36,8 @@ export interface PageEnd {
   point(): void;
   /** Each line's place, from the container's content's top left corner: at once in the host's page, from a frame later. */
   lines(from?: number): Iterable<Line> | AsyncIterable<Line>;
+  /** Sizes code blocks' lines by their line in the text, as `@compmd/render`'s `Page.lineHeights`. */
+  lineHeights(heights: ReadonlyMap<number, number>): void;
   /** What renders in the host's page has drawn: its components mounted, their `busy` drawings settled. */
   drawn(): Promise<void>;
   /** The frames the host's page made for the page, each of which says when it has settled. */
@@ -131,6 +133,9 @@ export function hostPage(container: HTMLElement, runtime: HostRuntime, options: 
     },
     // The page's root is the container: its lines are where they should be.
     lines: (from) => page.lines(from),
+    lineHeights: (heights) => {
+      page.lineHeights(heights);
+    },
     drawn: () => page.drawn(),
     frames: () => runtime.frames(),
     destroy: () => {
@@ -260,6 +265,9 @@ export function framePage(container: HTMLElement, runtime: HostRuntime, options:
         const dy = at.y - around.y + iframe.clientTop + container.scrollTop;
         yield { line, rects: rects.map((rect) => ({ ...rect, x: rect.x + dx, y: rect.y + dy })) };
       }
+    },
+    lineHeights: (heights) => {
+      frame.lineHeights(heights);
     },
     // Nothing renders here: the page's frame settles after all the host sent it, its own frames with it.
     drawn: () => Promise.resolve(),

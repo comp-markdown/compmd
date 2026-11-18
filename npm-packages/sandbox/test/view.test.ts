@@ -665,6 +665,27 @@ describe("where each line is", () => {
     });
   }
 
+  for (const mode of MODES) {
+    it(`sizes a code block's lines by their line in the text, so the lines after them move down (${mode} mode)`, async () => {
+      const { view, events, until } = open(mode, []);
+      // "```js\na\nb\nc\n```": the block from line 1 to line 5, its code on lines 2 to 4.
+      view.render({ type: "root", children: [{ type: "code", lang: "js", meta: null, value: "a\nb\nc", origin: range([1, 0], [5, 17]) }] });
+      await until(() => events.layout.length > 0);
+      const tops = async () => {
+        const found = new Map<number, number>();
+        for await (const { line, rects: [first] } of view.lines()) found.set(line, first?.y ?? 0);
+        return found;
+      };
+      const before = await tops();
+      const gap = (at: Map<number, number>) => (at.get(3) ?? 0) - (at.get(2) ?? 0);
+      expect(gap(before)).toBeLessThan(30);
+      view.lineHeights(new Map([[2, 60]]));
+      await expect.poll(async () => gap(await tops()), { timeout: 5000 }).toBeGreaterThanOrEqual(59);
+      view.lineHeights(new Map());
+      await expect.poll(async () => gap(await tops()), { timeout: 5000 }).toBeLessThan(30);
+    });
+  }
+
   // In host mode, where the test can look into the page. A host that wraps long lines, as a diff's two sides do.
   it("draws a code block's lines an element each, numbered, which copy as the code and keep their boxes, a wrapped line's several (host mode)", async () => {
     const long = `let wrapped = ${Array.from({ length: 24 }, (_, i) => `word${String(i)}`).join(" + ")};`;

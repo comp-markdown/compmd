@@ -3,6 +3,7 @@
 // list at the end, link definitions, and the inputs from the tree's root. A change is a splice of the blocks, or a
 // whole tree; keys follow its edit, and invalid text keeps the last good render (`stable.ts`).
 import { Blocks } from "./blocks.ts";
+import { LineHeights } from "./code-lines.ts";
 import { diff, editOf, type Edit } from "./keys.ts";
 import { Layout } from "./layout.ts";
 import { linesIn, type Line } from "./lines.ts";
@@ -87,6 +88,17 @@ export interface Page {
    */
   lines(from?: number): Generator<Line>;
   /**
+   * Makes the code blocks' lines `heights` names at least that tall: by their line in the current text, as `lines`
+   * numbers them, in CSS pixels. Only those: an empty map gives every line its own height back. Kept as later renders
+   * draw and move the lines, until the next call. A line that isn't a code block's is left as it is. For a host that
+   * keeps two pages' lines level, as a diff's two sides, with what `lines` measured of each.
+   *
+   * @example
+   * // line 4 wrapped on the other side, to 45px
+   * page.lineHeights(new Map([[4, 45]]));
+   */
+  lineHeights(heights: ReadonlyMap<number, number>): void;
+  /**
    * Resolves once the components of the last render and splice have mounted and every drawing they gave
    * `context.busy` has settled, fulfilled or rejected, or after `BUSY_MS` for one that never does; a render after it
    * makes it wait for that one's too. Nothing shows differently meanwhile.
@@ -130,6 +142,7 @@ export function createPage(root: HTMLElement, options: PageOptions = {}): Page {
   const schemes = new Schemes(root);
   const surface = surfaceOf(root.ownerDocument, stylesheet, schemes, options);
   const blocks = new Blocks(root, surface);
+  const heights = new LineHeights(root);
   const onLayout = options.onLayout?.bind(options);
   const layout = onLayout ? new Layout(root, onLayout) : undefined;
   /** The text the blocks are of, as the last change gave it. */
@@ -141,6 +154,7 @@ export function createPage(root: HTMLElement, options: PageOptions = {}): Page {
     // Rule 1: the blocks follow the change, and show when the frontmatter parses again.
     if (rendered && breaksDocument(errors)) return;
     blocks.render(errors, text);
+    heights.apply();
     stylesheet.flush();
     surface.pending.run();
     rendered = true;
@@ -173,6 +187,9 @@ export function createPage(root: HTMLElement, options: PageOptions = {}): Page {
     sourceOf: (node) => sourceIn(blocks.placed(), node, root),
     elementsAt: (offset) => elementsIn(blocks.placed(), offset),
     lines: (from) => linesIn(blocks.placed(), root, from),
+    lineHeights: (next) => {
+      heights.set(next);
+    },
     // Mounts run in the render itself, so what is left is what the components said they were drawing.
     drawn: () => surface.busy.idle(),
     print: () => printLight(root, schemes, () => surface.busy.idle()),
