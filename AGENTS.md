@@ -33,7 +33,7 @@ Component Markdown: a Markdown flavor with components, containers, slots and lay
 - **Verify before claiming.** Run the tests and checks; report failures as they are.
 - **Stay in scope.** Do what the task asks.
 - **Docs:** plain wording, one edit per change.
-- **Git:** commit only when asked, never push unless asked, no `Co-Authored-By` lines. Push the `markdown-rs` fork before a commit here that points to it.
+- **Git:** commit only when asked, never push unless asked, no `Co-Authored-By`, `Claude-Session` or other AI attribution lines in commit messages. Push the `markdown-rs` fork before a commit here that points to it.
 
 ## Tasks and reviews
 
