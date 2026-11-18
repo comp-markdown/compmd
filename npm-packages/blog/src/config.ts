@@ -24,7 +24,7 @@ export interface Giscus {
 /** A blog's configuration. */
 export interface BlogConfig {
   title: string;
-  /** Its address, ending in `/`: `https://compmd.dev/blog/`. */
+  /** Its address, ending in `/`: `https://host/blog/`. */
   url: string;
   /** Who writes it, when a post doesn't say. */
   author: string;
