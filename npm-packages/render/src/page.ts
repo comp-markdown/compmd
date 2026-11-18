@@ -90,8 +90,8 @@ export interface Page {
   /**
    * Makes the code blocks' lines `heights` names at least that tall: by their line in the current text, as `lines`
    * numbers them, in CSS pixels. Only those: an empty map gives every line its own height back. Kept as later renders
-   * draw and move the lines, until the next call. A line that isn't a code block's is left as it is. For a host that
-   * keeps two pages' lines level, as a diff's two sides, with what `lines` measured of each.
+   * draw and move the lines, until the next call. A line that isn't a code block's is left as it is. For example, a
+   * host that shows a diff's two sides in two pages keeps their lines level, with what `lines` measured of each.
    *
    * @example
    * // line 4 wrapped on the other side, to 45px

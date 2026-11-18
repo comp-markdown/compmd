@@ -136,8 +136,8 @@ export interface View {
    * Makes the code blocks' lines `heights` names at least that tall: by their line in the text, as `lines` numbers
    * them, in CSS pixels; an empty map gives every line its own height back. Kept as later renders and splices draw and
    * move the lines, until the next call. Lines that aren't a code block's are left as they are. In frame mode the frame
-   * sizes them. For a host that keeps two views' lines level, as a diff's two sides, from what `lines` measured of each.
-   * In order with renders and splices, as `reveal`.
+   * sizes them. In order with renders and splices, as `reveal`. For example, a host that shows a diff's two sides in
+   * two views keeps their lines level: each line as tall as the taller of its two sides, from what `lines` measured.
    *
    * @example
    * // each line as tall as the taller of its two sides
