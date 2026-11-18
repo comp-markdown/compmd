@@ -35,13 +35,21 @@ const bundled = {
   // configuration brings too.
   club: import.meta.glob(["../../website/content/hero.comp.md", "../../website/content/club.csv", "../../website/content/shelf.js"], { query: "?raw", import: "default", eager: true }),
   // The guides' documents, which their **Try it** links open (`?doc=guides/<book>/<example>`); but a pack's own
-  // document, `index.comp.md`, which imports its built module and renders only where the pack is built, and the
-  // document of an app's own components, which only that app has.
-  guides: import.meta.glob(["../../guides/*/examples/*/*.comp.md", "!../../guides/*/examples/*/index.comp.md", "!../../guides/developers/examples/own-components/*.comp.md"], {
-    query: "?raw",
-    import: "default",
-    eager: true,
-  }),
+  // document, `index.comp.md`, which imports its built module and renders only where the pack is built, the
+  // document of an app's own components, which only that app has, and the wireframes, whose pack isn't on npm yet.
+  guides: import.meta.glob(
+    [
+      "../../guides/*/examples/*/*.comp.md",
+      "!../../guides/*/examples/*/index.comp.md",
+      "!../../guides/developers/examples/own-components/*.comp.md",
+      "!../../guides/authors/examples/wireframes/*.comp.md",
+    ],
+    {
+      query: "?raw",
+      import: "default",
+      eager: true,
+    },
+  ),
   // What a guide's document reads in its folder: its data beside it, the documents it imports in a folder below, and,
   // in the Author's Guide, the components it imports. Not an app's own files (its code, its page, its configuration),
   // which the playground has no use for.

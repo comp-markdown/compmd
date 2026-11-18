@@ -137,7 +137,7 @@ A code renderer can also be written in CompMD itself, as a definition whose sign
 
 Another pack, `@comp-markdown/wireframe`, draws sketches of screens: the newsletter shows the plot booking the garden is building before anyone writes a line of it.
 
-````md snippet=code-blocks/booking.comp.md
+````md snippet=wireframes/booking.comp.md
 ---
 md:
   version: 1

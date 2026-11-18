@@ -59,6 +59,13 @@ describe("EXAMPLES", () => {
     expect(exampleIndex(null)).toBe(0);
   });
 
+  // The menu is keyed by name and `?doc=` finds by id: a guide's example folder with two documents would repeat both.
+  it("each have a name and an id no other has", () => {
+    const repeated = (values: string[]) => values.filter((value, i) => values.indexOf(value) !== i);
+    expect(repeated(EXAMPLES.map(({ id }) => id))).toEqual([]);
+    expect(repeated(EXAMPLES.map(({ name }) => name))).toEqual([]);
+  });
+
   for (const example of EXAMPLES.filter(({ id }) => id !== "diagnostics")) {
     it(`${example.name} renders without diagnostics`, () => {
       const processed = process(withNpmAllowed(withRegistryPacks(example.request)));
