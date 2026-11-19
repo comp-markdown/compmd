@@ -9099,7 +9099,7 @@
       "description": "Each code block is tokenized as it renders, so a render with many blocks tokenizes them all in one frame. Tokenizing a block a task, those on screen first, bounds a frame to one block: in the spike CMD-252 ([its README](spikes/highlight-perf/README.md), the *sliced* variants) it took opening's last 83 ms blocked to 0 with Oniguruma, and the JavaScript engine's opening frame in WebKit from 1.2 s to 0.6 s (it can't split one block's first compile).\n\n## Change\n- The sandbox's highlighter queues the blocks it is asked for and tokenizes one a task, yielding to the page between them; a block on screen goes before one that isn't, and a block whose text changed or that is gone is dropped from the queue.\n- After CMD-251 a highlighter gives tokens and the renderer draws them, so the queue is the highlighter's own and the renderer needs no change.\n- A view's `settled` still waits for its blocks' highlighting, as today.\n\n## Tests\n- Unit: the order (on screen first), one block a task, a dropped block; a block of a newer text isn't drawn with older tokens.\n- Browser tests of code blocks as today, both modes.\n- Measured with the spike's page, before and after, in the task's note.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "blocked",
       "dependencies": [
         "01a1f2b1-fd0d-721c-bf49-5ed9548584bf",
         "01a1f065-c028-7345-9484-b544d2ee9eab"
@@ -9109,9 +9109,9 @@
         "npm-packages/sandbox/README.md"
       ],
       "created_at": "2026-11-19T07:25:13Z",
-      "updated_at": "2026-11-19T07:25:13Z",
+      "updated_at": "2026-11-19T08:46:20Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "sprint_history": [
         {
           "sprint": "Packs and website",
@@ -9120,7 +9120,15 @@
       ],
       "sprint": "Packs and website",
       "number": 259,
-      "key_final": false
+      "key_final": false,
+      "started_at": "2026-11-19T08:45:56Z",
+      "started_by": "claude:79612601",
+      "waiting_on": "user",
+      "questions": [
+        "The queue can’t be the highlighter’s: since CMD-251 a highlighter gets only (code, language), not the block, so it can’t know what is on screen or gone. Proposed: the renderer queues the blocks of a document and asks the highlighter for one at a time, waiting for its tokens and drawing them before the next, a task apart; blocks an IntersectionObserver reports on screen first (no layout read); a changed or removed block dropped. Works for any highlighter, no contract change. OK?",
+        "Highlighting isn’t part of settling today (drawn() doesn’t wait for it). Should a page’s drawn(), and so a view’s settled, now wait for its blocks’ tokens? Proposed: yes, so tests, printing and scrolling to a link see highlighted code."
+      ],
+      "blocked_at": "2026-11-19T08:46:20Z"
     },
     {
       "id": "01a1f2df-0550-7070-8958-7ecfa358d7e5",
