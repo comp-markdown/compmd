@@ -1,8 +1,8 @@
 # WebAssembly in the frames
 
-**Status: proposed (2026-11-19), for the maintainer to decide.** Whether the sandbox's frame documents (`strict.html`, `permissive.html`) allow WebAssembly, so the page's frame can highlight code with Shiki's Oniguruma engine, and what else was weighed. It builds on [running components in the sandbox](running-components-in-the-sandbox.md), whose threats (T1 to T10) it goes through, and on [the spike CMD-252](../spikes/highlight-perf/README.md), which measured the engines.
+**Status: accepted (2026-11-19).** Whether the sandbox's frame documents (`strict.html`, `permissive.html`) allow WebAssembly, so the page's frame can highlight code with Shiki's Oniguruma engine, and what else was weighed. It builds on [running components in the sandbox](running-components-in-the-sandbox.md), whose threats (T1 to T10) it goes through, and on [the spike CMD-252](../spikes/highlight-perf/README.md), which measured the engines.
 
-## Proposed decisions
+## Decisions
 
 1. **Both frame documents allow compiling WebAssembly:** `'wasm-unsafe-eval'` in their `script-src`, and nothing else in their policies changes. Against the sandbox's threat model it gives component code nothing it hasn't already: a strict frame runs any code it writes itself today (`blob:` modules), and WebAssembly reaches nothing but through that code (*What it allows*, below). What it adds is the browser's WebAssembly engine as more surface for a browser bug, which every web page already has.
 2. **The frames' highlighter uses Oniguruma, its WebAssembly inlined in `highlight.js`** (`@shikijs/engine-oniguruma/wasm-inlined`), since a strict frame can fetch nothing, a `.wasm` file included. Where compiling is refused (a host's own frame documents with another policy, or a browser that refuses it), it falls back to the JavaScript engine, so highlighting never depends on it.
@@ -75,8 +75,7 @@ What compiling WebAssembly in a frame lets component code do that its JavaScript
 
 ## Open points
 
-1. **The maintainer's decision** on decision 1: the WebAssembly engine as accepted surface in frames that run documents' code.
-2. **What Oniguruma costs a frame:** loading 232 KB from the cache and compiling it, once per frame. The spike measured it once per page (host mode); a page with many frames (host mode with many strict uses, each highlighting its slots' code) pays it per frame. To measure with the follow-up, before choosing B instead.
+1. **What Oniguruma costs a frame:** loading 232 KB from the cache and compiling it, once per frame. The spike measured it once per page (host mode); a page with many frames (host mode with many strict uses, each highlighting its slots' code) pays it per frame. To measure with the follow-up, before choosing B instead.
 
 ## Follow-ups, once decided
 

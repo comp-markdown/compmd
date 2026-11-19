@@ -26,7 +26,7 @@ The designs behind the spec and its implementation. Each starts with its status 
 - [Running components in the sandbox](running-components-in-the-sandbox.md): how `@compmd/sandbox` runs code at the three trust levels; builds the levels of *components from apps and packs*.
   - [The sandbox's frame protocol](sandbox-protocol.md): the messages between its windows.
   - [Libraries in the sandbox](libraries-in-the-sandbox.md): where a library the sandbox loads (Shiki, Temml) is built, and how a host-mode page loads the frames' copy, so an app ships it once; with the steps for adding one.
-  - [WebAssembly in the frames](webassembly-in-the-frames.md): proposed, the frame documents allowing WebAssembly, so the frames highlight code with Oniguruma: what it gives component code against each threat, and what else was weighed.
+  - [WebAssembly in the frames](webassembly-in-the-frames.md): the frame documents allowing WebAssembly, so the frames highlight code with Oniguruma: what it gives component code against each threat, and what else was weighed.
 - [The Tauri plugin](tauri-plugin.md): `tauri-plugin-compmd`, the Tauri adapter of *hosting CompMD*: the bundle compiled into the app and served from a scheme of its own, and the example app that checks it in a real webview.
 - [The configuration and `@compmd/vite`](vite.md): `compmd.config.json` and the Vite plugin, for packs an app installs; builds H3 of *components from apps and packs*.
 - [`@compmd/create-pack`, the pack template](create-pack.md): `npm create @compmd/pack`; builds S2 of *components from apps and packs*.
