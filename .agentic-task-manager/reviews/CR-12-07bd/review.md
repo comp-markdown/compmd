@@ -2,12 +2,12 @@
 id = "01a1f2d6-8037-7099-8967-15488c1007bd"
 number = 12
 title = "Settling reads the page’s links, not the whole page"
-status = "open"
+status = "approved"
 tasks = ["~CMD-255"]
 author = "claude:79612601"
 reviewers = []
 created = 2026-11-19T08:05:06Z
-updated = 2026-11-19T08:05:06Z
+updated = 2026-11-19T08:15:32Z
 +++
 
 A view settling no longer looks through the whole page for its stylesheets: it reads the page's links from a list the browser keeps up to date, one per document.

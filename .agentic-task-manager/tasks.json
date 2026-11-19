@@ -8534,7 +8534,7 @@
       "description": "A highlighter (`CodeHighlighter`, `@compmd/render`) writes DOM into the renderer's `<code>`, so it has to know how the renderer draws a block: since CMD-250, that each line is an element of its own, whose attributes it must keep. That is the renderer's private detail (the line elements, `data-line`, how lines are numbered), which may change (CMD-250's option 3), and a host's own highlighter shouldn't break when it does.\n\n## Change\n\n- `CodeHighlighter` gives tokens instead of writing DOM: `(code, language) => Promise<lines | undefined>`, each line a list of tokens with their text and their style (a colour per theme, and the font style), `undefined` for a language it doesn't highlight.\n- The renderer draws them into its own line elements, after checking that they are the block's text, and drops tokens that come after a newer text (as `highlightWith` does today).\n- `@compmd/sandbox`'s Shiki highlighter (`shikiHighlight`, `highlightWith`) gives Shiki's tokens as they are; its `draw` moves into the renderer.\n- Nothing about lines is exported for highlighters (`CODE_LINE` is the renderer's own).\n- The READMEs give the new contract; the release notes name the break: a host's own highlighter returns tokens.\n\n## Tests\n\n- The renderer draws a highlighter's tokens into a block's lines, keeping the lines' numbers, and keeps the text when the tokens aren't its text or don't come.\n- Shiki's highlighter gives tokens for a language it highlights, and none for one it doesn't.\n- The browser tests of code blocks, in both page modes, light and dark, as today.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [
         "01a1eda3-72cc-74dd-9a87-b21dd98dd410"
       ],
@@ -8544,7 +8544,7 @@
         "npm-packages/sandbox/src/highlight/highlight.ts"
       ],
       "created_at": "2026-11-18T20:42:42Z",
-      "updated_at": "2026-11-19T07:43:54Z",
+      "updated_at": "2026-11-19T08:16:50Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -8566,15 +8566,35 @@
         }
       ],
       "review_requested_at": "2026-11-19T07:43:54Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-19T07:43:54Z",
           "kind": "review",
           "text": "CR-9: Highlighters give tokens, and the renderer draws them",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-19T08:16:49Z",
+          "kind": "note",
+          "text": "Approved: Approved by the maintainer (CR-9).",
+          "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-19T08:16:50Z",
+          "kind": "outcome",
+          "text": "Highlighters give tokens; the renderer draws them into its own lines. Breaking for a host’s own highlighter.",
+          "by": "claude:79612601"
         }
-      ]
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-19T07:43:54Z",
+          "to": "2026-11-19T08:16:49Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-19T08:16:50Z",
+      "completed_by": "claude:79612601"
     },
     {
       "id": "01a1f0f9-76de-73fc-b8ae-e07bc47777fc",
@@ -8731,7 +8751,7 @@
       "description": "After CMD-253 a document's pages share one stylesheet, and `Stylesheet.flush()` still writes its whole text with `replaceSync` whenever a block's rules changed (`npm-packages/render/src/styles.ts`). In a host document with many pages of styled blocks (rows, grids, breakpoints), each such write may restyle the whole document.\n\n## Measure first\nOn the spike's page with a large host document (`spikes/highlight-perf`, as CMD-253 left it), with pages whose blocks have rules: what a `replaceSync` of the whole sheet costs against `insertRule` and `deleteRule` of one block's rules, in WebKit and Chromium. Whether `insertRule` avoids a document-wide restyle in WebKit is not known; the numbers decide.\n\n## Change\nWhat the numbers support: rules inserted and deleted per block, or the writes of every page in one animation frame joined into one, or both. Breakpoint rules keep their order, so wider ones win. Each rule passes the value guard (`safe`) as now.\n\n## Tests\nUnit tests for the order of rules and for a destroyed page's rules leaving the sheet; the measurement's numbers in the spike's README.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [
         "01a1f272-b584-7767-aae6-7e59371fdc9c"
       ],
@@ -8741,7 +8761,7 @@
         "spikes/highlight-perf/README.md"
       ],
       "created_at": "2026-11-19T07:02:11Z",
-      "updated_at": "2026-11-19T07:58:00Z",
+      "updated_at": "2026-11-19T08:16:51Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -8763,15 +8783,35 @@
         }
       ],
       "review_requested_at": "2026-11-19T07:58:00Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-19T07:58:00Z",
           "kind": "review",
           "text": "CR-11: Writing a block’s rules: measured, no change",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-19T08:16:49Z",
+          "kind": "note",
+          "text": "Approved: Approved by the maintainer (CR-11).",
+          "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-19T08:16:51Z",
+          "kind": "outcome",
+          "text": "Measured: writing the sheet whole costs no more than rule by rule; no change.",
+          "by": "claude:79612601"
         }
-      ]
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-19T07:58:00Z",
+          "to": "2026-11-19T08:16:49Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-19T08:16:51Z",
+      "completed_by": "claude:79612601"
     },
     {
       "id": "01a1f29c-e577-7274-b7b7-a9eed7234af3",
@@ -8784,7 +8824,7 @@
       "description": "Each view has a settle loop of its own (`npm-packages/sandbox/src/settling.ts`), which at every change lists the document's `link[rel=stylesheet]` elements and awaits `document.fonts.ready`. Those are the document's facts: with many views in one document, each pays for them.\n\n## Change\nThe document-wide waits (stylesheets loaded, fonts ready) are shared by the views settling at the same time: one scan for all of them. What a view waits for of its own (its drawing, its frames, its images, a still animation frame) stays its own, and `settled` means what it does now ([the protocol's *Settled*](docs/sandbox-protocol.md#settled)).\n\n## Tests\nUnit tests: many views changing together scan the links once; a view still settles after its own latest change. The existing settling tests pass unchanged.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [
         "01a1f272-b584-7767-aae6-7e59371fdc9c"
       ],
@@ -8793,7 +8833,7 @@
         "npm-packages/sandbox/src/settling.test.ts"
       ],
       "created_at": "2026-11-19T07:02:11Z",
-      "updated_at": "2026-11-19T08:05:06Z",
+      "updated_at": "2026-11-19T08:16:51Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -8815,15 +8855,35 @@
         }
       ],
       "review_requested_at": "2026-11-19T08:05:06Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-19T08:05:06Z",
           "kind": "review",
           "text": "CR-12: Settling reads the page’s links, not the whole page",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-19T08:16:50Z",
+          "kind": "note",
+          "text": "Approved: Approved by the maintainer (CR-12).",
+          "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-19T08:16:51Z",
+          "kind": "outcome",
+          "text": "Settling reads the page’s links from a live list, never the whole page.",
+          "by": "claude:79612601"
         }
-      ]
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-19T08:05:06Z",
+          "to": "2026-11-19T08:16:50Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-19T08:16:51Z",
+      "completed_by": "claude:79612601"
     },
     {
       "id": "01a1f2b1-fd0d-721c-bf49-5ed9548584bf",
@@ -8927,7 +8987,7 @@
       "description": "In frame mode the page's frame highlights its own code blocks, with Shiki's JavaScript engine, which in WebKit blocks for about a second on the first TypeScript block (the spike CMD-252, [its README](spikes/highlight-perf/README.md)). Oniguruma, as WebAssembly, doesn't; but the frames' policy refuses WebAssembly (`npm-packages/sandbox/build/policy.ts`: no `'wasm-unsafe-eval'`, `worker-src 'none'`), and a strict frame runs code from documents.\n\n## The design\nA design document in `docs/`, its decisions first, for the maintainer to decide. It answers:\n- What `'wasm-unsafe-eval'` in a strict frame's `script-src` lets a component's code do that JavaScript there can't: against each threat of [the sandbox's design](docs/running-components-in-the-sandbox.md) (T1 to T10), and spec §15's five rules. Stopping a component that runs too long (rule 5, T9) and timing side channels are looked at in particular.\n- The alternatives: the host's page tokenizing for its frames and sending tokens (after CMD-251, a highlighter gives tokens), a frame of its own for highlighting, a worker (`worker-src`), or staying with the JavaScript engine in frames, with what each costs and measures (the spike has the worker's numbers).\n- What changes in the frames' policies, the protocol and the spec's informative note on browsers, if anything.\n\nNo code. Its follow-up tasks are added once it is decided.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [
         "01a1f0f9-76de-73fc-b8ae-e07bc47777fc"
       ],
@@ -8936,7 +8996,7 @@
         "npm-packages/sandbox/build/policy.ts"
       ],
       "created_at": "2026-11-19T07:25:13Z",
-      "updated_at": "2026-11-19T08:14:24Z",
+      "updated_at": "2026-11-19T08:16:51Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -8959,15 +9019,35 @@
         }
       ],
       "review_requested_at": "2026-11-19T08:06:53Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-19T08:06:53Z",
           "kind": "review",
           "text": "CR-13: Design: WebAssembly in the frames",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-19T08:16:50Z",
+          "kind": "note",
+          "text": "Approved: Approved by the maintainer (CR-13).",
+          "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-19T08:16:51Z",
+          "kind": "outcome",
+          "text": "Design accepted: WebAssembly in the frames; follow-up CMD-260.",
+          "by": "claude:79612601"
         }
-      ]
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-19T08:06:53Z",
+          "to": "2026-11-19T08:16:50Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-19T08:16:51Z",
+      "completed_by": "claude:79612601"
     },
     {
       "id": "01a1f2b1-fd0d-721c-bf49-5edc8890af56",

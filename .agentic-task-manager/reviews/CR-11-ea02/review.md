@@ -2,12 +2,12 @@
 id = "01a1f2d0-025a-7202-a7b6-388d074bea02"
 number = 11
 title = "Writing a block’s rules: measured, no change"
-status = "open"
+status = "approved"
 tasks = ["~CMD-254"]
 author = "claude:79612601"
 reviewers = []
 created = 2026-11-19T07:58:00Z
-updated = 2026-11-19T07:58:00Z
+updated = 2026-11-19T08:14:56Z
 +++
 
 CMD-254 measured first, as it asked, and the numbers support no change: the renderer keeps writing the document's sheet whole.
