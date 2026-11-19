@@ -9201,7 +9201,7 @@
         "docs/webassembly-in-the-frames.md"
       ],
       "created_at": "2026-11-19T08:14:24Z",
-      "updated_at": "2026-11-19T09:04:10Z",
+      "updated_at": "2026-11-19T09:17:08Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -9214,7 +9214,8 @@
       "number": 260,
       "key_final": false,
       "started_at": "2026-11-19T09:04:10Z",
-      "started_by": "claude:79612601"
+      "started_by": "claude:79612601",
+      "commit": "833e565930ea4d28e4e34f5b8a1e5daf726089dc"
     },
     {
       "id": "01a1f300-ea72-7291-b97f-c3d75b6dc73e",
