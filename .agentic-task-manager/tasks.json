@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 263,
+    "next_number": 264,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -209,15 +209,20 @@
         }
       },
       {
-        "id": "Packs and website",
+        "id": "Rendering optimizations",
         "state": "active",
-        "goal": "Wrapping an npm package as a pack takes one command; a first set of packs, shown on the website with a playground; Safety higher on the landing page, components shown without delay, and a blog.",
+        "goal": "Many CompMD views in one page stay cheap, and code highlights without blocking the page in WebKit: a stylesheet per document, one highlighter for a page, Oniguruma where it is fast, a block at a time.",
         "start": "2026-11-17T01:51:31Z"
       },
       {
         "id": "Editor support",
         "state": "planned",
         "goal": "CompMD in VS Code, Neovim, Helix, Zed and Emacs: a tree-sitter grammar, a TextMate grammar and a language server"
+      },
+      {
+        "id": "Packs & Blog",
+        "state": "planned",
+        "goal": "Wrapping an npm package as a pack takes one command; a first set of packs, shown on the website; a blog section with its first posts."
       }
     ],
     "archived": 102
@@ -415,16 +420,21 @@
         "npm-packages/create-pack/src/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-18T01:19:02Z",
+      "updated_at": "2026-11-19T10:12:52Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
-          "from": "2026-11-17T22:51:26Z"
+          "sprint": "Rendering optimizations",
+          "from": "2026-11-17T22:51:26Z",
+          "to": "2026-11-19T10:12:52Z"
+        },
+        {
+          "sprint": "Packs & Blog",
+          "from": "2026-11-19T10:12:52Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Packs & Blog",
       "number": 9,
       "key_final": true
     },
@@ -472,16 +482,21 @@
         "compmd-packs/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-18T01:19:02Z",
+      "updated_at": "2026-11-19T10:12:52Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
-          "from": "2026-11-17T22:51:26Z"
+          "sprint": "Rendering optimizations",
+          "from": "2026-11-17T22:51:26Z",
+          "to": "2026-11-19T10:12:52Z"
+        },
+        {
+          "sprint": "Packs & Blog",
+          "from": "2026-11-19T10:12:52Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Packs & Blog",
       "number": 11,
       "key_final": true
     },
@@ -505,16 +520,21 @@
         "website/build/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-18T01:19:02Z",
+      "updated_at": "2026-11-19T10:12:52Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
-          "from": "2026-11-17T22:51:26Z"
+          "sprint": "Rendering optimizations",
+          "from": "2026-11-17T22:51:26Z",
+          "to": "2026-11-19T10:12:52Z"
+        },
+        {
+          "sprint": "Packs & Blog",
+          "from": "2026-11-19T10:12:52Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Packs & Blog",
       "with": "user",
       "number": 12,
       "key_final": true
@@ -538,16 +558,21 @@
         "website/blog/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-19T10:12:52Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
-          "from": "2026-11-17T22:51:26Z"
+          "sprint": "Rendering optimizations",
+          "from": "2026-11-17T22:51:26Z",
+          "to": "2026-11-19T10:12:52Z"
+        },
+        {
+          "sprint": "Packs & Blog",
+          "from": "2026-11-19T10:12:52Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Packs & Blog",
       "with": "user",
       "number": 13,
       "key_final": true
@@ -571,16 +596,21 @@
         "website/blog/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-19T10:12:52Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
-          "from": "2026-11-17T22:51:26Z"
+          "sprint": "Rendering optimizations",
+          "from": "2026-11-17T22:51:26Z",
+          "to": "2026-11-19T10:12:52Z"
+        },
+        {
+          "sprint": "Packs & Blog",
+          "from": "2026-11-19T10:12:52Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Packs & Blog",
       "with": "user",
       "number": 14,
       "key_final": true
@@ -604,16 +634,21 @@
         "website/blog/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-19T10:12:52Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
-          "from": "2026-11-17T22:51:26Z"
+          "sprint": "Rendering optimizations",
+          "from": "2026-11-17T22:51:26Z",
+          "to": "2026-11-19T10:12:52Z"
+        },
+        {
+          "sprint": "Packs & Blog",
+          "from": "2026-11-19T10:12:52Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Packs & Blog",
       "with": "user",
       "number": 15,
       "key_final": true
@@ -637,16 +672,21 @@
         "website/blog/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-19T10:12:52Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
-          "from": "2026-11-17T22:51:26Z"
+          "sprint": "Rendering optimizations",
+          "from": "2026-11-17T22:51:26Z",
+          "to": "2026-11-19T10:12:52Z"
+        },
+        {
+          "sprint": "Packs & Blog",
+          "from": "2026-11-19T10:12:52Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Packs & Blog",
       "with": "user",
       "number": 16,
       "key_final": true
@@ -699,16 +739,21 @@
         "compmd-packs/excalidraw/src/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-18T01:19:02Z",
+      "updated_at": "2026-11-19T10:12:52Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
-          "from": "2026-11-17T22:51:26Z"
+          "sprint": "Rendering optimizations",
+          "from": "2026-11-17T22:51:26Z",
+          "to": "2026-11-19T10:12:52Z"
+        },
+        {
+          "sprint": "Packs & Blog",
+          "from": "2026-11-19T10:12:52Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Packs & Blog",
       "number": 18,
       "key_final": true
     },
@@ -1215,11 +1260,11 @@
       "updated_by": "claude:79612601",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
+          "sprint": "Rendering optimizations",
           "from": "2026-11-17T22:51:26Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Rendering optimizations",
       "number": 36,
       "key_final": true,
       "started_at": "2026-11-17T22:51:33Z",
@@ -1289,11 +1334,11 @@
       "updated_by": "claude:79612601",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
+          "sprint": "Rendering optimizations",
           "from": "2026-11-17T22:51:26Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Rendering optimizations",
       "number": 37,
       "key_final": true,
       "started_at": "2026-11-17T22:51:33Z",
@@ -1482,11 +1527,11 @@
       "updated_by": "claude:e2fd71c2",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
+          "sprint": "Rendering optimizations",
           "from": "2026-11-17T01:51:23Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Rendering optimizations",
       "started_at": "2026-11-17T04:57:47Z",
       "started_by": "claude:e2fd71c2",
       "blocks": [
@@ -1668,11 +1713,11 @@
       "priority": "P3",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
+          "sprint": "Rendering optimizations",
           "from": "2026-11-17T01:51:23Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Rendering optimizations",
       "started_at": "2026-11-17T04:57:57Z",
       "started_by": "claude:e2fd71c2",
       "blocks": [
@@ -1763,11 +1808,11 @@
           "to": "2026-11-01T00:18:50Z"
         },
         {
-          "sprint": "Packs and website",
+          "sprint": "Rendering optimizations",
           "from": "2026-11-17T01:51:23Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Rendering optimizations",
       "started_at": "2026-11-17T04:58:39Z",
       "started_by": "claude:e2fd71c2",
       "review_requested_at": "2026-11-17T04:59:17Z",
@@ -2144,11 +2189,11 @@
           "to": "2026-11-04T01:18:29Z"
         },
         {
-          "sprint": "Packs and website",
+          "sprint": "Rendering optimizations",
           "from": "2026-11-17T01:51:23Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Rendering optimizations",
       "started_at": "2026-11-17T08:31:46Z",
       "started_by": "claude:e2fd71c2",
       "notes": [
@@ -3289,11 +3334,11 @@
       "updated_by": "claude:e2fd71c2",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
+          "sprint": "Rendering optimizations",
           "from": "2026-11-17T01:51:23Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Rendering optimizations",
       "blocks": [
         {
           "from": "2026-11-17T09:51:20Z",
@@ -3622,11 +3667,11 @@
       "updated_by": "claude:e2fd71c2",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
+          "sprint": "Rendering optimizations",
           "from": "2026-11-17T01:51:23Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Rendering optimizations",
       "notes": [
         {
           "at": "2026-11-17T03:06:17Z",
@@ -4027,11 +4072,11 @@
       "updated_by": "claude:e2fd71c2",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
+          "sprint": "Rendering optimizations",
           "from": "2026-11-17T01:51:23Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Rendering optimizations",
       "blocks": [
         {
           "from": "2026-11-17T02:43:06Z",
@@ -5135,11 +5180,11 @@
       "updated_by": "claude:e2fd71c2",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
+          "sprint": "Rendering optimizations",
           "from": "2026-11-17T01:51:23Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Rendering optimizations",
       "blocks": [
         {
           "from": "2026-11-17T02:44:08Z",
@@ -5212,11 +5257,11 @@
       "updated_by": "claude:e2fd71c2",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
+          "sprint": "Rendering optimizations",
           "from": "2026-11-17T01:51:23Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Rendering optimizations",
       "blocks": [
         {
           "from": "2026-11-17T02:44:16Z",
@@ -5403,11 +5448,11 @@
       "updated_by": "claude:e2fd71c2",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
+          "sprint": "Rendering optimizations",
           "from": "2026-11-17T01:51:23Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Rendering optimizations",
       "blocks": [
         {
           "from": "2026-11-17T02:44:51Z",
@@ -5526,7 +5571,7 @@
       "updated_by": "claude:e2fd71c2",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
+          "sprint": "Rendering optimizations",
           "from": "2026-11-17T01:51:23Z"
         }
       ],
@@ -5556,7 +5601,7 @@
           "by": "claude:e2fd71c2"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Rendering optimizations",
       "started_at": "2026-11-17T11:13:44Z",
       "started_by": "claude:e2fd71c2",
       "review_requested_at": "2026-11-17T11:14:49Z",
@@ -5701,11 +5746,11 @@
       "updated_by": "claude:e2fd71c2",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
+          "sprint": "Rendering optimizations",
           "from": "2026-11-08T18:11:29Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Rendering optimizations",
       "started_at": "2026-11-17T01:59:14Z",
       "started_by": "claude:e2fd71c2",
       "review_requested_at": "2026-11-17T02:05:07Z",
@@ -5764,11 +5809,11 @@
       "updated_by": "claude:e2fd71c2",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
+          "sprint": "Rendering optimizations",
           "from": "2026-11-08T18:11:29Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Rendering optimizations",
       "started_at": "2026-11-17T02:07:25Z",
       "started_by": "claude:e2fd71c2",
       "review_requested_at": "2026-11-17T02:25:30Z",
@@ -6301,11 +6346,11 @@
       "updated_by": "claude:e2fd71c2",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
+          "sprint": "Rendering optimizations",
           "from": "2026-11-09T16:26:42Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Rendering optimizations",
       "blocks": [
         {
           "from": "2026-11-17T02:57:29Z",
@@ -6378,11 +6423,11 @@
       "with": "user",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
+          "sprint": "Rendering optimizations",
           "from": "2026-11-17T01:51:23Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Rendering optimizations",
       "started_at": "2026-11-17T11:08:37Z",
       "started_by": "claude:e2fd71c2",
       "review_requested_at": "2026-11-17T11:08:38Z",
@@ -6445,11 +6490,11 @@
       "updated_by": "claude:e2fd71c2",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
+          "sprint": "Rendering optimizations",
           "from": "2026-11-17T01:51:23Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Rendering optimizations",
       "notes": [
         {
           "at": "2026-11-17T20:47:30Z",
@@ -7031,11 +7076,11 @@
       "updated_by": "claude:e2fd71c2",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
+          "sprint": "Rendering optimizations",
           "from": "2026-11-17T01:51:23Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Rendering optimizations",
       "started_at": "2026-11-17T04:39:30Z",
       "started_by": "claude:e2fd71c2",
       "review_requested_at": "2026-11-17T04:44:39Z",
@@ -7100,11 +7145,11 @@
       "updated_by": "claude:e2fd71c2",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
+          "sprint": "Rendering optimizations",
           "from": "2026-11-17T01:51:23Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Rendering optimizations",
       "started_at": "2026-11-17T04:45:26Z",
       "started_by": "claude:e2fd71c2",
       "review_requested_at": "2026-11-17T04:55:30Z",
@@ -7485,11 +7530,11 @@
       "updated_by": "claude:e2fd71c2",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
+          "sprint": "Rendering optimizations",
           "from": "2026-11-17T01:51:23Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Rendering optimizations",
       "notes": [
         {
           "at": "2026-11-17T02:39:21Z",
@@ -7579,11 +7624,11 @@
       "updated_by": "claude:e2fd71c2",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
+          "sprint": "Rendering optimizations",
           "from": "2026-11-17T01:51:23Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Rendering optimizations",
       "blocks": [
         {
           "from": "2026-11-17T02:41:23Z",
@@ -7650,11 +7695,11 @@
       "updated_by": "claude:e2fd71c2",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
+          "sprint": "Rendering optimizations",
           "from": "2026-11-17T01:51:23Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Rendering optimizations",
       "started_at": "2026-11-17T04:55:30Z",
       "started_by": "claude:e2fd71c2",
       "review_requested_at": "2026-11-17T04:57:06Z",
@@ -7714,11 +7759,11 @@
       "with": "user",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
+          "sprint": "Rendering optimizations",
           "from": "2026-11-17T01:51:23Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Rendering optimizations",
       "blocks": [
         {
           "from": "2026-11-17T11:06:16Z",
@@ -7805,11 +7850,11 @@
       "updated_by": "claude:e2fd71c2",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
+          "sprint": "Rendering optimizations",
           "from": "2026-11-17T08:01:17Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Rendering optimizations",
       "number": 239,
       "key_final": true,
       "started_at": "2026-11-17T09:45:17Z",
@@ -7865,11 +7910,11 @@
       "updated_by": "claude:e2fd71c2",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
+          "sprint": "Rendering optimizations",
           "from": "2026-11-17T10:27:45Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Rendering optimizations",
       "number": 240,
       "key_final": true,
       "started_at": "2026-11-17T10:30:29Z",
@@ -7925,11 +7970,11 @@
       "updated_by": "claude:e2fd71c2",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
+          "sprint": "Rendering optimizations",
           "from": "2026-11-17T11:07:11Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Rendering optimizations",
       "number": 241,
       "key_final": true,
       "blocks": [
@@ -7980,11 +8025,11 @@
       "updated_by": "claude:e2fd71c2",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
+          "sprint": "Rendering optimizations",
           "from": "2026-11-17T17:16:29Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Rendering optimizations",
       "number": 242,
       "key_final": true,
       "notes": [
@@ -8050,11 +8095,11 @@
       "updated_by": "claude:e2fd71c2",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
+          "sprint": "Rendering optimizations",
           "from": "2026-11-17T18:12:25Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Rendering optimizations",
       "number": 243,
       "key_final": true,
       "blocks": [
@@ -8127,11 +8172,11 @@
       "updated_by": "claude:e2fd71c2",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
+          "sprint": "Rendering optimizations",
           "from": "2026-11-17T18:12:25Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Rendering optimizations",
       "number": 244,
       "key_final": true,
       "started_at": "2026-11-17T19:20:22Z",
@@ -8191,11 +8236,11 @@
       "updated_by": "claude:e2fd71c2",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
+          "sprint": "Rendering optimizations",
           "from": "2026-11-17T18:12:25Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Rendering optimizations",
       "number": 245,
       "key_final": true,
       "started_at": "2026-11-17T19:45:06Z",
@@ -8265,11 +8310,11 @@
       "updated_by": "claude:79612601",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
+          "sprint": "Rendering optimizations",
           "from": "2026-11-17T23:47:24Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Rendering optimizations",
       "with": "user",
       "number": 246,
       "key_final": true,
@@ -8371,11 +8416,11 @@
       "updated_by": "claude:79612601",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
+          "sprint": "Rendering optimizations",
           "from": "2026-11-18T02:49:59Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Rendering optimizations",
       "number": 248,
       "key_final": false,
       "commit": "58f52970611fa800810b4df3d627376bf45e8fe0",
@@ -8476,11 +8521,11 @@
       "key_final": false,
       "sprint_history": [
         {
-          "sprint": "Packs and website",
+          "sprint": "Rendering optimizations",
           "from": "2026-11-18T07:57:13Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Rendering optimizations",
       "notes": [
         {
           "at": "2026-11-18T19:44:57Z",
@@ -8549,11 +8594,11 @@
       "updated_by": "claude:79612601",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
+          "sprint": "Rendering optimizations",
           "from": "2026-11-18T20:42:42Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Rendering optimizations",
       "number": 251,
       "key_final": false,
       "started_at": "2026-11-19T07:25:25Z",
@@ -8619,11 +8664,11 @@
       "updated_by": "claude:79612601",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
+          "sprint": "Rendering optimizations",
           "from": "2026-11-18T23:24:03Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Rendering optimizations",
       "number": 252,
       "key_final": false,
       "started_at": "2026-11-18T23:24:07Z",
@@ -8693,11 +8738,11 @@
       "updated_by": "claude:79612601",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
+          "sprint": "Rendering optimizations",
           "from": "2026-11-19T06:16:06Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Rendering optimizations",
       "number": 253,
       "key_final": false,
       "started_at": "2026-11-19T07:02:19Z",
@@ -8766,11 +8811,11 @@
       "updated_by": "claude:79612601",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
+          "sprint": "Rendering optimizations",
           "from": "2026-11-19T07:02:11Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Rendering optimizations",
       "number": 254,
       "key_final": false,
       "started_at": "2026-11-19T07:54:59Z",
@@ -8838,11 +8883,11 @@
       "updated_by": "claude:79612601",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
+          "sprint": "Rendering optimizations",
           "from": "2026-11-19T07:02:11Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Rendering optimizations",
       "number": 255,
       "key_final": false,
       "started_at": "2026-11-19T07:58:11Z",
@@ -8912,11 +8957,11 @@
       "updated_by": "claude:79612601",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
+          "sprint": "Rendering optimizations",
           "from": "2026-11-19T07:25:13Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Rendering optimizations",
       "number": 256,
       "key_final": false,
       "started_at": "2026-11-19T07:44:05Z",
@@ -8987,11 +9032,11 @@
       "updated_by": "claude:79612601",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
+          "sprint": "Rendering optimizations",
           "from": "2026-11-19T07:25:13Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Rendering optimizations",
       "number": 257,
       "key_final": false,
       "started_at": "2026-11-19T08:18:12Z",
@@ -9060,11 +9105,11 @@
       "updated_by": "claude:79612601",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
+          "sprint": "Rendering optimizations",
           "from": "2026-11-19T07:25:13Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Rendering optimizations",
       "review": "blocker",
       "number": 258,
       "key_final": false,
@@ -9134,11 +9179,11 @@
       "updated_by": "claude:79612601",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
+          "sprint": "Rendering optimizations",
           "from": "2026-11-19T07:25:13Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Rendering optimizations",
       "number": 259,
       "key_final": false,
       "blocks": [
@@ -9206,7 +9251,7 @@
       "description": "Builds [WebAssembly in the frames](docs/webassembly-in-the-frames.md) (accepted, decision 2 revised 2026-11-19): the frame documents allow compiling WebAssembly, and the highlighter uses Oniguruma except in Chromium, in the frames and in a host-mode page alike.\n\n## Change\n- `'wasm-unsafe-eval'` in both frame documents' `script-src` (`common` in `npm-packages/sandbox/src/build/policy.ts`), and nothing else in their policies; `policy.test.ts` says so.\n- **One rule for the engine** (`npm-packages/sandbox/src/highlight/highlight.ts`, `engineFor`): the JavaScript engine in Chromium, told by `navigator.userAgentData` (only Chromium's browsers have it; never the user agent string); Oniguruma elsewhere, where the page compiles WebAssembly; the JavaScript engine where it doesn't. The frames' runtime and `framesHighlight` both use it; `shikiHighlight({ webAssembly })` keeps its meaning for a host that calls it itself, with the same rule.\n- Spec §15's informative note on browsers gains one line: the frames allow WebAssembly, which reaches no more than their scripts; with its changelog entry under *Unreleased*. No rule changes.\n- The sandbox's design (`docs/running-components-in-the-sandbox.md`, Q3's table) names `'wasm-unsafe-eval'` in the first policy; the sandbox's README says which engine runs where.\n\n## Tests\n- Unit: the engine for each of Chromium, another browser, and a page that refuses WebAssembly.\n- Browser (Chrome and WebKit): a strict component that compiles and runs WebAssembly given `fetch` reaches no origin (T1); the frames' code blocks highlighted, light and dark, as today; the engine each browser runs (JavaScript in Chrome, Oniguruma in WebKit).\n- Measured on the spike's page: frame mode's first block in WebKit, before and after.\n\nThe cost per frame is measured already (the design's open point 1, 833e565).\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [
         "01a1f2b1-fd0d-721c-bf49-5eda0057a136",
         "01a1f2b1-fd0d-721c-bf49-5edb17e6e4f3"
@@ -9224,16 +9269,16 @@
         "npm-packages/sandbox/README.md"
       ],
       "created_at": "2026-11-19T08:14:24Z",
-      "updated_at": "2026-11-19T10:08:57Z",
+      "updated_at": "2026-11-19T10:12:36Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
         {
-          "sprint": "Packs and website",
+          "sprint": "Rendering optimizations",
           "from": "2026-11-19T08:14:24Z"
         }
       ],
-      "sprint": "Packs and website",
+      "sprint": "Rendering optimizations",
       "number": 260,
       "key_final": false,
       "commit": "3c853f45e6862530c902d321d2546414480e0c51",
@@ -9256,6 +9301,18 @@
           "kind": "review",
           "text": "CR-16: Oniguruma in the frames, the JavaScript engine in Chromium",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-19T10:12:36Z",
+          "kind": "note",
+          "text": "Approved: Approved by the maintainer (CR-16).",
+          "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-19T10:12:36Z",
+          "kind": "outcome",
+          "text": "Oniguruma in the frames, the JavaScript engine in Chromium; WebKit frame mode first block 660 ms to 56 ms.",
+          "by": "claude:79612601"
         }
       ],
       "started_at": "2026-11-19T09:36:12Z",
@@ -9267,7 +9324,15 @@
         }
       ],
       "review_requested_at": "2026-11-19T09:45:50Z",
-      "review_state": "waiting"
+      "reviews": [
+        {
+          "from": "2026-11-19T09:45:50Z",
+          "to": "2026-11-19T10:12:36Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-19T10:12:36Z",
+      "completed_by": "claude:79612601"
     },
     {
       "id": "01a1f300-ea72-7291-b97f-c3d75b6dc73e",
@@ -9318,6 +9383,34 @@
       "created_by": "Hakan Serce",
       "updated_by": "Hakan Serce",
       "number": 262,
+      "key_final": false
+    },
+    {
+      "id": "01a1f34b-d7aa-7785-bd1e-e697a34044a4",
+      "name": "Release 0.8.0",
+      "type": "infra",
+      "priority": "P1",
+      "description": "Release CompMD 0.8.0 as [releases](docs/releases.md) and `RELEASING.md` say: every npm package and the crates at one version. A minor version, since it breaks (below).\n\n## Before the tag\n- **The spec's revision:** the spec is dirty (§15's note, CMD-260), so `cargo make spec-revision` cuts `1.0-draft.16`, and `SPEC_VERSION` (crate and `@compmd/processor`) and the packages' READMEs name it.\n- **Release notes**, in each package's README version list:\n  - Breaking: a highlighter gives tokens, `(code, language) => lines`, and the renderer draws them (CMD-251); the frame protocol is version 5 (`lineHeights`, CMD-250), so a host's page and the frame documents it serves are upgraded together.\n  - New: a code block's lines are elements, with `view.lineHeights` and their boxes in `lines()` (CMD-250); one stylesheet per document and the colour scheme read only when needed, so many views in one page are cheap (CMD-253, CMD-255); one highlighter for a page's views (CMD-256); Oniguruma where the page compiles WebAssembly, outside Chromium, with `'wasm-unsafe-eval'` in `cspFor` and in the frames' policies (CMD-257, CMD-260); a block highlighted at a time, those on screen first, and `drawn()`/`settled` waiting for it (CMD-259).\n  - The repository's new layout (CMD-246) changes no package.\n- `cargo make ci` green on `main`, the Tauri check on Linux CI and `cargo make tauri-check` by hand on macOS.\n\n## The release\nThe version in every `package.json`, `crates/processor/Cargo.toml` and `crates/tauri/Cargo.toml` in one commit; the tag `v0.8.0`; the release workflow stages the npm packages and waits for the crates' approval.\n\nEvery push and every publish needs the user's go; the push order is the markdown-rs fork (if it changed), then `compmd`, with `--follow-tags` for the spec's tag.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "RELEASING.md",
+        "spec/CHANGELOG.md"
+      ],
+      "created_at": "2026-11-19T10:13:16Z",
+      "updated_at": "2026-11-19T10:13:16Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Rendering optimizations",
+          "from": "2026-11-19T10:13:16Z"
+        }
+      ],
+      "sprint": "Rendering optimizations",
+      "number": 263,
       "key_final": false
     }
   ]

@@ -2,12 +2,12 @@
 id = "01a1f332-b998-770d-aaed-d866e39003ea"
 number = 16
 title = "Oniguruma in the frames, the JavaScript engine in Chromium"
-status = "open"
+status = "approved"
 tasks = ["~CMD-260"]
 author = "claude:79612601"
 reviewers = []
 created = 2026-11-19T09:45:50Z
-updated = 2026-11-19T10:08:58Z
+updated = 2026-11-19T10:09:35Z
 +++
 
 The frames allow compiling WebAssembly, and one rule picks the highlighter's engine wherever a page renders: the JavaScript engine in Chromium, Oniguruma elsewhere where the page compiles it ([WebAssembly in the frames](docs/webassembly-in-the-frames.md), decision 2 as revised).
