@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 256,
+    "next_number": 260,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -8726,6 +8726,146 @@
       ],
       "sprint": "Packs and website",
       "number": 255,
+      "key_final": false
+    },
+    {
+      "id": "01a1f2b1-fd0d-721c-bf49-5ed9548584bf",
+      "name": "Code highlighting: one Shiki for a page's views",
+      "type": "feature",
+      "priority": "P1",
+      "labels": [
+        "performance"
+      ],
+      "description": "In host mode every view makes a highlighter of its own: `hostPage` calls `framesHighlight(options.base)` per view (`npm-packages/sandbox/src/pages.ts`, `npm-packages/sandbox/src/from-frames.ts`), and each `shikiHighlight()` makes its own Shiki (`npm-packages/sandbox/src/highlight/highlight.ts`), which Shiki warns about. Each then pays for its grammar again: in WebKit, with a view per run of code, 5.9 s blocked over a skim against 0.9 s with one Shiki, and a run tokenized in 14 ms against 1 ms (the spike CMD-252, [its README](spikes/highlight-perf/README.md), *today* against *shared*).\n\n## Change\n- One Shiki for the views of a page that load the frames' `highlight.js` from the same `base`: made with the first code block, shared by every view after it, with the languages loaded so far.\n- A language loaded for one view is there for the others; two views asking for one at once load it once.\n- In frame mode nothing changes: a frame is a page of its own, with one Shiki already.\n- `shikiHighlight()` keeps giving a highlighter of its own to a host that calls it itself; its docs say to make one and share it.\n\n## Tests\n- Unit: two highlighters from `framesHighlight` of one base share one Shiki (it is made once); a language is loaded once for both.\n- Browser (Chrome and WebKit, host mode): two views with code blocks are both highlighted, light and dark, as today.\n- Measured with the spike's page (`today` against a variant that goes through the sandbox's own highlighter, if the page needs one): the numbers in the task's note.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1f0f9-76de-73fc-b8ae-e07bc47777fc"
+      ],
+      "files": [
+        "npm-packages/sandbox/src/from-frames.ts",
+        "npm-packages/sandbox/src/highlight/highlight.ts",
+        "npm-packages/sandbox/src/pages.ts",
+        "npm-packages/sandbox/README.md"
+      ],
+      "created_at": "2026-11-19T07:25:13Z",
+      "updated_at": "2026-11-19T07:25:13Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Packs and website",
+          "from": "2026-11-19T07:25:13Z"
+        }
+      ],
+      "sprint": "Packs and website",
+      "number": 256,
+      "key_final": false
+    },
+    {
+      "id": "01a1f2b1-fd0d-721c-bf49-5eda0057a136",
+      "name": "Code highlighting: Oniguruma where the page allows WebAssembly (host mode)",
+      "type": "feature",
+      "priority": "P1",
+      "labels": [
+        "performance"
+      ],
+      "description": "WebKit's cost in highlighting is Shiki's JavaScript engine compiling a grammar's regexes the first time each runs: a 1.1 s frame for the first TypeScript block, and later long frames as new rules first match. With Oniguruma, as WebAssembly, the first tokenizing takes 30 ms and nothing after it is long: with one Shiki for the page, 83 ms blocked on opening and 10 ms over a skim, where the JavaScript engine has 1.2 s and 0.9 s (the spike CMD-252, [its README](spikes/highlight-perf/README.md), *shared + oniguruma*). In Chromium the two are as fast.\n\n## Change\n- In host mode the shared Shiki (the task before this one) uses Oniguruma (`@shikijs/engine-oniguruma`) when the page can compile WebAssembly, and the JavaScript engine, as today, when it can't: a page whose policy has no `'wasm-unsafe-eval'` refuses it, and highlighting must still work there.\n- The WebAssembly ships once, with the frames' files beside `highlight.js` (622 KB, 232 KB gzipped), loaded with the first code block; the site's check that Shiki ships once covers it.\n- `@compmd/vite`'s `cspFor` (`npm-packages/vite/src/csp.ts`) adds `'wasm-unsafe-eval'` to the host page's `script-src`, so a host that takes its policy from it gets Oniguruma; the docs say what it allows (compiling WebAssembly, in the host's own page, which runs the host's own code) and that a host may leave it out.\n- **The frames stay on the JavaScript engine:** their policy refuses WebAssembly, and whether it should allow it is a design of its own (its own task).\n\n## Tests\n- Unit: the engine chosen when WebAssembly compiles and when it is refused.\n- Browser (Chrome and WebKit, host mode): code highlighted under a policy with `'wasm-unsafe-eval'` and under one without, the same tokens.\n- `cspFor`'s tests; the hosting check and the Tauri example still pass (`cargo make tauri-check`).\n- Measured with the spike's page, before and after, in the task's note.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1f2b1-fd0d-721c-bf49-5ed9548584bf"
+      ],
+      "files": [
+        "npm-packages/sandbox/src/highlight/highlight.ts",
+        "npm-packages/sandbox/scripts/frames.ts",
+        "npm-packages/vite/src/csp.ts",
+        "npm-packages/sandbox/README.md",
+        "docs/hosting.md"
+      ],
+      "created_at": "2026-11-19T07:25:13Z",
+      "updated_at": "2026-11-19T07:25:13Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Packs and website",
+          "from": "2026-11-19T07:25:13Z"
+        }
+      ],
+      "sprint": "Packs and website",
+      "number": 257,
+      "key_final": false
+    },
+    {
+      "id": "01a1f2b1-fd0d-721c-bf49-5edb17e6e4f3",
+      "name": "Design: WebAssembly in the frames, for code highlighting",
+      "type": "docs",
+      "priority": "P2",
+      "labels": [
+        "performance",
+        "security"
+      ],
+      "description": "In frame mode the page's frame highlights its own code blocks, with Shiki's JavaScript engine, which in WebKit blocks for about a second on the first TypeScript block (the spike CMD-252, [its README](spikes/highlight-perf/README.md)). Oniguruma, as WebAssembly, doesn't; but the frames' policy refuses WebAssembly (`npm-packages/sandbox/build/policy.ts`: no `'wasm-unsafe-eval'`, `worker-src 'none'`), and a strict frame runs code from documents.\n\n## The design\nA design document in `docs/`, its decisions first, for the maintainer to decide. It answers:\n- What `'wasm-unsafe-eval'` in a strict frame's `script-src` lets a component's code do that JavaScript there can't: against each threat of [the sandbox's design](docs/running-components-in-the-sandbox.md) (T1 to T10), and spec §15's five rules. Stopping a component that runs too long (rule 5, T9) and timing side channels are looked at in particular.\n- The alternatives: the host's page tokenizing for its frames and sending tokens (after CMD-251, a highlighter gives tokens), a frame of its own for highlighting, a worker (`worker-src`), or staying with the JavaScript engine in frames, with what each costs and measures (the spike has the worker's numbers).\n- What changes in the frames' policies, the protocol and the spec's informative note on browsers, if anything.\n\nNo code. Its follow-up tasks are added once it is decided.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1f0f9-76de-73fc-b8ae-e07bc47777fc"
+      ],
+      "files": [
+        "docs/README.md",
+        "npm-packages/sandbox/build/policy.ts"
+      ],
+      "created_at": "2026-11-19T07:25:13Z",
+      "updated_at": "2026-11-19T07:25:13Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Packs and website",
+          "from": "2026-11-19T07:25:13Z"
+        }
+      ],
+      "sprint": "Packs and website",
+      "review": "blocker",
+      "number": 258,
+      "key_final": false
+    },
+    {
+      "id": "01a1f2b1-fd0d-721c-bf49-5edc8890af56",
+      "name": "Code highlighting: a block a task, those on screen first",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "performance"
+      ],
+      "description": "Each code block is tokenized as it renders, so a render with many blocks tokenizes them all in one frame. Tokenizing a block a task, those on screen first, bounds a frame to one block: in the spike CMD-252 ([its README](spikes/highlight-perf/README.md), the *sliced* variants) it took opening's last 83 ms blocked to 0 with Oniguruma, and the JavaScript engine's opening frame in WebKit from 1.2 s to 0.6 s (it can't split one block's first compile).\n\n## Change\n- The sandbox's highlighter queues the blocks it is asked for and tokenizes one a task, yielding to the page between them; a block on screen goes before one that isn't, and a block whose text changed or that is gone is dropped from the queue.\n- After CMD-251 a highlighter gives tokens and the renderer draws them, so the queue is the highlighter's own and the renderer needs no change.\n- A view's `settled` still waits for its blocks' highlighting, as today.\n\n## Tests\n- Unit: the order (on screen first), one block a task, a dropped block; a block of a newer text isn't drawn with older tokens.\n- Browser tests of code blocks as today, both modes.\n- Measured with the spike's page, before and after, in the task's note.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1f2b1-fd0d-721c-bf49-5ed9548584bf",
+        "01a1f065-c028-7345-9484-b544d2ee9eab"
+      ],
+      "files": [
+        "npm-packages/sandbox/src/highlight/highlight.ts",
+        "npm-packages/sandbox/README.md"
+      ],
+      "created_at": "2026-11-19T07:25:13Z",
+      "updated_at": "2026-11-19T07:25:13Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Packs and website",
+          "from": "2026-11-19T07:25:13Z"
+        }
+      ],
+      "sprint": "Packs and website",
+      "number": 259,
       "key_final": false
     }
   ]
