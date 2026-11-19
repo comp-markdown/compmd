@@ -21,9 +21,17 @@ function imagesLoaded(root: ParentNode | undefined): Promise<unknown> {
   })));
 }
 
-/** Resolves once every stylesheet the window links has loaded or failed: a host's stylesheet moves its page too. */
-function stylesheetsLoaded(): Promise<unknown> {
-  const loading = [...document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')].filter((link) => link.sheet === null);
+/**
+ * Each document's links, as the browser keeps them up to date: so a view settling looks at the links alone, with
+ * those added since, where a selector would go through the whole document, again for every view in it.
+ */
+const linksOf = new WeakMap<Document, HTMLCollectionOf<HTMLLinkElement>>();
+
+/** Resolves once every stylesheet `document` links has loaded or failed: a host's stylesheet moves its page too. */
+export function stylesheetsLoaded(document: Document): Promise<unknown> {
+  let links = linksOf.get(document);
+  if (!links) linksOf.set(document, (links = document.getElementsByTagName("link")));
+  const loading = [...links].filter((link) => link.getAttribute("rel") === "stylesheet" && link.sheet === null);
   return Promise.all(loading.map((link) => new Promise((resolve) => {
     link.addEventListener("load", resolve, { once: true });
     link.addEventListener("error", resolve, { once: true });
@@ -76,7 +84,7 @@ export class Settling {
         await this.#parts.drawn();
         await Promise.all([...this.#parts.frames()].map((frame) => frame.settled()));
         await imagesLoaded(this.#parts.root());
-        await stylesheetsLoaded();
+        await stylesheetsLoaded(document);
         await document.fonts.ready;
         await nextFrame();
         if (version === this.#version) break;
