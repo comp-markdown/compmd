@@ -2,12 +2,12 @@
 id = "01a1f2ae-e64a-7756-8bf6-93781ac1920a"
 number = 8
 title = "One stylesheet per document, and the scheme read on need"
-status = "open"
+status = "approved"
 tasks = ["~CMD-253"]
 author = "claude:79612601"
 reviewers = []
 created = 2026-11-19T07:21:50Z
-updated = 2026-11-19T07:21:50Z
+updated = 2026-11-19T07:27:35Z
 +++
 
 A document's pages share one stylesheet, and the colour scheme is read only when something needs it, so opening a page of text and code no longer makes the browser style the whole host document.

@@ -66,7 +66,12 @@ describe("a code block a code renderer renders", () => {
 
   it("has its fallback's code block highlighted when the renderer isn't here", () => {
     const highlighted: string[] = [];
-    const page = createPage(area, { highlight: (code, language) => highlighted.push(`${language}: ${code}`) });
+    const page = createPage(area, {
+      highlight: (code, language) => {
+        highlighted.push(`${language}: ${code}`);
+        return undefined;
+      },
+    });
     page.render({ type: "root", children: [rendered("A --> B")] });
     expect(highlighted).toEqual(["mermaid: A --> B"]);
   });
@@ -132,27 +137,27 @@ describe("a rendered block with `render=both`", () => {
 describe("a code block that shows as code", () => {
   const block = (value: string, lang: string | null = "js"): ExpandedNode => ({ type: "code", lang, meta: null, value });
 
-  it("is highlighted into its `<code>`, which holds its text until then, and again only when its text or language changes", () => {
-    const calls: [string, string, string][] = [];
+  it("is highlighted with the highlighter's tokens, in its lines, and again only when its text or language changes", () => {
+    const calls: [string, string][] = [];
     const page = createPage(area, {
-      highlight: (code, language, target) => {
-        calls.push([code, language, target.textContent]);
-        target.replaceChildren(Object.assign(document.createElement("span"), { textContent: code }));
+      highlight: (code, language) => {
+        calls.push([code, language]);
+        return [[{ text: code, bold: true }]];
       },
     });
     page.render({ type: "root", children: [block("let a;")] });
-    expect(area.innerHTML).toBe('<pre><code class="language-js"><span>let a;</span></code></pre>');
+    expect(area.innerHTML).toBe('<pre><code class="language-js"><span class="compmd-line"><span style="font-weight: bold;">let a;</span></span></code></pre>');
     page.render({ type: "root", children: [block("let a;")], inputs: { x: { type: "string", value: "" } } });
     page.render({ type: "root", children: [block("let b;")] });
     page.render({ type: "root", children: [block("let b;", "ts")] });
     page.render({ type: "root", children: [block("plain", null)] });
     expect(calls).toEqual([
-      ["let a;", "js", "let a;"],
-      ["let b;", "js", "let b;"],
-      ["let b;", "ts", "let b;"],
-      ["plain", "", "plain"],
+      ["let a;", "js"],
+      ["let b;", "js"],
+      ["let b;", "ts"],
+      ["plain", ""],
     ]);
-    expect(area.innerHTML).toBe("<pre><code><span>plain</span></code></pre>");
+    expect(area.textContent).toBe("plain");
   });
 
   it("is plain without a highlighter", () => {

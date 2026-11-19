@@ -1,12 +1,15 @@
-// The variants' highlighters, `@compmd/render`'s `CodeHighlighter`, each made of the choices the spike tries: where
+// The variants' highlighters, each drawing a block's `<code>` as a highlighter did when the spike was run (since
+// CMD-251 one gives tokens and the renderer draws them), each made of the choices the spike tries: where
 // Shiki lives (one per view, as the sandbox's host mode has it today, or one for the page), its engine, where it
 // tokenizes (the page's thread or a worker), when blocks are highlighted (each as it renders, or one per task with
 // those on screen first), and a cache of tokens. Every step is counted in `stats`.
 
-import type { CodeHighlighter } from "@compmd/render";
 import type { HighlighterCore } from "@shikijs/core";
 import { draw } from "./draw.ts";
 import { loadShiki, tokensOf, type Engine, type Lines } from "./shiki.ts";
+
+/** Highlights `code` into `target`, a block's `<code>` holding its lines. */
+export type CodeHighlighter = (code: string, language: string, target: HTMLElement) => void;
 
 export interface Config {
   shiki: "per-view" | "shared";

@@ -3,6 +3,7 @@
 import { Busy } from "./busy.ts";
 import type { ComponentError, ComponentRecovered, Mount, RenderError } from "./contract.ts";
 import type { LinkDefinition } from "./document.ts";
+import type { CodeHighlighter } from "./highlight.ts";
 import { ownSchemes } from "./html.ts";
 import { RefusedImages } from "./refused-images.ts";
 import type { ImageSource } from "./images.ts";
@@ -10,7 +11,7 @@ import type { KeyOf } from "./keys.ts";
 import { Layout } from "./layout.ts";
 import { linesIn, type Line } from "./lines.ts";
 import { needsContainer } from "./component-views.ts";
-import { destroyAll, patch, PendingMounts, type CodeHighlighter, type CodeRenderer, type MathRenderer, type Surface, type View } from "./render.ts";
+import { destroyAll, patch, PendingMounts, type CodeRenderer, type MathRenderer, type Surface, type View } from "./render.ts";
 import { Schemes } from "./scheme.ts";
 import { Drawn, elementsIn, placedOf, sourceIn, type Source } from "./source.ts";
 import { Stylesheet, type ParentLayout } from "./styles.ts";

@@ -83,9 +83,7 @@ describe("lines", () => {
 
   it("finds a code block's lines across the highlighter's tokens", () => {
     const p = page({
-      highlight: (code, _language, target) => {
-        target.replaceChildren(...code.split(/(?<=\s)/).map((token) => Object.assign(document.createElement("span"), { textContent: token })));
-      },
+      highlight: (code) => code.split("\n").map((line) => line.split(/(?<= )/).map((text) => ({ text }))),
     });
     p.render(tree(node("code", span(1, 0, 4, 30), [], { lang: "js", value: "let a = 1;\nlet b;" })));
     expect([...p.lines()].map(({ line }) => line)).toEqual([2, 3]);

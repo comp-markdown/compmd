@@ -1,16 +1,12 @@
 // A code block's lines, each an element of its own, so the page can size one for a host (`LineHeights`: a diff's two
 // sides kept level): `<span class="compmd-line" data-line="N">`, N its line in the current text, its newline inside
 // it, so the block's text, and what a reader copies, are the code's. The renderer draws them, numbers them again when
-// what is before the block moves them, and a highlighter fills them with its tokens. All of it is the renderer's own:
+// what is before the block moves them, and fills them with a highlighter's tokens (`highlight.ts`). All of it is the renderer's own:
 // a host sizes lines by their line in the text (`Page.lineHeights`) and finds them with `Page.lines`, never by these
 // elements, so how they are drawn and numbered can change.
 import type { Placed } from "./source.ts";
 
-/**
- * The class of a code block's line.
- *
- * @internal For `@compmd/sandbox`'s highlighter, which fills the lines; not for hosts.
- */
+/** The class of a code block's line. */
 export const CODE_LINE = "compmd-line";
 
 /** How many lines `text` has: one more than its line breaks. */

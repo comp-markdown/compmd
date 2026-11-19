@@ -1,8 +1,12 @@
-// A block's tokens drawn into its lines, as `@compmd/sandbox`'s highlighter draws them (`highlight.ts` `draw`): each
-// line's tokens in the renderer's element for that line, with their colours as `light-dark()`.
+// A block's tokens drawn into its lines, as `@compmd/sandbox`'s highlighter drew them when the spike was run, and as
+// `@compmd/render` draws a highlighter's tokens since (CMD-251): each line's tokens in the renderer's element for that
+// line, with their colours as `light-dark()`. The spike keeps its own, so its variants say when a block is drawn and
+// which blocks are on screen.
 
-import { CODE_LINE } from "@compmd/render";
 import type { Lines } from "./shiki.ts";
+
+/** The class of a code block's line, the renderer's own. */
+const CODE_LINE = "compmd-line";
 
 const ITALIC = 1;
 const BOLD = 2;

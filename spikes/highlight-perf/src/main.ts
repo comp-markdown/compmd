@@ -55,10 +55,13 @@ function mount(index: number): void {
   if (!run || code === undefined || run.page) return;
   run.mounted = performance.now();
   delete run.highlighted;
-  run.page = createPage(run.slot, query.get("highlight") === "off" ? {} : { highlight: made() });
-  if (query.get("highlight") === "off") run.highlighted = performance.now();
+  run.page = createPage(run.slot);
   const lines = code.split("\n").length;
   run.page.render({ type: "root", children: [{ type: "code", lang: "ts", meta: null, value: code, origin: { start: { line: 1, column: 1 }, end: { line: lines + 2, column: 4 }, occurrence: 0 } }] });
+  // The variant's highlighter draws the block itself, as the page's `highlight` did when the spike was run.
+  const target = run.slot.querySelector<HTMLElement>("pre > code");
+  if (query.get("highlight") === "off" || !target) run.highlighted = performance.now();
+  else made()(code, "ts", target);
 }
 
 /**

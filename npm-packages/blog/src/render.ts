@@ -65,8 +65,9 @@ export async function renderPost(post: Post, now: string, highlight: Highlight, 
   try {
     // happy-dom's elements are the DOM's, as the renderer takes them.
     const root = window.document.body.appendChild(window.document.createElement("div")) as unknown as HTMLElement;
-    const page = createPage(root, { highlight: highlight.highlight });
+    const page = createPage(root);
     page.render(expanded);
+    highlight.highlight(root);
     // An input's state is in its properties, which HTML doesn't hold; its attributes give it to the page.
     for (const input of root.querySelectorAll("input")) {
       if (input.type === "checkbox") input.toggleAttribute("checked", input.checked);

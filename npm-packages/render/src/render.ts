@@ -7,6 +7,7 @@ import { BoxView, ComponentView, INPUTS, InputView, RenderedCodeView } from "./c
 import type { ComponentError, ComponentRecovered, Mount } from "./contract.ts";
 import type { LinkDefinition } from "./document.ts";
 import { ExampleView } from "./example-view.ts";
+import type { CodeHighlighter } from "./highlight.ts";
 import { withHtml } from "./html.ts";
 import type { ImageSource } from "./images.ts";
 import { CallbackView, CodeBlockView, ElementView, ImageView, isImage, textView } from "./markdown-views.ts";
@@ -20,14 +21,6 @@ import { isComponent, rendererOf, textOf, type ExpandedCode, type ExpandedInput,
 export type CodeRenderer = (source: string, target: HTMLElement) => void;
 /** Renders TeX math into `target`. */
 export type MathRenderer = (tex: string, options: { display: boolean }, target: HTMLElement) => void;
-/**
- * Highlights a code block that shows as code: `code`, written in the fence language `language` (`""` for none), into
- * `target`, the block's `<code>`, which holds one element per line until then, each `.compmd-line` (`CODE_LINE`)
- * with its text and its line break. It puts each line's tokens in that line's element, keeping the element and its
- * attributes (`data-line`), so a host's styles for a line stay. It may do so later, once what it needs has loaded; it
- * is called again only when the block's text or language changes.
- */
-export type CodeHighlighter = (code: string, language: string, target: HTMLElement) => void;
 
 /**
  * The mounts of the components a render made, waiting until it has placed their boxes in the document and flushed the

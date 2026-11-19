@@ -8640,7 +8640,7 @@
       "description": "A host that opens many pages in one document (a diff viewer: a page per run) pays, per page, costs that belong to the document. Each one restyles the whole host document, about 1 s each on a large page in WebKit:\n\n- `createPage` makes a `Stylesheet` of its own (`npm-packages/render/src/page.ts`), which assigns `document.adoptedStyleSheets` on open and again on destroy, and holds the whole `BASE_RULES` (`npm-packages/render/src/styles.ts`);\n- `new Schemes(root)` then reads `getComputedStyle(root).colorScheme` (`npm-packages/render/src/scheme.ts`), which forces the recalculation at once; the page reads it again at every render, and so does the sandbox's view (`followScheme` in `npm-packages/sandbox/src/sandbox.ts`), which tracks the scheme a second time in host mode.\n\nThe spike CMD-252 ([its README](spikes/highlight-perf/README.md)) measured the first with every page kept mounted (43 s blocked over a skim in WebKit, highlighting off); its page's host document is small, so it missed the cost of each open.\n\n## Change\n\n- **One stylesheet per document**, shared by every page and region in it without an option: made with the document's first page, adopted once, removed with its last. The base rules are in it once.\n- **Block class names are unique in a document and never used again**, also after a page is destroyed. Today each page counts from `compmd-b0`, so one page's rules match another's blocks.\n- **A destroyed page's rules leave the sheet.**\n- **A page whose blocks have no rules writes nothing to the sheet.** The sheet is still written as a whole when its text changed; writing rule by rule is a task of its own.\n- **The colour scheme is read when something needs it**: when the first follower (a component, a frame) is there, and from then on as now (each render, the reader's preference, printing, `scheme()`). A page with no follower never calls `getComputedStyle`. The scheme stays the element's own (spec §7.4), never one per document.\n- **Host mode tracks the scheme once**, not in the view and in the page both.\n- **The value guard stays** (`safe` in `styles.ts`).\n- **Docs:** `@compmd/render`'s and `@compmd/sandbox`'s READMEs say what a page costs, what a document shares, and that many pages in one document is a supported use.\n\n## Tests\n\n- Unit (`styles.test.ts`, `scheme.test.ts`, `page.test.ts`): two pages, one adopted sheet, assigned once; destroying one keeps the sheet and the other's rules and removes its own; destroying both removes the sheet; two documents, two sheets; names not used again after a destroy; a page with no follower never calls `getComputedStyle`, at open or at render; a follower gets the scheme at mount and its changes.\n- Browser (Chrome and WebKit): two pages in one document whose blocks style differently, each styled as its own; a component follows a scheme switch in both modes.\n- **Measured** on the spike's page, with a large host document (about 20,000 elements) and 100 pages opened and closed: the assignments to `adoptedStyleSheets`, the calls to `getComputedStyle` and `replaceSync`, and the frames blocked, before and after, in WebKit and Chromium. Account for every `getComputedStyle` call on that page. The numbers go in the spike's README.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [],
       "files": [
         "npm-packages/render/src/styles.ts",
@@ -8651,7 +8651,7 @@
         "spikes/highlight-perf/README.md"
       ],
       "created_at": "2026-11-19T06:16:06Z",
-      "updated_at": "2026-11-19T07:21:51Z",
+      "updated_at": "2026-11-19T07:29:55Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -8673,15 +8673,35 @@
         }
       ],
       "review_requested_at": "2026-11-19T07:21:51Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-19T07:21:51Z",
           "kind": "review",
           "text": "CR-8: One stylesheet per document, and the scheme read on need",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-19T07:29:52Z",
+          "kind": "note",
+          "text": "Approved: Approved by the maintainer (CR-8).",
+          "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-19T07:29:55Z",
+          "kind": "outcome",
+          "text": "One stylesheet per document and the scheme read on need: in WebKit, 100 opens in a 20,000-element host went from 2.6 s blocked to 0.",
+          "by": "claude:79612601"
         }
-      ]
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-19T07:21:51Z",
+          "to": "2026-11-19T07:29:52Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-19T07:29:55Z",
+      "completed_by": "claude:79612601"
     },
     {
       "id": "01a1f29c-e577-7274-b7b7-a9ed8c29b6ee",

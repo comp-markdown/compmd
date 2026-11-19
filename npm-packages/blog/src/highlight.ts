@@ -1,21 +1,25 @@
-// Code highlighted at build time by Shiki, in GitHub's light and dark themes (docs/blog-tool.md, decision 5), as the
-// renderer's `highlight` takes it: each code block's `<code>` gets Shiki's lines, its `<pre>` Shiki's colours.
+// Code highlighted at build time by Shiki, in GitHub's light and dark themes (docs/blog-tool.md, decision 5), in the
+// page the renderer drew: each code block's `<code>` gets Shiki's lines, its `<pre>` Shiki's colours. A built page is
+// HTML of its own, with a `style` attribute per token and Shiki's dark colours in custom properties, which the
+// renderer's own highlighting, for a live page, doesn't write.
 //
 // Markdown and CompMD show CompMD's syntax through the grammar the sandbox's highlighter injects into Markdown's
 // (`@compmd/sandbox/grammar`). Shiki loses that injection when YAML's grammar is loaded beside Markdown's, so Markdown
 // has a highlighter of its own, and a Markdown example's frontmatter is highlighted as YAML by the other.
 
-import type { CodeHighlighter } from "@compmd/render";
 import { COMPMD, splitYaml } from "@compmd/sandbox/grammar";
 import { bundledLanguages, createHighlighter, type BundledLanguage, type Highlighter } from "shiki";
 
 const THEMES = { themes: { light: "github-light", dark: "github-dark" }, defaultColor: "light" } as const;
 const MARKDOWN = new Set(["md", "markdown", "compmd"]);
 
+/** The class the renderer gives a code block's `<code>` for its fence language, before the language. */
+const LANGUAGE = "language-";
+
 /** A highlighter, and the languages it should load before a render that uses them. */
 export interface Highlight {
-  /** The renderer's `highlight`: a block in a language not loaded keeps its text as it is. */
-  highlight: CodeHighlighter;
+  /** Highlights the code blocks of a rendered page, `root`: a block in a language not loaded keeps its text as it is. */
+  highlight(root: HTMLElement): void;
   /** Loads `languages`, fence languages as written, those Shiki has. */
   load(languages: Iterable<string>): Promise<void>;
 }
@@ -55,17 +59,23 @@ async function create(): Promise<Highlight> {
       pre.setAttribute("style", style);
     }
   };
+  const highlight = (code: string, language: string, target: HTMLElement) => {
+    if (MARKDOWN.has(language)) {
+      const [head, rest] = splitYaml(code, language !== "compmd");
+      const blocks = [head ? parts(others, head, "yaml") : undefined, rest ? parts(markdown, rest, "markdown") : undefined].filter((block) => block !== undefined);
+      const [first] = blocks;
+      if (first) write(target, { style: first.style, lines: blocks.map(({ lines }) => lines).join("\n") });
+      return;
+    }
+    const lang = known(language);
+    if (lang !== undefined && loaded.has(lang)) write(target, parts(others, code, lang));
+  };
   return {
-    highlight(code, language, target) {
-      if (MARKDOWN.has(language)) {
-        const [head, rest] = splitYaml(code, language !== "compmd");
-        const blocks = [head ? parts(others, head, "yaml") : undefined, rest ? parts(markdown, rest, "markdown") : undefined].filter((block) => block !== undefined);
-        const [first] = blocks;
-        if (first) write(target, { style: first.style, lines: blocks.map(({ lines }) => lines).join("\n") });
-        return;
+    highlight(root) {
+      for (const target of root.querySelectorAll<HTMLElement>("pre > code")) {
+        const language = [...target.classList].find((name) => name.startsWith(LANGUAGE))?.slice(LANGUAGE.length) ?? "";
+        highlight(target.textContent, language, target);
       }
-      const lang = known(language);
-      if (lang !== undefined && loaded.has(lang)) write(target, parts(others, code, lang));
     },
     async load(languages) {
       for (const language of languages) {

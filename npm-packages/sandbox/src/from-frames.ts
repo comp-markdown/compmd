@@ -10,18 +10,13 @@ const imported = <T>(url: string): Promise<T> => import(/* @vite-ignore */ url) 
 
 /**
  * The frames' highlighter (`shikiHighlight`), loaded from `base` the first time a page has a code block. Until then
- * a block shows its text, as it does when its language isn't highlighted.
+ * a block shows its text, as it does when its language isn't highlighted, or when the file can't be had.
  */
 export function framesHighlight(base: string): CodeHighlighter {
   let loaded: Promise<CodeHighlighter> | undefined;
-  return (code, language, target) => {
+  return async (code, language) => {
     loaded ??= imported<{ shikiHighlight: () => CodeHighlighter }>(frameUrl(base, "highlight.js")).then((module) => module.shikiHighlight());
-    void loaded.then(
-      (highlight) => {
-        highlight(code, language, target);
-      },
-      () => undefined,
-    );
+    return (await loaded)(code, language);
   };
 }
 
