@@ -1,0 +1,87 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "26a635cf8fb8ec3ca7fc602fad8e12c28a0bc547",
+    "head": "34e1a317c47d4f750aefca0dc85cf03430ccfa95"
+  },
+  "files": [
+    {
+      "path": "docs/hosting.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/running-components-in-the-sandbox.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/webassembly-in-the-frames.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/developers/19-a-tauri-app.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/build/policy.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/build/policy.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/frame/runtime.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/highlight/highlight.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/highlight/highlight.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/highlight-policy.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/strict.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spec/CHANGELOG.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spec/compmd-spec-v1.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spikes/highlight-perf/README.md",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-19T09:45:50Z"
+}

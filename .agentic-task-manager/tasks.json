@@ -9206,7 +9206,7 @@
       "description": "Builds [WebAssembly in the frames](docs/webassembly-in-the-frames.md) (accepted, decision 2 revised 2026-11-19): the frame documents allow compiling WebAssembly, and the highlighter uses Oniguruma except in Chromium, in the frames and in a host-mode page alike.\n\n## Change\n- `'wasm-unsafe-eval'` in both frame documents' `script-src` (`common` in `npm-packages/sandbox/src/build/policy.ts`), and nothing else in their policies; `policy.test.ts` says so.\n- **One rule for the engine** (`npm-packages/sandbox/src/highlight/highlight.ts`, `engineFor`): the JavaScript engine in Chromium, told by `navigator.userAgentData` (only Chromium's browsers have it; never the user agent string); Oniguruma elsewhere, where the page compiles WebAssembly; the JavaScript engine where it doesn't. The frames' runtime and `framesHighlight` both use it; `shikiHighlight({ webAssembly })` keeps its meaning for a host that calls it itself, with the same rule.\n- Spec §15's informative note on browsers gains one line: the frames allow WebAssembly, which reaches no more than their scripts; with its changelog entry under *Unreleased*. No rule changes.\n- The sandbox's design (`docs/running-components-in-the-sandbox.md`, Q3's table) names `'wasm-unsafe-eval'` in the first policy; the sandbox's README says which engine runs where.\n\n## Tests\n- Unit: the engine for each of Chromium, another browser, and a page that refuses WebAssembly.\n- Browser (Chrome and WebKit): a strict component that compiles and runs WebAssembly given `fetch` reaches no origin (T1); the frames' code blocks highlighted, light and dark, as today; the engine each browser runs (JavaScript in Chrome, Oniguruma in WebKit).\n- Measured on the spike's page: frame mode's first block in WebKit, before and after.\n\nThe cost per frame is measured already (the design's open point 1, 833e565).\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [
         "01a1f2b1-fd0d-721c-bf49-5eda0057a136",
         "01a1f2b1-fd0d-721c-bf49-5edb17e6e4f3"
@@ -9224,7 +9224,7 @@
         "npm-packages/sandbox/README.md"
       ],
       "created_at": "2026-11-19T08:14:24Z",
-      "updated_at": "2026-11-19T09:36:12Z",
+      "updated_at": "2026-11-19T09:45:50Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -9236,7 +9236,7 @@
       "sprint": "Packs and website",
       "number": 260,
       "key_final": false,
-      "commit": "833e565930ea4d28e4e34f5b8a1e5daf726089dc",
+      "commit": "34e1a317c47d4f750aefca0dc85cf03430ccfa95",
       "blocks": [
         {
           "from": "2026-11-19T09:17:17Z",
@@ -9250,10 +9250,24 @@
           "kind": "answer",
           "text": "Oniguruma costs each frame about 85 ms, against about 30 ms for the JavaScript engine’s frames after the first; in WebKit it blocks less for a few frames, more from about 35 (docs/webassembly-in-the-frames.md, open point 1). Go on with A (frame mode has one frame per document), switch to B (the host’s page tokenizes for its frames), or A now with B as a task? → The JavaScript engine in Chromium (told by navigator.userAgentData), Oniguruma elsewhere, one rule for frames and host mode; B as CMD-262 in the backlog. Design decision 2 revised.",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-19T09:45:50Z",
+          "kind": "review",
+          "text": "CR-16: Oniguruma in the frames, the JavaScript engine in Chromium",
+          "by": "claude:79612601"
         }
       ],
       "started_at": "2026-11-19T09:36:12Z",
-      "started_by": "claude:79612601"
+      "started_by": "claude:79612601",
+      "code_reviews": [
+        {
+          "id": "01a1f332-b998-770d-aaed-d866e39003ea",
+          "ref": "CR-16"
+        }
+      ],
+      "review_requested_at": "2026-11-19T09:45:50Z",
+      "review_state": "waiting"
     },
     {
       "id": "01a1f300-ea72-7291-b97f-c3d75b6dc73e",
