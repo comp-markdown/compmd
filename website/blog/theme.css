@@ -34,3 +34,12 @@ body {
 .spec .post-list h2 a:hover {
   color: var(--accent);
 }
+
+/* Under every page: how the blog is made, quieter than the text. */
+.blog .colophon {
+  margin-block: 3rem 0;
+  padding-block-start: 1rem;
+  border-block-start: 1px solid var(--rule);
+  color: var(--ink-secondary);
+  font-size: 0.9rem;
+}

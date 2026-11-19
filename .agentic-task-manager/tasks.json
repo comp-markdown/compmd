@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 266,
+    "next_number": 267,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -524,13 +524,13 @@
       "description": "Asked by the user (2026-11-08): a research of existing components, to define the first list CompMD should have soon to be attractive to authors.\n\n## Research\n- **MDX:** the components docs frameworks ship and authors use most (Docusaurus, Nextra, Starlight, Mintlify, Fumadocs and others: tabs, callouts, cards, steps, code groups, file trees, embeds…).\n- **React, Svelte and plain JS/TS:** widely used component packages that make sense in a document (charts, maps, diagrams, media, data tables, timelines, math, code playgrounds…), with their weekly downloads and licences.\n- What CompMD covers already (`@compmd/core`, layout, callouts, code renderers, Mermaid), so the list holds only what is missing.\n\n## Result\nA document in `docs/` with sources, and a ranked first list: each component's name, the package it wraps (or written in CompMD), its binding, and why it is on the list. Reviewed with the user.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "docs/first-components.md"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-19T17:46:35Z",
+      "updated_at": "2026-11-19T19:03:49Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "with": "user",
@@ -542,7 +542,7 @@
         }
       ],
       "sprint": "Packs & Blog",
-      "started_at": "2026-11-19T16:40:23Z",
+      "started_at": "2026-11-19T19:03:49Z",
       "started_by": "claude:79612601",
       "commit": "64e255400b72397989e2340c6b0bd4119fd4a283",
       "code_reviews": [
@@ -551,14 +551,25 @@
           "ref": "CR-19"
         }
       ],
-      "review_requested_at": "2026-11-19T17:46:35Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-19T17:46:35Z",
           "kind": "review",
           "text": "CR-19: The first components: research and a ranked list",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-19T19:01:44Z",
+          "kind": "rejection",
+          "text": "CR-19 round 1: 8 open comments",
+          "by": "Hakan Serce"
+        }
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-19T17:46:35Z",
+          "to": "2026-11-19T19:01:44Z",
+          "outcome": "changes_requested"
         }
       ]
     },
@@ -656,7 +667,7 @@
         "website/blog/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-19T17:46:50Z",
+      "updated_at": "2026-11-19T19:10:06Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -673,8 +684,36 @@
       "sprint": "Packs & Blog",
       "with": "user",
       "number": 13,
-      "started_at": "2026-11-19T17:46:50Z",
-      "started_by": "claude:79612601"
+      "started_at": "2026-11-19T19:10:06Z",
+      "started_by": "claude:79612601",
+      "commit": "2fb6b8e8d9343442863002e0398ca51797937649",
+      "code_reviews": [
+        {
+          "id": "01a1f526-12a2-7353-a254-f28756dcb5b5",
+          "ref": "CR-20"
+        }
+      ],
+      "notes": [
+        {
+          "at": "2026-11-19T18:51:15Z",
+          "kind": "review",
+          "text": "CR-20: The blog at /blog/, on @compmd/blog, in the site layout",
+          "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-19T19:09:30Z",
+          "kind": "rejection",
+          "text": "CR-20 round 1: 2 open comments",
+          "by": "Hakan Serce"
+        }
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-19T18:51:15Z",
+          "to": "2026-11-19T19:09:30Z",
+          "outcome": "changes_requested"
+        }
+      ]
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68ebbb96493c",
@@ -9515,6 +9554,36 @@
       "created_by": "claude:79612601",
       "updated_by": "claude:79612601",
       "number": 265
+    },
+    {
+      "id": "01a1f531-c90d-709d-8f34-b9e20b74ceb8",
+      "name": "Images in a component's frame: a zoom, a lightbox, a before-and-after slider",
+      "type": "docs",
+      "priority": "P2",
+      "labels": [
+        "packs",
+        "security"
+      ],
+      "description": "A strict frame's policy loads images only from `data:` and `blob:` (spec §15, rule 2), so a component written in code can't show an image the document links: a zoom, a lightbox or a before-and-after slider ([the first components](docs/first-components.md), G1). `compmd` definitions (`figure`, the card gallery) need none of this: their images are the document's own.\n\n## Questions\n- **How the images reach the frame:** the host hands them in already loaded (as `blob:` URLs, or the slot's items' elements), or the frame's policy allows the document's own origin for images, or the pack's.\n- **What each way gives a component:** can it read a document's image it wasn't given (another post's, a private one)? Remote images stay the reader's to allow (§15, *Privacy*); how that answer carries into the frame.\n- **Both page modes** (frame and host), and what the renderer already does for remote images ([remote images](docs/remote-images.md)).\n\n## Do\nA design note, decisions first, with a spec change if one is needed, reviewed with the user; then the zoom or the slider built on it, with tests in Chrome and WebKit. Found while testing the first image components (CMD-11).",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "docs/first-components.md"
+      ],
+      "created_at": "2026-11-19T19:04:03Z",
+      "updated_at": "2026-11-19T19:04:03Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Packs & Blog",
+          "from": "2026-11-19T19:04:03Z"
+        }
+      ],
+      "sprint": "Packs & Blog",
+      "number": 266
     }
   ]
 }

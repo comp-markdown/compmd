@@ -8,7 +8,7 @@ import { createServer, type ViteDevServer } from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 const PORT = 4192;
-const PAGES = ["spec/", "guides/", "guides/developers/", "guides/developers/quick-start/", "blog/", "blog/the-compmd-blog/"];
+const PAGES = ["spec/", "guides/", "guides/developers/", "guides/developers/quick-start/", "blog/", "blog/hello-world/"];
 /** The site's desk colour in the light scheme, `--desk` in `src/base.css`. */
 const DESK = "rgb(233, 237, 241)";
 
