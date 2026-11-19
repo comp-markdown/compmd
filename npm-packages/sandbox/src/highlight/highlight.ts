@@ -32,7 +32,14 @@ async function loadShikis(): Promise<Shikis> {
   return { markdown: md, others };
 }
 
-/** The highlighter both page modes use: Shiki, loaded the first time a page has a code block. */
+/**
+ * The highlighter both page modes use: Shiki, loaded the first time a page has a code block. Each call makes a Shiki
+ * of its own, which loads each grammar again: a host that renders many pages makes one and gives it to them all.
+ *
+ * @example
+ * const highlight = shikiHighlight();
+ * for (const run of runs) createPage(run.element, { highlight }).render(run.tree);
+ */
 export function shikiHighlight(): CodeHighlighter {
   return highlightWith(loadShikis);
 }

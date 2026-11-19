@@ -3,7 +3,8 @@
 // records every animation frame, so the runner can read how long frames blocked in each phase: opening, a skim to the
 // end, and a revisit, every run mounted again, as a reader jumping back.
 
-import { createPage, type Page } from "@compmd/render";
+import { createPage, type CodeHighlighter, type Page } from "@compmd/render";
+import { shikiHighlight } from "@compmd/sandbox";
 import { highlighters, stats, type Config } from "./highlighters.ts";
 import { runsOf } from "./runs.ts";
 
@@ -43,10 +44,32 @@ const slots: Run[] = runs.map((code) => {
 });
 const bySlot = new Map(slots.map((run) => [run.slot, run]));
 
-const made = highlighters(config, (target) => {
-  const run = bySlot.get(target.closest<HTMLElement>(".run") ?? target);
+const highlighted = (target: Element) => {
+  const run = bySlot.get(target.closest<HTMLElement>(".run") ?? (target as HTMLElement));
   if (run && run.highlighted === undefined) run.highlighted = performance.now();
-});
+};
+const made = highlighters(config, highlighted);
+
+/**
+ * `?sandbox=per-view` or `?sandbox=shared`: the sandbox's own highlighter, as the page's `highlight` (CMD-256), one
+ * for each page, as a view made before, or one for all, as `framesHighlight` gives them now. A run is highlighted
+ * when its tokens are drawn, which the renderer does once the highlighter's promise has settled.
+ */
+const sandbox = query.get("sandbox");
+const sandboxHighlight = (() => {
+  if (sandbox !== "per-view" && sandbox !== "shared") return undefined;
+  const one = shikiHighlight();
+  return (slot: HTMLElement): CodeHighlighter => {
+    const highlight = sandbox === "shared" ? one : shikiHighlight();
+    return async (code, language) => {
+      const lines = await highlight(code, language);
+      setTimeout(() => {
+        highlighted(slot);
+      }, 0);
+      return lines;
+    };
+  };
+})();
 
 /** A run's page, rendered: one code block, with its origin, as a document of one fenced block. */
 function mount(index: number): void {
@@ -55,9 +78,10 @@ function mount(index: number): void {
   if (!run || code === undefined || run.page) return;
   run.mounted = performance.now();
   delete run.highlighted;
-  run.page = createPage(run.slot);
+  run.page = createPage(run.slot, sandboxHighlight ? { highlight: sandboxHighlight(run.slot) } : {});
   const lines = code.split("\n").length;
   run.page.render({ type: "root", children: [{ type: "code", lang: "ts", meta: null, value: code, origin: { start: { line: 1, column: 1 }, end: { line: lines + 2, column: 4 }, occurrence: 0 } }] });
+  if (sandboxHighlight) return;
   // The variant's highlighter draws the block itself, as the page's `highlight` did when the spike was run.
   const target = run.slot.querySelector<HTMLElement>("pre > code");
   if (query.get("highlight") === "off" || !target) run.highlighted = performance.now();

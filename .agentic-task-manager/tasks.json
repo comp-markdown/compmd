@@ -8798,7 +8798,7 @@
       "description": "In host mode every view makes a highlighter of its own: `hostPage` calls `framesHighlight(options.base)` per view (`npm-packages/sandbox/src/pages.ts`, `npm-packages/sandbox/src/from-frames.ts`), and each `shikiHighlight()` makes its own Shiki (`npm-packages/sandbox/src/highlight/highlight.ts`), which Shiki warns about. Each then pays for its grammar again: in WebKit, with a view per run of code, 5.9 s blocked over a skim against 0.9 s with one Shiki, and a run tokenized in 14 ms against 1 ms (the spike CMD-252, [its README](spikes/highlight-perf/README.md), *today* against *shared*).\n\n## Change\n- One Shiki for the views of a page that load the frames' `highlight.js` from the same `base`: made with the first code block, shared by every view after it, with the languages loaded so far.\n- A language loaded for one view is there for the others; two views asking for one at once load it once.\n- In frame mode nothing changes: a frame is a page of its own, with one Shiki already.\n- `shikiHighlight()` keeps giving a highlighter of its own to a host that calls it itself; its docs say to make one and share it.\n\n## Tests\n- Unit: two highlighters from `framesHighlight` of one base share one Shiki (it is made once); a language is loaded once for both.\n- Browser (Chrome and WebKit, host mode): two views with code blocks are both highlighted, light and dark, as today.\n- Measured with the spike's page (`today` against a variant that goes through the sandbox's own highlighter, if the page needs one): the numbers in the task's note.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a1f0f9-76de-73fc-b8ae-e07bc47777fc"
       ],
@@ -8809,9 +8809,9 @@
         "npm-packages/sandbox/README.md"
       ],
       "created_at": "2026-11-19T07:25:13Z",
-      "updated_at": "2026-11-19T07:25:13Z",
+      "updated_at": "2026-11-19T07:44:05Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "sprint_history": [
         {
           "sprint": "Packs and website",
@@ -8820,7 +8820,9 @@
       ],
       "sprint": "Packs and website",
       "number": 256,
-      "key_final": false
+      "key_final": false,
+      "started_at": "2026-11-19T07:44:05Z",
+      "started_by": "claude:79612601"
     },
     {
       "id": "01a1f2b1-fd0d-721c-bf49-5eda0057a136",

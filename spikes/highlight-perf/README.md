@@ -75,6 +75,19 @@ node spikes/highlight-perf/measure.ts 3 today shared     # some variants, three 
 | no highlighting | 43 459 / 1679 ms | 17 300 / 900 ms |
 | shared | 304 346 / 11 708 ms | 24 166 / 1300 ms |
 
+### The sandbox's own highlighter, per view and shared (CMD-256)
+
+`?sandbox=per-view` and `?sandbox=shared` give each page `@compmd/sandbox`'s `shikiHighlight()` as its `highlight`, drawn by the renderer (CMD-251): a highlighter for each page, as a host-mode view made one before CMD-256, or one for all, as `framesHighlight` shares it since. Three runs each, medians; `results-sandbox.json` has every run. Its tokenizing isn't counted here, so the table has no such column.
+
+| | Opening: blocked / longest | Skim: blocked / longest | Revisit: blocked | Wait on opening |
+|---|---|---|---|---|
+| WebKit, per view | 1147 / 1077 ms | 4174 / 735 ms | 3529 ms | 1285 ms |
+| WebKit, shared | 1142 / 1192 ms | 772 / 679 ms | 0 | 1227 ms |
+| Chromium, per view | 50 / 83 ms | 284 / 133 ms | 150 ms | 169 ms |
+| Chromium, shared | 33 / 83 ms | 67 / 117 ms | 0 | 106 ms |
+
+The same as the spike's *today* and *shared*: one highlighter takes WebKit's skim from 4.2 s to 0.8 s blocked and its revisit to 0; the opening's long first frame is the JavaScript engine's compile, which CMD-257 is for.
+
 ### A large host document: 100 pages opened and closed (CMD-253)
 
 The page above has a small host document, so it missed what each open costs a large one. `?churn=1` adds 20,000 host elements (rows a host's own rules style), then opens 100 pages, one an animation frame, eight live at a time, destroying the oldest, without highlighting: `churn` with a code block each, `churn-styled` with the code in a box with a `width` of its own. It counts what makes the browser style the whole document again: the times the document's sheets are set (`adoptedStyleSheets`), the styles read (`getComputedStyle`) and the sheets written (`replaceSync`). **An open** is from `createPage` to the next animation frame, so 16 ms is one frame. Three runs each, medians; `results-churn-before.json` and `results-churn-after.json` have every run.
@@ -95,6 +108,7 @@ The page above has a small host document, so it missed what each open costs a la
 
 ```sh
 pnpm --dir spikes/highlight-perf measure 3 churn churn-styled --out=results-churn.json
+pnpm --dir spikes/highlight-perf measure 3 sandbox-per-view sandbox-shared --out=results-sandbox.json   # after building @compmd/sandbox
 ```
 
 ## What the numbers say

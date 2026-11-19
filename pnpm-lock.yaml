@@ -934,6 +934,9 @@ importers:
       '@compmd/render':
         specifier: workspace:*
         version: link:../../npm-packages/render
+      '@compmd/sandbox':
+        specifier: workspace:*
+        version: link:../../npm-packages/sandbox
       '@shikijs/core':
         specifier: 4.5.0
         version: 4.5.0

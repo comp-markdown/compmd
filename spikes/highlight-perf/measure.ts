@@ -34,6 +34,9 @@ const VARIANTS: Record<string, string> = {
   "shared+sliced+precompiled+cache": "shiki=shared&engine=precompiled&where=main&schedule=sliced&cache=1",
   "shared+sliced+oniguruma+cache": "shiki=shared&engine=oniguruma&where=main&schedule=sliced&cache=1",
   "worker+sliced+precompiled+cache": "shiki=shared&engine=precompiled&where=worker&schedule=sliced&cache=1",
+  // The sandbox's own highlighter, a Shiki for each page as before CMD-256, and one for all as since.
+  "sandbox-per-view": "sandbox=per-view",
+  "sandbox-shared": "sandbox=shared",
   // A large host document, and 100 pages opened and closed in it, without highlighting (CMD-253): code only, then
   // each in a box with rules of its own.
   churn: "highlight=off&churn=1",

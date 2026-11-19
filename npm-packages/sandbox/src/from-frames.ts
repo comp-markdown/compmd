@@ -8,15 +8,32 @@ import { frameUrl } from "./host/runtime.ts";
 /** A module of the frames' files, imported by its URL: the app's bundler leaves it alone. */
 const imported = <T>(url: string): Promise<T> => import(/* @vite-ignore */ url) as Promise<T>;
 
+/** Makes the highlighter of the frames' `highlight.js` at `url`. */
+export type LoadHighlighter = (url: string) => Promise<CodeHighlighter>;
+
+const loadFramesHighlighter: LoadHighlighter = (url) => imported<{ shikiHighlight: () => CodeHighlighter }>(url).then((module) => module.shikiHighlight());
+
 /**
- * The frames' highlighter (`shikiHighlight`), loaded from `base` the first time a page has a code block. Until then
- * a block shows its text, as it does when its language isn't highlighted, or when the file can't be had.
+ * The page's highlighters, by the URL of the `highlight.js` they come from: one for every view of the page, so Shiki
+ * is made once, and a grammar loads once for all of them, where a Shiki a view made each paid for it again.
  */
-export function framesHighlight(base: string): CodeHighlighter {
-  let loaded: Promise<CodeHighlighter> | undefined;
+const shared = new Map<string, Promise<CodeHighlighter>>();
+
+/**
+ * The frames' highlighter (`shikiHighlight`), loaded from `base` the first time a page has a code block, and shared by
+ * every view of the page that loads it from there. Until then a block shows its text, as it does when its language
+ * isn't highlighted, or when the file can't be had; a view after a failed load tries again.
+ */
+export function framesHighlight(base: string, load: LoadHighlighter = loadFramesHighlighter): CodeHighlighter {
+  const url = frameUrl(base, "highlight.js");
   return async (code, language) => {
-    loaded ??= imported<{ shikiHighlight: () => CodeHighlighter }>(frameUrl(base, "highlight.js")).then((module) => module.shikiHighlight());
-    return (await loaded)(code, language);
+    let highlighter = shared.get(url);
+    if (!highlighter) {
+      highlighter = load(url);
+      shared.set(url, highlighter);
+      highlighter.catch(() => shared.delete(url));
+    }
+    return (await highlighter)(code, language);
   };
 }
 

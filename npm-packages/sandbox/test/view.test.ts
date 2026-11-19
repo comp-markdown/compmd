@@ -491,6 +491,19 @@ describe("code blocks", () => {
       expect(js).toMatchObject({ language: "language-js", text: "const a = 1;", color: keyword[scheme] });
       expect(mermaid?.tokens).toBeGreaterThan(1);
     });
+
+    it(`highlights the code blocks of every view of the page, which share one highlighter, in the ${scheme} theme (host mode)`, async () => {
+      const opened = [open("host", []), open("host", [])];
+      for (const { area, view } of opened) {
+        area.style.colorScheme = scheme;
+        view.render({ type: "root", children: blocks });
+      }
+      for (const { area } of opened) {
+        const [js, mermaid] = await shown(area);
+        expect(js).toMatchObject({ language: "language-js", text: "const a = 1;", color: keyword[scheme] });
+        expect(mermaid?.tokens).toBeGreaterThan(1);
+      }
+    });
   }
 });
 
