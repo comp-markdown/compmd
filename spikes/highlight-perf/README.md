@@ -101,7 +101,7 @@ The same as the spike's *today* and *shared*: one highlighter takes WebKit's ski
 
 - **In WebKit Oniguruma takes the opening from about 1.2 s blocked to about 0.25 s,** and the longest frame from about 1.2 s to 0.3 s; the skim from 0.9 s to 0.15 s.
 - **It is short of the spike's *shared + oniguruma*** (83 ms on opening, 10 ms over the skim): the sandbox's highlighter has two Shikis (Markdown's and the other languages'), each made with the first block, and loads its grammars as blocks need them; and this run was noisier. Slicing (CMD-259) is for what is left.
-- **The JavaScript engine's tokens in WebKit** were wrong for one block in the browser test (`test/highlight-policy.test.ts`): its light theme's colours disagreed with its dark theme's, and its tokens with Oniguruma's and with Chromium's. Oniguruma's were right. Not looked into further.
+- **The JavaScript engine's tokens in WebKit** were wrong for one block in the browser test (`test/highlight-policy.test.ts`): its light theme's colours disagreed with its dark theme's, and its tokens with Oniguruma's and with Chromium's. Oniguruma's were right. Not looked into here: CMD-261.
 
 ### A large host document: 100 pages opened and closed (CMD-253)
 

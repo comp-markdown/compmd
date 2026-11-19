@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 261,
+    "next_number": 262,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -9099,7 +9099,7 @@
       "description": "Each code block is tokenized as it renders, so a render with many blocks tokenizes them all in one frame. Tokenizing a block a task, those on screen first, bounds a frame to one block: in the spike CMD-252 ([its README](spikes/highlight-perf/README.md), the *sliced* variants) it took opening's last 83 ms blocked to 0 with Oniguruma, and the JavaScript engine's opening frame in WebKit from 1.2 s to 0.6 s (it can't split one block's first compile).\n\n## Change\n- The sandbox's highlighter queues the blocks it is asked for and tokenizes one a task, yielding to the page between them; a block on screen goes before one that isn't, and a block whose text changed or that is gone is dropped from the queue.\n- After CMD-251 a highlighter gives tokens and the renderer draws them, so the queue is the highlighter's own and the renderer needs no change.\n- A view's `settled` still waits for its blocks' highlighting, as today.\n\n## Tests\n- Unit: the order (on screen first), one block a task, a dropped block; a block of a newer text isn't drawn with older tokens.\n- Browser tests of code blocks as today, both modes.\n- Measured with the spike's page, before and after, in the task's note.",
       "requirements": [],
       "use_cases": [],
-      "status": "blocked",
+      "status": "in_progress",
       "dependencies": [
         "01a1f2b1-fd0d-721c-bf49-5ed9548584bf",
         "01a1f065-c028-7345-9484-b544d2ee9eab"
@@ -9109,7 +9109,7 @@
         "npm-packages/sandbox/README.md"
       ],
       "created_at": "2026-11-19T07:25:13Z",
-      "updated_at": "2026-11-19T08:46:20Z",
+      "updated_at": "2026-11-19T08:48:54Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -9121,14 +9121,23 @@
       "sprint": "Packs and website",
       "number": 259,
       "key_final": false,
-      "started_at": "2026-11-19T08:45:56Z",
-      "started_by": "claude:79612601",
-      "waiting_on": "user",
-      "questions": [
-        "The queue can’t be the highlighter’s: since CMD-251 a highlighter gets only (code, language), not the block, so it can’t know what is on screen or gone. Proposed: the renderer queues the blocks of a document and asks the highlighter for one at a time, waiting for its tokens and drawing them before the next, a task apart; blocks an IntersectionObserver reports on screen first (no layout read); a changed or removed block dropped. Works for any highlighter, no contract change. OK?",
-        "Highlighting isn’t part of settling today (drawn() doesn’t wait for it). Should a page’s drawn(), and so a view’s settled, now wait for its blocks’ tokens? Proposed: yes, so tests, printing and scrolling to a link see highlighted code."
+      "blocks": [
+        {
+          "from": "2026-11-19T08:46:20Z",
+          "to": "2026-11-19T08:48:53Z",
+          "on": "user"
+        }
       ],
-      "blocked_at": "2026-11-19T08:46:20Z"
+      "notes": [
+        {
+          "at": "2026-11-19T08:48:53Z",
+          "kind": "answer",
+          "text": "The queue can’t be the highlighter’s: since CMD-251 a highlighter gets only (code, language), not the block, so it can’t know what is on screen or gone. Proposed: the renderer queues the blocks of a document and asks the highlighter for one at a time, waiting for its tokens and drawing them before the next, a task apart; blocks an IntersectionObserver reports on screen first (no layout read); a changed or removed block dropped. Works for any highlighter, no contract change. OK? → Yes: the renderer queues the blocks, one at a time, on screen first by an IntersectionObserver, changed or removed blocks dropped; no contract change.; Highlighting isn’t part of settling today (drawn() doesn’t wait for it). Should a page’s drawn(), and so a view’s settled, now wait for its blocks’ tokens? Proposed: yes, so tests, printing and scrolling to a link see highlighted code. → Yes: drawn(), and so settled, waits for the blocks’ tokens.",
+          "by": "claude:79612601"
+        }
+      ],
+      "started_at": "2026-11-19T08:48:54Z",
+      "started_by": "claude:79612601"
     },
     {
       "id": "01a1f2df-0550-7070-8958-7ecfa358d7e5",
@@ -9168,6 +9177,30 @@
       ],
       "sprint": "Packs and website",
       "number": 260,
+      "key_final": false
+    },
+    {
+      "id": "01a1f300-ea72-7291-b97f-c3d75b6dc73e",
+      "name": "Code highlighting: the JavaScript engine's wrong tokens in WebKit",
+      "type": "bugfix",
+      "priority": "P2",
+      "labels": [
+        "highlighting"
+      ],
+      "description": "In CMD-257's browser test (`npm-packages/sandbox/test/highlight-policy.test.ts`), the frames' highlighter with Shiki's JavaScript engine gave wrong tokens in WebKit for one TypeScript block:\n\n```ts\nexport async function load(url: string): Promise<number> {\n  return (await fetch(url)).status; // done\n}\n```\n\nIts light theme's colours disagreed with its dark theme's on the same tokens (`Promise` `#005CC5` in the light theme, a constant's colour, where the dark theme gave a type's, `#B392F0`; `return` and `await` a function's colour), and some tokens were split differently (`(url)).status; ` as one token). Oniguruma's tokens were right, in WebKit as in Chromium, and the JavaScript engine's were right in Chromium. Seen in one run; not looked into.\n\nThe frames highlight with the JavaScript engine until CMD-260, and a host-mode page whose policy refuses WebAssembly does always, so their code may show in wrong colours in WebKit.\n\n## To do\n- Reproduce it: the block above, with the JavaScript engine, in WebKit, in a test; find whether it is the same each time, or depends on what was tokenized before (the two themes are tokenized one after the other).\n- Find the cause: a grammar pattern the forgiving engine turns into a regex WebKit runs differently, or the engine's own state between runs.\n- Fix it where it is ours, or report it upstream (Shiki, or WebKit) with the smallest case, and record what was found here.\n\n## Tests\nA browser test in WebKit and Chrome: the JavaScript engine's tokens for the block above are Oniguruma's.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "npm-packages/sandbox/src/highlight/highlight.ts",
+        "npm-packages/sandbox/test/highlight-policy.test.ts"
+      ],
+      "created_at": "2026-11-19T08:51:25Z",
+      "updated_at": "2026-11-19T08:51:25Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "number": 261,
       "key_final": false
     }
   ]
