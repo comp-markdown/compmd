@@ -7,10 +7,14 @@ import type { ExpandedNode, ExpandedRoot } from "./tree.ts";
 
 let area: HTMLElement;
 beforeEach(() => {
+  // The queue's task is then a timer, as the tests' is: Node runs timers of one delay in the order they were set, but
+  // a message and a timer in either order.
+  vi.stubGlobal("MessageChannel", undefined);
   area = document.body.appendChild(document.createElement("main"));
 });
 afterEach(() => {
   area.remove();
+  vi.unstubAllGlobals();
 });
 
 const origin = { start: { line: 4, column: 1 }, end: { line: 8, column: 4 }, occurrence: 0 };
@@ -156,7 +160,6 @@ describe("a page of many blocks", () => {
     await page.drawn();
     expect(asked).toEqual(["c", "a", "b"]);
     expect(tokens(root)).toEqual(["a", "b", "c"]);
-    vi.unstubAllGlobals();
   });
 
   it("never asks for a block that is gone, and the page has drawn", async () => {
