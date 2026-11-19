@@ -128,16 +128,18 @@ Frames only go down in trust. Your page holds permissive and strict frames; a pe
 
 The cost is a frame, and a copy of its runtime, per use. It is right for an app with components of its own, or permissive packs.
 
+**Many views in one page.** A page may open a view for each of its texts, a diff viewer's runs or a list of comments. The views of a page share what belongs to the page: one stylesheet, with the built-ins' rules once, and one highlighter, whose grammars load once. A view of text and code changes nothing in your page's styles when it opens, renders or goes, so what a view costs is its own content.
+
 ## What the frames load
 
 `@compmd/vite` writes the frames' files into your app's `compmd/` folder (`buildFrames` does it for other hosts, [chapter 18](18-other-hosts.md)):
 
 | File | What it is |
 | --- | --- |
-| `strict.html` | the strict frame: a fixed content security policy with no network and no nested frames, then the import map, then the frame runtime |
+| `strict.html` | the strict frame: a fixed content security policy with no network and no nested frames, which lets it compile WebAssembly, then the import map, then the frame runtime |
 | `permissive.html` | the same, without the network directives; its parent sends the pack's origins, which the frame adds as a second policy before any component loads, and it may nest `strict.html` only |
 | `runtime.js` and its files | the frame runtime: the sandbox's end of the protocol, the renderer, the bindings |
-| `highlight.js`, `math.js` | Shiki and Temml, which highlight code blocks and typeset math: the frames load them through the runtime, and in host mode your page loads them from here, so your app ships each once |
+| `highlight.js`, `math.js` | Shiki and Temml, which highlight code blocks and typeset math: the frames load them through the runtime, and in host mode your page loads them from here, so your app ships each once. Shiki comes with both its engines, Oniguruma's WebAssembly and its JavaScript engine, and loads the one it runs ([chapter 7](07-rendering-and-styling.md#code-blocks)) |
 | `libs/` | the runtimes every frame shares through the import map, React 19, React DOM and Svelte 5, and the libraries your configuration offers |
 | `library-definition.json` | those runtimes and libraries with their versions, which the processor checks components against |
 | `packs/<name>@<version>/…` | each installed pack's built modules |
@@ -158,7 +160,7 @@ Besides the frames that render, each view makes one hidden `strict.html` frame, 
 | `X-Content-Type-Options: nosniff` | each file is only what its type says |
 | `Cache-Control: max-age=31536000, immutable` | a path names a build of the frames or a pack's version, so what it serves never changes |
 
-The dev server and `vite preview` send them. A deployed app sends them from its server, or its static host's header rules: the build writes a `_headers` file with them, for a host that reads one. Your page's own content security policy adds what `cspFor(origin)` from `@compmd/vite/config` gives. Nothing under `compmd/` is secret: it is the same for every reader.
+The dev server and `vite preview` send them. A deployed app sends them from its server, or its static host's header rules: the build writes a `_headers` file with them, for a host that reads one. Your page's own content security policy adds what `cspFor(origin)` from `@compmd/vite/config` gives: the frames, and `'wasm-unsafe-eval'` in `script-src`, so your page may compile the WebAssembly code blocks are highlighted with. Nothing under `compmd/` is secret: it is the same for every reader.
 
 The frames may be served from another origin than your page, with the same headers: `createSandbox`'s `base` takes a full URL. That is the way to keep the requests a frame can make to them (its scripts, styles and prefetches) apart from your app's own server and logs.
 
@@ -192,7 +194,7 @@ view.render(opened.expanded);
 await view.settled();
 ```
 
-`settled()` resolves once, after the latest render or splice, every use in your page and in every frame has drawn (a component that draws late says so with `busy`, spec §7.4), every frame has its last height, the page's images and fonts have loaded, and nothing moved for an animation frame; at once when that holds already. The view's `settled` event comes each time it settles again, and the container has the attribute `data-compmd-settled` while it is settled, so a browser test waits for it without reaching into your app: `await page.locator("#page[data-compmd-settled]").waitFor()`. A frame that hangs is stopped and counts as settled; a drawing or a frame that never says it is done holds it up for 10 s at most.
+`settled()` resolves once, after the latest render or splice, every use in your page and in every frame has drawn (a component that draws late says so with `busy`, spec §7.4), every frame has its last height, its code blocks are highlighted, the page's images and fonts have loaded, and nothing moved for an animation frame; at once when that holds already. The view's `settled` event comes each time it settles again, and the container has the attribute `data-compmd-settled` while it is settled, so a browser test waits for it without reaching into your app: `await page.locator("#page[data-compmd-settled]").waitFor()`. A frame that hangs is stopped and counts as settled; a drawing or a frame that never says it is done holds it up for 10 s at most.
 
 ## Editors that render block by block
 

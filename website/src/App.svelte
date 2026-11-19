@@ -25,6 +25,7 @@
   ];
 
   const SPEC_SECURITY = "spec/#15-security";
+  // Links to the repository's files are written out in full, so the link check (`cargo make links`) reads them.
 
   const css = Object.values(snapshots)
     .map((snapshot) => snapshot.css)
@@ -86,10 +87,10 @@
     { href: "spec/", title: "The spec", text: "Version 1, a draft: the syntax, the components, expressions, data and security." },
     { href: "guides/", title: "The guides", text: "The Author's Guide, for writing documents, and the Developer's Guide, for building CompMD into your app." },
     { href: "playground/", title: "The playground", text: "Write CompMD and watch the page, with a tour, examples and the diagnostics." },
-    { href: `${REPOSITORY}/tree/main/conformance`, title: "The conformance set", text: `${String(facts.cases)} cases any implementation can run, with their expected trees.` },
+    { href: "https://github.com/comp-markdown/compmd/tree/main/conformance", title: "The conformance set", text: `${String(facts.cases)} cases any implementation can run, with their expected trees.` },
     { href: REPOSITORY, title: "GitHub", text: "The spec, the processor in Rust, the packages and this site." },
-    { href: "https://www.npmjs.com/org/compmd", title: "The npm packages", text: "The processor, the renderer, the sandbox, the registry client, the Vite plugin, the Developer Tools and the pack tools." },
-    { href: "https://crates.io/search?q=compmd", title: "The Rust crates", text: "The processor, compmd; what a host serves, compmd-host; and the Tauri plugin, tauri-plugin-compmd." },
+    { href: "https://www.npmjs.com/org/compmd", title: "The npm packages", text: "The processor, the renderer, the sandbox, the registry client, the Vite plugin, the Developer Tools, the pack tools, the blog tool and what a host serves." },
+    { href: "https://crates.io/search?q=compmd", title: "The Rust crates", text: "The processor, compmd; the names of packs and their files, compmd-pack; what a host serves, compmd-host; and the Tauri plugin, tauri-plugin-compmd." },
   ];
 </script>
 
@@ -215,8 +216,8 @@
         <strong>An early stage:</strong> versions are <code>0.x</code> while the spec is a draft, and until version 1 a release can break documents and code written for the one before.
         On npm: <a href="https://www.npmjs.com/package/@compmd/vite">@compmd/vite</a>, <a href="https://www.npmjs.com/package/@compmd/processor">@compmd/processor</a>,
         <a href="https://www.npmjs.com/package/@compmd/sandbox">@compmd/sandbox</a> and <a href="https://www.npmjs.com/package/@compmd/render">@compmd/render</a>; in Rust, the crate
-        <a href="https://crates.io/crates/compmd">compmd</a>, and for a desktop app <a href="https://crates.io/crates/tauri-plugin-compmd">tauri-plugin-compmd</a>. What each release changed: <a href="{REPOSITORY}/releases">the releases</a> and
-        <a href="{REPOSITORY}/blob/main/CHANGELOG.md">the spec's changelog</a>, and GitHub's <em>Watch → Releases</em> to hear of the next.
+        <a href="https://crates.io/crates/compmd">compmd</a>, and for a desktop app <a href="https://crates.io/crates/tauri-plugin-compmd">tauri-plugin-compmd</a>. What each release changed: <a href="https://github.com/comp-markdown/compmd/releases">the releases</a> and
+        <a href="https://github.com/comp-markdown/compmd/blob/main/spec/CHANGELOG.md">the spec's changelog</a>, and GitHub's <em>Watch → Releases</em> to hear of the next.
       </p>
       <Snippets />
       <div class="feature">
@@ -236,11 +237,11 @@
       <dl class="points">
         <div>
           <dt>A processor in Rust, run as WebAssembly</dt>
-          <dd>The same processor runs natively and in the browser, where it is {facts.wasmKb} KB gzipped. <a href="{REPOSITORY}/tree/main/processor">The processor</a></dd>
+          <dd>The same processor runs natively and in the browser, where it is {facts.wasmKb} KB gzipped. <a href="https://github.com/comp-markdown/compmd/tree/main/crates/processor">The processor</a></dd>
         </div>
         <div>
           <dt>Incremental</dt>
-          <dd>A keystroke in a 500 KB document is processed in 0.30 ms (p95, Chrome on an Apple M4): only the blocks an edit touches are processed again. <a href="{REPOSITORY}/blob/main/processor/docs/incremental.md">How</a></dd>
+          <dd>A keystroke in a 500 KB document is processed in 0.30 ms (p95, Chrome on an Apple M4): only the blocks an edit touches are processed again. <a href="https://github.com/comp-markdown/compmd/blob/main/crates/processor/docs/incremental.md">How</a></dd>
         </div>
         <div>
           <dt>Diagnostics with fixes, hints at the caret</dt>
@@ -252,7 +253,7 @@
         </div>
         <div>
           <dt>A conformance set</dt>
-          <dd>{facts.cases} cases, with every diagnostic code, that any implementation can run against its own processor. <a href="{REPOSITORY}/tree/main/conformance">The cases</a></dd>
+          <dd>{facts.cases} cases, with every diagnostic code, that any implementation can run against its own processor. <a href="https://github.com/comp-markdown/compmd/tree/main/conformance">The cases</a></dd>
         </div>
       </dl>
     </div>

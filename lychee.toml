@@ -11,8 +11,10 @@ timeout = 20
 # A site that limits a checker's rate answers 429; the link itself is there.
 accept = ["200..=299", "429"]
 no_progress = true
-# The READMEs, and the Rust and TypeScript sources the API docs come from.
-extensions = ["md", "rs", "ts"]
+# The READMEs, the Rust and TypeScript sources the API docs come from, and the Svelte of the website, the playground
+# and the Developer Tools. A Svelte file is read as text, so only a link written out in full is found: write the
+# repository's links so, not built from a constant.
+extensions = ["md", "rs", "ts", "svelte"]
 
 # The examples' local servers, which are not links.
 exclude_loopback = true
@@ -22,6 +24,9 @@ exclude = [
   '^https?://(host|a\.org)(/|$)',
   # npm's site answers a checker 403 for every page.
   '^https://www\.npmjs\.com/',
+  # The website's analytics, which a check would count as a visit.
+  '^https://([a-z0-9-]+\.)?goatcounter\.com/',
+  '^https://gc\.zgo\.at/',
 ]
 
 # What is built or installed, never written; and the tests, whose addresses are made up.

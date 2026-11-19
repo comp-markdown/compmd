@@ -236,6 +236,22 @@ The page knows which text made each thing it shows, from the origins (`origins: 
   });
   ```
 
+- **`view.lineHeights(heights)`** makes the lines of code blocks at least as tall as `heights` says, a map from a line of the text to CSS pixels, through later renders and splices, until the next call; an empty map gives each line its own height back. A diff shown in two views uses it to keep its two sides level: `lines()` of each, then each line as tall as the taller of its two.
+
+  ```ts
+  const heightsOf = async (view: View) => {
+    const heights = new Map<number, number>();
+    for await (const { line, rects } of view.lines()) heights.set(line, rects.reduce((sum, rect) => sum + rect.height, 0));
+    return heights;
+  };
+  const [left, right] = await Promise.all([heightsOf(before), heightsOf(after)]);
+  const tallest = new Map([...left].map(([line, height]) => [line, Math.max(height, right.get(line) ?? 0)]));
+  before.lineHeights(tallest);
+  after.lineHeights(tallest);
+  ```
+
+  Lines that aren't a code block's are left as they are. How a block's lines are drawn is the renderer's own, so size them through this call, not through their markup.
+
 Offsets count code points, as the processor's do, and a text area's count UTF-16 units: an emoji is one code point and two units. `codePointOffset(text, utf16)` and `utf16Offset(text, codePoint)`, from `@compmd/render`, convert one to the other in the text the page shows (`shown` here).
 
 What a click gives follows the origins: a word in `*em*` gives the emphasis, text a `value` made the node holding it, anything a `compmd` component's body drew the line that uses the component, and a host-language component's own drawing the component. An offset gives the innermost thing that came from there, all of them for an `each`, whose items share their template's text. [`@compmd/render`'s README](../../npm-packages/render/README.md#where-the-page-came-from) has the whole table, and `page.sourceOf(node)` and `page.elementsAt(offset)`, the same for a page you render yourself; [where each line is](../../npm-packages/render/README.md#where-each-line-is) has the rules for lines, and `page.lines()` with `onLayout`.

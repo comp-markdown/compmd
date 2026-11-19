@@ -1,5 +1,6 @@
 # What lychee checks (lychee.toml): what npmjs.com, crates.io and docs.rs show of the published packages, where a link
-# relative to the repository breaks. Each package's README, and the sources its API docs come from.
+# relative to the repository breaks. Each package's README, and the sources its API docs come from; and the website's
+# and the playground's sources, whose links to the repository's files the site's own check doesn't follow.
 crates/processor/README.md
 crates/processor/src
 crates/host/README.md
@@ -37,3 +38,5 @@ compmd-packs/mermaid/src
 compmd-packs/wireframe/README.md
 compmd-packs/wireframe/LANGUAGE.md
 compmd-packs/wireframe/src
+website/src
+npm-packages/editor/src

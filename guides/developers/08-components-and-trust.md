@@ -101,7 +101,7 @@ Who might misbehave, and what they must not reach:
 | Strict code | documents, unlisted packs | any network; your page and session; other documents' frames; code of a higher level |
 | The document | anyone | a higher level for any of its code |
 
-The sandbox stops each threat with something the browser enforces: the frames' opaque origin, their content security policies, which a frame can only narrow, frames that only nest lower levels, a hash check for every built module, and a ping for every frame that runs components. Each one is a browser test in Chrome and WebKit. The design has the full list, T1 to T10 ([running components in the sandbox](../../docs/running-components-in-the-sandbox.md#threat-model)).
+The sandbox stops each threat with something the browser enforces: the frames' opaque origin, their content security policies, which a frame can only narrow, frames that only nest lower levels, a hash check for every built module, and a ping for every frame that runs components. Each one is a browser test in Chrome and WebKit. The design has the full list, T1 to T10 ([running components in the sandbox](../../docs/running-components-in-the-sandbox.md#threat-model)). The frames may compile WebAssembly, which the sandbox's own highlighter runs: it has no way out of its own, and reaches only what the frame's scripts reach ([WebAssembly in the frames](../../docs/webassembly-in-the-frames.md)).
 
 What a browser can't stop, and so the sandbox can't either:
 

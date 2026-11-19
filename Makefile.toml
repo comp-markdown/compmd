@@ -35,7 +35,7 @@ command = "cargo"
 args = ["doc", "--workspace", "--all-features", "--no-deps"]
 
 [tasks.links]
-description = "Check the links in what npmjs.com, crates.io and docs.rs show of the published packages (`lychee-inputs.txt`), offline: a link to this repository's files on GitHub, or to the spec on compmd.dev, is checked against the file here, with its anchor. Needs lychee; CI's `links` job checks every link with the network, on each push to `main` (docs/ci.md, decision 14)"
+description = "Check the links in what npmjs.com, crates.io and docs.rs show of the published packages, and in the website's and the playground's sources (`lychee-inputs.txt`), offline: a link to this repository's files on GitHub, or to the spec on compmd.dev, is checked against the file here, with its anchor. Needs lychee; CI's `links` job checks every link with the network, on each push to `main` (docs/ci.md, decision 14)"
 clear = true
 command = "lychee"
 args = [

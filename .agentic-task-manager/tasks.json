@@ -9390,7 +9390,7 @@
       "name": "Release 0.8.0",
       "type": "infra",
       "priority": "P1",
-      "description": "Release CompMD 0.8.0 as [releases](docs/releases.md) and `RELEASING.md` say: every npm package and the crates at one version. A minor version, since it breaks (below).\n\n## Before the tag\n- **The spec's revision:** the spec is dirty (§15's note, CMD-260), so `cargo make spec-revision` cuts `1.0-draft.16`, and `SPEC_VERSION` (crate and `@compmd/processor`) and the packages' READMEs name it.\n- **Release notes**, in each package's README version list:\n  - Breaking: a highlighter gives tokens, `(code, language) => lines`, and the renderer draws them (CMD-251); the frame protocol is version 5 (`lineHeights`, CMD-250), so a host's page and the frame documents it serves are upgraded together.\n  - New: a code block's lines are elements, with `view.lineHeights` and their boxes in `lines()` (CMD-250); one stylesheet per document and the colour scheme read only when needed, so many views in one page are cheap (CMD-253, CMD-255); one highlighter for a page's views (CMD-256); Oniguruma where the page compiles WebAssembly, outside Chromium, with `'wasm-unsafe-eval'` in `cspFor` and in the frames' policies (CMD-257, CMD-260); a block highlighted at a time, those on screen first, and `drawn()`/`settled` waiting for it (CMD-259).\n  - The repository's new layout (CMD-246) changes no package.\n- `cargo make ci` green on `main`, the Tauri check on Linux CI and `cargo make tauri-check` by hand on macOS.\n\n## The release\nThe version in every `package.json`, `crates/processor/Cargo.toml` and `crates/tauri/Cargo.toml` in one commit; the tag `v0.8.0`; the release workflow stages the npm packages and waits for the crates' approval.\n\nEvery push and every publish needs the user's go; the push order is the markdown-rs fork (if it changed), then `compmd`, with `--follow-tags` for the spec's tag.",
+      "description": "Release CompMD 0.8.0 as [releases](docs/releases.md) and `RELEASING.md` say: every npm package and the crates at one version. A minor version, since it breaks (below).\n\n## Before the tag\n- **The spec's revision:** the spec is dirty (§15's note, CMD-260), so `cargo make spec-revision` cuts `1.0-draft.16`, and `SPEC_VERSION` (crate and `@compmd/processor`) and the packages' READMEs name it.\n- **Every npm package's `repository.directory`** names its folder since CMD-246 (`npm-packages/blog`, `compmd-packs/mermaid`, …), not the old top-level one (`blog`): npm links to it.\n- **The new packages:** `@compmd/blog`, `@compmd/create-blog`, `@compmd/host` and `@comp-markdown/wireframe` are on npm as 0.0.0 placeholders, each with its trusted publisher; `@compmd/host` (`npm-packages/host-js`) is added to `release.yml` (its version check, its pack and its stage, in dependency order) and to `RELEASING.md`'s lists. The wireframe pack is released by `release-wireframe.yml` (`wireframe-v0.1.0`), within two days of its trusted publisher. Deprecate each placeholder once its first version is out.\n- **Release notes**, in each package's README version list:\n  - Breaking: a highlighter gives tokens, `(code, language) => lines`, and the renderer draws them (CMD-251); the frame protocol is version 5 (`lineHeights`, CMD-250), so a host's page and the frame documents it serves are upgraded together.\n  - New: a code block's lines are elements, with `view.lineHeights` and their boxes in `lines()` (CMD-250); one stylesheet per document and the colour scheme read only when needed, so many views in one page are cheap (CMD-253, CMD-255); one highlighter for a page's views (CMD-256); Oniguruma where the page compiles WebAssembly, outside Chromium, with `'wasm-unsafe-eval'` in `cspFor` and in the frames' policies (CMD-257, CMD-260); a block highlighted at a time, those on screen first, and `drawn()`/`settled` waiting for it (CMD-259).\n  - The repository's new layout (CMD-246) changes no package.\n- `cargo make ci` green on `main`, the Tauri check on Linux CI and `cargo make tauri-check` by hand on macOS.\n\n## The release\nThe version in every `package.json`, `crates/processor/Cargo.toml` and `crates/tauri/Cargo.toml` in one commit; the tag `v0.8.0`; the release workflow stages the npm packages and waits for the crates' approval.\n\nEvery push and every publish needs the user's go; the push order is the markdown-rs fork (if it changed), then `compmd`, with `--follow-tags` for the spec's tag.\n",
       "requirements": [],
       "use_cases": [],
       "status": "todo",
@@ -9403,7 +9403,7 @@
         ".github/workflows/release.yml"
       ],
       "created_at": "2026-11-19T10:13:16Z",
-      "updated_at": "2026-11-19T10:16:16Z",
+      "updated_at": "2026-11-19T10:38:09Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -9422,7 +9422,8 @@
           "text": "Found while preparing it: every npm package’s `repository.directory` still names the folder before CMD-246 (`blog`, not `npm-packages/blog`): fix before the tag. New on npm: `@compmd/blog`, `@compmd/create-blog`, `@compmd/host`, `@comp-markdown/wireframe` (0.0.0 placeholders by hand first); `@compmd/host` isn’t in `release.yml`, and the wireframe pack has no release workflow yet. No new crates.",
           "by": "claude:79612601"
         }
-      ]
+      ],
+      "commit": "4afcc8fe8a22e5dc2ca4c9c8ee020c230f13b107"
     },
     {
       "id": "01a1f34e-94e0-75eb-921a-452c66f8215a",
@@ -9432,7 +9433,7 @@
       "description": "Before the 0.8.0 release (CMD-263), go through what readers see and list what is missing or out of date since 0.7.1, then fix it or add a task for it. With the user: what to change is theirs to decide.\n\n## What changed since 0.7.1\n- A code block's lines are elements, with `view.lineHeights` and their boxes in `lines()`; the frame protocol is version 5 (CMD-250).\n- A highlighter gives tokens, and the renderer draws them, a block at a time, those on screen first; `drawn()` and `settled` wait for it (CMD-251, CMD-259).\n- Many views in one page: one stylesheet per document, the colour scheme read only when needed, one highlighter for a page's views (CMD-253, CMD-255, CMD-256).\n- Oniguruma where the page compiles WebAssembly, outside Chromium; `'wasm-unsafe-eval'` in `cspFor` and in the frames' policies; the spec's §15 note (CMD-257, CMD-258, CMD-260).\n- The repository's new layout (CMD-246).\n\n## What to check\n- **The landing page:** what it says about safety, speed and hosting; its install line and snippets.\n- **The playground:** code blocks highlighted in both modes and both schemes, in Chrome and Safari; nothing slower.\n- **The spec page:** §15's note shows; the draft's revision and changelog.\n- **The guides:** the Developer's Guide's chapters on rendering, highlighting, hosting, the policy and Tauri (a host's own highlighter now returns tokens; `cspFor`'s `'wasm-unsafe-eval'`; `lineHeights`); the Author's Guide where it shows code blocks; their examples still tested; the PDFs build.\n- **Links** to files that moved with the new layout.\n\n## Outcome\nThe list of what was found, each fixed here or in a task of its own, in the task's note.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a1f2df-0550-7070-8958-7ecfa358d7e5"
       ],
@@ -9442,9 +9443,9 @@
         "spec/compmd-spec-v1.md"
       ],
       "created_at": "2026-11-19T10:16:15Z",
-      "updated_at": "2026-11-19T10:16:15Z",
+      "updated_at": "2026-11-19T10:25:56Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "sprint_history": [
         {
           "sprint": "Rendering optimizations",
@@ -9453,7 +9454,9 @@
       ],
       "sprint": "Rendering optimizations",
       "number": 264,
-      "key_final": false
+      "key_final": false,
+      "started_at": "2026-11-19T10:25:56Z",
+      "started_by": "claude:79612601"
     }
   ]
 }
