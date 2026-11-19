@@ -1,0 +1,24 @@
+{
+  "name": "@spike/highlight-perf",
+  "private": true,
+  "description": "CMD-252's spike: code highlighting's cost in WebKit and Chromium on a page of many short runs, and what lowers it. Not part of the packages: no build, lint or test script, so the workspace's runs leave it out.",
+  "type": "module",
+  "scripts": {
+    "measure": "vite build && node measure.ts"
+  },
+  "dependencies": {
+    "@compmd/render": "workspace:*",
+    "@shikijs/core": "4.5.0",
+    "@shikijs/engine-javascript": "4.5.0",
+    "@shikijs/engine-oniguruma": "4.5.0",
+    "@shikijs/langs": "4.5.0",
+    "@shikijs/langs-precompiled": "4.5.0",
+    "@shikijs/themes": "4.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.5",
+    "playwright": "1.64.1",
+    "typescript": "6.0.3",
+    "vite": "8.3.4"
+  }
+}
