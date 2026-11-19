@@ -43,8 +43,10 @@
     "@compmd/render": "workspace:^",
     "@compmd/sandbox": "workspace:^",
     "@compmd/vite": "workspace:^",
+    "@sveltejs/vite-plugin-svelte": "7.3.1",
     "happy-dom": "21.0.3",
     "shiki": "4.5.0",
+    "svelte": "5.57.2",
     "vite": "8.3.4"
   },
   "devDependencies": {

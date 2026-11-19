@@ -1,0 +1,11 @@
+{
+  "name": "@compmd/website-blog",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The CompMD website's blog: its posts, built by @compmd/blog in the site's layout. An app of its own, for the libraries its posts' components use.",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "d3": "7.9.0"
+  }
+}

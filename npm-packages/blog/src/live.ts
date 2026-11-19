@@ -8,6 +8,7 @@ import { tmpdir } from "node:os";
 import { extname, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { compmd, loadApp } from "@compmd/vite";
+import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { build } from "vite";
 import { BlogError } from "./config.ts";
 import type { Given } from "./render.ts";
@@ -44,7 +45,8 @@ async function filesUnder(dir: string): Promise<Map<string, Uint8Array>> {
 
 /**
  * Builds the page's script for the blog in `dir`, published at `base` (`/blog/`), with the sandbox's frames and the
- * blog's packs under `compmd/`.
+ * blog's packs under `compmd/`. The blog is the app its trusted packs are built with (docs/vite.md), so it compiles
+ * their Svelte components with Svelte's plugin.
  *
  * @throws BlogError when Vite's build fails, with what it said.
  */
@@ -57,7 +59,7 @@ export async function buildClient(dir: string, base: string): Promise<Client> {
       configFile: false,
       logLevel: "warn",
       publicDir: false,
-      plugins: [compmd()],
+      plugins: [svelte(), compmd()],
       build: { outDir: out, emptyOutDir: true, manifest: true, rolldownOptions: { input: { client: CLIENT } } },
     });
     const manifest = JSON.parse(await readFile(join(out, ".vite", "manifest.json"), "utf8")) as Record<string, { file: string; name?: string; isEntry?: boolean }>;

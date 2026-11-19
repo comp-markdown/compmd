@@ -18,6 +18,7 @@ packages:
   - crates/tauri/examples/tauri-app
   - guides
   - website
+  - website/blog
   # Spikes: measurements, not packages; they have no build, lint or test script, so the workspace's runs skip them.
   - spikes/*
 

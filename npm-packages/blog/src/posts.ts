@@ -80,14 +80,15 @@ export function postOf(path: string, files: Record<string, string>, config: Blog
 }
 
 /**
- * The posts of the blog in `dir`, newest first (by date, then by slug), with its drafts when `drafts`.
+ * The posts of the blog in `dir`, newest first (by date, then by slug), with its drafts when `drafts`, and
+ * `sharedFiles` among the posts' folder's files, by their path there.
  *
  * @throws BlogError when it has no posts' folder, or a post's frontmatter is wrong.
  */
-export async function readPosts(dir: string, config: BlogConfig, { drafts }: { drafts: boolean }): Promise<Post[]> {
+export async function readPosts(dir: string, config: BlogConfig, { drafts, sharedFiles = {} }: { drafts: boolean; sharedFiles?: Record<string, string> }): Promise<Post[]> {
   let files: Record<string, string>;
   try {
-    files = await filesUnder(join(dir, POSTS));
+    files = { ...(await filesUnder(join(dir, POSTS))), ...sharedFiles };
   } catch {
     throw new BlogError(`${dir} has no ${POSTS}/ folder for its posts`);
   }

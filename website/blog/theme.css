@@ -35,6 +35,25 @@ body {
   color: var(--accent);
 }
 
+/* An example a post shows, its document and what it makes: a sheet of its own, set apart from the post's text. */
+.blog .compmd-example {
+  margin-block: 1.6em;
+  padding: 1rem 1.2rem;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--sheet);
+  box-shadow: var(--shadow);
+}
+
+.blog .compmd-example pre {
+  margin-block-start: 0;
+}
+
+.blog .compmd-example-document {
+  padding-block-start: 1rem;
+  border-block-start: 1px dashed var(--rule);
+}
+
 /* Under every page: how the blog is made, quieter than the text. */
 .blog .colophon {
   margin-block: 3rem 0;

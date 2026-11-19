@@ -31,6 +31,11 @@ export interface BuildOptions {
    * as it builds them, so the blog's pages stay the same as the site's.
    */
   layout?: string;
+  /**
+   * Files a site shares with its posts from elsewhere in it, by their path in the posts' folder
+   * (`hello-world/shelf.js`): a post reads them as its own, so the site keeps one copy.
+   */
+  sharedFiles?: Record<string, string>;
 }
 
 /** A blog built: each file by its path in the site, and the build's warnings. */
@@ -84,9 +89,9 @@ function liveOf(post: Post, script: string): string {
 }
 
 /** The blog in `dir`, built. @throws BlogError for what is wrong with it, a post's errors among them. */
-export async function buildSite(dir: string, { drafts, now = new Date().toISOString(), reuseClient = false, layout }: BuildOptions): Promise<Site> {
+export async function buildSite(dir: string, { drafts, now = new Date().toISOString(), reuseClient = false, layout, sharedFiles = {} }: BuildOptions): Promise<Site> {
   const config = await readConfig(dir);
-  const posts = await readPosts(dir, config, { drafts });
+  const posts = await readPosts(dir, config, { drafts, sharedFiles });
   const pageLayout = layout ?? (existsSync(join(dir, LAYOUT)) ? await readFile(join(dir, LAYOUT), "utf8") : defaultLayout(config));
   const theme = [await readFile(DEFAULT_THEME, "utf8"), existsSync(join(dir, THEME)) ? await readFile(join(dir, THEME), "utf8") : ""].join("\n");
   const highlight = await highlighter();

@@ -667,7 +667,7 @@
         "website/blog/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-19T19:10:06Z",
+      "updated_at": "2026-11-19T19:40:59Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -684,9 +684,9 @@
       "sprint": "Packs & Blog",
       "with": "user",
       "number": 13,
-      "started_at": "2026-11-19T19:10:06Z",
+      "started_at": "2026-11-19T19:40:59Z",
       "started_by": "claude:79612601",
-      "commit": "2fb6b8e8d9343442863002e0398ca51797937649",
+      "commit": "66a3188ac8c4c630f7cc0429f7405b0f2b2afc5f",
       "code_reviews": [
         {
           "id": "01a1f526-12a2-7353-a254-f28756dcb5b5",
@@ -705,12 +705,29 @@
           "kind": "rejection",
           "text": "CR-20 round 1: 2 open comments",
           "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-19T19:16:52Z",
+          "kind": "review",
+          "text": "CR-20: round 2",
+          "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-19T19:40:17Z",
+          "kind": "rejection",
+          "text": "CR-20 round 2: 3 open comments",
+          "by": "Hakan Serce"
         }
       ],
       "reviews": [
         {
           "from": "2026-11-19T18:51:15Z",
           "to": "2026-11-19T19:09:30Z",
+          "outcome": "changes_requested"
+        },
+        {
+          "from": "2026-11-19T19:16:52Z",
+          "to": "2026-11-19T19:40:17Z",
           "outcome": "changes_requested"
         }
       ]

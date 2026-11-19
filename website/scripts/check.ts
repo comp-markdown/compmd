@@ -16,8 +16,8 @@
 //   and its companion, a section of the page, linked from the spec and back.
 // - Search finds sections of the spec and the guides, and opens them with the words found marked; on a phone, its
 //   dialog fits.
-// - The blog: every page names its feed, the feed and search have every post, and a post's comments load only once
-//   scrolled to.
+// - The blog: every page names its feed, the feed and search have every post, the first post's book club picks the
+//   cover clicked, and a post's comments load only once scrolled to.
 // - The playground opens every document of its menu.
 // - Shiki and Temml once in each app, the site's and the playground's: in the frames' files, not in its own bundle.
 // - The budgets (website/docs/design.md): the page before its live parts at most 100 KB gzipped, and so is a post's,
@@ -383,6 +383,13 @@ async function blog(browser: Browser): Promise<void> {
     check(named === "/blog/feed.xml", `/${path} names ${named ?? "no feed"}, not the blog's feed`);
     await page.close();
   }
+  // The first post's book club, the landing page's hero: its shelf draws the covers in its frame, and a cover clicked
+  // shows what the club made of that book.
+  const hello = await open(browser, "blog/hello-world/", VIEWS[0]);
+  await hello.page.frameLocator(".compmd-example iframe").getByRole("radio", { name: /^Piranesi/ }).click();
+  await hello.page.getByText("A strange, gentle book").waitFor();
+  check(hello.problems.length === 0, `/blog/hello-world/'s book club: ${hello.problems.join("; ")}`);
+  await hello.page.close();
   for (const path of BLOG_POSTS) {
     // Its HTML doesn't load giscus: its script, scrolled near, does.
     const html = readFileSync(join(DIST, path, "index.html"), "utf8");

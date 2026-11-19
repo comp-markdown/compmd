@@ -32,4 +32,17 @@ describe("readPosts", () => {
       await rm(dir, { recursive: true, force: true });
     }
   });
+
+  it("gives a post the files a site shares with it, as its own", async () => {
+    const dir = await writeBlog();
+    try {
+      const sharedFiles = { "first/shelf.js": "export default function mount() {}", "elsewhere.csv": "a\n1\n" };
+      const [second, first] = await readPosts(dir, CONFIG, { drafts: false, sharedFiles });
+      expect(first!.files["first/shelf.js"]).toBe(sharedFiles["first/shelf.js"]);
+      // A shared file outside a post's folder is no post's.
+      expect(Object.keys(second!.files)).toEqual(["second.comp.md"]);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
 });

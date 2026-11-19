@@ -1,0 +1,2 @@
+# The blogs the tests write, inside the package so their packs' imports resolve.
+test/.out

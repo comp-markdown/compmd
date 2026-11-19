@@ -22,9 +22,13 @@ export const BLOG: Record<string, string> = {
   "posts/draft.comp.md": post({ title: "Draft", date: "2026-11-20", draft: true }),
 };
 
-/** Writes `files` into a new folder; its path. */
-export async function writeBlog(files: Record<string, string> = BLOG): Promise<string> {
-  const dir = await mkdtemp(join(tmpdir(), "compmd-blog-"));
+/**
+ * Writes `files` into a new folder in `parent`; its path. A blog whose packs import packages (`svelte`) is written
+ * inside this package, where Node finds them.
+ */
+export async function writeBlog(files: Record<string, string> = BLOG, parent = tmpdir()): Promise<string> {
+  await mkdir(parent, { recursive: true });
+  const dir = await mkdtemp(join(parent, "compmd-blog-"));
   for (const [path, text] of Object.entries(files)) {
     const file = join(dir, ...path.split("/"));
     await mkdir(dirname(file), { recursive: true });
