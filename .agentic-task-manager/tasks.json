@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 253,
+    "next_number": 254,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -8606,6 +8606,40 @@
           "by": "claude:79612601"
         }
       ]
+    },
+    {
+      "id": "01a1f272-b584-7767-aae6-7e59371fdc9c",
+      "name": "One base-rules stylesheet per document, shared by its pages",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "performance"
+      ],
+      "description": "The spike CMD-252 ([its README](spikes/highlight-perf/README.md)) found that a document with hundreds of mounted pages restyles slowly: each `createPage` makes a `Stylesheet` of its own (`npm-packages/render/src/page.ts`), which adopts a constructed sheet holding the whole `BASE_RULES` plus its blocks' rules (`npm-packages/render/src/styles.ts`). With 440 pages kept mounted, a skim blocked 43 s in WebKit with highlighting off (17 s in Chromium).\n\n## Change\n- The base rules are adopted once per document, shared by every page in it and removed with the last one.\n- Each page's own sheet holds only its blocks' rules.\n- Check that block class names (`compmd-b<n>`, counted per `Stylesheet`) can't collide between two pages in one document, and make them unique per document if they can.\n\n## Tests\n- Unit tests in `styles.test.ts`: two pages, one base sheet; destroying one keeps it, destroying both removes it.\n- A browser test (Chrome and WebKit) with two pages in one document whose blocks style differently.\n- Measure with the spike's `off-kept` variant (`node spikes/highlight-perf/measure.ts 1 off-kept`) before and after, and record both in the task's note.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1f0f9-76de-73fc-b8ae-e07bc47777fc"
+      ],
+      "files": [
+        "npm-packages/render/src/styles.ts",
+        "npm-packages/render/src/page.ts",
+        "npm-packages/render/src/styles.test.ts"
+      ],
+      "created_at": "2026-11-19T06:16:06Z",
+      "updated_at": "2026-11-19T06:16:06Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Packs and website",
+          "from": "2026-11-19T06:16:06Z"
+        }
+      ],
+      "sprint": "Packs and website",
+      "number": 253,
+      "key_final": false
     }
   ]
 }

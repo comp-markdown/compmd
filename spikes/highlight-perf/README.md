@@ -8,7 +8,7 @@
 2. **Oniguruma, as WebAssembly, where the page allows WebAssembly.** WebKit's cost is the JavaScript engine compiling TypeScript's regexes the first time they run: a 1.1 s frame on opening, and later long frames as new rules first match. With Oniguruma, shared, the first tokenizing takes 30 ms, and the page meets the host's targets: 83 ms blocked on opening, its longest frame 133 ms, 10 ms blocked over the skim. In Chromium it is as fast as the JavaScript engine once shared.
 3. **Tokenizing in slices, a block per task, those on screen first,** as a guard: with Oniguruma it takes opening's last 83 ms to 0, and it bounds a frame to one block however many blocks render at once.
 4. **Not carried over:** grammars prepared ahead (no gain in WebKit, which still compiles each regex on first use), a cache of tokens (nothing left to save once Shiki is shared: a run tokenizes in about 1 ms), and a worker (as smooth as Oniguruma on the page's thread, but a run waits 1.1 s on opening with the JavaScript engine, and it needs `worker-src` where Oniguruma needs `wasm-unsafe-eval`).
-5. **A finding apart from highlighting:** every `createPage` adopts a stylesheet of its own, with the base rules, so a document with hundreds of mounted pages restyles against hundreds of sheets: 43 s blocked in WebKit over the skim with highlighting off, 304 s with it.
+5. **A finding apart from highlighting:** every `createPage` adopts a stylesheet of its own, with the base rules, so a document with hundreds of mounted pages restyles against hundreds of sheets: 43 s blocked in WebKit over the skim with highlighting off, 304 s with it. The spike doesn't fix it: CMD-253 shares the base rules' sheet among a document's pages.
 
 ## The test page
 
