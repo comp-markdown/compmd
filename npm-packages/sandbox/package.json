@@ -15,7 +15,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/comp-markdown/compmd.git",
-    "directory": "sandbox"
+    "directory": "npm-packages/sandbox"
   },
   "author": "Hakan Serce",
   "license": "MIT",

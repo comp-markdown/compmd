@@ -15,7 +15,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/comp-markdown/compmd.git",
-    "directory": "create-pack"
+    "directory": "npm-packages/create-pack"
   },
   "author": "Hakan Serce",
   "license": "MIT",

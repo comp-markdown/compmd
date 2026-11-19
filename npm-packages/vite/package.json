@@ -15,7 +15,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/comp-markdown/compmd.git",
-    "directory": "vite"
+    "directory": "npm-packages/vite"
   },
   "author": "Hakan Serce",
   "license": "MIT",
