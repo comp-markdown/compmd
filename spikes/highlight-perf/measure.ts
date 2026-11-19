@@ -41,6 +41,11 @@ const VARIANTS: Record<string, string> = {
   // each in a box with rules of its own.
   churn: "highlight=off&churn=1",
   "churn-styled": "highlight=off&churn=1&styled=1",
+  // The same document, one sheet, a block's rules written as a whole sheet, rule by rule, or not at all (CMD-254).
+  "sheet-replace": "highlight=off&churn=1&sheet=replace",
+  "sheet-insert": "highlight=off&churn=1&sheet=insert",
+  "sheet-none": "highlight=off&churn=1&sheet=none",
+  "churn-styled-nowrite": "highlight=off&churn=1&styled=1&nowrite=1",
 };
 
 const options = process.argv.slice(2).filter((argument) => argument.startsWith("--"));

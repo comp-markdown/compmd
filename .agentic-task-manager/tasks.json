@@ -8731,7 +8731,7 @@
       "description": "After CMD-253 a document's pages share one stylesheet, and `Stylesheet.flush()` still writes its whole text with `replaceSync` whenever a block's rules changed (`npm-packages/render/src/styles.ts`). In a host document with many pages of styled blocks (rows, grids, breakpoints), each such write may restyle the whole document.\n\n## Measure first\nOn the spike's page with a large host document (`spikes/highlight-perf`, as CMD-253 left it), with pages whose blocks have rules: what a `replaceSync` of the whole sheet costs against `insertRule` and `deleteRule` of one block's rules, in WebKit and Chromium. Whether `insertRule` avoids a document-wide restyle in WebKit is not known; the numbers decide.\n\n## Change\nWhat the numbers support: rules inserted and deleted per block, or the writes of every page in one animation frame joined into one, or both. Breakpoint rules keep their order, so wider ones win. Each rule passes the value guard (`safe`) as now.\n\n## Tests\nUnit tests for the order of rules and for a destroyed page's rules leaving the sheet; the measurement's numbers in the spike's README.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a1f272-b584-7767-aae6-7e59371fdc9c"
       ],
@@ -8741,9 +8741,9 @@
         "spikes/highlight-perf/README.md"
       ],
       "created_at": "2026-11-19T07:02:11Z",
-      "updated_at": "2026-11-19T07:02:11Z",
+      "updated_at": "2026-11-19T07:54:59Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "sprint_history": [
         {
           "sprint": "Packs and website",
@@ -8752,7 +8752,9 @@
       ],
       "sprint": "Packs and website",
       "number": 254,
-      "key_final": false
+      "key_final": false,
+      "started_at": "2026-11-19T07:54:59Z",
+      "started_by": "claude:79612601"
     },
     {
       "id": "01a1f29c-e577-7274-b7b7-a9eed7234af3",

@@ -1,0 +1,416 @@
+[
+  {
+    "browser": "webkit",
+    "variant": "sheet-none",
+    "repeat": 0,
+    "config": {
+      "churnSheet": true,
+      "hostElements": 20000,
+      "sheet": "none"
+    },
+    "counts": {
+      "adoptions": 0,
+      "styleReads": 0,
+      "sheetWrites": 0
+    },
+    "rules": 0,
+    "totalMs": 1663,
+    "blockedMs": 0,
+    "longestMs": 18,
+    "longFrames": 0,
+    "firstTenOpenMs": 16,
+    "lastTenOpenMs": 16,
+    "longestOpenMs": 18
+  },
+  {
+    "browser": "webkit",
+    "variant": "sheet-none",
+    "repeat": 1,
+    "config": {
+      "churnSheet": true,
+      "hostElements": 20000,
+      "sheet": "none"
+    },
+    "counts": {
+      "adoptions": 0,
+      "styleReads": 0,
+      "sheetWrites": 0
+    },
+    "rules": 0,
+    "totalMs": 1659,
+    "blockedMs": 0,
+    "longestMs": 18,
+    "longFrames": 0,
+    "firstTenOpenMs": 17,
+    "lastTenOpenMs": 16,
+    "longestOpenMs": 18
+  },
+  {
+    "browser": "webkit",
+    "variant": "sheet-none",
+    "repeat": 2,
+    "config": {
+      "churnSheet": true,
+      "hostElements": 20000,
+      "sheet": "none"
+    },
+    "counts": {
+      "adoptions": 0,
+      "styleReads": 0,
+      "sheetWrites": 0
+    },
+    "rules": 0,
+    "totalMs": 1658,
+    "blockedMs": 0,
+    "longestMs": 18,
+    "longFrames": 0,
+    "firstTenOpenMs": 16,
+    "lastTenOpenMs": 16,
+    "longestOpenMs": 18
+  },
+  {
+    "browser": "webkit",
+    "variant": "sheet-replace",
+    "repeat": 0,
+    "config": {
+      "churnSheet": true,
+      "hostElements": 20000,
+      "sheet": "replace"
+    },
+    "counts": {
+      "adoptions": 0,
+      "styleReads": 0,
+      "sheetWrites": 100
+    },
+    "rules": 16,
+    "totalMs": 1663,
+    "blockedMs": 0,
+    "longestMs": 26,
+    "longFrames": 0,
+    "firstTenOpenMs": 16,
+    "lastTenOpenMs": 16,
+    "longestOpenMs": 18
+  },
+  {
+    "browser": "webkit",
+    "variant": "sheet-replace",
+    "repeat": 1,
+    "config": {
+      "churnSheet": true,
+      "hostElements": 20000,
+      "sheet": "replace"
+    },
+    "counts": {
+      "adoptions": 0,
+      "styleReads": 0,
+      "sheetWrites": 100
+    },
+    "rules": 16,
+    "totalMs": 1727,
+    "blockedMs": 0,
+    "longestMs": 25,
+    "longFrames": 0,
+    "firstTenOpenMs": 17,
+    "lastTenOpenMs": 18,
+    "longestOpenMs": 20
+  },
+  {
+    "browser": "webkit",
+    "variant": "sheet-replace",
+    "repeat": 2,
+    "config": {
+      "churnSheet": true,
+      "hostElements": 20000,
+      "sheet": "replace"
+    },
+    "counts": {
+      "adoptions": 0,
+      "styleReads": 0,
+      "sheetWrites": 100
+    },
+    "rules": 16,
+    "totalMs": 1887,
+    "blockedMs": 0,
+    "longestMs": 30,
+    "longFrames": 0,
+    "firstTenOpenMs": 18,
+    "lastTenOpenMs": 19,
+    "longestOpenMs": 21
+  },
+  {
+    "browser": "webkit",
+    "variant": "sheet-insert",
+    "repeat": 0,
+    "config": {
+      "churnSheet": true,
+      "hostElements": 20000,
+      "sheet": "insert"
+    },
+    "counts": {
+      "adoptions": 0,
+      "styleReads": 0,
+      "sheetWrites": 0
+    },
+    "rules": 16,
+    "totalMs": 1844,
+    "blockedMs": 0,
+    "longestMs": 26,
+    "longFrames": 0,
+    "firstTenOpenMs": 17,
+    "lastTenOpenMs": 18,
+    "longestOpenMs": 22
+  },
+  {
+    "browser": "webkit",
+    "variant": "sheet-insert",
+    "repeat": 1,
+    "config": {
+      "churnSheet": true,
+      "hostElements": 20000,
+      "sheet": "insert"
+    },
+    "counts": {
+      "adoptions": 0,
+      "styleReads": 0,
+      "sheetWrites": 0
+    },
+    "rules": 16,
+    "totalMs": 1760,
+    "blockedMs": 0,
+    "longestMs": 20,
+    "longFrames": 0,
+    "firstTenOpenMs": 18,
+    "lastTenOpenMs": 19,
+    "longestOpenMs": 20
+  },
+  {
+    "browser": "webkit",
+    "variant": "sheet-insert",
+    "repeat": 2,
+    "config": {
+      "churnSheet": true,
+      "hostElements": 20000,
+      "sheet": "insert"
+    },
+    "counts": {
+      "adoptions": 0,
+      "styleReads": 0,
+      "sheetWrites": 0
+    },
+    "rules": 16,
+    "totalMs": 1861,
+    "blockedMs": 0,
+    "longestMs": 26,
+    "longFrames": 0,
+    "firstTenOpenMs": 16,
+    "lastTenOpenMs": 21,
+    "longestOpenMs": 25
+  },
+  {
+    "browser": "chromium",
+    "variant": "sheet-none",
+    "repeat": 0,
+    "config": {
+      "churnSheet": true,
+      "hostElements": 20000,
+      "sheet": "none"
+    },
+    "counts": {
+      "adoptions": 0,
+      "styleReads": 0,
+      "sheetWrites": 0
+    },
+    "rules": 0,
+    "totalMs": 1666,
+    "blockedMs": 0,
+    "longestMs": 17,
+    "longFrames": 0,
+    "firstTenOpenMs": 15,
+    "lastTenOpenMs": 16,
+    "longestOpenMs": 17
+  },
+  {
+    "browser": "chromium",
+    "variant": "sheet-none",
+    "repeat": 1,
+    "config": {
+      "churnSheet": true,
+      "hostElements": 20000,
+      "sheet": "none"
+    },
+    "counts": {
+      "adoptions": 0,
+      "styleReads": 0,
+      "sheetWrites": 0
+    },
+    "rules": 0,
+    "totalMs": 1664,
+    "blockedMs": 0,
+    "longestMs": 17,
+    "longFrames": 0,
+    "firstTenOpenMs": 16,
+    "lastTenOpenMs": 16,
+    "longestOpenMs": 17
+  },
+  {
+    "browser": "chromium",
+    "variant": "sheet-none",
+    "repeat": 2,
+    "config": {
+      "churnSheet": true,
+      "hostElements": 20000,
+      "sheet": "none"
+    },
+    "counts": {
+      "adoptions": 0,
+      "styleReads": 0,
+      "sheetWrites": 0
+    },
+    "rules": 0,
+    "totalMs": 1664,
+    "blockedMs": 0,
+    "longestMs": 17,
+    "longFrames": 0,
+    "firstTenOpenMs": 16,
+    "lastTenOpenMs": 16,
+    "longestOpenMs": 17
+  },
+  {
+    "browser": "chromium",
+    "variant": "sheet-replace",
+    "repeat": 0,
+    "config": {
+      "churnSheet": true,
+      "hostElements": 20000,
+      "sheet": "replace"
+    },
+    "counts": {
+      "adoptions": 0,
+      "styleReads": 0,
+      "sheetWrites": 100
+    },
+    "rules": 16,
+    "totalMs": 1666,
+    "blockedMs": 0,
+    "longestMs": 17,
+    "longFrames": 0,
+    "firstTenOpenMs": 16,
+    "lastTenOpenMs": 16,
+    "longestOpenMs": 17
+  },
+  {
+    "browser": "chromium",
+    "variant": "sheet-replace",
+    "repeat": 1,
+    "config": {
+      "churnSheet": true,
+      "hostElements": 20000,
+      "sheet": "replace"
+    },
+    "counts": {
+      "adoptions": 0,
+      "styleReads": 0,
+      "sheetWrites": 100
+    },
+    "rules": 16,
+    "totalMs": 1666,
+    "blockedMs": 0,
+    "longestMs": 17,
+    "longFrames": 0,
+    "firstTenOpenMs": 16,
+    "lastTenOpenMs": 16,
+    "longestOpenMs": 17
+  },
+  {
+    "browser": "chromium",
+    "variant": "sheet-replace",
+    "repeat": 2,
+    "config": {
+      "churnSheet": true,
+      "hostElements": 20000,
+      "sheet": "replace"
+    },
+    "counts": {
+      "adoptions": 0,
+      "styleReads": 0,
+      "sheetWrites": 100
+    },
+    "rules": 16,
+    "totalMs": 1665,
+    "blockedMs": 0,
+    "longestMs": 17,
+    "longFrames": 0,
+    "firstTenOpenMs": 16,
+    "lastTenOpenMs": 16,
+    "longestOpenMs": 17
+  },
+  {
+    "browser": "chromium",
+    "variant": "sheet-insert",
+    "repeat": 0,
+    "config": {
+      "churnSheet": true,
+      "hostElements": 20000,
+      "sheet": "insert"
+    },
+    "counts": {
+      "adoptions": 0,
+      "styleReads": 0,
+      "sheetWrites": 0
+    },
+    "rules": 16,
+    "totalMs": 1664,
+    "blockedMs": 0,
+    "longestMs": 17,
+    "longFrames": 0,
+    "firstTenOpenMs": 16,
+    "lastTenOpenMs": 16,
+    "longestOpenMs": 16
+  },
+  {
+    "browser": "chromium",
+    "variant": "sheet-insert",
+    "repeat": 1,
+    "config": {
+      "churnSheet": true,
+      "hostElements": 20000,
+      "sheet": "insert"
+    },
+    "counts": {
+      "adoptions": 0,
+      "styleReads": 0,
+      "sheetWrites": 0
+    },
+    "rules": 16,
+    "totalMs": 1665,
+    "blockedMs": 0,
+    "longestMs": 17,
+    "longFrames": 0,
+    "firstTenOpenMs": 16,
+    "lastTenOpenMs": 16,
+    "longestOpenMs": 17
+  },
+  {
+    "browser": "chromium",
+    "variant": "sheet-insert",
+    "repeat": 2,
+    "config": {
+      "churnSheet": true,
+      "hostElements": 20000,
+      "sheet": "insert"
+    },
+    "counts": {
+      "adoptions": 0,
+      "styleReads": 0,
+      "sheetWrites": 0
+    },
+    "rules": 16,
+    "totalMs": 1664,
+    "blockedMs": 0,
+    "longestMs": 17,
+    "longFrames": 0,
+    "firstTenOpenMs": 16,
+    "lastTenOpenMs": 16,
+    "longestOpenMs": 17
+  }
+]

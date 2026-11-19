@@ -217,6 +217,8 @@ async function churn(): Promise<unknown> {
   await nextFrame();
   await pause(500);
   const counts = counted();
+  // `?nowrite=1`: the renderer's sheet writes counted but not made, to see what they cost apart from the rest.
+  if (query.get("nowrite") === "1") CSSStyleSheet.prototype.replaceSync = () => (counts.sheetWrites += 1, undefined);
   const styled = query.get("styled") === "1";
   const live: Run[] = [];
   const opens: number[] = [];
@@ -246,6 +248,73 @@ async function churn(): Promise<unknown> {
   };
 }
 
+/**
+ * What writing a block's rules costs in a large host document, apart from the renderer (CMD-254): one adopted sheet,
+ * the renderer's base rules in it, then 100 blocks added and removed, eight live at a time, one a frame, each with a
+ * rule of its own and one in a container query, as a styled block's. `?sheet=replace` writes the whole sheet's text
+ * each time (`replaceSync`, as `Stylesheet.flush` does), `?sheet=insert` inserts and deletes the block's rules
+ * (`insertRule`, `deleteRule`), `?sheet=none` writes no rule, for the blocks' own cost.
+ */
+async function churnSheet(): Promise<unknown> {
+  observer.disconnect();
+  for (const run of slots) unmountNow(run);
+  const mode = query.get("sheet") ?? "replace";
+  const host = scroller.appendChild(document.createElement("div"));
+  host.className = "host";
+  const elements = Number(query.get("host") ?? 20_000);
+  for (let i = 0; i < elements / 2; i++) {
+    const row = host.appendChild(document.createElement("div"));
+    row.className = `row r${String(i % 7)}`;
+    row.appendChild(document.createElement("span")).textContent = `Row ${String(i)}`;
+  }
+  // The base rules as the renderer has them: what a page's own sheet held before CMD-253.
+  const probe = document.createElement("div");
+  const page = createPage(probe);
+  const base = page.stylesheet.text;
+  page.destroy();
+  const sheet = new CSSStyleSheet();
+  sheet.replaceSync(base);
+  document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet];
+  await nextFrame();
+  await pause(500);
+  const counts = counted();
+  const live: { element: HTMLElement; rules: readonly string[] }[] = [];
+  const opens: number[] = [];
+  const rulesOf = (i: number) => [`.blk${String(i)} { width: ${String(50 + (i % 40))}%; }`, `@container (min-width: 480px) { .blk${String(i)} { padding: ${String(i % 9)}px; } }`];
+  const write = () => {
+    sheet.replaceSync([base, ...live.flatMap(({ rules }) => rules)].join("\n"));
+  };
+  const start = performance.now();
+  for (let i = 0; i < 100; i++) {
+    const before = performance.now();
+    const element = scroller.appendChild(document.createElement("div"));
+    element.className = `compmd-page blk${String(i)}`;
+    element.textContent = runs[i] ?? "";
+    const rules = rulesOf(i);
+    live.push({ element, rules });
+    if (mode === "insert") for (const rule of rules) sheet.insertRule(rule, sheet.cssRules.length);
+    const gone = live.length > 8 ? live.shift() : undefined;
+    gone?.element.remove();
+    if (gone && mode === "insert") {
+      const selector = `.${gone.element.classList[1] ?? ""} {`;
+      for (let at = sheet.cssRules.length - 1; at >= 0; at--) if (sheet.cssRules[at]?.cssText.includes(selector)) sheet.deleteRule(at);
+    }
+    if (mode === "replace") write();
+    opens.push((await nextFrame()) - before);
+  }
+  const end = performance.now();
+  return {
+    config: { churnSheet: true, hostElements: elements, sheet: mode },
+    counts,
+    rules: sheet.cssRules.length,
+    totalMs: Math.round(end - start),
+    ...blocked(start, end),
+    firstTenOpenMs: percentile(opens.slice(0, 10), 0.5),
+    lastTenOpenMs: percentile(opens.slice(-10), 0.5),
+    longestOpenMs: Math.round(Math.max(...opens)),
+  };
+}
+
 /** A run's page gone now, whatever `?keep` says. */
 function unmountNow(run: Run | undefined): void {
   run?.page?.destroy();
@@ -260,7 +329,7 @@ declare global {
 }
 
 window.spike = {
-  churn,
+  churn: () => (query.has("sheet") ? churnSheet() : churn()),
   async run() {
     const opened = performance.now();
     // The first runs mount when the observer first reports, a frame or so after the page loads.

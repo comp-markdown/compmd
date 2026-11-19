@@ -102,12 +102,36 @@ The page above has a small host document, so it missed what each open costs a la
 
 - **Before, every open set the document's sheets and read a style at once,** which styled all 20,000 elements inside the open: 92 of 100 frames were long in WebKit, and an open grew from 31 ms to 71 ms over the run (why it grows wasn't looked into). The two reads a page are the page's own: one when it is made, one at its render. A sandbox's view in host mode read twice more, at open and at each render.
 - **After, a page of text and code changes nothing in the document's styles:** one sheet set for the first page, no style read, and each open within a frame.
-- **A page with styled blocks still writes the sheet** when it renders and when it is destroyed (193 writes), and in WebKit each takes the open to about two frames (38 ms), without a long frame. Whether writing a rule at a time is cheaper is CMD-254's to measure.
+- **A page with styled blocks still writes the sheet** when it renders and when it is destroyed (193 writes), and in WebKit an open took about two frames (38 ms) in this run, without a long frame. The writes aren't what that costs ([below](#writing-a-blocks-rules-cmd-254)).
 - **Chromium doesn't show any of it** at this size, before or after.
 - **A real host's document is heavier** than 20,000 plain rows: the host that reported it saw about 1 s for each of these restyles, where this page has 70 ms.
 
+### Writing a block's rules (CMD-254)
+
+Whether a styled block's rules should be inserted and deleted one by one (`insertRule`, `deleteRule`) rather than the document's sheet written whole (`replaceSync`, as `Stylesheet.flush` does). Two ways, in the same large host document, three runs each, medians; `results-sheet.json` and `results-sheet-styled.json` have every run.
+
+- **The writes alone** (`sheet-none`, `sheet-replace`, `sheet-insert`): one adopted sheet with the base rules, 100 blocks added and removed, eight live, one a frame, each with a rule of its own and one in a container query, written one way or the other, or not at all.
+- **The renderer's pages** (`churn-styled`), against the same with the sheet writes counted but not made (`churn-styled-nowrite`), so what is left is the rest of an open.
+
+| WebKit | Blocked | An open: first ten / last ten / longest |
+|---|---|---|
+| No rules written | 0 | 16 / 16 / 18 ms |
+| The whole sheet each time | 0 | 17 / 18 / 20 ms |
+| Rule by rule | 0 | 17 / 19 / 22 ms |
+| The renderer's styled pages | 0 | 20 / 20 / 24 ms |
+| The same, the writes not made | 0 | 20 / 26 / 30 ms |
+
+Chromium: 16 ms an open in every one.
+
+- **Writing the sheet costs little, either way:** a frame and a millisecond or two with sixteen rules live, and rule by rule is no cheaper than the whole sheet.
+- **What a styled page's open costs beyond a code block's is its own boxes,** not the writes: without them the open is no faster.
+- **So the renderer keeps writing the sheet whole.** Hundreds of styled pages live at once, with hundreds of blocks' rules in the sheet, weren't measured; that is what could change it.
+- This run's styled opens took 20 ms where the CMD-253 run above measured 38 ms, on the same page; why the two runs differ wasn't looked into. The comparisons are within a run.
+
 ```sh
 pnpm --dir spikes/highlight-perf measure 3 churn churn-styled --out=results-churn.json
+pnpm --dir spikes/highlight-perf measure 3 sheet-none sheet-replace sheet-insert --out=results-sheet.json
+pnpm --dir spikes/highlight-perf measure 3 churn churn-styled churn-styled-nowrite --out=results-sheet-styled.json
 pnpm --dir spikes/highlight-perf measure 3 sandbox-per-view sandbox-shared --out=results-sandbox.json   # after building @compmd/sandbox
 ```
 
