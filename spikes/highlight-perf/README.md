@@ -103,6 +103,20 @@ The same as the spike's *today* and *shared*: one highlighter takes WebKit's ski
 - **It is short of the spike's *shared + oniguruma*** (83 ms on opening, 10 ms over the skim): the sandbox's highlighter has two Shikis (Markdown's and the other languages'), each made with the first block, and loads its grammars as blocks need them; and this run was noisier. Slicing (CMD-259) is for what is left.
 - **The JavaScript engine's tokens in WebKit** were wrong for one block in the browser test (`test/highlight-policy.test.ts`): its light theme's colours disagreed with its dark theme's, and its tokens with Oniguruma's and with Chromium's. Oniguruma's were right. Not looked into here: CMD-261.
 
+### A block at a time, those on screen first (CMD-259)
+
+The same two variants, with the renderer asking for one block's tokens at a time since CMD-259: the next a task after the last is drawn, blocks on screen first. Three runs each, medians and ranges; `results-sandbox-queued.json` has every run.
+
+| | Opening: blocked / longest | Skim: blocked | Revisit: blocked | Wait on opening |
+|---|---|---|---|---|
+| WebKit, JavaScript engine | 1698 ms (1621–2437) / 1748 ms | 901 ms (787–1357) | 0 | 1809 ms |
+| WebKit, Oniguruma | 84 ms (77–110) / 134 ms | 8 ms (0–13) | 0 | 158 ms |
+| Chromium, JavaScript engine | 33 ms | 83 ms | 0 | 111 ms |
+| Chromium, Oniguruma | 50 ms | 0 | 0 | 155 ms |
+
+- **With Oniguruma, WebKit now meets the host's targets** (no frame over 200 ms on opening, well under a second over the skim): 84 ms blocked on opening, its longest frame 134 ms, 8 ms over the skim, against 253 ms and 151 ms before. That is the spike's best (*shared + oniguruma*: 83 ms and 10 ms).
+- **With the JavaScript engine it is no better, and its opening looks worse** (1.7 s against 1.2 s before, in runs that varied a lot): a block at a time can't split one block's first compile of its regexes, and the blocks' compiles no longer share a frame. A page that refuses WebAssembly keeps that cost; the frames do until CMD-260.
+
 ### A large host document: 100 pages opened and closed (CMD-253)
 
 The page above has a small host document, so it missed what each open costs a large one. `?churn=1` adds 20,000 host elements (rows a host's own rules style), then opens 100 pages, one an animation frame, eight live at a time, destroying the oldest, without highlighting: `churn` with a code block each, `churn-styled` with the code in a box with a `width` of its own. It counts what makes the browser style the whole document again: the times the document's sheets are set (`adoptedStyleSheets`), the styles read (`getComputedStyle`) and the sheets written (`replaceSync`). **An open** is from `createPage` to the next animation frame, so 16 ms is one frame. Three runs each, medians; `results-churn-before.json` and `results-churn-after.json` have every run.

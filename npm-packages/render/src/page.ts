@@ -100,7 +100,7 @@ export interface Page {
   lineHeights(heights: ReadonlyMap<number, number>): void;
   /**
    * Resolves once the components of the last render and splice have mounted and every drawing they gave
-   * `context.busy` has settled, fulfilled or rejected, or after `BUSY_MS` for one that never does; a render after it
+   * `context.busy` has settled, fulfilled or rejected, and its code blocks are highlighted, or after `BUSY_MS` for one that never does; a render after it
    * makes it wait for that one's too. Nothing shows differently meanwhile.
    *
    * @example

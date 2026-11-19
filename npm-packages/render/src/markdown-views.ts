@@ -1,7 +1,7 @@
 // The views of Markdown nodes (CommonMark and GFM, with alerts and math; spec §2.3): text, elements, code blocks that
 // show as code, images whose files the caller gives, and code or math the caller's renderer draws.
 import { drawCodeLines } from "./code-lines.ts";
-import { highlightCode } from "./highlight.ts";
+import { dropHighlight, highlightCode } from "./highlight-queue.ts";
 import type { ImageSource } from "./images.ts";
 import { safeUrl } from "./html.ts";
 import { destroyAll, patch, pendingTag, shapeOf, type Pass, type Surface, type View } from "./render.ts";
@@ -182,8 +182,8 @@ export class ElementView implements View {
 
 /**
  * A code block that shows as code, `<pre><code class="language-…">`, each line an element of its own (`code-lines.ts`):
- * one no code renderer draws, or a code renderer's fallback. The caller's highlighter, if any, highlights it, again
- * only when its text or language changes.
+ * one no code renderer draws, or a code renderer's fallback. The caller's highlighter, if any, highlights it in its
+ * turn (`highlight-queue.ts`), again only when its text or language changes.
  */
 export class CodeBlockView implements View {
   readonly shape: string;
@@ -212,11 +212,12 @@ export class CodeBlockView implements View {
     if (language) this.#code.className = `language-${language}`;
     else this.#code.removeAttribute("class");
     drawCodeLines(this.#code, code);
-    if (this.#surface.highlight) highlightCode(this.#code, code, language, this.#surface.highlight);
+    // The page has drawn once its blocks are highlighted, so a test, printing or a scroll to a link sees them so.
+    if (this.#surface.highlight) this.#surface.busy.add(highlightCode(this.#code, code, language, this.#surface.highlight));
   }
 
   destroy(): void {
-    return undefined;
+    dropHighlight(this.#code);
   }
 }
 

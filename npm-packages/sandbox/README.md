@@ -163,7 +163,7 @@ view.destroy();
 
 Offsets are of the text of the last render or splice, and the calls come after the renders and splices sent before them. In frame mode the frame's code may be untrusted: what it sends as a source or a box is checked to be numbers, but a frame's code could still report a click that wasn't, so a host only moves a caret with it. A click inside a use's own frame (a strict or permissive use in host mode, a nested use) isn't seen by the page around it, and gives nothing.
 
-**When the page has settled.** A view's page keeps moving after `render()` returns: each frame takes its height once it has drawn and reported it, its own frames later still, and components that draw late (a diagram, data through `host`) later again. Tests, printing and scrolling to a link's target wait for it to stop:
+**When the page has settled.** A view's page keeps moving after `render()` returns: each frame takes its height once it has drawn and reported it, its own frames later still, components that draw late (a diagram, data through `host`) later again, and code blocks once they are highlighted, a block at a time. Tests, printing and scrolling to a link's target wait for it to stop:
 
 ```ts
 view.render(processed.expanded);

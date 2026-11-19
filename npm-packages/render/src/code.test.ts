@@ -64,7 +64,7 @@ describe("a code block a code renderer renders", () => {
     expect(code()).toBe("A --> C");
   });
 
-  it("has its fallback's code block highlighted when the renderer isn't here", () => {
+  it("has its fallback's code block highlighted when the renderer isn't here", async () => {
     const highlighted: string[] = [];
     const page = createPage(area, {
       highlight: (code, language) => {
@@ -73,6 +73,7 @@ describe("a code block a code renderer renders", () => {
       },
     });
     page.render({ type: "root", children: [rendered("A --> B")] });
+    await page.drawn();
     expect(highlighted).toEqual(["mermaid: A --> B"]);
   });
 
@@ -137,7 +138,7 @@ describe("a rendered block with `render=both`", () => {
 describe("a code block that shows as code", () => {
   const block = (value: string, lang: string | null = "js"): ExpandedNode => ({ type: "code", lang, meta: null, value });
 
-  it("is highlighted with the highlighter's tokens, in its lines, and again only when its text or language changes", () => {
+  it("is highlighted with the highlighter's tokens, in its lines, and again only when its text or language changes", async () => {
     const calls: [string, string][] = [];
     const page = createPage(area, {
       highlight: (code, language) => {
@@ -145,12 +146,16 @@ describe("a code block that shows as code", () => {
         return [[{ text: code, bold: true }]];
       },
     });
-    page.render({ type: "root", children: [block("let a;")] });
+    const render = async (root: Parameters<typeof page.render>[0]) => {
+      page.render(root);
+      await page.drawn();
+    };
+    await render({ type: "root", children: [block("let a;")] });
     expect(area.innerHTML).toBe('<pre><code class="language-js"><span class="compmd-line"><span style="font-weight: bold;">let a;</span></span></code></pre>');
-    page.render({ type: "root", children: [block("let a;")], inputs: { x: { type: "string", value: "" } } });
-    page.render({ type: "root", children: [block("let b;")] });
-    page.render({ type: "root", children: [block("let b;", "ts")] });
-    page.render({ type: "root", children: [block("plain", null)] });
+    await render({ type: "root", children: [block("let a;")], inputs: { x: { type: "string", value: "" } } });
+    await render({ type: "root", children: [block("let b;")] });
+    await render({ type: "root", children: [block("let b;", "ts")] });
+    await render({ type: "root", children: [block("plain", null)] });
     expect(calls).toEqual([
       ["let a;", "js"],
       ["let b;", "js"],

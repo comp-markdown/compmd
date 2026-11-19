@@ -33,39 +33,11 @@ export type CodeLines = readonly (readonly CodeToken[])[];
  */
 export type CodeHighlighter = (code: string, language: string) => CodeLines | undefined | Promise<CodeLines | undefined>;
 
-/** What each block asked for last, so tokens that come after a newer text's are dropped. */
-const latest = new WeakMap<HTMLElement, object>();
-
-/**
- * Highlights `target`, a block's `<code>` holding `code` as its lines, with `highlight`: its tokens drawn at once when
- * it gives them at once, or when they come, unless the block has changed since.
- */
-export function highlightCode(target: HTMLElement, code: string, language: string, highlight: CodeHighlighter): void {
-  const asked = {};
-  latest.set(target, asked);
-  let given: ReturnType<CodeHighlighter>;
-  try {
-    given = highlight(code, language);
-  } catch {
-    return;
-  }
-  if (!(given instanceof Promise)) {
-    if (given) drawTokens(target, code, given);
-    return;
-  }
-  void given.then(
-    (lines) => {
-      if (lines && latest.get(target) === asked) drawTokens(target, code, lines);
-    },
-    () => undefined,
-  );
-}
-
 /**
  * Puts `lines` in `target` as spans, each line's in its line's element, which keeps its attributes and its line break,
  * unless they aren't `code`'s text: then the block keeps its text.
  */
-function drawTokens(target: HTMLElement, code: string, lines: CodeLines): void {
+export function drawTokens(target: HTMLElement, code: string, lines: CodeLines): void {
   if (lines.map((line) => line.map(({ text }) => text).join("")).join("\n") !== code) return;
   const elements = [...target.children].filter((child) => child.classList.contains(CODE_LINE));
   if (elements.length !== lines.length) return;

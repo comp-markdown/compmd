@@ -492,6 +492,15 @@ describe("code blocks", () => {
       expect(mermaid?.tokens).toBeGreaterThan(1);
     });
 
+    it(`has settled once its code blocks are highlighted, in the ${scheme} theme (host mode)`, async () => {
+      const { area, view } = open("host", []);
+      area.style.colorScheme = scheme;
+      view.render({ type: "root", children: blocks });
+      await view.settled();
+      const tokens = [...area.querySelectorAll("pre code")].map((code) => code.querySelectorAll(".compmd-line > span").length);
+      expect(tokens.every((count) => count > 1)).toBe(true);
+    });
+
     it(`highlights the code blocks of every view of the page, which share one highlighter, in the ${scheme} theme (host mode)`, async () => {
       const opened = [open("host", []), open("host", [])];
       for (const { area, view } of opened) {
