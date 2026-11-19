@@ -1,0 +1,1414 @@
+diff --git a/docs/running-components-in-the-sandbox.md b/docs/running-components-in-the-sandbox.md
+index 89ff045..81a0321 100644
+--- a/docs/running-components-in-the-sandbox.md
++++ b/docs/running-components-in-the-sandbox.md
+@@ -11,7 +11,7 @@
+ 5. **`host` goes to the permissive frames the host's page makes**, of packs the configuration gives `host` (`{"level": "permissive", "network": […], "host": true}`). Each frame's parent made it, so there is no frame to fake.
+ 6. **Layers a host can use apart:** the protocol (messages and rules, no DOM), the frame runtime (what runs in a frame), the host runtime (mount one use in a target the host gives, inline or in a frame), and defaults (the two frame documents, the import map, a compile frame, `createSandbox` with the two modes). A host with frame documents, libraries and compiling of its own uses the first three; a simple host uses all four.
+ 7. **A built module loads by its URL** with `<script type="module" integrity>`, so the browser checks the file's hash the host gives, and runs nothing that doesn't match; or, when the host's page holds the module's file already checked, as a registry pack's ([packs from a registry](packs-from-a-registry.md), R2), as a `blob:` module made from it. **Source** is compiled once per document, by default in a compile frame that runs no components.
+-8. **A view says when its page has settled** (decided 2026-11-03): every use drawn, a component that draws late saying so with `busy` (spec §7.4), every frame at any depth settled and sized, the page's images, stylesheets and fonts loaded, then an animation frame with nothing moving. Each window settles bottom-up and tells its parent, which counts what it sent, so a report for an older render is dropped ([the protocol's *Settled*](sandbox-protocol.md#settled)); a frame that hangs, never loads, or never says so holds it up for 10 s at most. Tests, printing and scrolling to a link's target wait for it (`view.settled()`, `data-compmd-settled`).
++8. **A view says when its page has settled** (decided 2026-11-03): every use drawn, a component that draws late saying so with `busy` (spec §7.4), the code blocks highlighted (added 2026-11-19), every frame at any depth settled and sized, the page's images, stylesheets and fonts loaded, then an animation frame with nothing moving. Each window settles bottom-up and tells its parent, which counts what it sent, so a report for an older render is dropped ([the protocol's *Settled*](sandbox-protocol.md#settled)); a frame that hangs, never loads, or never says so holds it up for 10 s at most. Tests, printing and scrolling to a link's target wait for it (`view.settled()`, `data-compmd-settled`).
+ 9. **Every threat in the threat model is a browser test,** in Chrome and WebKit. Where a browser can't keep a rule (WebRTC, below), the design says so, and the test records what the browser does.
+ 
+ ## Today
+diff --git a/npm-packages/render/README.md b/npm-packages/render/README.md
+index 6e44355..14bbdbe 100644
+--- a/npm-packages/render/README.md
++++ b/npm-packages/render/README.md
+@@ -87,7 +87,7 @@ for (const [pane, nodes] of [[left, before], [right, after]]) {
+ 
+ **Code blocks and math.** `code: { mermaid: (source, target) => … }` renders fenced code of a language, and `math: (tex, { display }, target) => …` renders math. Without them, code shows as a code block and math as its TeX source, as spec §2.3 says. A code block a document's code renderer renders (spec §7.7; the tree gives it `component` and `alt`) mounts that component from `components` in its box, as a leaf: the block's text is its `code` param, `alt` its `fallback.text`, and the code block its fallback. It takes the place of `code` for its language, since a document's import wins over the host's.
+ 
+-**Highlighting.** A code block that shows as code, `<pre><code class="language-…">`, is one no renderer draws, or a code renderer's fallback, when its component is missing or fails. `highlight: (code, language) => …` highlights it: it gives the block's tokens, line by line, each token its `text` and how it shows (`color: { light, dark }`, `italic`, `bold`, `underline`), at once or as a promise, once what it needs has loaded; or `undefined` for a language it doesn't highlight. The page draws them into the block's lines, which are its own: a highlighter never touches the page. The tokens' texts are the block's text, each line's joined giving the line; tokens that aren't, and those that come after a newer text's, are dropped, and the block shows its text until its tokens come and when the promise is rejected. `language` is the fence's, or `""`. It is called again only when the block's text or language changes. Without it, the text is plain. [`@compmd/sandbox`](https://github.com/comp-markdown/compmd/blob/main/npm-packages/sandbox/README.md#code-blocks) gives one by default, Shiki's (`shikiHighlight()`), which a page rendered with `createPage` can take too.
++**Highlighting.** A code block that shows as code, `<pre><code class="language-…">`, is one no renderer draws, or a code renderer's fallback, when its component is missing or fails. `highlight: (code, language) => …` highlights it: it gives the block's tokens, line by line, each token its `text` and how it shows (`color: { light, dark }`, `italic`, `bold`, `underline`), at once or as a promise, once what it needs has loaded; or `undefined` for a language it doesn't highlight. The page draws them into the block's lines, which are its own: a highlighter never touches the page. The tokens' texts are the block's text, each line's joined giving the line; tokens that aren't, and those that come after a newer text's, are dropped, and the block shows its text until its tokens come and when the promise is rejected. `language` is the fence's, or `""`. It is called again only when the block's text or language changes. The page asks for one block at a time, the next a task after the last block's tokens are drawn, blocks on screen first, so a render of many blocks never highlights them all in one frame; a block whose text changes, or that is gone, before its turn isn't asked for. `page.drawn()` waits for them. Without it, the text is plain. [`@compmd/sandbox`](https://github.com/comp-markdown/compmd/blob/main/npm-packages/sandbox/README.md#code-blocks) gives one by default, Shiki's (`shikiHighlight()`), which a page rendered with `createPage` can take too.
+ 
+ **A code block's lines.** A host finds a code block's lines with `lines()`, and sizes them with `lineHeights(heights)`, by their line in the text: each line `heights` names is at least that tall, in CSS pixels, through later renders, until the next call. For example, a host that shows a diff's two sides in two pages keeps their lines level so: each line as tall as the taller of its two sides. How the renderer draws a block's lines, an element each, and numbers them, is its own, and may change: a host styles and finds lines through these two calls, not through that markup. Copying a block gives its code as it is.
+ 
+@@ -105,7 +105,7 @@ So what a page costs is its own content: its DOM, and the rules of the blocks it
+ 
+ **A component that fails.** `context.fail(message)` is for a component that finds, after `mount` or `update` returned, that it can't draw what it was given: it reports `threw` through `onError` with `message` (W118), and shows the fallback until its next `update`, when the box is emptied and given back. A throw in `update` does the same; a throw in `mount` shows the fallback for good. Each error names its use, `use`, an id unique in the window, and when the use draws again after such a failure, `onRecovered({component, use})` says so, so a host that lists failures takes that one off; a frame posts it as `recovered`.
+ 
+-**A component still drawing.** `context.busy(work)` is for a component that draws after `mount` or `update` returned: `work` is a promise of the drawing (spec §7.4). `page.drawn()` (and `region.drawn()`) resolves once the components of the last render and splice have mounted and every promise they gave `busy` has settled, fulfilled or rejected, or after `BUSY_MS` (10 s) for one that never does; a later render waits for its own. Nothing shows differently meanwhile. A frame's end tells its host the same (`drawn`, *In a frame*), which a sandbox builds its `settled` on.
++**A component still drawing.** `context.busy(work)` is for a component that draws after `mount` or `update` returned: `work` is a promise of the drawing (spec §7.4). `page.drawn()` (and `region.drawn()`) resolves once the components of the last render and splice have mounted, their code blocks are highlighted, and every promise they gave `busy` has settled, fulfilled or rejected, or after `BUSY_MS` (10 s) for one that never does; a later render waits for its own. Nothing shows differently meanwhile. A frame's end tells its host the same (`drawn`, *In a frame*), which a sandbox builds its `settled` on.
+ 
+ **Printing** ([docs/printing.md](https://github.com/comp-markdown/compmd/blob/main/docs/printing.md)). On paper the page is light, a component, a table, a code block or an image is kept whole where it fits, and a heading stays with what follows it; the page's own print styles, at no specificity, so the host's win. `page.print()` sets the page light, waits for its components to redraw (`page.drawn()`), then calls the browser's print, and puts the scheme back. `printsFallback(name)` names the components whose uses print their fallback (a host component's `print: fallback`, spec §7.3): each such use has its fallback beside its box, shown only on paper.
+ 
+diff --git a/npm-packages/render/src/code.test.ts b/npm-packages/render/src/code.test.ts
+index 616e7c7..cef691c 100644
+--- a/npm-packages/render/src/code.test.ts
++++ b/npm-packages/render/src/code.test.ts
+@@ -64,7 +64,7 @@ describe("a code block a code renderer renders", () => {
+     expect(code()).toBe("A --> C");
+   });
+ 
+-  it("has its fallback's code block highlighted when the renderer isn't here", () => {
++  it("has its fallback's code block highlighted when the renderer isn't here", async () => {
+     const highlighted: string[] = [];
+     const page = createPage(area, {
+       highlight: (code, language) => {
+@@ -73,6 +73,7 @@ describe("a code block a code renderer renders", () => {
+       },
+     });
+     page.render({ type: "root", children: [rendered("A --> B")] });
++    await page.drawn();
+     expect(highlighted).toEqual(["mermaid: A --> B"]);
+   });
+ 
+@@ -137,7 +138,7 @@ describe("a rendered block with `render=both`", () => {
+ describe("a code block that shows as code", () => {
+   const block = (value: string, lang: string | null = "js"): ExpandedNode => ({ type: "code", lang, meta: null, value });
+ 
+-  it("is highlighted with the highlighter's tokens, in its lines, and again only when its text or language changes", () => {
++  it("is highlighted with the highlighter's tokens, in its lines, and again only when its text or language changes", async () => {
+     const calls: [string, string][] = [];
+     const page = createPage(area, {
+       highlight: (code, language) => {
+@@ -145,12 +146,16 @@ describe("a code block that shows as code", () => {
+         return [[{ text: code, bold: true }]];
+       },
+     });
+-    page.render({ type: "root", children: [block("let a;")] });
++    const render = async (root: Parameters<typeof page.render>[0]) => {
++      page.render(root);
++      await page.drawn();
++    };
++    await render({ type: "root", children: [block("let a;")] });
+     expect(area.innerHTML).toBe('<pre><code class="language-js"><span class="compmd-line"><span style="font-weight: bold;">let a;</span></span></code></pre>');
+-    page.render({ type: "root", children: [block("let a;")], inputs: { x: { type: "string", value: "" } } });
+-    page.render({ type: "root", children: [block("let b;")] });
+-    page.render({ type: "root", children: [block("let b;", "ts")] });
+-    page.render({ type: "root", children: [block("plain", null)] });
++    await render({ type: "root", children: [block("let a;")], inputs: { x: { type: "string", value: "" } } });
++    await render({ type: "root", children: [block("let b;")] });
++    await render({ type: "root", children: [block("let b;", "ts")] });
++    await render({ type: "root", children: [block("plain", null)] });
+     expect(calls).toEqual([
+       ["let a;", "js"],
+       ["let b;", "js"],
+diff --git a/npm-packages/render/src/highlight-queue.ts b/npm-packages/render/src/highlight-queue.ts
+new file mode 100644
+index 0000000..32f947c
+--- /dev/null
++++ b/npm-packages/render/src/highlight-queue.ts
+@@ -0,0 +1,134 @@
++// The code blocks of a document waiting to be highlighted, one at a time: the highlighter is asked for a block's
++// tokens, which are drawn, and the next block is asked for a task later, so a render of many blocks never tokenizes
++// them all in one frame. Blocks on screen go first, as an `IntersectionObserver` reports them, which reads no layout.
++// A block whose text changed is asked for again with its new text, and one that is gone is dropped.
++import { drawTokens, type CodeHighlighter } from "./highlight.ts";
++
++/** A block waiting: what to ask for, and what to tell once it is drawn or dropped. */
++interface Job {
++  target: HTMLElement;
++  code: string;
++  language: string;
++  highlight: CodeHighlighter;
++  done: () => void;
++}
++
++/** A task later, after the browser has had its turn: a message, which no timer clamps. */
++function nextTask(): Promise<void> {
++  return new Promise((resolve) => {
++    if (typeof MessageChannel !== "function") {
++      setTimeout(resolve, 0);
++      return;
++    }
++    const { port1, port2 } = new MessageChannel();
++    port1.onmessage = () => {
++      port1.close();
++      resolve();
++    };
++    port2.postMessage(null);
++  });
++}
++
++/** One document's queue. */
++class HighlightQueue {
++  static readonly #all = new WeakMap<Document, HighlightQueue>();
++  /** The blocks waiting, by their `<code>`, in the order they were asked for. */
++  readonly #waiting = new Map<HTMLElement, Job>();
++  /** The blocks on screen, as the observer last said. */
++  readonly #shown = new WeakSet<Element>();
++  readonly #observer: IntersectionObserver | undefined;
++  #running = false;
++
++  static of(document: Document): HighlightQueue {
++    let queue = HighlightQueue.#all.get(document);
++    if (!queue) HighlightQueue.#all.set(document, (queue = new HighlightQueue(document)));
++    return queue;
++  }
++
++  private constructor(document: Document) {
++    const Observer = document.defaultView?.IntersectionObserver;
++    this.#observer = Observer
++      ? new Observer((entries) => {
++          for (const { target, isIntersecting } of entries) {
++            if (isIntersecting) this.#shown.add(target);
++            else this.#shown.delete(target);
++          }
++        })
++      : undefined;
++  }
++
++  /** Asks for `job`'s block: in place of what it waited for before, which is told it is done. */
++  add(job: Job): void {
++    const before = this.#waiting.get(job.target);
++    if (before) {
++      this.#waiting.delete(job.target);
++      before.done();
++    } else {
++      this.#observer?.observe(job.target);
++    }
++    this.#waiting.set(job.target, job);
++    if (!this.#running) void this.#run();
++  }
++
++  /** The block is gone: it isn't highlighted. */
++  drop(target: HTMLElement): void {
++    const job = this.#waiting.get(target);
++    if (!job) return;
++    this.#forget(job);
++    job.done();
++  }
++
++  #forget(job: Job): void {
++    this.#waiting.delete(job.target);
++    this.#observer?.unobserve(job.target);
++  }
++
++  /** The next block: the first on screen, else the first asked for. */
++  #next(): Job | undefined {
++    for (const job of this.#waiting.values()) if (this.#shown.has(job.target)) return job;
++    return this.#waiting.values().next().value;
++  }
++
++  async #run(): Promise<void> {
++    this.#running = true;
++    try {
++      for (;;) {
++        // A task first: the render that asked is placed, and the observer has had its say.
++        await nextTask();
++        const job = this.#next();
++        if (!job) break;
++        this.#forget(job);
++        await this.#highlight(job);
++        job.done();
++      }
++    } finally {
++      this.#running = false;
++    }
++  }
++
++  /** Asks for `job`'s tokens and draws them, unless its block has been asked for again meanwhile. */
++  async #highlight({ target, code, language, highlight }: Job): Promise<void> {
++    try {
++      const lines = await highlight(code, language);
++      if (lines && !this.#waiting.has(target)) drawTokens(target, code, lines);
++    } catch {
++      // The block keeps its text.
++    }
++  }
++}
++
++/**
++ * Highlights `target`, a block's `<code>` holding `code` as its lines, with `highlight`, when its turn comes in its
++ * document's queue: its tokens drawn unless the block has changed or gone since. Resolves once they are drawn, or the
++ * block is dropped, asked for again, or keeps its text.
++ */
++export function highlightCode(target: HTMLElement, code: string, language: string, highlight: CodeHighlighter): Promise<void> {
++  return new Promise((done) => {
++    HighlightQueue.of(target.ownerDocument).add({ target, code, language, highlight, done });
++  });
++}
++
++/** `target`'s block is gone: whatever it waited for isn't highlighted. */
++export function dropHighlight(target: HTMLElement): void {
++  HighlightQueue.of(target.ownerDocument).drop(target);
++}
+diff --git a/npm-packages/render/src/highlight.test.ts b/npm-packages/render/src/highlight.test.ts
+index 0bc6b86..cadcf5b 100644
+--- a/npm-packages/render/src/highlight.test.ts
++++ b/npm-packages/render/src/highlight.test.ts
+@@ -1,7 +1,8 @@
+-// A code block's highlighting: a highlighter gives tokens, and the page draws them into the block's own lines.
++// A code block's highlighting: a highlighter gives tokens, and the page draws them into the block's own lines, a
++// block at a time (`highlight-queue.ts`); the page has drawn once they are.
+ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+ import type { CodeHighlighter, CodeLines } from "./highlight.ts";
+-import { createPage } from "./page.ts";
++import { createPage, type Page } from "./page.ts";
+ import type { ExpandedNode, ExpandedRoot } from "./tree.ts";
+ 
+ let area: HTMLElement;
+@@ -21,16 +22,24 @@ const tree = (...children: ExpandedNode[]): ExpandedRoot => ({ type: "root", chi
+ const words: CodeHighlighter = (code) => code.split("\n").map((line) => (line === "" ? [] : line.split(/(?<= )/).map((text, i) => ({ text, ...(i === 0 ? { bold: true } : {}) }))));
+ 
+ /** The block's lines: each one's number, its tokens' texts, and its text. */
+-const lines = () => [...area.querySelectorAll(".compmd-line")].map((line) => [line.getAttribute("data-line"), [...line.querySelectorAll(":scope > span")].map((span) => span.textContent), line.textContent]);
+-/** The block's tokens' texts. */
+-const tokens = () => [...area.querySelectorAll(".compmd-line > span")].map((span) => span.textContent);
+-/** Until promises a highlighter gave have settled. */
+-const settled = () => new Promise((resolve) => setTimeout(resolve, 0));
++const lines = (root: ParentNode = area) => [...root.querySelectorAll(".compmd-line")].map((line) => [line.getAttribute("data-line"), [...line.querySelectorAll(":scope > span")].map((span) => span.textContent), line.textContent]);
++/** The blocks' tokens' texts. */
++const tokens = (root: ParentNode = area) => [...root.querySelectorAll(".compmd-line > span")].map((span) => span.textContent);
++/** A task later. */
++const nextTask = () => new Promise((resolve) => setTimeout(resolve, 0));
++
++/** A page of `children` in `area`, highlighted with `highlight`, once it has drawn. */
++async function drawn(highlight: CodeHighlighter, ...children: ExpandedNode[]): Promise<Page> {
++  const page = createPage(area, { highlight });
++  page.render(tree(...children));
++  await page.drawn();
++  return page;
++}
+ 
+ describe("a highlighter's tokens", () => {
+-  it("are drawn in the block's lines, which keep their numbers and their line breaks, a blank line too", () => {
++  it("are drawn in the block's lines, which keep their numbers and their line breaks, a blank line too", async () => {
+     const text = "const a = 1;\n\nconst b = 2;";
+-    createPage(area, { highlight: words }).render(tree(block(text)));
++    await drawn(words, block(text));
+     expect(lines()).toEqual([
+       ["5", ["const ", "a ", "= ", "1;"], "const a = 1;\n"],
+       ["6", [], "\n"],
+@@ -39,11 +48,11 @@ describe("a highlighter's tokens", () => {
+     expect(area.textContent).toBe(text);
+   });
+ 
+-  it("show in their colour in each scheme, and their font style", () => {
++  it("show in their colour in each scheme, and their font style", async () => {
+     const highlight: CodeHighlighter = () => [[{ text: "a", color: { light: "#111111", dark: "#eeeeee" }, italic: true, underline: true }, { text: "b" }]];
+     // happy-dom doesn't know `light-dark()` and drops it, so what the page sets is read where it sets it.
+     const set = vi.spyOn(CSSStyleDeclaration.prototype, "setProperty");
+-    createPage(area, { highlight }).render(tree(block("ab")));
++    await drawn(highlight, block("ab"));
+     expect(set.mock.calls).toEqual([
+       ["color", "light-dark(#111111, #eeeeee)"],
+       ["font-style", "italic"],
+@@ -55,32 +64,124 @@ describe("a highlighter's tokens", () => {
+     expect(b?.getAttribute("style")).toBeNull();
+   });
+ 
+-  it("are drawn when they come, the block showing its text until then", async () => {
+-    createPage(area, { highlight: (code, language) => Promise.resolve(words(code, language)) }).render(tree(block("let a;")));
+-    expect([tokens(), area.textContent]).toEqual([[], "let a;"]);
+-    await settled();
++  it("are drawn when they come, the block showing its text until then, and the page has drawn once they are", async () => {
++    let give: (lines: CodeLines) => void = () => undefined;
++    const page = createPage(area, { highlight: () => new Promise((resolve) => (give = resolve)) });
++    page.render(tree(block("let a;")));
++    let done = false;
++    void page.drawn().then(() => (done = true));
++    await nextTask();
++    expect([tokens(), area.textContent, done]).toEqual([[], "let a;", false]);
++    give([[{ text: "let " }, { text: "a;" }]]);
++    await page.drawn();
+     expect(tokens()).toEqual(["let ", "a;"]);
+   });
+ 
+-  it("are dropped when they come after a newer text's, whichever comes first", async () => {
++  it("are dropped when they come after the block's text changed", async () => {
+     const given: ((lines: CodeLines) => void)[] = [];
+     const page = createPage(area, { highlight: () => new Promise((resolve) => given.push(resolve)) });
+     page.render(tree(block("let older;")));
++    await nextTask();
+     page.render(tree(block("let newer;")));
+-    given[1]?.([[{ text: "let newer;" }]]);
+     given[0]?.([[{ text: "let older;" }]]);
+-    await settled();
++    await nextTask();
++    await nextTask();
++    given[1]?.([[{ text: "let newer;" }]]);
++    await page.drawn();
+     expect([tokens(), area.textContent]).toEqual([["let newer;"], "let newer;"]);
+   });
+ });
+ 
++describe("a page of many blocks", () => {
++  it("asks for one block's tokens at a time, the next once they are drawn and a task later", async () => {
++    const asked: string[] = [];
++    let give: (lines: CodeLines) => void = () => undefined;
++    const page = createPage(area, {
++      highlight: (code) => {
++        asked.push(code);
++        return new Promise((resolve) => (give = resolve));
++      },
++    });
++    page.render(tree(block("a"), block("b"), block("c")));
++    await nextTask();
++    expect(asked).toEqual(["a"]);
++    give([[{ text: "a" }]]);
++    await nextTask();
++    await nextTask();
++    expect([asked, tokens()]).toEqual([["a", "b"], ["a"]]);
++    give([[{ text: "b" }]]);
++    await nextTask();
++    await nextTask();
++    give([[{ text: "c" }]]);
++    await page.drawn();
++    expect(tokens()).toEqual(["a", "b", "c"]);
++  });
++
++  it("asks for the blocks on screen first", async () => {
++    const observers: { callback: IntersectionObserverCallback; observed: Element[] }[] = [];
++    vi.stubGlobal(
++      "IntersectionObserver",
++      class {
++        readonly #entry: { callback: IntersectionObserverCallback; observed: Element[] };
++        constructor(callback: IntersectionObserverCallback) {
++          this.#entry = { callback, observed: [] };
++          observers.push(this.#entry);
++        }
++        observe(target: Element) {
++          this.#entry.observed.push(target);
++        }
++        unobserve() {
++          return undefined;
++        }
++        disconnect() {
++          return undefined;
++        }
++      },
++    );
++    // A document of its own, so its queue's observer is the one stubbed here.
++    const other = document.implementation.createHTMLDocument();
++    Object.defineProperty(other, "defaultView", { value: window });
++    const root = other.body.appendChild(other.createElement("main"));
++    const asked: string[] = [];
++    const page = createPage(root, {
++      highlight: (code) => {
++        asked.push(code);
++        return [[{ text: code }]];
++      },
++    });
++    page.render(tree(block("a"), block("b"), block("c")));
++    const [observer] = observers;
++    const c = observer?.observed.find((target) => target.textContent === "c");
++    observer?.callback([{ target: c, isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver);
++    await page.drawn();
++    expect(asked).toEqual(["c", "a", "b"]);
++    expect(tokens(root)).toEqual(["a", "b", "c"]);
++    vi.unstubAllGlobals();
++  });
++
++  it("never asks for a block that is gone, and the page has drawn", async () => {
++    const asked: string[] = [];
++    const page = createPage(area, {
++      highlight: (code) => {
++        asked.push(code);
++        return [[{ text: code }]];
++      },
++    });
++    page.render(tree(block("a"), block("b")));
++    page.render(tree(block("a")));
++    await page.drawn();
++    expect(asked).toEqual(["a"]);
++  });
++});
++
+ describe("a block keeps its text", () => {
+   const kept = '<pre><code class="language-js"><span class="compmd-line" data-line="5">let a;</span></code></pre>';
+-  /** What a page of the block `let a;` shows with `highlight`, once what it gave has settled. */
++  /** What a page of the block `let a;` shows with `highlight`, once it has drawn. */
+   async function shown(highlight: CodeHighlighter): Promise<string> {
+     const root = area.appendChild(document.createElement("div"));
+-    createPage(root, { highlight }).render(tree(block("let a;")));
+-    await settled();
++    const page = createPage(root, { highlight });
++    page.render(tree(block("let a;")));
++    await page.drawn();
+     return root.innerHTML;
+   }
+ 
+diff --git a/npm-packages/render/src/highlight.ts b/npm-packages/render/src/highlight.ts
+index a09639c..99b9fd6 100644
+--- a/npm-packages/render/src/highlight.ts
++++ b/npm-packages/render/src/highlight.ts
+@@ -33,39 +33,11 @@ export type CodeLines = readonly (readonly CodeToken[])[];
+  */
+ export type CodeHighlighter = (code: string, language: string) => CodeLines | undefined | Promise<CodeLines | undefined>;
+ 
+-/** What each block asked for last, so tokens that come after a newer text's are dropped. */
+-const latest = new WeakMap<HTMLElement, object>();
+-
+-/**
+- * Highlights `target`, a block's `<code>` holding `code` as its lines, with `highlight`: its tokens drawn at once when
+- * it gives them at once, or when they come, unless the block has changed since.
+- */
+-export function highlightCode(target: HTMLElement, code: string, language: string, highlight: CodeHighlighter): void {
+-  const asked = {};
+-  latest.set(target, asked);
+-  let given: ReturnType<CodeHighlighter>;
+-  try {
+-    given = highlight(code, language);
+-  } catch {
+-    return;
+-  }
+-  if (!(given instanceof Promise)) {
+-    if (given) drawTokens(target, code, given);
+-    return;
+-  }
+-  void given.then(
+-    (lines) => {
+-      if (lines && latest.get(target) === asked) drawTokens(target, code, lines);
+-    },
+-    () => undefined,
+-  );
+-}
+-
+ /**
+  * Puts `lines` in `target` as spans, each line's in its line's element, which keeps its attributes and its line break,
+  * unless they aren't `code`'s text: then the block keeps its text.
+  */
+-function drawTokens(target: HTMLElement, code: string, lines: CodeLines): void {
++export function drawTokens(target: HTMLElement, code: string, lines: CodeLines): void {
+   if (lines.map((line) => line.map(({ text }) => text).join("")).join("\n") !== code) return;
+   const elements = [...target.children].filter((child) => child.classList.contains(CODE_LINE));
+   if (elements.length !== lines.length) return;
+diff --git a/npm-packages/render/src/markdown-views.ts b/npm-packages/render/src/markdown-views.ts
+index 8a791a3..7b67af3 100644
+--- a/npm-packages/render/src/markdown-views.ts
++++ b/npm-packages/render/src/markdown-views.ts
+@@ -1,7 +1,7 @@
+ // The views of Markdown nodes (CommonMark and GFM, with alerts and math; spec §2.3): text, elements, code blocks that
+ // show as code, images whose files the caller gives, and code or math the caller's renderer draws.
+ import { drawCodeLines } from "./code-lines.ts";
+-import { highlightCode } from "./highlight.ts";
++import { dropHighlight, highlightCode } from "./highlight-queue.ts";
+ import type { ImageSource } from "./images.ts";
+ import { safeUrl } from "./html.ts";
+ import { destroyAll, patch, pendingTag, shapeOf, type Pass, type Surface, type View } from "./render.ts";
+@@ -182,8 +182,8 @@ export class ElementView implements View {
+ 
+ /**
+  * A code block that shows as code, `<pre><code class="language-…">`, each line an element of its own (`code-lines.ts`):
+- * one no code renderer draws, or a code renderer's fallback. The caller's highlighter, if any, highlights it, again
+- * only when its text or language changes.
++ * one no code renderer draws, or a code renderer's fallback. The caller's highlighter, if any, highlights it in its
++ * turn (`highlight-queue.ts`), again only when its text or language changes.
+  */
+ export class CodeBlockView implements View {
+   readonly shape: string;
+@@ -212,11 +212,12 @@ export class CodeBlockView implements View {
+     if (language) this.#code.className = `language-${language}`;
+     else this.#code.removeAttribute("class");
+     drawCodeLines(this.#code, code);
+-    if (this.#surface.highlight) highlightCode(this.#code, code, language, this.#surface.highlight);
++    // The page has drawn once its blocks are highlighted, so a test, printing or a scroll to a link sees them so.
++    if (this.#surface.highlight) this.#surface.busy.add(highlightCode(this.#code, code, language, this.#surface.highlight));
+   }
+ 
+   destroy(): void {
+-    return undefined;
++    dropHighlight(this.#code);
+   }
+ }
+ 
+diff --git a/npm-packages/render/src/page.ts b/npm-packages/render/src/page.ts
+index 89b9863..196e9f2 100644
+--- a/npm-packages/render/src/page.ts
++++ b/npm-packages/render/src/page.ts
+@@ -100,7 +100,7 @@ export interface Page {
+   lineHeights(heights: ReadonlyMap<number, number>): void;
+   /**
+    * Resolves once the components of the last render and splice have mounted and every drawing they gave
+-   * `context.busy` has settled, fulfilled or rejected, or after `BUSY_MS` for one that never does; a render after it
++   * `context.busy` has settled, fulfilled or rejected, and its code blocks are highlighted, or after `BUSY_MS` for one that never does; a render after it
+    * makes it wait for that one's too. Nothing shows differently meanwhile.
+    *
+    * @example
+diff --git a/npm-packages/sandbox/README.md b/npm-packages/sandbox/README.md
+index d12dcc1..3beb543 100644
+--- a/npm-packages/sandbox/README.md
++++ b/npm-packages/sandbox/README.md
+@@ -163,7 +163,7 @@ view.destroy();
+ 
+ Offsets are of the text of the last render or splice, and the calls come after the renders and splices sent before them. In frame mode the frame's code may be untrusted: what it sends as a source or a box is checked to be numbers, but a frame's code could still report a click that wasn't, so a host only moves a caret with it. A click inside a use's own frame (a strict or permissive use in host mode, a nested use) isn't seen by the page around it, and gives nothing.
+ 
+-**When the page has settled.** A view's page keeps moving after `render()` returns: each frame takes its height once it has drawn and reported it, its own frames later still, and components that draw late (a diagram, data through `host`) later again. Tests, printing and scrolling to a link's target wait for it to stop:
++**When the page has settled.** A view's page keeps moving after `render()` returns: each frame takes its height once it has drawn and reported it, its own frames later still, components that draw late (a diagram, data through `host`) later again, and code blocks once they are highlighted, a block at a time. Tests, printing and scrolling to a link's target wait for it to stop:
+ 
+ ```ts
+ view.render(processed.expanded);
+diff --git a/npm-packages/sandbox/test/view.test.ts b/npm-packages/sandbox/test/view.test.ts
+index 48a79c7..7515422 100644
+--- a/npm-packages/sandbox/test/view.test.ts
++++ b/npm-packages/sandbox/test/view.test.ts
+@@ -492,6 +492,15 @@ describe("code blocks", () => {
+       expect(mermaid?.tokens).toBeGreaterThan(1);
+     });
+ 
++    it(`has settled once its code blocks are highlighted, in the ${scheme} theme (host mode)`, async () => {
++      const { area, view } = open("host", []);
++      area.style.colorScheme = scheme;
++      view.render({ type: "root", children: blocks });
++      await view.settled();
++      const tokens = [...area.querySelectorAll("pre code")].map((code) => code.querySelectorAll(".compmd-line > span").length);
++      expect(tokens.every((count) => count > 1)).toBe(true);
++    });
++
+     it(`highlights the code blocks of every view of the page, which share one highlighter, in the ${scheme} theme (host mode)`, async () => {
+       const opened = [open("host", []), open("host", [])];
+       for (const { area, view } of opened) {
+diff --git a/spikes/highlight-perf/README.md b/spikes/highlight-perf/README.md
+index 7511c3f..83bbc7b 100644
+--- a/spikes/highlight-perf/README.md
++++ b/spikes/highlight-perf/README.md
+@@ -103,6 +103,20 @@ The same as the spike's *today* and *shared*: one highlighter takes WebKit's ski
+ - **It is short of the spike's *shared + oniguruma*** (83 ms on opening, 10 ms over the skim): the sandbox's highlighter has two Shikis (Markdown's and the other languages'), each made with the first block, and loads its grammars as blocks need them; and this run was noisier. Slicing (CMD-259) is for what is left.
+ - **The JavaScript engine's tokens in WebKit** were wrong for one block in the browser test (`test/highlight-policy.test.ts`): its light theme's colours disagreed with its dark theme's, and its tokens with Oniguruma's and with Chromium's. Oniguruma's were right. Not looked into here: CMD-261.
+ 
++### A block at a time, those on screen first (CMD-259)
++
++The same two variants, with the renderer asking for one block's tokens at a time since CMD-259: the next a task after the last is drawn, blocks on screen first. Three runs each, medians and ranges; `results-sandbox-queued.json` has every run.
++
++| | Opening: blocked / longest | Skim: blocked | Revisit: blocked | Wait on opening |
++|---|---|---|---|---|
++| WebKit, JavaScript engine | 1698 ms (1621–2437) / 1748 ms | 901 ms (787–1357) | 0 | 1809 ms |
++| WebKit, Oniguruma | 84 ms (77–110) / 134 ms | 8 ms (0–13) | 0 | 158 ms |
++| Chromium, JavaScript engine | 33 ms | 83 ms | 0 | 111 ms |
++| Chromium, Oniguruma | 50 ms | 0 | 0 | 155 ms |
++
++- **With Oniguruma, WebKit now meets the host's targets** (no frame over 200 ms on opening, well under a second over the skim): 84 ms blocked on opening, its longest frame 134 ms, 8 ms over the skim, against 253 ms and 151 ms before. That is the spike's best (*shared + oniguruma*: 83 ms and 10 ms).
++- **With the JavaScript engine it is no better, and its opening looks worse** (1.7 s against 1.2 s before, in runs that varied a lot): a block at a time can't split one block's first compile of its regexes, and the blocks' compiles no longer share a frame. A page that refuses WebAssembly keeps that cost; the frames do until CMD-260.
++
+ ### A large host document: 100 pages opened and closed (CMD-253)
+ 
+ The page above has a small host document, so it missed what each open costs a large one. `?churn=1` adds 20,000 host elements (rows a host's own rules style), then opens 100 pages, one an animation frame, eight live at a time, destroying the oldest, without highlighting: `churn` with a code block each, `churn-styled` with the code in a box with a `width` of its own. It counts what makes the browser style the whole document again: the times the document's sheets are set (`adoptedStyleSheets`), the styles read (`getComputedStyle`) and the sheets written (`replaceSync`). **An open** is from `createPage` to the next animation frame, so 16 ms is one frame. Three runs each, medians; `results-churn-before.json` and `results-churn-after.json` have every run.
+diff --git a/spikes/highlight-perf/results-sandbox-queued.json b/spikes/highlight-perf/results-sandbox-queued.json
+new file mode 100644
+index 0000000..260b45a
+--- /dev/null
++++ b/spikes/highlight-perf/results-sandbox-queued.json
+@@ -0,0 +1,830 @@
++[
++  {
++    "browser": "webkit",
++    "variant": "sandbox-shared",
++    "repeat": 0,
++    "config": {
++      "shiki": "per-view",
++      "engine": "js",
++      "where": "main",
++      "schedule": "eager",
++      "cache": false
++    },
++    "runs": 440,
++    "openedAtMs": 79,
++    "open": {
++      "blockedMs": 2437,
++      "longestMs": 2469,
++      "longFrames": 3,
++      "runs": 6,
++      "medianWaitMs": 2592,
++      "p95WaitMs": 2593,
++      "loadToHighlightedMs": 2823
++    },
++    "skim": {
++      "blockedMs": 787,
++      "longestMs": 675,
++      "longFrames": 4,
++      "runs": 434,
++      "medianWaitMs": 14,
++      "p95WaitMs": 34,
++      "toAllHighlightedMs": 11052
++    },
++    "revisit": {
++      "blockedMs": 0,
++      "longestMs": 43,
++      "longFrames": 0,
++      "runs": 434,
++      "medianWaitMs": 16,
++      "p95WaitMs": 27
++    },
++    "costs": {
++      "afterOpen": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "afterSkim": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "total": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      }
++    }
++  },
++  {
++    "browser": "webkit",
++    "variant": "sandbox-shared",
++    "repeat": 1,
++    "config": {
++      "shiki": "per-view",
++      "engine": "js",
++      "where": "main",
++      "schedule": "eager",
++      "cache": false
++    },
++    "runs": 440,
++    "openedAtMs": 41,
++    "open": {
++      "blockedMs": 1698,
++      "longestMs": 1748,
++      "longFrames": 1,
++      "runs": 6,
++      "medianWaitMs": 1809,
++      "p95WaitMs": 1809,
++      "loadToHighlightedMs": 1860
++    },
++    "skim": {
++      "blockedMs": 1357,
++      "longestMs": 1182,
++      "longFrames": 6,
++      "runs": 434,
++      "medianWaitMs": 19,
++      "p95WaitMs": 44,
++      "toAllHighlightedMs": 11613
++    },
++    "revisit": {
++      "blockedMs": 0,
++      "longestMs": 36,
++      "longFrames": 0,
++      "runs": 434,
++      "medianWaitMs": 14,
++      "p95WaitMs": 23
++    },
++    "costs": {
++      "afterOpen": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "afterSkim": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "total": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      }
++    }
++  },
++  {
++    "browser": "webkit",
++    "variant": "sandbox-shared",
++    "repeat": 2,
++    "config": {
++      "shiki": "per-view",
++      "engine": "js",
++      "where": "main",
++      "schedule": "eager",
++      "cache": false
++    },
++    "runs": 440,
++    "openedAtMs": 20,
++    "open": {
++      "blockedMs": 1621,
++      "longestMs": 1671,
++      "longFrames": 1,
++      "runs": 6,
++      "medianWaitMs": 1712,
++      "p95WaitMs": 1712,
++      "loadToHighlightedMs": 1760
++    },
++    "skim": {
++      "blockedMs": 901,
++      "longestMs": 699,
++      "longFrames": 5,
++      "runs": 434,
++      "medianWaitMs": 15,
++      "p95WaitMs": 45,
++      "toAllHighlightedMs": 11166
++    },
++    "revisit": {
++      "blockedMs": 0,
++      "longestMs": 33,
++      "longFrames": 0,
++      "runs": 434,
++      "medianWaitMs": 14,
++      "p95WaitMs": 22
++    },
++    "costs": {
++      "afterOpen": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "afterSkim": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "total": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      }
++    }
++  },
++  {
++    "browser": "webkit",
++    "variant": "sandbox-shared-wasm",
++    "repeat": 0,
++    "config": {
++      "shiki": "per-view",
++      "engine": "js",
++      "where": "main",
++      "schedule": "eager",
++      "cache": false
++    },
++    "runs": 440,
++    "openedAtMs": 25,
++    "open": {
++      "blockedMs": 84,
++      "longestMs": 134,
++      "longFrames": 1,
++      "runs": 6,
++      "medianWaitMs": 158,
++      "p95WaitMs": 158,
++      "loadToHighlightedMs": 199
++    },
++    "skim": {
++      "blockedMs": 13,
++      "longestMs": 63,
++      "longFrames": 1,
++      "runs": 434,
++      "medianWaitMs": 17,
++      "p95WaitMs": 28,
++      "toAllHighlightedMs": 10388
++    },
++    "revisit": {
++      "blockedMs": 0,
++      "longestMs": 35,
++      "longFrames": 0,
++      "runs": 434,
++      "medianWaitMs": 15,
++      "p95WaitMs": 22
++    },
++    "costs": {
++      "afterOpen": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "afterSkim": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "total": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      }
++    }
++  },
++  {
++    "browser": "webkit",
++    "variant": "sandbox-shared-wasm",
++    "repeat": 1,
++    "config": {
++      "shiki": "per-view",
++      "engine": "js",
++      "where": "main",
++      "schedule": "eager",
++      "cache": false
++    },
++    "runs": 440,
++    "openedAtMs": 23,
++    "open": {
++      "blockedMs": 77,
++      "longestMs": 127,
++      "longFrames": 1,
++      "runs": 6,
++      "medianWaitMs": 152,
++      "p95WaitMs": 152,
++      "loadToHighlightedMs": 193
++    },
++    "skim": {
++      "blockedMs": 0,
++      "longestMs": 42,
++      "longFrames": 0,
++      "runs": 434,
++      "medianWaitMs": 14,
++      "p95WaitMs": 24,
++      "toAllHighlightedMs": 10381
++    },
++    "revisit": {
++      "blockedMs": 0,
++      "longestMs": 49,
++      "longFrames": 0,
++      "runs": 434,
++      "medianWaitMs": 14,
++      "p95WaitMs": 22
++    },
++    "costs": {
++      "afterOpen": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "afterSkim": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "total": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      }
++    }
++  },
++  {
++    "browser": "webkit",
++    "variant": "sandbox-shared-wasm",
++    "repeat": 2,
++    "config": {
++      "shiki": "per-view",
++      "engine": "js",
++      "where": "main",
++      "schedule": "eager",
++      "cache": false
++    },
++    "runs": 440,
++    "openedAtMs": 27,
++    "open": {
++      "blockedMs": 110,
++      "longestMs": 160,
++      "longFrames": 1,
++      "runs": 6,
++      "medianWaitMs": 188,
++      "p95WaitMs": 189,
++      "loadToHighlightedMs": 232
++    },
++    "skim": {
++      "blockedMs": 8,
++      "longestMs": 58,
++      "longFrames": 1,
++      "runs": 434,
++      "medianWaitMs": 15,
++      "p95WaitMs": 29,
++      "toAllHighlightedMs": 10382
++    },
++    "revisit": {
++      "blockedMs": 0,
++      "longestMs": 49,
++      "longFrames": 0,
++      "runs": 434,
++      "medianWaitMs": 17,
++      "p95WaitMs": 29
++    },
++    "costs": {
++      "afterOpen": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "afterSkim": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "total": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      }
++    }
++  },
++  {
++    "browser": "chromium",
++    "variant": "sandbox-shared",
++    "repeat": 0,
++    "config": {
++      "shiki": "per-view",
++      "engine": "js",
++      "where": "main",
++      "schedule": "eager",
++      "cache": false
++    },
++    "runs": 440,
++    "openedAtMs": 23,
++    "open": {
++      "blockedMs": 33,
++      "longestMs": 83,
++      "longFrames": 1,
++      "runs": 6,
++      "medianWaitMs": 111,
++      "p95WaitMs": 111,
++      "loadToHighlightedMs": 133
++    },
++    "skim": {
++      "blockedMs": 100,
++      "longestMs": 150,
++      "longFrames": 1,
++      "runs": 434,
++      "medianWaitMs": 10,
++      "p95WaitMs": 45,
++      "toAllHighlightedMs": 9792
++    },
++    "revisit": {
++      "blockedMs": 0,
++      "longestMs": 17,
++      "longFrames": 0,
++      "runs": 434,
++      "medianWaitMs": 8,
++      "p95WaitMs": 28
++    },
++    "costs": {
++      "afterOpen": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "afterSkim": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "total": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      }
++    }
++  },
++  {
++    "browser": "chromium",
++    "variant": "sandbox-shared",
++    "repeat": 1,
++    "config": {
++      "shiki": "per-view",
++      "engine": "js",
++      "where": "main",
++      "schedule": "eager",
++      "cache": false
++    },
++    "runs": 440,
++    "openedAtMs": 21,
++    "open": {
++      "blockedMs": 67,
++      "longestMs": 117,
++      "longFrames": 1,
++      "runs": 6,
++      "medianWaitMs": 155,
++      "p95WaitMs": 155,
++      "loadToHighlightedMs": 181
++    },
++    "skim": {
++      "blockedMs": 83,
++      "longestMs": 133,
++      "longFrames": 1,
++      "runs": 434,
++      "medianWaitMs": 8,
++      "p95WaitMs": 33,
++      "toAllHighlightedMs": 9778
++    },
++    "revisit": {
++      "blockedMs": 0,
++      "longestMs": 33,
++      "longFrames": 0,
++      "runs": 434,
++      "medianWaitMs": 8,
++      "p95WaitMs": 27
++    },
++    "costs": {
++      "afterOpen": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "afterSkim": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "total": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      }
++    }
++  },
++  {
++    "browser": "chromium",
++    "variant": "sandbox-shared",
++    "repeat": 2,
++    "config": {
++      "shiki": "per-view",
++      "engine": "js",
++      "where": "main",
++      "schedule": "eager",
++      "cache": false
++    },
++    "runs": 440,
++    "openedAtMs": 16,
++    "open": {
++      "blockedMs": 33,
++      "longestMs": 83,
++      "longFrames": 1,
++      "runs": 6,
++      "medianWaitMs": 109,
++      "p95WaitMs": 109,
++      "loadToHighlightedMs": 132
++    },
++    "skim": {
++      "blockedMs": 67,
++      "longestMs": 117,
++      "longFrames": 1,
++      "runs": 434,
++      "medianWaitMs": 10,
++      "p95WaitMs": 46,
++      "toAllHighlightedMs": 9757
++    },
++    "revisit": {
++      "blockedMs": 0,
++      "longestMs": 17,
++      "longFrames": 0,
++      "runs": 434,
++      "medianWaitMs": 8,
++      "p95WaitMs": 24
++    },
++    "costs": {
++      "afterOpen": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "afterSkim": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "total": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      }
++    }
++  },
++  {
++    "browser": "chromium",
++    "variant": "sandbox-shared-wasm",
++    "repeat": 0,
++    "config": {
++      "shiki": "per-view",
++      "engine": "js",
++      "where": "main",
++      "schedule": "eager",
++      "cache": false
++    },
++    "runs": 440,
++    "openedAtMs": 20,
++    "open": {
++      "blockedMs": 100,
++      "longestMs": 150,
++      "longFrames": 1,
++      "runs": 6,
++      "medianWaitMs": 205,
++      "p95WaitMs": 205,
++      "loadToHighlightedMs": 230
++    },
++    "skim": {
++      "blockedMs": 0,
++      "longestMs": 17,
++      "longFrames": 0,
++      "runs": 434,
++      "medianWaitMs": 10,
++      "p95WaitMs": 27,
++      "toAllHighlightedMs": 9715
++    },
++    "revisit": {
++      "blockedMs": 0,
++      "longestMs": 17,
++      "longFrames": 0,
++      "runs": 434,
++      "medianWaitMs": 11,
++      "p95WaitMs": 27
++    },
++    "costs": {
++      "afterOpen": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "afterSkim": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "total": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      }
++    }
++  },
++  {
++    "browser": "chromium",
++    "variant": "sandbox-shared-wasm",
++    "repeat": 1,
++    "config": {
++      "shiki": "per-view",
++      "engine": "js",
++      "where": "main",
++      "schedule": "eager",
++      "cache": false
++    },
++    "runs": 440,
++    "openedAtMs": 18,
++    "open": {
++      "blockedMs": 50,
++      "longestMs": 100,
++      "longFrames": 1,
++      "runs": 6,
++      "medianWaitMs": 151,
++      "p95WaitMs": 151,
++      "loadToHighlightedMs": 175
++    },
++    "skim": {
++      "blockedMs": 0,
++      "longestMs": 17,
++      "longFrames": 0,
++      "runs": 434,
++      "medianWaitMs": 12,
++      "p95WaitMs": 28,
++      "toAllHighlightedMs": 9715
++    },
++    "revisit": {
++      "blockedMs": 0,
++      "longestMs": 17,
++      "longFrames": 0,
++      "runs": 434,
++      "medianWaitMs": 10,
++      "p95WaitMs": 21
++    },
++    "costs": {
++      "afterOpen": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "afterSkim": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "total": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      }
++    }
++  },
++  {
++    "browser": "chromium",
++    "variant": "sandbox-shared-wasm",
++    "repeat": 2,
++    "config": {
++      "shiki": "per-view",
++      "engine": "js",
++      "where": "main",
++      "schedule": "eager",
++      "cache": false
++    },
++    "runs": 440,
++    "openedAtMs": 17,
++    "open": {
++      "blockedMs": 50,
++      "longestMs": 100,
++      "longFrames": 1,
++      "runs": 6,
++      "medianWaitMs": 155,
++      "p95WaitMs": 155,
++      "loadToHighlightedMs": 180
++    },
++    "skim": {
++      "blockedMs": 0,
++      "longestMs": 17,
++      "longFrames": 0,
++      "runs": 434,
++      "medianWaitMs": 10,
++      "p95WaitMs": 26,
++      "toAllHighlightedMs": 9717
++    },
++    "revisit": {
++      "blockedMs": 0,
++      "longestMs": 17,
++      "longFrames": 0,
++      "runs": 434,
++      "medianWaitMs": 10,
++      "p95WaitMs": 22
++    },
++    "costs": {
++      "afterOpen": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "afterSkim": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "total": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      }
++    }
++  }
++]

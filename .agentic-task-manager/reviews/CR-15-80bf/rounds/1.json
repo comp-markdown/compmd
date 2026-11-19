@@ -1,0 +1,72 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "67f3577bf9a9fa6c43d86efc2005968c8f6ce118",
+    "head": "3cc0eff4df666de83f9d14f531db18b6cabfb28f"
+  },
+  "files": [
+    {
+      "path": "docs/running-components-in-the-sandbox.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/code.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/highlight-queue.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/highlight.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/highlight.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/markdown-views.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/page.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/view.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spikes/highlight-perf/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spikes/highlight-perf/results-sandbox-queued.json",
+      "status": "added",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-19T09:03:57Z"
+}
