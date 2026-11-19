@@ -2,12 +2,12 @@
 id = "01a1f2fb-b4ee-71b9-a099-c82d641a3ef7"
 number = 14
 title = "Oniguruma in host mode, where the page allows WebAssembly"
-status = "open"
+status = "approved"
 tasks = ["~CMD-257"]
 author = "claude:79612601"
 reviewers = []
 created = 2026-11-19T08:45:44Z
-updated = 2026-11-19T08:51:40Z
+updated = 2026-11-19T08:52:07Z
 +++
 
 A host-mode page highlights code with Oniguruma, as WebAssembly, where its policy lets it compile WebAssembly, and with the JavaScript engine where it doesn't. The frames are unchanged (CMD-260).
