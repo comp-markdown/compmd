@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 265,
+    "next_number": 266,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -9496,6 +9496,30 @@
       ],
       "completed_at": "2026-11-19T10:43:33Z",
       "completed_by": "claude:79612601"
+    },
+    {
+      "id": "01a1f462-547f-7712-8b0f-32c71df2e11e",
+      "name": "Highlighting: wrong colours when Shiki's per-line time limit runs out",
+      "type": "bugfix",
+      "priority": "P1",
+      "labels": [
+        "highlighting"
+      ],
+      "description": "Shiki stops tokenizing a line after `tokenizeTimeLimit` (500 ms by default, `@shikijs/types` 4.5.0) and carries the scope it was in into the lines after, so a block can be drawn in the wrong colours for good. With two themes, Shiki tokenizes the light one first, while the engine is still cold, so the light colours are the ones that go wrong.\n\n## Seen\n`cargo make linux` before 0.8.0, in a loaded container:\n- `npm-packages/sandbox/src/highlight/highlight.test.ts`, \"gives Oniguruma's tokens as the JavaScript engine's\": Oniguruma's light colours are wrong after `url` on the first line, and on;\n- `npm-packages/sandbox/test/highlight-policy.test.ts` (Chromium): `// done` has a keyword's light colour.\n\nThe dark colours were right in both. Not proven to be the time limit: confirm first, by running the tests with a small limit.\n\n## Change\nThe limit on the two `codeToTokensWithThemes` calls in `npm-packages/sandbox/src/highlight/highlight.ts`: off (`0`) or raised, as decided with the maintainer. Check whether CMD-261 (the JavaScript engine's wrong tokens in WebKit) has the same cause.\n\n## Tests\nA test that a slow first line keeps its colours, and the tests above passing in `cargo make linux`.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "npm-packages/sandbox/src/highlight/highlight.ts",
+        "npm-packages/sandbox/src/highlight/highlight.test.ts"
+      ],
+      "created_at": "2026-11-19T15:17:27Z",
+      "updated_at": "2026-11-19T15:17:27Z",
+      "created_by": "claude:79612601",
+      "updated_by": "claude:79612601",
+      "number": 265,
+      "key_final": false
     }
   ]
 }
