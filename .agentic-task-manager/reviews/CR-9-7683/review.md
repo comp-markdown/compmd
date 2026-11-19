@@ -2,12 +2,12 @@
 id = "01a1f2c3-198f-762d-86ae-9bc7e2bf7683"
 number = 9
 title = "Highlighters give tokens, and the renderer draws them"
-status = "open"
+status = "approved"
 tasks = ["~CMD-251"]
 author = "claude:79612601"
 reviewers = []
 created = 2026-11-19T07:43:54Z
-updated = 2026-11-19T07:43:54Z
+updated = 2026-11-19T08:12:09Z
 +++
 
 A highlighter gives tokens, and the renderer draws them into its own lines, so how a code block is drawn (its line elements, `data-line`) stays the renderer's own.

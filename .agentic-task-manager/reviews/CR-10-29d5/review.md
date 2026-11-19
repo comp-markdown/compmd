@@ -2,12 +2,12 @@
 id = "01a1f2cd-29ca-7647-ad57-f6513e9729d5"
 number = 10
 title = "One highlighter for a page’s views"
-status = "open"
+status = "approved"
 tasks = ["~CMD-256"]
 author = "claude:79612601"
 reviewers = []
 created = 2026-11-19T07:54:54Z
-updated = 2026-11-19T07:54:54Z
+updated = 2026-11-19T08:13:09Z
 +++
 
 In host mode every view of a page shares one highlighter, so Shiki is made once and each grammar loads once.
