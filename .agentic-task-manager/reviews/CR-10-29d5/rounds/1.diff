@@ -1,0 +1,1107 @@
+diff --git a/npm-packages/sandbox/README.md b/npm-packages/sandbox/README.md
+index b43c97c..24d32f5 100644
+--- a/npm-packages/sandbox/README.md
++++ b/npm-packages/sandbox/README.md
+@@ -188,7 +188,7 @@ Every code block that shows as code is highlighted, wherever a page renders (the
+ - **CompMD's syntax** shows in `md`, `markdown` and `compmd` blocks: component lines, inline components, param lists and `{{paths}}`, by a grammar injected into Markdown's, with a document's frontmatter, or a `compmd` definition's signature, as YAML. The website's spec page uses the same grammar, `@compmd/sandbox/grammar`.
+ - **The languages, by the fence names that mean them:** C (`c`), C++ (`cpp`, `c++`), C# (`csharp`, `c#`, `cs`), Java, Kotlin (`kotlin`, `kt`, `kts`), Scala, Swift, Objective-C (`objective-c`, `objc`), Go, Rust (`rust`, `rs`), Zig, Dart; Python (`python`, `py`), Ruby (`ruby`, `rb`), PHP, Perl, Lua, R, Julia (`julia`, `jl`), PowerShell (`powershell`, `ps`, `ps1`, `pwsh`), shell (`shellscript`, `bash`, `sh`, `shell`, `zsh`), Batch (`bat`, `batch`, `cmd`); Haskell (`haskell`, `hs`), Elixir, Erlang (`erlang`, `erl`), Clojure (`clojure`, `clj`), F# (`fsharp`, `f#`, `fs`), OCaml; JavaScript (`javascript`, `js`, `cjs`, `mjs`), TypeScript (`typescript`, `ts`, `cts`, `mts`), JSX, TSX, HTML, CSS, SCSS, Less, Svelte, Vue, Astro, GraphQL (`graphql`, `gql`); JSON, JSONC, JSON5, YAML (`yaml`, `yml`), TOML, INI (`ini`, `properties`), XML, CSV, SQL, Protocol Buffers (`proto`, `protobuf`); Dockerfile (`docker`, `dockerfile`), Makefile (`make`, `makefile`), CMake, HCL, Nix, Nginx; Diff, Markdown (`markdown`, `md`), CompMD (`compmd`), LaTeX, Mermaid (`mermaid`, `mmd`), MATLAB, Groovy, Solidity. A name is any case; any other language stays plain.
+ 
+-**One copy, the frames'.** Shiki and Temml are built once, with the frame runtime (`dist/frames/`): the frames load them, and so does a host-mode page, from `highlight.js` and `math.js` where the host serves the frame documents (`base`), which share their chunks with the runtime. So the host's own bundle has neither, and a page and its frames load the same files, which the browser caches once. A host that renders a page itself with `createPage` and gives it `shikiHighlight()` or `temmlMath()` bundles its own. A host's page with a content security policy allows scripts from where the frames are served. A library the sandbox comes to load next is added the same way: [libraries in the sandbox](https://github.com/comp-markdown/compmd/blob/main/docs/libraries-in-the-sandbox.md) has the steps.
++**One copy, the frames'.** Shiki and Temml are built once, with the frame runtime (`dist/frames/`): the frames load them, and so does a host-mode page, from `highlight.js` and `math.js` where the host serves the frame documents (`base`), which share their chunks with the runtime. So the host's own bundle has neither, and a page and its frames load the same files, which the browser caches once. In host mode every view of the page shares one highlighter, so Shiki is made once and each grammar loads once, however many views the page opens: one each made the page pay for each grammar again in every view, which in WebKit blocked for seconds over a list of short code blocks ([the spike](https://github.com/comp-markdown/compmd/blob/main/spikes/highlight-perf/README.md)). A host that renders a page itself with `createPage` and gives it `shikiHighlight()` or `temmlMath()` bundles its own; one that renders many pages makes one `shikiHighlight()` and gives it to them all. A host's page with a content security policy allows scripts from where the frames are served. A library the sandbox comes to load next is added the same way: [libraries in the sandbox](https://github.com/comp-markdown/compmd/blob/main/docs/libraries-in-the-sandbox.md) has the steps.
+ 
+ **What it costs.** Measured on the frame documents' build (`dist/frames/chunks/`, gzipped at level 9), of what a host serves: Shiki's core is 34.6 KB, its JavaScript engine 19.6 KB, the two themes 4.9 KB, and the 63 grammars 406 KB, about 465 KB in all. A page loads the core, the engine, the themes and the grammars of its blocks: about 75 KB for one with a JavaScript block. Most grammars are 1 to 15 KB; the largest are C++ (52.9 KB), PHP (27.9 KB), Objective-C (22.7 KB), JSX, TSX, JavaScript and TypeScript (about 16 KB each, each with what it embeds).
+ 
+diff --git a/npm-packages/sandbox/src/from-frames.test.ts b/npm-packages/sandbox/src/from-frames.test.ts
+new file mode 100644
+index 0000000..8525c16
+--- /dev/null
++++ b/npm-packages/sandbox/src/from-frames.test.ts
+@@ -0,0 +1,31 @@
++// @vitest-environment happy-dom
++import type { CodeHighlighter } from "@compmd/render";
++import { describe, expect, it, vi } from "vitest";
++import { framesHighlight } from "./from-frames.ts";
++
++/** A highlighter that gives each line as one token. */
++const lines: CodeHighlighter = (code) => code.split("\n").map((text) => [{ text }]);
++
++describe("framesHighlight", () => {
++  it("makes one highlighter for every view of the page that loads it from one place", async () => {
++    const load = vi.fn(() => Promise.resolve(lines));
++    const [one, two] = [framesHighlight("https://app.example/compmd/one/", load), framesHighlight("https://app.example/compmd/one/", load)];
++    expect(await Promise.all([one("a", "js"), two("b", "js"), one("c", "ts")])).toEqual([[[{ text: "a" }]], [[{ text: "b" }]], [[{ text: "c" }]]]);
++    expect(load.mock.calls).toEqual([["https://app.example/compmd/one/highlight.js"]]);
++  });
++
++  it("makes one for each place it is loaded from", async () => {
++    const load = vi.fn(() => Promise.resolve(lines));
++    await framesHighlight("https://app.example/compmd/two/", load)("a", "js");
++    await framesHighlight("https://app.example/compmd/three/", load)("a", "js");
++    expect(load).toHaveBeenCalledTimes(2);
++  });
++
++  it("loads again for the next block after a load that failed", async () => {
++    const load = vi.fn<(url: string) => Promise<CodeHighlighter>>().mockRejectedValueOnce(new Error("offline")).mockResolvedValue(lines);
++    const highlight = framesHighlight("https://app.example/compmd/four/", load);
++    await expect(highlight("a", "js")).rejects.toThrow("offline");
++    expect(await framesHighlight("https://app.example/compmd/four/", load)("a", "js")).toEqual([[{ text: "a" }]]);
++    expect(load).toHaveBeenCalledTimes(2);
++  });
++});
+diff --git a/npm-packages/sandbox/src/from-frames.ts b/npm-packages/sandbox/src/from-frames.ts
+index 5edb066..7f2edfe 100644
+--- a/npm-packages/sandbox/src/from-frames.ts
++++ b/npm-packages/sandbox/src/from-frames.ts
+@@ -8,15 +8,32 @@ import { frameUrl } from "./host/runtime.ts";
+ /** A module of the frames' files, imported by its URL: the app's bundler leaves it alone. */
+ const imported = <T>(url: string): Promise<T> => import(/* @vite-ignore */ url) as Promise<T>;
+ 
++/** Makes the highlighter of the frames' `highlight.js` at `url`. */
++export type LoadHighlighter = (url: string) => Promise<CodeHighlighter>;
++
++const loadFramesHighlighter: LoadHighlighter = (url) => imported<{ shikiHighlight: () => CodeHighlighter }>(url).then((module) => module.shikiHighlight());
++
++/**
++ * The page's highlighters, by the URL of the `highlight.js` they come from: one for every view of the page, so Shiki
++ * is made once, and a grammar loads once for all of them, where a Shiki a view made each paid for it again.
++ */
++const shared = new Map<string, Promise<CodeHighlighter>>();
++
+ /**
+- * The frames' highlighter (`shikiHighlight`), loaded from `base` the first time a page has a code block. Until then
+- * a block shows its text, as it does when its language isn't highlighted, or when the file can't be had.
++ * The frames' highlighter (`shikiHighlight`), loaded from `base` the first time a page has a code block, and shared by
++ * every view of the page that loads it from there. Until then a block shows its text, as it does when its language
++ * isn't highlighted, or when the file can't be had; a view after a failed load tries again.
+  */
+-export function framesHighlight(base: string): CodeHighlighter {
+-  let loaded: Promise<CodeHighlighter> | undefined;
++export function framesHighlight(base: string, load: LoadHighlighter = loadFramesHighlighter): CodeHighlighter {
++  const url = frameUrl(base, "highlight.js");
+   return async (code, language) => {
+-    loaded ??= imported<{ shikiHighlight: () => CodeHighlighter }>(frameUrl(base, "highlight.js")).then((module) => module.shikiHighlight());
+-    return (await loaded)(code, language);
++    let highlighter = shared.get(url);
++    if (!highlighter) {
++      highlighter = load(url);
++      shared.set(url, highlighter);
++      highlighter.catch(() => shared.delete(url));
++    }
++    return (await highlighter)(code, language);
+   };
+ }
+ 
+diff --git a/npm-packages/sandbox/src/highlight/highlight.ts b/npm-packages/sandbox/src/highlight/highlight.ts
+index 9186323..85c08cd 100644
+--- a/npm-packages/sandbox/src/highlight/highlight.ts
++++ b/npm-packages/sandbox/src/highlight/highlight.ts
+@@ -32,7 +32,14 @@ async function loadShikis(): Promise<Shikis> {
+   return { markdown: md, others };
+ }
+ 
+-/** The highlighter both page modes use: Shiki, loaded the first time a page has a code block. */
++/**
++ * The highlighter both page modes use: Shiki, loaded the first time a page has a code block. Each call makes a Shiki
++ * of its own, which loads each grammar again: a host that renders many pages makes one and gives it to them all.
++ *
++ * @example
++ * const highlight = shikiHighlight();
++ * for (const run of runs) createPage(run.element, { highlight }).render(run.tree);
++ */
+ export function shikiHighlight(): CodeHighlighter {
+   return highlightWith(loadShikis);
+ }
+diff --git a/npm-packages/sandbox/test/view.test.ts b/npm-packages/sandbox/test/view.test.ts
+index 237e7c0..48a79c7 100644
+--- a/npm-packages/sandbox/test/view.test.ts
++++ b/npm-packages/sandbox/test/view.test.ts
+@@ -491,6 +491,19 @@ describe("code blocks", () => {
+       expect(js).toMatchObject({ language: "language-js", text: "const a = 1;", color: keyword[scheme] });
+       expect(mermaid?.tokens).toBeGreaterThan(1);
+     });
++
++    it(`highlights the code blocks of every view of the page, which share one highlighter, in the ${scheme} theme (host mode)`, async () => {
++      const opened = [open("host", []), open("host", [])];
++      for (const { area, view } of opened) {
++        area.style.colorScheme = scheme;
++        view.render({ type: "root", children: blocks });
++      }
++      for (const { area } of opened) {
++        const [js, mermaid] = await shown(area);
++        expect(js).toMatchObject({ language: "language-js", text: "const a = 1;", color: keyword[scheme] });
++        expect(mermaid?.tokens).toBeGreaterThan(1);
++      }
++    });
+   }
+ });
+ 
+diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
+index 6f60bc9..fe8f093 100644
+--- a/pnpm-lock.yaml
++++ b/pnpm-lock.yaml
+@@ -934,6 +934,9 @@ importers:
+       '@compmd/render':
+         specifier: workspace:*
+         version: link:../../npm-packages/render
++      '@compmd/sandbox':
++        specifier: workspace:*
++        version: link:../../npm-packages/sandbox
+       '@shikijs/core':
+         specifier: 4.5.0
+         version: 4.5.0
+diff --git a/spikes/highlight-perf/README.md b/spikes/highlight-perf/README.md
+index 426fe87..4140fe8 100644
+--- a/spikes/highlight-perf/README.md
++++ b/spikes/highlight-perf/README.md
+@@ -75,6 +75,19 @@ node spikes/highlight-perf/measure.ts 3 today shared     # some variants, three
+ | no highlighting | 43 459 / 1679 ms | 17 300 / 900 ms |
+ | shared | 304 346 / 11 708 ms | 24 166 / 1300 ms |
+ 
++### The sandbox's own highlighter, per view and shared (CMD-256)
++
++`?sandbox=per-view` and `?sandbox=shared` give each page `@compmd/sandbox`'s `shikiHighlight()` as its `highlight`, drawn by the renderer (CMD-251): a highlighter for each page, as a host-mode view made one before CMD-256, or one for all, as `framesHighlight` shares it since. Three runs each, medians; `results-sandbox.json` has every run. Its tokenizing isn't counted here, so the table has no such column.
++
++| | Opening: blocked / longest | Skim: blocked / longest | Revisit: blocked | Wait on opening |
++|---|---|---|---|---|
++| WebKit, per view | 1147 / 1077 ms | 4174 / 735 ms | 3529 ms | 1285 ms |
++| WebKit, shared | 1142 / 1192 ms | 772 / 679 ms | 0 | 1227 ms |
++| Chromium, per view | 50 / 83 ms | 284 / 133 ms | 150 ms | 169 ms |
++| Chromium, shared | 33 / 83 ms | 67 / 117 ms | 0 | 106 ms |
++
++The same as the spike's *today* and *shared*: one highlighter takes WebKit's skim from 4.2 s to 0.8 s blocked and its revisit to 0; the opening's long first frame is the JavaScript engine's compile, which CMD-257 is for.
++
+ ### A large host document: 100 pages opened and closed (CMD-253)
+ 
+ The page above has a small host document, so it missed what each open costs a large one. `?churn=1` adds 20,000 host elements (rows a host's own rules style), then opens 100 pages, one an animation frame, eight live at a time, destroying the oldest, without highlighting: `churn` with a code block each, `churn-styled` with the code in a box with a `width` of its own. It counts what makes the browser style the whole document again: the times the document's sheets are set (`adoptedStyleSheets`), the styles read (`getComputedStyle`) and the sheets written (`replaceSync`). **An open** is from `createPage` to the next animation frame, so 16 ms is one frame. Three runs each, medians; `results-churn-before.json` and `results-churn-after.json` have every run.
+@@ -95,6 +108,7 @@ The page above has a small host document, so it missed what each open costs a la
+ 
+ ```sh
+ pnpm --dir spikes/highlight-perf measure 3 churn churn-styled --out=results-churn.json
++pnpm --dir spikes/highlight-perf measure 3 sandbox-per-view sandbox-shared --out=results-sandbox.json   # after building @compmd/sandbox
+ ```
+ 
+ ## What the numbers say
+diff --git a/spikes/highlight-perf/measure.ts b/spikes/highlight-perf/measure.ts
+index 19b5387..f9c4a6d 100644
+--- a/spikes/highlight-perf/measure.ts
++++ b/spikes/highlight-perf/measure.ts
+@@ -34,6 +34,9 @@ const VARIANTS: Record<string, string> = {
+   "shared+sliced+precompiled+cache": "shiki=shared&engine=precompiled&where=main&schedule=sliced&cache=1",
+   "shared+sliced+oniguruma+cache": "shiki=shared&engine=oniguruma&where=main&schedule=sliced&cache=1",
+   "worker+sliced+precompiled+cache": "shiki=shared&engine=precompiled&where=worker&schedule=sliced&cache=1",
++  // The sandbox's own highlighter, a Shiki for each page as before CMD-256, and one for all as since.
++  "sandbox-per-view": "sandbox=per-view",
++  "sandbox-shared": "sandbox=shared",
+   // A large host document, and 100 pages opened and closed in it, without highlighting (CMD-253): code only, then
+   // each in a box with rules of its own.
+   churn: "highlight=off&churn=1",
+diff --git a/spikes/highlight-perf/package.json b/spikes/highlight-perf/package.json
+index 51b0c12..c161bf9 100644
+--- a/spikes/highlight-perf/package.json
++++ b/spikes/highlight-perf/package.json
+@@ -8,6 +8,7 @@
+   },
+   "dependencies": {
+     "@compmd/render": "workspace:*",
++    "@compmd/sandbox": "workspace:*",
+     "@shikijs/core": "4.5.0",
+     "@shikijs/engine-javascript": "4.5.0",
+     "@shikijs/engine-oniguruma": "4.5.0",
+diff --git a/spikes/highlight-perf/results-sandbox.json b/spikes/highlight-perf/results-sandbox.json
+new file mode 100644
+index 0000000..d464da4
+--- /dev/null
++++ b/spikes/highlight-perf/results-sandbox.json
+@@ -0,0 +1,830 @@
++[
++  {
++    "browser": "webkit",
++    "variant": "sandbox-per-view",
++    "repeat": 0,
++    "config": {
++      "shiki": "per-view",
++      "engine": "js",
++      "where": "main",
++      "schedule": "eager",
++      "cache": false
++    },
++    "runs": 440,
++    "openedAtMs": 31,
++    "open": {
++      "blockedMs": 1170,
++      "longestMs": 1077,
++      "longFrames": 2,
++      "runs": 6,
++      "medianWaitMs": 1286,
++      "p95WaitMs": 1325,
++      "loadToHighlightedMs": 1422
++    },
++    "skim": {
++      "blockedMs": 4580,
++      "longestMs": 728,
++      "longFrames": 95,
++      "runs": 434,
++      "medianWaitMs": 79,
++      "p95WaitMs": 207,
++      "toAllHighlightedMs": 12094
++    },
++    "revisit": {
++      "blockedMs": 3548,
++      "longestMs": 249,
++      "longFrames": 95,
++      "runs": 434,
++      "medianWaitMs": 71,
++      "p95WaitMs": 180
++    },
++    "costs": {
++      "afterOpen": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "afterSkim": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "total": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      }
++    }
++  },
++  {
++    "browser": "webkit",
++    "variant": "sandbox-per-view",
++    "repeat": 1,
++    "config": {
++      "shiki": "per-view",
++      "engine": "js",
++      "where": "main",
++      "schedule": "eager",
++      "cache": false
++    },
++    "runs": 440,
++    "openedAtMs": 24,
++    "open": {
++      "blockedMs": 1147,
++      "longestMs": 1078,
++      "longFrames": 2,
++      "runs": 6,
++      "medianWaitMs": 1285,
++      "p95WaitMs": 1309,
++      "loadToHighlightedMs": 1348
++    },
++    "skim": {
++      "blockedMs": 3902,
++      "longestMs": 736,
++      "longFrames": 94,
++      "runs": 434,
++      "medianWaitMs": 77,
++      "p95WaitMs": 160,
++      "toAllHighlightedMs": 11540
++    },
++    "revisit": {
++      "blockedMs": 3529,
++      "longestMs": 227,
++      "longFrames": 95,
++      "runs": 434,
++      "medianWaitMs": 72,
++      "p95WaitMs": 172
++    },
++    "costs": {
++      "afterOpen": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "afterSkim": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "total": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      }
++    }
++  },
++  {
++    "browser": "webkit",
++    "variant": "sandbox-per-view",
++    "repeat": 2,
++    "config": {
++      "shiki": "per-view",
++      "engine": "js",
++      "where": "main",
++      "schedule": "eager",
++      "cache": false
++    },
++    "runs": 440,
++    "openedAtMs": 16,
++    "open": {
++      "blockedMs": 1147,
++      "longestMs": 1052,
++      "longFrames": 2,
++      "runs": 6,
++      "medianWaitMs": 1284,
++      "p95WaitMs": 1301,
++      "loadToHighlightedMs": 1330
++    },
++    "skim": {
++      "blockedMs": 4174,
++      "longestMs": 735,
++      "longFrames": 96,
++      "runs": 434,
++      "medianWaitMs": 78,
++      "p95WaitMs": 173,
++      "toAllHighlightedMs": 11656
++    },
++    "revisit": {
++      "blockedMs": 3355,
++      "longestMs": 279,
++      "longFrames": 96,
++      "runs": 434,
++      "medianWaitMs": 74,
++      "p95WaitMs": 155
++    },
++    "costs": {
++      "afterOpen": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "afterSkim": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "total": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      }
++    }
++  },
++  {
++    "browser": "webkit",
++    "variant": "sandbox-shared",
++    "repeat": 0,
++    "config": {
++      "shiki": "per-view",
++      "engine": "js",
++      "where": "main",
++      "schedule": "eager",
++      "cache": false
++    },
++    "runs": 440,
++    "openedAtMs": 28,
++    "open": {
++      "blockedMs": 1142,
++      "longestMs": 1192,
++      "longFrames": 1,
++      "runs": 6,
++      "medianWaitMs": 1227,
++      "p95WaitMs": 1227,
++      "loadToHighlightedMs": 1268
++    },
++    "skim": {
++      "blockedMs": 770,
++      "longestMs": 677,
++      "longFrames": 3,
++      "runs": 434,
++      "medianWaitMs": 14,
++      "p95WaitMs": 29,
++      "toAllHighlightedMs": 11041
++    },
++    "revisit": {
++      "blockedMs": 0,
++      "longestMs": 32,
++      "longFrames": 0,
++      "runs": 434,
++      "medianWaitMs": 13,
++      "p95WaitMs": 21
++    },
++    "costs": {
++      "afterOpen": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "afterSkim": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "total": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      }
++    }
++  },
++  {
++    "browser": "webkit",
++    "variant": "sandbox-shared",
++    "repeat": 1,
++    "config": {
++      "shiki": "per-view",
++      "engine": "js",
++      "where": "main",
++      "schedule": "eager",
++      "cache": false
++    },
++    "runs": 440,
++    "openedAtMs": 24,
++    "open": {
++      "blockedMs": 1140,
++      "longestMs": 1190,
++      "longFrames": 1,
++      "runs": 6,
++      "medianWaitMs": 1224,
++      "p95WaitMs": 1224,
++      "loadToHighlightedMs": 1265
++    },
++    "skim": {
++      "blockedMs": 775,
++      "longestMs": 681,
++      "longFrames": 3,
++      "runs": 434,
++      "medianWaitMs": 14,
++      "p95WaitMs": 30,
++      "toAllHighlightedMs": 11050
++    },
++    "revisit": {
++      "blockedMs": 0,
++      "longestMs": 35,
++      "longFrames": 0,
++      "runs": 434,
++      "medianWaitMs": 15,
++      "p95WaitMs": 22
++    },
++    "costs": {
++      "afterOpen": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "afterSkim": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "total": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      }
++    }
++  },
++  {
++    "browser": "webkit",
++    "variant": "sandbox-shared",
++    "repeat": 2,
++    "config": {
++      "shiki": "per-view",
++      "engine": "js",
++      "where": "main",
++      "schedule": "eager",
++      "cache": false
++    },
++    "runs": 440,
++    "openedAtMs": 19,
++    "open": {
++      "blockedMs": 1173,
++      "longestMs": 1223,
++      "longFrames": 1,
++      "runs": 6,
++      "medianWaitMs": 1259,
++      "p95WaitMs": 1259,
++      "loadToHighlightedMs": 1304
++    },
++    "skim": {
++      "blockedMs": 772,
++      "longestMs": 679,
++      "longFrames": 3,
++      "runs": 434,
++      "medianWaitMs": 15,
++      "p95WaitMs": 31,
++      "toAllHighlightedMs": 11047
++    },
++    "revisit": {
++      "blockedMs": 0,
++      "longestMs": 33,
++      "longFrames": 0,
++      "runs": 434,
++      "medianWaitMs": 12,
++      "p95WaitMs": 20
++    },
++    "costs": {
++      "afterOpen": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "afterSkim": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "total": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      }
++    }
++  },
++  {
++    "browser": "chromium",
++    "variant": "sandbox-per-view",
++    "repeat": 0,
++    "config": {
++      "shiki": "per-view",
++      "engine": "js",
++      "where": "main",
++      "schedule": "eager",
++      "cache": false
++    },
++    "runs": 440,
++    "openedAtMs": 18,
++    "open": {
++      "blockedMs": 50,
++      "longestMs": 83,
++      "longFrames": 2,
++      "runs": 6,
++      "medianWaitMs": 170,
++      "p95WaitMs": 170,
++      "loadToHighlightedMs": 222
++    },
++    "skim": {
++      "blockedMs": 284,
++      "longestMs": 133,
++      "longFrames": 18,
++      "runs": 434,
++      "medianWaitMs": 63,
++      "p95WaitMs": 91,
++      "toAllHighlightedMs": 9853
++    },
++    "revisit": {
++      "blockedMs": 167,
++      "longestMs": 83,
++      "longFrames": 9,
++      "runs": 434,
++      "medianWaitMs": 62,
++      "p95WaitMs": 86
++    },
++    "costs": {
++      "afterOpen": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "afterSkim": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "total": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      }
++    }
++  },
++  {
++    "browser": "chromium",
++    "variant": "sandbox-per-view",
++    "repeat": 1,
++    "config": {
++      "shiki": "per-view",
++      "engine": "js",
++      "where": "main",
++      "schedule": "eager",
++      "cache": false
++    },
++    "runs": 440,
++    "openedAtMs": 29,
++    "open": {
++      "blockedMs": 33,
++      "longestMs": 83,
++      "longFrames": 1,
++      "runs": 6,
++      "medianWaitMs": 169,
++      "p95WaitMs": 170,
++      "loadToHighlightedMs": 218
++    },
++    "skim": {
++      "blockedMs": 317,
++      "longestMs": 133,
++      "longFrames": 16,
++      "runs": 434,
++      "medianWaitMs": 63,
++      "p95WaitMs": 94,
++      "toAllHighlightedMs": 9858
++    },
++    "revisit": {
++      "blockedMs": 150,
++      "longestMs": 83,
++      "longFrames": 10,
++      "runs": 434,
++      "medianWaitMs": 62,
++      "p95WaitMs": 90
++    },
++    "costs": {
++      "afterOpen": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "afterSkim": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "total": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      }
++    }
++  },
++  {
++    "browser": "chromium",
++    "variant": "sandbox-per-view",
++    "repeat": 2,
++    "config": {
++      "shiki": "per-view",
++      "engine": "js",
++      "where": "main",
++      "schedule": "eager",
++      "cache": false
++    },
++    "runs": 440,
++    "openedAtMs": 17,
++    "open": {
++      "blockedMs": 50,
++      "longestMs": 100,
++      "longFrames": 1,
++      "runs": 6,
++      "medianWaitMs": 166,
++      "p95WaitMs": 167,
++      "loadToHighlightedMs": 215
++    },
++    "skim": {
++      "blockedMs": 251,
++      "longestMs": 133,
++      "longFrames": 17,
++      "runs": 434,
++      "medianWaitMs": 63,
++      "p95WaitMs": 90,
++      "toAllHighlightedMs": 9831
++    },
++    "revisit": {
++      "blockedMs": 84,
++      "longestMs": 83,
++      "longFrames": 8,
++      "runs": 434,
++      "medianWaitMs": 62,
++      "p95WaitMs": 80
++    },
++    "costs": {
++      "afterOpen": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "afterSkim": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "total": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      }
++    }
++  },
++  {
++    "browser": "chromium",
++    "variant": "sandbox-shared",
++    "repeat": 0,
++    "config": {
++      "shiki": "per-view",
++      "engine": "js",
++      "where": "main",
++      "schedule": "eager",
++      "cache": false
++    },
++    "runs": 440,
++    "openedAtMs": 18,
++    "open": {
++      "blockedMs": 33,
++      "longestMs": 83,
++      "longFrames": 1,
++      "runs": 6,
++      "medianWaitMs": 104,
++      "p95WaitMs": 104,
++      "loadToHighlightedMs": 131
++    },
++    "skim": {
++      "blockedMs": 83,
++      "longestMs": 133,
++      "longFrames": 1,
++      "runs": 434,
++      "medianWaitMs": 8,
++      "p95WaitMs": 32,
++      "toAllHighlightedMs": 9768
++    },
++    "revisit": {
++      "blockedMs": 0,
++      "longestMs": 17,
++      "longFrames": 0,
++      "runs": 434,
++      "medianWaitMs": 8,
++      "p95WaitMs": 26
++    },
++    "costs": {
++      "afterOpen": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "afterSkim": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "total": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      }
++    }
++  },
++  {
++    "browser": "chromium",
++    "variant": "sandbox-shared",
++    "repeat": 1,
++    "config": {
++      "shiki": "per-view",
++      "engine": "js",
++      "where": "main",
++      "schedule": "eager",
++      "cache": false
++    },
++    "runs": 440,
++    "openedAtMs": 16,
++    "open": {
++      "blockedMs": 33,
++      "longestMs": 83,
++      "longFrames": 1,
++      "runs": 6,
++      "medianWaitMs": 107,
++      "p95WaitMs": 107,
++      "loadToHighlightedMs": 132
++    },
++    "skim": {
++      "blockedMs": 67,
++      "longestMs": 117,
++      "longFrames": 1,
++      "runs": 434,
++      "medianWaitMs": 8,
++      "p95WaitMs": 33,
++      "toAllHighlightedMs": 9745
++    },
++    "revisit": {
++      "blockedMs": 0,
++      "longestMs": 33,
++      "longFrames": 0,
++      "runs": 434,
++      "medianWaitMs": 8,
++      "p95WaitMs": 30
++    },
++    "costs": {
++      "afterOpen": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "afterSkim": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "total": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      }
++    }
++  },
++  {
++    "browser": "chromium",
++    "variant": "sandbox-shared",
++    "repeat": 2,
++    "config": {
++      "shiki": "per-view",
++      "engine": "js",
++      "where": "main",
++      "schedule": "eager",
++      "cache": false
++    },
++    "runs": 440,
++    "openedAtMs": 16,
++    "open": {
++      "blockedMs": 33,
++      "longestMs": 83,
++      "longFrames": 1,
++      "runs": 6,
++      "medianWaitMs": 106,
++      "p95WaitMs": 106,
++      "loadToHighlightedMs": 132
++    },
++    "skim": {
++      "blockedMs": 67,
++      "longestMs": 117,
++      "longFrames": 1,
++      "runs": 434,
++      "medianWaitMs": 8,
++      "p95WaitMs": 34,
++      "toAllHighlightedMs": 9764
++    },
++    "revisit": {
++      "blockedMs": 0,
++      "longestMs": 17,
++      "longFrames": 0,
++      "runs": 434,
++      "medianWaitMs": 8,
++      "p95WaitMs": 30
++    },
++    "costs": {
++      "afterOpen": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "afterSkim": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "total": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      }
++    }
++  }
++]
+diff --git a/spikes/highlight-perf/src/main.ts b/spikes/highlight-perf/src/main.ts
+index 6f3a394..effd3cc 100644
+--- a/spikes/highlight-perf/src/main.ts
++++ b/spikes/highlight-perf/src/main.ts
+@@ -3,7 +3,8 @@
+ // records every animation frame, so the runner can read how long frames blocked in each phase: opening, a skim to the
+ // end, and a revisit, every run mounted again, as a reader jumping back.
+ 
+-import { createPage, type Page } from "@compmd/render";
++import { createPage, type CodeHighlighter, type Page } from "@compmd/render";
++import { shikiHighlight } from "@compmd/sandbox";
+ import { highlighters, stats, type Config } from "./highlighters.ts";
+ import { runsOf } from "./runs.ts";
+ 
+@@ -43,10 +44,32 @@ const slots: Run[] = runs.map((code) => {
+ });
+ const bySlot = new Map(slots.map((run) => [run.slot, run]));
+ 
+-const made = highlighters(config, (target) => {
+-  const run = bySlot.get(target.closest<HTMLElement>(".run") ?? target);
++const highlighted = (target: Element) => {
++  const run = bySlot.get(target.closest<HTMLElement>(".run") ?? (target as HTMLElement));
+   if (run && run.highlighted === undefined) run.highlighted = performance.now();
+-});
++};
++const made = highlighters(config, highlighted);
++
++/**
++ * `?sandbox=per-view` or `?sandbox=shared`: the sandbox's own highlighter, as the page's `highlight` (CMD-256), one
++ * for each page, as a view made before, or one for all, as `framesHighlight` gives them now. A run is highlighted
++ * when its tokens are drawn, which the renderer does once the highlighter's promise has settled.
++ */
++const sandbox = query.get("sandbox");
++const sandboxHighlight = (() => {
++  if (sandbox !== "per-view" && sandbox !== "shared") return undefined;
++  const one = shikiHighlight();
++  return (slot: HTMLElement): CodeHighlighter => {
++    const highlight = sandbox === "shared" ? one : shikiHighlight();
++    return async (code, language) => {
++      const lines = await highlight(code, language);
++      setTimeout(() => {
++        highlighted(slot);
++      }, 0);
++      return lines;
++    };
++  };
++})();
+ 
+ /** A run's page, rendered: one code block, with its origin, as a document of one fenced block. */
+ function mount(index: number): void {
+@@ -55,9 +78,10 @@ function mount(index: number): void {
+   if (!run || code === undefined || run.page) return;
+   run.mounted = performance.now();
+   delete run.highlighted;
+-  run.page = createPage(run.slot);
++  run.page = createPage(run.slot, sandboxHighlight ? { highlight: sandboxHighlight(run.slot) } : {});
+   const lines = code.split("\n").length;
+   run.page.render({ type: "root", children: [{ type: "code", lang: "ts", meta: null, value: code, origin: { start: { line: 1, column: 1 }, end: { line: lines + 2, column: 4 }, occurrence: 0 } }] });
++  if (sandboxHighlight) return;
+   // The variant's highlighter draws the block itself, as the page's `highlight` did when the spike was run.
+   const target = run.slot.querySelector<HTMLElement>("pre > code");
+   if (query.get("highlight") === "off" || !target) run.highlighted = performance.now();
