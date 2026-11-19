@@ -1,0 +1,237 @@
+diff --git a/Makefile.toml b/Makefile.toml
+index 0f12c1e..cae898d 100644
+--- a/Makefile.toml
++++ b/Makefile.toml
+@@ -35,7 +35,7 @@ command = "cargo"
+ args = ["doc", "--workspace", "--all-features", "--no-deps"]
+ 
+ [tasks.links]
+-description = "Check the links in what npmjs.com, crates.io and docs.rs show of the published packages (`lychee-inputs.txt`), offline: a link to this repository's files on GitHub, or to the spec on compmd.dev, is checked against the file here, with its anchor. Needs lychee; CI's `links` job checks every link with the network, on each push to `main` (docs/ci.md, decision 14)"
++description = "Check the links in what npmjs.com, crates.io and docs.rs show of the published packages, and in the website's and the playground's sources (`lychee-inputs.txt`), offline: a link to this repository's files on GitHub, or to the spec on compmd.dev, is checked against the file here, with its anchor. Needs lychee; CI's `links` job checks every link with the network, on each push to `main` (docs/ci.md, decision 14)"
+ clear = true
+ command = "lychee"
+ args = [
+diff --git a/docs/ci.md b/docs/ci.md
+index c2ae53d..840b49b 100644
+--- a/docs/ci.md
++++ b/docs/ci.md
+@@ -24,7 +24,7 @@ Every check of this repository runs only on a contributor's machine: `cargo make
+     - **Caches**: the Rust build, cargo's registry, pnpm's store and Playwright's browsers in named volumes (`compmd-linux-*`), so a second run reuses them.
+ 
+ 13. **The Tauri check is a workflow of its own** (`tauri.yml`, added 2026-11-09; [the Tauri plugin](tauri-plugin.md), decisions 9 and 10): `cargo make tauri-check` on `ubuntu-24.04`, with WebKitGTK and GTK from apt and the app under `xvfb-run`. It builds `tauri-plugin-compmd` with its frames and the example app (`crates/tauri/examples/tauri-app/`), and runs the app with `--check` and `--check-broken` in a real webview, which serves the sandbox's frames from a scheme of the app's own: WebKit's `'self'` and its cache there are what no browser test shows. It runs on a push or a pull request that changes what it covers (the sandbox, the renderer, the processor, the Mermaid pack, the plugin or the example), by hand, and before every release, which calls it (`workflow_call`) and waits for it. It isn't part of `cargo make ci`, whose minutes every change would pay for Tauri's build. Its Cargo projects are cached on their own (`Swatinem/rust-cache`, two workspaces). macOS's WKWebView is checked by hand before a release, with the same command: a macOS runner costs about ten times the minutes.
+-14. **The links of the published packages are checked, with lychee** (added 2026-11-16). npmjs.com, crates.io and docs.rs show a package's README and API docs away from the repository, where a link relative to it breaks: the published READMEs, the Rust doc comments and the TypeScript doc comments that ship in the `.d.ts` link to the repository's files on GitHub (`https://github.com/comp-markdown/compmd/blob/main/<path>`, `/tree/main/` for a folder) and to the spec and the guides on https://compmd.dev/, never relatively. The docs that aren't published (`docs/`, the guides, the root README) keep their relative links, read on GitHub and the site. What is checked is listed in `lychee-inputs.txt`, how in `lychee.toml`: the anchors too; the 429 of a site that limits a checker's rate accepted; the sources' placeholder hosts and local servers left out, and the tests; npmjs.com left out, since it answers a checker 403 on every page.
++14. **The links of the published packages are checked, with lychee** (added 2026-11-16). npmjs.com, crates.io and docs.rs show a package's README and API docs away from the repository, where a link relative to it breaks: the published READMEs, the Rust doc comments and the TypeScript doc comments that ship in the `.d.ts` link to the repository's files on GitHub (`https://github.com/comp-markdown/compmd/blob/main/<path>`, `/tree/main/` for a folder) and to the spec and the guides on https://compmd.dev/, never relatively. The docs that aren't published (`docs/`, the guides, the root README) keep their relative links, read on GitHub and the site. What is checked is listed in `lychee-inputs.txt`, how in `lychee.toml`: the anchors too; the 429 of a site that limits a checker's rate accepted; the sources' placeholder hosts and local servers left out, and the tests; npmjs.com left out, since it answers a checker 403 on every page. **The website's and the playground's sources too** (added 2026-11-19), their `.svelte` files read as text: a link to the repository's files in them is written out in full, not built from a constant, so it is checked as the published docs' are; their links to the site's own pages stay relative, and the site's analytics are left out, which a check would count as a visit.
+     - **Locally, offline:** `cargo make links` checks a link to this repository's files on GitHub, or to the spec on compmd.dev, against the file here, with its anchor (lychee's `--remap`; the registry companion's `#registry-…` ids against `compmd-registry-v1.md`), so a renamed file or section shows before a push. It needs lychee (0.24.2); it isn't part of `ci`, which needs no tool beyond decision 4's.
+     - **In CI, with the network:** a job of its own in `ci.yml`, `links`, on pushes to `main` only, not on pull requests: a site that is down for a moment would fail a pull request that changed nothing of it. It runs lychee 0.24.2 with `lycheeverse/lychee-action`, pinned by its commit (decision 5), on the same inputs and configuration, and fails the run on a broken link. A link to a file a commit adds is checked once that commit is on `main`, as the job runs after the push. It is one of the two checks CI has that `cargo make ci` doesn't (decision 1), since it needs the network; the other is the spec's revision (decision 15), which a contributor's work in progress may not pass yet.
+     - **Intra-doc links:** the crates deny a broken one (`[workspace.lints.rustdoc]`, the plugin's `[lints.rustdoc]`); `cargo make docs`, part of `ci`, builds the docs with every feature, as docs.rs does (`compmd-host`'s `[package.metadata.docs.rs]`), and `tauri-plugin` the plugin's.
+diff --git a/guides/developers/05-live-editing.md b/guides/developers/05-live-editing.md
+index 28cfce6..9e5d3a1 100644
+--- a/guides/developers/05-live-editing.md
++++ b/guides/developers/05-live-editing.md
+@@ -236,6 +236,22 @@ The page knows which text made each thing it shows, from the origins (`origins:
+   });
+   ```
+ 
++- **`view.lineHeights(heights)`** makes the lines of code blocks at least as tall as `heights` says, a map from a line of the text to CSS pixels, through later renders and splices, until the next call; an empty map gives each line its own height back. A diff shown in two views uses it to keep its two sides level: `lines()` of each, then each line as tall as the taller of its two.
++
++  ```ts
++  const heightsOf = async (view: View) => {
++    const heights = new Map<number, number>();
++    for await (const { line, rects } of view.lines()) heights.set(line, rects.reduce((sum, rect) => sum + rect.height, 0));
++    return heights;
++  };
++  const [left, right] = await Promise.all([heightsOf(before), heightsOf(after)]);
++  const tallest = new Map([...left].map(([line, height]) => [line, Math.max(height, right.get(line) ?? 0)]));
++  before.lineHeights(tallest);
++  after.lineHeights(tallest);
++  ```
++
++  Lines that aren't a code block's are left as they are. How a block's lines are drawn is the renderer's own, so size them through this call, not through their markup.
++
+ Offsets count code points, as the processor's do, and a text area's count UTF-16 units: an emoji is one code point and two units. `codePointOffset(text, utf16)` and `utf16Offset(text, codePoint)`, from `@compmd/render`, convert one to the other in the text the page shows (`shown` here).
+ 
+ What a click gives follows the origins: a word in `*em*` gives the emphasis, text a `value` made the node holding it, anything a `compmd` component's body drew the line that uses the component, and a host-language component's own drawing the component. An offset gives the innermost thing that came from there, all of them for an `each`, whose items share their template's text. [`@compmd/render`'s README](../../npm-packages/render/README.md#where-the-page-came-from) has the whole table, and `page.sourceOf(node)` and `page.elementsAt(offset)`, the same for a page you render yourself; [where each line is](../../npm-packages/render/README.md#where-each-line-is) has the rules for lines, and `page.lines()` with `onLayout`.
+diff --git a/guides/developers/07-rendering-and-styling.md b/guides/developers/07-rendering-and-styling.md
+index 1ce22ae..f583cbe 100644
+--- a/guides/developers/07-rendering-and-styling.md
++++ b/guides/developers/07-rendering-and-styling.md
+@@ -163,6 +163,9 @@ An app that switches its own theme, with a class or a style as the example does,
+ 
+ A code block shows as code when no renderer draws it: a language nothing renders, or a code renderer's block whose component is missing or fails, which shows its code block as its fallback. The sandbox highlights it, in both page modes, with Shiki in GitHub's light and dark themes, in about 60 popular languages, CompMD's own syntax in `md` and `compmd` blocks among them; any other language stays plain ([the sandbox's README](../../npm-packages/sandbox/README.md#code-blocks) lists them). Each language loads the first time a block of it shows, so a page without code blocks loads nothing of it. The colours follow the page's light or dark as frames do, with nothing more to call.
+ 
++- **A block at a time.** The page asks for one block's tokens, draws them, and asks for the next a task later, those on screen first, so a page of many blocks never highlights them all in one frame. Each block shows its text until its tokens come. `view.settled()` waits for them.
++- **Two engines.** Shiki runs its grammars with Oniguruma, as WebAssembly, where the page compiles it, and with its JavaScript engine in Chromium and where it doesn't. In Safari the JavaScript engine blocks the page for about a second on a first TypeScript block, where Oniguruma takes 60 ms; in Chromium the two are as fast. The frames compile it; in host mode your page does, when its content security policy has `'wasm-unsafe-eval'` in `script-src`, which `cspFor` gives ([chapter 11](11-the-sandbox-closer.md#serving-compmd)). Without it, the JavaScript engine highlights the same blocks.
++
+ To style it, a stylesheet styles `pre` and `code` as it would any page's: the tokens are spans in the `<code>`, each with its colour.
+ 
+ ## Links and the `link` event
+@@ -197,7 +200,7 @@ page.render(opened.expanded);                            // or page.splice(splic
+ 
+ It runs only the components you give it in `components`; every other component the document names shows its fallback, and `onError` hears of it as `missing`. Without a sandbox, though, the page is in your page: its links are your page's, and its images load from wherever they point. So use it alone for documents you trust as your own code, and the sandbox for any other.
+ 
+-Its options, beside `components`, `onSet`, `onError` and `tokens`: `code` renders the code blocks of a language (`{ mermaid: (source, target) => … }`), `math` renders TeX (`(tex, { display }, target) => …`), `highlight` highlights the code blocks that show as code (`(code, language) => …`, which gives each line's tokens for the page to draw, or the sandbox's `shikiHighlight()`), `wikiLink` says where a wiki link points, `ownSchemes` names your app's own URL schemes (`["app"]`, so `[Books](app:item/7)` is a link and `![Cover](app:file/3)` an image, which loads as `images` gives it; spec §15), `printsFallback(name)` says which components print their fallback (their signature's `print: fallback`), and `host` is what components get as `context.host`. The page has `theme(tokens)` and `scheme()` as a view has, `print()`, which prints it light once its components have redrawn, and `destroy()`.
++Its options, beside `components`, `onSet`, `onError` and `tokens`: `code` renders the code blocks of a language (`{ mermaid: (source, target) => … }`), `math` renders TeX (`(tex, { display }, target) => …`), `highlight` highlights the code blocks that show as code (`(code, language) => …`, which gives each line's tokens for the page to draw, or the sandbox's `shikiHighlight({ webAssembly: true })`, with Oniguruma where the page compiles it; make one and give it to every page you render, so its grammars load once), `wikiLink` says where a wiki link points, `ownSchemes` names your app's own URL schemes (`["app"]`, so `[Books](app:item/7)` is a link and `![Cover](app:file/3)` an image, which loads as `images` gives it; spec §15), `printsFallback(name)` says which components print their fallback (their signature's `print: fallback`), and `host` is what components get as `context.host`. The page has `theme(tokens)` and `scheme()` as a view has, `print()`, which prints it light once its components have redrawn, and `destroy()`.
+ 
+ A **region** draws any list of nodes, for an editor that shows blocks in its own widgets: `createRegion(target, { components, stylesheet: page.stylesheet }).render(nodes, { inputs, headingLevel })`. Breakpoints are container queries, so a region outside a page needs a container to follow: the class `compmd-container` on its target, or on an element around it. Without one, `onError` reports `no-container` once. A region in a sandbox, one use per widget, is `HostRuntime`'s `mountUse` ([chapter 11](11-the-sandbox-closer.md)).
+ 
+diff --git a/guides/developers/08-components-and-trust.md b/guides/developers/08-components-and-trust.md
+index e77a8a9..5bd4e1a 100644
+--- a/guides/developers/08-components-and-trust.md
++++ b/guides/developers/08-components-and-trust.md
+@@ -101,7 +101,7 @@ Who might misbehave, and what they must not reach:
+ | Strict code | documents, unlisted packs | any network; your page and session; other documents' frames; code of a higher level |
+ | The document | anyone | a higher level for any of its code |
+ 
+-The sandbox stops each threat with something the browser enforces: the frames' opaque origin, their content security policies, which a frame can only narrow, frames that only nest lower levels, a hash check for every built module, and a ping for every frame that runs components. Each one is a browser test in Chrome and WebKit. The design has the full list, T1 to T10 ([running components in the sandbox](../../docs/running-components-in-the-sandbox.md#threat-model)).
++The sandbox stops each threat with something the browser enforces: the frames' opaque origin, their content security policies, which a frame can only narrow, frames that only nest lower levels, a hash check for every built module, and a ping for every frame that runs components. Each one is a browser test in Chrome and WebKit. The design has the full list, T1 to T10 ([running components in the sandbox](../../docs/running-components-in-the-sandbox.md#threat-model)). The frames may compile WebAssembly, which the sandbox's own highlighter runs: it has no way out of its own, and reaches only what the frame's scripts reach ([WebAssembly in the frames](../../docs/webassembly-in-the-frames.md)).
+ 
+ What a browser can't stop, and so the sandbox can't either:
+ 
+diff --git a/guides/developers/11-the-sandbox-closer.md b/guides/developers/11-the-sandbox-closer.md
+index fece1f0..6b0470f 100644
+--- a/guides/developers/11-the-sandbox-closer.md
++++ b/guides/developers/11-the-sandbox-closer.md
+@@ -128,16 +128,18 @@ Frames only go down in trust. Your page holds permissive and strict frames; a pe
+ 
+ The cost is a frame, and a copy of its runtime, per use. It is right for an app with components of its own, or permissive packs.
+ 
++**Many views in one page.** A page may open a view for each of its texts, a diff viewer's runs or a list of comments. The views of a page share what belongs to the page: one stylesheet, with the built-ins' rules once, and one highlighter, whose grammars load once. A view of text and code changes nothing in your page's styles when it opens, renders or goes, so what a view costs is its own content.
++
+ ## What the frames load
+ 
+ `@compmd/vite` writes the frames' files into your app's `compmd/` folder (`buildFrames` does it for other hosts, [chapter 18](18-other-hosts.md)):
+ 
+ | File | What it is |
+ | --- | --- |
+-| `strict.html` | the strict frame: a fixed content security policy with no network and no nested frames, then the import map, then the frame runtime |
++| `strict.html` | the strict frame: a fixed content security policy with no network and no nested frames, which lets it compile WebAssembly, then the import map, then the frame runtime |
+ | `permissive.html` | the same, without the network directives; its parent sends the pack's origins, which the frame adds as a second policy before any component loads, and it may nest `strict.html` only |
+ | `runtime.js` and its files | the frame runtime: the sandbox's end of the protocol, the renderer, the bindings |
+-| `highlight.js`, `math.js` | Shiki and Temml, which highlight code blocks and typeset math: the frames load them through the runtime, and in host mode your page loads them from here, so your app ships each once |
++| `highlight.js`, `math.js` | Shiki and Temml, which highlight code blocks and typeset math: the frames load them through the runtime, and in host mode your page loads them from here, so your app ships each once. Shiki comes with both its engines, Oniguruma's WebAssembly and its JavaScript engine, and loads the one it runs ([chapter 7](07-rendering-and-styling.md#code-blocks)) |
+ | `libs/` | the runtimes every frame shares through the import map, React 19, React DOM and Svelte 5, and the libraries your configuration offers |
+ | `library-definition.json` | those runtimes and libraries with their versions, which the processor checks components against |
+ | `packs/<name>@<version>/…` | each installed pack's built modules |
+@@ -158,7 +160,7 @@ Besides the frames that render, each view makes one hidden `strict.html` frame,
+ | `X-Content-Type-Options: nosniff` | each file is only what its type says |
+ | `Cache-Control: max-age=31536000, immutable` | a path names a build of the frames or a pack's version, so what it serves never changes |
+ 
+-The dev server and `vite preview` send them. A deployed app sends them from its server, or its static host's header rules: the build writes a `_headers` file with them, for a host that reads one. Your page's own content security policy adds what `cspFor(origin)` from `@compmd/vite/config` gives. Nothing under `compmd/` is secret: it is the same for every reader.
++The dev server and `vite preview` send them. A deployed app sends them from its server, or its static host's header rules: the build writes a `_headers` file with them, for a host that reads one. Your page's own content security policy adds what `cspFor(origin)` from `@compmd/vite/config` gives: the frames, and `'wasm-unsafe-eval'` in `script-src`, so your page may compile the WebAssembly code blocks are highlighted with. Nothing under `compmd/` is secret: it is the same for every reader.
+ 
+ The frames may be served from another origin than your page, with the same headers: `createSandbox`'s `base` takes a full URL. That is the way to keep the requests a frame can make to them (its scripts, styles and prefetches) apart from your app's own server and logs.
+ 
+@@ -192,7 +194,7 @@ view.render(opened.expanded);
+ await view.settled();
+ ```
+ 
+-`settled()` resolves once, after the latest render or splice, every use in your page and in every frame has drawn (a component that draws late says so with `busy`, spec §7.4), every frame has its last height, the page's images and fonts have loaded, and nothing moved for an animation frame; at once when that holds already. The view's `settled` event comes each time it settles again, and the container has the attribute `data-compmd-settled` while it is settled, so a browser test waits for it without reaching into your app: `await page.locator("#page[data-compmd-settled]").waitFor()`. A frame that hangs is stopped and counts as settled; a drawing or a frame that never says it is done holds it up for 10 s at most.
++`settled()` resolves once, after the latest render or splice, every use in your page and in every frame has drawn (a component that draws late says so with `busy`, spec §7.4), every frame has its last height, its code blocks are highlighted, the page's images and fonts have loaded, and nothing moved for an animation frame; at once when that holds already. The view's `settled` event comes each time it settles again, and the container has the attribute `data-compmd-settled` while it is settled, so a browser test waits for it without reaching into your app: `await page.locator("#page[data-compmd-settled]").waitFor()`. A frame that hangs is stopped and counts as settled; a drawing or a frame that never says it is done holds it up for 10 s at most.
+ 
+ ## Editors that render block by block
+ 
+diff --git a/lychee-inputs.txt b/lychee-inputs.txt
+index 637ee1a..1e3719f 100644
+--- a/lychee-inputs.txt
++++ b/lychee-inputs.txt
+@@ -1,5 +1,6 @@
+ # What lychee checks (lychee.toml): what npmjs.com, crates.io and docs.rs show of the published packages, where a link
+-# relative to the repository breaks. Each package's README, and the sources its API docs come from.
++# relative to the repository breaks. Each package's README, and the sources its API docs come from; and the website's
++# and the playground's sources, whose links to the repository's files the site's own check doesn't follow.
+ crates/processor/README.md
+ crates/processor/src
+ crates/host/README.md
+@@ -37,3 +38,5 @@ compmd-packs/mermaid/src
+ compmd-packs/wireframe/README.md
+ compmd-packs/wireframe/LANGUAGE.md
+ compmd-packs/wireframe/src
++website/src
++npm-packages/editor/src
+diff --git a/lychee.toml b/lychee.toml
+index 90561f8..dcc3591 100644
+--- a/lychee.toml
++++ b/lychee.toml
+@@ -11,8 +11,10 @@ timeout = 20
+ # A site that limits a checker's rate answers 429; the link itself is there.
+ accept = ["200..=299", "429"]
+ no_progress = true
+-# The READMEs, and the Rust and TypeScript sources the API docs come from.
+-extensions = ["md", "rs", "ts"]
++# The READMEs, the Rust and TypeScript sources the API docs come from, and the Svelte of the website, the playground
++# and the Developer Tools. A Svelte file is read as text, so only a link written out in full is found: write the
++# repository's links so, not built from a constant.
++extensions = ["md", "rs", "ts", "svelte"]
+ 
+ # The examples' local servers, which are not links.
+ exclude_loopback = true
+@@ -22,6 +24,9 @@ exclude = [
+   '^https?://(host|a\.org)(/|$)',
+   # npm's site answers a checker 403 for every page.
+   '^https://www\.npmjs\.com/',
++  # The website's analytics, which a check would count as a visit.
++  '^https://([a-z0-9-]+\.)?goatcounter\.com/',
++  '^https://gc\.zgo\.at/',
+ ]
+ 
+ # What is built or installed, never written; and the tests, whose addresses are made up.
+diff --git a/website/src/App.svelte b/website/src/App.svelte
+index 0e32ee4..2644c18 100644
+--- a/website/src/App.svelte
++++ b/website/src/App.svelte
+@@ -25,6 +25,7 @@
+   ];
+ 
+   const SPEC_SECURITY = "spec/#15-security";
++  // Links to the repository's files are written out in full, so the link check (`cargo make links`) reads them.
+ 
+   const css = Object.values(snapshots)
+     .map((snapshot) => snapshot.css)
+@@ -86,10 +87,10 @@
+     { href: "spec/", title: "The spec", text: "Version 1, a draft: the syntax, the components, expressions, data and security." },
+     { href: "guides/", title: "The guides", text: "The Author's Guide, for writing documents, and the Developer's Guide, for building CompMD into your app." },
+     { href: "playground/", title: "The playground", text: "Write CompMD and watch the page, with a tour, examples and the diagnostics." },
+-    { href: `${REPOSITORY}/tree/main/conformance`, title: "The conformance set", text: `${String(facts.cases)} cases any implementation can run, with their expected trees.` },
++    { href: "https://github.com/comp-markdown/compmd/tree/main/conformance", title: "The conformance set", text: `${String(facts.cases)} cases any implementation can run, with their expected trees.` },
+     { href: REPOSITORY, title: "GitHub", text: "The spec, the processor in Rust, the packages and this site." },
+-    { href: "https://www.npmjs.com/org/compmd", title: "The npm packages", text: "The processor, the renderer, the sandbox, the registry client, the Vite plugin, the Developer Tools and the pack tools." },
+-    { href: "https://crates.io/search?q=compmd", title: "The Rust crates", text: "The processor, compmd; what a host serves, compmd-host; and the Tauri plugin, tauri-plugin-compmd." },
++    { href: "https://www.npmjs.com/org/compmd", title: "The npm packages", text: "The processor, the renderer, the sandbox, the registry client, the Vite plugin, the Developer Tools, the pack tools, the blog tool and what a host serves." },
++    { href: "https://crates.io/search?q=compmd", title: "The Rust crates", text: "The processor, compmd; the names of packs and their files, compmd-pack; what a host serves, compmd-host; and the Tauri plugin, tauri-plugin-compmd." },
+   ];
+ </script>
+ 
+@@ -215,8 +216,8 @@
+         <strong>An early stage:</strong> versions are <code>0.x</code> while the spec is a draft, and until version 1 a release can break documents and code written for the one before.
+         On npm: <a href="https://www.npmjs.com/package/@compmd/vite">@compmd/vite</a>, <a href="https://www.npmjs.com/package/@compmd/processor">@compmd/processor</a>,
+         <a href="https://www.npmjs.com/package/@compmd/sandbox">@compmd/sandbox</a> and <a href="https://www.npmjs.com/package/@compmd/render">@compmd/render</a>; in Rust, the crate
+-        <a href="https://crates.io/crates/compmd">compmd</a>, and for a desktop app <a href="https://crates.io/crates/tauri-plugin-compmd">tauri-plugin-compmd</a>. What each release changed: <a href="{REPOSITORY}/releases">the releases</a> and
+-        <a href="{REPOSITORY}/blob/main/CHANGELOG.md">the spec's changelog</a>, and GitHub's <em>Watch → Releases</em> to hear of the next.
++        <a href="https://crates.io/crates/compmd">compmd</a>, and for a desktop app <a href="https://crates.io/crates/tauri-plugin-compmd">tauri-plugin-compmd</a>. What each release changed: <a href="https://github.com/comp-markdown/compmd/releases">the releases</a> and
++        <a href="https://github.com/comp-markdown/compmd/blob/main/spec/CHANGELOG.md">the spec's changelog</a>, and GitHub's <em>Watch → Releases</em> to hear of the next.
+       </p>
+       <Snippets />
+       <div class="feature">
+@@ -236,11 +237,11 @@
+       <dl class="points">
+         <div>
+           <dt>A processor in Rust, run as WebAssembly</dt>
+-          <dd>The same processor runs natively and in the browser, where it is {facts.wasmKb} KB gzipped. <a href="{REPOSITORY}/tree/main/processor">The processor</a></dd>
++          <dd>The same processor runs natively and in the browser, where it is {facts.wasmKb} KB gzipped. <a href="https://github.com/comp-markdown/compmd/tree/main/crates/processor">The processor</a></dd>
+         </div>
+         <div>
+           <dt>Incremental</dt>
+-          <dd>A keystroke in a 500 KB document is processed in 0.30 ms (p95, Chrome on an Apple M4): only the blocks an edit touches are processed again. <a href="{REPOSITORY}/blob/main/processor/docs/incremental.md">How</a></dd>
++          <dd>A keystroke in a 500 KB document is processed in 0.30 ms (p95, Chrome on an Apple M4): only the blocks an edit touches are processed again. <a href="https://github.com/comp-markdown/compmd/blob/main/crates/processor/docs/incremental.md">How</a></dd>
+         </div>
+         <div>
+           <dt>Diagnostics with fixes, hints at the caret</dt>
+@@ -252,7 +253,7 @@
+         </div>
+         <div>
+           <dt>A conformance set</dt>
+-          <dd>{facts.cases} cases, with every diagnostic code, that any implementation can run against its own processor. <a href="{REPOSITORY}/tree/main/conformance">The cases</a></dd>
++          <dd>{facts.cases} cases, with every diagnostic code, that any implementation can run against its own processor. <a href="https://github.com/comp-markdown/compmd/tree/main/conformance">The cases</a></dd>
+         </div>
+       </dl>
+     </div>

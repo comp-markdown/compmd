@@ -9433,7 +9433,7 @@
       "description": "Before the 0.8.0 release (CMD-263), go through what readers see and list what is missing or out of date since 0.7.1, then fix it or add a task for it. With the user: what to change is theirs to decide.\n\n## What changed since 0.7.1\n- A code block's lines are elements, with `view.lineHeights` and their boxes in `lines()`; the frame protocol is version 5 (CMD-250).\n- A highlighter gives tokens, and the renderer draws them, a block at a time, those on screen first; `drawn()` and `settled` wait for it (CMD-251, CMD-259).\n- Many views in one page: one stylesheet per document, the colour scheme read only when needed, one highlighter for a page's views (CMD-253, CMD-255, CMD-256).\n- Oniguruma where the page compiles WebAssembly, outside Chromium; `'wasm-unsafe-eval'` in `cspFor` and in the frames' policies; the spec's §15 note (CMD-257, CMD-258, CMD-260).\n- The repository's new layout (CMD-246).\n\n## What to check\n- **The landing page:** what it says about safety, speed and hosting; its install line and snippets.\n- **The playground:** code blocks highlighted in both modes and both schemes, in Chrome and Safari; nothing slower.\n- **The spec page:** §15's note shows; the draft's revision and changelog.\n- **The guides:** the Developer's Guide's chapters on rendering, highlighting, hosting, the policy and Tauri (a host's own highlighter now returns tokens; `cspFor`'s `'wasm-unsafe-eval'`; `lineHeights`); the Author's Guide where it shows code blocks; their examples still tested; the PDFs build.\n- **Links** to files that moved with the new layout.\n\n## Outcome\nThe list of what was found, each fixed here or in a task of its own, in the task's note.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [
         "01a1f2df-0550-7070-8958-7ecfa358d7e5"
       ],
@@ -9443,7 +9443,7 @@
         "spec/compmd-spec-v1.md"
       ],
       "created_at": "2026-11-19T10:16:15Z",
-      "updated_at": "2026-11-19T10:25:56Z",
+      "updated_at": "2026-11-19T10:42:33Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -9456,7 +9456,24 @@
       "number": 264,
       "key_final": false,
       "started_at": "2026-11-19T10:25:56Z",
-      "started_by": "claude:79612601"
+      "started_by": "claude:79612601",
+      "commit": "f33a23fd75f2778331ca6ae01b35bd5c66bf5934",
+      "code_reviews": [
+        {
+          "id": "01a1f366-a672-7145-90dd-d970aeefa9f4",
+          "ref": "CR-17"
+        }
+      ],
+      "review_requested_at": "2026-11-19T10:42:33Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-19T10:42:33Z",
+          "kind": "review",
+          "text": "CR-17: Before 0.8.0: the landing page, the guides and the link check",
+          "by": "claude:79612601"
+        }
+      ]
     }
   ]
 }

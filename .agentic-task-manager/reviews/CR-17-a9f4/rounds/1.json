@@ -1,0 +1,57 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "4afcc8fe8a22e5dc2ca4c9c8ee020c230f13b107",
+    "head": "f33a23fd75f2778331ca6ae01b35bd5c66bf5934"
+  },
+  "files": [
+    {
+      "path": "Makefile.toml",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/ci.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/developers/05-live-editing.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/developers/07-rendering-and-styling.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/developers/08-components-and-trust.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/developers/11-the-sandbox-closer.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "lychee-inputs.txt",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "lychee.toml",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "website/src/App.svelte",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-19T10:42:33Z"
+}
