@@ -59,7 +59,7 @@ pub use resolve::{Ambient, Language};
 /// ```
 /// assert!(compmd::SPEC_VERSION.starts_with("1.0"));
 /// ```
-pub const SPEC_VERSION: &str = "1.0-draft.13";
+pub const SPEC_VERSION: &str = "1.0-draft.16";
 
 #[cfg(test)]
 mod tests {

@@ -22,7 +22,7 @@ export type { ExpandedInput, ExpandedRoot, Splice, TextEdit } from "@compmd/rend
  * draft, `1.0-draft.N`, until the spec's version 1 is released. The spec is versioned on its own, apart from this
  * package.
  */
-export const SPEC_VERSION = "1.0-draft.13";
+export const SPEC_VERSION = "1.0-draft.16";
 
 /** A document to process, with everything it needs. Only `path` and `now` are required. */
 export interface Request {

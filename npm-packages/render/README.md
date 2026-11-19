@@ -15,7 +15,7 @@ It renders trees; it doesn't process documents. A processor (stages 1 to 4b, spe
 npm install @compmd/render @compmd/processor
 ```
 
-It implements version **1.0-draft.13** of the [CompMD specification](https://compmd.dev/spec/); the spec is versioned on its own. Its versions are `0.x` until the spec's version 1 is published, and it shares its version with `@compmd/processor` ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
+It implements version **1.0-draft.16** of the [CompMD specification](https://compmd.dev/spec/); the spec is versioned on its own. Its versions are `0.x` until the spec's version 1 is published, and it shares its version with `@compmd/processor` ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
 
 **Versions:**
 - **0.7.1:** the same as 0.7.0; its homepage and links name the website's new address, [compmd.dev](https://compmd.dev/).

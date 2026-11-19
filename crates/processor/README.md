@@ -1,6 +1,6 @@
 # compmd
 
-The [CompMD](https://compmd.dev/) processor, in Rust: it parses, validates and expands documents written in CompMD (Component Markdown), as the [specification](https://github.com/comp-markdown/compmd/blob/main/spec/compmd-spec-v1.md) describes. It implements the spec's version **1.0-draft.13** (`compmd::SPEC_VERSION`); the spec is versioned on its own, apart from this crate.
+The [CompMD](https://compmd.dev/) processor, in Rust: it parses, validates and expands documents written in CompMD (Component Markdown), as the [specification](https://github.com/comp-markdown/compmd/blob/main/spec/compmd-spec-v1.md) describes. It implements the spec's version **1.0-draft.16** (`compmd::SPEC_VERSION`); the spec is versioned on its own, apart from this crate.
 
 **Website:** [compmd.dev](https://compmd.dev/), with the spec and a playground to try CompMD in.
 

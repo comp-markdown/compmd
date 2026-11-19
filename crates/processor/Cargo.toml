@@ -22,7 +22,7 @@ icu = "2.4.0"
 icu_experimental = "=0.7.0"
 indexmap = "2.14.2"
 # The fork of markdown-rs with CompMD's syntax: `crates/markdown-rs/`, a submodule, here; `compmd-markdown` on crates.io.
-markdown = { package = "compmd-markdown", path = "../markdown-rs", version = "0.1.0" }
+markdown = { package = "compmd-markdown", path = "../markdown-rs", version = "0.2.0" }
 # Import version ranges (`@1`, `@^1.4.2`) matched against a registry's releases.
 semver = { version = "1.0.28", features = ["serde"] }
 serde ={ version = "1.0.228", features = ["derive"] }

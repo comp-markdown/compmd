@@ -29,7 +29,7 @@ A release publishes only packages that npm and this repository's workflow alread
 - Each package's README says what changed, until the implementation has a changelog of its own.
 - The code implements the spec as it is on `main`, and `SPEC_VERSION` in `crates/processor/src/lib.rs` is the spec header's revision (`**Version 1.0-draft.N.**`), with `npm-packages/wasm/src/index.ts` and the READMEs the same (their tests say so). The workflow refuses a release otherwise.
 - The version, in one commit: `npm-packages/render/package.json`, `npm-packages/wasm/package.json`, `npm-packages/sandbox/package.json`, `npm-packages/registry/package.json`, `npm-packages/devtools/package.json`, `npm-packages/host-js/package.json`, `npm-packages/vite/package.json`, `npm-packages/pack/package.json`, `npm-packages/create-pack/package.json`, `npm-packages/blog/package.json`, `npm-packages/create-blog/package.json`, `crates/processor/Cargo.toml`, `crates/pack-types/Cargo.toml`, `crates/host/Cargo.toml` and `crates/tauri/Cargo.toml`, with the crates' dependencies on each other (`version = …` beside each `path`).
-- If the fork changed since its last release: its version in `markdown-rs/Cargo.toml` (on its `compmd` branch), and the same version in the `compmd-markdown` dependency of `crates/processor/Cargo.toml` and `markdown-rs/mdast_util_to_markdown/Cargo.toml`.
+- If the fork changed since its last release: its version in `crates/markdown-rs/Cargo.toml` (on its `compmd` branch), and the same version in the `compmd-markdown` dependency of `crates/processor/Cargo.toml` and `crates/markdown-rs/mdast_util_to_markdown/Cargo.toml`.
 - On Linux, once the version is committed: `cargo make linux` and `cargo make linux site` pass, so neither the release's checks nor its site deploy fail on the runner alone ([CI](docs/ci.md), decision 12).
 - Push: the fork first, then this repository.
 
@@ -70,7 +70,7 @@ Each gives the new version as `latest`.
 
 Once the npm packages are staged, the workflow's second job, `crates`, waits in the GitHub environment `crates-io` for the author's approval: on the run's page on GitHub, **Review deployments**, then approve. crates.io has no staging, and a published crate version can't be deleted, only yanked, so this approval is the last look. The job then publishes with crates.io's trusted publishing (no token is stored; `rust-lang/crates-io-auth-action` gets one for the job and revokes it after):
 
-1. `compmd-markdown`, only when its version (`markdown-rs/Cargo.toml`) isn't on crates.io yet, since `compmd` depends on it;
+1. `compmd-markdown`, only when its version (`crates/markdown-rs/Cargo.toml`) isn't on crates.io yet, since `compmd` depends on it;
 2. `compmd-pack`, at the release's version, since `compmd` and `compmd-host` depend on it;
 3. `compmd`, at the release's version;
 4. `compmd-host`, at the release's version, since the plugin depends on it;

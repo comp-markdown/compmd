@@ -13,7 +13,7 @@ Runs a [CompMD](https://compmd.dev/) document's components in a browser at the t
 npm install @compmd/sandbox @compmd/render @compmd/processor
 ```
 
-It implements version **1.0-draft.13** of the [CompMD specification](https://compmd.dev/spec/), which is versioned on its own, and shares its version with `@compmd/render` and `@compmd/processor` ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
+It implements version **1.0-draft.16** of the [CompMD specification](https://compmd.dev/spec/), which is versioned on its own, and shares its version with `@compmd/render` and `@compmd/processor` ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
 
 **Versions:**
 - **0.7.1:** the same as 0.7.0; its homepage and links name the website's new address, [compmd.dev](https://compmd.dev/).
