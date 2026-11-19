@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 268,
+    "next_number": 269,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -675,9 +675,9 @@
         "website/blog/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-19T20:18:22Z",
+      "updated_at": "2026-11-19T20:58:44Z",
       "created_by": "Hakan Serce",
-      "updated_by": "claude:79612601",
+      "updated_by": "Hakan Serce",
       "sprint_history": [
         {
           "sprint": "Rendering optimizations",
@@ -731,6 +731,12 @@
           "kind": "review",
           "text": "CR-20: round 3",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-19T20:58:44Z",
+          "kind": "note",
+          "text": "Approved: in CR-20 (round 3)",
+          "by": "Hakan Serce"
         }
       ],
       "reviews": [
@@ -746,7 +752,8 @@
         }
       ],
       "review_requested_at": "2026-11-19T20:18:22Z",
-      "review_state": "waiting"
+      "review_state": "approved",
+      "reviewed_at": "2026-11-19T20:58:44Z"
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68ebbb96493c",
@@ -9641,7 +9648,7 @@
       "description": "A design, decisions first, reviewed with the user before CMD-262 builds it: the sandbox takes the code highlighter from its host, in both page modes, with Shiki staying the default.\n\n## Why\n- A host whose editor highlights with its own engine (Lezer, for one) wants the same colours in its rendered pages, and languages Shiki doesn't ship.\n- WebKit's cost: about a second on a first TypeScript block with the JavaScript engine, 60 ms with Oniguruma plus its 230 KB chunk, and about 85 ms per frame to compile Oniguruma (the open point of [WebAssembly in the frames](docs/webassembly-in-the-frames.md)).\n- Today the renderer takes tokens from any highlighter (`CodeHighlighter`), but the sandbox has no option: its frames and host-mode pages always use its own Shiki, and only `createPage` lets a host choose, without the sandbox.\n\n## Decide\n- **The option:** its name and type; in host mode a function, `(code, language) => lines`.\n- **Frame mode, (b):** the frame sends a block's text to the host's page, which highlights it and sends the tokens back; only data crosses, and the frames' code stays fixed. Why not (a), a highlighter module the host names by URL, loaded into the frames.\n- **The messages** of the frame protocol's next version: a frame's request for a block's tokens and the answer; the host's page answers only blocks of trees it sent that frame, as it does for images, so a frame can't make it tokenize anything else.\n- **A host that never answers:** a time limit, after which the block keeps its text, so `settled()` doesn't hang.\n- **The threats:** grammars running on untrusted text in the host's realm (as in host mode already), a frame's highlighting waiting on the host's thread, tokens that aren't the block's text (the renderer keeps the text).\n- **Shiki as the default, explained in full with examples, comparisons and measurements:** the default staying in each frame (as today) against the default moving to the host's page through the same messages. For each: what a page of one frame, of ten and of many frames costs in Chrome and WebKit (first block, a page's worth of blocks, memory), what each frame then needs (`'wasm-unsafe-eval'`, the 230 KB chunk), and worked examples of a page in each mode. Measured, as the [highlighting spike](spikes/highlight-perf/README.md) measured, not estimated.\n- Batching blocks in one round trip, if the measurements ask for it.\n\n## Result\nA section of [the frame protocol](docs/sandbox-protocol.md) and of [running components in the sandbox](docs/running-components-in-the-sandbox.md) (or a design of its own, linked from both), reviewed with the user.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [],
       "files": [
         "docs/sandbox-protocol.md",
@@ -9650,7 +9657,7 @@
         "spikes/highlight-perf/"
       ],
       "created_at": "2026-11-19T20:45:02Z",
-      "updated_at": "2026-11-19T20:45:21Z",
+      "updated_at": "2026-11-19T20:55:30Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -9662,7 +9669,56 @@
       "sprint": "Packs & Blog",
       "number": 267,
       "started_at": "2026-11-19T20:45:21Z",
-      "started_by": "claude:79612601"
+      "started_by": "claude:79612601",
+      "commit": "f134fcce6fd50b3a4220eb64e87892b8a5cf4367",
+      "code_reviews": [
+        {
+          "id": "01a1f597-d1bf-7045-991e-3cca1132f76c",
+          "ref": "CR-21"
+        }
+      ],
+      "review_requested_at": "2026-11-19T20:55:30Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-19T20:55:30Z",
+          "kind": "review",
+          "text": "CR-21: The host’s code highlighter, and where the default Shiki runs",
+          "by": "claude:79612601"
+        }
+      ]
+    },
+    {
+      "id": "01a1f5ac-46f1-7265-8aef-db1a0db26768",
+      "name": "A document's host components: only those it uses",
+      "type": "bugfix",
+      "priority": "P1",
+      "labels": [
+        "packs",
+        "performance"
+      ],
+      "description": "G10 of [the first components](docs/first-components.md): the processor lists as a document's host-language components every one it can name, an ambient pack's included, whether the document uses it or not (`host_components`, `crates/processor/src/resolve.rs`). So a host that makes packs built in for every document (decision 9 there) makes each document pay for all of them:\n- the sandbox compiles and loads every listed component for each view;\n- `@compmd/blog` gives every post its page script and the sandbox's frames, since a post is live when the list isn't empty (`npm-packages/blog/src/render.ts`).\n\n## Change\nThe list holds the components the expanded tree uses (its examples' trees included), so a document that uses none of an ambient pack's components loads none of its code. Check first whether the spec says which components a processor gives its host (spec §7.4, §11); change the spec first if it says otherwise.\n\n## Tests\nThe processor: a document with an ambient pack of two host components, using one, lists one; using none, lists none; an example using one lists it. The blog: a post that uses no host component gets no script, with an ambient pack that has some. The sandbox: a view compiles only the used component.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "crates/processor/src/resolve.rs",
+        "crates/processor/src/processor/outputs.rs",
+        "npm-packages/blog/src/render.ts"
+      ],
+      "created_at": "2026-11-19T21:17:50Z",
+      "updated_at": "2026-11-19T21:17:50Z",
+      "created_by": "claude:79612601",
+      "updated_by": "claude:79612601",
+      "sprint_history": [
+        {
+          "sprint": "Packs & Blog",
+          "from": "2026-11-19T21:17:50Z"
+        }
+      ],
+      "sprint": "Packs & Blog",
+      "number": 268
     }
   ]
 }

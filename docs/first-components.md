@@ -1,6 +1,6 @@
 # The first components
 
-**Status: proposed (2026-11-19), round 2 of its review.** Which components CompMD should have first, so an author
+**Status: proposed (2026-11-19), round 3 of its review.** Which components CompMD should have first, so an author
 finds what they reach for: what documentation frameworks ship, which npm component packages are used most, the widgets
 pages have, and what CompMD covers already, with the list, each component's package, and how it runs.
 
@@ -33,6 +33,25 @@ pages have, and what CompMD covers already, with the list, each component's pack
    `md.data` rows, drawn by Observable Plot.
 8. **One package per kind,** by licence (MIT, BSD, ISC, Apache-2.0, or MPL-2.0 bundled unmodified), size, and whether
    it draws without the network and prints. A GPL package is not used.
+9. **A host makes the packs it wants built in once, in its configuration, and no document imports them.** A pack the
+   configuration lists as ambient (spec §6.3) gives every document its names, with no import in its frontmatter. The
+   blog of compmd.dev lists the first list's packs once, in `website/blog/compmd.config.json`, and every post uses
+   their components as it uses the site's own pack today:
+
+   ```json
+   {
+     "packs": {
+       "../app": { "trust": "trusted", "ambient": true },
+       "@comp-markdown/charts": { "ambient": true },
+       "@comp-markdown/music": { "ambient": true },
+       "@comp-markdown/embeds": { "trust": "permissive", "ambient": true, "network": ["https://www.youtube-nocookie.com", "https://open.spotify.com"] }
+     }
+   }
+   ```
+
+   A minimal host lists none and carries none: the weight is each host's choice, not CompMD's. What a document that
+   uses none of them should pay is their signatures only, and today it pays more (G10). The packs' names here are
+   placeholders until CMD-11 names them.
 
 ## The first list
 
@@ -203,11 +222,19 @@ does both. Vimeo's, Spotify's and SoundCloud's terms on facades are to read befo
   `sandbox="allow-scripts"` works in Chrome; WebKit's behaviour is to test in the music pack's browser tests. FluidR3's
   sound font is CC BY 3.0, which the pack credits.
 
+- **G10. An ambient pack's code costs documents that don't use it.** The processor lists as a document's host-language
+  components every one it can name, an ambient pack's included, used or not (`host_components`,
+  `crates/processor/src/resolve.rs`). So the sandbox compiles each of them for every view, and the blog gives every post
+  its page script, frames and all, since a post is live when that list isn't empty (`npm-packages/blog/src/render.ts`):
+  that is why the blog's plain first post was given one in its first round. Decision 9 needs the list to hold only the
+  components the document's expanded tree uses (its examples' included), so a post that uses none loads nothing:
+  CMD-268, before the packs are many.
+
 Round 1's G4, tabs and collapsibles in the core pack, is decision 6 now.
 
-## What round 2 changed
+## What the review changed
 
-From CR-19's comments:
+From CR-19's comments, in round 2 and, for c30, round 3:
 
 | Comment | Where it is |
 |---|---|
@@ -219,6 +246,7 @@ From CR-19's comments:
 | c6: the document's images | G1, and the task CMD-266 |
 | c7: tabs and the rest built in, not in the spec | Decision 6, which settles round 1's G4 |
 | c8, c24: a permissive embeds pack, with the details | `embeds` (21), [Embeds](#embeds), G2 |
+| c30: the packs built in for a host, configured once, as for the blog | Decision 9, and G10, what it needs first |
 
 ## The research
 
