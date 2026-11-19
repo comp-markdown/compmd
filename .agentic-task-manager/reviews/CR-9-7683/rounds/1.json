@@ -1,0 +1,117 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "2140c1df1e8317d328fe80df46cfc093685d8e04",
+    "head": "86c5c448343d3b3ac4f787fd4163b13952a5316c"
+  },
+  "files": [
+    {
+      "path": "guides/developers/07-rendering-and-styling.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/highlight.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/render.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/code-lines.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/code.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/highlight.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/highlight.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/index.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/lines.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/markdown-views.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/region.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/render.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/from-frames.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/highlight/highlight.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/highlight/highlight.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/highlight/tokens.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/highlight-perf/src/draw.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spikes/highlight-perf/src/highlighters.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spikes/highlight-perf/src/main.ts",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-19T07:43:54Z"
+}

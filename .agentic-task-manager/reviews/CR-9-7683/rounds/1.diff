@@ -1,0 +1,910 @@
+diff --git a/guides/developers/07-rendering-and-styling.md b/guides/developers/07-rendering-and-styling.md
+index 800116f..1ce22ae 100644
+--- a/guides/developers/07-rendering-and-styling.md
++++ b/guides/developers/07-rendering-and-styling.md
+@@ -197,7 +197,7 @@ page.render(opened.expanded);                            // or page.splice(splic
+ 
+ It runs only the components you give it in `components`; every other component the document names shows its fallback, and `onError` hears of it as `missing`. Without a sandbox, though, the page is in your page: its links are your page's, and its images load from wherever they point. So use it alone for documents you trust as your own code, and the sandbox for any other.
+ 
+-Its options, beside `components`, `onSet`, `onError` and `tokens`: `code` renders the code blocks of a language (`{ mermaid: (source, target) => … }`), `math` renders TeX (`(tex, { display }, target) => …`), `highlight` highlights the code blocks that show as code (`(code, language, target) => …`, or the sandbox's `shikiHighlight()`), `wikiLink` says where a wiki link points, `ownSchemes` names your app's own URL schemes (`["app"]`, so `[Books](app:item/7)` is a link and `![Cover](app:file/3)` an image, which loads as `images` gives it; spec §15), `printsFallback(name)` says which components print their fallback (their signature's `print: fallback`), and `host` is what components get as `context.host`. The page has `theme(tokens)` and `scheme()` as a view has, `print()`, which prints it light once its components have redrawn, and `destroy()`.
++Its options, beside `components`, `onSet`, `onError` and `tokens`: `code` renders the code blocks of a language (`{ mermaid: (source, target) => … }`), `math` renders TeX (`(tex, { display }, target) => …`), `highlight` highlights the code blocks that show as code (`(code, language) => …`, which gives each line's tokens for the page to draw, or the sandbox's `shikiHighlight()`), `wikiLink` says where a wiki link points, `ownSchemes` names your app's own URL schemes (`["app"]`, so `[Books](app:item/7)` is a link and `![Cover](app:file/3)` an image, which loads as `images` gives it; spec §15), `printsFallback(name)` says which components print their fallback (their signature's `print: fallback`), and `host` is what components get as `context.host`. The page has `theme(tokens)` and `scheme()` as a view has, `print()`, which prints it light once its components have redrawn, and `destroy()`.
+ 
+ A **region** draws any list of nodes, for an editor that shows blocks in its own widgets: `createRegion(target, { components, stylesheet: page.stylesheet }).render(nodes, { inputs, headingLevel })`. Breakpoints are container queries, so a region outside a page needs a container to follow: the class `compmd-container` on its target, or on an element around it. Without one, `onError` reports `no-container` once. A region in a sandbox, one use per widget, is `HostRuntime`'s `mountUse` ([chapter 11](11-the-sandbox-closer.md)).
+ 
+diff --git a/npm-packages/blog/src/highlight.ts b/npm-packages/blog/src/highlight.ts
+index fc835c3..3eecd4b 100644
+--- a/npm-packages/blog/src/highlight.ts
++++ b/npm-packages/blog/src/highlight.ts
+@@ -1,21 +1,25 @@
+-// Code highlighted at build time by Shiki, in GitHub's light and dark themes (docs/blog-tool.md, decision 5), as the
+-// renderer's `highlight` takes it: each code block's `<code>` gets Shiki's lines, its `<pre>` Shiki's colours.
++// Code highlighted at build time by Shiki, in GitHub's light and dark themes (docs/blog-tool.md, decision 5), in the
++// page the renderer drew: each code block's `<code>` gets Shiki's lines, its `<pre>` Shiki's colours. A built page is
++// HTML of its own, with a `style` attribute per token and Shiki's dark colours in custom properties, which the
++// renderer's own highlighting, for a live page, doesn't write.
+ //
+ // Markdown and CompMD show CompMD's syntax through the grammar the sandbox's highlighter injects into Markdown's
+ // (`@compmd/sandbox/grammar`). Shiki loses that injection when YAML's grammar is loaded beside Markdown's, so Markdown
+ // has a highlighter of its own, and a Markdown example's frontmatter is highlighted as YAML by the other.
+ 
+-import type { CodeHighlighter } from "@compmd/render";
+ import { COMPMD, splitYaml } from "@compmd/sandbox/grammar";
+ import { bundledLanguages, createHighlighter, type BundledLanguage, type Highlighter } from "shiki";
+ 
+ const THEMES = { themes: { light: "github-light", dark: "github-dark" }, defaultColor: "light" } as const;
+ const MARKDOWN = new Set(["md", "markdown", "compmd"]);
+ 
++/** The class the renderer gives a code block's `<code>` for its fence language, before the language. */
++const LANGUAGE = "language-";
++
+ /** A highlighter, and the languages it should load before a render that uses them. */
+ export interface Highlight {
+-  /** The renderer's `highlight`: a block in a language not loaded keeps its text as it is. */
+-  highlight: CodeHighlighter;
++  /** Highlights the code blocks of a rendered page, `root`: a block in a language not loaded keeps its text as it is. */
++  highlight(root: HTMLElement): void;
+   /** Loads `languages`, fence languages as written, those Shiki has. */
+   load(languages: Iterable<string>): Promise<void>;
+ }
+@@ -55,17 +59,23 @@ async function create(): Promise<Highlight> {
+       pre.setAttribute("style", style);
+     }
+   };
++  const highlight = (code: string, language: string, target: HTMLElement) => {
++    if (MARKDOWN.has(language)) {
++      const [head, rest] = splitYaml(code, language !== "compmd");
++      const blocks = [head ? parts(others, head, "yaml") : undefined, rest ? parts(markdown, rest, "markdown") : undefined].filter((block) => block !== undefined);
++      const [first] = blocks;
++      if (first) write(target, { style: first.style, lines: blocks.map(({ lines }) => lines).join("\n") });
++      return;
++    }
++    const lang = known(language);
++    if (lang !== undefined && loaded.has(lang)) write(target, parts(others, code, lang));
++  };
+   return {
+-    highlight(code, language, target) {
+-      if (MARKDOWN.has(language)) {
+-        const [head, rest] = splitYaml(code, language !== "compmd");
+-        const blocks = [head ? parts(others, head, "yaml") : undefined, rest ? parts(markdown, rest, "markdown") : undefined].filter((block) => block !== undefined);
+-        const [first] = blocks;
+-        if (first) write(target, { style: first.style, lines: blocks.map(({ lines }) => lines).join("\n") });
+-        return;
++    highlight(root) {
++      for (const target of root.querySelectorAll<HTMLElement>("pre > code")) {
++        const language = [...target.classList].find((name) => name.startsWith(LANGUAGE))?.slice(LANGUAGE.length) ?? "";
++        highlight(target.textContent, language, target);
+       }
+-      const lang = known(language);
+-      if (lang !== undefined && loaded.has(lang)) write(target, parts(others, code, lang));
+     },
+     async load(languages) {
+       for (const language of languages) {
+diff --git a/npm-packages/blog/src/render.ts b/npm-packages/blog/src/render.ts
+index b9e6887..e536993 100644
+--- a/npm-packages/blog/src/render.ts
++++ b/npm-packages/blog/src/render.ts
+@@ -65,8 +65,9 @@ export async function renderPost(post: Post, now: string, highlight: Highlight,
+   try {
+     // happy-dom's elements are the DOM's, as the renderer takes them.
+     const root = window.document.body.appendChild(window.document.createElement("div")) as unknown as HTMLElement;
+-    const page = createPage(root, { highlight: highlight.highlight });
++    const page = createPage(root);
+     page.render(expanded);
++    highlight.highlight(root);
+     // An input's state is in its properties, which HTML doesn't hold; its attributes give it to the page.
+     for (const input of root.querySelectorAll("input")) {
+       if (input.type === "checkbox") input.toggleAttribute("checked", input.checked);
+diff --git a/npm-packages/render/README.md b/npm-packages/render/README.md
+index c14575e..6e44355 100644
+--- a/npm-packages/render/README.md
++++ b/npm-packages/render/README.md
+@@ -87,7 +87,7 @@ for (const [pane, nodes] of [[left, before], [right, after]]) {
+ 
+ **Code blocks and math.** `code: { mermaid: (source, target) => … }` renders fenced code of a language, and `math: (tex, { display }, target) => …` renders math. Without them, code shows as a code block and math as its TeX source, as spec §2.3 says. A code block a document's code renderer renders (spec §7.7; the tree gives it `component` and `alt`) mounts that component from `components` in its box, as a leaf: the block's text is its `code` param, `alt` its `fallback.text`, and the code block its fallback. It takes the place of `code` for its language, since a document's import wins over the host's.
+ 
+-**Highlighting.** A code block that shows as code, `<pre><code class="language-…">`, is one no renderer draws, or a code renderer's fallback, when its component is missing or fails. `highlight: (code, language, target) => …` highlights it: `target` is the block's `<code>`, holding its lines, which the highlighter fills with its tokens, line by line, keeping each line's element and its attributes, at once or once what it needs has loaded. `language` is the fence's, or `""`. It is called again only when the block's text or language changes. Without it, the text is plain. [`@compmd/sandbox`](https://github.com/comp-markdown/compmd/blob/main/npm-packages/sandbox/README.md#code-blocks) gives one by default, Shiki's (`shikiHighlight()`), which a page rendered with `createPage` can take too.
++**Highlighting.** A code block that shows as code, `<pre><code class="language-…">`, is one no renderer draws, or a code renderer's fallback, when its component is missing or fails. `highlight: (code, language) => …` highlights it: it gives the block's tokens, line by line, each token its `text` and how it shows (`color: { light, dark }`, `italic`, `bold`, `underline`), at once or as a promise, once what it needs has loaded; or `undefined` for a language it doesn't highlight. The page draws them into the block's lines, which are its own: a highlighter never touches the page. The tokens' texts are the block's text, each line's joined giving the line; tokens that aren't, and those that come after a newer text's, are dropped, and the block shows its text until its tokens come and when the promise is rejected. `language` is the fence's, or `""`. It is called again only when the block's text or language changes. Without it, the text is plain. [`@compmd/sandbox`](https://github.com/comp-markdown/compmd/blob/main/npm-packages/sandbox/README.md#code-blocks) gives one by default, Shiki's (`shikiHighlight()`), which a page rendered with `createPage` can take too.
+ 
+ **A code block's lines.** A host finds a code block's lines with `lines()`, and sizes them with `lineHeights(heights)`, by their line in the text: each line `heights` names is at least that tall, in CSS pixels, through later renders, until the next call. For example, a host that shows a diff's two sides in two pages keeps their lines level so: each line as tall as the taller of its two sides. How the renderer draws a block's lines, an element each, and numbers them, is its own, and may change: a host styles and finds lines through these two calls, not through that markup. Copying a block gives its code as it is.
+ 
+diff --git a/npm-packages/render/src/code-lines.ts b/npm-packages/render/src/code-lines.ts
+index a7b4d95..a40f9fd 100644
+--- a/npm-packages/render/src/code-lines.ts
++++ b/npm-packages/render/src/code-lines.ts
+@@ -1,16 +1,12 @@
+ // A code block's lines, each an element of its own, so the page can size one for a host (`LineHeights`: a diff's two
+ // sides kept level): `<span class="compmd-line" data-line="N">`, N its line in the current text, its newline inside
+ // it, so the block's text, and what a reader copies, are the code's. The renderer draws them, numbers them again when
+-// what is before the block moves them, and a highlighter fills them with its tokens. All of it is the renderer's own:
++// what is before the block moves them, and fills them with a highlighter's tokens (`highlight.ts`). All of it is the renderer's own:
+ // a host sizes lines by their line in the text (`Page.lineHeights`) and finds them with `Page.lines`, never by these
+ // elements, so how they are drawn and numbered can change.
+ import type { Placed } from "./source.ts";
+ 
+-/**
+- * The class of a code block's line.
+- *
+- * @internal For `@compmd/sandbox`'s highlighter, which fills the lines; not for hosts.
+- */
++/** The class of a code block's line. */
+ export const CODE_LINE = "compmd-line";
+ 
+ /** How many lines `text` has: one more than its line breaks. */
+diff --git a/npm-packages/render/src/code.test.ts b/npm-packages/render/src/code.test.ts
+index 42e49ee..616e7c7 100644
+--- a/npm-packages/render/src/code.test.ts
++++ b/npm-packages/render/src/code.test.ts
+@@ -66,7 +66,12 @@ describe("a code block a code renderer renders", () => {
+ 
+   it("has its fallback's code block highlighted when the renderer isn't here", () => {
+     const highlighted: string[] = [];
+-    const page = createPage(area, { highlight: (code, language) => highlighted.push(`${language}: ${code}`) });
++    const page = createPage(area, {
++      highlight: (code, language) => {
++        highlighted.push(`${language}: ${code}`);
++        return undefined;
++      },
++    });
+     page.render({ type: "root", children: [rendered("A --> B")] });
+     expect(highlighted).toEqual(["mermaid: A --> B"]);
+   });
+@@ -132,27 +137,27 @@ describe("a rendered block with `render=both`", () => {
+ describe("a code block that shows as code", () => {
+   const block = (value: string, lang: string | null = "js"): ExpandedNode => ({ type: "code", lang, meta: null, value });
+ 
+-  it("is highlighted into its `<code>`, which holds its text until then, and again only when its text or language changes", () => {
+-    const calls: [string, string, string][] = [];
++  it("is highlighted with the highlighter's tokens, in its lines, and again only when its text or language changes", () => {
++    const calls: [string, string][] = [];
+     const page = createPage(area, {
+-      highlight: (code, language, target) => {
+-        calls.push([code, language, target.textContent]);
+-        target.replaceChildren(Object.assign(document.createElement("span"), { textContent: code }));
++      highlight: (code, language) => {
++        calls.push([code, language]);
++        return [[{ text: code, bold: true }]];
+       },
+     });
+     page.render({ type: "root", children: [block("let a;")] });
+-    expect(area.innerHTML).toBe('<pre><code class="language-js"><span>let a;</span></code></pre>');
++    expect(area.innerHTML).toBe('<pre><code class="language-js"><span class="compmd-line"><span style="font-weight: bold;">let a;</span></span></code></pre>');
+     page.render({ type: "root", children: [block("let a;")], inputs: { x: { type: "string", value: "" } } });
+     page.render({ type: "root", children: [block("let b;")] });
+     page.render({ type: "root", children: [block("let b;", "ts")] });
+     page.render({ type: "root", children: [block("plain", null)] });
+     expect(calls).toEqual([
+-      ["let a;", "js", "let a;"],
+-      ["let b;", "js", "let b;"],
+-      ["let b;", "ts", "let b;"],
+-      ["plain", "", "plain"],
++      ["let a;", "js"],
++      ["let b;", "js"],
++      ["let b;", "ts"],
++      ["plain", ""],
+     ]);
+-    expect(area.innerHTML).toBe("<pre><code><span>plain</span></code></pre>");
++    expect(area.textContent).toBe("plain");
+   });
+ 
+   it("is plain without a highlighter", () => {
+diff --git a/npm-packages/render/src/highlight.test.ts b/npm-packages/render/src/highlight.test.ts
+new file mode 100644
+index 0000000..0bc6b86
+--- /dev/null
++++ b/npm-packages/render/src/highlight.test.ts
+@@ -0,0 +1,104 @@
++// A code block's highlighting: a highlighter gives tokens, and the page draws them into the block's own lines.
++import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
++import type { CodeHighlighter, CodeLines } from "./highlight.ts";
++import { createPage } from "./page.ts";
++import type { ExpandedNode, ExpandedRoot } from "./tree.ts";
++
++let area: HTMLElement;
++beforeEach(() => {
++  area = document.body.appendChild(document.createElement("main"));
++});
++afterEach(() => {
++  area.remove();
++});
++
++const origin = { start: { line: 4, column: 1 }, end: { line: 8, column: 4 }, occurrence: 0 };
++/** A fenced block of `value`, its fence on line 4. */
++const block = (value: string, lang = "js"): ExpandedNode => ({ type: "code", lang, meta: null, value, origin });
++const tree = (...children: ExpandedNode[]): ExpandedRoot => ({ type: "root", children });
++
++/** Each word of each line a token, the first of a line bold. */
++const words: CodeHighlighter = (code) => code.split("\n").map((line) => (line === "" ? [] : line.split(/(?<= )/).map((text, i) => ({ text, ...(i === 0 ? { bold: true } : {}) }))));
++
++/** The block's lines: each one's number, its tokens' texts, and its text. */
++const lines = () => [...area.querySelectorAll(".compmd-line")].map((line) => [line.getAttribute("data-line"), [...line.querySelectorAll(":scope > span")].map((span) => span.textContent), line.textContent]);
++/** The block's tokens' texts. */
++const tokens = () => [...area.querySelectorAll(".compmd-line > span")].map((span) => span.textContent);
++/** Until promises a highlighter gave have settled. */
++const settled = () => new Promise((resolve) => setTimeout(resolve, 0));
++
++describe("a highlighter's tokens", () => {
++  it("are drawn in the block's lines, which keep their numbers and their line breaks, a blank line too", () => {
++    const text = "const a = 1;\n\nconst b = 2;";
++    createPage(area, { highlight: words }).render(tree(block(text)));
++    expect(lines()).toEqual([
++      ["5", ["const ", "a ", "= ", "1;"], "const a = 1;\n"],
++      ["6", [], "\n"],
++      ["7", ["const ", "b ", "= ", "2;"], "const b = 2;"],
++    ]);
++    expect(area.textContent).toBe(text);
++  });
++
++  it("show in their colour in each scheme, and their font style", () => {
++    const highlight: CodeHighlighter = () => [[{ text: "a", color: { light: "#111111", dark: "#eeeeee" }, italic: true, underline: true }, { text: "b" }]];
++    // happy-dom doesn't know `light-dark()` and drops it, so what the page sets is read where it sets it.
++    const set = vi.spyOn(CSSStyleDeclaration.prototype, "setProperty");
++    createPage(area, { highlight }).render(tree(block("ab")));
++    expect(set.mock.calls).toEqual([
++      ["color", "light-dark(#111111, #eeeeee)"],
++      ["font-style", "italic"],
++      ["text-decoration", "underline"],
++    ]);
++    set.mockRestore();
++    const [a, b] = [...area.querySelectorAll<HTMLElement>(".compmd-line > span")];
++    expect([a?.style.getPropertyValue("font-style"), a?.style.getPropertyValue("text-decoration")]).toEqual(["italic", "underline"]);
++    expect(b?.getAttribute("style")).toBeNull();
++  });
++
++  it("are drawn when they come, the block showing its text until then", async () => {
++    createPage(area, { highlight: (code, language) => Promise.resolve(words(code, language)) }).render(tree(block("let a;")));
++    expect([tokens(), area.textContent]).toEqual([[], "let a;"]);
++    await settled();
++    expect(tokens()).toEqual(["let ", "a;"]);
++  });
++
++  it("are dropped when they come after a newer text's, whichever comes first", async () => {
++    const given: ((lines: CodeLines) => void)[] = [];
++    const page = createPage(area, { highlight: () => new Promise((resolve) => given.push(resolve)) });
++    page.render(tree(block("let older;")));
++    page.render(tree(block("let newer;")));
++    given[1]?.([[{ text: "let newer;" }]]);
++    given[0]?.([[{ text: "let older;" }]]);
++    await settled();
++    expect([tokens(), area.textContent]).toEqual([["let newer;"], "let newer;"]);
++  });
++});
++
++describe("a block keeps its text", () => {
++  const kept = '<pre><code class="language-js"><span class="compmd-line" data-line="5">let a;</span></code></pre>';
++  /** What a page of the block `let a;` shows with `highlight`, once what it gave has settled. */
++  async function shown(highlight: CodeHighlighter): Promise<string> {
++    const root = area.appendChild(document.createElement("div"));
++    createPage(root, { highlight }).render(tree(block("let a;")));
++    await settled();
++    return root.innerHTML;
++  }
++
++  it("when the highlighter gives none for its language", async () => {
++    expect(await shown(() => undefined)).toBe(kept);
++    expect(await shown(() => Promise.resolve(undefined))).toBe(kept);
++  });
++
++  it("when the tokens aren't its text: other text, or other lines", async () => {
++    for (const given of [[[{ text: "let b;" }]], [[{ text: "let " }], [{ text: "a;" }]], []]) expect(await shown(() => given)).toBe(kept);
++  });
++
++  it("when the highlighter fails, at once or later", async () => {
++    expect(
++      await shown(() => {
++        throw new Error("no grammar");
++      }),
++    ).toBe(kept);
++    expect(await shown(() => Promise.reject(new Error("offline")))).toBe(kept);
++  });
++});
+diff --git a/npm-packages/render/src/highlight.ts b/npm-packages/render/src/highlight.ts
+new file mode 100644
+index 0000000..a09639c
+--- /dev/null
++++ b/npm-packages/render/src/highlight.ts
+@@ -0,0 +1,88 @@
++// Highlighting a code block that shows as code: a highlighter says what each line's tokens are, and the renderer
++// draws them into the block's own lines (`code-lines.ts`). So a highlighter never touches the page, and how a block
++// is drawn (its lines, their numbers) stays the renderer's own.
++import { CODE_LINE } from "./code-lines.ts";
++
++/** A token of a highlighted line: a piece of its text, and how it shows. */
++export interface CodeToken {
++  /** The token's text, without a line break. */
++  text: string;
++  /** Its colour in each colour scheme, as CSS colours; without it, the text's own colour. */
++  color?: { light: string; dark: string };
++  italic?: boolean;
++  bold?: boolean;
++  underline?: boolean;
++}
++
++/** A highlighted block: each line's tokens, whose texts joined are the line. */
++export type CodeLines = readonly (readonly CodeToken[])[];
++
++/**
++ * Highlights a code block that shows as code: gives the tokens of `code`, written in the fence language `language`
++ * (`""` for none), line by line, or `undefined` for a language it doesn't highlight. It may give them later, as a
++ * promise, once what it needs has loaded: the block shows its text until then, and keeps it when the promise is
++ * rejected. It is called again only when the block's text or language changes.
++ *
++ * The tokens must be the block's text: each line's texts joined give the line, and the lines are the code's. Tokens
++ * that aren't are dropped, and the block keeps its text.
++ *
++ * @example
++ * const highlight: CodeHighlighter = (code, language) =>
++ *   language === "todo" ? code.split("\n").map((line) => [{ text: line, bold: line.startsWith("!") }]) : undefined;
++ * createPage(root, { highlight });
++ */
++export type CodeHighlighter = (code: string, language: string) => CodeLines | undefined | Promise<CodeLines | undefined>;
++
++/** What each block asked for last, so tokens that come after a newer text's are dropped. */
++const latest = new WeakMap<HTMLElement, object>();
++
++/**
++ * Highlights `target`, a block's `<code>` holding `code` as its lines, with `highlight`: its tokens drawn at once when
++ * it gives them at once, or when they come, unless the block has changed since.
++ */
++export function highlightCode(target: HTMLElement, code: string, language: string, highlight: CodeHighlighter): void {
++  const asked = {};
++  latest.set(target, asked);
++  let given: ReturnType<CodeHighlighter>;
++  try {
++    given = highlight(code, language);
++  } catch {
++    return;
++  }
++  if (!(given instanceof Promise)) {
++    if (given) drawTokens(target, code, given);
++    return;
++  }
++  void given.then(
++    (lines) => {
++      if (lines && latest.get(target) === asked) drawTokens(target, code, lines);
++    },
++    () => undefined,
++  );
++}
++
++/**
++ * Puts `lines` in `target` as spans, each line's in its line's element, which keeps its attributes and its line break,
++ * unless they aren't `code`'s text: then the block keeps its text.
++ */
++function drawTokens(target: HTMLElement, code: string, lines: CodeLines): void {
++  if (lines.map((line) => line.map(({ text }) => text).join("")).join("\n") !== code) return;
++  const elements = [...target.children].filter((child) => child.classList.contains(CODE_LINE));
++  if (elements.length !== lines.length) return;
++  const document = target.ownerDocument;
++  for (const [i, line] of lines.entries()) {
++    const parts: Node[] = line.map(({ text, color, italic, bold, underline }) => {
++      const span = document.createElement("span");
++      span.textContent = text;
++      // Through the CSSOM, which a frame's policy allows where it refuses a `style` attribute; it follows the
++      // `color-scheme` of the page around it, so nothing is drawn again when that changes.
++      if (color) span.style.setProperty("color", `light-dark(${color.light}, ${color.dark})`);
++      if (italic) span.style.setProperty("font-style", "italic");
++      if (bold) span.style.setProperty("font-weight", "bold");
++      if (underline) span.style.setProperty("text-decoration", "underline");
++      return span;
++    });
++    if (i < lines.length - 1) parts.push(document.createTextNode("\n"));
++    elements[i]?.replaceChildren(...parts);
++  }
++}
+diff --git a/npm-packages/render/src/index.ts b/npm-packages/render/src/index.ts
+index 6862ddb..8beaabe 100644
+--- a/npm-packages/render/src/index.ts
++++ b/npm-packages/render/src/index.ts
+@@ -8,11 +8,11 @@ export { schemeOf } from "./scheme.ts";
+ export { Keys, codePointOffset, utf16Offset, type EditRange, type KeyOf, type Keyed } from "./keys.ts";
+ export { reveal, REVEALED_MS, type Source } from "./source.ts";
+ export type { Line, Rect } from "./lines.ts";
+-export { CODE_LINE } from "./code-lines.ts";
+ export { BUSY_MS } from "./busy.ts";
+ export type { Change, Diagnostic } from "./stable.ts";
+ export { footnotesOf, definitionsOf, plainText, type Footnotes, type LinkDefinition } from "./document.ts";
+-export type { CodeHighlighter, CodeRenderer, MathRenderer } from "./render.ts";
++export type { CodeRenderer, MathRenderer } from "./render.ts";
++export type { CodeHighlighter, CodeLines, CodeToken } from "./highlight.ts";
+ export { imageSources, type ImageSource, type Refused } from "./images.ts";
+ export { ownSchemes, urlScheme } from "./html.ts";
+ export type * from "./contract.ts";
+diff --git a/npm-packages/render/src/lines.test.ts b/npm-packages/render/src/lines.test.ts
+index 207e0f2..2bf80d8 100644
+--- a/npm-packages/render/src/lines.test.ts
++++ b/npm-packages/render/src/lines.test.ts
+@@ -83,9 +83,7 @@ describe("lines", () => {
+ 
+   it("finds a code block's lines across the highlighter's tokens", () => {
+     const p = page({
+-      highlight: (code, _language, target) => {
+-        target.replaceChildren(...code.split(/(?<=\s)/).map((token) => Object.assign(document.createElement("span"), { textContent: token })));
+-      },
++      highlight: (code) => code.split("\n").map((line) => line.split(/(?<= )/).map((text) => ({ text }))),
+     });
+     p.render(tree(node("code", span(1, 0, 4, 30), [], { lang: "js", value: "let a = 1;\nlet b;" })));
+     expect([...p.lines()].map(({ line }) => line)).toEqual([2, 3]);
+diff --git a/npm-packages/render/src/markdown-views.ts b/npm-packages/render/src/markdown-views.ts
+index 150784f..8a791a3 100644
+--- a/npm-packages/render/src/markdown-views.ts
++++ b/npm-packages/render/src/markdown-views.ts
+@@ -1,6 +1,7 @@
+ // The views of Markdown nodes (CommonMark and GFM, with alerts and math; spec §2.3): text, elements, code blocks that
+ // show as code, images whose files the caller gives, and code or math the caller's renderer draws.
+ import { drawCodeLines } from "./code-lines.ts";
++import { highlightCode } from "./highlight.ts";
+ import type { ImageSource } from "./images.ts";
+ import { safeUrl } from "./html.ts";
+ import { destroyAll, patch, pendingTag, shapeOf, type Pass, type Surface, type View } from "./render.ts";
+@@ -211,7 +212,7 @@ export class CodeBlockView implements View {
+     if (language) this.#code.className = `language-${language}`;
+     else this.#code.removeAttribute("class");
+     drawCodeLines(this.#code, code);
+-    this.#surface.highlight?.(code, language, this.#code);
++    if (this.#surface.highlight) highlightCode(this.#code, code, language, this.#surface.highlight);
+   }
+ 
+   destroy(): void {
+diff --git a/npm-packages/render/src/region.ts b/npm-packages/render/src/region.ts
+index 43a45c7..98e4b29 100644
+--- a/npm-packages/render/src/region.ts
++++ b/npm-packages/render/src/region.ts
+@@ -3,6 +3,7 @@
+ import { Busy } from "./busy.ts";
+ import type { ComponentError, ComponentRecovered, Mount, RenderError } from "./contract.ts";
+ import type { LinkDefinition } from "./document.ts";
++import type { CodeHighlighter } from "./highlight.ts";
+ import { ownSchemes } from "./html.ts";
+ import { RefusedImages } from "./refused-images.ts";
+ import type { ImageSource } from "./images.ts";
+@@ -10,7 +11,7 @@ import type { KeyOf } from "./keys.ts";
+ import { Layout } from "./layout.ts";
+ import { linesIn, type Line } from "./lines.ts";
+ import { needsContainer } from "./component-views.ts";
+-import { destroyAll, patch, PendingMounts, type CodeHighlighter, type CodeRenderer, type MathRenderer, type Surface, type View } from "./render.ts";
++import { destroyAll, patch, PendingMounts, type CodeRenderer, type MathRenderer, type Surface, type View } from "./render.ts";
+ import { Schemes } from "./scheme.ts";
+ import { Drawn, elementsIn, placedOf, sourceIn, type Source } from "./source.ts";
+ import { Stylesheet, type ParentLayout } from "./styles.ts";
+diff --git a/npm-packages/render/src/render.ts b/npm-packages/render/src/render.ts
+index da6fa14..5647083 100644
+--- a/npm-packages/render/src/render.ts
++++ b/npm-packages/render/src/render.ts
+@@ -7,6 +7,7 @@ import { BoxView, ComponentView, INPUTS, InputView, RenderedCodeView } from "./c
+ import type { ComponentError, ComponentRecovered, Mount } from "./contract.ts";
+ import type { LinkDefinition } from "./document.ts";
+ import { ExampleView } from "./example-view.ts";
++import type { CodeHighlighter } from "./highlight.ts";
+ import { withHtml } from "./html.ts";
+ import type { ImageSource } from "./images.ts";
+ import { CallbackView, CodeBlockView, ElementView, ImageView, isImage, textView } from "./markdown-views.ts";
+@@ -20,14 +21,6 @@ import { isComponent, rendererOf, textOf, type ExpandedCode, type ExpandedInput,
+ export type CodeRenderer = (source: string, target: HTMLElement) => void;
+ /** Renders TeX math into `target`. */
+ export type MathRenderer = (tex: string, options: { display: boolean }, target: HTMLElement) => void;
+-/**
+- * Highlights a code block that shows as code: `code`, written in the fence language `language` (`""` for none), into
+- * `target`, the block's `<code>`, which holds one element per line until then, each `.compmd-line` (`CODE_LINE`)
+- * with its text and its line break. It puts each line's tokens in that line's element, keeping the element and its
+- * attributes (`data-line`), so a host's styles for a line stay. It may do so later, once what it needs has loaded; it
+- * is called again only when the block's text or language changes.
+- */
+-export type CodeHighlighter = (code: string, language: string, target: HTMLElement) => void;
+ 
+ /**
+  * The mounts of the components a render made, waiting until it has placed their boxes in the document and flushed the
+diff --git a/npm-packages/sandbox/README.md b/npm-packages/sandbox/README.md
+index 625a8c7..b43c97c 100644
+--- a/npm-packages/sandbox/README.md
++++ b/npm-packages/sandbox/README.md
+@@ -183,8 +183,8 @@ view.on("settled", () => print());             // each time it settles again, af
+ 
+ Every code block that shows as code is highlighted, wherever a page renders (the page's frame, a use's frame, the host's page): one of a language no code renderer draws, and a code renderer's fallback, when its component is missing or fails (spec §7.7). It is `@compmd/render`'s `highlight`, given as `shikiHighlight()`, which a host that renders a page itself with `createPage` or `createRegion` can give too.
+ 
+-- **Shiki,** with its JavaScript regex engine, so a strict frame needs no WebAssembly and its policy stays as it is. Its core and engine load the first time a page has a code block; each language's grammar the first time a block of it shows. Until then, and for a block it can't highlight, the text shows as it is. A block is highlighted again only when its text changes. Each line's tokens go into that line's element, which `@compmd/render` draws, so a line's height (`view.lineHeights`) holds before and after the tokens come.
+-- **Light and dark:** GitHub's themes, as the website's spec page. Each token's colour is `light-dark(light, dark)`, set through the CSSOM, so it follows the `color-scheme` every frame takes from the page around it, with nothing drawn again when it changes.
++- **Shiki,** with its JavaScript regex engine, so a strict frame needs no WebAssembly and its policy stays as it is. Its core and engine load the first time a page has a code block; each language's grammar the first time a block of it shows. Until then, and for a block it can't highlight, the text shows as it is. A block is highlighted again only when its text changes. The highlighter gives each line's tokens, and `@compmd/render` draws them into the line's element, which is its own, so a line's height (`view.lineHeights`) holds before and after the tokens come.
++- **Light and dark:** GitHub's themes, as the website's spec page. Each token has its colour in both, which the renderer sets as `light-dark(light, dark)` through the CSSOM, so it follows the `color-scheme` every frame takes from the page around it, with nothing drawn again when it changes.
+ - **CompMD's syntax** shows in `md`, `markdown` and `compmd` blocks: component lines, inline components, param lists and `{{paths}}`, by a grammar injected into Markdown's, with a document's frontmatter, or a `compmd` definition's signature, as YAML. The website's spec page uses the same grammar, `@compmd/sandbox/grammar`.
+ - **The languages, by the fence names that mean them:** C (`c`), C++ (`cpp`, `c++`), C# (`csharp`, `c#`, `cs`), Java, Kotlin (`kotlin`, `kt`, `kts`), Scala, Swift, Objective-C (`objective-c`, `objc`), Go, Rust (`rust`, `rs`), Zig, Dart; Python (`python`, `py`), Ruby (`ruby`, `rb`), PHP, Perl, Lua, R, Julia (`julia`, `jl`), PowerShell (`powershell`, `ps`, `ps1`, `pwsh`), shell (`shellscript`, `bash`, `sh`, `shell`, `zsh`), Batch (`bat`, `batch`, `cmd`); Haskell (`haskell`, `hs`), Elixir, Erlang (`erlang`, `erl`), Clojure (`clojure`, `clj`), F# (`fsharp`, `f#`, `fs`), OCaml; JavaScript (`javascript`, `js`, `cjs`, `mjs`), TypeScript (`typescript`, `ts`, `cts`, `mts`), JSX, TSX, HTML, CSS, SCSS, Less, Svelte, Vue, Astro, GraphQL (`graphql`, `gql`); JSON, JSONC, JSON5, YAML (`yaml`, `yml`), TOML, INI (`ini`, `properties`), XML, CSV, SQL, Protocol Buffers (`proto`, `protobuf`); Dockerfile (`docker`, `dockerfile`), Makefile (`make`, `makefile`), CMake, HCL, Nix, Nginx; Diff, Markdown (`markdown`, `md`), CompMD (`compmd`), LaTeX, Mermaid (`mermaid`, `mmd`), MATLAB, Groovy, Solidity. A name is any case; any other language stays plain.
+ 
+diff --git a/npm-packages/sandbox/src/from-frames.ts b/npm-packages/sandbox/src/from-frames.ts
+index 677e331..5edb066 100644
+--- a/npm-packages/sandbox/src/from-frames.ts
++++ b/npm-packages/sandbox/src/from-frames.ts
+@@ -10,18 +10,13 @@ const imported = <T>(url: string): Promise<T> => import(/* @vite-ignore */ url)
+ 
+ /**
+  * The frames' highlighter (`shikiHighlight`), loaded from `base` the first time a page has a code block. Until then
+- * a block shows its text, as it does when its language isn't highlighted.
++ * a block shows its text, as it does when its language isn't highlighted, or when the file can't be had.
+  */
+ export function framesHighlight(base: string): CodeHighlighter {
+   let loaded: Promise<CodeHighlighter> | undefined;
+-  return (code, language, target) => {
++  return async (code, language) => {
+     loaded ??= imported<{ shikiHighlight: () => CodeHighlighter }>(frameUrl(base, "highlight.js")).then((module) => module.shikiHighlight());
+-    void loaded.then(
+-      (highlight) => {
+-        highlight(code, language, target);
+-      },
+-      () => undefined,
+-    );
++    return (await loaded)(code, language);
+   };
+ }
+ 
+diff --git a/npm-packages/sandbox/src/highlight/highlight.test.ts b/npm-packages/sandbox/src/highlight/highlight.test.ts
+index f67e81d..fc1958e 100644
+--- a/npm-packages/sandbox/src/highlight/highlight.test.ts
++++ b/npm-packages/sandbox/src/highlight/highlight.test.ts
+@@ -1,132 +1,58 @@
+-// @vitest-environment happy-dom
+-import { CODE_LINE } from "@compmd/render";
+-import { describe, expect, it, vi } from "vitest";
++import type { CodeLines } from "@compmd/render";
++import { describe, expect, it } from "vitest";
+ import { highlightWith, shikiHighlight, type Shikis } from "./highlight.ts";
+ import { LANGUAGE_NAMES } from "./languages.ts";
+ 
+-/** `target` holding `text` as the renderer draws it: an element per line, each with its line break but the last. */
+-function drawLines(target: HTMLElement, text: string): HTMLElement {
+-  const lines = text.split("\n");
+-  target.replaceChildren(...lines.map((line, i) => Object.assign(document.createElement("span"), { className: CODE_LINE, textContent: i < lines.length - 1 ? `${line}\n` : line })));
+-  return target;
+-}
+-/** A block's `<code>`, holding its text, as the renderer gives it. */
+-const codeOf = (text: string) => drawLines(document.createElement("code"), text);
+-/** The texts of `target`'s tokens, the spans in its lines. */
+-const tokens = (target: HTMLElement) => [...target.querySelectorAll(`.${CODE_LINE} > span`)].map((span) => span.textContent);
++/** The texts of `lines`' tokens. */
++const texts = (lines: CodeLines | undefined) => (lines ?? []).flatMap((line) => line.map(({ text }) => text));
++/** `lines` as the text they are of. */
++const textOf = (lines: CodeLines | undefined) => (lines ?? []).map((line) => line.map(({ text }) => text).join("")).join("\n");
+ 
+-/**
+- * How long to wait for Shiki and a grammar to load: well under a second alone, but many seconds while every package's
+- * tests run at once; and the test's own limit above it.
+- */
+-const LOADED = { timeout: 10_000 };
++/** Shiki and a grammar load well under a second alone, but take many seconds while every package's tests run at once. */
+ const TEST = { timeout: 15_000 };
+ 
+ describe("shikiHighlight", () => {
+-  it("draws a block's tokens, its text as it was, loading Shiki once", TEST, async () => {
++  it("gives a block's tokens, which are its text, in both themes' colours, loading Shiki once", TEST, async () => {
+     const highlight = shikiHighlight();
+-    const [first, second] = [codeOf("const a = 1;"), codeOf("print('hi')")];
+-    highlight("const a = 1;", "js", first);
+-    highlight("print('hi')", "python", second);
+-    expect(first.textContent).toBe("const a = 1;");
+-    await vi.waitFor(() => {
+-      expect(tokens(first)).toContain("const");
+-      expect(tokens(second)).toContain("print");
+-    }, LOADED);
+-    expect(first.textContent).toBe("const a = 1;");
+-    expect(second.textContent).toBe("print('hi')");
++    const [js, python] = await Promise.all([highlight("const a = 1;", "js"), highlight("print('hi')", "python")]);
++    expect(texts(js)).toContain("const");
++    expect(texts(python)).toContain("print");
++    expect([textOf(js), textOf(python)]).toEqual(["const a = 1;", "print('hi')"]);
++    const keyword = js?.[0]?.find(({ text }) => text === "const");
++    expect(keyword?.color).toEqual({ light: expect.stringMatching(/^#/) as string, dark: expect.stringMatching(/^#/) as string });
++    expect(keyword?.color?.light).not.toBe(keyword?.color?.dark);
++  });
++
++  it("gives a line of tokens for each line of the text, a blank line too", TEST, async () => {
++    const lines = await shikiHighlight()("const a = 1;\n\nconst b = 2;", "js");
++    expect(lines?.map((line) => line.map(({ text }) => text).join(""))).toEqual(["const a = 1;", "", "const b = 2;"]);
+   });
+ 
+   it("shows CompMD's syntax in Markdown, its frontmatter as YAML, and a definition's signature as YAML", TEST, async () => {
+     const highlight = shikiHighlight();
+     const markdown = '---\nheading: A\n---\n::: card {title="Setup" gap=m}\n- {{md.doc.heading}}\n::: /card';
+     const definition = "params:\n  a: string\n---\n::: box {gap=s}\n{{a}}\n::: /box";
+-    const [md, compmd] = [codeOf(markdown), codeOf(definition)];
+-    highlight(markdown, "md", md);
+-    highlight(definition, "compmd", compmd);
+-    await vi.waitFor(() => {
+-      expect(tokens(md)).toEqual(expect.arrayContaining(["heading", "card", "gap", "{{md.doc.heading}}"]));
+-      expect(tokens(compmd)).toEqual(expect.arrayContaining(["params", "box"]));
+-    }, LOADED);
+-    expect(md.textContent).toBe(markdown);
+-    expect(compmd.textContent).toBe(definition);
+-  });
+-
+-  it("leaves a block of a language it doesn't highlight, or of none, as it is", async () => {
+-    const highlight = shikiHighlight();
+-    const [cobol, none] = [codeOf("DISPLAY 'HI'."), codeOf("plain")];
+-    highlight("DISPLAY 'HI'.", "cobol", cobol);
+-    highlight("plain", "", none);
+-    await new Promise((resolve) => setTimeout(resolve, 100));
+-    expect([tokens(cobol), tokens(none)]).toEqual([[], []]);
+-    expect([cobol.textContent, none.textContent]).toEqual(["DISPLAY 'HI'.", "plain"]);
++    const [md, compmd] = await Promise.all([highlight(markdown, "md"), highlight(definition, "compmd")]);
++    expect(texts(md)).toEqual(expect.arrayContaining(["heading", "card", "gap", "{{md.doc.heading}}"]));
++    expect(texts(compmd)).toEqual(expect.arrayContaining(["params", "box"]));
++    expect([textOf(md), textOf(compmd)]).toEqual([markdown, definition]);
+   });
+ 
+-  it("puts each line's tokens in its line's element, which keeps its attributes, a blank line's too", TEST, async () => {
++  it("gives none for a language it doesn't highlight, or for none", () => {
+     const highlight = shikiHighlight();
+-    const text = "const a = 1;\n\nconst b = 2;";
+-    const target = codeOf(text);
+-    for (const [i, line] of [...target.children].entries()) line.setAttribute("data-line", String(4 + i));
+-    const lines = [...target.children];
+-    highlight(text, "js", target);
+-    await vi.waitFor(() => {
+-      expect(tokens(target)).toContain("const");
+-    }, LOADED);
+-    expect([...target.children]).toEqual(lines);
+-    expect(lines.map((line) => [line.getAttribute("data-line"), line.textContent])).toEqual([
+-      ["4", "const a = 1;\n"],
+-      ["5", "\n"],
+-      ["6", "const b = 2;"],
+-    ]);
+-    expect(target.textContent).toBe(text);
++    expect([highlight("DISPLAY 'HI'.", "cobol"), highlight("plain", "")]).toEqual([undefined, undefined]);
+   });
+ 
+-  it("loads and draws every language it lists, with the JavaScript engine", { timeout: 30_000 }, async () => {
++  it("loads and gives every language it lists, with the JavaScript engine", { timeout: 30_000 }, async () => {
+     const highlight = shikiHighlight();
+-    const blocks = LANGUAGE_NAMES.map((name) => [name, codeOf("x = 1\ny")] as const);
+-    for (const [name, target] of blocks) highlight("x = 1\ny", name, target);
+-    await vi.waitFor(
+-      () => {
+-        expect(blocks.filter(([, target]) => tokens(target).length === 0).map(([name]) => name)).toEqual([]);
+-      },
+-      { timeout: 25_000 },
+-    );
+-    for (const [, target] of blocks) expect(target.textContent).toBe("x = 1\ny");
++    const given = await Promise.all(LANGUAGE_NAMES.map(async (name) => [name, await highlight("x = 1\ny", name)] as const));
++    expect(given.filter(([, lines]) => textOf(lines) !== "x = 1\ny").map(([name]) => name)).toEqual([]);
+   });
+ });
+ 
+ describe("highlightWith", () => {
+-  it("draws only a block's newest text, whichever tokens come first", TEST, async () => {
+-    const highlight = shikiHighlight();
+-    const target = codeOf("let older = 1;");
+-    // TypeScript's grammar loads after JavaScript's, so the older block's tokens could come last.
+-    highlight("let older = 1;", "ts", target);
+-    drawLines(target, "let newer = 2;");
+-    highlight("let newer = 2;", "js", target);
+-    await vi.waitFor(() => {
+-      expect(tokens(target).some((token) => token.includes("newer"))).toBe(true);
+-    }, LOADED);
+-    await new Promise((resolve) => setTimeout(resolve, 200));
+-    expect(target.textContent).toBe("let newer = 2;");
+-  });
+-
+-  it("keeps a block's text when Shiki doesn't load", async () => {
++  it("rejects when Shiki doesn't load, so the renderer keeps the block's text", async () => {
+     const highlight = highlightWith((): Promise<Shikis> => Promise.reject(new Error("offline")));
+-    const target = codeOf("const a = 1;");
+-    highlight("const a = 1;", "js", target);
+-    await new Promise((resolve) => setTimeout(resolve, 50));
+-    expect(target.innerHTML).toBe(`<span class="${CODE_LINE}">const a = 1;</span>`);
+-  });
+-
+-  it("keeps a block's text when its lines aren't an element each, as another renderer's are", TEST, async () => {
+-    const highlight = shikiHighlight();
+-    const target = Object.assign(document.createElement("code"), { textContent: "const a = 1;" });
+-    const other = codeOf("const b = 2;");
+-    highlight("const a = 1;", "js", target);
+-    highlight("const b = 2;", "js", other);
+-    await vi.waitFor(() => {
+-      expect(tokens(other)).toContain("const");
+-    }, LOADED);
+-    expect(target.innerHTML).toBe("const a = 1;");
++    await expect(highlight("const a = 1;", "js")).rejects.toThrow("offline");
+   });
+ });
+diff --git a/npm-packages/sandbox/src/highlight/highlight.ts b/npm-packages/sandbox/src/highlight/highlight.ts
+index 73ee9e9..9186323 100644
+--- a/npm-packages/sandbox/src/highlight/highlight.ts
++++ b/npm-packages/sandbox/src/highlight/highlight.ts
+@@ -1,16 +1,13 @@
+ // Code blocks highlighted by Shiki, in both page modes (in the page's frame and use frames, or in the host's page), in
+ // GitHub's light and dark themes. Shiki's core and its JavaScript regex engine load the first time a page has a code
+ // block, so a strict frame's policy needs no WebAssembly; each language's grammar loads the first time a block of it
+-// shows. Each token's colour is `light-dark(light, dark)`, set through the CSSOM, which a frame's policy allows, and
+-// which follows the `color-scheme` a frame takes from the page around it.
++// shows. It gives each token's text and its colour in each theme (`tokens.ts`); the renderer draws them.
+ 
+-import { CODE_LINE, type CodeHighlighter } from "@compmd/render";
+-import type { HighlighterCore, LanguageRegistration, ThemedTokenWithVariants } from "@shikijs/core";
++import type { CodeHighlighter } from "@compmd/render";
++import type { HighlighterCore, LanguageRegistration } from "@shikijs/core";
+ import { COMPMD, splitYaml } from "./grammar.ts";
+ import { grammarOf, languageOf } from "./languages.ts";
+-
+-/** A block's lines, each a list of tokens with their colours in each theme. */
+-type Lines = ThemedTokenWithVariants[][];
++import { codeTokens, type ShikiLines as Lines } from "./tokens.ts";
+ 
+ /** Two Shikis: Markdown's, with CompMD's syntax injected, and the other languages', YAML among them (`grammar.ts`). */
+ export interface Shikis {
+@@ -20,11 +17,6 @@ export interface Shikis {
+ 
+ const THEMES = { light: "github-light", dark: "github-dark" } as const;
+ 
+-/** Shiki's `FontStyle` bits. */
+-const ITALIC = 1;
+-const BOLD = 2;
+-const UNDERLINE = 4;
+-
+ /** Loads Shiki's core, its JavaScript engine and the two themes, and Markdown with CompMD's syntax. */
+ async function loadShikis(): Promise<Shikis> {
+   const [{ createHighlighterCore }, { createJavaScriptRegexEngine }, light, dark, markdown] = await Promise.all([
+@@ -46,8 +38,9 @@ export function shikiHighlight(): CodeHighlighter {
+ }
+ 
+ /**
+- * A highlighter for the page, with the Shikis `load` gives, loaded once. A block of a language it doesn't highlight
+- * stays as it is; one it does keeps its text until its tokens are there, and keeps it if they can't be had.
++ * A highlighter for the page, with the Shikis `load` gives, loaded once. It gives a block's tokens once Shiki and the
++ * block's grammar have loaded, none for a language it doesn't highlight, and a rejected promise when they can't be
++ * had: the renderer keeps the block's text then.
+  *
+  * @example
+  * serveFrame(port, { container, highlight: highlightWith(loadMyShikis) });
+@@ -56,8 +49,6 @@ export function highlightWith(load: () => Promise<Shikis>): CodeHighlighter {
+   let shikis: Promise<Shikis> | undefined;
+   /** The grammars the other languages' Shiki has, or is loading, by name. */
+   const loaded = new Map<string, Promise<void>>();
+-  /** What each block is to show last, so tokens that come after newer ones are dropped. */
+-  const latest = new WeakMap<HTMLElement, string>();
+ 
+   const tokens = async (code: string, name: string): Promise<Lines> => {
+     const { others } = await (shikis ??= load());
+@@ -84,41 +75,5 @@ export function highlightWith(load: () => Promise<Shikis>): CodeHighlighter {
+     return name === undefined ? undefined : tokens(code, name);
+   };
+ 
+-  return (code, language, target) => {
+-    const shown = `${language}\u0000${code}`;
+-    latest.set(target, shown);
+-    const lines = linesOf(code, language);
+-    void lines?.then(
+-      (drawn) => {
+-        if (latest.get(target) === shown) draw(drawn, code, target);
+-      },
+-      () => undefined,
+-    );
+-  };
+-}
+-
+-/**
+- * Puts `lines` in `target` as spans, each line's in its line's element (`CODE_LINE`), which keeps its attributes,
+- * unless they aren't `code`'s text, or `target` hasn't an element for each line: then it keeps the text.
+- */
+-function draw(lines: Lines, code: string, target: HTMLElement): void {
+-  if (lines.map((line) => line.map(({ content }) => content).join("")).join("\n") !== code) return;
+-  const elements = [...target.children].filter((child) => child.classList.contains(CODE_LINE));
+-  if (elements.length !== lines.length) return;
+-  const document = target.ownerDocument;
+-  for (const [i, line] of lines.entries()) {
+-    const parts: Node[] = line.map(({ content, variants }) => {
+-      const span = document.createElement("span");
+-      span.textContent = content;
+-      const { light, dark } = variants;
+-      if (light?.color && dark?.color) span.style.setProperty("color", `light-dark(${light.color}, ${dark.color})`);
+-      const style = light?.fontStyle ?? 0;
+-      if (style & ITALIC) span.style.setProperty("font-style", "italic");
+-      if (style & BOLD) span.style.setProperty("font-weight", "bold");
+-      if (style & UNDERLINE) span.style.setProperty("text-decoration", "underline");
+-      return span;
+-    });
+-    if (i < lines.length - 1) parts.push(document.createTextNode("\n"));
+-    elements[i]?.replaceChildren(...parts);
+-  }
++  return (code, language) => linesOf(code, language)?.then(codeTokens);
+ }
+diff --git a/npm-packages/sandbox/src/highlight/tokens.ts b/npm-packages/sandbox/src/highlight/tokens.ts
+new file mode 100644
+index 0000000..b6a547b
+--- /dev/null
++++ b/npm-packages/sandbox/src/highlight/tokens.ts
+@@ -0,0 +1,35 @@
++// Shiki's tokens as the renderer's highlighter gives them (`@compmd/render`'s `CodeHighlighter`): each token's text,
++// its colour in the light and the dark theme, and its font style.
++
++import type { CodeLines, CodeToken } from "@compmd/render";
++import type { ThemedTokenWithVariants } from "@shikijs/core";
++
++/** A block's lines as Shiki's `codeToTokensWithThemes` gives them, with the themes `light` and `dark`. */
++export type ShikiLines = ThemedTokenWithVariants[][];
++
++/** Shiki's `FontStyle` bits. */
++const ITALIC = 1;
++const BOLD = 2;
++const UNDERLINE = 4;
++
++/**
++ * `lines`, Shiki's tokens in the themes `light` and `dark`, as the renderer's: a token's colour when both themes give
++ * one, and the light theme's font style.
++ *
++ * @example
++ * const highlight: CodeHighlighter = (code, language) => codeTokens(shiki.codeToTokensWithThemes(code, { lang: language, themes: { light: "github-light", dark: "github-dark" } }));
++ */
++export function codeTokens(lines: ShikiLines): CodeLines {
++  return lines.map((line) =>
++    line.map(({ content, variants: { light, dark } }): CodeToken => {
++      const style = light?.fontStyle ?? 0;
++      return {
++        text: content,
++        ...(light?.color && dark?.color ? { color: { light: light.color, dark: dark.color } } : {}),
++        ...(style & ITALIC ? { italic: true } : {}),
++        ...(style & BOLD ? { bold: true } : {}),
++        ...(style & UNDERLINE ? { underline: true } : {}),
++      };
++    }),
++  );
++}
+diff --git a/spikes/highlight-perf/src/draw.ts b/spikes/highlight-perf/src/draw.ts
+index d324801..31e1936 100644
+--- a/spikes/highlight-perf/src/draw.ts
++++ b/spikes/highlight-perf/src/draw.ts
+@@ -1,9 +1,13 @@
+-// A block's tokens drawn into its lines, as `@compmd/sandbox`'s highlighter draws them (`highlight.ts` `draw`): each
+-// line's tokens in the renderer's element for that line, with their colours as `light-dark()`.
++// A block's tokens drawn into its lines, as `@compmd/sandbox`'s highlighter drew them when the spike was run, and as
++// `@compmd/render` draws a highlighter's tokens since (CMD-251): each line's tokens in the renderer's element for that
++// line, with their colours as `light-dark()`. The spike keeps its own, so its variants say when a block is drawn and
++// which blocks are on screen.
+ 
+-import { CODE_LINE } from "@compmd/render";
+ import type { Lines } from "./shiki.ts";
+ 
++/** The class of a code block's line, the renderer's own. */
++const CODE_LINE = "compmd-line";
++
+ const ITALIC = 1;
+ const BOLD = 2;
+ const UNDERLINE = 4;
+diff --git a/spikes/highlight-perf/src/highlighters.ts b/spikes/highlight-perf/src/highlighters.ts
+index 38ce82a..4efb3ca 100644
+--- a/spikes/highlight-perf/src/highlighters.ts
++++ b/spikes/highlight-perf/src/highlighters.ts
+@@ -1,13 +1,16 @@
+-// The variants' highlighters, `@compmd/render`'s `CodeHighlighter`, each made of the choices the spike tries: where
++// The variants' highlighters, each drawing a block's `<code>` as a highlighter did when the spike was run (since
++// CMD-251 one gives tokens and the renderer draws them), each made of the choices the spike tries: where
+ // Shiki lives (one per view, as the sandbox's host mode has it today, or one for the page), its engine, where it
+ // tokenizes (the page's thread or a worker), when blocks are highlighted (each as it renders, or one per task with
+ // those on screen first), and a cache of tokens. Every step is counted in `stats`.
+ 
+-import type { CodeHighlighter } from "@compmd/render";
+ import type { HighlighterCore } from "@shikijs/core";
+ import { draw } from "./draw.ts";
+ import { loadShiki, tokensOf, type Engine, type Lines } from "./shiki.ts";
+ 
++/** Highlights `code` into `target`, a block's `<code>` holding its lines. */
++export type CodeHighlighter = (code: string, language: string, target: HTMLElement) => void;
++
+ export interface Config {
+   shiki: "per-view" | "shared";
+   engine: Engine;
+diff --git a/spikes/highlight-perf/src/main.ts b/spikes/highlight-perf/src/main.ts
+index 8fee472..6f3a394 100644
+--- a/spikes/highlight-perf/src/main.ts
++++ b/spikes/highlight-perf/src/main.ts
+@@ -55,10 +55,13 @@ function mount(index: number): void {
+   if (!run || code === undefined || run.page) return;
+   run.mounted = performance.now();
+   delete run.highlighted;
+-  run.page = createPage(run.slot, query.get("highlight") === "off" ? {} : { highlight: made() });
+-  if (query.get("highlight") === "off") run.highlighted = performance.now();
++  run.page = createPage(run.slot);
+   const lines = code.split("\n").length;
+   run.page.render({ type: "root", children: [{ type: "code", lang: "ts", meta: null, value: code, origin: { start: { line: 1, column: 1 }, end: { line: lines + 2, column: 4 }, occurrence: 0 } }] });
++  // The variant's highlighter draws the block itself, as the page's `highlight` did when the spike was run.
++  const target = run.slot.querySelector<HTMLElement>("pre > code");
++  if (query.get("highlight") === "off" || !target) run.highlighted = performance.now();
++  else made()(code, "ts", target);
+ }
+ 
+ /**

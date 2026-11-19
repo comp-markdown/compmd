@@ -8534,7 +8534,7 @@
       "description": "A highlighter (`CodeHighlighter`, `@compmd/render`) writes DOM into the renderer's `<code>`, so it has to know how the renderer draws a block: since CMD-250, that each line is an element of its own, whose attributes it must keep. That is the renderer's private detail (the line elements, `data-line`, how lines are numbered), which may change (CMD-250's option 3), and a host's own highlighter shouldn't break when it does.\n\n## Change\n\n- `CodeHighlighter` gives tokens instead of writing DOM: `(code, language) => Promise<lines | undefined>`, each line a list of tokens with their text and their style (a colour per theme, and the font style), `undefined` for a language it doesn't highlight.\n- The renderer draws them into its own line elements, after checking that they are the block's text, and drops tokens that come after a newer text (as `highlightWith` does today).\n- `@compmd/sandbox`'s Shiki highlighter (`shikiHighlight`, `highlightWith`) gives Shiki's tokens as they are; its `draw` moves into the renderer.\n- Nothing about lines is exported for highlighters (`CODE_LINE` is the renderer's own).\n- The READMEs give the new contract; the release notes name the break: a host's own highlighter returns tokens.\n\n## Tests\n\n- The renderer draws a highlighter's tokens into a block's lines, keeping the lines' numbers, and keeps the text when the tokens aren't its text or don't come.\n- Shiki's highlighter gives tokens for a language it highlights, and none for one it doesn't.\n- The browser tests of code blocks, in both page modes, light and dark, as today.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [
         "01a1eda3-72cc-74dd-9a87-b21dd98dd410"
       ],
@@ -8544,7 +8544,7 @@
         "npm-packages/sandbox/src/highlight/highlight.ts"
       ],
       "created_at": "2026-11-18T20:42:42Z",
-      "updated_at": "2026-11-19T07:25:25Z",
+      "updated_at": "2026-11-19T07:43:54Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -8557,7 +8557,24 @@
       "number": 251,
       "key_final": false,
       "started_at": "2026-11-19T07:25:25Z",
-      "started_by": "claude:79612601"
+      "started_by": "claude:79612601",
+      "commit": "86c5c448343d3b3ac4f787fd4163b13952a5316c",
+      "code_reviews": [
+        {
+          "id": "01a1f2c3-198f-762d-86ae-9bc7e2bf7683",
+          "ref": "CR-9"
+        }
+      ],
+      "review_requested_at": "2026-11-19T07:43:54Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-19T07:43:54Z",
+          "kind": "review",
+          "text": "CR-9: Highlighters give tokens, and the renderer draws them",
+          "by": "claude:79612601"
+        }
+      ]
     },
     {
       "id": "01a1f0f9-76de-73fc-b8ae-e07bc47777fc",
