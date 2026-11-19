@@ -1,0 +1,167 @@
+diff --git a/docs/first-components.md b/docs/first-components.md
+new file mode 100644
+index 0000000..c9f1460
+--- /dev/null
++++ b/docs/first-components.md
+@@ -0,0 +1,161 @@
++# The first components
++
++**Status: proposed (2026-11-19), for review.** Which components CompMD should have first, so an author finds what
++they reach for: what documentation frameworks ship, which npm component packages are used most, and what CompMD covers
++already, with a ranked list.
++
++## Decisions (proposed)
++
++1. **The ranking weighs what people write, not only documentation.** CompMD's documents are posts, newsletters and
++   notes as well as docs, so the frameworks' counts (below) are one signal; a figure with a caption or a chart ranks
++   higher than a framework count gives it, and an API field table, which only API docs need, lower.
++2. **What CompMD has is not listed again.** Callouts are GitHub's alerts (spec §2.3), math is in the base syntax (the
++   sandbox draws it with Temml), columns and card grids are `row` and `grid` (spec §9), Mermaid and wireframes are packs,
++   and code blocks are highlighted by the host.
++3. **A component without code is a `compmd` definition**, styled with the visual tokens (spec §9.4), as the spec's own
++   `card` and `callout` are: no code, no sandbox, nothing to load. Code is for what a definition can't do: a component
++   that changes when the reader clicks (tabs, a collapsible), and drawing from data (charts).
++4. **A component that needs code is written in the plain binding** (spec §7.6), with no framework to load, unless the
++   package it wraps is a framework's.
++5. **Only what runs in a strict frame is in the first list:** no network, no frames, images only from `data:` and
++   `blob:` (spec §15). What needs more is listed under [Later](#later), with what it waits for.
++6. **One package per kind,** by licence (MIT, BSD, ISC or Apache-2.0), size, and whether it draws without the network
++   and prints.
++
++## The first list
++
++| # | Component | Written as | Wraps | Binding | Why |
++|---|---|---|---|---|---|
++| 1 | `tabs` (and code groups) | a leaf of its own code | — | plain | 10 of 11 frameworks ship tabs. A slot's items carry their params (spec §7.4), so each tab's label is its item's; a code group is tabs whose items are code blocks. Its fallback is every tab in order, under its label. |
++| 2 | `details` (a collapsible) | its own code | — | plain | 9 of 11 frameworks. Raw HTML's `<details>` exists, but HTML is opaque (spec §2.3): no components or Markdown structure inside it. A component draws a native `<details>` around its slot. Its fallback is its content, under its summary. |
++| 3 | `card`, `link-card` | `compmd` definitions on `box`, in a `grid` | — | none | 8 of 11 frameworks; the spec's own example of a definition. A link card is a card whose title is a link. |
++| 4 | `steps` | its own code | — | plain | 7 of 11 frameworks, and how-tos in posts. Numbers its items and draws the line between them; its fallback is the items in order. |
++| 5 | `figure` | a `compmd` definition | — | none | Few frameworks ship it, but posts and newsletters caption their images. An image, a caption below it, the caption as its text alternative too. |
++| 6 | `badge` | a `compmd` definition, inline | — | none | 6 of 11 frameworks; "new", "beta", a version. Its fallback is its text. |
++| 7 | `chart` | a leaf over data rows | `@observablehq/plot` | plain | Charts from `md.data` are what CompMD's data imports are for (spec §8.6). Plot draws SVG, which prints and follows the scheme with CSS, with no network; ISC, 127 KB gzipped. |
++| 8 | `graphviz` | a code renderer for ```` ```dot ```` | `@viz-js/viz` | plain | The other text-to-diagram language people write, as Mermaid is; MIT, WebAssembly (which the frames now allow), no network. |
++| 9 | `data-table` | a leaf over data rows | `gridjs` | plain | A table of data the reader sorts and searches. MIT, 16 KB gzipped. Its fallback is the table's caption. |
++| 10 | `music` | a code renderer for ```` ```abc ```` | `abcjs` | plain | Sheet music from text, which a plain renderer shows as its source; MIT. Drawing only: playing it needs a sound font from the network. |
++| 11 | `qr-code` | a leaf | `qrcode` | plain | A link on paper: newsletters, posters and slides, printed. MIT, 9 KB gzipped, an SVG. |
++| 12 | `timeline` | `compmd` definitions on `box` | — | none | Dates and what happened, in a post or notes; a list of items is enough, so no package. |
++
++Each is a pack of its own, or a few of them share one (`tabs`, `details`, `steps`, `card`, `figure` and `badge` as one
++pack of the basics, since documents use them together); how they are grouped is the packs' design, after this list.
++
++## What else was weighed
++
++**Charts.** Chart.js (MIT, 70 KB gzipped, the most used) draws on a canvas, which prints at the screen's resolution;
++ECharts (Apache-2.0) has the most kinds but is 368 KB gzipped; Vega-Lite (BSD-3) is a JSON spec, and would fit a code
++renderer (```` ```vega-lite ````) better than a leaf; Recharts is React's. Highcharts and amCharts are commercial, and
++ApexCharts' licence is no longer MIT.
++
++**Tables.** TanStack Table is headless (the component would draw the table itself), AG Grid is 392 KB gzipped, and
++Handsontable is commercial.
++
++**Diagrams.** D2's WebAssembly is 6 MB gzipped. tldraw's licence needs a key for production use. Excalidraw is planned
++already (CMD-18), once a component can keep a drawing (CMD-17).
++
++**Math.** KaTeX and MathJax are not needed: math is in the base syntax, and the sandbox draws it with Temml.
++
++## Later
++
++What the first list leaves out, and what it waits for:
++
++| Kind | Packages | Waits for |
++|---|---|---|
++| Image zoom, a gallery, a before-and-after slider | `medium-zoom`, `photoswipe`, `img-comparison-slider` (all MIT) | a component reading the document's images: a strict frame loads images only from `data:` and `blob:` (G1) |
++| 3D models | `@google/model-viewer` (Apache-2.0) | the same, for model files, and WebGL in the frames |
++| Video, YouTube, a post on a social network | `lite-youtube-embed`, `media-chrome` | frames inside a frame (the frames' `frame-src 'none'`) and the network: a permissive pack at least (G2) |
++| Maps | `leaflet` (BSD-2), `maplibre-gl` (BSD-3), with `pmtiles` | tiles from the network (a permissive pack), or a tile file in the pack (G3) |
++| A live code playground | `@codesandbox/sandpack-react` | a hosted bundler, in a frame |
++| An API field table | — | API docs only (decision 1); a `compmd` definition when it's asked for |
++| A tooltip, a banner, `kbd` | — | 2 to 3 frameworks each; `kbd` is in raw HTML's allowlist already |
++
++## Gaps
++
++- **G1. A component and the document's images.** A strict frame's policy allows images from `data:` and `blob:` only,
++  so a component can't show an image the document links. A zoom, a gallery or a slider needs the host to hand the
++  images in (as the slot's items, already loaded), which no design says yet.
++- **G2. Embeds.** A frame can't open a frame, and a strict one has no network, so an embed is a permissive pack's at
++  best; until then, a link card is the honest fallback.
++- **G3. Maps.** A map's tiles come from a server, which only a permissive pack reaches; a tile file in the pack (PMTiles)
++  makes a small offline map possible, its size to measure.
++- **G4. Tabs and collapsibles in the core pack.** They are what authors reach for first, and every page with one would
++  load a frame for it. Implemented by the processor in `@compmd/core`, like the input components (spec §8.7), they'd
++  cost nothing, but that is a spec change; as a pack, nothing changes. To decide before the pack is built.
++- **G5. The numbers.** Weekly downloads count every install, including those pulled in by other packages (cytoscape and
++  elkjs come with Mermaid), so they say what is used, not what authors chose; no study of what docs authors use most
++  was found.
++
++## The research
++
++Read on 2026-11-19. Downloads are npm's for the week of 12 to 18 November 2026
++(`api.npmjs.org/downloads/point/last-week/<name>`), licences from the registry, sizes from Bundlephobia (minified and
++gzipped, the package's entry point).
++
++### What documentation frameworks ship
++
++Y: built in; P: an official option or partly; blank: none; ?: not checked.
++
++| Kind | Docusaurus | Nextra | Starlight | Mintlify | Fumadocs | VitePress | GitBook | Docus | Material for MkDocs | Rspress | sphinx-design | Y |
++|---|---|---|---|---|---|---|---|---|---|---|---|---|
++| Callout | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | 11 |
++| Tabs | Y | Y | Y | Y | Y | | Y | Y | Y | Y | Y | 10 |
++| Collapsible | Y | ? | Y | Y | Y | Y | Y | Y | Y | ? | Y | 9 |
++| Cards | P | Y | Y | Y | Y | | Y | Y | Y | | Y | 8 |
++| Steps | | Y | Y | Y | Y | | Y | Y | | Y | ? | 7 |
++| Badge | | | Y | Y | | Y | ? | Y | | Y | Y | 6 |
++| Code group | P | P | P | Y | Y | Y | | Y | P | P | Y | 5 |
++| Mermaid | P | Y | | Y | Y | | Y | | Y | ? | | 5 |
++| Icons | | | Y | Y | | | ? | Y | Y | | Y | 5 |
++| Math | P | Y | | ? | Y | P | Y | ? | Y | ? | | 4 |
++| File tree | | Y | Y | Y | Y | | | P | | | | 4 |
++| Columns | | | P | Y | | | Y | | Y | | Y | 4 |
++| API fields | | P | | Y | Y | | P | Y | | | | 3 |
++| Banner | | Y | | Y | Y | | | | | | | 3 |
++| Captioned image | | | | Y | P | | | | Y | | | 2 |
++| Tooltip | | | | Y | | | | | Y | | | 2 |
++| Video or embed | | | | P | | | Y | Y | | | | 2 |
++
++Sources: [Docusaurus](https://docusaurus.io/docs/markdown-features), [Nextra](https://nextra.site/docs/built-ins),
++[Starlight](https://starlight.astro.build/components/using-components/), [Mintlify](https://mintlify.com/docs/components),
++[Fumadocs](https://fumadocs.dev/docs/ui/components), [VitePress](https://vitepress.dev/guide/markdown),
++[GitBook](https://gitbook.com/docs/llms.txt), [Docus](https://docus.dev/en/essentials/components),
++[Material for MkDocs](https://squidfunk.github.io/mkdocs-material/reference/),
++[Rspress](https://rspress.rs/ui/components/index.md), [sphinx-design](https://sphinx-design.readthedocs.io/en/latest/).
++
++What authors ask for: Starlight's [discussion of more built-in components](https://github.com/withastro/starlight/discussions/1491)
++(a quiz, click-to-zoom images, cards, `kbd`, math, captions and video; Steps, FileTree and Badge were added after it),
++VitePress's [code groups](https://github.com/vuejs/vitepress/issues/728), and the
++[steps](https://github.com/withastro/docs/discussions/885) Starlight added later. Cloudflare's
++[style guide](https://developers.cloudflare.com/style-guide/build-the-page/components/) lists tabs, details, link
++cards, badges, YouTube, package-manager tabs, glossary tooltips and directory listings as its most used.
++
++### Component packages for documents
++
++| Kind | Package | Weekly downloads | Licence | Framework | Gzipped | Needs |
++|---|---|---|---|---|---|---|
++| Charts | `chart.js` | 17.7 M | MIT | none | 70 KB | canvas |
++| | `echarts` | 11.2 M | Apache-2.0 | none | 368 KB | canvas or SVG |
++| | `vega-lite` | 2.3 M | BSD-3 | none | (`vega-embed` 21 KB, without Vega) | SVG or canvas |
++| | `@observablehq/plot` | 1.5 M | ISC | none | 127 KB | SVG |
++| | `recharts` | 70.6 M | MIT | React | 177 KB | SVG |
++| Diagrams | `mermaid` | 28.1 M | MIT | none | 159 KB | (the Mermaid pack) |
++| | `@viz-js/viz` | 571 K | MIT | none | 486 KB | WebAssembly |
++| | `@terrastruct/d2` | 127 K | MPL-2.0 | none | 6 MB | WebAssembly |
++| | `@excalidraw/excalidraw` | 1.6 M | MIT | React | 353 KB | canvas |
++| Tables | `gridjs` | 84 K | MIT | none | 16 KB | |
++| | `tabulator-tables` | 271 K | MIT | none | 105 KB | |
++| | `ag-grid-community` | 5.7 M | MIT | none | 392 KB | |
++| Music | `abcjs` | 176 K | MIT | none | 148 KB | SVG; a sound font to play |
++| QR codes | `qrcode` | 43.4 M | MIT | none | 9 KB | |
++| Timelines | `vis-timeline` | 312 K | Apache-2.0 or MIT | none | 122 KB | |
++| Images | `medium-zoom` | 755 K | MIT | none | 3 KB | the images |
++| | `photoswipe` | 870 K | MIT | none | 17 KB | the images |
++| | `img-comparison-slider` | 61 K | MIT | web component | 4 KB | the images |
++| Maps | `leaflet` | 12.0 M | BSD-2 | none | 43 KB | tiles |
++| | `maplibre-gl` | 11.4 M | BSD-3 | none | 300 KB | WebGL, tiles |
++| Embeds | `lite-youtube-embed` | 124 K | Apache-2.0 | web component | 2 KB | a frame, the network |
++| 3D | `@google/model-viewer` | 955 K | Apache-2.0 | web component | 73 KB, and Three.js | WebGL, the model |
++
++What each package needs (canvas, WebGL, the network) is from its documentation as known, not tested here.
