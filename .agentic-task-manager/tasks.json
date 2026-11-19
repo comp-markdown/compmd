@@ -524,13 +524,13 @@
       "description": "Asked by the user (2026-11-08): a research of existing components, to define the first list CompMD should have soon to be attractive to authors.\n\n## Research\n- **MDX:** the components docs frameworks ship and authors use most (Docusaurus, Nextra, Starlight, Mintlify, Fumadocs and others: tabs, callouts, cards, steps, code groups, file trees, embeds…).\n- **React, Svelte and plain JS/TS:** widely used component packages that make sense in a document (charts, maps, diagrams, media, data tables, timelines, math, code playgrounds…), with their weekly downloads and licences.\n- What CompMD covers already (`@compmd/core`, layout, callouts, code renderers, Mermaid), so the list holds only what is missing.\n\n## Result\nA document in `docs/` with sources, and a ranked first list: each component's name, the package it wraps (or written in CompMD), its binding, and why it is on the list. Reviewed with the user.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "docs/first-components.md"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-19T16:36:50Z",
+      "updated_at": "2026-11-19T16:40:23Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "with": "user",
@@ -541,7 +541,9 @@
           "from": "2026-11-19T16:36:50Z"
         }
       ],
-      "sprint": "Packs & Blog"
+      "sprint": "Packs & Blog",
+      "started_at": "2026-11-19T16:40:23Z",
+      "started_by": "claude:79612601"
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68e81c39ce10",

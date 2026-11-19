@@ -18,6 +18,7 @@ The designs behind the spec and its implementation. Each starts with its status 
 - [A blog in CompMD](blog-tool.md): `@compmd/blog`, the command `cblo`, a folder of CompMD documents made a static blog (posts, tags, a feed, comments), which the website's blog uses.
 - [Wireframes in CompMD](wireframe-pack.md): the ways a pack could draw wireframes (CompMD components, a small language of its own, Salt, Excalidraw, a service), and the one chosen: Wireloom's syntax as a grammar of our own, drawn as HTML and CSS by a code renderer pack.
   - [The wireframe language](../compmd-packs/wireframe/LANGUAGE.md), in the pack: its grammar in ABNF, the parts drawn first, how each is drawn, its errors and examples, and where it differs from Wireloom.
+- [The first components](first-components.md): proposed, which components CompMD should have first (tabs, a collapsible, cards, steps, a figure, a badge, a chart and others), from what documentation frameworks ship and the component packages used most.
 - [Printing a document](printing.md): proposed, what a document looks like on paper: its components, its colours, its page breaks, and what a processor without a browser prints.
 - [Hosting CompMD](hosting.md): what every host does (the configuration, the bundle, the pack store, serving, the page's configuration, the check), which of it is shared code, and the adapter a platform writes.
 
