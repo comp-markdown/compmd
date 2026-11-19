@@ -121,6 +121,16 @@ The same two variants, with the renderer asking for one block's tokens at a time
 
 `?frames=12` (`frames-js`, `frames-wasm`): twelve frames, one after the other, each a `srcdoc` document that imports `frame.js` (`src/frame.ts`), makes the sandbox's highlighter, and highlights one TypeScript run, with the JavaScript engine or with Oniguruma (`&wasm=1`); the time is from importing to the first tokens. Three runs each, medians; `results-frames.json` has every run. The numbers and what they mean are in [WebAssembly in the frames](../../docs/webassembly-in-the-frames.md#open-points): Oniguruma costs about 85 ms a frame, compiled again in each, where the JavaScript engine's frames after the first take about 30 ms. The first frame is what frame mode's page frame pays for its first block, before CMD-260 and after: 660 ms with the JavaScript engine in WebKit, 56 ms with Oniguruma. These frames have no policy of their own, as `strict.html` has; the work is the same. Since CMD-260 the sandbox's highlighter runs the JavaScript engine in Chromium, so `frames-wasm` there measures it too.
 
+### A page of frames: each frame's Shiki, or the page's for all (CMD-267)
+
+`?framepage=N` (`framepage-frame-1`, `-10`, `-40`; `framepage-host-1`, `-10`, `-40`): `N` frames live at once, each a
+document from another origin (`127.0.0.1` against the page's `localhost`, served by `measure.ts` as `frame-page.html`),
+highlighting five TypeScript runs, with a highlighter of its own (`where=frame`) or by asking the page over a port
+(`where=host`). `--site-per-process` runs Chromium with each frame in a process of its own, as desktop Chrome; the
+runner then reads every process's heap. Three runs each; `results-framepage.json` (Chromium's frames in the page's
+process) and `results-framepage-isolated.json` have every run. The numbers and what they mean are in
+[the host's code highlighter](../../docs/host-highlighter.md#shiki-as-the-default).
+
 ### A large host document: 100 pages opened and closed (CMD-253)
 
 The page above has a small host document, so it missed what each open costs a large one. `?churn=1` adds 20,000 host elements (rows a host's own rules style), then opens 100 pages, one an animation frame, eight live at a time, destroying the oldest, without highlighting: `churn` with a code block each, `churn-styled` with the code in a box with a `width` of its own. It counts what makes the browser style the whole document again: the times the document's sheets are set (`adoptedStyleSheets`), the styles read (`getComputedStyle`) and the sheets written (`replaceSync`). **An open** is from `createPage` to the next animation frame, so 16 ms is one frame. Three runs each, medians; `results-churn-before.json` and `results-churn-after.json` have every run.

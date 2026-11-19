@@ -218,4 +218,6 @@ The sandbox's version travels in `hello` and `ready`, beside `@compmd/render`'s.
 
 ## Open
 
+- **Highlighting by the host's page:** `highlight` and `highlighted`, a frame asking its parent for a block's tokens,
+  proposed in [the host's code highlighter](host-highlighter.md) for the protocol's version 2.
 - **`@compmd/render`'s protocol** could take the sandbox's messages into its own, or stay as it is with the sandbox's beside it on the same port (recommended, decision 5): a host that builds its own sandbox can still use `connectFrame` and `serveFrame` alone.

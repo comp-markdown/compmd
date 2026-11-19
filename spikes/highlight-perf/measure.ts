@@ -4,11 +4,12 @@
 //   node measure.ts [repeats] [variant…]     # each variant `repeats` times (1 by default), all variants without names
 //   node measure.ts 1 today --runs=40        # a smaller page, to try the runner
 //   node measure.ts 3 churn --out=x.json     # written to `x.json` here, not `results.json`
+//   node measure.ts 3 framepage-host-10 --site-per-process   # Chromium's frames each in a process of their own
 
 import { readFileSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { extname, join } from "node:path";
-import { chromium, webkit, type BrowserType } from "playwright";
+import { chromium, webkit, type BrowserType, type Page } from "playwright";
 
 const DIST = join(import.meta.dirname, "dist");
 const TYPES: Record<string, string> = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".wasm": "application/wasm", ".json": "application/json" };
@@ -51,7 +52,51 @@ const VARIANTS: Record<string, string> = {
   // Twelve frames, each highlighting its first block with a highlighter of its own (CMD-260).
   "frames-js": "highlight=off&churn=1&frames=12",
   "frames-wasm": "highlight=off&churn=1&frames=12&wasm=1",
+  // A page of 1, 10 and 40 documents in frame mode, each frame from another origin highlighting five blocks: with a
+  // highlighter of its own, as today, or asking the page, which highlights for all of them with one (CMD-267).
+  "framepage-frame-1": "highlight=off&churn=1&framepage=1&where=frame",
+  "framepage-frame-10": "highlight=off&churn=1&framepage=10&where=frame",
+  "framepage-frame-40": "highlight=off&churn=1&framepage=40&where=frame",
+  "framepage-host-1": "highlight=off&churn=1&framepage=1&where=host",
+  "framepage-host-10": "highlight=off&churn=1&framepage=10&where=host",
+  "framepage-host-40": "highlight=off&churn=1&framepage=40&where=host",
 };
+
+/**
+ * The document each frame of `?framepage=N` loads, from `127.0.0.1` while the page is `localhost`'s, so it is
+ * cross-origin, as the sandbox's frames are: it imports `frame.js` and highlights the blocks the page sends it.
+ */
+const FRAME_PAGE = `<!doctype html>
+<script type="module">
+  import { highlightBlocks } from "/frame.js";
+  addEventListener("message", async ({ data, ports }) => {
+    parent.postMessage(await highlightBlocks(data.blocks, data.askThePage ? ports[0] : undefined), "*");
+  }, { once: true });
+  parent.postMessage("ready", "*");
+</script>
+`;
+
+/**
+ * In Chromium, the JavaScript heap the page and its frames use, in MB, after a collection: each cross-origin frame is
+ * a process of its own, with a heap of its own, and the page's session has the page's. WebKit has no such measure.
+ */
+async function heapMb(page: Page): Promise<{ heapMb: number; heapsRead: number }> {
+  let bytes = 0;
+  let heapsRead = 0;
+  for (const frame of page.frames()) {
+    // A frame in the page's process has no session of its own: its heap is the page's, counted with it.
+    const session = await page
+      .context()
+      .newCDPSession(frame === page.mainFrame() ? page : frame)
+      .catch(() => undefined);
+    if (!session) continue;
+    await session.send("HeapProfiler.collectGarbage");
+    bytes += (await session.send("Runtime.getHeapUsage")).usedSize;
+    heapsRead++;
+    await session.detach();
+  }
+  return { heapMb: Math.round(bytes / 1024 / 1024), heapsRead };
+}
 
 const options = process.argv.slice(2).filter((argument) => argument.startsWith("--"));
 const [repeatsArgument, ...named] = process.argv.slice(2).filter((argument) => !argument.startsWith("--"));
@@ -62,6 +107,10 @@ const runsQuery = runsOption ? `&runs=${runsOption.slice("--runs=".length)}` : "
 
 const server = createServer((request, response) => {
   const path = new URL(request.url ?? "/", "http://localhost").pathname;
+  if (path === "/frame-page.html") {
+    response.writeHead(200, { "content-type": "text/html" }).end(FRAME_PAGE);
+    return;
+  }
   try {
     const file = join(DIST, path === "/" ? "index.html" : path);
     response.writeHead(200, { "content-type": TYPES[extname(file)] ?? "application/octet-stream" }).end(readFileSync(file));
@@ -78,7 +127,9 @@ const BROWSERS: [string, BrowserType][] = [
 
 const results: unknown[] = [];
 for (const [browserName, type] of BROWSERS) {
-  const browser = await type.launch({ headless: true });
+  // `--site-per-process`: Chromium gives each cross-site frame a process of its own, as desktop Chrome does.
+  const isolated = type === chromium && options.includes("--site-per-process");
+  const browser = await type.launch({ headless: true, ...(isolated ? { args: ["--site-per-process"] } : {}) });
   for (const name of chosen) {
     const query = VARIANTS[name];
     if (query === undefined) throw new Error(`no variant ${name}`);
@@ -93,6 +144,7 @@ for (const [browserName, type] of BROWSERS) {
       await page.goto(`http://localhost:4290/?${query}${runsQuery}`);
       const churn = query.includes("churn=1");
       const result = (await page.evaluate((churns) => (churns ? window.spike.churn() : window.spike.run()), churn)) as Record<string, unknown>;
+      if (query.includes("framepage=") && browserName === "chromium") Object.assign(result, await heapMb(page));
       await page.close();
       results.push({ browser: browserName, variant: name, repeat, ...result });
       if (churn) {

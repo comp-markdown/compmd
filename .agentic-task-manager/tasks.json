@@ -9641,7 +9641,7 @@
       "description": "A design, decisions first, reviewed with the user before CMD-262 builds it: the sandbox takes the code highlighter from its host, in both page modes, with Shiki staying the default.\n\n## Why\n- A host whose editor highlights with its own engine (Lezer, for one) wants the same colours in its rendered pages, and languages Shiki doesn't ship.\n- WebKit's cost: about a second on a first TypeScript block with the JavaScript engine, 60 ms with Oniguruma plus its 230 KB chunk, and about 85 ms per frame to compile Oniguruma (the open point of [WebAssembly in the frames](docs/webassembly-in-the-frames.md)).\n- Today the renderer takes tokens from any highlighter (`CodeHighlighter`), but the sandbox has no option: its frames and host-mode pages always use its own Shiki, and only `createPage` lets a host choose, without the sandbox.\n\n## Decide\n- **The option:** its name and type; in host mode a function, `(code, language) => lines`.\n- **Frame mode, (b):** the frame sends a block's text to the host's page, which highlights it and sends the tokens back; only data crosses, and the frames' code stays fixed. Why not (a), a highlighter module the host names by URL, loaded into the frames.\n- **The messages** of the frame protocol's next version: a frame's request for a block's tokens and the answer; the host's page answers only blocks of trees it sent that frame, as it does for images, so a frame can't make it tokenize anything else.\n- **A host that never answers:** a time limit, after which the block keeps its text, so `settled()` doesn't hang.\n- **The threats:** grammars running on untrusted text in the host's realm (as in host mode already), a frame's highlighting waiting on the host's thread, tokens that aren't the block's text (the renderer keeps the text).\n- **Shiki as the default, explained in full with examples, comparisons and measurements:** the default staying in each frame (as today) against the default moving to the host's page through the same messages. For each: what a page of one frame, of ten and of many frames costs in Chrome and WebKit (first block, a page's worth of blocks, memory), what each frame then needs (`'wasm-unsafe-eval'`, the 230 KB chunk), and worked examples of a page in each mode. Measured, as the [highlighting spike](spikes/highlight-perf/README.md) measured, not estimated.\n- Batching blocks in one round trip, if the measurements ask for it.\n\n## Result\nA section of [the frame protocol](docs/sandbox-protocol.md) and of [running components in the sandbox](docs/running-components-in-the-sandbox.md) (or a design of its own, linked from both), reviewed with the user.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "docs/sandbox-protocol.md",
@@ -9650,9 +9650,9 @@
         "spikes/highlight-perf/"
       ],
       "created_at": "2026-11-19T20:45:02Z",
-      "updated_at": "2026-11-19T20:45:02Z",
+      "updated_at": "2026-11-19T20:45:21Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "sprint_history": [
         {
           "sprint": "Packs & Blog",
@@ -9660,7 +9660,9 @@
         }
       ],
       "sprint": "Packs & Blog",
-      "number": 267
+      "number": 267,
+      "started_at": "2026-11-19T20:45:21Z",
+      "started_by": "claude:79612601"
     }
   ]
 }

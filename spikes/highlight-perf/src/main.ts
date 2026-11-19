@@ -5,6 +5,7 @@
 
 import { createPage, type CodeHighlighter, type Page } from "@compmd/render";
 import { shikiHighlight } from "@compmd/sandbox";
+import type { FrameReport, TokensAnswer, TokensRequest } from "./frame.ts";
 import { highlighters, stats, type Config } from "./highlighters.ts";
 import { runsOf } from "./runs.ts";
 
@@ -364,6 +365,59 @@ async function perFrame(): Promise<unknown> {
   };
 }
 
+/** How many blocks each frame of `?framepage=N` highlights: a short post's. */
+const BLOCKS_PER_FRAME = Number(query.get("blocks") ?? 5);
+
+/**
+ * A page of documents in frame mode (CMD-267): `?framepage=N` frames live at once, each from another origin, as the
+ * sandbox's are (so Chromium gives each a process of its own), each highlighting `BLOCKS_PER_FRAME` TypeScript runs.
+ * `&where=frame`, as today: each frame with a highlighter of its own. `&where=host`: each frame asks the page over a
+ * port, and the page highlights every frame's blocks with one. Both with `webAssembly`, so the engine is the
+ * sandbox's choice: Oniguruma in WebKit, the JavaScript engine in Chromium. The frames stay, for the runner to read
+ * their memory.
+ */
+async function framePage(): Promise<unknown> {
+  observer.disconnect();
+  const count = Number(query.get("framepage"));
+  const askThePage = query.get("where") === "host";
+  const pageHighlight = askThePage ? shikiHighlight({ webAssembly: true }) : undefined;
+  const frameOrigin = `http://127.0.0.1:${location.port}`;
+  const answerOn = (port: MessagePort) => {
+    port.onmessage = async ({ data }: MessageEvent<TokensRequest>) => {
+      port.postMessage({ id: data.id, lines: await pageHighlight?.(data.code, data.language) } satisfies TokensAnswer);
+    };
+  };
+  const openFrame = (index: number) =>
+    new Promise<FrameReport>((resolve) => {
+      const frame = document.body.appendChild(document.createElement("iframe"));
+      const blocks = Array.from({ length: BLOCKS_PER_FRAME }, (_, i) => runs[(index * BLOCKS_PER_FRAME + i) % runs.length] ?? "");
+      const listener = ({ data, source }: MessageEvent<"ready" | FrameReport>) => {
+        if (source !== frame.contentWindow) return;
+        if (data !== "ready") {
+          removeEventListener("message", listener);
+          resolve(data);
+          return;
+        }
+        const channel = new MessageChannel();
+        if (askThePage) answerOn(channel.port1);
+        frame.contentWindow?.postMessage({ blocks, askThePage }, frameOrigin, askThePage ? [channel.port2] : []);
+      };
+      addEventListener("message", listener);
+      frame.src = `${frameOrigin}/frame-page.html`;
+    });
+  const start = performance.now();
+  const reports = await Promise.all(Array.from({ length: count }, (_, index) => openFrame(index)));
+  const end = performance.now();
+  return {
+    config: { framepage: count, blocks: BLOCKS_PER_FRAME, where: askThePage ? "host" : "frame" },
+    pageMs: Math.round(end - start),
+    medianFirstBlockMs: percentile(reports.map(({ firstMs }) => firstMs), 0.5),
+    longestFirstBlockMs: Math.round(Math.max(...reports.map(({ firstMs }) => firstMs))),
+    medianFrameMs: percentile(reports.map(({ allMs }) => allMs), 0.5),
+    ...blocked(start, end),
+  };
+}
+
 /** A run's page gone now, whatever `?keep` says. */
 function unmountNow(run: Run | undefined): void {
   run?.page?.destroy();
@@ -378,7 +432,7 @@ declare global {
 }
 
 window.spike = {
-  churn: () => (query.has("frames") ? perFrame() : query.has("sheet") ? churnSheet() : churn()),
+  churn: () => (query.has("framepage") ? framePage() : query.has("frames") ? perFrame() : query.has("sheet") ? churnSheet() : churn()),
   async run() {
     const opened = performance.now();
     // The first runs mount when the observer first reports, a frame or so after the page loads.

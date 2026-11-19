@@ -1,0 +1,650 @@
+[
+  {
+    "browser": "webkit",
+    "variant": "framepage-frame-1",
+    "repeat": 0,
+    "config": {
+      "framepage": 1,
+      "blocks": 5,
+      "where": "frame"
+    },
+    "pageMs": 449,
+    "medianFirstBlockMs": 170,
+    "longestFirstBlockMs": 170,
+    "medianFrameMs": 409,
+    "blockedMs": 0,
+    "longestMs": 0,
+    "longFrames": 0
+  },
+  {
+    "browser": "webkit",
+    "variant": "framepage-frame-1",
+    "repeat": 1,
+    "config": {
+      "framepage": 1,
+      "blocks": 5,
+      "where": "frame"
+    },
+    "pageMs": 428,
+    "medianFirstBlockMs": 164,
+    "longestFirstBlockMs": 164,
+    "medianFrameMs": 401,
+    "blockedMs": 3,
+    "longestMs": 53,
+    "longFrames": 1
+  },
+  {
+    "browser": "webkit",
+    "variant": "framepage-frame-1",
+    "repeat": 2,
+    "config": {
+      "framepage": 1,
+      "blocks": 5,
+      "where": "frame"
+    },
+    "pageMs": 402,
+    "medianFirstBlockMs": 145,
+    "longestFirstBlockMs": 145,
+    "medianFrameMs": 383,
+    "blockedMs": 0,
+    "longestMs": 34,
+    "longFrames": 0
+  },
+  {
+    "browser": "webkit",
+    "variant": "framepage-frame-10",
+    "repeat": 0,
+    "config": {
+      "framepage": 10,
+      "blocks": 5,
+      "where": "frame"
+    },
+    "pageMs": 3341,
+    "medianFirstBlockMs": 1492,
+    "longestFirstBlockMs": 3042,
+    "medianFrameMs": 1643,
+    "blockedMs": 2378,
+    "longestMs": 691,
+    "longFrames": 6
+  },
+  {
+    "browser": "webkit",
+    "variant": "framepage-frame-10",
+    "repeat": 1,
+    "config": {
+      "framepage": 10,
+      "blocks": 5,
+      "where": "frame"
+    },
+    "pageMs": 3409,
+    "medianFirstBlockMs": 1571,
+    "longestFirstBlockMs": 3102,
+    "medianFrameMs": 1785,
+    "blockedMs": 2815,
+    "longestMs": 679,
+    "longFrames": 10
+  },
+  {
+    "browser": "webkit",
+    "variant": "framepage-frame-10",
+    "repeat": 2,
+    "config": {
+      "framepage": 10,
+      "blocks": 5,
+      "where": "frame"
+    },
+    "pageMs": 3260,
+    "medianFirstBlockMs": 1632,
+    "longestFirstBlockMs": 3020,
+    "medianFrameMs": 1676,
+    "blockedMs": 2698,
+    "longestMs": 732,
+    "longFrames": 6
+  },
+  {
+    "browser": "webkit",
+    "variant": "framepage-frame-40",
+    "repeat": 0,
+    "config": {
+      "framepage": 40,
+      "blocks": 5,
+      "where": "frame"
+    },
+    "pageMs": 15064,
+    "medianFirstBlockMs": 8150,
+    "longestFirstBlockMs": 14789,
+    "medianFrameMs": 8372,
+    "blockedMs": 12687,
+    "longestMs": 781,
+    "longFrames": 38
+  },
+  {
+    "browser": "webkit",
+    "variant": "framepage-frame-40",
+    "repeat": 1,
+    "config": {
+      "framepage": 40,
+      "blocks": 5,
+      "where": "frame"
+    },
+    "pageMs": 15280,
+    "medianFirstBlockMs": 7872,
+    "longestFirstBlockMs": 14790,
+    "medianFrameMs": 8172,
+    "blockedMs": 12778,
+    "longestMs": 861,
+    "longFrames": 39
+  },
+  {
+    "browser": "webkit",
+    "variant": "framepage-frame-40",
+    "repeat": 2,
+    "config": {
+      "framepage": 40,
+      "blocks": 5,
+      "where": "frame"
+    },
+    "pageMs": 16562,
+    "medianFirstBlockMs": 9176,
+    "longestFirstBlockMs": 16087,
+    "medianFrameMs": 9317,
+    "blockedMs": 13980,
+    "longestMs": 827,
+    "longFrames": 43
+  },
+  {
+    "browser": "webkit",
+    "variant": "framepage-host-1",
+    "repeat": 0,
+    "config": {
+      "framepage": 1,
+      "blocks": 5,
+      "where": "host"
+    },
+    "pageMs": 345,
+    "medianFirstBlockMs": 124,
+    "longestFirstBlockMs": 124,
+    "medianFrameMs": 328,
+    "blockedMs": 86,
+    "longestMs": 85,
+    "longFrames": 4
+  },
+  {
+    "browser": "webkit",
+    "variant": "framepage-host-1",
+    "repeat": 1,
+    "config": {
+      "framepage": 1,
+      "blocks": 5,
+      "where": "host"
+    },
+    "pageMs": 419,
+    "medianFirstBlockMs": 149,
+    "longestFirstBlockMs": 149,
+    "medianFrameMs": 395,
+    "blockedMs": 141,
+    "longestMs": 103,
+    "longFrames": 4
+  },
+  {
+    "browser": "webkit",
+    "variant": "framepage-host-1",
+    "repeat": 2,
+    "config": {
+      "framepage": 1,
+      "blocks": 5,
+      "where": "host"
+    },
+    "pageMs": 459,
+    "medianFirstBlockMs": 165,
+    "longestFirstBlockMs": 165,
+    "medianFrameMs": 419,
+    "blockedMs": 151,
+    "longestMs": 106,
+    "longFrames": 4
+  },
+  {
+    "browser": "webkit",
+    "variant": "framepage-host-10",
+    "repeat": 0,
+    "config": {
+      "framepage": 10,
+      "blocks": 5,
+      "where": "host"
+    },
+    "pageMs": 935,
+    "medianFirstBlockMs": 551,
+    "longestFirstBlockMs": 551,
+    "medianFrameMs": 784,
+    "blockedMs": 388,
+    "longestMs": 430,
+    "longFrames": 3
+  },
+  {
+    "browser": "webkit",
+    "variant": "framepage-host-10",
+    "repeat": 1,
+    "config": {
+      "framepage": 10,
+      "blocks": 5,
+      "where": "host"
+    },
+    "pageMs": 802,
+    "medianFirstBlockMs": 500,
+    "longestFirstBlockMs": 501,
+    "medianFrameMs": 727,
+    "blockedMs": 379,
+    "longestMs": 425,
+    "longFrames": 2
+  },
+  {
+    "browser": "webkit",
+    "variant": "framepage-host-10",
+    "repeat": 2,
+    "config": {
+      "framepage": 10,
+      "blocks": 5,
+      "where": "host"
+    },
+    "pageMs": 873,
+    "medianFirstBlockMs": 504,
+    "longestFirstBlockMs": 505,
+    "medianFrameMs": 772,
+    "blockedMs": 395,
+    "longestMs": 445,
+    "longFrames": 1
+  },
+  {
+    "browser": "webkit",
+    "variant": "framepage-host-40",
+    "repeat": 0,
+    "config": {
+      "framepage": 40,
+      "blocks": 5,
+      "where": "host"
+    },
+    "pageMs": 1832,
+    "medianFirstBlockMs": 710,
+    "longestFirstBlockMs": 711,
+    "medianFrameMs": 1375,
+    "blockedMs": 655,
+    "longestMs": 604,
+    "longFrames": 3
+  },
+  {
+    "browser": "webkit",
+    "variant": "framepage-host-40",
+    "repeat": 1,
+    "config": {
+      "framepage": 40,
+      "blocks": 5,
+      "where": "host"
+    },
+    "pageMs": 1785,
+    "medianFirstBlockMs": 699,
+    "longestFirstBlockMs": 704,
+    "medianFrameMs": 1424,
+    "blockedMs": 664,
+    "longestMs": 621,
+    "longFrames": 4
+  },
+  {
+    "browser": "webkit",
+    "variant": "framepage-host-40",
+    "repeat": 2,
+    "config": {
+      "framepage": 40,
+      "blocks": 5,
+      "where": "host"
+    },
+    "pageMs": 1488,
+    "medianFirstBlockMs": 556,
+    "longestFirstBlockMs": 557,
+    "medianFrameMs": 1246,
+    "blockedMs": 526,
+    "longestMs": 493,
+    "longFrames": 6
+  },
+  {
+    "browser": "chromium",
+    "variant": "framepage-frame-1",
+    "repeat": 0,
+    "config": {
+      "framepage": 1,
+      "blocks": 5,
+      "where": "frame"
+    },
+    "pageMs": 316,
+    "medianFirstBlockMs": 133,
+    "longestFirstBlockMs": 133,
+    "medianFrameMs": 282,
+    "blockedMs": 0,
+    "longestMs": 17,
+    "longFrames": 0,
+    "heapMb": 6,
+    "heapsRead": 2
+  },
+  {
+    "browser": "chromium",
+    "variant": "framepage-frame-1",
+    "repeat": 1,
+    "config": {
+      "framepage": 1,
+      "blocks": 5,
+      "where": "frame"
+    },
+    "pageMs": 302,
+    "medianFirstBlockMs": 124,
+    "longestFirstBlockMs": 124,
+    "medianFrameMs": 274,
+    "blockedMs": 0,
+    "longestMs": 17,
+    "longFrames": 0,
+    "heapMb": 6,
+    "heapsRead": 2
+  },
+  {
+    "browser": "chromium",
+    "variant": "framepage-frame-1",
+    "repeat": 2,
+    "config": {
+      "framepage": 1,
+      "blocks": 5,
+      "where": "frame"
+    },
+    "pageMs": 306,
+    "medianFirstBlockMs": 129,
+    "longestFirstBlockMs": 129,
+    "medianFrameMs": 276,
+    "blockedMs": 0,
+    "longestMs": 17,
+    "longFrames": 0,
+    "heapMb": 6,
+    "heapsRead": 2
+  },
+  {
+    "browser": "chromium",
+    "variant": "framepage-frame-10",
+    "repeat": 0,
+    "config": {
+      "framepage": 10,
+      "blocks": 5,
+      "where": "frame"
+    },
+    "pageMs": 1285,
+    "medianFirstBlockMs": 543,
+    "longestFirstBlockMs": 730,
+    "medianFrameMs": 590,
+    "blockedMs": 0,
+    "longestMs": 17,
+    "longFrames": 0,
+    "heapMb": 119,
+    "heapsRead": 11
+  },
+  {
+    "browser": "chromium",
+    "variant": "framepage-frame-10",
+    "repeat": 1,
+    "config": {
+      "framepage": 10,
+      "blocks": 5,
+      "where": "frame"
+    },
+    "pageMs": 1299,
+    "medianFirstBlockMs": 563,
+    "longestFirstBlockMs": 824,
+    "medianFrameMs": 605,
+    "blockedMs": 0,
+    "longestMs": 33,
+    "longFrames": 0,
+    "heapMb": 119,
+    "heapsRead": 11
+  },
+  {
+    "browser": "chromium",
+    "variant": "framepage-frame-10",
+    "repeat": 2,
+    "config": {
+      "framepage": 10,
+      "blocks": 5,
+      "where": "frame"
+    },
+    "pageMs": 1430,
+    "medianFirstBlockMs": 617,
+    "longestFirstBlockMs": 751,
+    "medianFrameMs": 662,
+    "blockedMs": 0,
+    "longestMs": 17,
+    "longFrames": 0,
+    "heapMb": 120,
+    "heapsRead": 11
+  },
+  {
+    "browser": "chromium",
+    "variant": "framepage-frame-40",
+    "repeat": 0,
+    "config": {
+      "framepage": 40,
+      "blocks": 5,
+      "where": "frame"
+    },
+    "pageMs": 4829,
+    "medianFirstBlockMs": 1723,
+    "longestFirstBlockMs": 2875,
+    "medianFrameMs": 1752,
+    "blockedMs": 50,
+    "longestMs": 100,
+    "longFrames": 1,
+    "heapMb": 1693,
+    "heapsRead": 41
+  },
+  {
+    "browser": "chromium",
+    "variant": "framepage-frame-40",
+    "repeat": 1,
+    "config": {
+      "framepage": 40,
+      "blocks": 5,
+      "where": "frame"
+    },
+    "pageMs": 4927,
+    "medianFirstBlockMs": 1784,
+    "longestFirstBlockMs": 3411,
+    "medianFrameMs": 1818,
+    "blockedMs": 33,
+    "longestMs": 83,
+    "longFrames": 1,
+    "heapMb": 1693,
+    "heapsRead": 41
+  },
+  {
+    "browser": "chromium",
+    "variant": "framepage-frame-40",
+    "repeat": 2,
+    "config": {
+      "framepage": 40,
+      "blocks": 5,
+      "where": "frame"
+    },
+    "pageMs": 4963,
+    "medianFirstBlockMs": 1821,
+    "longestFirstBlockMs": 3315,
+    "medianFrameMs": 1850,
+    "blockedMs": 33,
+    "longestMs": 83,
+    "longFrames": 1,
+    "heapMb": 1690,
+    "heapsRead": 41
+  },
+  {
+    "browser": "chromium",
+    "variant": "framepage-host-1",
+    "repeat": 0,
+    "config": {
+      "framepage": 1,
+      "blocks": 5,
+      "where": "host"
+    },
+    "pageMs": 280,
+    "medianFirstBlockMs": 115,
+    "longestFirstBlockMs": 115,
+    "medianFrameMs": 260,
+    "blockedMs": 67,
+    "longestMs": 100,
+    "longFrames": 2,
+    "heapMb": 9,
+    "heapsRead": 2
+  },
+  {
+    "browser": "chromium",
+    "variant": "framepage-host-1",
+    "repeat": 1,
+    "config": {
+      "framepage": 1,
+      "blocks": 5,
+      "where": "host"
+    },
+    "pageMs": 341,
+    "medianFirstBlockMs": 142,
+    "longestFirstBlockMs": 142,
+    "medianFrameMs": 298,
+    "blockedMs": 83,
+    "longestMs": 100,
+    "longFrames": 2,
+    "heapMb": 9,
+    "heapsRead": 2
+  },
+  {
+    "browser": "chromium",
+    "variant": "framepage-host-1",
+    "repeat": 2,
+    "config": {
+      "framepage": 1,
+      "blocks": 5,
+      "where": "host"
+    },
+    "pageMs": 325,
+    "medianFirstBlockMs": 132,
+    "longestFirstBlockMs": 132,
+    "medianFrameMs": 281,
+    "blockedMs": 83,
+    "longestMs": 100,
+    "longFrames": 2,
+    "heapMb": 9,
+    "heapsRead": 2
+  },
+  {
+    "browser": "chromium",
+    "variant": "framepage-host-10",
+    "repeat": 0,
+    "config": {
+      "framepage": 10,
+      "blocks": 5,
+      "where": "host"
+    },
+    "pageMs": 577,
+    "medianFirstBlockMs": 314,
+    "longestFirstBlockMs": 359,
+    "medianFrameMs": 462,
+    "blockedMs": 250,
+    "longestMs": 283,
+    "longFrames": 2,
+    "heapMb": 48,
+    "heapsRead": 11
+  },
+  {
+    "browser": "chromium",
+    "variant": "framepage-host-10",
+    "repeat": 1,
+    "config": {
+      "framepage": 10,
+      "blocks": 5,
+      "where": "host"
+    },
+    "pageMs": 580,
+    "medianFirstBlockMs": 296,
+    "longestFirstBlockMs": 345,
+    "medianFrameMs": 435,
+    "blockedMs": 233,
+    "longestMs": 283,
+    "longFrames": 1,
+    "heapMb": 48,
+    "heapsRead": 11
+  },
+  {
+    "browser": "chromium",
+    "variant": "framepage-host-10",
+    "repeat": 2,
+    "config": {
+      "framepage": 10,
+      "blocks": 5,
+      "where": "host"
+    },
+    "pageMs": 589,
+    "medianFirstBlockMs": 304,
+    "longestFirstBlockMs": 344,
+    "medianFrameMs": 452,
+    "blockedMs": 233,
+    "longestMs": 283,
+    "longFrames": 2,
+    "heapMb": 48,
+    "heapsRead": 11
+  },
+  {
+    "browser": "chromium",
+    "variant": "framepage-host-40",
+    "repeat": 0,
+    "config": {
+      "framepage": 40,
+      "blocks": 5,
+      "where": "host"
+    },
+    "pageMs": 1558,
+    "medianFirstBlockMs": 359,
+    "longestFirstBlockMs": 491,
+    "medianFrameMs": 962,
+    "blockedMs": 817,
+    "longestMs": 300,
+    "longFrames": 11,
+    "heapMb": 616,
+    "heapsRead": 41
+  },
+  {
+    "browser": "chromium",
+    "variant": "framepage-host-40",
+    "repeat": 1,
+    "config": {
+      "framepage": 40,
+      "blocks": 5,
+      "where": "host"
+    },
+    "pageMs": 1624,
+    "medianFirstBlockMs": 368,
+    "longestFirstBlockMs": 495,
+    "medianFrameMs": 1029,
+    "blockedMs": 850,
+    "longestMs": 283,
+    "longFrames": 11,
+    "heapMb": 616,
+    "heapsRead": 41
+  },
+  {
+    "browser": "chromium",
+    "variant": "framepage-host-40",
+    "repeat": 2,
+    "config": {
+      "framepage": 40,
+      "blocks": 5,
+      "where": "host"
+    },
+    "pageMs": 1571,
+    "medianFirstBlockMs": 351,
+    "longestFirstBlockMs": 474,
+    "medianFrameMs": 930,
+    "blockedMs": 833,
+    "longestMs": 300,
+    "longFrames": 10,
+    "heapMb": 616,
+    "heapsRead": 41
+  }
+]
