@@ -2,12 +2,12 @@
 id = "01a1f30c-6298-72e2-960b-b2caf23680bf"
 number = 15
 title = "A block at a time, those on screen first"
-status = "open"
+status = "approved"
 tasks = ["~CMD-259"]
 author = "claude:79612601"
 reviewers = []
 created = 2026-11-19T09:03:57Z
-updated = 2026-11-19T09:03:57Z
+updated = 2026-11-19T09:30:37Z
 +++
 
 The renderer highlights a document's code blocks one at a time, those on screen first, and a page has drawn once they are: the two answers on CMD-259.
