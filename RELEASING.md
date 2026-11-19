@@ -9,6 +9,7 @@ Four things are released, each on its own:
 | The implementation: `@compmd/render`, `@compmd/processor`, `@compmd/sandbox`, `@compmd/registry`, `@compmd/devtools`, `@compmd/vite`, `@compmd/pack`, `@compmd/create-pack`, `@compmd/blog`, `@compmd/create-blog` (first published by hand, below) | npm | a tag `v<version>`; `.github/workflows/release.yml` publishes |
 | The implementation: the crates `compmd-markdown`, `compmd-pack`, `compmd`, `compmd-host`, `tauri-plugin-compmd` | crates.io | the same tag `v<version>`; the workflow publishes once the author approves its `crates` job |
 | The Mermaid pack, `@comp-markdown/mermaid` | npm | a tag `mermaid-v<version>`; `.github/workflows/release-mermaid.yml` publishes |
+| The wireframe pack, `@comp-markdown/wireframe` | npm | a tag `wireframe-v<version>`; `.github/workflows/release-wireframe.yml` publishes |
 | The spec | the website, `/spec/<version>/` | a tag `spec-v<version>`; the Pages workflow deploys |
 
 The website follows `main` and needs no release: every push that touches what it is built from deploys it.
@@ -111,6 +112,14 @@ Run them from this repository's root, where its tags are. Git won't remove a wor
    The workflow checks the tag is the pack's version, runs `cargo make ci`, packs the pack and stages it with npm's trusted publishing.
 4. Approve it, as for the `@compmd` packages: `(cd ~ && npm stage list @comp-markdown/mermaid)`, then `npm stage approve <stage-id>`.
 5. Check: `curl -s https://registry.npmjs.org/-/package/@comp-markdown%2fmermaid/dist-tags` gives the new version as `latest`.
+
+## The wireframe pack
+
+`@comp-markdown/wireframe` (`compmd-packs/wireframe/`) is released as the Mermaid pack is, with a version of its own, by `.github/workflows/release-wireframe.yml` on a tag `wireframe-v<version>`.
+
+1. **Once, before its first release** (2026-11-19): a placeholder `0.0.0`, with no code, published by hand from outside the repository, as `@compmd/devtools`'s was ([a placeholder first](#prerequisites-once-per-package)); then its trusted publisher set up for the workflow `release-wireframe.yml`. A new trusted publisher must publish within 2 days, so the first tag follows soon after.
+2. **Each release**, as the Mermaid pack's steps 2 to 5, with `wireframe-v<version>` and `@comp-markdown%2fwireframe`; the version in `package.json` and in `index.comp.md`'s `export.version`, the same in both. The tarball holds `dist/`, `index.comp.md`, the README, `LANGUAGE.md` and its MIT `LICENSE`.
+3. Deprecate the placeholder once the first version is out: `(cd ~ && npm deprecate @comp-markdown/wireframe@0.0.0 "A placeholder with no code: install 0.1.0 or later")`.
 
 ## The spec
 
