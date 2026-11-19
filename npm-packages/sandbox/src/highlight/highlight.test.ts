@@ -1,6 +1,6 @@
 import type { CodeLines } from "@compmd/render";
-import { describe, expect, it } from "vitest";
-import { highlightWith, shikiHighlight, type Shikis } from "./highlight.ts";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { compilesWebAssembly, engineFor, highlightWith, shikiHighlight, type Shikis } from "./highlight.ts";
 import { LANGUAGE_NAMES } from "./languages.ts";
 
 /** The texts of `lines`' tokens. */
@@ -10,6 +10,10 @@ const textOf = (lines: CodeLines | undefined) => (lines ?? []).map((line) => lin
 
 /** Shiki and a grammar load well under a second alone, but take many seconds while every package's tests run at once. */
 const TEST = { timeout: 15_000 };
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe("shikiHighlight", () => {
   it("gives a block's tokens, which are its text, in both themes' colours, loading Shiki once", TEST, async () => {
@@ -47,6 +51,26 @@ describe("shikiHighlight", () => {
     const highlight = shikiHighlight();
     const given = await Promise.all(LANGUAGE_NAMES.map(async (name) => [name, await highlight("x = 1\ny", name)] as const));
     expect(given.filter(([, lines]) => textOf(lines) !== "x = 1\ny").map(([name]) => name)).toEqual([]);
+  });
+});
+
+describe("the engine", () => {
+  it("is Oniguruma when the highlighter may use it and the page compiles WebAssembly, the JavaScript engine otherwise", async () => {
+    const [compiles, refuses] = [() => Promise.resolve(true), () => Promise.resolve(false)];
+    expect(await Promise.all([engineFor(true, compiles), engineFor(true, refuses), engineFor(false, compiles), engineFor(false, refuses)])).toEqual(["oniguruma", "javascript", "javascript", "javascript"]);
+  });
+
+  it("is asked of the page with an empty module, which a policy without 'wasm-unsafe-eval' refuses", async () => {
+    expect(await compilesWebAssembly()).toBe(true);
+    vi.spyOn(WebAssembly, "compile").mockRejectedValue(new EvalError("Refused to compile WebAssembly"));
+    expect(await compilesWebAssembly()).toBe(false);
+  });
+
+  it("gives Oniguruma's tokens as the JavaScript engine's, the same texts and colours", TEST, async () => {
+    const code = "export async function load(url: string): Promise<number> {\n  return (await fetch(url)).status; // done\n}";
+    const [oniguruma, javascript] = await Promise.all([shikiHighlight({ webAssembly: true })(code, "ts"), shikiHighlight()(code, "ts")]);
+    expect(oniguruma).toEqual(javascript);
+    expect(texts(oniguruma)).toContain("async");
   });
 });
 

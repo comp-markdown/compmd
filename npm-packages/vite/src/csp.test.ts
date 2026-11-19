@@ -3,17 +3,17 @@ import { readConfig } from "./config.ts";
 import { cspFor } from "./csp.ts";
 
 describe("cspFor", () => {
-  it("gives the frames from the origin, and Shiki and Temml from its frames, never its packs", () => {
+  it("gives the frames from the origin, Shiki and Temml from its frames and WebAssembly for Shiki, never its packs", () => {
     expect(cspFor("compmd://localhost")).toEqual({
       "frame-src": ["compmd://localhost/"],
-      "script-src": ["compmd://localhost/frames/"],
+      "script-src": ["compmd://localhost/frames/", "'wasm-unsafe-eval'"],
       "connect-src": ["compmd://localhost/frames/"],
       "frame-ancestors": ["'none'"],
     });
   });
 
   it("takes an app's folder as the origin", () => {
-    expect(cspFor("https://app.example/compmd/")["script-src"]).toEqual(["https://app.example/compmd/frames/"]);
+    expect(cspFor("https://app.example/compmd/")["script-src"]).toEqual(["https://app.example/compmd/frames/", "'wasm-unsafe-eval'"]);
   });
 
   it("adds the registry proxy only when the host fetches from registries", () => {

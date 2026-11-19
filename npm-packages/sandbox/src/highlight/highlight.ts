@@ -1,7 +1,8 @@
 // Code blocks highlighted by Shiki, in both page modes (in the page's frame and use frames, or in the host's page), in
-// GitHub's light and dark themes. Shiki's core and its JavaScript regex engine load the first time a page has a code
-// block, so a strict frame's policy needs no WebAssembly; each language's grammar loads the first time a block of it
-// shows. It gives each token's text and its colour in each theme (`tokens.ts`); the renderer draws them.
+// GitHub's light and dark themes. Shiki's core and its regex engine load the first time a page has a code block: the
+// JavaScript engine in the frames, whose policy refuses WebAssembly, and Oniguruma in a host's page that compiles it;
+// each language's grammar loads the first time a block of it shows. It gives each token's text and its colour in each
+// theme (`tokens.ts`); the renderer draws them.
 
 import type { CodeHighlighter } from "@compmd/render";
 import type { HighlighterCore, LanguageRegistration } from "@shikijs/core";
@@ -17,19 +18,55 @@ export interface Shikis {
 
 const THEMES = { light: "github-light", dark: "github-dark" } as const;
 
-/** Loads Shiki's core, its JavaScript engine and the two themes, and Markdown with CompMD's syntax. */
-async function loadShikis(): Promise<Shikis> {
-  const [{ createHighlighterCore }, { createJavaScriptRegexEngine }, light, dark, markdown] = await Promise.all([
-    import("@shikijs/core"),
-    import("@shikijs/engine-javascript"),
-    import("@shikijs/themes/github-light"),
-    import("@shikijs/themes/github-dark"),
-    grammarOf("markdown"),
-  ]);
-  // Forgiving: a pattern the engine can't translate matches nothing, instead of failing the whole grammar.
-  const shiki = (langs: LanguageRegistration[]) => createHighlighterCore({ themes: [light.default, dark.default], langs, engine: createJavaScriptRegexEngine({ forgiving: true }) });
+/** The regex engine Shiki runs grammars with. */
+export type Engine = "oniguruma" | "javascript";
+
+/** The smallest WebAssembly module: its header alone. */
+const EMPTY_MODULE = new Uint8Array([0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00]);
+
+/**
+ * Whether this page may compile WebAssembly: a policy without `'wasm-unsafe-eval'` (or `'unsafe-eval'`) refuses it,
+ * as the frames' does. Asked with an empty module, so Oniguruma's 622 KB load only where it can run.
+ */
+export async function compilesWebAssembly(): Promise<boolean> {
+  try {
+    await WebAssembly.compile(EMPTY_MODULE);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The engine a highlighter runs: Oniguruma, as WebAssembly, when it may (`webAssembly`) and the page compiles it,
+ * otherwise the JavaScript engine. In WebKit the JavaScript engine compiles each of a grammar's regexes the first time
+ * it runs, which blocks the page for a second on a first TypeScript block; Oniguruma doesn't.
+ */
+export async function engineFor(webAssembly: boolean, compiles: () => Promise<boolean> = compilesWebAssembly): Promise<Engine> {
+  return webAssembly && (await compiles()) ? "oniguruma" : "javascript";
+}
+
+/** Loads Shiki's core, `engine` and the two themes, and Markdown with CompMD's syntax. */
+async function loadShikis(engine: Engine): Promise<Shikis> {
+  const [{ createHighlighterCore }, light, dark, markdown] = await Promise.all([import("@shikijs/core"), import("@shikijs/themes/github-light"), import("@shikijs/themes/github-dark"), grammarOf("markdown")]);
+  const regexes =
+    engine === "oniguruma"
+      ? import("@shikijs/engine-oniguruma").then(({ createOnigurumaEngine }) => createOnigurumaEngine(import("@shikijs/engine-oniguruma/wasm-inlined")))
+      : // Forgiving: a pattern the engine can't translate matches nothing, instead of failing the whole grammar.
+        import("@shikijs/engine-javascript").then(({ createJavaScriptRegexEngine }) => createJavaScriptRegexEngine({ forgiving: true }));
+  const shiki = (langs: LanguageRegistration[]) => createHighlighterCore({ themes: [light.default, dark.default], langs, engine: regexes });
   const [md, others] = await Promise.all([shiki([...markdown, COMPMD]), shiki([])]);
   return { markdown: md, others };
+}
+
+/** How a highlighter runs. */
+export interface ShikiOptions {
+  /**
+   * Oniguruma, as WebAssembly, where the page compiles it; the JavaScript engine where it doesn't, as without. A page
+   * allows it with `'wasm-unsafe-eval'` in its policy's `script-src`. Its WebAssembly is inlined in a chunk of its own
+   * (232 KB gzipped), loaded with the first code block where it is used.
+   */
+  webAssembly?: boolean;
 }
 
 /**
@@ -37,11 +74,11 @@ async function loadShikis(): Promise<Shikis> {
  * of its own, which loads each grammar again: a host that renders many pages makes one and gives it to them all.
  *
  * @example
- * const highlight = shikiHighlight();
+ * const highlight = shikiHighlight({ webAssembly: true });
  * for (const run of runs) createPage(run.element, { highlight }).render(run.tree);
  */
-export function shikiHighlight(): CodeHighlighter {
-  return highlightWith(loadShikis);
+export function shikiHighlight(options: ShikiOptions = {}): CodeHighlighter {
+  return highlightWith(async () => loadShikis(await engineFor(options.webAssembly === true)));
 }
 
 /**

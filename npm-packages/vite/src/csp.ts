@@ -1,5 +1,6 @@
 // The sources a host's page adds to its content security policy (docs/hosting.md, decision 10): the frames from the
-// origin, Shiki and Temml from the frames' folder in host mode, and the registry proxy with `fetch: "host"`. Never the
+// origin, Shiki and Temml from the frames' folder in host mode, WebAssembly for Shiki's Oniguruma, and the registry
+// proxy with `fetch: "host"`. Never the
 // packs' folder, nor the whole origin: a pack's code runs in frames only. No Node.
 
 import type { ReadConfig } from "./config.ts";
@@ -15,7 +16,7 @@ export type Csp = Record<string, string[]>;
  * @param config The configuration (`readConfig`): with registries the host fetches from, the page reaches the proxy.
  * @example
  * cspFor("compmd://localhost", readConfig(json));
- * // { "frame-src": ["compmd://localhost/"], "script-src": ["compmd://localhost/frames/"], … }
+ * // { "frame-src": ["compmd://localhost/"], "script-src": ["compmd://localhost/frames/", "'wasm-unsafe-eval'"], … }
  */
 export function cspFor(origin: string, config?: Pick<ReadConfig, "registries" | "fetch">): Csp {
   const base = origin.replace(/\/*$/, "/");
@@ -23,7 +24,8 @@ export function cspFor(origin: string, config?: Pick<ReadConfig, "registries" | 
   const proxied = config !== undefined && config.fetch === "host" && Object.keys(config.registries).length > 0;
   return {
     "frame-src": [base],
-    "script-src": [frames],
+    // Compiling WebAssembly, for code highlighted with Oniguruma: only in the host's page, which runs its own code.
+    "script-src": [frames, "'wasm-unsafe-eval'"],
     "connect-src": [frames, ...(proxied ? [`${base}registry/`] : [])],
     "frame-ancestors": ["'none'"],
   };

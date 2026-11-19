@@ -56,11 +56,13 @@ const made = highlighters(config, highlighted);
  * when its tokens are drawn, which the renderer does once the highlighter's promise has settled.
  */
 const sandbox = query.get("sandbox");
+/** `&wasm=1`: with Oniguruma where the page compiles WebAssembly, as a host-mode page since CMD-257. */
+const shikiOptions = { webAssembly: query.get("wasm") === "1" };
 const sandboxHighlight = (() => {
   if (sandbox !== "per-view" && sandbox !== "shared") return undefined;
-  const one = shikiHighlight();
+  const one = shikiHighlight(shikiOptions);
   return (slot: HTMLElement): CodeHighlighter => {
-    const highlight = sandbox === "shared" ? one : shikiHighlight();
+    const highlight = sandbox === "shared" ? one : shikiHighlight(shikiOptions);
     return async (code, language) => {
       const lines = await highlight(code, language);
       setTimeout(() => {

@@ -88,6 +88,21 @@ node spikes/highlight-perf/measure.ts 3 today shared     # some variants, three 
 
 The same as the spike's *today* and *shared*: one highlighter takes WebKit's skim from 4.2 s to 0.8 s blocked and its revisit to 0; the opening's long first frame is the JavaScript engine's compile, which CMD-257 is for.
 
+### The sandbox's shared highlighter with Oniguruma (CMD-257)
+
+`?sandbox=shared&wasm=1`: the same, with `shikiHighlight({ webAssembly: true })`, as a host-mode page that allows WebAssembly has it since CMD-257; this page has no policy, so it compiles. Three runs each; `results-sandbox-wasm.json` has every run. WebKit's runs varied more than before (one JavaScript run took twice the others, and the Oniguruma openings were 103, 253 and 265 ms), so each cell is the median and the range.
+
+| | Opening: blocked | Skim: blocked | Revisit: blocked | Wait on opening |
+|---|---|---|---|---|
+| WebKit, JavaScript engine | 1175 ms (1144–2417) | 921 ms (783–2072) | 72 ms (0–115) | 1261 ms |
+| WebKit, Oniguruma | 253 ms (103–265) | 151 ms (0–576) | 94 ms (0–105) | 375 ms |
+| Chromium, JavaScript engine | 33 ms | 67 ms | 0 | 111 ms |
+| Chromium, Oniguruma | 67 ms (50–200) | 0 (0–17) | 0 | 177 ms |
+
+- **In WebKit Oniguruma takes the opening from about 1.2 s blocked to about 0.25 s,** and the longest frame from about 1.2 s to 0.3 s; the skim from 0.9 s to 0.15 s.
+- **It is short of the spike's *shared + oniguruma*** (83 ms on opening, 10 ms over the skim): the sandbox's highlighter has two Shikis (Markdown's and the other languages'), each made with the first block, and loads its grammars as blocks need them; and this run was noisier. Slicing (CMD-259) is for what is left.
+- **The JavaScript engine's tokens in WebKit** were wrong for one block in the browser test (`test/highlight-policy.test.ts`): its light theme's colours disagreed with its dark theme's, and its tokens with Oniguruma's and with Chromium's. Oniguruma's were right. Not looked into further.
+
 ### A large host document: 100 pages opened and closed (CMD-253)
 
 The page above has a small host document, so it missed what each open costs a large one. `?churn=1` adds 20,000 host elements (rows a host's own rules style), then opens 100 pages, one an animation frame, eight live at a time, destroying the oldest, without highlighting: `churn` with a code block each, `churn-styled` with the code in a box with a `width` of its own. It counts what makes the browser style the whole document again: the times the document's sheets are set (`adoptedStyleSheets`), the styles read (`getComputedStyle`) and the sheets written (`replaceSync`). **An open** is from `createPage` to the next animation frame, so 16 ms is one frame. Three runs each, medians; `results-churn-before.json` and `results-churn-after.json` have every run.

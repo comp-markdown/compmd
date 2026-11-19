@@ -723,6 +723,9 @@ importers:
       '@shikijs/engine-javascript':
         specifier: 4.5.0
         version: 4.5.0
+      '@shikijs/engine-oniguruma':
+        specifier: 4.5.0
+        version: 4.5.0
       '@shikijs/langs':
         specifier: 4.5.0
         version: 4.5.0

@@ -37,6 +37,8 @@ const VARIANTS: Record<string, string> = {
   // The sandbox's own highlighter, a Shiki for each page as before CMD-256, and one for all as since.
   "sandbox-per-view": "sandbox=per-view",
   "sandbox-shared": "sandbox=shared",
+  // And with Oniguruma where the page compiles WebAssembly, as a host-mode page since CMD-257.
+  "sandbox-shared-wasm": "sandbox=shared&wasm=1",
   // A large host document, and 100 pages opened and closed in it, without highlighting (CMD-253): code only, then
   // each in a box with rules of its own.
   churn: "highlight=off&churn=1",

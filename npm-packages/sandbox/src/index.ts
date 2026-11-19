@@ -8,7 +8,7 @@ export type { BundleModuleSource } from "./found.ts";
 export { frameUse, type UseFrame, type UseFrameOptions } from "./use.ts";
 export { hostClient, localHost, serveHost, type HostApi, type HostClient } from "./host-api.ts";
 export { networkPolicy } from "./frame/narrow.ts";
-export { shikiHighlight } from "./highlight/highlight.ts";
+export { shikiHighlight, type ShikiOptions } from "./highlight/highlight.ts";
 export {
   allowOrigins,
   askWithDialog,

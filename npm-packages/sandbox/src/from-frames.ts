@@ -11,7 +11,8 @@ const imported = <T>(url: string): Promise<T> => import(/* @vite-ignore */ url) 
 /** Makes the highlighter of the frames' `highlight.js` at `url`. */
 export type LoadHighlighter = (url: string) => Promise<CodeHighlighter>;
 
-const loadFramesHighlighter: LoadHighlighter = (url) => imported<{ shikiHighlight: () => CodeHighlighter }>(url).then((module) => module.shikiHighlight());
+/** The frames' highlighter, with Oniguruma where the host's page compiles WebAssembly (`cspFor` allows it). */
+const loadFramesHighlighter: LoadHighlighter = (url) => imported<{ shikiHighlight: (options: { webAssembly: boolean }) => CodeHighlighter }>(url).then((module) => module.shikiHighlight({ webAssembly: true }));
 
 /**
  * The page's highlighters, by the URL of the `highlight.js` they come from: one for every view of the page, so Shiki

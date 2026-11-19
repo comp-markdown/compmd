@@ -1,0 +1,830 @@
+[
+  {
+    "browser": "webkit",
+    "variant": "sandbox-shared",
+    "repeat": 0,
+    "config": {
+      "shiki": "per-view",
+      "engine": "js",
+      "where": "main",
+      "schedule": "eager",
+      "cache": false
+    },
+    "runs": 440,
+    "openedAtMs": 28,
+    "open": {
+      "blockedMs": 1175,
+      "longestMs": 1225,
+      "longFrames": 1,
+      "runs": 6,
+      "medianWaitMs": 1261,
+      "p95WaitMs": 1262,
+      "loadToHighlightedMs": 1371
+    },
+    "skim": {
+      "blockedMs": 921,
+      "longestMs": 804,
+      "longFrames": 3,
+      "runs": 434,
+      "medianWaitMs": 16,
+      "p95WaitMs": 39,
+      "toAllHighlightedMs": 11206
+    },
+    "revisit": {
+      "blockedMs": 0,
+      "longestMs": 37,
+      "longFrames": 0,
+      "runs": 434,
+      "medianWaitMs": 12,
+      "p95WaitMs": 22
+    },
+    "costs": {
+      "afterOpen": {
+        "setups": [],
+        "firstTokenizeMs": 0,
+        "tokenizeMs": 0,
+        "tokenized": 0,
+        "medianTokenizeMs": 0,
+        "drawMs": 0,
+        "cacheHits": 0
+      },
+      "afterSkim": {
+        "setups": [],
+        "firstTokenizeMs": 0,
+        "tokenizeMs": 0,
+        "tokenized": 0,
+        "medianTokenizeMs": 0,
+        "drawMs": 0,
+        "cacheHits": 0
+      },
+      "total": {
+        "setups": [],
+        "firstTokenizeMs": 0,
+        "tokenizeMs": 0,
+        "tokenized": 0,
+        "medianTokenizeMs": 0,
+        "drawMs": 0,
+        "cacheHits": 0
+      }
+    }
+  },
+  {
+    "browser": "webkit",
+    "variant": "sandbox-shared",
+    "repeat": 1,
+    "config": {
+      "shiki": "per-view",
+      "engine": "js",
+      "where": "main",
+      "schedule": "eager",
+      "cache": false
+    },
+    "runs": 440,
+    "openedAtMs": 25,
+    "open": {
+      "blockedMs": 1144,
+      "longestMs": 1194,
+      "longFrames": 1,
+      "runs": 6,
+      "medianWaitMs": 1232,
+      "p95WaitMs": 1232,
+      "loadToHighlightedMs": 1272
+    },
+    "skim": {
+      "blockedMs": 783,
+      "longestMs": 679,
+      "longFrames": 4,
+      "runs": 434,
+      "medianWaitMs": 13,
+      "p95WaitMs": 41,
+      "toAllHighlightedMs": 11042
+    },
+    "revisit": {
+      "blockedMs": 115,
+      "longestMs": 78,
+      "longFrames": 13,
+      "runs": 434,
+      "medianWaitMs": 26,
+      "p95WaitMs": 44
+    },
+    "costs": {
+      "afterOpen": {
+        "setups": [],
+        "firstTokenizeMs": 0,
+        "tokenizeMs": 0,
+        "tokenized": 0,
+        "medianTokenizeMs": 0,
+        "drawMs": 0,
+        "cacheHits": 0
+      },
+      "afterSkim": {
+        "setups": [],
+        "firstTokenizeMs": 0,
+        "tokenizeMs": 0,
+        "tokenized": 0,
+        "medianTokenizeMs": 0,
+        "drawMs": 0,
+        "cacheHits": 0
+      },
+      "total": {
+        "setups": [],
+        "firstTokenizeMs": 0,
+        "tokenizeMs": 0,
+        "tokenized": 0,
+        "medianTokenizeMs": 0,
+        "drawMs": 0,
+        "cacheHits": 0
+      }
+    }
+  },
+  {
+    "browser": "webkit",
+    "variant": "sandbox-shared",
+    "repeat": 2,
+    "config": {
+      "shiki": "per-view",
+      "engine": "js",
+      "where": "main",
+      "schedule": "eager",
+      "cache": false
+    },
+    "runs": 440,
+    "openedAtMs": 81,
+    "open": {
+      "blockedMs": 2417,
+      "longestMs": 2467,
+      "longFrames": 1,
+      "runs": 6,
+      "medianWaitMs": 2540,
+      "p95WaitMs": 2540,
+      "loadToHighlightedMs": 2629
+    },
+    "skim": {
+      "blockedMs": 2072,
+      "longestMs": 1361,
+      "longFrames": 30,
+      "runs": 434,
+      "medianWaitMs": 30,
+      "p95WaitMs": 61,
+      "toAllHighlightedMs": 11954
+    },
+    "revisit": {
+      "blockedMs": 72,
+      "longestMs": 70,
+      "longFrames": 14,
+      "runs": 434,
+      "medianWaitMs": 27,
+      "p95WaitMs": 41
+    },
+    "costs": {
+      "afterOpen": {
+        "setups": [],
+        "firstTokenizeMs": 0,
+        "tokenizeMs": 0,
+        "tokenized": 0,
+        "medianTokenizeMs": 0,
+        "drawMs": 0,
+        "cacheHits": 0
+      },
+      "afterSkim": {
+        "setups": [],
+        "firstTokenizeMs": 0,
+        "tokenizeMs": 0,
+        "tokenized": 0,
+        "medianTokenizeMs": 0,
+        "drawMs": 0,
+        "cacheHits": 0
+      },
+      "total": {
+        "setups": [],
+        "firstTokenizeMs": 0,
+        "tokenizeMs": 0,
+        "tokenized": 0,
+        "medianTokenizeMs": 0,
+        "drawMs": 0,
+        "cacheHits": 0
+      }
+    }
+  },
+  {
+    "browser": "webkit",
+    "variant": "sandbox-shared-wasm",
+    "repeat": 0,
+    "config": {
+      "shiki": "per-view",
+      "engine": "js",
+      "where": "main",
+      "schedule": "eager",
+      "cache": false
+    },
+    "runs": 440,
+    "openedAtMs": 93,
+    "open": {
+      "blockedMs": 265,
+      "longestMs": 314,
+      "longFrames": 2,
+      "runs": 6,
+      "medianWaitMs": 410,
+      "p95WaitMs": 411,
+      "loadToHighlightedMs": 512
+    },
+    "skim": {
+      "blockedMs": 151,
+      "longestMs": 99,
+      "longFrames": 15,
+      "runs": 434,
+      "medianWaitMs": 30,
+      "p95WaitMs": 47,
+      "toAllHighlightedMs": 10392
+    },
+    "revisit": {
+      "blockedMs": 105,
+      "longestMs": 65,
+      "longFrames": 17,
+      "runs": 434,
+      "medianWaitMs": 30,
+      "p95WaitMs": 44
+    },
+    "costs": {
+      "afterOpen": {
+        "setups": [],
+        "firstTokenizeMs": 0,
+        "tokenizeMs": 0,
+        "tokenized": 0,
+        "medianTokenizeMs": 0,
+        "drawMs": 0,
+        "cacheHits": 0
+      },
+      "afterSkim": {
+        "setups": [],
+        "firstTokenizeMs": 0,
+        "tokenizeMs": 0,
+        "tokenized": 0,
+        "medianTokenizeMs": 0,
+        "drawMs": 0,
+        "cacheHits": 0
+      },
+      "total": {
+        "setups": [],
+        "firstTokenizeMs": 0,
+        "tokenizeMs": 0,
+        "tokenized": 0,
+        "medianTokenizeMs": 0,
+        "drawMs": 0,
+        "cacheHits": 0
+      }
+    }
+  },
+  {
+    "browser": "webkit",
+    "variant": "sandbox-shared-wasm",
+    "repeat": 1,
+    "config": {
+      "shiki": "per-view",
+      "engine": "js",
+      "where": "main",
+      "schedule": "eager",
+      "cache": false
+    },
+    "runs": 440,
+    "openedAtMs": 74,
+    "open": {
+      "blockedMs": 253,
+      "longestMs": 303,
+      "longFrames": 1,
+      "runs": 6,
+      "medianWaitMs": 375,
+      "p95WaitMs": 376,
+      "loadToHighlightedMs": 457
+    },
+    "skim": {
+      "blockedMs": 576,
+      "longestMs": 128,
+      "longFrames": 44,
+      "runs": 434,
+      "medianWaitMs": 32,
+      "p95WaitMs": 53,
+      "toAllHighlightedMs": 10402
+    },
+    "revisit": {
+      "blockedMs": 94,
+      "longestMs": 72,
+      "longFrames": 15,
+      "runs": 434,
+      "medianWaitMs": 30,
+      "p95WaitMs": 43
+    },
+    "costs": {
+      "afterOpen": {
+        "setups": [],
+        "firstTokenizeMs": 0,
+        "tokenizeMs": 0,
+        "tokenized": 0,
+        "medianTokenizeMs": 0,
+        "drawMs": 0,
+        "cacheHits": 0
+      },
+      "afterSkim": {
+        "setups": [],
+        "firstTokenizeMs": 0,
+        "tokenizeMs": 0,
+        "tokenized": 0,
+        "medianTokenizeMs": 0,
+        "drawMs": 0,
+        "cacheHits": 0
+      },
+      "total": {
+        "setups": [],
+        "firstTokenizeMs": 0,
+        "tokenizeMs": 0,
+        "tokenized": 0,
+        "medianTokenizeMs": 0,
+        "drawMs": 0,
+        "cacheHits": 0
+      }
+    }
+  },
+  {
+    "browser": "webkit",
+    "variant": "sandbox-shared-wasm",
+    "repeat": 2,
+    "config": {
+      "shiki": "per-view",
+      "engine": "js",
+      "where": "main",
+      "schedule": "eager",
+      "cache": false
+    },
+    "runs": 440,
+    "openedAtMs": 20,
+    "open": {
+      "blockedMs": 103,
+      "longestMs": 153,
+      "longFrames": 1,
+      "runs": 6,
+      "medianWaitMs": 181,
+      "p95WaitMs": 182,
+      "loadToHighlightedMs": 227
+    },
+    "skim": {
+      "blockedMs": 0,
+      "longestMs": 46,
+      "longFrames": 0,
+      "runs": 434,
+      "medianWaitMs": 14,
+      "p95WaitMs": 28,
+      "toAllHighlightedMs": 10381
+    },
+    "revisit": {
+      "blockedMs": 0,
+      "longestMs": 28,
+      "longFrames": 0,
+      "runs": 434,
+      "medianWaitMs": 13,
+      "p95WaitMs": 20
+    },
+    "costs": {
+      "afterOpen": {
+        "setups": [],
+        "firstTokenizeMs": 0,
+        "tokenizeMs": 0,
+        "tokenized": 0,
+        "medianTokenizeMs": 0,
+        "drawMs": 0,
+        "cacheHits": 0
+      },
+      "afterSkim": {
+        "setups": [],
+        "firstTokenizeMs": 0,
+        "tokenizeMs": 0,
+        "tokenized": 0,
+        "medianTokenizeMs": 0,
+        "drawMs": 0,
+        "cacheHits": 0
+      },
+      "total": {
+        "setups": [],
+        "firstTokenizeMs": 0,
+        "tokenizeMs": 0,
+        "tokenized": 0,
+        "medianTokenizeMs": 0,
+        "drawMs": 0,
+        "cacheHits": 0
+      }
+    }
+  },
+  {
+    "browser": "chromium",
+    "variant": "sandbox-shared",
+    "repeat": 0,
+    "config": {
+      "shiki": "per-view",
+      "engine": "js",
+      "where": "main",
+      "schedule": "eager",
+      "cache": false
+    },
+    "runs": 440,
+    "openedAtMs": 18,
+    "open": {
+      "blockedMs": 33,
+      "longestMs": 83,
+      "longFrames": 1,
+      "runs": 6,
+      "medianWaitMs": 111,
+      "p95WaitMs": 111,
+      "loadToHighlightedMs": 134
+    },
+    "skim": {
+      "blockedMs": 67,
+      "longestMs": 117,
+      "longFrames": 1,
+      "runs": 434,
+      "medianWaitMs": 7,
+      "p95WaitMs": 32,
+      "toAllHighlightedMs": 9756
+    },
+    "revisit": {
+      "blockedMs": 0,
+      "longestMs": 17,
+      "longFrames": 0,
+      "runs": 434,
+      "medianWaitMs": 8,
+      "p95WaitMs": 29
+    },
+    "costs": {
+      "afterOpen": {
+        "setups": [],
+        "firstTokenizeMs": 0,
+        "tokenizeMs": 0,
+        "tokenized": 0,
+        "medianTokenizeMs": 0,
+        "drawMs": 0,
+        "cacheHits": 0
+      },
+      "afterSkim": {
+        "setups": [],
+        "firstTokenizeMs": 0,
+        "tokenizeMs": 0,
+        "tokenized": 0,
+        "medianTokenizeMs": 0,
+        "drawMs": 0,
+        "cacheHits": 0
+      },
+      "total": {
+        "setups": [],
+        "firstTokenizeMs": 0,
+        "tokenizeMs": 0,
+        "tokenized": 0,
+        "medianTokenizeMs": 0,
+        "drawMs": 0,
+        "cacheHits": 0
+      }
+    }
+  },
+  {
+    "browser": "chromium",
+    "variant": "sandbox-shared",
+    "repeat": 1,
+    "config": {
+      "shiki": "per-view",
+      "engine": "js",
+      "where": "main",
+      "schedule": "eager",
+      "cache": false
+    },
+    "runs": 440,
+    "openedAtMs": 20,
+    "open": {
+      "blockedMs": 33,
+      "longestMs": 83,
+      "longFrames": 1,
+      "runs": 6,
+      "medianWaitMs": 112,
+      "p95WaitMs": 113,
+      "loadToHighlightedMs": 140
+    },
+    "skim": {
+      "blockedMs": 67,
+      "longestMs": 117,
+      "longFrames": 1,
+      "runs": 434,
+      "medianWaitMs": 8,
+      "p95WaitMs": 32,
+      "toAllHighlightedMs": 9779
+    },
+    "revisit": {
+      "blockedMs": 0,
+      "longestMs": 33,
+      "longFrames": 0,
+      "runs": 434,
+      "medianWaitMs": 7,
+      "p95WaitMs": 28
+    },
+    "costs": {
+      "afterOpen": {
+        "setups": [],
+        "firstTokenizeMs": 0,
+        "tokenizeMs": 0,
+        "tokenized": 0,
+        "medianTokenizeMs": 0,
+        "drawMs": 0,
+        "cacheHits": 0
+      },
+      "afterSkim": {
+        "setups": [],
+        "firstTokenizeMs": 0,
+        "tokenizeMs": 0,
+        "tokenized": 0,
+        "medianTokenizeMs": 0,
+        "drawMs": 0,
+        "cacheHits": 0
+      },
+      "total": {
+        "setups": [],
+        "firstTokenizeMs": 0,
+        "tokenizeMs": 0,
+        "tokenized": 0,
+        "medianTokenizeMs": 0,
+        "drawMs": 0,
+        "cacheHits": 0
+      }
+    }
+  },
+  {
+    "browser": "chromium",
+    "variant": "sandbox-shared",
+    "repeat": 2,
+    "config": {
+      "shiki": "per-view",
+      "engine": "js",
+      "where": "main",
+      "schedule": "eager",
+      "cache": false
+    },
+    "runs": 440,
+    "openedAtMs": 17,
+    "open": {
+      "blockedMs": 33,
+      "longestMs": 83,
+      "longFrames": 1,
+      "runs": 6,
+      "medianWaitMs": 110,
+      "p95WaitMs": 110,
+      "loadToHighlightedMs": 133
+    },
+    "skim": {
+      "blockedMs": 67,
+      "longestMs": 117,
+      "longFrames": 1,
+      "runs": 434,
+      "medianWaitMs": 8,
+      "p95WaitMs": 33,
+      "toAllHighlightedMs": 9772
+    },
+    "revisit": {
+      "blockedMs": 0,
+      "longestMs": 17,
+      "longFrames": 0,
+      "runs": 434,
+      "medianWaitMs": 7,
+      "p95WaitMs": 23
+    },
+    "costs": {
+      "afterOpen": {
+        "setups": [],
+        "firstTokenizeMs": 0,
+        "tokenizeMs": 0,
+        "tokenized": 0,
+        "medianTokenizeMs": 0,
+        "drawMs": 0,
+        "cacheHits": 0
+      },
+      "afterSkim": {
+        "setups": [],
+        "firstTokenizeMs": 0,
+        "tokenizeMs": 0,
+        "tokenized": 0,
+        "medianTokenizeMs": 0,
+        "drawMs": 0,
+        "cacheHits": 0
+      },
+      "total": {
+        "setups": [],
+        "firstTokenizeMs": 0,
+        "tokenizeMs": 0,
+        "tokenized": 0,
+        "medianTokenizeMs": 0,
+        "drawMs": 0,
+        "cacheHits": 0
+      }
+    }
+  },
+  {
+    "browser": "chromium",
+    "variant": "sandbox-shared-wasm",
+    "repeat": 0,
+    "config": {
+      "shiki": "per-view",
+      "engine": "js",
+      "where": "main",
+      "schedule": "eager",
+      "cache": false
+    },
+    "runs": 440,
+    "openedAtMs": 17,
+    "open": {
+      "blockedMs": 50,
+      "longestMs": 100,
+      "longFrames": 1,
+      "runs": 6,
+      "medianWaitMs": 155,
+      "p95WaitMs": 155,
+      "loadToHighlightedMs": 179
+    },
+    "skim": {
+      "blockedMs": 0,
+      "longestMs": 17,
+      "longFrames": 0,
+      "runs": 434,
+      "medianWaitMs": 9,
+      "p95WaitMs": 21,
+      "toAllHighlightedMs": 9714
+    },
+    "revisit": {
+      "blockedMs": 0,
+      "longestMs": 17,
+      "longFrames": 0,
+      "runs": 434,
+      "medianWaitMs": 8,
+      "p95WaitMs": 18
+    },
+    "costs": {
+      "afterOpen": {
+        "setups": [],
+        "firstTokenizeMs": 0,
+        "tokenizeMs": 0,
+        "tokenized": 0,
+        "medianTokenizeMs": 0,
+        "drawMs": 0,
+        "cacheHits": 0
+      },
+      "afterSkim": {
+        "setups": [],
+        "firstTokenizeMs": 0,
+        "tokenizeMs": 0,
+        "tokenized": 0,
+        "medianTokenizeMs": 0,
+        "drawMs": 0,
+        "cacheHits": 0
+      },
+      "total": {
+        "setups": [],
+        "firstTokenizeMs": 0,
+        "tokenizeMs": 0,
+        "tokenized": 0,
+        "medianTokenizeMs": 0,
+        "drawMs": 0,
+        "cacheHits": 0
+      }
+    }
+  },
+  {
+    "browser": "chromium",
+    "variant": "sandbox-shared-wasm",
+    "repeat": 1,
+    "config": {
+      "shiki": "per-view",
+      "engine": "js",
+      "where": "main",
+      "schedule": "eager",
+      "cache": false
+    },
+    "runs": 440,
+    "openedAtMs": 19,
+    "open": {
+      "blockedMs": 67,
+      "longestMs": 117,
+      "longFrames": 1,
+      "runs": 6,
+      "medianWaitMs": 177,
+      "p95WaitMs": 177,
+      "loadToHighlightedMs": 202
+    },
+    "skim": {
+      "blockedMs": 0,
+      "longestMs": 50,
+      "longFrames": 0,
+      "runs": 434,
+      "medianWaitMs": 11,
+      "p95WaitMs": 24,
+      "toAllHighlightedMs": 9725
+    },
+    "revisit": {
+      "blockedMs": 0,
+      "longestMs": 17,
+      "longFrames": 0,
+      "runs": 434,
+      "medianWaitMs": 21,
+      "p95WaitMs": 34
+    },
+    "costs": {
+      "afterOpen": {
+        "setups": [],
+        "firstTokenizeMs": 0,
+        "tokenizeMs": 0,
+        "tokenized": 0,
+        "medianTokenizeMs": 0,
+        "drawMs": 0,
+        "cacheHits": 0
+      },
+      "afterSkim": {
+        "setups": [],
+        "firstTokenizeMs": 0,
+        "tokenizeMs": 0,
+        "tokenized": 0,
+        "medianTokenizeMs": 0,
+        "drawMs": 0,
+        "cacheHits": 0
+      },
+      "total": {
+        "setups": [],
+        "firstTokenizeMs": 0,
+        "tokenizeMs": 0,
+        "tokenized": 0,
+        "medianTokenizeMs": 0,
+        "drawMs": 0,
+        "cacheHits": 0
+      }
+    }
+  },
+  {
+    "browser": "chromium",
+    "variant": "sandbox-shared-wasm",
+    "repeat": 2,
+    "config": {
+      "shiki": "per-view",
+      "engine": "js",
+      "where": "main",
+      "schedule": "eager",
+      "cache": false
+    },
+    "runs": 440,
+    "openedAtMs": 74,
+    "open": {
+      "blockedMs": 200,
+      "longestMs": 250,
+      "longFrames": 1,
+      "runs": 6,
+      "medianWaitMs": 352,
+      "p95WaitMs": 353,
+      "loadToHighlightedMs": 395
+    },
+    "skim": {
+      "blockedMs": 17,
+      "longestMs": 67,
+      "longFrames": 1,
+      "runs": 434,
+      "medianWaitMs": 24,
+      "p95WaitMs": 44,
+      "toAllHighlightedMs": 9734
+    },
+    "revisit": {
+      "blockedMs": 0,
+      "longestMs": 17,
+      "longFrames": 0,
+      "runs": 434,
+      "medianWaitMs": 21,
+      "p95WaitMs": 34
+    },
+    "costs": {
+      "afterOpen": {
+        "setups": [],
+        "firstTokenizeMs": 0,
+        "tokenizeMs": 0,
+        "tokenized": 0,
+        "medianTokenizeMs": 0,
+        "drawMs": 0,
+        "cacheHits": 0
+      },
+      "afterSkim": {
+        "setups": [],
+        "firstTokenizeMs": 0,
+        "tokenizeMs": 0,
+        "tokenized": 0,
+        "medianTokenizeMs": 0,
+        "drawMs": 0,
+        "cacheHits": 0
+      },
+      "total": {
+        "setups": [],
+        "firstTokenizeMs": 0,
+        "tokenizeMs": 0,
+        "tokenized": 0,
+        "medianTokenizeMs": 0,
+        "drawMs": 0,
+        "cacheHits": 0
+      }
+    }
+  }
+]

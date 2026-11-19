@@ -173,7 +173,7 @@ A frame's code must never reach the app: a strict component sees its params and 
 
 - **WebKit's `ipc` handler.** On macOS and Linux, WebKit gives every frame Tauri's `ipc` script message handler, and no content security policy governs it. Tauri drops a message without the key, so a frame's call through it runs nothing; the example's check posts one with a guessed key to prove it. [The plugin's design](../../docs/tauri-plugin.md#appendix-webkits-ipc-handler-in-a-frame) has the research.
 
-**If the app sets a content security policy** (`app.security.csp`; Tauri's template sets none), it adds what `cspFor` from `@compmd/vite/config` gives, for both forms of the origin: `frame-src` the origin, `script-src` and `connect-src` its `frames/` (a host-mode page loads Shiki and Temml from there), never its `packs/`, and `frame-ancestors 'none'`:
+**If the app sets a content security policy** (`app.security.csp`; Tauri's template sets none), it adds what `cspFor` from `@compmd/vite/config` gives, for both forms of the origin: `frame-src` the origin, `script-src` and `connect-src` its `frames/` (a host-mode page loads Shiki and Temml from there), `script-src` `'wasm-unsafe-eval'` (it highlights code with Oniguruma, as WebAssembly; without it, with Shiki's slower JavaScript engine), never its `packs/`, and `frame-ancestors 'none'`:
 
 ```json snippet=../../../crates/tauri/examples/tauri-app/src-tauri/tauri.conf.json
 {
@@ -190,7 +190,7 @@ A frame's code must never reach the app: a strict component sees its params and 
   "app": {
     "windows": [{ "label": "main", "title": "CompMD in Tauri", "width": 900, "height": 760 }],
     "security": {
-      "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; frame-src compmd://localhost/ http://compmd.localhost/; script-src 'self' compmd://localhost/frames/ http://compmd.localhost/frames/; connect-src 'self' ipc: http://ipc.localhost compmd://localhost/frames/ http://compmd.localhost/frames/; frame-ancestors 'none'; object-src 'none'; base-uri 'self'"
+      "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; frame-src compmd://localhost/ http://compmd.localhost/; script-src 'self' compmd://localhost/frames/ http://compmd.localhost/frames/ 'wasm-unsafe-eval'; connect-src 'self' ipc: http://ipc.localhost compmd://localhost/frames/ http://compmd.localhost/frames/; frame-ancestors 'none'; object-src 'none'; base-uri 'self'"
     }
   },
   "bundle": { "active": false }
