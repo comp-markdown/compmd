@@ -4,7 +4,7 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
 
 ## Version 1 (draft)
 
-### Unreleased
+### 1.0-draft.16, 2026-11-19
 
 - **WebAssembly in a sandbox (§15).** The informative note on browsers says a sandbox's policy may allow compiling WebAssembly (`'wasm-unsafe-eval'`), since WebAssembly reaches only what the frame's scripts reach. No rule changes. Not breaking.
 
