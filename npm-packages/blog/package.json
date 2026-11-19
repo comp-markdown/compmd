@@ -1,6 +1,6 @@
 {
   "name": "@compmd/blog",
-  "version": "0.7.1",
+  "version": "0.8.0",
   "description": "A blog in CompMD: a folder of CompMD documents made a static blog, with a page per post, tags, an Atom feed and comments. cblo new, cblo dev, cblo build",
   "keywords": [
     "compmd",
