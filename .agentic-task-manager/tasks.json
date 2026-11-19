@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 264,
+    "next_number": 265,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -9394,15 +9394,18 @@
       "requirements": [],
       "use_cases": [],
       "status": "todo",
-      "dependencies": [],
+      "dependencies": [
+        "01a1f34e-94e0-75eb-921a-452c66f8215a"
+      ],
       "files": [
         "RELEASING.md",
-        "spec/CHANGELOG.md"
+        "spec/CHANGELOG.md",
+        ".github/workflows/release.yml"
       ],
       "created_at": "2026-11-19T10:13:16Z",
-      "updated_at": "2026-11-19T10:13:16Z",
+      "updated_at": "2026-11-19T10:16:16Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "sprint_history": [
         {
           "sprint": "Rendering optimizations",
@@ -9411,6 +9414,45 @@
       ],
       "sprint": "Rendering optimizations",
       "number": 263,
+      "key_final": false,
+      "notes": [
+        {
+          "at": "2026-11-19T10:16:16Z",
+          "kind": "note",
+          "text": "Found while preparing it: every npm package’s `repository.directory` still names the folder before CMD-246 (`blog`, not `npm-packages/blog`): fix before the tag. New on npm: `@compmd/blog`, `@compmd/create-blog`, `@compmd/host`, `@comp-markdown/wireframe` (0.0.0 placeholders by hand first); `@compmd/host` isn’t in `release.yml`, and the wireframe pack has no release workflow yet. No new crates.",
+          "by": "claude:79612601"
+        }
+      ]
+    },
+    {
+      "id": "01a1f34e-94e0-75eb-921a-452c66f8215a",
+      "name": "Before 0.8.0: the website, the playground, the spec and the guides, checked against what changed",
+      "type": "docs",
+      "priority": "P1",
+      "description": "Before the 0.8.0 release (CMD-263), go through what readers see and list what is missing or out of date since 0.7.1, then fix it or add a task for it. With the user: what to change is theirs to decide.\n\n## What changed since 0.7.1\n- A code block's lines are elements, with `view.lineHeights` and their boxes in `lines()`; the frame protocol is version 5 (CMD-250).\n- A highlighter gives tokens, and the renderer draws them, a block at a time, those on screen first; `drawn()` and `settled` wait for it (CMD-251, CMD-259).\n- Many views in one page: one stylesheet per document, the colour scheme read only when needed, one highlighter for a page's views (CMD-253, CMD-255, CMD-256).\n- Oniguruma where the page compiles WebAssembly, outside Chromium; `'wasm-unsafe-eval'` in `cspFor` and in the frames' policies; the spec's §15 note (CMD-257, CMD-258, CMD-260).\n- The repository's new layout (CMD-246).\n\n## What to check\n- **The landing page:** what it says about safety, speed and hosting; its install line and snippets.\n- **The playground:** code blocks highlighted in both modes and both schemes, in Chrome and Safari; nothing slower.\n- **The spec page:** §15's note shows; the draft's revision and changelog.\n- **The guides:** the Developer's Guide's chapters on rendering, highlighting, hosting, the policy and Tauri (a host's own highlighter now returns tokens; `cspFor`'s `'wasm-unsafe-eval'`; `lineHeights`); the Author's Guide where it shows code blocks; their examples still tested; the PDFs build.\n- **Links** to files that moved with the new layout.\n\n## Outcome\nThe list of what was found, each fixed here or in a task of its own, in the task's note.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1f2df-0550-7070-8958-7ecfa358d7e5"
+      ],
+      "files": [
+        "website/",
+        "guides/",
+        "spec/compmd-spec-v1.md"
+      ],
+      "created_at": "2026-11-19T10:16:15Z",
+      "updated_at": "2026-11-19T10:16:15Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Rendering optimizations",
+          "from": "2026-11-19T10:16:15Z"
+        }
+      ],
+      "sprint": "Rendering optimizations",
+      "number": 264,
       "key_final": false
     }
   ]
