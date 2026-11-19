@@ -248,8 +248,7 @@
       "updated_at": "2026-11-18T01:19:02Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
-      "number": 1,
-      "key_final": true
+      "number": 1
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68df443abb7a",
@@ -266,8 +265,7 @@
       "updated_at": "2026-11-17T22:51:26Z",
       "created_by": "Hakan Serce",
       "updated_by": "Hakan Serce",
-      "number": 2,
-      "key_final": true
+      "number": 2
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68e08cff6758",
@@ -287,8 +285,7 @@
       "updated_at": "2026-11-18T01:19:02Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
-      "number": 3,
-      "key_final": true
+      "number": 3
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68e1a89013a8",
@@ -309,8 +306,7 @@
       "updated_at": "2026-11-18T01:19:02Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
-      "number": 4,
-      "key_final": true
+      "number": 4
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68e2b7a9ca57",
@@ -330,8 +326,7 @@
       "updated_at": "2026-11-18T01:19:02Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
-      "number": 5,
-      "key_final": true
+      "number": 5
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68e3a6c54ad2",
@@ -351,8 +346,7 @@
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "with": "user",
-      "number": 6,
-      "key_final": true
+      "number": 6
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68e49113138d",
@@ -372,8 +366,7 @@
       "updated_at": "2026-11-17T22:51:26Z",
       "created_by": "Hakan Serce",
       "updated_by": "Hakan Serce",
-      "number": 7,
-      "key_final": true
+      "number": 7
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68e5ebcaa0da",
@@ -396,8 +389,7 @@
       "created_by": "Hakan Serce",
       "updated_by": "Hakan Serce",
       "with": "user",
-      "number": 8,
-      "key_final": true
+      "number": 8
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68e63c5137a7",
@@ -435,8 +427,7 @@
         }
       ],
       "sprint": "Packs & Blog",
-      "number": 9,
-      "key_final": true
+      "number": 9
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68e7d6fc0e9a",
@@ -459,8 +450,7 @@
       "created_by": "Hakan Serce",
       "updated_by": "Hakan Serce",
       "with": "user",
-      "number": 10,
-      "key_final": true
+      "number": 10
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68e81c39ce10",
@@ -497,8 +487,7 @@
         }
       ],
       "sprint": "Packs & Blog",
-      "number": 11,
-      "key_final": true
+      "number": 11
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68e96cefc8f6",
@@ -536,8 +525,7 @@
       ],
       "sprint": "Packs & Blog",
       "with": "user",
-      "number": 12,
-      "key_final": true
+      "number": 12
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68ea9d5906c3",
@@ -574,8 +562,7 @@
       ],
       "sprint": "Packs & Blog",
       "with": "user",
-      "number": 13,
-      "key_final": true
+      "number": 13
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68ebbb96493c",
@@ -612,8 +599,7 @@
       ],
       "sprint": "Packs & Blog",
       "with": "user",
-      "number": 14,
-      "key_final": true
+      "number": 14
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68ecc9cfcfc3",
@@ -650,8 +636,7 @@
       ],
       "sprint": "Packs & Blog",
       "with": "user",
-      "number": 15,
-      "key_final": true
+      "number": 15
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68ed0184b787",
@@ -688,8 +673,7 @@
       ],
       "sprint": "Packs & Blog",
       "with": "user",
-      "number": 16,
-      "key_final": true
+      "number": 16
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68ee6b325353",
@@ -715,8 +699,7 @@
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "with": "user",
-      "number": 17,
-      "key_final": true
+      "number": 17
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68efa9d8fbb8",
@@ -754,8 +737,7 @@
         }
       ],
       "sprint": "Packs & Blog",
-      "number": 18,
-      "key_final": true
+      "number": 18
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68f0d62886dc",
@@ -776,8 +758,7 @@
       "updated_at": "2026-11-18T01:19:02Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
-      "number": 19,
-      "key_final": true
+      "number": 19
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68f1c63d6537",
@@ -801,8 +782,7 @@
         }
       ],
       "sprint": "Editor support",
-      "number": 20,
-      "key_final": true
+      "number": 20
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68f25533b0bc",
@@ -826,8 +806,7 @@
         }
       ],
       "sprint": "Editor support",
-      "number": 21,
-      "key_final": true
+      "number": 21
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68f3362597b7",
@@ -856,8 +835,7 @@
         }
       ],
       "sprint": "Editor support",
-      "number": 22,
-      "key_final": true
+      "number": 22
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68f4dc43b1c6",
@@ -883,8 +861,7 @@
         }
       ],
       "sprint": "Editor support",
-      "number": 23,
-      "key_final": true
+      "number": 23
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68f5234f8107",
@@ -910,8 +887,7 @@
         }
       ],
       "sprint": "Editor support",
-      "number": 24,
-      "key_final": true
+      "number": 24
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68f60d5336b0",
@@ -941,8 +917,7 @@
         }
       ],
       "sprint": "Editor support",
-      "number": 25,
-      "key_final": true
+      "number": 25
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68f7e63b4bc7",
@@ -971,8 +946,7 @@
         }
       ],
       "sprint": "Editor support",
-      "number": 26,
-      "key_final": true
+      "number": 26
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68f88dfb60a2",
@@ -1001,8 +975,7 @@
         }
       ],
       "sprint": "Editor support",
-      "number": 27,
-      "key_final": true
+      "number": 27
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68f99f7e17b0",
@@ -1031,8 +1004,7 @@
         }
       ],
       "sprint": "Editor support",
-      "number": 28,
-      "key_final": true
+      "number": 28
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68fa0ba359f5",
@@ -1061,8 +1033,7 @@
         }
       ],
       "sprint": "Editor support",
-      "number": 29,
-      "key_final": true
+      "number": 29
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68fba28f75de",
@@ -1089,8 +1060,7 @@
         }
       ],
       "sprint": "Editor support",
-      "number": 30,
-      "key_final": true
+      "number": 30
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68fc858593ce",
@@ -1124,8 +1094,7 @@
         }
       ],
       "sprint": "Editor support",
-      "number": 31,
-      "key_final": true
+      "number": 31
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68fdcd069437",
@@ -1154,8 +1123,7 @@
         }
       ],
       "sprint": "Editor support",
-      "number": 32,
-      "key_final": true
+      "number": 32
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68feb5c241b6",
@@ -1181,8 +1149,7 @@
         }
       ],
       "sprint": "Editor support",
-      "number": 33,
-      "key_final": true
+      "number": 33
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68ff5f211bc8",
@@ -1208,8 +1175,7 @@
         }
       ],
       "sprint": "Editor support",
-      "number": 34,
-      "key_final": true
+      "number": 34
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-6900be5dd164",
@@ -1235,8 +1201,7 @@
         }
       ],
       "sprint": "Editor support",
-      "number": 35,
-      "key_final": true
+      "number": 35
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-6901086800fe",
@@ -1266,7 +1231,6 @@
       ],
       "sprint": "Rendering optimizations",
       "number": 36,
-      "key_final": true,
       "started_at": "2026-11-17T22:51:33Z",
       "started_by": "claude:e2fd71c2",
       "code_reviews": [
@@ -1340,7 +1304,6 @@
       ],
       "sprint": "Rendering optimizations",
       "number": 37,
-      "key_final": true,
       "started_at": "2026-11-17T22:51:33Z",
       "started_by": "claude:e2fd71c2",
       "code_reviews": [
@@ -1383,7 +1346,6 @@
     {
       "id": "14fb0014-1501-800e-ab58-a93bc2621b7f",
       "number": 58,
-      "key_final": true,
       "name": "Markdown-rs: report and fix normalize_identifier upstream (needs the user)",
       "type": "bugfix",
       "labels": [],
@@ -1424,7 +1386,6 @@
     {
       "id": "120cad54-8355-8891-865b-0828aab3e54d",
       "number": 60,
-      "key_final": true,
       "name": "Markdown-rs: propose extension points upstream, to retire the fork",
       "type": "docs",
       "priority": "P3",
@@ -1507,7 +1468,6 @@
     {
       "id": "50fa6cf9-deae-83fd-9679-1250ed1b4d06",
       "number": 84,
-      "key_final": true,
       "name": "Reconsider a separate compmd-cel crate",
       "type": "refactor",
       "priority": "P3",
@@ -1554,7 +1514,6 @@
     {
       "id": "f33893c8-314a-8b19-9c2c-92ee8ccfdc92",
       "number": 98,
-      "key_final": true,
       "name": "Markdown-rs: report and fix lines skipped after a failed frontmatter attempt upstream (needs the user)",
       "type": "bugfix",
       "priority": "P2",
@@ -1623,7 +1582,6 @@
     {
       "id": "446a6c1f-8ffb-8b8c-9879-59b36777077e",
       "number": 99,
-      "key_final": true,
       "name": "Markdown-rs: report and fix the panic on an underline moved into a paragraph upstream (needs the user)",
       "type": "bugfix",
       "priority": "P2",
@@ -1692,7 +1650,6 @@
     {
       "id": "35be5aa7-f5cf-8009-acaf-32b54fafd8db",
       "number": 114,
-      "key_final": true,
       "name": "Website: the landing page written in CompMD",
       "type": "feature",
       "labels": [],
@@ -1740,7 +1697,6 @@
     {
       "id": "b4526828-34b1-8bef-82b7-e46f77829289",
       "number": 120,
-      "key_final": true,
       "name": "Website: a search bar on the spec page",
       "type": "feature",
       "priority": "P2",
@@ -1782,7 +1738,6 @@
     {
       "id": "8e4a5900-5a06-8189-9e6d-b0d84671afec",
       "number": 132,
-      "key_final": true,
       "name": "A design for content languages in editors",
       "type": "docs",
       "priority": "P3",
@@ -1849,7 +1804,6 @@
     {
       "id": "d2671a41-64d4-8209-a490-fd0740f66664",
       "number": 138,
-      "key_final": true,
       "name": "Handling pack loading states (loading, loaded, failed)",
       "type": "docs",
       "priority": "P2",
@@ -1948,7 +1902,6 @@
     {
       "id": "df64dee6-96ad-81b9-9094-c2ac14e81d73",
       "number": 147,
-      "key_final": true,
       "name": "Guides: packs from a registry",
       "type": "docs",
       "priority": "P2",
@@ -2004,7 +1957,6 @@
     {
       "id": "6a323fbd-2ed3-817e-b556-793001f5ecce",
       "number": 148,
-      "key_final": true,
       "name": "Guides: the chapters still to come, and more detail",
       "type": "docs",
       "priority": "P2",
@@ -2057,7 +2009,6 @@
     {
       "id": "ab52d40a-d14b-8309-b3d1-958fff58b330",
       "number": 149,
-      "key_final": true,
       "name": "Website: the companion, CompMD packs on a registry",
       "type": "docs",
       "priority": "P2",
@@ -2111,7 +2062,6 @@
     {
       "id": "388bb90f-0ab7-87a0-92b8-2133a24d3253",
       "number": 150,
-      "key_final": true,
       "name": "Split long source files into modules",
       "type": "refactor",
       "priority": "P2",
@@ -2165,7 +2115,6 @@
     {
       "id": "c6305d51-1011-88d2-b46c-5bd02ee9f58b",
       "number": 152,
-      "key_final": true,
       "name": "Define and implement how printing works",
       "type": "feature",
       "priority": "P2",
@@ -2247,7 +2196,6 @@
     {
       "id": "04a2529f-2680-8a0f-b400-54c87a06a5b4",
       "number": 154,
-      "key_final": true,
       "name": "The Developer Tools inspector",
       "type": "feature",
       "priority": "P1",
@@ -2303,7 +2251,6 @@
     {
       "id": "6584e524-2cb4-8a70-94a9-bfcecf79a246",
       "number": 155,
-      "key_final": true,
       "name": "Publish @compmd/devtools on npm",
       "type": "infra",
       "priority": "P1",
@@ -2361,7 +2308,6 @@
     {
       "id": "3e1d7fa3-7e89-8331-ab15-d799896738a3",
       "number": 156,
-      "key_final": true,
       "name": "Website: no unstyled flash between guide pages on the dev server",
       "type": "bugfix",
       "priority": "P1",
@@ -2416,7 +2362,6 @@
     {
       "id": "5a51092b-95da-85c9-a7d8-36e76ee9494a",
       "number": 157,
-      "key_final": true,
       "name": "Website: download each guide and each version of the spec as a PDF",
       "type": "feature",
       "priority": "P2",
@@ -2475,7 +2420,6 @@
     {
       "id": "5cef2ba5-54a5-86e9-a481-a991f1a9e352",
       "number": 158,
-      "key_final": true,
       "name": "Pack: build modules in production mode whatever NODE_ENV says",
       "type": "bugfix",
       "priority": "P1",
@@ -2528,7 +2472,6 @@
     {
       "id": "20b226a2-f998-82e0-b83b-c9e2ef92017e",
       "number": 159,
-      "key_final": true,
       "name": "Pack: minify built modules' whitespace too",
       "type": "bugfix",
       "priority": "P2",
@@ -2584,7 +2527,6 @@
     {
       "id": "f16916a8-c959-8e95-b6a6-d137c00c1273",
       "number": 160,
-      "key_final": true,
       "name": "Spec: slot names with `-` in paths and bindings",
       "type": "docs",
       "priority": "P1",
@@ -2637,7 +2579,6 @@
     {
       "id": "eebab559-283b-8984-95ff-ecc68269e666",
       "number": 161,
-      "key_final": true,
       "name": "Place slots named with `-`",
       "type": "bugfix",
       "priority": "P1",
@@ -2696,7 +2637,6 @@
     {
       "id": "0516a4fd-0221-8841-bb09-9b054da31190",
       "number": 162,
-      "key_final": true,
       "name": "Spec: `host` for trusted components too",
       "type": "docs",
       "priority": "P1",
@@ -2749,7 +2689,6 @@
     {
       "id": "288b8d98-c042-887f-b819-b3096fed8a78",
       "number": 163,
-      "key_final": true,
       "name": "Sandbox: give trusted components `host` on both mounting paths",
       "type": "bugfix",
       "priority": "P1",
@@ -2814,7 +2753,6 @@
     {
       "id": "1cd5531e-4ddf-8c4d-9d66-224573fd04f7",
       "number": 164,
-      "key_final": true,
       "name": "Sandbox: let an app send `host` events to its components",
       "type": "feature",
       "priority": "P2",
@@ -2873,7 +2811,6 @@
     {
       "id": "0f256ace-a445-87a6-9bb1-b74d8c66e0f3",
       "number": 165,
-      "key_final": true,
       "name": "Docs: bindings come from the file extension (`docs/vite.md`)",
       "type": "docs",
       "priority": "P3",
@@ -2925,7 +2862,6 @@
     {
       "id": "9381145f-ef73-80ee-aee9-1b029c852467",
       "number": 166,
-      "key_final": true,
       "name": "Processor: the diagnostics it misses",
       "type": "bugfix",
       "priority": "P1",
@@ -2979,7 +2915,6 @@
     {
       "id": "761eb820-7201-8ffb-a82a-e5d0873e4c45",
       "number": 167,
-      "key_final": true,
       "name": "Processor: params and types the spec allows",
       "type": "bugfix",
       "priority": "P1",
@@ -3057,7 +2992,6 @@
     {
       "id": "73f2cb2d-37f5-80f9-94bc-e6cb4342cdba",
       "number": 168,
-      "key_final": true,
       "name": "Processor: interpolation and data fixes",
       "type": "bugfix",
       "priority": "P2",
@@ -3111,7 +3045,6 @@
     {
       "id": "b7c9f612-46a6-81c7-84bd-318e433de3fe",
       "number": 169,
-      "key_final": true,
       "name": "Processor: strict and lenient mode, and cache keys for the JS host",
       "type": "feature",
       "priority": "P2",
@@ -3196,7 +3129,6 @@
     {
       "id": "3cbdfb55-9d57-8f9c-b167-2b8e72b636b7",
       "number": 170,
-      "key_final": true,
       "name": "Ask the reader before data from a new origin",
       "type": "feature",
       "priority": "P2",
@@ -3262,7 +3194,6 @@
     {
       "id": "32cee9c7-9683-8f8e-b73a-8767b388346c",
       "number": 171,
-      "key_final": true,
       "name": "Publish the processor crate's current version on crates.io",
       "type": "infra",
       "priority": "P2",
@@ -3315,7 +3246,6 @@
     {
       "id": "609402d7-9900-808e-be56-6cfcb400426f",
       "number": 172,
-      "key_final": true,
       "name": "W104, checking components against their signature fences",
       "type": "feature",
       "priority": "P3",
@@ -3388,7 +3318,6 @@
     {
       "id": "53aeedce-28c4-8a91-b188-3b16adc8944c",
       "number": 173,
-      "key_final": true,
       "name": "Publish the crates with every release, and point the guides at crates.io",
       "type": "infra",
       "priority": "P1",
@@ -3453,7 +3382,6 @@
     {
       "id": "4ffa1ba9-bbbb-83fb-b259-4552cc7d6a21",
       "number": 174,
-      "key_final": true,
       "name": "Vite: the inspector's Data test fails in WebKit under load",
       "type": "bugfix",
       "priority": "P1",
@@ -3506,7 +3434,6 @@
     {
       "id": "fd5845c9-e77c-8e4a-83d1-c44ff1d234d6",
       "number": 175,
-      "key_final": true,
       "name": "Sandbox: tell the host when a view's layout has settled",
       "type": "feature",
       "priority": "P2",
@@ -3584,7 +3511,6 @@
     {
       "id": "2c3aba86-4458-8a2a-ab7d-3454af8c4920",
       "number": 176,
-      "key_final": true,
       "name": "Guides: the devtools example's dev server test fails on a late dependency",
       "type": "bugfix",
       "priority": "P1",
@@ -3644,7 +3570,6 @@
     {
       "id": "eabf4652-7d12-8076-aa87-5abb7c13f970",
       "number": 177,
-      "key_final": true,
       "name": "CompMD guides as proper PDF ebooks: contents with page numbers, book typography, a cover, example previews",
       "type": "feature",
       "priority": "P2",
@@ -3739,7 +3664,6 @@
     {
       "id": "c3b1aa14-5ff1-8d15-8112-41ab4e337648",
       "number": 178,
-      "key_final": true,
       "name": "Sandbox: math typeset in host mode too",
       "type": "bugfix",
       "priority": "P1",
@@ -3795,7 +3719,6 @@
     {
       "id": "fe983f3f-d5d8-80ee-bcbe-46aae74d2ae6",
       "number": 179,
-      "key_final": true,
       "name": "Sandbox: a document's own images in frame mode",
       "type": "feature",
       "priority": "P1",
@@ -3858,7 +3781,6 @@
     {
       "id": "ed0ba94f-c20e-8513-bf28-8c2ccac95b7f",
       "number": 180,
-      "key_final": true,
       "name": "Sandbox: frame mode's theme tokens before the first mount",
       "type": "bugfix",
       "priority": "P1",
@@ -3913,7 +3835,6 @@
     {
       "id": "d0f924e2-03ee-8029-89c2-fd2c18b97e32",
       "number": 181,
-      "key_final": true,
       "name": "`cargo make ci` lints the TypeScript packages",
       "type": "infra",
       "priority": "P1",
@@ -3972,7 +3893,6 @@
     {
       "id": "73993acf-7593-8889-aece-ae7d406debbd",
       "number": 182,
-      "key_final": true,
       "name": "`loadData`, the playground asking before data from a new origin, and the guides",
       "type": "feature",
       "priority": "P1",
@@ -4050,7 +3970,6 @@
     {
       "id": "ea22de04-cdd6-85fb-8e21-331b8ba4c9df",
       "number": 183,
-      "key_final": true,
       "name": "Decide whether a document's remote images are asked about like data",
       "type": "feature",
       "priority": "P2",
@@ -4143,7 +4062,6 @@
     {
       "id": "822a2ca2-87cc-879d-84f8-ca563c629319",
       "number": 184,
-      "key_final": true,
       "name": "The sprint review's feedback, wrapped up",
       "type": "polish",
       "priority": "P1",
@@ -4210,7 +4128,6 @@
     {
       "id": "acba3143-033f-8a01-b832-5884446b446a",
       "number": 185,
-      "key_final": true,
       "name": "Website: a search box across the site, the spec and the guides",
       "type": "feature",
       "priority": "P1",
@@ -4283,7 +4200,6 @@
     {
       "id": "e1099145-6653-8634-b5eb-543377c76518",
       "number": 186,
-      "key_final": true,
       "name": "Highlight code blocks that show as code",
       "type": "feature",
       "priority": "P2",
@@ -4339,7 +4255,6 @@
     {
       "id": "eb66ba87-52f6-8338-9c4f-2ed16027acac",
       "number": 187,
-      "key_final": true,
       "name": "Developer Tools: evaluate expressions in the Console",
       "type": "feature",
       "priority": "P2",
@@ -4402,7 +4317,6 @@
     {
       "id": "026b925b-2873-8e6f-9ced-83575217c44e",
       "number": 188,
-      "key_final": true,
       "name": "Render: map between the page's elements and the source they came from",
       "type": "feature",
       "priority": "P2",
@@ -4460,7 +4374,6 @@
     {
       "id": "64bbca23-d808-82a4-98e0-22860b29d659",
       "number": 189,
-      "key_final": true,
       "name": "Developer Tools: two tabs, Page and CompMD Inspector",
       "type": "polish",
       "priority": "P2",
@@ -4515,7 +4428,6 @@
     {
       "id": "a11cf928-0972-8da5-81ae-68881f09b0ec",
       "number": 190,
-      "key_final": true,
       "name": "Release 0.4.0",
       "type": "infra",
       "priority": "P1",
@@ -4576,7 +4488,6 @@
     {
       "id": "9592a1ac-532d-8d41-99d7-18054ebe12d4",
       "number": 191,
-      "key_final": true,
       "name": "Faster CI and e2e tests, and Linux problems caught locally with Docker before pushing",
       "type": "infra",
       "priority": "P0",
@@ -4682,7 +4593,6 @@
     {
       "id": "93fe932d-fa18-810c-a121-1f10473ba36c",
       "number": 192,
-      "key_final": true,
       "name": "The release workflow's crates job reads each crate's version without a Cargo.lock",
       "type": "bugfix",
       "priority": "P0",
@@ -4747,7 +4657,6 @@
     {
       "id": "d64aab97-f72a-87b8-8e5e-c2df863bdf10",
       "number": 193,
-      "key_final": true,
       "name": "Shiki and Temml shipped once, host mode loading them from the frames’ files",
       "type": "refactor",
       "description": "Shiki (code highlighting, about 465 KB gzipped with its 63 grammars) and Temml (math, 204 KB) are each built **twice** into every app made with `@compmd/vite`, and the website's deploy holds four copies of each (the site and the playground, two apps). Decided with the user (2026-11-04): **host mode loads both from the frames' own files, as frames share React from `compmd/libs/`**; one copy per app, which a page and its frames cache once.\n\n## Why there are two copies\n\nNot two sources: one npm source, bundled by **two builds** that run in different windows.\n\n```mermaid\nflowchart TB\n  npm[\"@shikijs/* and temml<br/>(npm, one source)\"]\n  npm --> fb[\"the frames' build<br/>sandbox/scripts/frames.ts, ahead of time\"]\n  npm --> ab[\"the app's own Vite build<br/>it bundles what @compmd/sandbox imports\"]\n  fb --> fc[\"compmd/chunks/cpp-D4FY7gDX.js, temml-….js<br/>copied into each app by @compmd/vite\"]\n  ab --> ac[\"assets/cpp-BtFpP2dM.js, temml-….js\"]\n  fc --> frames[\"loaded by the frames<br/>(frame mode's page frame, host mode's use frames)\"]\n  ac --> page[\"loaded by the app's page<br/>(host mode only: hostPage's shikiHighlight() and temmlMath())\"]\n```\n\n- `sandbox/src/sandbox.ts`, `hostPage`: `createPage(container, { math: temmlMath(), highlight: shikiHighlight(), … })`. Their dynamic imports (`import(\"@shikijs/core\")`, the grammars in `highlight/languages.ts`, `import(\"temml\")`) are what Vite bundles into the app's `assets/`.\n- Both copies load lazily, the first time a page has a code block or math. **Frame mode** fetches only the frames' copy; the `assets/` one is dead weight in the deploy. **Host mode** fetches the `assets/` copy for the page and the frames' copy for code or math in a framed use: a reader downloads both.\n- Found in the build (2026-11-04): `website/dist/assets/cpp-BtFpP2dM.js`, `website/dist/compmd/chunks/cpp-D4FY7gDX.js`, and the same two under `website/dist/playground/`; `editor/dist/` has its two; `sandbox/dist/frames/chunks/cpp-D4FY7gDX.js` is the frames' source of `compmd/`.\n\n**Why not the other way round:** the frames are sandboxed with an opaque origin, and their policy loads scripts from `compmd/` only, so they can't use the app's `assets/`. The app's page can load `compmd/`, which is the app's own deploy, served with `Access-Control-Allow-Origin: *` already.\n\n**Rejected:** host mode as a wrapper around one trusted frame. It would remove the copy, but trusted components would lose the app's state, context and direct `host` (spec §15: trusted is the host's own code, outside a sandbox), the page would need a height and its own styles, and editors that render block by block wouldn't fit. Frame mode already is that one path, for an app that needs nothing inline.\n\n## The change\n\n```mermaid\nflowchart TB\n  npm[\"@shikijs/* and temml (npm)\"] --> fb[\"the frames' build\"]\n  fb --> entries[\"compmd/highlight.js, compmd/math.js (new, fixed names)<br/>runtime.js<br/>compmd/chunks/: the grammars, Shiki's core, Temml, shared by all three\"]\n  entries --> frames[\"the frames: runtime.js, as now\"]\n  entries --> page[\"the app's page, host mode:<br/>import(new URL('highlight.js', base)) the first time it has a code block,<br/>import(new URL('math.js', base)) the first time it has math\"]\n  ab[\"the app's own Vite build\"] -.->|\"no Shiki, no Temml:<br/>host mode no longer imports them\"| none[\"assets/\"]\n```\n\n1. **The frames' build** (`sandbox/scripts/frames.ts`): two more entries beside `runtime.js`, with fixed names, `highlight.js` (exporting `shikiHighlight`) and `math.js` (exporting Temml's typesetter), built in the same build, so they share their chunks with `runtime.js`: still one copy of each grammar.\n2. **`hostPage`** (`sandbox/src/sandbox.ts`): a `CodeHighlighter` and a `MathRenderer` that, on first use, `import(/* @vite-ignore */ new URL(\"highlight.js\", base))` (and `math.js`), from the frames' folder the app gives `createSandbox` as `base` (`frameUrl`), then delegate to what they export; `typesetMath(load)` and `highlightWith` already take a loader. Until it loads, code and math show as they do now, as text.\n3. **Exports stay:** `shikiHighlight()` and `temmlMath()` remain for a host that renders with `createPage` itself; that host bundles them, as now.\n4. **A host whose page has a content security policy** allows scripts from where `compmd/` is served (its own origin, or the frames' origin when `base` is another): the README says so.\n\n```mermaid\nsequenceDiagram\n  participant P as the app's page (host mode)\n  participant C as compmd/ (the frames' files)\n  participant F as a use's frame\n  Note over P: the first code block on the page\n  P->>C: import highlight.js\n  C-->>P: highlight.js + Shiki's core, engine, themes, the block's grammar\n  Note over F: a code block in a framed use's slot\n  F->>C: runtime.js imports the same chunks\n  C-->>F: from the browser's cache: the same files\n```\n\n## Done when\n\n- **One copy per app:** a test of `@compmd/vite`'s example build (`vite/test/example.test.ts`) checks that `assets/` has no Shiki or Temml chunk (no `cpp-*.js`, `temml-*.js`, `@shikijs/core`'s code) and that `compmd/` has `highlight.js` and `math.js`; the website's build (`website/scripts/check.ts`) the same.\n- **Highlighting and math still work in host mode**, light and dark: the sandbox's browser tests (`sandbox/test/view.test.ts`, *code blocks* and *math*, host mode) pass, now loading from `compmd/`; and in frame mode, unchanged.\n- **Docs:** the sandbox README's *Code blocks* (where Shiki comes from in each mode, what it costs: once per app), the table of *Where the page renders*, and `docs/running-components-in-the-sandbox.md` decision 4; guides chapter 11, *What the frames load* (`highlight.js`, `math.js`).\n\n## Not in this task\n\n- The website deploying two apps, the site and the playground, each with its own `compmd/`: their files are the same (the same hashes), so one shared `compmd/` would halve the website's deploy. Deploy size only, since a reader downloads one app's copy; a task of its own if wanted.\n",
@@ -4809,7 +4718,6 @@
     {
       "id": "f1698fe0-b7d7-8701-a308-c3a2253a8202",
       "number": 194,
-      "key_final": true,
       "name": "Render: where each line of the text is on the page, for a gutter of line numbers",
       "type": "feature",
       "priority": "P1",
@@ -4879,7 +4787,6 @@
     {
       "id": "3b9db470-ad9c-87dc-a443-61f648345dcf",
       "number": 195,
-      "key_final": true,
       "name": "Release 0.5.0",
       "type": "infra",
       "priority": "P1",
@@ -4941,7 +4848,6 @@
     {
       "id": "5ba0d0cf-885c-8ffd-95b9-dc8ba34a7490",
       "number": 196,
-      "key_final": true,
       "name": "A short About for the playground",
       "type": "polish",
       "priority": "P2",
@@ -4989,7 +4895,6 @@
     {
       "id": "df4ecaca-a203-86dd-b65b-075b4655fd1d",
       "number": 197,
-      "key_final": true,
       "name": "Review compmd.hakanserce.com as an awareness site and improve content, look, consistency",
       "type": "polish",
       "priority": "P2",
@@ -5074,7 +4979,6 @@
     {
       "id": "64160f04-33d4-8101-8b73-e730479b5671",
       "number": 198,
-      "key_final": true,
       "name": "W118 component error is sticky: after a component throws, fixing the source does not recover",
       "type": "bugfix",
       "priority": "P1",
@@ -5117,7 +5021,6 @@
     {
       "id": "5d69fa18-3585-8d0f-9d59-6047d0a1cfa2",
       "number": 199,
-      "key_final": true,
       "name": "Scan for dead code, duplication and leftover TODOs",
       "type": "refactor",
       "priority": "P2",
@@ -5161,7 +5064,6 @@
     {
       "id": "69b4cbca-fc01-88e6-b7d0-78f8cb21d5f9",
       "number": 200,
-      "key_final": true,
       "name": "Markdown-rs: a `---` underline after no paragraph is a thematic break (wooorm/markdown-rs#286)",
       "type": "bugfix",
       "priority": "P2",
@@ -5234,7 +5136,6 @@
     {
       "id": "98b5f708-311d-87a2-a7e3-b9f527949b9e",
       "number": 201,
-      "key_final": true,
       "name": "Frontmatter accepts TOML (`+++`) as well as YAML",
       "type": "feature",
       "priority": "P2",
@@ -5328,7 +5229,6 @@
     {
       "id": "48bd7dfe-125a-8b71-9f1b-e58914339c3b",
       "number": 202,
-      "key_final": true,
       "name": "Vite: read packages from every YAML document of `pnpm-lock.yaml`, and warn when a pack has no integrity",
       "type": "bugfix",
       "priority": "P1",
@@ -5388,7 +5288,6 @@
     {
       "id": "008bfcf5-e2bb-87ca-b6a6-038bcdb43964",
       "number": 203,
-      "key_final": true,
       "name": "Developer Tools: several diagnostics at once each get their own scrollbar",
       "type": "bugfix",
       "priority": "P2",
@@ -5430,7 +5329,6 @@
     {
       "id": "0b3dc482-2976-8352-89bd-94b056b1a480",
       "number": 204,
-      "key_final": true,
       "name": "An unquoted default with spaces is cut at the first space, silently",
       "type": "bugfix",
       "labels": [
@@ -5502,7 +5400,6 @@
     {
       "id": "ed80f3c9-2df9-85b3-9e20-359faf9d769d",
       "number": 205,
-      "key_final": true,
       "name": "`cargo make site`, the Pages workflow's site check, run locally",
       "type": "infra",
       "priority": "P2",
@@ -5552,7 +5449,6 @@
     {
       "id": "a2cfc4a1-91be-88ac-81bd-191816fb7355",
       "number": 206,
-      "key_final": true,
       "name": "Plain::text, a document's text as read",
       "type": "feature",
       "priority": "P3",
@@ -5618,7 +5514,6 @@
     {
       "id": "53de40dc-6fa3-82d0-a597-28d7e88b80ac",
       "number": 207,
-      "key_final": true,
       "name": "Follow up on markdown-rs PR #270 (syntax extensions) for CompMD",
       "type": "docs",
       "priority": "P2",
@@ -5671,7 +5566,6 @@
     {
       "id": "07bef441-697f-8c54-a96f-04ea343500b7",
       "number": 208,
-      "key_final": true,
       "name": "Markdown-rs: an upstream issue for ParseOptions::definitions",
       "type": "docs",
       "priority": "P2",
@@ -5724,7 +5618,6 @@
     {
       "id": "1df38b97-8493-8464-b382-b06ad50b0789",
       "number": 209,
-      "key_final": true,
       "name": "Website: Safety higher on the landing page",
       "type": "polish",
       "priority": "P1",
@@ -5787,7 +5680,6 @@
     {
       "id": "ea802534-7514-89db-8e39-38a2f7055fce",
       "number": 210,
-      "key_final": true,
       "name": "Website: the landing page's 2–3 s before components show",
       "type": "bugfix",
       "priority": "P1",
@@ -5850,7 +5742,6 @@
     {
       "id": "30855a93-6073-89a8-b0ee-41ca2d3591f3",
       "number": 211,
-      "key_final": true,
       "name": "The frames load from a custom scheme in WebKit",
       "type": "bugfix",
       "priority": "P0",
@@ -5907,7 +5798,6 @@
     {
       "id": "ebe04294-567b-89cd-8278-63db66477557",
       "number": 212,
-      "key_final": true,
       "name": "A frame whose runtime doesn't load says so",
       "type": "bugfix",
       "priority": "P0",
@@ -5962,7 +5852,6 @@
     {
       "id": "45922984-ad95-8104-a038-4be99acb4688",
       "number": 213,
-      "key_final": true,
       "name": "HostComponent serializes in the processor crate",
       "type": "refactor",
       "priority": "P0",
@@ -6019,7 +5908,6 @@
     {
       "id": "8e439bcc-094c-872c-8875-baefd7ff2084",
       "number": 214,
-      "key_final": true,
       "name": "Release 0.6.0",
       "type": "infra",
       "priority": "P0",
@@ -6098,7 +5986,6 @@
     {
       "id": "3cedbb33-54d4-88d0-93c1-40d967c8e899",
       "number": 215,
-      "key_final": true,
       "name": "Tauri-plugin-compmd, the design",
       "type": "docs",
       "priority": "P0",
@@ -6153,7 +6040,6 @@
     {
       "id": "c4d1dbd3-e917-84cd-8c46-df79cb339040",
       "number": 216,
-      "key_final": true,
       "name": "Tauri-plugin-compmd, the crate",
       "type": "feature",
       "priority": "P0",
@@ -6210,7 +6096,6 @@
     {
       "id": "d6ef5591-043d-8f92-88fa-734a36a6ccea",
       "number": 217,
-      "key_final": true,
       "name": "An example Tauri app that checks itself",
       "type": "test",
       "priority": "P0",
@@ -6266,7 +6151,6 @@
     {
       "id": "b359717f-5a77-826f-b419-c76fd5ff3176",
       "number": 218,
-      "key_final": true,
       "name": "The Tauri check in Linux CI",
       "type": "infra",
       "priority": "P0",
@@ -6323,7 +6207,6 @@
     {
       "id": "183c4a00-5864-81ff-a211-fd856df912c3",
       "number": 219,
-      "key_final": true,
       "name": "A guide for Tauri apps in the Developer's Guide",
       "type": "docs",
       "priority": "P2",
@@ -6400,7 +6283,6 @@
     {
       "id": "fa6143ea-f675-855e-a792-78a8f6185160",
       "number": 220,
-      "key_final": true,
       "name": "Wireframe diagrams, choose the technology",
       "type": "docs",
       "priority": "P2",
@@ -6464,7 +6346,6 @@
     {
       "id": "adc3708d-f16f-8c73-8edc-0696cc7b986c",
       "number": 221,
-      "key_final": true,
       "name": "The wireframe pack",
       "type": "feature",
       "priority": "P2",
@@ -6543,7 +6424,6 @@
     {
       "id": "4c6934c8-27b4-87fa-8aa9-79f561ffd142",
       "number": 222,
-      "key_final": true,
       "name": "Compmd-host, the shared Rust core of hosting",
       "type": "feature",
       "priority": "P1",
@@ -6627,7 +6507,6 @@
     {
       "id": "372790cd-b524-8715-b42a-260ff896497f",
       "number": 223,
-      "key_final": true,
       "name": "@compmd/vite writes the bundle",
       "type": "feature",
       "priority": "P1",
@@ -6694,7 +6573,6 @@
     {
       "id": "96a51bc0-f1d2-861d-9b36-2c0be2f4c8a2",
       "number": 224,
-      "key_final": true,
       "name": "@compmd/sandbox on the bundle and the origin",
       "type": "feature",
       "priority": "P1",
@@ -6758,7 +6636,6 @@
     {
       "id": "0f8aa69d-2638-8e9c-a947-a886ef93d5e3",
       "number": 225,
-      "key_final": true,
       "name": "The hosting check page",
       "type": "test",
       "priority": "P1",
@@ -6821,7 +6698,6 @@
     {
       "id": "78fa7e56-bba6-8d58-8c1a-f5bbe71a92c5",
       "number": 226,
-      "key_final": true,
       "name": "Tauri-plugin-compmd as the Tauri adapter",
       "type": "feature",
       "priority": "P1",
@@ -6890,7 +6766,6 @@
     {
       "id": "42351c5a-26f0-8cc3-b6e9-7230db13122a",
       "number": 227,
-      "key_final": true,
       "name": "The Tauri example app on the hosting pattern",
       "type": "test",
       "priority": "P1",
@@ -6967,7 +6842,6 @@
     {
       "id": "91a6d3ed-9be9-8064-96fc-32b51d89d45e",
       "number": 228,
-      "key_final": true,
       "name": "Release 0.7.0",
       "type": "infra",
       "priority": "P1",
@@ -7054,7 +6928,6 @@
     {
       "id": "e9b67fa8-6cd1-8909-8449-d0802a354f17",
       "number": 229,
-      "key_final": true,
       "name": "Compiled code kept by its source (CompiledCache)",
       "type": "feature",
       "priority": "P2",
@@ -7123,7 +6996,6 @@
     {
       "id": "04150ecc-312a-875d-b02d-a19f0221a7a0",
       "number": 230,
-      "key_final": true,
       "name": "@compmd/host, respond over the Fetch API",
       "type": "feature",
       "priority": "P2",
@@ -7192,7 +7064,6 @@
     {
       "id": "0209a480-8c9b-880d-a4f7-17b78bb6605d",
       "number": 231,
-      "key_final": true,
       "name": "A pack's source component named by its place, loaded built",
       "type": "feature",
       "priority": "P1",
@@ -7258,7 +7129,6 @@
     {
       "id": "4d27ede8-ec11-8bed-9b2b-1c83b635b934",
       "number": 232,
-      "key_final": true,
       "name": "The guides and the site on 0.7.0's hosting",
       "type": "docs",
       "priority": "P1",
@@ -7331,7 +7201,6 @@
     {
       "id": "292d9aa3-f23e-81c4-b6eb-2706875f6ba7",
       "number": 233,
-      "key_final": true,
       "name": "Website: move from compmd.hakanserce.com to compmd.dev",
       "type": "infra",
       "priority": "P0",
@@ -7406,7 +7275,6 @@
     {
       "id": "03d01576-c341-8aca-bc1f-cf9ecf2f4663",
       "number": 234,
-      "key_final": true,
       "name": "Release 0.7.1",
       "type": "infra",
       "priority": "P1",
@@ -7506,7 +7374,6 @@
     {
       "id": "32fd6b2d-9d75-8d45-9f1b-d1e07fe04854",
       "number": 235,
-      "key_final": true,
       "name": "A host's own link schemes",
       "type": "feature",
       "priority": "P1",
@@ -7607,7 +7474,6 @@
     {
       "id": "5ae1b344-67ae-8b05-8960-3aa8f78d5b30",
       "number": 236,
-      "key_final": true,
       "name": "Working links in the packages' documentation, checked in CI",
       "type": "bugfix",
       "priority": "P1",
@@ -7678,7 +7544,6 @@
     {
       "id": "ef24dfa6-79f7-8f32-83c7-b2abcbbf4c3f",
       "number": 237,
-      "key_final": true,
       "name": "Every package's documentation links to compmd.dev at its first mention of CompMD",
       "type": "docs",
       "priority": "P2",
@@ -7736,7 +7601,6 @@
     {
       "id": "ee0ca4d6-3518-8350-b798-e7faf3fa0047",
       "number": 238,
-      "key_final": true,
       "name": "The spec gets a version number",
       "type": "docs",
       "priority": "P2",
@@ -7856,7 +7720,6 @@
       ],
       "sprint": "Rendering optimizations",
       "number": 239,
-      "key_final": true,
       "started_at": "2026-11-17T09:45:17Z",
       "started_by": "claude:e2fd71c2",
       "review_requested_at": "2026-11-17T09:49:24Z",
@@ -7916,7 +7779,6 @@
       ],
       "sprint": "Rendering optimizations",
       "number": 240,
-      "key_final": true,
       "started_at": "2026-11-17T10:30:29Z",
       "started_by": "claude:e2fd71c2",
       "review_requested_at": "2026-11-17T10:32:32Z",
@@ -7976,7 +7838,6 @@
       ],
       "sprint": "Rendering optimizations",
       "number": 241,
-      "key_final": true,
       "blocks": [
         {
           "from": "2026-11-17T11:07:18Z",
@@ -8031,7 +7892,6 @@
       ],
       "sprint": "Rendering optimizations",
       "number": 242,
-      "key_final": true,
       "notes": [
         {
           "at": "2026-11-17T17:45:48Z",
@@ -8101,7 +7961,6 @@
       ],
       "sprint": "Rendering optimizations",
       "number": 243,
-      "key_final": true,
       "blocks": [
         {
           "from": "2026-11-17T18:47:51Z",
@@ -8178,7 +8037,6 @@
       ],
       "sprint": "Rendering optimizations",
       "number": 244,
-      "key_final": true,
       "started_at": "2026-11-17T19:20:22Z",
       "started_by": "claude:e2fd71c2",
       "review_requested_at": "2026-11-17T19:24:45Z",
@@ -8242,7 +8100,6 @@
       ],
       "sprint": "Rendering optimizations",
       "number": 245,
-      "key_final": true,
       "started_at": "2026-11-17T19:45:06Z",
       "started_by": "claude:e2fd71c2",
       "review_requested_at": "2026-11-17T20:06:32Z",
@@ -8317,7 +8174,6 @@
       "sprint": "Rendering optimizations",
       "with": "user",
       "number": 246,
-      "key_final": true,
       "started_at": "2026-11-18T00:53:10Z",
       "started_by": "claude:79612601",
       "code_reviews": [
@@ -8388,7 +8244,6 @@
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 247,
-      "key_final": true,
       "sprint_history": [
         {
           "sprint": "Editor support",
@@ -8422,7 +8277,6 @@
       ],
       "sprint": "Rendering optimizations",
       "number": 248,
-      "key_final": false,
       "commit": "58f52970611fa800810b4df3d627376bf45e8fe0",
       "blocks": [
         {
@@ -8491,8 +8345,7 @@
       "updated_at": "2026-11-18T03:40:29Z",
       "created_by": "Hakan Serce",
       "updated_by": "Hakan Serce",
-      "number": 249,
-      "key_final": false
+      "number": 249
     },
     {
       "id": "01a1eda3-72cc-74dd-9a87-b21dd98dd410",
@@ -8518,7 +8371,6 @@
       "created_by": "claude:0f56a916",
       "updated_by": "claude:79612601",
       "number": 250,
-      "key_final": false,
       "sprint_history": [
         {
           "sprint": "Rendering optimizations",
@@ -8600,7 +8452,6 @@
       ],
       "sprint": "Rendering optimizations",
       "number": 251,
-      "key_final": false,
       "started_at": "2026-11-19T07:25:25Z",
       "started_by": "claude:79612601",
       "commit": "86c5c448343d3b3ac4f787fd4163b13952a5316c",
@@ -8670,7 +8521,6 @@
       ],
       "sprint": "Rendering optimizations",
       "number": 252,
-      "key_final": false,
       "started_at": "2026-11-18T23:24:07Z",
       "started_by": "claude:79612601",
       "commit": "51a973f82cdc8531fe19344a5aee7683e5cf2c7d",
@@ -8744,7 +8594,6 @@
       ],
       "sprint": "Rendering optimizations",
       "number": 253,
-      "key_final": false,
       "started_at": "2026-11-19T07:02:19Z",
       "started_by": "claude:79612601",
       "commit": "0c7b63bfacbbff84ea10378b07c596ec64dc759f",
@@ -8817,7 +8666,6 @@
       ],
       "sprint": "Rendering optimizations",
       "number": 254,
-      "key_final": false,
       "started_at": "2026-11-19T07:54:59Z",
       "started_by": "claude:79612601",
       "commit": "f636d81d6147074d8a27ac9f82459213a593a34c",
@@ -8889,7 +8737,6 @@
       ],
       "sprint": "Rendering optimizations",
       "number": 255,
-      "key_final": false,
       "started_at": "2026-11-19T07:58:11Z",
       "started_by": "claude:79612601",
       "commit": "1cbc7eb02743a67dcfab4d02348d79f307bd2484",
@@ -8963,7 +8810,6 @@
       ],
       "sprint": "Rendering optimizations",
       "number": 256,
-      "key_final": false,
       "started_at": "2026-11-19T07:44:05Z",
       "started_by": "claude:79612601",
       "commit": "0ae5da92809441f11ac521d8ba1a32d2324dc002",
@@ -9038,7 +8884,6 @@
       ],
       "sprint": "Rendering optimizations",
       "number": 257,
-      "key_final": false,
       "started_at": "2026-11-19T08:18:12Z",
       "started_by": "claude:79612601",
       "commit": "d1dea32ae034ebca68aa0edcbef8198eb7d99331",
@@ -9112,7 +8957,6 @@
       "sprint": "Rendering optimizations",
       "review": "blocker",
       "number": 258,
-      "key_final": false,
       "started_at": "2026-11-19T08:05:21Z",
       "started_by": "claude:79612601",
       "commit": "a3541795ea8d940ea2e0d6f200667897dbfc1c37",
@@ -9185,7 +9029,6 @@
       ],
       "sprint": "Rendering optimizations",
       "number": 259,
-      "key_final": false,
       "blocks": [
         {
           "from": "2026-11-19T08:46:20Z",
@@ -9280,7 +9123,6 @@
       ],
       "sprint": "Rendering optimizations",
       "number": 260,
-      "key_final": false,
       "commit": "3c853f45e6862530c902d321d2546414480e0c51",
       "blocks": [
         {
@@ -9355,8 +9197,7 @@
       "updated_at": "2026-11-19T08:51:25Z",
       "created_by": "Hakan Serce",
       "updated_by": "Hakan Serce",
-      "number": 261,
-      "key_final": false
+      "number": 261
     },
     {
       "id": "01a1f328-b4f9-7563-a426-a1b0b5a0ead4",
@@ -9382,8 +9223,7 @@
       "updated_at": "2026-11-19T09:34:53Z",
       "created_by": "Hakan Serce",
       "updated_by": "Hakan Serce",
-      "number": 262,
-      "key_final": false
+      "number": 262
     },
     {
       "id": "01a1f34b-d7aa-7785-bd1e-e697a34044a4",
@@ -9414,7 +9254,6 @@
       ],
       "sprint": "Rendering optimizations",
       "number": 263,
-      "key_final": false,
       "notes": [
         {
           "at": "2026-11-19T10:16:16Z",
@@ -9495,7 +9334,6 @@
       ],
       "sprint": "Rendering optimizations",
       "number": 264,
-      "key_final": false,
       "started_at": "2026-11-19T10:25:56Z",
       "started_by": "claude:79612601",
       "commit": "f33a23fd75f2778331ca6ae01b35bd5c66bf5934",
@@ -9557,8 +9395,7 @@
       "updated_at": "2026-11-19T15:17:27Z",
       "created_by": "claude:79612601",
       "updated_by": "claude:79612601",
-      "number": 265,
-      "key_final": false
+      "number": 265
     }
   ]
 }
