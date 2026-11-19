@@ -659,7 +659,7 @@
       "description": "Asked by the user (2026-11-08): a blog on the CompMD website.\n\n- **First, a design shown to the user:** where it sits, the list of posts and a post's page, dates and authors, a feed (RSS or Atom), and how a post is written (a CompMD document in the repository, prerendered like the guides).\n- Then build it with tests, the site's budgets, its checks, the sitemap and search, and run the site check after the work.\n\nEach push needs the user's go.\n\n## From earlier work\n\nThe design is approved: `website/docs/blog.md` (compmd `5ad391e`, `6ef1899`, `c71b41c`, `7718ec5`). Posts are CompMD documents rendered at build, with a list, a page per post and an Atom feed, in the header, the sitemap and search, within the landing page's budgets. Build it on `@compmd/blog` (made earlier), with giscus for comments, and tags from the start.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [],
       "files": [
         "website/src/",
@@ -667,7 +667,7 @@
         "website/blog/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-19T19:40:59Z",
+      "updated_at": "2026-11-19T20:18:22Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -686,7 +686,7 @@
       "number": 13,
       "started_at": "2026-11-19T19:40:59Z",
       "started_by": "claude:79612601",
-      "commit": "66a3188ac8c4c630f7cc0429f7405b0f2b2afc5f",
+      "commit": "0e3173e0476d35275d22e72032a2900790b94d7d",
       "code_reviews": [
         {
           "id": "01a1f526-12a2-7353-a254-f28756dcb5b5",
@@ -717,6 +717,12 @@
           "kind": "rejection",
           "text": "CR-20 round 2: 3 open comments",
           "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-19T20:18:22Z",
+          "kind": "review",
+          "text": "CR-20: round 3",
+          "by": "claude:79612601"
         }
       ],
       "reviews": [
@@ -730,7 +736,9 @@
           "to": "2026-11-19T19:40:17Z",
           "outcome": "changes_requested"
         }
-      ]
+      ],
+      "review_requested_at": "2026-11-19T20:18:22Z",
+      "review_state": "waiting"
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68ebbb96493c",
