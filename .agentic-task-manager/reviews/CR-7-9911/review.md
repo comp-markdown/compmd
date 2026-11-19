@@ -2,12 +2,12 @@
 id = "01a1f1ab-7170-7533-84d4-1b47a32c9911"
 number = 7
 title = "Spike: code highlighting's cost in WebKit"
-status = "open"
+status = "approved"
 tasks = ["CMD-252"]
 author = "claude:79612601"
 reviewers = []
 created = 2026-11-19T02:38:27Z
-updated = 2026-11-19T06:16:24Z
+updated = 2026-11-19T07:25:40Z
 +++
 
 The spike's test page, its runner, and its results: `spikes/highlight-perf/README.md` leads with what they support.

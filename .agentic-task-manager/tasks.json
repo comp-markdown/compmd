@@ -8534,7 +8534,7 @@
       "description": "A highlighter (`CodeHighlighter`, `@compmd/render`) writes DOM into the renderer's `<code>`, so it has to know how the renderer draws a block: since CMD-250, that each line is an element of its own, whose attributes it must keep. That is the renderer's private detail (the line elements, `data-line`, how lines are numbered), which may change (CMD-250's option 3), and a host's own highlighter shouldn't break when it does.\n\n## Change\n\n- `CodeHighlighter` gives tokens instead of writing DOM: `(code, language) => Promise<lines | undefined>`, each line a list of tokens with their text and their style (a colour per theme, and the font style), `undefined` for a language it doesn't highlight.\n- The renderer draws them into its own line elements, after checking that they are the block's text, and drops tokens that come after a newer text (as `highlightWith` does today).\n- `@compmd/sandbox`'s Shiki highlighter (`shikiHighlight`, `highlightWith`) gives Shiki's tokens as they are; its `draw` moves into the renderer.\n- Nothing about lines is exported for highlighters (`CODE_LINE` is the renderer's own).\n- The READMEs give the new contract; the release notes name the break: a host's own highlighter returns tokens.\n\n## Tests\n\n- The renderer draws a highlighter's tokens into a block's lines, keeping the lines' numbers, and keeps the text when the tokens aren't its text or don't come.\n- Shiki's highlighter gives tokens for a language it highlights, and none for one it doesn't.\n- The browser tests of code blocks, in both page modes, light and dark, as today.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a1eda3-72cc-74dd-9a87-b21dd98dd410"
       ],
@@ -8544,9 +8544,9 @@
         "npm-packages/sandbox/src/highlight/highlight.ts"
       ],
       "created_at": "2026-11-18T20:42:42Z",
-      "updated_at": "2026-11-18T20:42:42Z",
+      "updated_at": "2026-11-19T07:25:25Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "sprint_history": [
         {
           "sprint": "Packs and website",
@@ -8555,7 +8555,9 @@
       ],
       "sprint": "Packs and website",
       "number": 251,
-      "key_final": false
+      "key_final": false,
+      "started_at": "2026-11-19T07:25:25Z",
+      "started_by": "claude:79612601"
     },
     {
       "id": "01a1f0f9-76de-73fc-b8ae-e07bc47777fc",
@@ -8569,13 +8571,13 @@
       "description": "A host that shows many code blocks (a diff viewer: hundreds of short runs, each its own view) reports that in WebKit highlighting blocks the page for seconds, while Chromium is smooth: one frame of over a second when the first block's grammar loads, then about 24 ms per run, piled into frames of 100 ms to 1 s. This spike measures it on a test page of our own and tries each way to lower it; the results decide what goes into the packages, as tasks of their own. Nothing here changes the packages.\n\n## The test page\n\n`spikes/highlight-perf/`: a page of many short TypeScript runs, each a page of its own (`@compmd/render`'s `createPage`), as a diff viewer has them, with the highlighter swapped per variant; a script that opens it in Playwright's WebKit and Chromium, scrolls through it as a reader skims, and reports.\n\n## What is measured\n\n- **Blocked:** the time in frames over 50 ms, from the gaps between animation frames (WebKit has no long-task API), and the longest frame, on opening and over the skim.\n- **Waiting:** from a run's page rendering to its block highlighted, median and 95th percentile.\n- **Where the time goes:** Shiki's setup, tokenizing, and drawing the tokens.\n\n## Variants\n\n1. Today's: a Shiki per view, every block highlighted as it renders.\n2. One Shiki for the page, shared by its views.\n3. Sliced: a block per task, yielding between, the blocks on screen first.\n4. Grammars prepared ahead: Shiki's precompiled languages with its raw JavaScript engine.\n5. Tokenizing in a worker (host mode; a strict frame's policy refuses workers).\n6. Oniguruma as WebAssembly (host mode; a strict frame's policy refuses WebAssembly).\n7. A cache of tokens by text and language, for a run seen again.\n8. The combinations that the single variants suggest.\n\n## Done when\n\nThe results, with each variant's numbers in both browsers and what they mean for the packages, are in `spikes/highlight-perf/README.md`, and the variants worth carrying over are proposed as tasks.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [],
       "files": [
         "spikes/highlight-perf/"
       ],
       "created_at": "2026-11-18T23:24:03Z",
-      "updated_at": "2026-11-19T02:38:27Z",
+      "updated_at": "2026-11-19T07:25:56Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -8597,15 +8599,35 @@
         }
       ],
       "review_requested_at": "2026-11-19T02:38:27Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-19T02:38:27Z",
           "kind": "review",
           "text": "CR-7: Spike: code highlighting's cost in WebKit",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-19T07:25:40Z",
+          "kind": "note",
+          "text": "Approved: in CR-7 (round 2)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-19T07:25:56Z",
+          "kind": "outcome",
+          "text": "The spike measured highlighting in WebKit and Chromium; its README proposes what to carry over (CMD-253 and CMD-256 to CMD-259).",
+          "by": "claude:79612601"
         }
-      ]
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-19T02:38:27Z",
+          "to": "2026-11-19T07:25:40Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-19T07:25:56Z",
+      "completed_by": "claude:79612601"
     },
     {
       "id": "01a1f272-b584-7767-aae6-7e59371fdc9c",
