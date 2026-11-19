@@ -1,0 +1,1316 @@
+diff --git a/crates/tauri/examples/tauri-app/README.md b/crates/tauri/examples/tauri-app/README.md
+index 96b277d..eade208 100644
+--- a/crates/tauri/examples/tauri-app/README.md
++++ b/crates/tauri/examples/tauri-app/README.md
+@@ -19,7 +19,7 @@ cd crates/tauri/examples/tauri-app/src-tauri && cargo tauri dev
+ - **The plugin, in two calls:** `tauri_plugin_compmd::build::bundle("compmd")` in `src-tauri/build.rs` embeds the bundle in the binary, and `tauri_plugin_compmd::init(tauri_plugin_compmd::include_bundle!())` (`src-tauri/src/mode.rs`) serves it on the scheme the manifest names, `compmd`, and gives the page the origin.
+ - **The page names nothing:** `createSandbox({ ...sandbox, page: "host" })` (`src/main.ts`), with `sandbox` from `virtual:compmd`, takes the bundle's frames and modules, and the origin the plugin gave the page.
+ - **The document, processed in Rust** with the `compmd` crate (`src-tauri/src/document.rs`) over `app.compmd().packs()` (the plugin's `processor` feature): the bundle's packs, then the store's, the same files the frames load. Its tree, its host components and its diagnostics go to the page through a command, and the Mermaid pack's built module loads in its frame by its URL.
+-- **The page's content security policy** (`src-tauri/tauri.conf.json`): what `cspFor` from `@compmd/vite/config` gives, for both forms of the origin (`compmd://localhost`, and `http://compmd.localhost` on Windows and Android): `frame-src` the origin, `script-src` and `connect-src` its `frames/`, never its `packs/`, and `frame-ancestors 'none'`. An app without a policy needs none of it.
++- **The page's content security policy** (`src-tauri/tauri.conf.json`): what `cspFor` from `@compmd/vite/config` gives, for both forms of the origin (`compmd://localhost`, and `http://compmd.localhost` on Windows and Android): `frame-src` the origin, `script-src` and `connect-src` its `frames/`, `script-src` `'wasm-unsafe-eval'` for highlighting with Oniguruma, never its `packs/`, and `frame-ancestors 'none'`. An app without a policy needs none of it.
+ - **The app's commands, declared** (`src-tauri/build.rs`) and granted in its capability (`src-tauri/capabilities/main.json`). Tauri counts the frames' scheme as one of the app's own pages, so what keeps a frame's code from the commands is Tauri's invoke key, which only the app's page has. On WebKit a frame does have Tauri's `ipc` message handler: WebKit gives it to every frame, and Tauri drops a message without the key ([the research](../../../../docs/tauri-plugin.md#appendix-webkits-ipc-handler-in-a-frame)). Tauri 2.11.1 or later is needed.
+ 
+ ## What the check looks at
+diff --git a/crates/tauri/examples/tauri-app/src-tauri/tauri.conf.json b/crates/tauri/examples/tauri-app/src-tauri/tauri.conf.json
+index c74eee8..edbd59c 100644
+--- a/crates/tauri/examples/tauri-app/src-tauri/tauri.conf.json
++++ b/crates/tauri/examples/tauri-app/src-tauri/tauri.conf.json
+@@ -12,7 +12,7 @@
+   "app": {
+     "windows": [{ "label": "main", "title": "CompMD in Tauri", "width": 900, "height": 760 }],
+     "security": {
+-      "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; frame-src compmd://localhost/ http://compmd.localhost/; script-src 'self' compmd://localhost/frames/ http://compmd.localhost/frames/; connect-src 'self' ipc: http://ipc.localhost compmd://localhost/frames/ http://compmd.localhost/frames/; frame-ancestors 'none'; object-src 'none'; base-uri 'self'"
++      "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; frame-src compmd://localhost/ http://compmd.localhost/; script-src 'self' compmd://localhost/frames/ http://compmd.localhost/frames/ 'wasm-unsafe-eval'; connect-src 'self' ipc: http://ipc.localhost compmd://localhost/frames/ http://compmd.localhost/frames/; frame-ancestors 'none'; object-src 'none'; base-uri 'self'"
+     }
+   },
+   "bundle": { "active": false }
+diff --git a/docs/hosting.md b/docs/hosting.md
+index 01f04cb..c64688e 100644
+--- a/docs/hosting.md
++++ b/docs/hosting.md
+@@ -81,7 +81,7 @@ Two hosts built so far (a Vite web app and a Tauri app) did the same work twice,
+ 
+ 9. **The page's configuration is the bundle's, plus the origin from the adapter.** What the bundle knows is fixed at build time and reaches the page in its own bundle (`virtual:compmd`: the request's packs and policy, the sandbox's paths and modules, all relative to the origin). The origin is the one thing only the running host knows (a scheme's form differs by platform, a site's user-content domain by deployment), so the adapter gives it: `globalThis.__COMPMD__ = { origin }`, set by a Tauri initialization script, an Electron preload, or a `<meta name="compmd-origin">` a server writes. `createSandbox` reads it; the page passes nothing.
+ 
+-10. **The page's content security policy comes from the bundle too.** `cspFor(origin)` gives the sources a host's page adds: `frame-src` the origin, `script-src` and `connect-src` `<origin>/frames/` (a host-mode page loads Shiki and Temml from there), `connect-src` `<origin>/registry/` with `fetch: "host"`, and `frame-ancestors 'none'`. Never `<origin>/packs/` and never the whole origin: a pack's code runs in frames only. A host whose policy is compiled from a file (`tauri.conf.json`) pastes it; a server sets it from the function.
++10. **The page's content security policy comes from the bundle too.** `cspFor(origin)` gives the sources a host's page adds: `frame-src` the origin, `script-src` and `connect-src` `<origin>/frames/` (a host-mode page loads Shiki and Temml from there), `script-src` `'wasm-unsafe-eval'` (a host-mode page highlights code with Oniguruma, as WebAssembly; added 2026-11-19), `connect-src` `<origin>/registry/` with `fetch: "host"`, and `frame-ancestors 'none'`. `'wasm-unsafe-eval'` lets the host's page compile WebAssembly, and nothing else (no `eval`); the page runs only its own code and the frames' highlighter, never a pack's. A host may leave it out: its code blocks are then highlighted with Shiki's JavaScript engine, which in WebKit blocks the page for about a second on a first TypeScript block. Never `<origin>/packs/` and never the whole origin: a pack's code runs in frames only. A host whose policy is compiled from a file (`tauri.conf.json`) pastes it; a server sets it from the function.
+ 
+ 11. **Every host runs one check, in its real browser.** `@compmd/sandbox/check` is a page and a document that exercise the host: a strict frame loads from the origin; in it the origin is opaque, there is no host API (the adapter names what to look for: `__TAURI_INTERNALS__`, Electron's `ipcRenderer`), and `fetch` is refused; WebKit's `ipc` message handler is absent, or, where WebKit gives it to every frame and the host refuses a frame's messages (Tauri, by its invoke key), the adapter's check posts a call through it that must run nothing ([the Tauri plugin](tauri-plugin.md#appendix-webkits-ipc-handler-in-a-frame)); a code block is highlighted; a bundled pack's module and a stored one load by URL and draw; files arrive with exactly the contract's headers; a path outside the contract is `404`. It reports passed or failed with what failed, for the adapter to turn into an exit code (the Tauri example's `--check`) or a test. An adapter's CI runs it in the webview or browser that matters (WebKit first, which has the hard cases).
+ 
+diff --git a/docs/tauri-plugin.md b/docs/tauri-plugin.md
+index 641dbe6..22ac11c 100644
+--- a/docs/tauri-plugin.md
++++ b/docs/tauri-plugin.md
+@@ -26,7 +26,7 @@ Each of these, and whatever a platform or Tauri changes later, is then found and
+ 
+ 6. **The scheme is the one the bundle was built for.** WebKit needs the frames' policies to name where they are served (above), so the bundle is built with the custom-scheme form as its `source` (`compmd({ source: "compmd://localhost/" })` in the app's Vite configuration), which the manifest records; the plugin registers the scheme the manifest names, so the two can't disagree. The scheme is the app's choice (`compmd` if it has no reason for another). On Windows and Android, where `'self'` already matches, the source names nothing there and is harmless, so one bundle serves every platform.
+ 
+-7. **The page's content security policy is `cspFor` of the origin** ([hosting](hosting.md), decision 10), pasted into `app.security.csp` in `tauri.conf.json`, which the plugin can't write (Tauri compiles it from the file). An app without one, as Tauri's template is, adds nothing. Both forms of the origin go in: `frame-src` the scheme, `script-src` and `connect-src` `<origin>/frames/`, never `<origin>/packs/`, and `frame-ancestors 'none'`.
++7. **The page's content security policy is `cspFor` of the origin** ([hosting](hosting.md), decision 10), pasted into `app.security.csp` in `tauri.conf.json`, which the plugin can't write (Tauri compiles it from the file). An app without one, as Tauri's template is, adds nothing. Both forms of the origin go in: `frame-src` the scheme, `script-src` and `connect-src` `<origin>/frames/`, `script-src` `'wasm-unsafe-eval'` for highlighting with Oniguruma, never `<origin>/packs/`, and `frame-ancestors 'none'`.
+ 
+ 8. **No frame reaches a Tauri command, since no frame has Tauri's invoke key** (revised 2026-11-09, when the example's test found that a capability doesn't do it). Tauri counts a page on any scheme the app registers as one of the app's own (`is_local_url`, on macOS and Linux), so the capability of the frames' window covers the frames' scheme too: listing it or not changes nothing. What keeps a frame's code from the app's commands is Tauri's invoke key: every call must carry it, and Tauri puts it only into the main frame's IPC script (`for_main_frame_only`), which a frame, an opaque origin in another document, can't read. The tests show both halves: a call from the scheme without the key is refused, and in the real webview the strict component in the example finds no Tauri in its frame (no `__TAURI_INTERNALS__`). On WebKit a frame does have Tauri's IPC message handler, `window.webkit.messageHandlers.ipc` (decided 2026-11-12, [the research](#appendix-webkits-ipc-handler-in-a-frame)): WebKit gives it to every frame of the page, and Tauri's answer to that is the invoke key itself, which it added for sub-frames ([GHSA-57fm-592m-34r7](https://github.com/tauri-apps/tauri/security/advisories/GHSA-57fm-592m-34r7)). So the check doesn't fail on the handler being there; it fails if a frame's call through it runs a command. An app must also declare its own commands (`tauri_build::AppManifest`) and grant them in its capability, so they are allowed only as the capability says. Keeping custom schemes out of Tauri's `local` would be a second barrier, asked of Tauri upstream.
+ 
+diff --git a/guides/developers/19-a-tauri-app.md b/guides/developers/19-a-tauri-app.md
+index b22d965..d613b7b 100644
+--- a/guides/developers/19-a-tauri-app.md
++++ b/guides/developers/19-a-tauri-app.md
+@@ -173,7 +173,7 @@ A frame's code must never reach the app: a strict component sees its params and
+ 
+ - **WebKit's `ipc` handler.** On macOS and Linux, WebKit gives every frame Tauri's `ipc` script message handler, and no content security policy governs it. Tauri drops a message without the key, so a frame's call through it runs nothing; the example's check posts one with a guessed key to prove it. [The plugin's design](../../docs/tauri-plugin.md#appendix-webkits-ipc-handler-in-a-frame) has the research.
+ 
+-**If the app sets a content security policy** (`app.security.csp`; Tauri's template sets none), it adds what `cspFor` from `@compmd/vite/config` gives, for both forms of the origin: `frame-src` the origin, `script-src` and `connect-src` its `frames/` (a host-mode page loads Shiki and Temml from there), never its `packs/`, and `frame-ancestors 'none'`:
++**If the app sets a content security policy** (`app.security.csp`; Tauri's template sets none), it adds what `cspFor` from `@compmd/vite/config` gives, for both forms of the origin: `frame-src` the origin, `script-src` and `connect-src` its `frames/` (a host-mode page loads Shiki and Temml from there), `script-src` `'wasm-unsafe-eval'` (it highlights code with Oniguruma, as WebAssembly; without it, with Shiki's slower JavaScript engine), never its `packs/`, and `frame-ancestors 'none'`:
+ 
+ ```json snippet=../../../crates/tauri/examples/tauri-app/src-tauri/tauri.conf.json
+ {
+@@ -190,7 +190,7 @@ A frame's code must never reach the app: a strict component sees its params and
+   "app": {
+     "windows": [{ "label": "main", "title": "CompMD in Tauri", "width": 900, "height": 760 }],
+     "security": {
+-      "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; frame-src compmd://localhost/ http://compmd.localhost/; script-src 'self' compmd://localhost/frames/ http://compmd.localhost/frames/; connect-src 'self' ipc: http://ipc.localhost compmd://localhost/frames/ http://compmd.localhost/frames/; frame-ancestors 'none'; object-src 'none'; base-uri 'self'"
++      "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; frame-src compmd://localhost/ http://compmd.localhost/; script-src 'self' compmd://localhost/frames/ http://compmd.localhost/frames/ 'wasm-unsafe-eval'; connect-src 'self' ipc: http://ipc.localhost compmd://localhost/frames/ http://compmd.localhost/frames/; frame-ancestors 'none'; object-src 'none'; base-uri 'self'"
+     }
+   },
+   "bundle": { "active": false }
+diff --git a/npm-packages/sandbox/README.md b/npm-packages/sandbox/README.md
+index 94f65e1..d12dcc1 100644
+--- a/npm-packages/sandbox/README.md
++++ b/npm-packages/sandbox/README.md
+@@ -183,14 +183,14 @@ view.on("settled", () => print());             // each time it settles again, af
+ 
+ Every code block that shows as code is highlighted, wherever a page renders (the page's frame, a use's frame, the host's page): one of a language no code renderer draws, and a code renderer's fallback, when its component is missing or fails (spec §7.7). It is `@compmd/render`'s `highlight`, given as `shikiHighlight()`, which a host that renders a page itself with `createPage` or `createRegion` can give too.
+ 
+-- **Shiki,** with its JavaScript regex engine, so a strict frame needs no WebAssembly and its policy stays as it is. Its core and engine load the first time a page has a code block; each language's grammar the first time a block of it shows. Until then, and for a block it can't highlight, the text shows as it is. A block is highlighted again only when its text changes. The highlighter gives each line's tokens, and `@compmd/render` draws them into the line's element, which is its own, so a line's height (`view.lineHeights`) holds before and after the tokens come.
++- **Shiki,** with Oniguruma, as WebAssembly, in a host-mode page whose policy allows compiling it (`'wasm-unsafe-eval'`, which `@compmd/vite`'s `cspFor` gives), and its JavaScript regex engine everywhere else: in the frames, whose policy refuses WebAssembly, and in a page that refuses it. Both give a block's tokens; in WebKit the JavaScript engine compiles each regex the first time it runs, which blocks the page for about a second on a first TypeScript block, where Oniguruma takes 30 ms ([the spike](https://github.com/comp-markdown/compmd/blob/main/spikes/highlight-perf/README.md)). A host that gives `shikiHighlight` itself chooses with `shikiHighlight({ webAssembly: true })`. Its core and engine load the first time a page has a code block; each language's grammar the first time a block of it shows. Until then, and for a block it can't highlight, the text shows as it is. A block is highlighted again only when its text changes. The highlighter gives each line's tokens, and `@compmd/render` draws them into the line's element, which is its own, so a line's height (`view.lineHeights`) holds before and after the tokens come.
+ - **Light and dark:** GitHub's themes, as the website's spec page. Each token has its colour in both, which the renderer sets as `light-dark(light, dark)` through the CSSOM, so it follows the `color-scheme` every frame takes from the page around it, with nothing drawn again when it changes.
+ - **CompMD's syntax** shows in `md`, `markdown` and `compmd` blocks: component lines, inline components, param lists and `{{paths}}`, by a grammar injected into Markdown's, with a document's frontmatter, or a `compmd` definition's signature, as YAML. The website's spec page uses the same grammar, `@compmd/sandbox/grammar`.
+ - **The languages, by the fence names that mean them:** C (`c`), C++ (`cpp`, `c++`), C# (`csharp`, `c#`, `cs`), Java, Kotlin (`kotlin`, `kt`, `kts`), Scala, Swift, Objective-C (`objective-c`, `objc`), Go, Rust (`rust`, `rs`), Zig, Dart; Python (`python`, `py`), Ruby (`ruby`, `rb`), PHP, Perl, Lua, R, Julia (`julia`, `jl`), PowerShell (`powershell`, `ps`, `ps1`, `pwsh`), shell (`shellscript`, `bash`, `sh`, `shell`, `zsh`), Batch (`bat`, `batch`, `cmd`); Haskell (`haskell`, `hs`), Elixir, Erlang (`erlang`, `erl`), Clojure (`clojure`, `clj`), F# (`fsharp`, `f#`, `fs`), OCaml; JavaScript (`javascript`, `js`, `cjs`, `mjs`), TypeScript (`typescript`, `ts`, `cts`, `mts`), JSX, TSX, HTML, CSS, SCSS, Less, Svelte, Vue, Astro, GraphQL (`graphql`, `gql`); JSON, JSONC, JSON5, YAML (`yaml`, `yml`), TOML, INI (`ini`, `properties`), XML, CSV, SQL, Protocol Buffers (`proto`, `protobuf`); Dockerfile (`docker`, `dockerfile`), Makefile (`make`, `makefile`), CMake, HCL, Nix, Nginx; Diff, Markdown (`markdown`, `md`), CompMD (`compmd`), LaTeX, Mermaid (`mermaid`, `mmd`), MATLAB, Groovy, Solidity. A name is any case; any other language stays plain.
+ 
+ **One copy, the frames'.** Shiki and Temml are built once, with the frame runtime (`dist/frames/`): the frames load them, and so does a host-mode page, from `highlight.js` and `math.js` where the host serves the frame documents (`base`), which share their chunks with the runtime. So the host's own bundle has neither, and a page and its frames load the same files, which the browser caches once. In host mode every view of the page shares one highlighter, so Shiki is made once and each grammar loads once, however many views the page opens: one each made the page pay for each grammar again in every view, which in WebKit blocked for seconds over a list of short code blocks ([the spike](https://github.com/comp-markdown/compmd/blob/main/spikes/highlight-perf/README.md)). A host that renders a page itself with `createPage` and gives it `shikiHighlight()` or `temmlMath()` bundles its own; one that renders many pages makes one `shikiHighlight()` and gives it to them all. A host's page with a content security policy allows scripts from where the frames are served. A library the sandbox comes to load next is added the same way: [libraries in the sandbox](https://github.com/comp-markdown/compmd/blob/main/docs/libraries-in-the-sandbox.md) has the steps.
+ 
+-**What it costs.** Measured on the frame documents' build (`dist/frames/chunks/`, gzipped at level 9), of what a host serves: Shiki's core is 34.6 KB, its JavaScript engine 19.6 KB, the two themes 4.9 KB, and the 63 grammars 406 KB, about 465 KB in all. A page loads the core, the engine, the themes and the grammars of its blocks: about 75 KB for one with a JavaScript block. Most grammars are 1 to 15 KB; the largest are C++ (52.9 KB), PHP (27.9 KB), Objective-C (22.7 KB), JSX, TSX, JavaScript and TypeScript (about 16 KB each, each with what it embeds).
++**What it costs.** Measured on the frame documents' build (`dist/frames/chunks/`, gzipped at level 9), of what a host serves: Shiki's core is 34.6 KB, its JavaScript engine 19.6 KB, the two themes 4.9 KB, and the 63 grammars 406 KB, about 465 KB in all. A page loads the core, the engine, the themes and the grammars of its blocks: about 75 KB for one with a JavaScript block. Oniguruma is 2.5 KB and its WebAssembly 230 KB, which a host-mode page that compiles it loads instead of the JavaScript engine. Most grammars are 1 to 15 KB; the largest are C++ (52.9 KB), PHP (27.9 KB), Objective-C (22.7 KB), JSX, TSX, JavaScript and TypeScript (about 16 KB each, each with what it embeds).
+ 
+ ## Asking before data from a new origin
+ 
+diff --git a/npm-packages/sandbox/package.json b/npm-packages/sandbox/package.json
+index e4e4a9b..3a670f7 100644
+--- a/npm-packages/sandbox/package.json
++++ b/npm-packages/sandbox/package.json
+@@ -57,6 +57,7 @@
+     "@compmd/render": "workspace:*",
+     "@shikijs/core": "4.5.0",
+     "@shikijs/engine-javascript": "4.5.0",
++    "@shikijs/engine-oniguruma": "4.5.0",
+     "@shikijs/langs": "4.5.0",
+     "@shikijs/themes": "4.5.0",
+     "es-module-lexer": "2.3.2",
+diff --git a/npm-packages/sandbox/src/from-frames.ts b/npm-packages/sandbox/src/from-frames.ts
+index 7f2edfe..6d9626c 100644
+--- a/npm-packages/sandbox/src/from-frames.ts
++++ b/npm-packages/sandbox/src/from-frames.ts
+@@ -11,7 +11,8 @@ const imported = <T>(url: string): Promise<T> => import(/* @vite-ignore */ url)
+ /** Makes the highlighter of the frames' `highlight.js` at `url`. */
+ export type LoadHighlighter = (url: string) => Promise<CodeHighlighter>;
+ 
+-const loadFramesHighlighter: LoadHighlighter = (url) => imported<{ shikiHighlight: () => CodeHighlighter }>(url).then((module) => module.shikiHighlight());
++/** The frames' highlighter, with Oniguruma where the host's page compiles WebAssembly (`cspFor` allows it). */
++const loadFramesHighlighter: LoadHighlighter = (url) => imported<{ shikiHighlight: (options: { webAssembly: boolean }) => CodeHighlighter }>(url).then((module) => module.shikiHighlight({ webAssembly: true }));
+ 
+ /**
+  * The page's highlighters, by the URL of the `highlight.js` they come from: one for every view of the page, so Shiki
+diff --git a/npm-packages/sandbox/src/highlight/highlight.test.ts b/npm-packages/sandbox/src/highlight/highlight.test.ts
+index fc1958e..98c6c66 100644
+--- a/npm-packages/sandbox/src/highlight/highlight.test.ts
++++ b/npm-packages/sandbox/src/highlight/highlight.test.ts
+@@ -1,6 +1,6 @@
+ import type { CodeLines } from "@compmd/render";
+-import { describe, expect, it } from "vitest";
+-import { highlightWith, shikiHighlight, type Shikis } from "./highlight.ts";
++import { afterEach, describe, expect, it, vi } from "vitest";
++import { compilesWebAssembly, engineFor, highlightWith, shikiHighlight, type Shikis } from "./highlight.ts";
+ import { LANGUAGE_NAMES } from "./languages.ts";
+ 
+ /** The texts of `lines`' tokens. */
+@@ -11,6 +11,10 @@ const textOf = (lines: CodeLines | undefined) => (lines ?? []).map((line) => lin
+ /** Shiki and a grammar load well under a second alone, but take many seconds while every package's tests run at once. */
+ const TEST = { timeout: 15_000 };
+ 
++afterEach(() => {
++  vi.restoreAllMocks();
++});
++
+ describe("shikiHighlight", () => {
+   it("gives a block's tokens, which are its text, in both themes' colours, loading Shiki once", TEST, async () => {
+     const highlight = shikiHighlight();
+@@ -50,6 +54,26 @@ describe("shikiHighlight", () => {
+   });
+ });
+ 
++describe("the engine", () => {
++  it("is Oniguruma when the highlighter may use it and the page compiles WebAssembly, the JavaScript engine otherwise", async () => {
++    const [compiles, refuses] = [() => Promise.resolve(true), () => Promise.resolve(false)];
++    expect(await Promise.all([engineFor(true, compiles), engineFor(true, refuses), engineFor(false, compiles), engineFor(false, refuses)])).toEqual(["oniguruma", "javascript", "javascript", "javascript"]);
++  });
++
++  it("is asked of the page with an empty module, which a policy without 'wasm-unsafe-eval' refuses", async () => {
++    expect(await compilesWebAssembly()).toBe(true);
++    vi.spyOn(WebAssembly, "compile").mockRejectedValue(new EvalError("Refused to compile WebAssembly"));
++    expect(await compilesWebAssembly()).toBe(false);
++  });
++
++  it("gives Oniguruma's tokens as the JavaScript engine's, the same texts and colours", TEST, async () => {
++    const code = "export async function load(url: string): Promise<number> {\n  return (await fetch(url)).status; // done\n}";
++    const [oniguruma, javascript] = await Promise.all([shikiHighlight({ webAssembly: true })(code, "ts"), shikiHighlight()(code, "ts")]);
++    expect(oniguruma).toEqual(javascript);
++    expect(texts(oniguruma)).toContain("async");
++  });
++});
++
+ describe("highlightWith", () => {
+   it("rejects when Shiki doesn't load, so the renderer keeps the block's text", async () => {
+     const highlight = highlightWith((): Promise<Shikis> => Promise.reject(new Error("offline")));
+diff --git a/npm-packages/sandbox/src/highlight/highlight.ts b/npm-packages/sandbox/src/highlight/highlight.ts
+index 85c08cd..2b70154 100644
+--- a/npm-packages/sandbox/src/highlight/highlight.ts
++++ b/npm-packages/sandbox/src/highlight/highlight.ts
+@@ -1,7 +1,8 @@
+ // Code blocks highlighted by Shiki, in both page modes (in the page's frame and use frames, or in the host's page), in
+-// GitHub's light and dark themes. Shiki's core and its JavaScript regex engine load the first time a page has a code
+-// block, so a strict frame's policy needs no WebAssembly; each language's grammar loads the first time a block of it
+-// shows. It gives each token's text and its colour in each theme (`tokens.ts`); the renderer draws them.
++// GitHub's light and dark themes. Shiki's core and its regex engine load the first time a page has a code block: the
++// JavaScript engine in the frames, whose policy refuses WebAssembly, and Oniguruma in a host's page that compiles it;
++// each language's grammar loads the first time a block of it shows. It gives each token's text and its colour in each
++// theme (`tokens.ts`); the renderer draws them.
+ 
+ import type { CodeHighlighter } from "@compmd/render";
+ import type { HighlighterCore, LanguageRegistration } from "@shikijs/core";
+@@ -17,31 +18,67 @@ export interface Shikis {
+ 
+ const THEMES = { light: "github-light", dark: "github-dark" } as const;
+ 
+-/** Loads Shiki's core, its JavaScript engine and the two themes, and Markdown with CompMD's syntax. */
+-async function loadShikis(): Promise<Shikis> {
+-  const [{ createHighlighterCore }, { createJavaScriptRegexEngine }, light, dark, markdown] = await Promise.all([
+-    import("@shikijs/core"),
+-    import("@shikijs/engine-javascript"),
+-    import("@shikijs/themes/github-light"),
+-    import("@shikijs/themes/github-dark"),
+-    grammarOf("markdown"),
+-  ]);
+-  // Forgiving: a pattern the engine can't translate matches nothing, instead of failing the whole grammar.
+-  const shiki = (langs: LanguageRegistration[]) => createHighlighterCore({ themes: [light.default, dark.default], langs, engine: createJavaScriptRegexEngine({ forgiving: true }) });
++/** The regex engine Shiki runs grammars with. */
++export type Engine = "oniguruma" | "javascript";
++
++/** The smallest WebAssembly module: its header alone. */
++const EMPTY_MODULE = new Uint8Array([0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00]);
++
++/**
++ * Whether this page may compile WebAssembly: a policy without `'wasm-unsafe-eval'` (or `'unsafe-eval'`) refuses it,
++ * as the frames' does. Asked with an empty module, so Oniguruma's 622 KB load only where it can run.
++ */
++export async function compilesWebAssembly(): Promise<boolean> {
++  try {
++    await WebAssembly.compile(EMPTY_MODULE);
++    return true;
++  } catch {
++    return false;
++  }
++}
++
++/**
++ * The engine a highlighter runs: Oniguruma, as WebAssembly, when it may (`webAssembly`) and the page compiles it,
++ * otherwise the JavaScript engine. In WebKit the JavaScript engine compiles each of a grammar's regexes the first time
++ * it runs, which blocks the page for a second on a first TypeScript block; Oniguruma doesn't.
++ */
++export async function engineFor(webAssembly: boolean, compiles: () => Promise<boolean> = compilesWebAssembly): Promise<Engine> {
++  return webAssembly && (await compiles()) ? "oniguruma" : "javascript";
++}
++
++/** Loads Shiki's core, `engine` and the two themes, and Markdown with CompMD's syntax. */
++async function loadShikis(engine: Engine): Promise<Shikis> {
++  const [{ createHighlighterCore }, light, dark, markdown] = await Promise.all([import("@shikijs/core"), import("@shikijs/themes/github-light"), import("@shikijs/themes/github-dark"), grammarOf("markdown")]);
++  const regexes =
++    engine === "oniguruma"
++      ? import("@shikijs/engine-oniguruma").then(({ createOnigurumaEngine }) => createOnigurumaEngine(import("@shikijs/engine-oniguruma/wasm-inlined")))
++      : // Forgiving: a pattern the engine can't translate matches nothing, instead of failing the whole grammar.
++        import("@shikijs/engine-javascript").then(({ createJavaScriptRegexEngine }) => createJavaScriptRegexEngine({ forgiving: true }));
++  const shiki = (langs: LanguageRegistration[]) => createHighlighterCore({ themes: [light.default, dark.default], langs, engine: regexes });
+   const [md, others] = await Promise.all([shiki([...markdown, COMPMD]), shiki([])]);
+   return { markdown: md, others };
+ }
+ 
++/** How a highlighter runs. */
++export interface ShikiOptions {
++  /**
++   * Oniguruma, as WebAssembly, where the page compiles it; the JavaScript engine where it doesn't, as without. A page
++   * allows it with `'wasm-unsafe-eval'` in its policy's `script-src`. Its WebAssembly is inlined in a chunk of its own
++   * (232 KB gzipped), loaded with the first code block where it is used.
++   */
++  webAssembly?: boolean;
++}
++
+ /**
+  * The highlighter both page modes use: Shiki, loaded the first time a page has a code block. Each call makes a Shiki
+  * of its own, which loads each grammar again: a host that renders many pages makes one and gives it to them all.
+  *
+  * @example
+- * const highlight = shikiHighlight();
++ * const highlight = shikiHighlight({ webAssembly: true });
+  * for (const run of runs) createPage(run.element, { highlight }).render(run.tree);
+  */
+-export function shikiHighlight(): CodeHighlighter {
+-  return highlightWith(loadShikis);
++export function shikiHighlight(options: ShikiOptions = {}): CodeHighlighter {
++  return highlightWith(async () => loadShikis(await engineFor(options.webAssembly === true)));
+ }
+ 
+ /**
+diff --git a/npm-packages/sandbox/src/index.ts b/npm-packages/sandbox/src/index.ts
+index f2ca4e9..4fd9ff4 100644
+--- a/npm-packages/sandbox/src/index.ts
++++ b/npm-packages/sandbox/src/index.ts
+@@ -8,7 +8,7 @@ export type { BundleModuleSource } from "./found.ts";
+ export { frameUse, type UseFrame, type UseFrameOptions } from "./use.ts";
+ export { hostClient, localHost, serveHost, type HostApi, type HostClient } from "./host-api.ts";
+ export { networkPolicy } from "./frame/narrow.ts";
+-export { shikiHighlight } from "./highlight/highlight.ts";
++export { shikiHighlight, type ShikiOptions } from "./highlight/highlight.ts";
+ export {
+   allowOrigins,
+   askWithDialog,
+diff --git a/npm-packages/sandbox/test/highlight-policy.test.ts b/npm-packages/sandbox/test/highlight-policy.test.ts
+new file mode 100644
+index 0000000..dff91cd
+--- /dev/null
++++ b/npm-packages/sandbox/test/highlight-policy.test.ts
+@@ -0,0 +1,62 @@
++// The frames' highlighter in a host's page (host mode), under the page's own policy: Oniguruma where it allows
++// WebAssembly (`'wasm-unsafe-eval'`, as `@compmd/vite`'s `cspFor` gives it), the JavaScript engine where it doesn't, and
++// the same tokens either way. Each page is a frame of this one with that policy, which loads `highlight.js` from where
++// the frames are served, as `framesHighlight` does.
++
++import type { CodeLines } from "@compmd/render";
++import { afterEach, describe, expect, it } from "vitest";
++import { frames } from "./harness.ts";
++
++const placed: HTMLIFrameElement[] = [];
++afterEach(() => {
++  for (const frame of placed.splice(0)) frame.remove();
++});
++
++const CODE = "export async function load(url: string): Promise<number> {\n  return (await fetch(url)).status; // done\n}";
++
++/** What a page with the policy `scriptSrc` gets: whether it compiles WebAssembly, and the frames' highlighter's tokens. */
++function highlightedUnder(scriptSrc: string): Promise<{ compiles: boolean; lines: CodeLines | undefined }> {
++  const url = new URL("highlight.js", frames).href;
++  const frame = document.body.appendChild(document.createElement("iframe"));
++  placed.push(frame);
++  const id = String(Math.random());
++  frame.srcdoc = `<meta http-equiv="Content-Security-Policy" content="script-src 'unsafe-inline' ${new URL(frames).origin} ${scriptSrc}">
++<script type="module">
++  const id = ${JSON.stringify(id)};
++  try {
++    const { shikiHighlight } = await import(${JSON.stringify(url)});
++    const lines = await shikiHighlight({ webAssembly: true })(${JSON.stringify(CODE)}, "ts");
++    const compiles = await WebAssembly.compile(new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0])).then(() => true, () => false);
++    parent.postMessage({ id, compiles, lines }, "*");
++  } catch (error) {
++    parent.postMessage({ id, error: String(error) }, "*");
++  }
++</script>`;
++  return new Promise((resolve, reject) => {
++    const heard = ({ data }: MessageEvent<{ id: string; compiles: boolean; lines: CodeLines | undefined; error?: string }>) => {
++      if (data.id !== id) return;
++      removeEventListener("message", heard);
++      if (data.error !== undefined) reject(new Error(data.error));
++      else resolve({ compiles: data.compiles, lines: data.lines });
++    };
++    addEventListener("message", heard);
++  });
++}
++
++/** The block's text, as `lines` give it. */
++const textOf = (lines: CodeLines | undefined) => (lines ?? []).map((line) => line.map(({ text }) => text).join("")).join("\n");
++/** The colour of the token `text`, in each theme. */
++const colorOf = (lines: CodeLines | undefined, text: string) => lines?.flat().find((token) => token.text === text)?.color;
++
++describe("code highlighted in a host's page", () => {
++  it("with Oniguruma where its policy allows WebAssembly, and the JavaScript engine where it doesn't", { timeout: 30_000 }, async () => {
++    const [allowed, refused] = await Promise.all([highlightedUnder("'wasm-unsafe-eval'"), highlightedUnder("")]);
++    expect([allowed.compiles, refused.compiles]).toEqual([true, false]);
++    expect([textOf(allowed.lines), textOf(refused.lines)]).toEqual([CODE, CODE]);
++    // GitHub's colours: a keyword, a type and a comment, in each theme.
++    expect(colorOf(allowed.lines, "async")).toEqual({ light: "#D73A49", dark: "#F97583" });
++    expect(colorOf(allowed.lines, "Promise")).toEqual({ light: "#6F42C1", dark: "#B392F0" });
++    expect(colorOf(allowed.lines, "// done")).toEqual({ light: "#6A737D", dark: "#6A737D" });
++    expect(colorOf(refused.lines, "async")).toEqual({ light: "#D73A49", dark: "#F97583" });
++  });
++});
+diff --git a/npm-packages/vite/src/csp.test.ts b/npm-packages/vite/src/csp.test.ts
+index eada22f..8f89c92 100644
+--- a/npm-packages/vite/src/csp.test.ts
++++ b/npm-packages/vite/src/csp.test.ts
+@@ -3,17 +3,17 @@ import { readConfig } from "./config.ts";
+ import { cspFor } from "./csp.ts";
+ 
+ describe("cspFor", () => {
+-  it("gives the frames from the origin, and Shiki and Temml from its frames, never its packs", () => {
++  it("gives the frames from the origin, Shiki and Temml from its frames and WebAssembly for Shiki, never its packs", () => {
+     expect(cspFor("compmd://localhost")).toEqual({
+       "frame-src": ["compmd://localhost/"],
+-      "script-src": ["compmd://localhost/frames/"],
++      "script-src": ["compmd://localhost/frames/", "'wasm-unsafe-eval'"],
+       "connect-src": ["compmd://localhost/frames/"],
+       "frame-ancestors": ["'none'"],
+     });
+   });
+ 
+   it("takes an app's folder as the origin", () => {
+-    expect(cspFor("https://app.example/compmd/")["script-src"]).toEqual(["https://app.example/compmd/frames/"]);
++    expect(cspFor("https://app.example/compmd/")["script-src"]).toEqual(["https://app.example/compmd/frames/", "'wasm-unsafe-eval'"]);
+   });
+ 
+   it("adds the registry proxy only when the host fetches from registries", () => {
+diff --git a/npm-packages/vite/src/csp.ts b/npm-packages/vite/src/csp.ts
+index 35fee55..0b53967 100644
+--- a/npm-packages/vite/src/csp.ts
++++ b/npm-packages/vite/src/csp.ts
+@@ -1,5 +1,6 @@
+ // The sources a host's page adds to its content security policy (docs/hosting.md, decision 10): the frames from the
+-// origin, Shiki and Temml from the frames' folder in host mode, and the registry proxy with `fetch: "host"`. Never the
++// origin, Shiki and Temml from the frames' folder in host mode, WebAssembly for Shiki's Oniguruma, and the registry
++// proxy with `fetch: "host"`. Never the
+ // packs' folder, nor the whole origin: a pack's code runs in frames only. No Node.
+ 
+ import type { ReadConfig } from "./config.ts";
+@@ -15,7 +16,7 @@ export type Csp = Record<string, string[]>;
+  * @param config The configuration (`readConfig`): with registries the host fetches from, the page reaches the proxy.
+  * @example
+  * cspFor("compmd://localhost", readConfig(json));
+- * // { "frame-src": ["compmd://localhost/"], "script-src": ["compmd://localhost/frames/"], … }
++ * // { "frame-src": ["compmd://localhost/"], "script-src": ["compmd://localhost/frames/", "'wasm-unsafe-eval'"], … }
+  */
+ export function cspFor(origin: string, config?: Pick<ReadConfig, "registries" | "fetch">): Csp {
+   const base = origin.replace(/\/*$/, "/");
+@@ -23,7 +24,8 @@ export function cspFor(origin: string, config?: Pick<ReadConfig, "registries" |
+   const proxied = config !== undefined && config.fetch === "host" && Object.keys(config.registries).length > 0;
+   return {
+     "frame-src": [base],
+-    "script-src": [frames],
++    // Compiling WebAssembly, for code highlighted with Oniguruma: only in the host's page, which runs its own code.
++    "script-src": [frames, "'wasm-unsafe-eval'"],
+     "connect-src": [frames, ...(proxied ? [`${base}registry/`] : [])],
+     "frame-ancestors": ["'none'"],
+   };
+diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
+index fe8f093..be0f3d7 100644
+--- a/pnpm-lock.yaml
++++ b/pnpm-lock.yaml
+@@ -723,6 +723,9 @@ importers:
+       '@shikijs/engine-javascript':
+         specifier: 4.5.0
+         version: 4.5.0
++      '@shikijs/engine-oniguruma':
++        specifier: 4.5.0
++        version: 4.5.0
+       '@shikijs/langs':
+         specifier: 4.5.0
+         version: 4.5.0
+diff --git a/spikes/highlight-perf/README.md b/spikes/highlight-perf/README.md
+index 204a33c..7511c3f 100644
+--- a/spikes/highlight-perf/README.md
++++ b/spikes/highlight-perf/README.md
+@@ -88,6 +88,21 @@ node spikes/highlight-perf/measure.ts 3 today shared     # some variants, three
+ 
+ The same as the spike's *today* and *shared*: one highlighter takes WebKit's skim from 4.2 s to 0.8 s blocked and its revisit to 0; the opening's long first frame is the JavaScript engine's compile, which CMD-257 is for.
+ 
++### The sandbox's shared highlighter with Oniguruma (CMD-257)
++
++`?sandbox=shared&wasm=1`: the same, with `shikiHighlight({ webAssembly: true })`, as a host-mode page that allows WebAssembly has it since CMD-257; this page has no policy, so it compiles. Three runs each; `results-sandbox-wasm.json` has every run. WebKit's runs varied more than before (one JavaScript run took twice the others, and the Oniguruma openings were 103, 253 and 265 ms), so each cell is the median and the range.
++
++| | Opening: blocked | Skim: blocked | Revisit: blocked | Wait on opening |
++|---|---|---|---|---|
++| WebKit, JavaScript engine | 1175 ms (1144–2417) | 921 ms (783–2072) | 72 ms (0–115) | 1261 ms |
++| WebKit, Oniguruma | 253 ms (103–265) | 151 ms (0–576) | 94 ms (0–105) | 375 ms |
++| Chromium, JavaScript engine | 33 ms | 67 ms | 0 | 111 ms |
++| Chromium, Oniguruma | 67 ms (50–200) | 0 (0–17) | 0 | 177 ms |
++
++- **In WebKit Oniguruma takes the opening from about 1.2 s blocked to about 0.25 s,** and the longest frame from about 1.2 s to 0.3 s; the skim from 0.9 s to 0.15 s.
++- **It is short of the spike's *shared + oniguruma*** (83 ms on opening, 10 ms over the skim): the sandbox's highlighter has two Shikis (Markdown's and the other languages'), each made with the first block, and loads its grammars as blocks need them; and this run was noisier. Slicing (CMD-259) is for what is left.
++- **The JavaScript engine's tokens in WebKit** were wrong for one block in the browser test (`test/highlight-policy.test.ts`): its light theme's colours disagreed with its dark theme's, and its tokens with Oniguruma's and with Chromium's. Oniguruma's were right. Not looked into here: CMD-261.
++
+ ### A large host document: 100 pages opened and closed (CMD-253)
+ 
+ The page above has a small host document, so it missed what each open costs a large one. `?churn=1` adds 20,000 host elements (rows a host's own rules style), then opens 100 pages, one an animation frame, eight live at a time, destroying the oldest, without highlighting: `churn` with a code block each, `churn-styled` with the code in a box with a `width` of its own. It counts what makes the browser style the whole document again: the times the document's sheets are set (`adoptedStyleSheets`), the styles read (`getComputedStyle`) and the sheets written (`replaceSync`). **An open** is from `createPage` to the next animation frame, so 16 ms is one frame. Three runs each, medians; `results-churn-before.json` and `results-churn-after.json` have every run.
+diff --git a/spikes/highlight-perf/measure.ts b/spikes/highlight-perf/measure.ts
+index 9c812b7..f7cbd1a 100644
+--- a/spikes/highlight-perf/measure.ts
++++ b/spikes/highlight-perf/measure.ts
+@@ -37,6 +37,8 @@ const VARIANTS: Record<string, string> = {
+   // The sandbox's own highlighter, a Shiki for each page as before CMD-256, and one for all as since.
+   "sandbox-per-view": "sandbox=per-view",
+   "sandbox-shared": "sandbox=shared",
++  // And with Oniguruma where the page compiles WebAssembly, as a host-mode page since CMD-257.
++  "sandbox-shared-wasm": "sandbox=shared&wasm=1",
+   // A large host document, and 100 pages opened and closed in it, without highlighting (CMD-253): code only, then
+   // each in a box with rules of its own.
+   churn: "highlight=off&churn=1",
+diff --git a/spikes/highlight-perf/results-sandbox-wasm.json b/spikes/highlight-perf/results-sandbox-wasm.json
+new file mode 100644
+index 0000000..5328bb3
+--- /dev/null
++++ b/spikes/highlight-perf/results-sandbox-wasm.json
+@@ -0,0 +1,830 @@
++[
++  {
++    "browser": "webkit",
++    "variant": "sandbox-shared",
++    "repeat": 0,
++    "config": {
++      "shiki": "per-view",
++      "engine": "js",
++      "where": "main",
++      "schedule": "eager",
++      "cache": false
++    },
++    "runs": 440,
++    "openedAtMs": 28,
++    "open": {
++      "blockedMs": 1175,
++      "longestMs": 1225,
++      "longFrames": 1,
++      "runs": 6,
++      "medianWaitMs": 1261,
++      "p95WaitMs": 1262,
++      "loadToHighlightedMs": 1371
++    },
++    "skim": {
++      "blockedMs": 921,
++      "longestMs": 804,
++      "longFrames": 3,
++      "runs": 434,
++      "medianWaitMs": 16,
++      "p95WaitMs": 39,
++      "toAllHighlightedMs": 11206
++    },
++    "revisit": {
++      "blockedMs": 0,
++      "longestMs": 37,
++      "longFrames": 0,
++      "runs": 434,
++      "medianWaitMs": 12,
++      "p95WaitMs": 22
++    },
++    "costs": {
++      "afterOpen": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "afterSkim": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "total": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      }
++    }
++  },
++  {
++    "browser": "webkit",
++    "variant": "sandbox-shared",
++    "repeat": 1,
++    "config": {
++      "shiki": "per-view",
++      "engine": "js",
++      "where": "main",
++      "schedule": "eager",
++      "cache": false
++    },
++    "runs": 440,
++    "openedAtMs": 25,
++    "open": {
++      "blockedMs": 1144,
++      "longestMs": 1194,
++      "longFrames": 1,
++      "runs": 6,
++      "medianWaitMs": 1232,
++      "p95WaitMs": 1232,
++      "loadToHighlightedMs": 1272
++    },
++    "skim": {
++      "blockedMs": 783,
++      "longestMs": 679,
++      "longFrames": 4,
++      "runs": 434,
++      "medianWaitMs": 13,
++      "p95WaitMs": 41,
++      "toAllHighlightedMs": 11042
++    },
++    "revisit": {
++      "blockedMs": 115,
++      "longestMs": 78,
++      "longFrames": 13,
++      "runs": 434,
++      "medianWaitMs": 26,
++      "p95WaitMs": 44
++    },
++    "costs": {
++      "afterOpen": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "afterSkim": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "total": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      }
++    }
++  },
++  {
++    "browser": "webkit",
++    "variant": "sandbox-shared",
++    "repeat": 2,
++    "config": {
++      "shiki": "per-view",
++      "engine": "js",
++      "where": "main",
++      "schedule": "eager",
++      "cache": false
++    },
++    "runs": 440,
++    "openedAtMs": 81,
++    "open": {
++      "blockedMs": 2417,
++      "longestMs": 2467,
++      "longFrames": 1,
++      "runs": 6,
++      "medianWaitMs": 2540,
++      "p95WaitMs": 2540,
++      "loadToHighlightedMs": 2629
++    },
++    "skim": {
++      "blockedMs": 2072,
++      "longestMs": 1361,
++      "longFrames": 30,
++      "runs": 434,
++      "medianWaitMs": 30,
++      "p95WaitMs": 61,
++      "toAllHighlightedMs": 11954
++    },
++    "revisit": {
++      "blockedMs": 72,
++      "longestMs": 70,
++      "longFrames": 14,
++      "runs": 434,
++      "medianWaitMs": 27,
++      "p95WaitMs": 41
++    },
++    "costs": {
++      "afterOpen": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "afterSkim": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "total": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      }
++    }
++  },
++  {
++    "browser": "webkit",
++    "variant": "sandbox-shared-wasm",
++    "repeat": 0,
++    "config": {
++      "shiki": "per-view",
++      "engine": "js",
++      "where": "main",
++      "schedule": "eager",
++      "cache": false
++    },
++    "runs": 440,
++    "openedAtMs": 93,
++    "open": {
++      "blockedMs": 265,
++      "longestMs": 314,
++      "longFrames": 2,
++      "runs": 6,
++      "medianWaitMs": 410,
++      "p95WaitMs": 411,
++      "loadToHighlightedMs": 512
++    },
++    "skim": {
++      "blockedMs": 151,
++      "longestMs": 99,
++      "longFrames": 15,
++      "runs": 434,
++      "medianWaitMs": 30,
++      "p95WaitMs": 47,
++      "toAllHighlightedMs": 10392
++    },
++    "revisit": {
++      "blockedMs": 105,
++      "longestMs": 65,
++      "longFrames": 17,
++      "runs": 434,
++      "medianWaitMs": 30,
++      "p95WaitMs": 44
++    },
++    "costs": {
++      "afterOpen": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "afterSkim": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "total": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      }
++    }
++  },
++  {
++    "browser": "webkit",
++    "variant": "sandbox-shared-wasm",
++    "repeat": 1,
++    "config": {
++      "shiki": "per-view",
++      "engine": "js",
++      "where": "main",
++      "schedule": "eager",
++      "cache": false
++    },
++    "runs": 440,
++    "openedAtMs": 74,
++    "open": {
++      "blockedMs": 253,
++      "longestMs": 303,
++      "longFrames": 1,
++      "runs": 6,
++      "medianWaitMs": 375,
++      "p95WaitMs": 376,
++      "loadToHighlightedMs": 457
++    },
++    "skim": {
++      "blockedMs": 576,
++      "longestMs": 128,
++      "longFrames": 44,
++      "runs": 434,
++      "medianWaitMs": 32,
++      "p95WaitMs": 53,
++      "toAllHighlightedMs": 10402
++    },
++    "revisit": {
++      "blockedMs": 94,
++      "longestMs": 72,
++      "longFrames": 15,
++      "runs": 434,
++      "medianWaitMs": 30,
++      "p95WaitMs": 43
++    },
++    "costs": {
++      "afterOpen": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "afterSkim": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "total": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      }
++    }
++  },
++  {
++    "browser": "webkit",
++    "variant": "sandbox-shared-wasm",
++    "repeat": 2,
++    "config": {
++      "shiki": "per-view",
++      "engine": "js",
++      "where": "main",
++      "schedule": "eager",
++      "cache": false
++    },
++    "runs": 440,
++    "openedAtMs": 20,
++    "open": {
++      "blockedMs": 103,
++      "longestMs": 153,
++      "longFrames": 1,
++      "runs": 6,
++      "medianWaitMs": 181,
++      "p95WaitMs": 182,
++      "loadToHighlightedMs": 227
++    },
++    "skim": {
++      "blockedMs": 0,
++      "longestMs": 46,
++      "longFrames": 0,
++      "runs": 434,
++      "medianWaitMs": 14,
++      "p95WaitMs": 28,
++      "toAllHighlightedMs": 10381
++    },
++    "revisit": {
++      "blockedMs": 0,
++      "longestMs": 28,
++      "longFrames": 0,
++      "runs": 434,
++      "medianWaitMs": 13,
++      "p95WaitMs": 20
++    },
++    "costs": {
++      "afterOpen": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "afterSkim": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "total": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      }
++    }
++  },
++  {
++    "browser": "chromium",
++    "variant": "sandbox-shared",
++    "repeat": 0,
++    "config": {
++      "shiki": "per-view",
++      "engine": "js",
++      "where": "main",
++      "schedule": "eager",
++      "cache": false
++    },
++    "runs": 440,
++    "openedAtMs": 18,
++    "open": {
++      "blockedMs": 33,
++      "longestMs": 83,
++      "longFrames": 1,
++      "runs": 6,
++      "medianWaitMs": 111,
++      "p95WaitMs": 111,
++      "loadToHighlightedMs": 134
++    },
++    "skim": {
++      "blockedMs": 67,
++      "longestMs": 117,
++      "longFrames": 1,
++      "runs": 434,
++      "medianWaitMs": 7,
++      "p95WaitMs": 32,
++      "toAllHighlightedMs": 9756
++    },
++    "revisit": {
++      "blockedMs": 0,
++      "longestMs": 17,
++      "longFrames": 0,
++      "runs": 434,
++      "medianWaitMs": 8,
++      "p95WaitMs": 29
++    },
++    "costs": {
++      "afterOpen": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "afterSkim": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "total": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      }
++    }
++  },
++  {
++    "browser": "chromium",
++    "variant": "sandbox-shared",
++    "repeat": 1,
++    "config": {
++      "shiki": "per-view",
++      "engine": "js",
++      "where": "main",
++      "schedule": "eager",
++      "cache": false
++    },
++    "runs": 440,
++    "openedAtMs": 20,
++    "open": {
++      "blockedMs": 33,
++      "longestMs": 83,
++      "longFrames": 1,
++      "runs": 6,
++      "medianWaitMs": 112,
++      "p95WaitMs": 113,
++      "loadToHighlightedMs": 140
++    },
++    "skim": {
++      "blockedMs": 67,
++      "longestMs": 117,
++      "longFrames": 1,
++      "runs": 434,
++      "medianWaitMs": 8,
++      "p95WaitMs": 32,
++      "toAllHighlightedMs": 9779
++    },
++    "revisit": {
++      "blockedMs": 0,
++      "longestMs": 33,
++      "longFrames": 0,
++      "runs": 434,
++      "medianWaitMs": 7,
++      "p95WaitMs": 28
++    },
++    "costs": {
++      "afterOpen": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "afterSkim": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "total": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      }
++    }
++  },
++  {
++    "browser": "chromium",
++    "variant": "sandbox-shared",
++    "repeat": 2,
++    "config": {
++      "shiki": "per-view",
++      "engine": "js",
++      "where": "main",
++      "schedule": "eager",
++      "cache": false
++    },
++    "runs": 440,
++    "openedAtMs": 17,
++    "open": {
++      "blockedMs": 33,
++      "longestMs": 83,
++      "longFrames": 1,
++      "runs": 6,
++      "medianWaitMs": 110,
++      "p95WaitMs": 110,
++      "loadToHighlightedMs": 133
++    },
++    "skim": {
++      "blockedMs": 67,
++      "longestMs": 117,
++      "longFrames": 1,
++      "runs": 434,
++      "medianWaitMs": 8,
++      "p95WaitMs": 33,
++      "toAllHighlightedMs": 9772
++    },
++    "revisit": {
++      "blockedMs": 0,
++      "longestMs": 17,
++      "longFrames": 0,
++      "runs": 434,
++      "medianWaitMs": 7,
++      "p95WaitMs": 23
++    },
++    "costs": {
++      "afterOpen": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "afterSkim": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "total": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      }
++    }
++  },
++  {
++    "browser": "chromium",
++    "variant": "sandbox-shared-wasm",
++    "repeat": 0,
++    "config": {
++      "shiki": "per-view",
++      "engine": "js",
++      "where": "main",
++      "schedule": "eager",
++      "cache": false
++    },
++    "runs": 440,
++    "openedAtMs": 17,
++    "open": {
++      "blockedMs": 50,
++      "longestMs": 100,
++      "longFrames": 1,
++      "runs": 6,
++      "medianWaitMs": 155,
++      "p95WaitMs": 155,
++      "loadToHighlightedMs": 179
++    },
++    "skim": {
++      "blockedMs": 0,
++      "longestMs": 17,
++      "longFrames": 0,
++      "runs": 434,
++      "medianWaitMs": 9,
++      "p95WaitMs": 21,
++      "toAllHighlightedMs": 9714
++    },
++    "revisit": {
++      "blockedMs": 0,
++      "longestMs": 17,
++      "longFrames": 0,
++      "runs": 434,
++      "medianWaitMs": 8,
++      "p95WaitMs": 18
++    },
++    "costs": {
++      "afterOpen": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "afterSkim": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "total": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      }
++    }
++  },
++  {
++    "browser": "chromium",
++    "variant": "sandbox-shared-wasm",
++    "repeat": 1,
++    "config": {
++      "shiki": "per-view",
++      "engine": "js",
++      "where": "main",
++      "schedule": "eager",
++      "cache": false
++    },
++    "runs": 440,
++    "openedAtMs": 19,
++    "open": {
++      "blockedMs": 67,
++      "longestMs": 117,
++      "longFrames": 1,
++      "runs": 6,
++      "medianWaitMs": 177,
++      "p95WaitMs": 177,
++      "loadToHighlightedMs": 202
++    },
++    "skim": {
++      "blockedMs": 0,
++      "longestMs": 50,
++      "longFrames": 0,
++      "runs": 434,
++      "medianWaitMs": 11,
++      "p95WaitMs": 24,
++      "toAllHighlightedMs": 9725
++    },
++    "revisit": {
++      "blockedMs": 0,
++      "longestMs": 17,
++      "longFrames": 0,
++      "runs": 434,
++      "medianWaitMs": 21,
++      "p95WaitMs": 34
++    },
++    "costs": {
++      "afterOpen": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "afterSkim": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "total": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      }
++    }
++  },
++  {
++    "browser": "chromium",
++    "variant": "sandbox-shared-wasm",
++    "repeat": 2,
++    "config": {
++      "shiki": "per-view",
++      "engine": "js",
++      "where": "main",
++      "schedule": "eager",
++      "cache": false
++    },
++    "runs": 440,
++    "openedAtMs": 74,
++    "open": {
++      "blockedMs": 200,
++      "longestMs": 250,
++      "longFrames": 1,
++      "runs": 6,
++      "medianWaitMs": 352,
++      "p95WaitMs": 353,
++      "loadToHighlightedMs": 395
++    },
++    "skim": {
++      "blockedMs": 17,
++      "longestMs": 67,
++      "longFrames": 1,
++      "runs": 434,
++      "medianWaitMs": 24,
++      "p95WaitMs": 44,
++      "toAllHighlightedMs": 9734
++    },
++    "revisit": {
++      "blockedMs": 0,
++      "longestMs": 17,
++      "longFrames": 0,
++      "runs": 434,
++      "medianWaitMs": 21,
++      "p95WaitMs": 34
++    },
++    "costs": {
++      "afterOpen": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "afterSkim": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      },
++      "total": {
++        "setups": [],
++        "firstTokenizeMs": 0,
++        "tokenizeMs": 0,
++        "tokenized": 0,
++        "medianTokenizeMs": 0,
++        "drawMs": 0,
++        "cacheHits": 0
++      }
++    }
++  }
++]
+diff --git a/spikes/highlight-perf/src/main.ts b/spikes/highlight-perf/src/main.ts
+index 2918565..ca4a1b0 100644
+--- a/spikes/highlight-perf/src/main.ts
++++ b/spikes/highlight-perf/src/main.ts
+@@ -56,11 +56,13 @@ const made = highlighters(config, highlighted);
+  * when its tokens are drawn, which the renderer does once the highlighter's promise has settled.
+  */
+ const sandbox = query.get("sandbox");
++/** `&wasm=1`: with Oniguruma where the page compiles WebAssembly, as a host-mode page since CMD-257. */
++const shikiOptions = { webAssembly: query.get("wasm") === "1" };
+ const sandboxHighlight = (() => {
+   if (sandbox !== "per-view" && sandbox !== "shared") return undefined;
+-  const one = shikiHighlight();
++  const one = shikiHighlight(shikiOptions);
+   return (slot: HTMLElement): CodeHighlighter => {
+-    const highlight = sandbox === "shared" ? one : shikiHighlight();
++    const highlight = sandbox === "shared" ? one : shikiHighlight(shikiOptions);
+     return async (code, language) => {
+       const lines = await highlight(code, language);
+       setTimeout(() => {

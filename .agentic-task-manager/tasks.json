@@ -8982,7 +8982,7 @@
         "docs/hosting.md"
       ],
       "created_at": "2026-11-19T07:25:13Z",
-      "updated_at": "2026-11-19T08:45:44Z",
+      "updated_at": "2026-11-19T08:51:33Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -8996,7 +8996,7 @@
       "key_final": false,
       "started_at": "2026-11-19T08:18:12Z",
       "started_by": "claude:79612601",
-      "commit": "b493155c607f50a075b9dd1ea216a2ed784817b3",
+      "commit": "d1dea32ae034ebca68aa0edcbef8198eb7d99331",
       "code_reviews": [
         {
           "id": "01a1f2fb-b4ee-71b9-a099-c82d641a3ef7",
