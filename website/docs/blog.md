@@ -13,11 +13,14 @@ brings. Its first posts are *Why CompMD*, *Where CompMD is, and its roadmap*, an
    own pack (`content/app/`) as the landing page does. A post's frontmatter is the tool's: `title`, `date`, `summary`,
    and optional `author`, `updated`, `tags` and `draft`.
 
-2. **The site's build runs `cblo build`** into `dist/blog/`, beside the guides and the spec, and its dev server serves
-   the blog's pages from `cblo dev`, as it serves the playground from the playground's.
+2. **The site's build builds the blog with `@compmd/blog`'s `buildSite`**, the code `cblo build` runs, into
+   `dist/blog/`, beside the guides and the spec (changed 2026-11-19, from running `cblo build` and `cblo dev`). Its dev
+   server builds it in the same way for each page asked for, drafts included, as the guides are, with no second
+   server to run.
 
-3. **It looks like the rest of the site** with a `layout.html` of its own: the site's header, with "Blog" beside the
-   guides and the spec, and its footer; and a `theme.css` that takes the site's fonts and colours, light and dark.
+3. **It looks like the rest of the site.** Its layout is made as the site is built, from the site's own header, with
+   "Blog" beside the guides and the spec, and its footer (`src/BlogLayout.svelte`), so it never drifts from them; and its
+   `theme.css` gives the blog tool's colours the site's tokens, light and dark.
 
 4. **Tags from the start**: each post names a few (`release`, `design`, `comparison`), the tool writes their pages at
    `/blog/tags/<tag>/`, and the feed carries them.

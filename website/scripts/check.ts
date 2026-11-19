@@ -16,15 +16,17 @@
 //   and its companion, a section of the page, linked from the spec and back.
 // - Search finds sections of the spec and the guides, and opens them with the words found marked; on a phone, its
 //   dialog fits.
+// - The blog: every page names its feed, the feed and search have every post, and a post's comments load only once
+//   scrolled to.
 // - The playground opens every document of its menu.
 // - Shiki and Temml once in each app, the site's and the playground's: in the frames' files, not in its own bundle.
-// - The budgets (website/docs/design.md): the page before its live parts at most 100 KB gzipped, and painted within one
-//   second on a mid-range phone over fast 3G. `--no-timing` leaves the paint out, for a shared runner whose timings
+// - The budgets (website/docs/design.md): the page before its live parts at most 100 KB gzipped, and so is a post's,
+//   and painted within one second on a mid-range phone over fast 3G. `--no-timing` leaves the paint out, for a shared runner whose timings
 //   vary too much to hold a budget (docs/ci.md).
 import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { createServer } from "node:http";
-import { join } from "node:path";
+import { join, sep } from "node:path";
 import { gzipSync } from "node:zlib";
 import { getDocument, OPS } from "pdfjs-dist/legacy/build/pdf.mjs";
 import { chromium, type Browser, type Page } from "playwright-core";
@@ -41,7 +43,16 @@ const bookPages = (book: string): string[] => {
   const chapters = writtenOf(bookOf(readFileSync(join(import.meta.dirname, `../../guides/${book}/README.md`), "utf8")));
   return [`guides/${book}/`, ...chapters.map(({ slug }) => `guides/${book}/${slug}/`)];
 };
-const PAGES = ["", "spec/", "guides/", ...bookPages("authors"), ...bookPages("developers")];
+/** The blog's pages, as the build wrote them: each folder of `dist/blog/` with an `index.html`. */
+const blogPages = (): string[] =>
+  readdirSync(join(DIST, "blog"), { recursive: true, encoding: "utf8" })
+    .filter((path) => path === "index.html" || path.endsWith(`${sep}index.html`))
+    .map((path) => `blog/${path.slice(0, -"index.html".length).split(sep).join("/")}`)
+    .sort();
+const BLOG_PAGES = blogPages();
+/** The blog's posts: its pages that aren't its list or its tags'. */
+const BLOG_POSTS =BLOG_PAGES.filter((path) => path !== "blog/" && !path.startsWith("blog/tags/"));
+const PAGES = ["", "spec/", "guides/", ...bookPages("authors"), ...bookPages("developers"), ...BLOG_PAGES];
 const VIEWS = [
   { name: "desktop", width: 1280, height: 860 },
   { name: "phone", width: 390, height: 844 },
@@ -56,6 +67,9 @@ function check(condition: boolean, message: string): asserts condition {
 /** A page that records its errors and failed requests. */
 async function open(browser: Browser, path: string, options: { width: number; height: number; scheme?: "light" | "dark" }): Promise<{ page: Page; problems: string[] }> {
   const page = await browser.newPage({ viewport: { width: options.width, height: options.height }, colorScheme: options.scheme ?? "light" });
+  // The blog's comments are giscus's, a service of its own: its script is answered here, empty, so the check sees it
+  // asked for and never depends on giscus, nor on a post's discussion existing yet.
+  await page.route("https://giscus.app/**", (route) => route.fulfill({ status: 200, contentType: "text/javascript", body: "" }));
   const problems: string[] = [];
   page.on("pageerror", (error) => problems.push(`page error: ${error.message}`));
   page.on("console", (message) => {
@@ -292,7 +306,7 @@ async function links(browser: Browser): Promise<void> {
       check(response.ok, `/${path} links to ${url.href}, which is ${String(response.status)}`);
     }
   }
-  for (const place of ["", "spec/", "playground/"]) check(seen.has(ROOT + place), `nothing links to /${place}`);
+  for (const place of ["", "spec/", "blog/", "playground/"]) check(seen.has(ROOT + place), `nothing links to /${place}`);
 }
 
 async function spec(browser: Browser): Promise<void> {
@@ -355,6 +369,31 @@ async function search(browser: Browser): Promise<void> {
   await phone.page.close();
 }
 
+/** The blog: every page names its feed; the feed and search have every post; a post's comments load only once a reader scrolls to them. */
+async function blog(browser: Browser): Promise<void> {
+  const feed = await fetch(`${ROOT}blog/feed.xml`);
+  check(feed.ok && (feed.headers.get("content-type") ?? "").includes("xml"), `the blog's feed is ${String(feed.status)}, ${feed.headers.get("content-type") ?? "no type"}`);
+  const entries = await feed.text();
+  for (const post of BLOG_POSTS) check(entries.includes(`https://compmd.dev/${post}`), `the blog's feed lacks /${post}`);
+  const searched = JSON.parse(readFileSync(join(DIST, "search.json"), "utf8")) as { url: string }[];
+  for (const post of BLOG_POSTS) check(searched.some(({ url }) => url.startsWith(post)), `search's index has nothing of /${post}`);
+  for (const path of BLOG_PAGES) {
+    const { page } = await open(browser, path, VIEWS[0]);
+    const named = await page.locator("link[rel='alternate'][type='application/atom+xml']").getAttribute("href");
+    check(named === "/blog/feed.xml", `/${path} names ${named ?? "no feed"}, not the blog's feed`);
+    await page.close();
+  }
+  for (const path of BLOG_POSTS) {
+    // Its HTML doesn't load giscus: its script, scrolled near, does.
+    const html = readFileSync(join(DIST, path, "index.html"), "utf8");
+    check(!/<script[^>]*\ssrc="https:\/\/giscus\.app/.test(html), `/${path} loads its comments with the page, before they are scrolled to`);
+    const { page } = await open(browser, path, VIEWS[0]);
+    await page.locator("#comments").scrollIntoViewIfNeeded();
+    await page.waitForFunction(() => document.querySelector("#comments script[src='https://giscus.app/client.js']") !== null);
+    await page.close();
+  }
+}
+
 async function playground(browser: Browser): Promise<void> {
   const { page, problems } = await open(browser, "playground/", VIEWS[0]);
   const documents = await page.locator("select").first().locator("option").count();
@@ -368,10 +407,11 @@ async function playground(browser: Browser): Promise<void> {
   await page.close();
 }
 
-/** The page's bytes before the live parts, gzipped: the HTML and what it loads itself. */
-function weight(): number {
-  const html = readFileSync(join(DIST, "index.html"), "utf8");
-  const assets = [...html.matchAll(/(?:src|href)="\.\/(assets\/[^"]+\.(?:js|css))"/g)].map(([, path]) => readFileSync(join(DIST, path ?? "")));
+/** The page at `path`'s bytes before its live parts, in KB gzipped: its HTML and the scripts and stylesheets it loads itself. */
+function weightOf(path: string): number {
+  const html = readFileSync(join(DIST, path, "index.html"), "utf8");
+  const loaded = [...html.matchAll(/(?:src|href)="([^"]+\.(?:js|css))"/g)].map(([, href]) => new URL(href ?? "", ROOT + path)).filter((url) => url.href.startsWith(ROOT));
+  const assets = loaded.map((url) => readFileSync(join(DIST, decodeURIComponent(url.pathname))));
   return [Buffer.from(html), ...assets].reduce((sum, bytes) => sum + gzipSync(bytes).length, 0) / 1024;
 }
 
@@ -433,6 +473,7 @@ try {
     ["the links", links],
     ["the spec", spec],
     ["search", search],
+    ["the blog", blog],
     ["the playground", playground],
   ] as const) {
     await step(browser);
@@ -440,9 +481,14 @@ try {
   }
   oneCopy();
   console.log("ok: Shiki and Temml once each, in the frames' files");
-  const kb = weight();
+  const kb = weightOf("");
   check(kb <= BUDGET_KB, `the page before its live parts is ${kb.toFixed(1)} KB gzipped, over ${String(BUDGET_KB)} KB`);
   console.log(`ok: the page before its live parts is ${kb.toFixed(1)} KB gzipped (budget ${String(BUDGET_KB)} KB)`);
+  for (const post of BLOG_POSTS) {
+    const postKb = weightOf(post);
+    check(postKb <= BUDGET_KB, `/${post} is ${postKb.toFixed(1)} KB gzipped, over ${String(BUDGET_KB)} KB`);
+    console.log(`ok: /${post} is ${postKb.toFixed(1)} KB gzipped (budget ${String(BUDGET_KB)} KB)`);
+  }
   if (!process.argv.includes("--no-timing")) {
     const ms = await paint(browser);
     check(ms <= BUDGET_PAINT_MS, `the largest paint is ${ms.toFixed(0)} ms on a phone over fast 3G, over ${String(BUDGET_PAINT_MS)} ms`);

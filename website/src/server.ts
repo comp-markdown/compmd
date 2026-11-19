@@ -4,6 +4,7 @@ import { render } from "svelte/server";
 import type { BookProps } from "../build/book.ts";
 import type { Rendered } from "../build/prerender.ts";
 import App from "./App.svelte";
+import BlogLayout from "./BlogLayout.svelte";
 import Book from "./Book.svelte";
 import Guide from "./Guide.svelte";
 import NotFound from "./NotFound.svelte";
@@ -24,6 +25,12 @@ export function renderSpecPage(props: ComponentProps<typeof Spec>): Rendered {
 /** A page of the guides, static: nothing hydrates it. */
 export function renderGuidePage(props: ComponentProps<typeof Guide>): Rendered {
   const { head, body } = render(Guide, { props });
+  return { head, body };
+}
+
+/** The blog's layout, static: the site's header and footer around `content`, where each page of the blog goes. */
+export function renderBlogLayout(props: ComponentProps<typeof BlogLayout>): Rendered {
+  const { head, body } = render(BlogLayout, { props });
   return { head, body };
 }
 

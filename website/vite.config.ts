@@ -1,9 +1,11 @@
+import { fileFor, sendBlogFile } from "@compmd/blog";
 import { compmd } from "@compmd/vite";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { chromium, type Browser } from "playwright-core";
 import { defineConfig, type Plugin } from "vite";
+import { BLOG_FOLDER, blogLayout, BLOG_PATH, buildBlog } from "./build/blog.ts";
 import { bookPages, type BookPage, type BookProps } from "./build/book.ts";
 import { snapshotsOf } from "./build/plugin.ts";
 import { guidePages, type GuidePage } from "./build/guide-pages.ts";
@@ -158,6 +160,40 @@ function guideInDev(): Plugin {
 }
 
 /**
+ * In the dev server, the blog (`build/blog.ts`) from the working tree, drafts included, built again for each page asked
+ * for, as `cblo dev` builds it, in the layout made from the site's header and footer as they are then.
+ */
+function blogInDev(): Plugin {
+  const base = `/${BLOG_PATH}`;
+  return {
+    name: "compmd-blog-dev",
+    apply: "serve",
+    configureServer(server) {
+      server.middlewares.use((request, response, next) => {
+        const pathname = new URL(request.url ?? "/", "http://localhost").pathname;
+        if (!pathname.startsWith(base)) {
+          next();
+          return;
+        }
+        const respond = async () => {
+          const { renderBlogLayout } = (await server.ssrLoadModule("/src/server.ts")) as { renderBlogLayout: (props: { content: string }) => Rendered };
+          const template = await server.transformIndexHtml(base, readFileSync(join(BLOG_FOLDER, "index.html"), "utf8"));
+          const layout = blogLayout(template, (props) => devStylesheets(renderBlogLayout(props)), () => "");
+          const { site } = await buildBlog({ layout, drafts: true, reuseClient: true });
+          const file = fileFor(site, base, pathname);
+          if (file === undefined) {
+            next();
+            return;
+          }
+          sendBlogFile(response, site, file);
+        };
+        respond().catch(next);
+      });
+    },
+  };
+}
+
+/**
  * In the dev server, a PDF asked for (the books' and the draft spec's), printed from the working tree's page when it is
  * asked for, as the build prints it (`build/print.ts`) but for the examples' pictures: a few seconds, in the installed
  * Chrome.
@@ -200,10 +236,10 @@ function pdfInDev(): Plugin {
 export default defineConfig({
   base: "./",
   // `compmd()` gives the site its own pack (`app/`, trusted) and the sandbox's frames, under `compmd/`.
-  plugins: [snapshotsOf(join(import.meta.dirname, "content"), import.meta.dirname), assembled(), specInDev(), guideInDev(), searchInDev(), pdfInDev(), svelte(), compmd()],
+  plugins: [snapshotsOf(join(import.meta.dirname, "content"), import.meta.dirname), assembled(), specInDev(), guideInDev(), blogInDev(), searchInDev(), pdfInDev(), svelte(), compmd()],
   build: {
     target: "es2024",
-    rolldownOptions: { input: { index: "index.html", spec: "spec/index.html", guides: "guides/index.html" } },
+    rolldownOptions: { input: { index: "index.html", spec: "spec/index.html", guides: "guides/index.html", blog: "blog/index.html" } },
   },
   server: {
     fs: { allow: [".."] },

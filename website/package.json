@@ -23,6 +23,7 @@
     "svelte": "5.57.2"
   },
   "devDependencies": {
+    "@compmd/blog": "workspace:*",
     "@compmd/editor": "workspace:*",
     "@compmd/vite": "workspace:*",
     "@eslint/js": "10.0.1",

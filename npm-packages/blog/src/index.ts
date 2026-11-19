@@ -2,6 +2,7 @@
 // are what it is built from, for a site that builds its blog in its own build.
 export { buildSite, type BuildOptions, type Site } from "./build.ts";
 export { BlogError, configOf, readConfig, type BlogConfig, type Comments } from "./config.ts";
+export { CONTENT_MARKER } from "./layout.ts";
 export { newPost } from "./new.ts";
 export { readPosts, type Post } from "./posts.ts";
-export { serve, writeSite } from "./serve.ts";
+export { fileFor, sendBlogFile, serve, writeSite } from "./serve.ts";

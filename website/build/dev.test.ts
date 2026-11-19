@@ -1,5 +1,5 @@
 // @vitest-environment node
-// The dev server's spec and guide pages, in Chrome and WebKit: each paints styled from its HTML alone, as the build's
+// The dev server's spec, guide and blog pages, in Chrome and WebKit: each paints styled from its HTML alone, as the build's
 // prerendered pages do, so following a link shows no unstyled page while its script loads. And its PDFs, printed when
 // asked for.
 import { join } from "node:path";
@@ -8,7 +8,7 @@ import { createServer, type ViteDevServer } from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 const PORT = 4192;
-const PAGES = ["spec/", "guides/", "guides/developers/", "guides/developers/quick-start/"];
+const PAGES = ["spec/", "guides/", "guides/developers/", "guides/developers/quick-start/", "blog/", "blog/the-compmd-blog/"];
 /** The site's desk colour in the light scheme, `--desk` in `src/base.css`. */
 const DESK = "rgb(233, 237, 241)";
 

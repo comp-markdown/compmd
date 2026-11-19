@@ -1,4 +1,4 @@
-# The site on GitHub Pages: the landing page, the playground and the spec, built from this repository, checked in
+# The site on GitHub Pages: the landing page, the playground, the spec, the guides and the blog, built from this repository, checked in
 # Chrome, and deployed (website/docs/design.md).
 name: Pages
 
@@ -11,6 +11,7 @@ on:
       - website/**
       - npm-packages/editor/**
       - npm-packages/render/**
+      - npm-packages/blog/**
       - guides/**
       - npm-packages/wasm/**
       - crates/processor/**

@@ -1,11 +1,12 @@
 // Writes the server-rendered pages into the client build, `dist/`: the landing page, each version of the spec with its
 // companion (`build/versions.ts`, `build/companion.ts`), the draft from the working tree and each release from its tag,
-// the guides' pages and the page a wrong address gets, `404.html`; the search index of them, `search.json`
-// (`build/search.ts`); and `sitemap.xml` and `robots.txt` (`build/sitemap.ts`). Runs after `vite build` and the server
-// build.
+// the guides' pages, the blog (`build/blog.ts`) and the page a wrong address gets, `404.html`; the search index of them,
+// `search.json` (`build/search.ts`); and `sitemap.xml` and `robots.txt` (`build/sitemap.ts`). Runs after `vite build`
+// and the server build.
 import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { blogLayout, BLOG_PATH, buildBlog } from "../build/blog.ts";
 import { renderSpecPage } from "../build/companion.ts";
 import { bookPages, type BookProps } from "../build/book.ts";
 import { guidePages } from "../build/guide-pages.ts";
@@ -26,6 +27,7 @@ const server = (await import(join(import.meta.dirname, "../dist-server/server.js
   renderSpecPage: (props: ComponentProps<typeof Spec>) => Rendered;
   renderGuidePage: (props: ComponentProps<typeof Guide>) => Rendered;
   renderBookPage: (props: BookProps) => Rendered;
+  renderBlogLayout: (props: { content: string }) => Rendered;
   renderNotFoundPage: () => Rendered;
 };
 const git = (...args: string[]) => execFileSync("git", args, { cwd: REPO, encoding: "utf8" });
@@ -76,9 +78,18 @@ for (const page of guide) {
   mkdirSync(join(DIST, page.folder), { recursive: true });
   writeFileSync(join(DIST, page.folder, "index.html"), prerendered(relocated(guideTemplate, page.root), server.renderGuidePage(page.props), stylesheet(page.folder)));
 }
+// The blog, without its drafts, in the layout made from the site's header and footer.
+const blogTemplate = readFileSync(join(DIST, BLOG_PATH, "index.html"), "utf8");
+const blog = await buildBlog({ layout: blogLayout(blogTemplate, server.renderBlogLayout, stylesheet(BLOG_PATH)), drafts: false });
+for (const warning of blog.site.warnings) console.warn(`blog: ${warning}`);
+for (const [path, content] of blog.site.files) {
+  const file = join(DIST, BLOG_PATH, ...path.split("/"));
+  mkdirSync(dirname(file), { recursive: true });
+  writeFileSync(file, content);
+}
 // Each book as one page, which `scripts/pdf.ts` prints into the book's PDF, then removes.
-// The search index: every section of the landing page, the spec at `spec/` and the guides.
-writeFileSync(join(DIST, "search.json"), JSON.stringify(sectionsOf(sitePages(landing.body, specAtSpec, guide))));
+// The search index: every section of the landing page, the spec at `spec/`, the guides and the blog's posts.
+writeFileSync(join(DIST, "search.json"), JSON.stringify(sectionsOf([...sitePages(landing.body, specAtSpec, guide), ...blog.posts])));
 const books = await bookPages((path) => readFileSync(join(REPO, "guides", path), "utf8"), `${REPOSITORY}/blob/main/`);
 for (const page of books) {
   mkdirSync(join(DIST, page.folder), { recursive: true });
@@ -87,6 +98,8 @@ for (const page of books) {
 // The page a wrong address gets, at any depth: the guides' page, with its links and stylesheets from the site's root.
 writeFileSync(join(DIST, "404.html"), prerendered(relocated(guideTemplate, "/"), server.renderNotFoundPage(), stylesheet("")));
 // What the site tells search engines: every page made above, and the playground.
-writeFileSync(join(DIST, "sitemap.xml"), sitemapOf(["", ...versions.map((page) => page.folder), ...guide.map((page) => page.folder), "playground/"]));
+writeFileSync(join(DIST, "sitemap.xml"), sitemapOf(["", ...versions.map((page) => page.folder), ...guide.map((page) => page.folder), ...blog.folders, "playground/"]));
 writeFileSync(join(DIST, "robots.txt"), ROBOTS);
-console.log(`Prerendered the landing page, ${String(pages.length)} page(s) of the spec (${pages.map((page) => page.folder).join(", ")}), ${String(guide.length)} of the guides and ${String(books.length)} books to print`);
+console.log(
+  `Prerendered the landing page, ${String(pages.length)} page(s) of the spec (${pages.map((page) => page.folder).join(", ")}), ${String(guide.length)} of the guides, ${String(blog.folders.length)} of the blog and ${String(books.length)} books to print`,
+);

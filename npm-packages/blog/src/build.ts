@@ -26,6 +26,11 @@ export interface BuildOptions {
   now?: string;
   /** Whether the page's script, once built, is kept for the next build of the same blog: `cblo dev`'s. */
   reuseClient?: boolean;
+  /**
+   * The layout, in place of the blog's `layout.html`: for a site that makes it from its own pages' header and footer
+   * as it builds them, so the blog's pages stay the same as the site's.
+   */
+  layout?: string;
 }
 
 /** A blog built: each file by its path in the site, and the build's warnings. */
@@ -79,13 +84,13 @@ function liveOf(post: Post, script: string): string {
 }
 
 /** The blog in `dir`, built. @throws BlogError for what is wrong with it, a post's errors among them. */
-export async function buildSite(dir: string, { drafts, now = new Date().toISOString(), reuseClient = false }: BuildOptions): Promise<Site> {
+export async function buildSite(dir: string, { drafts, now = new Date().toISOString(), reuseClient = false, layout }: BuildOptions): Promise<Site> {
   const config = await readConfig(dir);
   const posts = await readPosts(dir, config, { drafts });
-  const layout = existsSync(join(dir, LAYOUT)) ? await readFile(join(dir, LAYOUT), "utf8") : defaultLayout(config);
+  const pageLayout = layout ?? (existsSync(join(dir, LAYOUT)) ? await readFile(join(dir, LAYOUT), "utf8") : defaultLayout(config));
   const theme = [await readFile(DEFAULT_THEME, "utf8"), existsSync(join(dir, THEME)) ? await readFile(join(dir, THEME), "utf8") : ""].join("\n");
   const highlight = await highlighter();
-  const given = await packsOf(dir);
+  const blogPacks = await packsOf(dir);
   const base = new URL(config.url).pathname;
   const warnings: string[] = [];
   const html = new Map<string, string>();
@@ -94,7 +99,7 @@ export async function buildSite(dir: string, { drafts, now = new Date().toISOStr
   let client: Client | undefined;
   for (const [i, post] of posts.entries()) {
     // A post's page is a folder below the posts', so its relative links take one `../` more.
-    const rendered = await renderPost(post, now, highlight, given, "../");
+    const rendered = await renderPost(post, now, highlight, blogPacks, "../");
     warnings.push(...rendered.warnings);
     html.set(post.slug, rendered.html);
     const page = postPage(config, post, rendered, posts[i - 1], posts[i + 1]);
@@ -111,7 +116,7 @@ export async function buildSite(dir: string, { drafts, now = new Date().toISOStr
   }
   const tags = tagsIn(posts);
   if (tags.size > 0) pages.push(tagsPage(config, tags), ...[...tags].map(([tag, tagged]) => tagPage(config, tag, tagged)));
-  for (const page of pages) files.set(`${page.path}index.html`, applyLayout(layout, { head: headOf(config, page), content: page.content }));
+  for (const page of pages) files.set(`${page.path}index.html`, applyLayout(pageLayout, { head: headOf(config, page), content: page.content }));
   files.set("style.css", theme);
   files.set("feed.xml", atom(config, posts, html));
   files.set("posts.json", postsJson(config, posts));

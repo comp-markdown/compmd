@@ -1,0 +1,15 @@
+{
+  "title": "The CompMD blog",
+  "url": "https://compmd.dev/blog/",
+  "author": "Hakan Serce",
+  "lang": "en",
+  "description": "Why CompMD is as it is, where it is going, how it compares, and what each release brings.",
+  "comments": {
+    "giscus": {
+      "repo": "comp-markdown/compmd",
+      "repoId": "R_kgDOVWUzzA",
+      "category": "Blog",
+      "categoryId": "DIC_kwDOVWUzzM4DLhHM"
+    }
+  }
+}

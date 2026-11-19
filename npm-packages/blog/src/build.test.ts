@@ -108,6 +108,10 @@ describe("buildSite", () => {
       expect(draft).toContain('<section id="comments"');
       expect(draft).toContain('"data-mapping","pathname"');
       expect(built.files.get("style.css")).toContain(".mine {}");
+      // A layout given, as a site gives the one it makes, in place of the blog's own.
+      const inSiteLayout = await buildSite(own, { drafts: false, now: NOW, layout: "<html><head></head><body><nav>the site's</nav><!-- content --></body></html>" });
+      expect(inSiteLayout.files.get("index.html")).toContain("<nav>the site's</nav>");
+      expect(inSiteLayout.files.get("index.html")).not.toContain("<nav>mine</nav>");
     } finally {
       await rm(own, { recursive: true, force: true });
     }

@@ -1,0 +1,36 @@
+/* The CompMD blog's look over @compmd/blog's default: the site's own. Its layout, made from the site's header and
+   footer, brings the site's stylesheets, so the blog's colours are the site's tokens, light and dark. */
+
+:root {
+  --blog-text: var(--ink);
+  --blog-muted: var(--ink-secondary);
+  --blog-link: var(--accent);
+  --blog-line: var(--rule);
+  --blog-background: var(--desk);
+}
+
+body {
+  font: 17px/1.55 var(--sans);
+}
+
+/* One column: the blog has no contents beside its text. */
+.reading.blog {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* A post's title in the list is a link, not a section: none of a section's rule and room above it. */
+.spec .post-list h2 {
+  margin: 0 0 0.25rem;
+  padding: 0;
+  border: 0;
+  font-size: 1.35rem;
+}
+
+.spec .post-list h2 a {
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.spec .post-list h2 a:hover {
+  color: var(--accent);
+}

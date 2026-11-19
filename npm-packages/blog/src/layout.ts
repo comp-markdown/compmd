@@ -5,7 +5,7 @@ import { BlogError, type BlogConfig } from "./config.ts";
 import { escape } from "./html.ts";
 
 /** Where a page's content goes in the layout. */
-export const CONTENT = "<!-- content -->";
+export const CONTENT_MARKER = "<!-- content -->";
 /** A blog's own layout's file. */
 export const LAYOUT = "layout.html";
 
@@ -21,7 +21,7 @@ export function defaultLayout(config: BlogConfig): string {
 <body>
 <header class="blog-header"><a href="${escape(home)}">${escape(config.title)}</a></header>
 <main class="blog-main">
-${CONTENT}
+${CONTENT_MARKER}
 </main>
 <footer class="blog-footer">Written in <a href="https://compmd.dev/">CompMD</a>.</footer>
 </body>
@@ -31,7 +31,7 @@ ${CONTENT}
 
 /** `layout` with a page's `head` before `</head>` and its `content` where it says. @throws BlogError when it lacks either. */
 export function applyLayout(layout: string, { head, content }: { head: string; content: string }): string {
-  if (!layout.includes(CONTENT)) throw new BlogError(`${LAYOUT} has no \`${CONTENT}\` for each page's content`);
+  if (!layout.includes(CONTENT_MARKER)) throw new BlogError(`${LAYOUT} has no \`${CONTENT_MARKER}\` for each page's content`);
   if (!layout.includes("</head>")) throw new BlogError(`${LAYOUT} has no \`</head>\` for each page's head`);
-  return layout.replace("</head>", () => `${head}\n</head>`).replace(CONTENT, () => content);
+  return layout.replace("</head>", () => `${head}\n</head>`).replace(CONTENT_MARKER, () => content);
 }

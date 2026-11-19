@@ -2,7 +2,7 @@
 // again for each page asked for, so a saved post shows when the page is reloaded.
 
 import { mkdir, rm, writeFile } from "node:fs/promises";
-import { createServer, type Server } from "node:http";
+import { createServer, type Server, type ServerResponse } from "node:http";
 import { dirname, extname, join } from "node:path";
 import { CONTRACT_HEADERS } from "@compmd/vite";
 import { readConfig } from "./config.ts";
@@ -45,6 +45,16 @@ export function fileFor(site: Site, base: string, pathname: string): string | un
 }
 
 /**
+ * Sends `file` of `site` as the response, with its content type, and the sandbox's frames and packs with the headers
+ * every host serves them with (docs/hosting.md, decision 8).
+ */
+export function sendBlogFile(response: ServerResponse, site: Site, file: string): void {
+  const contract = file.startsWith("compmd/frames/") || file.startsWith("compmd/packs/") ? CONTRACT_HEADERS : {};
+  response.writeHead(200, { "content-type": TYPES[extname(file)] ?? "application/octet-stream", ...contract });
+  response.end(site.files.get(file));
+}
+
+/**
  * Serves the blog in `dir` on `port`, at its address's path (`/blog/`), on this machine only: each request builds it
  * again, so a saved post shows when its page is reloaded, and an error in it shows on the page.
  */
@@ -60,10 +70,7 @@ export async function serve(dir: string, port: number, options: BuildOptions): P
           response.end(pathname === "/" ? "" : `Not in the blog: ${pathname}`);
           return;
         }
-        // The sandbox's frames and packs, as every host serves them (docs/hosting.md, decision 8).
-        const contract = file.startsWith("compmd/frames/") || file.startsWith("compmd/packs/") ? CONTRACT_HEADERS : {};
-        response.writeHead(200, { "content-type": TYPES[extname(file)] ?? "application/octet-stream", ...contract });
-        response.end(site.files.get(file));
+        sendBlogFile(response, site, file);
       },
       (error: unknown) => {
         response.writeHead(500, { "content-type": "text/plain; charset=utf-8" });

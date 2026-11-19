@@ -993,6 +993,9 @@ importers:
         specifier: 5.57.2
         version: 5.57.2(@typescript-eslint/types@8.72.0)
     devDependencies:
+      '@compmd/blog':
+        specifier: workspace:*
+        version: link:../npm-packages/blog
       '@compmd/editor':
         specifier: workspace:*
         version: link:../npm-packages/editor
