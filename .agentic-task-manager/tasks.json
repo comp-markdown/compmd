@@ -8970,7 +8970,7 @@
       "description": "WebKit's cost in highlighting is Shiki's JavaScript engine compiling a grammar's regexes the first time each runs: a 1.1 s frame for the first TypeScript block, and later long frames as new rules first match. With Oniguruma, as WebAssembly, the first tokenizing takes 30 ms and nothing after it is long: with one Shiki for the page, 83 ms blocked on opening and 10 ms over a skim, where the JavaScript engine has 1.2 s and 0.9 s (the spike CMD-252, [its README](spikes/highlight-perf/README.md), *shared + oniguruma*). In Chromium the two are as fast.\n\n## Change\n- In host mode the shared Shiki (the task before this one) uses Oniguruma (`@shikijs/engine-oniguruma`) when the page can compile WebAssembly, and the JavaScript engine, as today, when it can't: a page whose policy has no `'wasm-unsafe-eval'` refuses it, and highlighting must still work there.\n- The WebAssembly ships once, with the frames' files beside `highlight.js` (622 KB, 232 KB gzipped), loaded with the first code block; the site's check that Shiki ships once covers it.\n- `@compmd/vite`'s `cspFor` (`npm-packages/vite/src/csp.ts`) adds `'wasm-unsafe-eval'` to the host page's `script-src`, so a host that takes its policy from it gets Oniguruma; the docs say what it allows (compiling WebAssembly, in the host's own page, which runs the host's own code) and that a host may leave it out.\n- **The frames stay on the JavaScript engine:** their policy refuses WebAssembly, and whether it should allow it is a design of its own (its own task).\n\n## Tests\n- Unit: the engine chosen when WebAssembly compiles and when it is refused.\n- Browser (Chrome and WebKit, host mode): code highlighted under a policy with `'wasm-unsafe-eval'` and under one without, the same tokens.\n- `cspFor`'s tests; the hosting check and the Tauri example still pass (`cargo make tauri-check`).\n- Measured with the spike's page, before and after, in the task's note.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [
         "01a1f2b1-fd0d-721c-bf49-5ed9548584bf"
       ],
@@ -8982,7 +8982,7 @@
         "docs/hosting.md"
       ],
       "created_at": "2026-11-19T07:25:13Z",
-      "updated_at": "2026-11-19T08:18:12Z",
+      "updated_at": "2026-11-19T08:45:44Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -8995,7 +8995,24 @@
       "number": 257,
       "key_final": false,
       "started_at": "2026-11-19T08:18:12Z",
-      "started_by": "claude:79612601"
+      "started_by": "claude:79612601",
+      "commit": "b493155c607f50a075b9dd1ea216a2ed784817b3",
+      "code_reviews": [
+        {
+          "id": "01a1f2fb-b4ee-71b9-a099-c82d641a3ef7",
+          "ref": "CR-14"
+        }
+      ],
+      "review_requested_at": "2026-11-19T08:45:44Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-19T08:45:44Z",
+          "kind": "review",
+          "text": "CR-14: Oniguruma in host mode, where the page allows WebAssembly",
+          "by": "claude:79612601"
+        }
+      ]
     },
     {
       "id": "01a1f2b1-fd0d-721c-bf49-5edb17e6e4f3",

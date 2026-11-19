@@ -1,0 +1,107 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "41778c423a72b73fac12e62780a96ea2afb3ed08",
+    "head": "b493155c607f50a075b9dd1ea216a2ed784817b3"
+  },
+  "files": [
+    {
+      "path": "crates/tauri/examples/tauri-app/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/tauri/examples/tauri-app/src-tauri/tauri.conf.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/hosting.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/tauri-plugin.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/developers/19-a-tauri-app.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/package.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/from-frames.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/highlight/highlight.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/highlight/highlight.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/index.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/highlight-policy.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/src/csp.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/src/csp.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spikes/highlight-perf/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spikes/highlight-perf/measure.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spikes/highlight-perf/results-sandbox-wasm.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/highlight-perf/src/main.ts",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-19T08:45:44Z"
+}
