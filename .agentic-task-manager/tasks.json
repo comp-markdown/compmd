@@ -8569,13 +8569,13 @@
       "description": "A host that shows many code blocks (a diff viewer: hundreds of short runs, each its own view) reports that in WebKit highlighting blocks the page for seconds, while Chromium is smooth: one frame of over a second when the first block's grammar loads, then about 24 ms per run, piled into frames of 100 ms to 1 s. This spike measures it on a test page of our own and tries each way to lower it; the results decide what goes into the packages, as tasks of their own. Nothing here changes the packages.\n\n## The test page\n\n`spikes/highlight-perf/`: a page of many short TypeScript runs, each a page of its own (`@compmd/render`'s `createPage`), as a diff viewer has them, with the highlighter swapped per variant; a script that opens it in Playwright's WebKit and Chromium, scrolls through it as a reader skims, and reports.\n\n## What is measured\n\n- **Blocked:** the time in frames over 50 ms, from the gaps between animation frames (WebKit has no long-task API), and the longest frame, on opening and over the skim.\n- **Waiting:** from a run's page rendering to its block highlighted, median and 95th percentile.\n- **Where the time goes:** Shiki's setup, tokenizing, and drawing the tokens.\n\n## Variants\n\n1. Today's: a Shiki per view, every block highlighted as it renders.\n2. One Shiki for the page, shared by its views.\n3. Sliced: a block per task, yielding between, the blocks on screen first.\n4. Grammars prepared ahead: Shiki's precompiled languages with its raw JavaScript engine.\n5. Tokenizing in a worker (host mode; a strict frame's policy refuses workers).\n6. Oniguruma as WebAssembly (host mode; a strict frame's policy refuses WebAssembly).\n7. A cache of tokens by text and language, for a run seen again.\n8. The combinations that the single variants suggest.\n\n## Done when\n\nThe results, with each variant's numbers in both browsers and what they mean for the packages, are in `spikes/highlight-perf/README.md`, and the variants worth carrying over are proposed as tasks.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [],
       "files": [
         "spikes/highlight-perf/"
       ],
       "created_at": "2026-11-18T23:24:03Z",
-      "updated_at": "2026-11-18T23:24:07Z",
+      "updated_at": "2026-11-19T02:38:27Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -8588,7 +8588,24 @@
       "number": 252,
       "key_final": false,
       "started_at": "2026-11-18T23:24:07Z",
-      "started_by": "claude:79612601"
+      "started_by": "claude:79612601",
+      "commit": "51a973f82cdc8531fe19344a5aee7683e5cf2c7d",
+      "code_reviews": [
+        {
+          "id": "01a1f1ab-7170-7533-84d4-1b47a32c9911",
+          "ref": "CR-7"
+        }
+      ],
+      "review_requested_at": "2026-11-19T02:38:27Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-19T02:38:27Z",
+          "kind": "review",
+          "text": "CR-7: Spike: code highlighting's cost in WebKit",
+          "by": "claude:79612601"
+        }
+      ]
     }
   ]
 }

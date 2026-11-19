@@ -1,0 +1,87 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "7bd4acdc0bbe49f55dbfdfe0d5da3e3a5a9a43ec",
+    "head": "51a973f82cdc8531fe19344a5aee7683e5cf2c7d"
+  },
+  "files": [
+    {
+      "path": "pnpm-lock.yaml",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "pnpm-workspace.yaml",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spikes/highlight-perf/README.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/highlight-perf/index.html",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/highlight-perf/measure.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/highlight-perf/package.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/highlight-perf/results-first-pass.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/highlight-perf/results.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/highlight-perf/src/draw.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/highlight-perf/src/highlighters.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/highlight-perf/src/main.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/highlight-perf/src/runs.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/highlight-perf/src/shiki.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/highlight-perf/src/worker.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/highlight-perf/vite.config.ts",
+      "status": "added",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-19T02:38:27Z"
+}
