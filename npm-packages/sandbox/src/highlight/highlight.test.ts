@@ -55,9 +55,16 @@ describe("shikiHighlight", () => {
 });
 
 describe("the engine", () => {
-  it("is Oniguruma when the highlighter may use it and the page compiles WebAssembly, the JavaScript engine otherwise", async () => {
-    const [compiles, refuses] = [() => Promise.resolve(true), () => Promise.resolve(false)];
-    expect(await Promise.all([engineFor(true, compiles), engineFor(true, refuses), engineFor(false, compiles), engineFor(false, refuses)])).toEqual(["oniguruma", "javascript", "javascript", "javascript"]);
+  it("is Oniguruma when the highlighter may use it, the browser isn't Chromium's and the page compiles WebAssembly", async () => {
+    const page = (chromium: boolean, compiles: boolean) => ({ chromium, compiles: () => Promise.resolve(compiles) });
+    expect(
+      await Promise.all([
+        engineFor(true, page(false, true)),
+        engineFor(true, page(true, true)),
+        engineFor(true, page(false, false)),
+        engineFor(false, page(false, true)),
+      ]),
+    ).toEqual(["oniguruma", "javascript", "javascript", "javascript"]);
   });
 
   it("is asked of the page with an empty module, which a policy without 'wasm-unsafe-eval' refuses", async () => {

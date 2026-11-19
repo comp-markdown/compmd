@@ -1,10 +1,11 @@
 // The frames' highlighter in a host's page (host mode), under the page's own policy: Oniguruma where it allows
-// WebAssembly (`'wasm-unsafe-eval'`, as `@compmd/vite`'s `cspFor` gives it), the JavaScript engine where it doesn't, and
-// the same tokens either way. Each page is a frame of this one with that policy, which loads `highlight.js` from where
+// WebAssembly (`'wasm-unsafe-eval'`, as `@compmd/vite`'s `cspFor` gives it) and the browser isn't Chromium's, the
+// JavaScript engine otherwise, and the right tokens either way. Each page is a frame of this one with that policy, which loads `highlight.js` from where
 // the frames are served, as `framesHighlight` does.
 
 import type { CodeLines } from "@compmd/render";
 import { afterEach, describe, expect, it } from "vitest";
+import { engineFor } from "../src/highlight/highlight.ts";
 import { frames } from "./harness.ts";
 
 const placed: HTMLIFrameElement[] = [];
@@ -48,8 +49,15 @@ const textOf = (lines: CodeLines | undefined) => (lines ?? []).map((line) => lin
 /** The colour of the token `text`, in each theme. */
 const colorOf = (lines: CodeLines | undefined, text: string) => lines?.flat().find((token) => token.text === text)?.color;
 
+describe("the engine a browser runs", () => {
+  it("is the JavaScript engine in Chrome and Oniguruma in WebKit, on a page that compiles WebAssembly", async () => {
+    const chrome = navigator.userAgent.includes("Chrome");
+    expect(await engineFor(true)).toBe(chrome ? "javascript" : "oniguruma");
+  });
+});
+
 describe("code highlighted in a host's page", () => {
-  it("with Oniguruma where its policy allows WebAssembly, and the JavaScript engine where it doesn't", { timeout: 30_000 }, async () => {
+  it("under a policy that allows WebAssembly and under one that doesn't", { timeout: 30_000 }, async () => {
     const [allowed, refused] = await Promise.all([highlightedUnder("'wasm-unsafe-eval'"), highlightedUnder("")]);
     expect([allowed.compiles, refused.compiles]).toEqual([true, false]);
     expect([textOf(allowed.lines), textOf(refused.lines)]).toEqual([CODE, CODE]);

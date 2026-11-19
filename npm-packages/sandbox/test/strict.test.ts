@@ -58,6 +58,21 @@ describe("a strict frame", () => {
     expect(atHost.filter((kind) => !["font", "style", "prefetch"].includes(kind))).toEqual([]);
   });
 
+  it("compiles WebAssembly, which reaches only what its scripts do: nothing (T1, docs/webassembly-in-the-frames.md)", async () => {
+    const tag = tagged();
+    const result = await run(`async () => {
+      // A module that imports \`env.send\` and calls it as it starts: (import "env" "send" (func)) (start 0).
+      const bytes = new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0, 1, 4, 1, 96, 0, 0, 2, 12, 1, 3, 101, 110, 118, 4, 115, 101, 110, 100, 0, 0, 8, 1, 0]);
+      const sent = [];
+      const send = () => { sent.push(fetch(${JSON.stringify(denied)} + "attempt?${tag}-wasm").then(() => "reached", () => "refused")); };
+      await WebAssembly.instantiate(bytes, { env: { send } });
+      return { compiled: true, sent: await Promise.all(sent) };
+    }`);
+    expect(result).toEqual({ compiled: true, sent: ["refused"] });
+    await pause(200);
+    expect(await hits(denied, tag)).toEqual([]);
+  });
+
   it("can't reach the host's session or page (T2)", async () => {
     expect(
       await run(`async () => {

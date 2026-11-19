@@ -234,7 +234,7 @@ Two static documents, which the package builds and the host serves where it like
 
 | | `strict.html` | `permissive.html` |
 |---|---|---|
-| First policy, in a `<meta>` | `default-src 'none'`; scripts from the frames' origin, `blob:` modules and the import map by its hash; styles from the frames' origin and inline; `img-src data: blob:`; `font-src` from the frames' origin; `frame-src 'none'`; no objects, forms, workers or `<base>` | the same, without the network directives (`connect-src`, `img-src`, `font-src`, `media-src`, `default-src`) and nested frames |
+| First policy, in a `<meta>` | `default-src 'none'`; scripts from the frames' origin, `blob:` modules and the import map by its hash, and compiling WebAssembly (`'wasm-unsafe-eval'`, added 2026-11-19: [WebAssembly in the frames](webassembly-in-the-frames.md)); styles from the frames' origin and inline; `img-src data: blob:`; `font-src` from the frames' origin; `frame-src 'none'`; no objects, forms, workers or `<base>` | the same, without the network directives (`connect-src`, `img-src`, `font-src`, `media-src`, `default-src`) and nested frames |
 | Second policy | none: nothing to narrow | added by the frame before any component loads: `default-src 'none'`, the first's directives, the pack's origins its parent sends in `connect-src`, `img-src`, `font-src` and `media-src`, and `frame-src` naming the `strict.html` next to it by its full URL |
 | May nest | nothing | `strict.html` |
 

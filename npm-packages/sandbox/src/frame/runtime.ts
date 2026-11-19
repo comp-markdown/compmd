@@ -36,7 +36,8 @@ for (const name of ["RTCPeerConnection", "webkitRTCPeerConnection", "RTCDataChan
 /** Math typeset by Temml, which loads the first time a page has math. */
 const math = temmlMath();
 /** Code blocks highlighted by Shiki, which loads the first time a page has a code block. */
-const highlight = shikiHighlight();
+// Oniguruma where the frame compiles WebAssembly, which its policy allows (docs/webassembly-in-the-frames.md).
+const highlight = shikiHighlight({ webAssembly: true });
 
 /** Each component's stylesheet, adopted by the frame's document. */
 const sheets = new Map<string, CSSStyleSheet>();

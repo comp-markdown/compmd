@@ -1,6 +1,6 @@
 // Code blocks highlighted by Shiki, in both page modes (in the page's frame and use frames, or in the host's page), in
-// GitHub's light and dark themes. Shiki's core and its regex engine load the first time a page has a code block: the
-// JavaScript engine in the frames, whose policy refuses WebAssembly, and Oniguruma in a host's page that compiles it;
+// GitHub's light and dark themes. Shiki's core and its regex engine load the first time a page has a code block:
+// Oniguruma where the page compiles WebAssembly, the JavaScript engine in Chromium and where it doesn't (`engineFor`);
 // each language's grammar loads the first time a block of it shows. It gives each token's text and its colour in each
 // theme (`tokens.ts`); the renderer draws them.
 
@@ -37,13 +37,31 @@ export async function compilesWebAssembly(): Promise<boolean> {
   }
 }
 
+/** What the engine is chosen by: the page's browser, and whether the page compiles WebAssembly. */
+export interface EnginePage {
+  /** Whether the browser is Chromium's, which runs the JavaScript engine fast. */
+  chromium: boolean;
+  compiles(): Promise<boolean>;
+}
+
 /**
- * The engine a highlighter runs: Oniguruma, as WebAssembly, when it may (`webAssembly`) and the page compiles it,
- * otherwise the JavaScript engine. In WebKit the JavaScript engine compiles each of a grammar's regexes the first time
- * it runs, which blocks the page for a second on a first TypeScript block; Oniguruma doesn't.
+ * This page: Chromium's browsers alone have `navigator.userAgentData`, which a secure context has; a Chromium that
+ * hides it is taken for another browser, which costs time, never highlighting.
  */
-export async function engineFor(webAssembly: boolean, compiles: () => Promise<boolean> = compilesWebAssembly): Promise<Engine> {
-  return webAssembly && (await compiles()) ? "oniguruma" : "javascript";
+const THIS_PAGE: EnginePage = {
+  chromium: typeof navigator !== "undefined" && "userAgentData" in navigator,
+  compiles: compilesWebAssembly,
+};
+
+/**
+ * The engine a highlighter runs (docs/webassembly-in-the-frames.md, decision 2): Oniguruma, as WebAssembly, when it
+ * may (`webAssembly`), the browser isn't Chromium's and the page compiles it; otherwise the JavaScript engine. In
+ * WebKit the JavaScript engine compiles each of a grammar's regexes the first time it runs, which blocks the page for
+ * a second on a first TypeScript block, where Oniguruma takes 60 ms; in Chromium the JavaScript engine is as fast,
+ * and Oniguruma's compiling only costs more, in each frame.
+ */
+export async function engineFor(webAssembly: boolean, page: EnginePage = THIS_PAGE): Promise<Engine> {
+  return webAssembly && !page.chromium && (await page.compiles()) ? "oniguruma" : "javascript";
 }
 
 /** Loads Shiki's core, `engine` and the two themes, and Markdown with CompMD's syntax. */
@@ -62,9 +80,9 @@ async function loadShikis(engine: Engine): Promise<Shikis> {
 /** How a highlighter runs. */
 export interface ShikiOptions {
   /**
-   * Oniguruma, as WebAssembly, where the page compiles it; the JavaScript engine where it doesn't, as without. A page
-   * allows it with `'wasm-unsafe-eval'` in its policy's `script-src`. Its WebAssembly is inlined in a chunk of its own
-   * (232 KB gzipped), loaded with the first code block where it is used.
+   * Oniguruma, as WebAssembly, where the page compiles it and the browser isn't Chromium's (`engineFor`); the
+   * JavaScript engine otherwise, as without. A page allows it with `'wasm-unsafe-eval'` in its policy's `script-src`.
+   * Its WebAssembly is inlined in a chunk of its own (230 KB gzipped), loaded with the first code block where it is used.
    */
   webAssembly?: boolean;
 }
