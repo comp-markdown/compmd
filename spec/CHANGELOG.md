@@ -6,7 +6,7 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
 
 ### Unreleased
 
-- **WebAssembly in a sandbox (§15).** The informative note on browsers says a sandbox's policy may allow compiling WebAssembly (`'wasm-unsafe-eval'`), as for a highlighter's regex engine, since WebAssembly reaches only what the frame's scripts reach. No rule changes. Not breaking.
+- **WebAssembly in a sandbox (§15).** The informative note on browsers says a sandbox's policy may allow compiling WebAssembly (`'wasm-unsafe-eval'`), since WebAssembly reaches only what the frame's scripts reach. No rule changes. Not breaking.
 
 ### 1.0-draft.15, 2026-11-18
 
