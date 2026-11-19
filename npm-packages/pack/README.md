@@ -12,6 +12,7 @@ Everything a [CompMD](https://compmd.dev/) pack would otherwise copy into itself
 `npm create @compmd/pack` writes a pack on it ([`@compmd/create-pack`](https://github.com/comp-markdown/compmd/blob/main/npm-packages/create-pack/README.md)). It shares its version with the other `@compmd` packages.
 
 **Versions:**
+- **0.8.0:** the same as 0.7.1, on the sandbox's 0.8.0.
 - **0.7.1:** the same as 0.7.0; its homepage and links name the website's new address, [compmd.dev](https://compmd.dev/).
 - **0.7.0:** the same as 0.6.0, on the sandbox's 0.7.0.
 - **0.6.0:** the same as 0.5.0, on the sandbox's 0.6.0.

@@ -23,4 +23,4 @@ const answer = await respond(request, bundle);   // a Response
 It shares its version with the other `@compmd` packages ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
 
 **Versions:**
-- **0.7.1:** first version: `compmd-host`'s decision as WebAssembly, with `init` and `initSync`.
+- **0.8.0:** the first version: `respond`, `compmd-host`'s decision as WebAssembly, with `init` and `initSync`, and `@compmd/host/node`'s `folderBundle`. (`0.0.0` is a placeholder with no code.)

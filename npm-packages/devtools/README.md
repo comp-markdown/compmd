@@ -5,6 +5,7 @@ The [CompMD](https://compmd.dev/) Developer Tools as a part any page embeds ([th
 **Status: in development,** as the processor is; first released at 0.3.0, with the sandbox's observer it reads, and versioned with the other packages. Two ways to embed it (decision 3): the editor, below, and the inspector, attached to a view a host app already renders (*The inspector*).
 
 **Versions:**
+- **0.8.0:** the same tools as 0.7.1, on the sandbox's 0.8.0.
 - **0.7.1:** the same as 0.7.0; its homepage and links name the website's new address, [compmd.dev](https://compmd.dev/).
 - **0.7.0:** the same tools as 0.6.0, on the sandbox's 0.7.0.
 - **0.6.0:** several diagnostics in the Console scroll together, not each on its own; a use whose frame never loaded shows as stopped.

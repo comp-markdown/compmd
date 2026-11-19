@@ -71,4 +71,4 @@ as for any pack.
 
 The pack has its own version, for its language and its component's params.
 
-- **0.1.0:** the first version, not published yet.
+- **0.1.0:** the first version, published by `release-wireframe.yml`. (`0.0.0` is a placeholder with no code.)

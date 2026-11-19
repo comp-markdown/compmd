@@ -9,6 +9,9 @@ as any app's, read by [`@compmd/vite`](https://github.com/comp-markdown/compmd/t
 the page as it was built, and are drawn live once its script loads, through the sandbox; a post without them loads no
 script. Its tests open a live post in Chrome and WebKit.
 
+**Versions:**
+- **0.8.0:** the first version: `cblo new`, `cblo dev` and `cblo build`, the posts' pages, tags, an Atom feed and comments, each page within its size budget, and a post's host-language components drawn live. (`0.0.0` is a placeholder with no code.)
+
 ## A blog
 
 ```text

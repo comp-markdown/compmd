@@ -16,6 +16,9 @@ Options, after `--`: `--title "My notes"` (the folder's name by default), `--aut
 `blog.config.json` otherwise). It asks nothing, so it scripts the same way it runs. The new blog pins `@compmd/blog` at
 this package's version, as the two are released together.
 
+**Versions:**
+- **0.8.0:** the first version. (`0.0.0` is a placeholder with no code.)
+
 ## Licence
 
 MIT.
