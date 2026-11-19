@@ -8784,7 +8784,7 @@
       "description": "Each view has a settle loop of its own (`npm-packages/sandbox/src/settling.ts`), which at every change lists the document's `link[rel=stylesheet]` elements and awaits `document.fonts.ready`. Those are the document's facts: with many views in one document, each pays for them.\n\n## Change\nThe document-wide waits (stylesheets loaded, fonts ready) are shared by the views settling at the same time: one scan for all of them. What a view waits for of its own (its drawing, its frames, its images, a still animation frame) stays its own, and `settled` means what it does now ([the protocol's *Settled*](docs/sandbox-protocol.md#settled)).\n\n## Tests\nUnit tests: many views changing together scan the links once; a view still settles after its own latest change. The existing settling tests pass unchanged.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [
         "01a1f272-b584-7767-aae6-7e59371fdc9c"
       ],
@@ -8793,7 +8793,7 @@
         "npm-packages/sandbox/src/settling.test.ts"
       ],
       "created_at": "2026-11-19T07:02:11Z",
-      "updated_at": "2026-11-19T07:58:11Z",
+      "updated_at": "2026-11-19T08:05:06Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -8806,7 +8806,24 @@
       "number": 255,
       "key_final": false,
       "started_at": "2026-11-19T07:58:11Z",
-      "started_by": "claude:79612601"
+      "started_by": "claude:79612601",
+      "commit": "1cbc7eb02743a67dcfab4d02348d79f307bd2484",
+      "code_reviews": [
+        {
+          "id": "01a1f2d6-8037-7099-8967-15488c1007bd",
+          "ref": "CR-12"
+        }
+      ],
+      "review_requested_at": "2026-11-19T08:05:06Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-19T08:05:06Z",
+          "kind": "review",
+          "text": "CR-12: Settling reads the page’s links, not the whole page",
+          "by": "claude:79612601"
+        }
+      ]
     },
     {
       "id": "01a1f2b1-fd0d-721c-bf49-5ed9548584bf",

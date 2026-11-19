@@ -1,0 +1,27 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "453148149f4a40a607b734ce3479851e4addef4a",
+    "head": "1cbc7eb02743a67dcfab4d02348d79f307bd2484"
+  },
+  "files": [
+    {
+      "path": "npm-packages/sandbox/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/settling.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/settling.ts",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-19T08:05:06Z"
+}
