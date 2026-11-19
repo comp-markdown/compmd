@@ -5,7 +5,11 @@
 ## Decisions
 
 1. **Both frame documents allow compiling WebAssembly:** `'wasm-unsafe-eval'` in their `script-src`, and nothing else in their policies changes. Against the sandbox's threat model it gives component code nothing it hasn't already: a strict frame runs any code it writes itself today (`blob:` modules), and WebAssembly reaches nothing but through that code (*What it allows*, below). What it adds is the browser's WebAssembly engine as more surface for a browser bug, which every web page already has.
-2. **The frames' highlighter uses Oniguruma, its WebAssembly inlined in `highlight.js`** (`@shikijs/engine-oniguruma/wasm-inlined`), since a strict frame can fetch nothing, a `.wasm` file included. Where compiling is refused (a host's own frame documents with another policy, or a browser that refuses it), it falls back to the JavaScript engine, so highlighting never depends on it.
+2. **The highlighter uses Oniguruma, its WebAssembly inlined in `highlight.js`** (`@shikijs/engine-oniguruma/wasm-inlined`), since a strict frame can fetch nothing, a `.wasm` file included, **except in Chromium, where it uses the JavaScript engine** (revised 2026-11-19, after measuring each frame's cost, *Open points*). One rule for the frames and for a host-mode page:
+   - **Chromium** (Chrome, Edge, WebView2) runs the JavaScript engine fast, and there Oniguruma only costs more: 87 ms a frame against 32 ms, and its 230 KB. It is told by `navigator.userAgentData`, which only Chromium's browsers have, not by parsing the user agent string.
+   - **Elsewhere** (WebKit, and browsers not measured, such as Firefox) Oniguruma, which is fast in every browser measured: in WebKit it takes the first TypeScript block from about a second to 60 ms, and its tokens were right where the JavaScript engine's weren't (CMD-261).
+   - **A wrong guess costs time, never highlighting:** a Chromium where `userAgentData` is hidden (it is a secure context's) gets Oniguruma; a browser that refuses compiling gets the JavaScript engine (a host's own frame documents with another policy, a host page without `'wasm-unsafe-eval'`).
+   - **The same document may be highlighted a little differently** in Chromium and elsewhere: the JavaScript engine leaves out a grammar's patterns it can't translate.
 3. **No worker, no change to the protocol, no change to the spec's rules.** §15's informative note on browsers gains one line: the frames allow WebAssembly, which reaches no more than their scripts.
 
 The alternatives, and why each comes second, are in *What else was weighed*.
@@ -67,7 +71,7 @@ What compiling WebAssembly in a frame lets component code do that its JavaScript
 ## What it means
 
 - **The policies** (`npm-packages/sandbox/src/build/policy.ts`): `'wasm-unsafe-eval'` in `common`'s `script-src`, for both documents; their tests say so.
-- **The frames' highlighter** (`npm-packages/sandbox/src/highlight/highlight.ts`): Oniguruma inlined, the JavaScript engine when compiling is refused; the same tokens either way.
+- **The highlighter** (`npm-packages/sandbox/src/highlight/highlight.ts`), in the frames and in a host-mode page: Oniguruma inlined, the JavaScript engine in Chromium and when compiling is refused (decision 2).
 - **The browser tests** (Q8 of the sandbox's design) gain one: a strict component that compiles and runs WebAssembly given `fetch` still reaches no origin (T1).
 - **The serving contract** is unchanged: its header policy is `sandbox allow-scripts` only, and the documents' own policies are in their `<meta>`.
 - **The protocol** is unchanged.
@@ -88,8 +92,9 @@ What compiling WebAssembly in a frame lets component code do that its JavaScript
    - **In WebKit, for twelve frames, Oniguruma blocks a quarter as long** (0.3 s against 1.2 s) and no frame takes over 130 ms, against 0.4–0.6 s; but every frame is long (over 50 ms), where most of the JavaScript engine's aren't.
    - **So it doesn't scale:** at about 35 ms blocked per frame, Oniguruma blocks longer than the JavaScript engine from about 35 frames on, in WebKit. In Chromium it is slower at any number.
    - This is what alternative B avoids: one Oniguruma, the host's, for every frame.
+   - **Decided:** the JavaScript engine in Chromium, Oniguruma elsewhere (decision 2). A page of many frames in WebKit (host mode with dozens of strict uses that highlight code) still pays about 85 ms a frame; B is kept for it, as a task of its own (CMD-262).
 
-## Follow-ups, once decided
+## Follow-ups
 
-- The policies and the frames' highlighter, with the browser test above (after CMD-257, which does the same for host mode).
-- §15's informative note, with its changelog entry.
+- CMD-260: the policies, the highlighter's choice of engine (decision 2) in the frames and in a host-mode page, the browser test above, and §15's informative note with its changelog entry.
+- CMD-262: alternative B, for pages of many frames.
