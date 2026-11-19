@@ -1,0 +1,87 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "26f97845ff24d432a491e91debf47c7576a286c5",
+    "head": "0c7b63bfacbbff84ea10378b07c596ec64dc759f"
+  },
+  "files": [
+    {
+      "path": "npm-packages/render/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/scheme.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/scheme.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/styles.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/styles.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/test/identity.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/sandbox.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/view.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spikes/highlight-perf/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spikes/highlight-perf/index.html",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spikes/highlight-perf/measure.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spikes/highlight-perf/results-churn-after.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/highlight-perf/results-churn-before.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/highlight-perf/src/main.ts",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-19T07:21:50Z"
+}

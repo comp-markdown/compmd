@@ -1,0 +1,1301 @@
+diff --git a/npm-packages/render/README.md b/npm-packages/render/README.md
+index e48a07d..c14575e 100644
+--- a/npm-packages/render/README.md
++++ b/npm-packages/render/README.md
+@@ -93,7 +93,15 @@ for (const [pane, nodes] of [[left, before], [right, after]]) {
+ 
+ **Images from elsewhere.** A page that can't load images itself, such as one in a frame without the network, gives `images: (src) => …`, which resolves with the URL to show for an image's `src` (a `blob:` URL of a file its host fetched), or `undefined` when it can't be had. Markdown images, images by reference and raw HTML images then show their alt text, in `<span class="compmd-image-alt">`, until it resolves, and keep it when it can't. Without it, an image is an `<img>` loading from its `src`. `imageSources(nodes)` lists the `src` of every image a tree can show, for a host that fetches only those.
+ 
+-**Light and dark.** A component's `context.scheme` is the colour scheme of what the page or region renders into: its `color-scheme`, and the reader's preference where it allows both (`schemeOf(element)`). It is read at each render, when the reader's preference changes, and when printing starts and ends; a host that switches its own theme with a class calls `page.scheme()` (or `region.scheme()`) after it. When the scheme changes, every component on the page gets it and an `update` with the same params. A component that draws with CSS colours needs none of this; one that takes its colours when it draws (a diagram, a canvas chart) reads `context.scheme`.
++**Light and dark.** A component's `context.scheme` is the colour scheme of what the page or region renders into: its `color-scheme`, and the reader's preference where it allows both (`schemeOf(element)`). It is read when a component is there to show in it, and then at each render, when the reader's preference changes, and when printing starts and ends; a host that switches its own theme with a class calls `page.scheme()` (or `region.scheme()`) after it. A page with no such component never reads it. When the scheme changes, every component on the page gets it and an `update` with the same params. A component that draws with CSS colours needs none of this; one that takes its colours when it draws (a diagram, a canvas chart) reads `context.scheme`.
++
++**Many pages in one document.** A host may open as many pages in one document as it has texts: a diff viewer's runs, a list of comments. What belongs to the document is paid once, not per page:
++
++- **The stylesheet:** every page and region of a document writes its rules to one sheet, which the document adopts with the first and drops with the last. The base rules are in it once. A page whose blocks have no rules of their own (text, code, tables) writes nothing to it, so opening or destroying one doesn't make the browser style the document again. A page with styled blocks (boxes, common params, breakpoints) writes the sheet when it renders them, and when it is destroyed.
++- **A block's class** (`compmd-b<n>`) is its own in the document and is never used again, so one page's rules can't match another's blocks.
++- **The colour scheme** is each page's own, read only for a page with components (above).
++
++So what a page costs is its own content: its DOM, and the rules of the blocks it styles.
+ 
+ **A component that fails.** `context.fail(message)` is for a component that finds, after `mount` or `update` returned, that it can't draw what it was given: it reports `threw` through `onError` with `message` (W118), and shows the fallback until its next `update`, when the box is emptied and given back. A throw in `update` does the same; a throw in `mount` shows the fallback for good. Each error names its use, `use`, an id unique in the window, and when the use draws again after such a failure, `onRecovered({component, use})` says so, so a host that lists failures takes that one off; a frame posts it as `recovered`.
+ 
+diff --git a/npm-packages/render/src/scheme.test.ts b/npm-packages/render/src/scheme.test.ts
+index 8b86451..3ca81da 100644
+--- a/npm-packages/render/src/scheme.test.ts
++++ b/npm-packages/render/src/scheme.test.ts
+@@ -109,6 +109,28 @@ describe("a page's components", () => {
+     page.destroy();
+   });
+ 
++  it("are the only reason the scheme is read: a page with none never asks for its style, nor listens", () => {
++    const reader = preference(false);
++    const asked = vi.spyOn(window, "getComputedStyle");
++    const page = createPage(place("light dark"));
++    page.render({ type: "root", children: [{ type: "code", lang: null, meta: null, value: "let a = 1;" }] });
++    page.render({ type: "root", children: [{ type: "paragraph", children: [{ type: "text", value: "Text." }] }] });
++    page.scheme();
++    expect(asked).not.toHaveBeenCalled();
++    expect(reader.listeners.size).toBe(0);
++    page.destroy();
++  });
++
++  it("are listened for only while there is one", () => {
++    const reader = preference(false);
++    const page = createPage(place("light dark"), { components: { chart: recording().mount } });
++    page.render(tree);
++    expect(reader.listeners.size).toBe(1);
++    page.render({ type: "root", children: [] });
++    expect(reader.listeners.size).toBe(0);
++    page.destroy();
++  });
++
+   it("leave a frame to follow the scheme its own document takes", () => {
+     const reader = preference(false);
+     const update = vi.fn();
+diff --git a/npm-packages/render/src/scheme.ts b/npm-packages/render/src/scheme.ts
+index 2b66276..4485f1a 100644
+--- a/npm-packages/render/src/scheme.ts
++++ b/npm-packages/render/src/scheme.ts
+@@ -23,40 +23,35 @@ export interface SchemeFollower {
+ }
+ 
+ /**
+- * The scheme of what a page or region renders into, and who follows it. It reads the scheme again on `read()` (at
+- * each render, and when the host switches its own theme), when the reader's preference changes, and when printing
+- * starts and ends, since print styles may change it.
++ * The scheme of what a page or region renders into, and who follows it. While something follows it, it reads the
++ * scheme again on `read()` (at each render, and when the host switches its own theme), when the reader's preference
++ * changes, and when printing starts and ends, since print styles may change it.
++ *
++ * Reading it asks the browser for the element's style, which makes it style the whole document first if anything in
++ * it changed. So nothing is read, and nothing listened to, for a page with no component to show in a scheme.
+  */
+ export class Schemes {
+-  #current: Scheme;
++  /** The scheme as last read; `undefined` when nothing has asked since the last follower left. */
++  #current: Scheme | undefined;
+   readonly #root: Element;
+   readonly #followers = new Set<SchemeFollower>();
+-  readonly #stop: () => void;
++  #stop: (() => void) | undefined;
+ 
+   constructor(root: Element) {
+     this.#root = root;
+-    this.#current = schemeOf(root);
+-    const view = root.ownerDocument.defaultView;
+-    const preference = view?.matchMedia("(prefers-color-scheme: dark)");
+-    const read = () => {
+-      this.read();
+-    };
+-    preference?.addEventListener("change", read);
+-    view?.addEventListener("beforeprint", read);
+-    view?.addEventListener("afterprint", read);
+-    this.#stop = () => {
+-      preference?.removeEventListener("change", read);
+-      view?.removeEventListener("beforeprint", read);
+-      view?.removeEventListener("afterprint", read);
+-    };
+   }
+ 
++  /** The scheme now: read when nothing has it yet. */
+   get current(): Scheme {
+-    return this.#current;
++    return (this.#current ??= schemeOf(this.#root));
+   }
+ 
+-  /** Reads the scheme again; when it changed, every follower gets it. */
++  /** Reads the scheme again; when it changed, every follower gets it. With no follower, the next `current` reads it. */
+   read(): void {
++    if (this.#followers.size === 0) {
++      this.#current = undefined;
++      return;
++    }
+     const next = schemeOf(this.#root);
+     if (next === this.#current) return;
+     this.#current = next;
+@@ -65,14 +60,38 @@ export class Schemes {
+ 
+   follow(follower: SchemeFollower): void {
+     this.#followers.add(follower);
++    this.#stop ??= this.#listen();
+   }
+ 
+   unfollow(follower: SchemeFollower): void {
+     this.#followers.delete(follower);
++    if (this.#followers.size === 0) this.#unlisten();
+   }
+ 
+   destroy(): void {
+-    this.#stop();
++    this.#unlisten();
+     this.#followers.clear();
+   }
++
++  /** Reads again at what changes the scheme without a render; returns what stops it. */
++  #listen(): () => void {
++    const view = this.#root.ownerDocument.defaultView;
++    const preference = view?.matchMedia("(prefers-color-scheme: dark)");
++    const read = () => {
++      this.read();
++    };
++    preference?.addEventListener("change", read);
++    view?.addEventListener("beforeprint", read);
++    view?.addEventListener("afterprint", read);
++    return () => {
++      preference?.removeEventListener("change", read);
++      view?.removeEventListener("beforeprint", read);
++      view?.removeEventListener("afterprint", read);
++    };
++  }
++
++  #unlisten(): void {
++    this.#stop?.();
++    this.#stop = undefined;
++  }
+ }
+diff --git a/npm-packages/render/src/styles.test.ts b/npm-packages/render/src/styles.test.ts
+index 7192e33..c37ebec 100644
+--- a/npm-packages/render/src/styles.test.ts
++++ b/npm-packages/render/src/styles.test.ts
+@@ -112,3 +112,86 @@ describe("Stylesheet", () => {
+     sheet.remove();
+   });
+ });
++
++describe("a document's stylesheets", () => {
++  /** The rules the document has adopted, as text. */
++  const adopted = () => document.adoptedStyleSheets.flatMap((sheet) => [...sheet.cssRules]).map((rule) => rule.cssText).join("\n");
++
++  /** Counts the times the document's sheets are set while `run` runs: each restyles the whole document. */
++  function adoptions(run: () => void): number {
++    const own = Object.getOwnPropertyDescriptor(document, "adoptedStyleSheets");
++    let sheets = document.adoptedStyleSheets;
++    let count = 0;
++    Object.defineProperty(document, "adoptedStyleSheets", {
++      configurable: true,
++      get: () => sheets,
++      set: (next: CSSStyleSheet[]) => {
++        count += 1;
++        sheets = next;
++      },
++    });
++    try {
++      run();
++    } finally {
++      if (own) Object.defineProperty(document, "adoptedStyleSheets", own);
++      else Reflect.deleteProperty(document, "adoptedStyleSheets");
++      document.adoptedStyleSheets = sheets;
++    }
++    return count;
++  }
++
++  it("share one sheet, adopted with the first and dropped with the last", () => {
++    const before = document.adoptedStyleSheets.length;
++    const sheets: Stylesheet[] = [];
++    expect(adoptions(() => {
++      for (let i = 0; i < 50; i++) sheets.push(new Stylesheet(document));
++      for (const sheet of sheets) sheet.flush();
++    })).toBe(1);
++    expect(document.adoptedStyleSheets).toHaveLength(before + 1);
++    expect(adoptions(() => {
++      for (const sheet of sheets.slice(1)) sheet.remove();
++    })).toBe(0);
++    expect(document.adoptedStyleSheets).toHaveLength(before + 1);
++    sheets[0]?.remove();
++    expect(document.adoptedStyleSheets).toHaveLength(before);
++  });
++
++  it("have the base rules once, and each its own blocks' rules until it is removed", () => {
++    const [one, two] = [new Stylesheet(document), new Stylesheet(document)];
++    const a = one.style(document.createElement("div"), blockCss([p("width", "40%")], "block"));
++    const b = two.style(document.createElement("div"), blockCss([p("width", "60%")], "block"));
++    one.flush();
++    two.flush();
++    expect(adopted().split(".compmd-page {").length - 1).toBe(1);
++    expect(adopted()).toContain(`.${a} { width: 40%; }`);
++    expect(adopted()).toContain(`.${b} { width: 60%; }`);
++    expect(one.text).not.toContain(b);
++    one.remove();
++    expect(adopted()).not.toContain(`.${a} `);
++    expect(adopted()).toContain(`.${b} { width: 60%; }`);
++    two.remove();
++  });
++
++  it("never give two blocks of a document the same class, a removed stylesheet's included", () => {
++    const names = new Set<string>();
++    for (let i = 0; i < 3; i++) {
++      const sheet = new Stylesheet(document);
++      names.add(sheet.style(document.createElement("div"), blockCss([p("width", "40%")], "block")));
++      names.add(sheet.style(document.createElement("div"), blockCss([p("width", "60%")], "block")));
++      sheet.remove();
++    }
++    expect(names.size).toBe(6);
++  });
++
++  it("are a document's own", () => {
++    const other = document.implementation.createHTMLDocument();
++    const [here, there] = [new Stylesheet(document), new Stylesheet(other)];
++    const name = here.style(document.createElement("div"), blockCss([p("width", "40%")], "block"));
++    here.flush();
++    there.flush();
++    expect(adopted()).toContain(`.${name} `);
++    expect(there.text).not.toContain(name);
++    here.remove();
++    there.remove();
++  });
++});
+diff --git a/npm-packages/render/src/styles.ts b/npm-packages/render/src/styles.ts
+index 1ec6b81..eba06c6 100644
+--- a/npm-packages/render/src/styles.ts
++++ b/npm-packages/render/src/styles.ts
+@@ -226,9 +226,80 @@ const BASE_RULES = `
+ const declarationsText = (declarations: Declarations) => Object.entries(declarations).map(([property, value]) => `${property}: ${value};`).join(" ");
+ 
+ /**
+- * The stylesheet of one document, which every layer writes to: each styled block gets a class and its rules, and
+- * `flush` writes them all at once. It is a constructed stylesheet, which a sandbox's CSP allows, or a `<style>`
+- * element where constructed stylesheets aren't supported.
++ * The one sheet a document has for every {@link Stylesheet} in it: the base rules once, then each one's rules. The
++ * document adopts it with the first and drops it with the last, so a page more is no change to the document's sheets,
++ * which would restyle all of it. It is a constructed stylesheet, which a sandbox's CSP allows, or a `<style>` element
++ * where constructed stylesheets aren't supported.
++ */
++class DocumentSheet {
++  static readonly #all = new WeakMap<Document, DocumentSheet>();
++  readonly #document: Document;
++  readonly #users = new Set<Stylesheet>();
++  #sheet: CSSStyleSheet | undefined;
++  #element: HTMLStyleElement | undefined;
++  #next = 0;
++  #text = "";
++
++  static of(document: Document): DocumentSheet {
++    let sheet = DocumentSheet.#all.get(document);
++    if (!sheet) DocumentSheet.#all.set(document, (sheet = new DocumentSheet(document)));
++    return sheet;
++  }
++
++  private constructor(document: Document) {
++    this.#document = document;
++  }
++
++  /**
++   * A class no block of the document has had: never one used before, a destroyed page's included, so a rule can
++   * only ever match the block it was written for.
++   */
++  name(): string {
++    return `compmd-b${String(this.#next++)}`;
++  }
++
++  join(user: Stylesheet): void {
++    this.#users.add(user);
++    if (this.#users.size > 1) return;
++    this.write();
++    const Sheet = this.#document.defaultView?.CSSStyleSheet;
++    if (Sheet && typeof Sheet.prototype.replaceSync === "function" && "adoptedStyleSheets" in this.#document) {
++      this.#sheet = new Sheet();
++      this.#sheet.replaceSync(this.#text);
++      this.#document.adoptedStyleSheets = [...this.#document.adoptedStyleSheets, this.#sheet];
++    } else {
++      this.#element = this.#document.head.appendChild(this.#document.createElement("style"));
++      this.#element.textContent = this.#text;
++    }
++  }
++
++  leave(user: Stylesheet): void {
++    if (!this.#users.delete(user)) return;
++    if (this.#users.size > 0) {
++      this.write();
++      return;
++    }
++    if (this.#sheet) this.#document.adoptedStyleSheets = this.#document.adoptedStyleSheets.filter((sheet) => sheet !== this.#sheet);
++    this.#element?.remove();
++    this.#sheet = undefined;
++    this.#element = undefined;
++  }
++
++  /** Writes the sheet when its rules changed: a stylesheet whose blocks have none changes nothing. */
++  write(): void {
++    const next = [BASE_RULES, ...[...this.#users].map((user) => user.rules).filter(Boolean)].join("\n");
++    if (next === this.#text) return;
++    this.#text = next;
++    if (this.#sheet) this.#sheet.replaceSync(next);
++    else if (this.#element) this.#element.textContent = next;
++  }
++}
++
++/**
++ * The rules of one page, or of a region with a stylesheet of its own, which every layer of it writes to: each styled
++ * block gets a class and its rules, and `flush` writes them all at once, into the one sheet its document has for all
++ * of them. So many pages in one document share the base rules, and a page whose blocks have no rules never changes
++ * the document's styles.
+  *
+  * @example
+  * const sheet = new Stylesheet(document);
+@@ -236,30 +307,22 @@ const declarationsText = (declarations: Declarations) => Object.entries(declarat
+  * sheet.flush();
+  */
+ export class Stylesheet {
+-  readonly #document: Document;
+-  readonly #sheet: CSSStyleSheet | undefined;
+-  readonly #element: HTMLStyleElement | undefined;
++  readonly #shared: DocumentSheet;
+   readonly #blocks = new Map<string, BlockCss>();
+   readonly #classes = new WeakMap<Element, string>();
+-  #next = 0;
++  #rules = "";
+   #text = "";
+ 
+   constructor(document: Document) {
+-    this.#document = document;
+-    const Sheet = document.defaultView?.CSSStyleSheet;
+-    if (Sheet && typeof Sheet.prototype.replaceSync === "function" && "adoptedStyleSheets" in document) {
+-      this.#sheet = new Sheet();
+-      document.adoptedStyleSheets = [...document.adoptedStyleSheets, this.#sheet];
+-    } else {
+-      this.#element = document.head.appendChild(document.createElement("style"));
+-    }
++    this.#shared = DocumentSheet.of(document);
++    this.#shared.join(this);
+   }
+ 
+-  /** Sets `element`'s block rules, and returns the class they select it by. */
++  /** Sets `element`'s block rules, and returns the class they select it by, which is its own in the document. */
+   style(element: Element, css: BlockCss): string {
+     let name = this.#classes.get(element);
+     if (name === undefined) {
+-      name = `compmd-b${String(this.#next++)}`;
++      name = this.#shared.name();
+       this.#classes.set(element, name);
+     }
+     this.#blocks.set(name, css);
+@@ -290,21 +353,23 @@ export class Stylesheet {
+       const rules = at.get(name) ?? [];
+       return rules.length === 0 ? [] : [`@container (min-width: ${String(width)}px) {\n${rules.join("\n")}\n}`];
+     });
+-    const next = [BASE_RULES, ...base, ...queries, ...visibility].join("\n");
+-    if (next === this.#text) return;
+-    this.#text = next;
+-    if (this.#sheet) this.#sheet.replaceSync(next);
+-    else if (this.#element) this.#element.textContent = next;
++    this.#rules = [...base, ...queries, ...visibility].join("\n");
++    this.#text = [BASE_RULES, ...base, ...queries, ...visibility].join("\n");
++    this.#shared.write();
++  }
++
++  /** Its blocks' rules as the last `flush` wrote them, without the base rules. */
++  get rules(): string {
++    return this.#rules;
+   }
+ 
+-  /** The rules as written by the last `flush`. */
++  /** The base rules and its own, as written by the last `flush`: all a page of its own needs, as one built ahead. */
+   get text(): string {
+     return this.#text;
+   }
+ 
+-  /** Removes the stylesheet from its document. */
++  /** Removes its rules from the document, and the document's sheet with the last stylesheet in it. */
+   remove(): void {
+-    if (this.#sheet) this.#document.adoptedStyleSheets = this.#document.adoptedStyleSheets.filter((sheet) => sheet !== this.#sheet);
+-    this.#element?.remove();
++    this.#shared.leave(this);
+   }
+ }
+diff --git a/npm-packages/render/test/identity.test.ts b/npm-packages/render/test/identity.test.ts
+index f11cbc8..0701624 100644
+--- a/npm-packages/render/test/identity.test.ts
++++ b/npm-packages/render/test/identity.test.ts
+@@ -16,6 +16,15 @@ interface Outcome {
+   html: string;
+ }
+ 
++/** `html` with its blocks' classes numbered as they come: a block's class is its own in the document, so two runs differ. */
++function withBlocksNumbered(html: string): string {
++  const numbers = new Map<string, number>();
++  return html.replace(/compmd-b\d+/g, (name) => {
++    if (!numbers.has(name)) numbers.set(name, numbers.size);
++    return `compmd-b#${String(numbers.get(name))}`;
++  });
++}
++
+ function run(scenario: Scenario, mode: Mode): Outcome {
+   const root = document.body.appendChild(document.createElement("main"));
+   const log: Mounted[] = [];
+@@ -51,7 +60,7 @@ function run(scenario: Scenario, mode: Mode): Outcome {
+     moved: [...clicks].filter(([label, count]) => (after.get(label) ?? 0) > 0 && after.get(label) !== count).map(([label]) => label),
+     lost: [...clicks].filter(([label]) => after.get(label) === 0).map(([label]) => label),
+     notesKept: notes?.value === "typed" && document.activeElement === notes,
+-    html: root.innerHTML,
++    html: withBlocksNumbered(root.innerHTML),
+   };
+   page.destroy();
+   root.remove();
+diff --git a/npm-packages/sandbox/README.md b/npm-packages/sandbox/README.md
+index 3081ebb..625a8c7 100644
+--- a/npm-packages/sandbox/README.md
++++ b/npm-packages/sandbox/README.md
+@@ -132,7 +132,9 @@ view.destroy();
+ 
+ **Failures and recoveries, by use.** An `error` names the use that shows its fallback in `use`, an opaque id, when it has one: each window gives each mounted use its own, and a frame's parent puts the frame's key in front, so ids from different frames never meet. When a use that failed (W118, by `fail` or a throw in `update`) draws again after its next update, `recovered` comes with the same `use`, so a host that lists failures removes the one it listed, and keeps another use's of the same component. A frame's code could send `recovered` itself; it only clears a listing.
+ 
+-**Light and dark.** Every frame takes the colour scheme of the page around it: the view reads its container's `color-scheme` (and the reader's preference, where it allows both) when it opens, at each render, when the preference changes and when printing starts and ends, and sends it to its frames, which set it on their documents. So frames stay transparent on a dark page, their text in its colours, and every component, framed or inline, gets it as `context.scheme` (spec §7.4), with an update when it changes. A page that switches its scheme itself sets `color-scheme` on the container, or above it, and calls `view.scheme()` (or renders).
++**Light and dark.** Every frame takes the colour scheme of the page around it: the view reads its container's `color-scheme` (and the reader's preference, where it allows both) when it opens, at each render, when the preference changes and when printing starts and ends, and sends it to its frames, which set it on their documents. So frames stay transparent on a dark page, their text in its colours, and every component, framed or inline, gets it as `context.scheme` (spec §7.4), with an update when it changes. A page that switches its scheme itself sets `color-scheme` on the container, or above it, and calls `view.scheme()` (or renders). In host mode, a view with no frame and no component reads nothing: reading an element's style makes the browser style the whole host page first.
++
++**Many views in one page.** In host mode a host may open a view for each of its texts (a diff viewer's runs, a list of comments): the views of a page share one stylesheet and its base rules, and a view of text and code changes nothing in the page's styles when it opens, renders or is destroyed ([many pages in one document](https://github.com/comp-markdown/compmd/blob/main/npm-packages/render/README.md#the-three-layers)). Each view still has its own settling and its own listeners.
+ 
+ **Where the page renders** is the host's choice, never the document's:
+ 
+diff --git a/npm-packages/sandbox/src/sandbox.ts b/npm-packages/sandbox/src/sandbox.ts
+index 4a023d1..aba6f46 100644
+--- a/npm-packages/sandbox/src/sandbox.ts
++++ b/npm-packages/sandbox/src/sandbox.ts
+@@ -249,9 +249,13 @@ export function createSandbox(given: SandboxOptions): Sandbox {
+       );
+       const page = options.page === "host" ? hostPage(container, runtime, options, observer, emit) : framePage(container, runtime, options, observer, emit);
+       // The frames take the page's colour scheme: when the view opens, when the reader's preference changes, when
+-      // printing starts and ends, at each render, and when the host says it switched its own.
++      // printing starts and ends, at each render, and when the host says it switched its own. A page in the host's
++      // page reads its own for its components, so a view with no frame reads nothing here: reading it makes the
++      // browser style the whole host document first, at every view a host opens.
+       let scheme: Scheme | undefined;
++      const framed = () => page.frames()[Symbol.iterator]().next().done !== true;
+       const followScheme = () => {
++        if (!framed()) return;
+         const next = schemeOf(container);
+         if (next === scheme) return;
+         scheme = next;
+@@ -295,12 +299,14 @@ export function createSandbox(given: SandboxOptions): Sandbox {
+           changed();
+           void ready.then(() => {
+             page.render(tree, change);
++            followScheme();
+           });
+         },
+         splice: (splices, change, spliceOptions) => {
+           changed();
+           void ready.then(() => {
+             page.splice(splices, change, spliceOptions);
++            followScheme();
+           });
+         },
+         components: (next) => {
+@@ -308,6 +314,7 @@ export function createSandbox(given: SandboxOptions): Sandbox {
+           const loading = ready.then(async () => {
+             await runtime.set(next);
+             page.code();
++            followScheme();
+           });
+           const nextShape = shapeOf(next);
+           if (nextShape !== shape) ready = loading;
+diff --git a/npm-packages/sandbox/test/view.test.ts b/npm-packages/sandbox/test/view.test.ts
+index df44ded..237e7c0 100644
+--- a/npm-packages/sandbox/test/view.test.ts
++++ b/npm-packages/sandbox/test/view.test.ts
+@@ -160,6 +160,30 @@ describe("render and splice", () => {
+   });
+ });
+ 
++describe("views in one document (host mode)", () => {
++  /** A document of one box, as wide as `width`. */
++  const boxed = (width: string): ExpandedRoot => ({
++    type: "root",
++    children: [{ type: "componentContainer", name: "box", params: [{ key: "width", breakpoint: null, value: width }], children: [{ type: "paragraph", children: [{ type: "text", value: "A box." }] }], slots: [] }],
++  });
++  const widthOfBox = (area: HTMLElement) => area.querySelector<HTMLElement>(".compmd-box")?.getBoundingClientRect().width;
++
++  it("each style their own blocks, whichever was opened, rendered or closed first", async () => {
++    const [first, second] = [open("host", []), open("host", [])];
++    for (const { area } of [first, second]) area.style.width = "400px";
++    second.view.render(boxed("50%"));
++    first.view.render(boxed("25%"));
++    await Promise.all([first.view.settled(), second.view.settled()]);
++    expect([widthOfBox(first.area), widthOfBox(second.area)]).toEqual([100, 200]);
++    first.view.destroy();
++    const third = open("host", []);
++    third.area.style.width = "400px";
++    third.view.render(boxed("75%"));
++    await third.view.settled();
++    expect([widthOfBox(second.area), widthOfBox(third.area)]).toEqual([200, 300]);
++  });
++});
++
+ describe("the page's colour scheme", () => {
+   /** `label`, but setting the scheme it is shown in and the one its frame's document has, on each update. */
+   const scheme: HostComponent = {
+@@ -196,6 +220,26 @@ describe("the page's colour scheme", () => {
+       expect(values().at(-1)).toBe("dark dark");
+     });
+   }
++
++  it("is never read for a view with no component or frame to show in it: reading it styles the whole host page first (host mode)", async () => {
++    const read = window.getComputedStyle.bind(window);
++    let reads = 0;
++    window.getComputedStyle = (...given: Parameters<typeof read>) => {
++      reads += 1;
++      return read(...given);
++    };
++    try {
++      const sheets = document.adoptedStyleSheets.length;
++      const opened = [1, 2, 3].map(() => open("host", []));
++      for (const { view } of opened) view.render({ type: "root", children: [{ type: "code", lang: "js", meta: null, value: "let a = 1;" }] });
++      for (const { view } of opened) view.render({ type: "root", children: [{ type: "paragraph", children: [{ type: "text", value: "Text." }] }] });
++      await Promise.all(opened.map(({ view }) => view.settled()));
++      expect(reads).toBe(0);
++      expect(document.adoptedStyleSheets.length, "one sheet for the three views").toBeLessThanOrEqual(sheets + 1);
++    } finally {
++      window.getComputedStyle = read;
++    }
++  });
+ });
+ 
+ describe("a component that fails", () => {
+diff --git a/spikes/highlight-perf/README.md b/spikes/highlight-perf/README.md
+index 797bd2b..426fe87 100644
+--- a/spikes/highlight-perf/README.md
++++ b/spikes/highlight-perf/README.md
+@@ -8,7 +8,7 @@
+ 2. **Oniguruma, as WebAssembly, where the page allows WebAssembly.** WebKit's cost is the JavaScript engine compiling TypeScript's regexes the first time they run: a 1.1 s frame on opening, and later long frames as new rules first match. With Oniguruma, shared, the first tokenizing takes 30 ms, and the page meets the host's targets: 83 ms blocked on opening, its longest frame 133 ms, 10 ms blocked over the skim. In Chromium it is as fast as the JavaScript engine once shared.
+ 3. **Tokenizing in slices, a block per task, those on screen first,** as a guard: with Oniguruma it takes opening's last 83 ms to 0, and it bounds a frame to one block however many blocks render at once.
+ 4. **Not carried over:** grammars prepared ahead (no gain in WebKit, which still compiles each regex on first use), a cache of tokens (nothing left to save once Shiki is shared: a run tokenizes in about 1 ms), and a worker (as smooth as Oniguruma on the page's thread, but a run waits 1.1 s on opening with the JavaScript engine, and it needs `worker-src` where Oniguruma needs `wasm-unsafe-eval`).
+-5. **A finding apart from highlighting:** every `createPage` adopts a stylesheet of its own, with the base rules, so a document with hundreds of mounted pages restyles against hundreds of sheets: 43 s blocked in WebKit over the skim with highlighting off, 304 s with it. The spike doesn't fix it: CMD-253 shares the base rules' sheet among a document's pages.
++5. **A finding apart from highlighting:** every `createPage` adopts a stylesheet of its own, with the base rules, so a document with hundreds of mounted pages restyles against hundreds of sheets: 43 s blocked in WebKit over the skim with highlighting off, 304 s with it. The spike doesn't fix it: CMD-253 does, with one sheet for a document's pages, and measured what each open costs in a large host document ([below](#a-large-host-document-100-pages-opened-and-closed-cmd-253)).
+ 
+ ## The test page
+ 
+@@ -75,6 +75,28 @@ node spikes/highlight-perf/measure.ts 3 today shared     # some variants, three
+ | no highlighting | 43 459 / 1679 ms | 17 300 / 900 ms |
+ | shared | 304 346 / 11 708 ms | 24 166 / 1300 ms |
+ 
++### A large host document: 100 pages opened and closed (CMD-253)
++
++The page above has a small host document, so it missed what each open costs a large one. `?churn=1` adds 20,000 host elements (rows a host's own rules style), then opens 100 pages, one an animation frame, eight live at a time, destroying the oldest, without highlighting: `churn` with a code block each, `churn-styled` with the code in a box with a `width` of its own. It counts what makes the browser style the whole document again: the times the document's sheets are set (`adoptedStyleSheets`), the styles read (`getComputedStyle`) and the sheets written (`replaceSync`). **An open** is from `createPage` to the next animation frame, so 16 ms is one frame. Three runs each, medians; `results-churn-before.json` and `results-churn-after.json` have every run.
++
++| | Sheets set | Styles read | Sheets written | Blocked | An open: first ten / last ten / longest |
++|---|---|---|---|---|---|
++| WebKit, `churn`, before | 192 | 200 | 100 | 2609 ms | 31 / 71 / 94 ms |
++| WebKit, `churn`, after | 1 | 0 | 1 | 0 | 16 / 17 / 18 ms |
++| WebKit, `churn-styled`, before | 192 | 200 | 100 | 2619 ms | 38 / 74 / 93 ms |
++| WebKit, `churn-styled`, after | 1 | 0 | 193 | 0 | 36 / 38 / 45 ms |
++| Chromium, both, before and after | as WebKit's | | | 0 | 16 / 16 / 17 ms |
++
++- **Before, every open set the document's sheets and read a style at once,** which styled all 20,000 elements inside the open: 92 of 100 frames were long in WebKit, and an open grew from 31 ms to 71 ms over the run (why it grows wasn't looked into). The two reads a page are the page's own: one when it is made, one at its render. A sandbox's view in host mode read twice more, at open and at each render.
++- **After, a page of text and code changes nothing in the document's styles:** one sheet set for the first page, no style read, and each open within a frame.
++- **A page with styled blocks still writes the sheet** when it renders and when it is destroyed (193 writes), and in WebKit each takes the open to about two frames (38 ms), without a long frame. Whether writing a rule at a time is cheaper is CMD-254's to measure.
++- **Chromium doesn't show any of it** at this size, before or after.
++- **A real host's document is heavier** than 20,000 plain rows: the host that reported it saw about 1 s for each of these restyles, where this page has 70 ms.
++
++```sh
++pnpm --dir spikes/highlight-perf measure 3 churn churn-styled --out=results-churn.json
++```
++
+ ## What the numbers say
+ 
+ - **WebKit's extra cost is compiling, not tokenizing.** Once a Shiki has run its grammar, a run tokenizes in 1 ms in both browsers. What WebKit pays is the JavaScript engine's regexes on their first use: 616 ms for the first run (34 ms in Chromium), and later long frames as rules not met yet first match (the shared variant's 0.9 s over the skim). Precompiling the grammars converts the regexes ahead, but WebKit still compiles each on its first run, so it doesn't help (372 ms first, the same frames).
+diff --git a/spikes/highlight-perf/index.html b/spikes/highlight-perf/index.html
+index d6d702a..325a19c 100644
+--- a/spikes/highlight-perf/index.html
++++ b/spikes/highlight-perf/index.html
+@@ -8,6 +8,10 @@
+       #scroller { height: 100%; overflow-y: auto; }
+       .run { border-bottom: 1px solid #ddd; padding: 4px 8px; }
+       .run pre { margin: 0; white-space: pre-wrap; }
++      /* The large host document of `?churn=1`: rows a host's own rules style. */
++      .host .row { padding: 2px 8px; border-bottom: 1px solid #eee; }
++      .host .row > span { color: #444; }
++      .host .r3 > span, .host .r5 > span { font-weight: 600; }
+     </style>
+   </head>
+   <body>
+diff --git a/spikes/highlight-perf/measure.ts b/spikes/highlight-perf/measure.ts
+index 64477b9..19b5387 100644
+--- a/spikes/highlight-perf/measure.ts
++++ b/spikes/highlight-perf/measure.ts
+@@ -3,6 +3,7 @@
+ //
+ //   node measure.ts [repeats] [variant…]     # each variant `repeats` times (1 by default), all variants without names
+ //   node measure.ts 1 today --runs=40        # a smaller page, to try the runner
++//   node measure.ts 3 churn --out=x.json     # written to `x.json` here, not `results.json`
+ 
+ import { readFileSync, writeFileSync } from "node:fs";
+ import { createServer } from "node:http";
+@@ -33,6 +34,10 @@ const VARIANTS: Record<string, string> = {
+   "shared+sliced+precompiled+cache": "shiki=shared&engine=precompiled&where=main&schedule=sliced&cache=1",
+   "shared+sliced+oniguruma+cache": "shiki=shared&engine=oniguruma&where=main&schedule=sliced&cache=1",
+   "worker+sliced+precompiled+cache": "shiki=shared&engine=precompiled&where=worker&schedule=sliced&cache=1",
++  // A large host document, and 100 pages opened and closed in it, without highlighting (CMD-253): code only, then
++  // each in a box with rules of its own.
++  churn: "highlight=off&churn=1",
++  "churn-styled": "highlight=off&churn=1&styled=1",
+ };
+ 
+ const options = process.argv.slice(2).filter((argument) => argument.startsWith("--"));
+@@ -73,9 +78,14 @@ for (const [browserName, type] of BROWSERS) {
+         console.log(`  [${browserName} ${name}] error: ${error.message}`);
+       });
+       await page.goto(`http://localhost:4290/?${query}${runsQuery}`);
+-      const result = (await page.evaluate(() => window.spike.run())) as Record<string, unknown>;
++      const churn = query.includes("churn=1");
++      const result = (await page.evaluate((churns) => (churns ? window.spike.churn() : window.spike.run()), churn)) as Record<string, unknown>;
+       await page.close();
+       results.push({ browser: browserName, variant: name, repeat, ...result });
++      if (churn) {
++        console.log([browserName, name.padEnd(32), JSON.stringify(result)].join("  "));
++        continue;
++      }
+       const { open, skim, revisit, costs } = result as Record<string, Record<string, unknown>>;
+       console.log(
+         [browserName, name.padEnd(32), `open ${String(open?.blockedMs)}ms/${String(open?.longestMs)}ms`, `skim ${String(skim?.blockedMs)}ms/${String(skim?.longestMs)}ms (${String(skim?.longFrames)} long)`, `revisit ${String(revisit?.blockedMs)}ms`, `wait ${String(open?.medianWaitMs)}/${String(skim?.medianWaitMs)}ms`, `tok ${String((costs?.total as Record<string, unknown>).medianTokenizeMs)}ms first ${String((costs?.total as Record<string, unknown>).firstTokenizeMs)}ms`].join("  "),
+@@ -85,4 +95,5 @@ for (const [browserName, type] of BROWSERS) {
+   await browser.close();
+ }
+ server.close();
+-writeFileSync(join(import.meta.dirname, "results.json"), `${JSON.stringify(results, null, 2)}\n`);
++const outOption = options.find((option) => option.startsWith("--out="));
++writeFileSync(join(import.meta.dirname, outOption ? outOption.slice("--out=".length) : "results.json"), `${JSON.stringify(results, null, 2)}\n`);
+diff --git a/spikes/highlight-perf/results-churn-after.json b/spikes/highlight-perf/results-churn-after.json
+new file mode 100644
+index 0000000..d3d017d
+--- /dev/null
++++ b/spikes/highlight-perf/results-churn-after.json
+@@ -0,0 +1,266 @@
++[
++  {
++    "browser": "webkit",
++    "variant": "churn",
++    "repeat": 0,
++    "config": {
++      "churn": true,
++      "hostElements": 20000,
++      "styled": false
++    },
++    "counts": {
++      "adoptions": 1,
++      "styleReads": 0,
++      "sheetWrites": 1
++    },
++    "totalMs": 1722,
++    "blockedMs": 0,
++    "longestMs": 46,
++    "longFrames": 0,
++    "firstTenOpenMs": 17,
++    "lastTenOpenMs": 16,
++    "longestOpenMs": 46
++  },
++  {
++    "browser": "webkit",
++    "variant": "churn",
++    "repeat": 1,
++    "config": {
++      "churn": true,
++      "hostElements": 20000,
++      "styled": false
++    },
++    "counts": {
++      "adoptions": 1,
++      "styleReads": 0,
++      "sheetWrites": 1
++    },
++    "totalMs": 1665,
++    "blockedMs": 0,
++    "longestMs": 18,
++    "longFrames": 0,
++    "firstTenOpenMs": 16,
++    "lastTenOpenMs": 17,
++    "longestOpenMs": 18
++  },
++  {
++    "browser": "webkit",
++    "variant": "churn",
++    "repeat": 2,
++    "config": {
++      "churn": true,
++      "hostElements": 20000,
++      "styled": false
++    },
++    "counts": {
++      "adoptions": 1,
++      "styleReads": 0,
++      "sheetWrites": 1
++    },
++    "totalMs": 1656,
++    "blockedMs": 0,
++    "longestMs": 18,
++    "longFrames": 0,
++    "firstTenOpenMs": 16,
++    "lastTenOpenMs": 17,
++    "longestOpenMs": 18
++  },
++  {
++    "browser": "webkit",
++    "variant": "churn-styled",
++    "repeat": 0,
++    "config": {
++      "churn": true,
++      "hostElements": 20000,
++      "styled": true
++    },
++    "counts": {
++      "adoptions": 1,
++      "styleReads": 0,
++      "sheetWrites": 193
++    },
++    "totalMs": 3987,
++    "blockedMs": 0,
++    "longestMs": 50,
++    "longFrames": 0,
++    "firstTenOpenMs": 32,
++    "lastTenOpenMs": 38,
++    "longestOpenMs": 50
++  },
++  {
++    "browser": "webkit",
++    "variant": "churn-styled",
++    "repeat": 1,
++    "config": {
++      "churn": true,
++      "hostElements": 20000,
++      "styled": true
++    },
++    "counts": {
++      "adoptions": 1,
++      "styleReads": 0,
++      "sheetWrites": 193
++    },
++    "totalMs": 3781,
++    "blockedMs": 0,
++    "longestMs": 50,
++    "longFrames": 0,
++    "firstTenOpenMs": 36,
++    "lastTenOpenMs": 38,
++    "longestOpenMs": 42
++  },
++  {
++    "browser": "webkit",
++    "variant": "churn-styled",
++    "repeat": 2,
++    "config": {
++      "churn": true,
++      "hostElements": 20000,
++      "styled": true
++    },
++    "counts": {
++      "adoptions": 1,
++      "styleReads": 0,
++      "sheetWrites": 193
++    },
++    "totalMs": 3879,
++    "blockedMs": 13,
++    "longestMs": 63,
++    "longFrames": 1,
++    "firstTenOpenMs": 39,
++    "lastTenOpenMs": 39,
++    "longestOpenMs": 45
++  },
++  {
++    "browser": "chromium",
++    "variant": "churn",
++    "repeat": 0,
++    "config": {
++      "churn": true,
++      "hostElements": 20000,
++      "styled": false
++    },
++    "counts": {
++      "adoptions": 1,
++      "styleReads": 0,
++      "sheetWrites": 1
++    },
++    "totalMs": 1657,
++    "blockedMs": 0,
++    "longestMs": 17,
++    "longFrames": 0,
++    "firstTenOpenMs": 16,
++    "lastTenOpenMs": 16,
++    "longestOpenMs": 17
++  },
++  {
++    "browser": "chromium",
++    "variant": "churn",
++    "repeat": 1,
++    "config": {
++      "churn": true,
++      "hostElements": 20000,
++      "styled": false
++    },
++    "counts": {
++      "adoptions": 1,
++      "styleReads": 0,
++      "sheetWrites": 1
++    },
++    "totalMs": 1661,
++    "blockedMs": 0,
++    "longestMs": 17,
++    "longFrames": 0,
++    "firstTenOpenMs": 15,
++    "lastTenOpenMs": 15,
++    "longestOpenMs": 16
++  },
++  {
++    "browser": "chromium",
++    "variant": "churn",
++    "repeat": 2,
++    "config": {
++      "churn": true,
++      "hostElements": 20000,
++      "styled": false
++    },
++    "counts": {
++      "adoptions": 1,
++      "styleReads": 0,
++      "sheetWrites": 1
++    },
++    "totalMs": 1659,
++    "blockedMs": 0,
++    "longestMs": 17,
++    "longFrames": 0,
++    "firstTenOpenMs": 15,
++    "lastTenOpenMs": 15,
++    "longestOpenMs": 16
++  },
++  {
++    "browser": "chromium",
++    "variant": "churn-styled",
++    "repeat": 0,
++    "config": {
++      "churn": true,
++      "hostElements": 20000,
++      "styled": true
++    },
++    "counts": {
++      "adoptions": 1,
++      "styleReads": 0,
++      "sheetWrites": 193
++    },
++    "totalMs": 1658,
++    "blockedMs": 0,
++    "longestMs": 17,
++    "longFrames": 0,
++    "firstTenOpenMs": 15,
++    "lastTenOpenMs": 16,
++    "longestOpenMs": 17
++  },
++  {
++    "browser": "chromium",
++    "variant": "churn-styled",
++    "repeat": 1,
++    "config": {
++      "churn": true,
++      "hostElements": 20000,
++      "styled": true
++    },
++    "counts": {
++      "adoptions": 1,
++      "styleReads": 0,
++      "sheetWrites": 193
++    },
++    "totalMs": 1665,
++    "blockedMs": 0,
++    "longestMs": 17,
++    "longFrames": 0,
++    "firstTenOpenMs": 15,
++    "lastTenOpenMs": 16,
++    "longestOpenMs": 17
++  },
++  {
++    "browser": "chromium",
++    "variant": "churn-styled",
++    "repeat": 2,
++    "config": {
++      "churn": true,
++      "hostElements": 20000,
++      "styled": true
++    },
++    "counts": {
++      "adoptions": 1,
++      "styleReads": 0,
++      "sheetWrites": 193
++    },
++    "totalMs": 1666,
++    "blockedMs": 0,
++    "longestMs": 17,
++    "longFrames": 0,
++    "firstTenOpenMs": 16,
++    "lastTenOpenMs": 16,
++    "longestOpenMs": 17
++  }
++]
+diff --git a/spikes/highlight-perf/results-churn-before.json b/spikes/highlight-perf/results-churn-before.json
+new file mode 100644
+index 0000000..2572237
+--- /dev/null
++++ b/spikes/highlight-perf/results-churn-before.json
+@@ -0,0 +1,266 @@
++[
++  {
++    "browser": "webkit",
++    "variant": "churn",
++    "repeat": 0,
++    "config": {
++      "churn": true,
++      "hostElements": 20000,
++      "styled": false
++    },
++    "counts": {
++      "adoptions": 192,
++      "styleReads": 200,
++      "sheetWrites": 100
++    },
++    "totalMs": 7619,
++    "blockedMs": 2702,
++    "longestMs": 95,
++    "longFrames": 92,
++    "firstTenOpenMs": 44,
++    "lastTenOpenMs": 71,
++    "longestOpenMs": 95
++  },
++  {
++    "browser": "webkit",
++    "variant": "churn",
++    "repeat": 1,
++    "config": {
++      "churn": true,
++      "hostElements": 20000,
++      "styled": false
++    },
++    "counts": {
++      "adoptions": 192,
++      "styleReads": 200,
++      "sheetWrites": 100
++    },
++    "totalMs": 6527,
++    "blockedMs": 1695,
++    "longestMs": 80,
++    "longFrames": 92,
++    "firstTenOpenMs": 31,
++    "lastTenOpenMs": 67,
++    "longestOpenMs": 79
++  },
++  {
++    "browser": "webkit",
++    "variant": "churn",
++    "repeat": 2,
++    "config": {
++      "churn": true,
++      "hostElements": 20000,
++      "styled": false
++    },
++    "counts": {
++      "adoptions": 192,
++      "styleReads": 200,
++      "sheetWrites": 100
++    },
++    "totalMs": 7416,
++    "blockedMs": 2609,
++    "longestMs": 94,
++    "longFrames": 92,
++    "firstTenOpenMs": 28,
++    "lastTenOpenMs": 86,
++    "longestOpenMs": 94
++  },
++  {
++    "browser": "webkit",
++    "variant": "churn-styled",
++    "repeat": 0,
++    "config": {
++      "churn": true,
++      "hostElements": 20000,
++      "styled": true
++    },
++    "counts": {
++      "adoptions": 192,
++      "styleReads": 200,
++      "sheetWrites": 100
++    },
++    "totalMs": 8611,
++    "blockedMs": 3710,
++    "longestMs": 99,
++    "longFrames": 92,
++    "firstTenOpenMs": 42,
++    "lastTenOpenMs": 86,
++    "longestOpenMs": 99
++  },
++  {
++    "browser": "webkit",
++    "variant": "churn-styled",
++    "repeat": 1,
++    "config": {
++      "churn": true,
++      "hostElements": 20000,
++      "styled": true
++    },
++    "counts": {
++      "adoptions": 192,
++      "styleReads": 200,
++      "sheetWrites": 100
++    },
++    "totalMs": 6944,
++    "blockedMs": 2086,
++    "longestMs": 83,
++    "longFrames": 92,
++    "firstTenOpenMs": 34,
++    "lastTenOpenMs": 73,
++    "longestOpenMs": 83
++  },
++  {
++    "browser": "webkit",
++    "variant": "churn-styled",
++    "repeat": 2,
++    "config": {
++      "churn": true,
++      "hostElements": 20000,
++      "styled": true
++    },
++    "counts": {
++      "adoptions": 192,
++      "styleReads": 200,
++      "sheetWrites": 100
++    },
++    "totalMs": 7514,
++    "blockedMs": 2619,
++    "longestMs": 94,
++    "longFrames": 92,
++    "firstTenOpenMs": 38,
++    "lastTenOpenMs": 74,
++    "longestOpenMs": 93
++  },
++  {
++    "browser": "chromium",
++    "variant": "churn",
++    "repeat": 0,
++    "config": {
++      "churn": true,
++      "hostElements": 20000,
++      "styled": false
++    },
++    "counts": {
++      "adoptions": 192,
++      "styleReads": 200,
++      "sheetWrites": 100
++    },
++    "totalMs": 1659,
++    "blockedMs": 0,
++    "longestMs": 17,
++    "longFrames": 0,
++    "firstTenOpenMs": 16,
++    "lastTenOpenMs": 16,
++    "longestOpenMs": 16
++  },
++  {
++    "browser": "chromium",
++    "variant": "churn",
++    "repeat": 1,
++    "config": {
++      "churn": true,
++      "hostElements": 20000,
++      "styled": false
++    },
++    "counts": {
++      "adoptions": 192,
++      "styleReads": 200,
++      "sheetWrites": 100
++    },
++    "totalMs": 1665,
++    "blockedMs": 0,
++    "longestMs": 17,
++    "longFrames": 0,
++    "firstTenOpenMs": 16,
++    "lastTenOpenMs": 16,
++    "longestOpenMs": 16
++  },
++  {
++    "browser": "chromium",
++    "variant": "churn",
++    "repeat": 2,
++    "config": {
++      "churn": true,
++      "hostElements": 20000,
++      "styled": false
++    },
++    "counts": {
++      "adoptions": 192,
++      "styleReads": 200,
++      "sheetWrites": 100
++    },
++    "totalMs": 1665,
++    "blockedMs": 0,
++    "longestMs": 17,
++    "longFrames": 0,
++    "firstTenOpenMs": 16,
++    "lastTenOpenMs": 16,
++    "longestOpenMs": 17
++  },
++  {
++    "browser": "chromium",
++    "variant": "churn-styled",
++    "repeat": 0,
++    "config": {
++      "churn": true,
++      "hostElements": 20000,
++      "styled": true
++    },
++    "counts": {
++      "adoptions": 192,
++      "styleReads": 200,
++      "sheetWrites": 100
++    },
++    "totalMs": 1666,
++    "blockedMs": 0,
++    "longestMs": 17,
++    "longFrames": 0,
++    "firstTenOpenMs": 16,
++    "lastTenOpenMs": 16,
++    "longestOpenMs": 17
++  },
++  {
++    "browser": "chromium",
++    "variant": "churn-styled",
++    "repeat": 1,
++    "config": {
++      "churn": true,
++      "hostElements": 20000,
++      "styled": true
++    },
++    "counts": {
++      "adoptions": 192,
++      "styleReads": 200,
++      "sheetWrites": 100
++    },
++    "totalMs": 1726,
++    "blockedMs": 0,
++    "longestMs": 33,
++    "longFrames": 0,
++    "firstTenOpenMs": 15,
++    "lastTenOpenMs": 5,
++    "longestOpenMs": 25
++  },
++  {
++    "browser": "chromium",
++    "variant": "churn-styled",
++    "repeat": 2,
++    "config": {
++      "churn": true,
++      "hostElements": 20000,
++      "styled": true
++    },
++    "counts": {
++      "adoptions": 192,
++      "styleReads": 200,
++      "sheetWrites": 100
++    },
++    "totalMs": 1759,
++    "blockedMs": 0,
++    "longestMs": 33,
++    "longFrames": 0,
++    "firstTenOpenMs": 16,
++    "lastTenOpenMs": 8,
++    "longestOpenMs": 17
++  }
++]
+diff --git a/spikes/highlight-perf/src/main.ts b/spikes/highlight-perf/src/main.ts
+index 52479f6..8fee472 100644
+--- a/spikes/highlight-perf/src/main.ts
++++ b/spikes/highlight-perf/src/main.ts
+@@ -144,13 +144,96 @@ const costs = () => ({
+   cacheHits: stats.cacheHits,
+ });
+ 
++/** What makes the browser style the whole document again, counted from here on. */
++function counted() {
++  const counts = { adoptions: 0, styleReads: 0, sheetWrites: 0 };
++  const sheets = Object.getOwnPropertyDescriptor(Document.prototype, "adoptedStyleSheets");
++  Object.defineProperty(document, "adoptedStyleSheets", {
++    configurable: true,
++    get: () => sheets?.get?.call(document) as CSSStyleSheet[],
++    set: (next: CSSStyleSheet[]) => {
++      counts.adoptions += 1;
++      sheets?.set?.call(document, next);
++    },
++  });
++  const read = window.getComputedStyle.bind(window);
++  window.getComputedStyle = (...given: Parameters<typeof read>) => {
++    counts.styleReads += 1;
++    return read(...given);
++  };
++  const write = CSSStyleSheet.prototype.replaceSync;
++  CSSStyleSheet.prototype.replaceSync = function (this: CSSStyleSheet, text: string) {
++    counts.sheetWrites += 1;
++    write.call(this, text);
++  };
++  return counts;
++}
++
++const nextFrame = () => new Promise<number>((resolve) => requestAnimationFrame(resolve));
++
++/**
++ * A large host document, then pages opened and closed in it, one a frame, eight live at a time, as a list that mounts
++ * what scrolls into view: what each open costs the page, apart from highlighting. `?host=N` is the host's elements,
++ * `?styled=1` gives each page a box with rules of its own.
++ */
++async function churn(): Promise<unknown> {
++  observer.disconnect();
++  for (const run of slots) unmountNow(run);
++  const host = scroller.appendChild(document.createElement("div"));
++  host.className = "host";
++  const elements = Number(query.get("host") ?? 20_000);
++  for (let i = 0; i < elements / 2; i++) {
++    const row = host.appendChild(document.createElement("div"));
++    row.className = `row r${String(i % 7)}`;
++    row.appendChild(document.createElement("span")).textContent = `Row ${String(i)}`;
++  }
++  await nextFrame();
++  await pause(500);
++  const counts = counted();
++  const styled = query.get("styled") === "1";
++  const live: Run[] = [];
++  const opens: number[] = [];
++  const start = performance.now();
++  for (let i = 0; i < 100; i++) {
++    const run = slots[i];
++    const code = runs[i];
++    if (!run || code === undefined) break;
++    const before = performance.now();
++    run.page = createPage(run.slot);
++    const block = { type: "code" as const, lang: "ts", meta: null, value: code };
++    run.page.render({ type: "root", children: styled ? [{ type: "componentContainer", name: "box", params: [{ key: "width", breakpoint: null, value: `${String(50 + (i % 40))}%` }], children: [block], slots: [] }] : [block] });
++    live.push(run);
++    if (live.length > 8) unmountNow(live.shift());
++    // Until the frame after: the open's own work and the styling it left the browser to do.
++    opens.push((await nextFrame()) - before);
++  }
++  const end = performance.now();
++  return {
++    config: { churn: true, hostElements: elements, styled },
++    counts,
++    totalMs: Math.round(end - start),
++    ...blocked(start, end),
++    firstTenOpenMs: percentile(opens.slice(0, 10), 0.5),
++    lastTenOpenMs: percentile(opens.slice(-10), 0.5),
++    longestOpenMs: Math.round(Math.max(...opens)),
++  };
++}
++
++/** A run's page gone now, whatever `?keep` says. */
++function unmountNow(run: Run | undefined): void {
++  run?.page?.destroy();
++  delete run?.page;
++  run?.slot.replaceChildren();
++}
++
+ declare global {
+   interface Window {
+-    spike: { run(): Promise<unknown> };
++    spike: { run(): Promise<unknown>; churn(): Promise<unknown> };
+   }
+ }
+ 
+ window.spike = {
++  churn,
+   async run() {
+     const opened = performance.now();
+     // The first runs mount when the observer first reports, a frame or so after the page loads.
