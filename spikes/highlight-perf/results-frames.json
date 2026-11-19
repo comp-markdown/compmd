@@ -1,0 +1,182 @@
+[
+  {
+    "browser": "webkit",
+    "variant": "frames-js",
+    "repeat": 0,
+    "config": {
+      "frames": 12,
+      "wasm": false
+    },
+    "firstFrameMs": 676,
+    "medianFrameMs": 34,
+    "longestFrameMs": 442,
+    "blockedMs": 693,
+    "longestMs": 447,
+    "longFrames": 4
+  },
+  {
+    "browser": "webkit",
+    "variant": "frames-js",
+    "repeat": 1,
+    "config": {
+      "frames": 12,
+      "wasm": false
+    },
+    "firstFrameMs": 652,
+    "medianFrameMs": 31,
+    "longestFrameMs": 436,
+    "blockedMs": 1250,
+    "longestMs": 619,
+    "longFrames": 5
+  },
+  {
+    "browser": "webkit",
+    "variant": "frames-js",
+    "repeat": 2,
+    "config": {
+      "frames": 12,
+      "wasm": false
+    },
+    "firstFrameMs": 659,
+    "medianFrameMs": 30,
+    "longestFrameMs": 434,
+    "blockedMs": 1230,
+    "longestMs": 627,
+    "longFrames": 4
+  },
+  {
+    "browser": "webkit",
+    "variant": "frames-wasm",
+    "repeat": 0,
+    "config": {
+      "frames": 12,
+      "wasm": true
+    },
+    "firstFrameMs": 56,
+    "medianFrameMs": 84,
+    "longestFrameMs": 117,
+    "blockedMs": 288,
+    "longestMs": 108,
+    "longFrames": 9
+  },
+  {
+    "browser": "webkit",
+    "variant": "frames-wasm",
+    "repeat": 1,
+    "config": {
+      "frames": 12,
+      "wasm": true
+    },
+    "firstFrameMs": 59,
+    "medianFrameMs": 83,
+    "longestFrameMs": 122,
+    "blockedMs": 317,
+    "longestMs": 112,
+    "longFrames": 10
+  },
+  {
+    "browser": "webkit",
+    "variant": "frames-wasm",
+    "repeat": 2,
+    "config": {
+      "frames": 12,
+      "wasm": true
+    },
+    "firstFrameMs": 56,
+    "medianFrameMs": 86,
+    "longestFrameMs": 127,
+    "blockedMs": 312,
+    "longestMs": 126,
+    "longFrames": 9
+  },
+  {
+    "browser": "chromium",
+    "variant": "frames-js",
+    "repeat": 0,
+    "config": {
+      "frames": 12,
+      "wasm": false
+    },
+    "firstFrameMs": 49,
+    "medianFrameMs": 35,
+    "longestFrameMs": 65,
+    "blockedMs": 0,
+    "longestMs": 33,
+    "longFrames": 0
+  },
+  {
+    "browser": "chromium",
+    "variant": "frames-js",
+    "repeat": 1,
+    "config": {
+      "frames": 12,
+      "wasm": false
+    },
+    "firstFrameMs": 51,
+    "medianFrameMs": 32,
+    "longestFrameMs": 67,
+    "blockedMs": 0,
+    "longestMs": 33,
+    "longFrames": 0
+  },
+  {
+    "browser": "chromium",
+    "variant": "frames-js",
+    "repeat": 2,
+    "config": {
+      "frames": 12,
+      "wasm": false
+    },
+    "firstFrameMs": 45,
+    "medianFrameMs": 32,
+    "longestFrameMs": 62,
+    "blockedMs": 0,
+    "longestMs": 50,
+    "longFrames": 0
+  },
+  {
+    "browser": "chromium",
+    "variant": "frames-wasm",
+    "repeat": 0,
+    "config": {
+      "frames": 12,
+      "wasm": true
+    },
+    "firstFrameMs": 60,
+    "medianFrameMs": 87,
+    "longestFrameMs": 126,
+    "blockedMs": 50,
+    "longestMs": 83,
+    "longFrames": 4
+  },
+  {
+    "browser": "chromium",
+    "variant": "frames-wasm",
+    "repeat": 1,
+    "config": {
+      "frames": 12,
+      "wasm": true
+    },
+    "firstFrameMs": 63,
+    "medianFrameMs": 87,
+    "longestFrameMs": 122,
+    "blockedMs": 50,
+    "longestMs": 83,
+    "longFrames": 2
+  },
+  {
+    "browser": "chromium",
+    "variant": "frames-wasm",
+    "repeat": 2,
+    "config": {
+      "frames": 12,
+      "wasm": true
+    },
+    "firstFrameMs": 64,
+    "medianFrameMs": 84,
+    "longestFrameMs": 126,
+    "blockedMs": 50,
+    "longestMs": 84,
+    "longFrames": 2
+  }
+]

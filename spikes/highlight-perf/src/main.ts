@@ -317,6 +317,53 @@ async function churnSheet(): Promise<unknown> {
   };
 }
 
+/**
+ * What each frame of a page pays to highlight its first block (CMD-260): `?frames=N` frames, one after the other, each
+ * a document of its own that makes the sandbox's highlighter and asks for a TypeScript block's tokens, with Oniguruma
+ * (`&wasm=1`) or the JavaScript engine. The files come from the browser's cache after the first frame; the compiling
+ * is each frame's own. In WebKit the frames run in the page's thread, so the page's frames show what they block.
+ */
+async function perFrame(): Promise<unknown> {
+  observer.disconnect();
+  const count = Number(query.get("frames") ?? 12);
+  const wasm = query.get("wasm") === "1";
+  const module = new URL("frame.js", location.href).href;
+  const ms: number[] = [];
+  const start = performance.now();
+  for (let i = 0; i < count; i++) {
+    const frame = document.body.appendChild(document.createElement("iframe"));
+    const heard = new Promise<number>((resolve) => {
+      const listener = ({ data, source }: MessageEvent<number>) => {
+        if (source !== frame.contentWindow) return;
+        removeEventListener("message", listener);
+        resolve(data);
+      };
+      addEventListener("message", listener);
+    });
+    // A frame that fails says so with -1, so the run goes on and the result shows it.
+    frame.srcdoc = `<script type="module">
+      try {
+        const { firstTokens } = await import(${JSON.stringify(module)});
+        parent.postMessage(await firstTokens(${JSON.stringify(runs[i] ?? "")}, ${String(wasm)}), "*");
+      } catch (error) {
+        console.error(String(error));
+        parent.postMessage(-1, "*");
+      }
+    </script>`;
+    ms.push(await heard);
+    frame.remove();
+  }
+  const end = performance.now();
+  const rest = ms.slice(1);
+  return {
+    config: { frames: count, wasm },
+    firstFrameMs: Math.round(ms[0] ?? 0),
+    medianFrameMs: percentile(rest, 0.5),
+    longestFrameMs: Math.round(Math.max(...rest)),
+    ...blocked(start, end),
+  };
+}
+
 /** A run's page gone now, whatever `?keep` says. */
 function unmountNow(run: Run | undefined): void {
   run?.page?.destroy();
@@ -331,7 +378,7 @@ declare global {
 }
 
 window.spike = {
-  churn: () => (query.has("sheet") ? churnSheet() : churn()),
+  churn: () => (query.has("frames") ? perFrame() : query.has("sheet") ? churnSheet() : churn()),
   async run() {
     const opened = performance.now();
     // The first runs mount when the observer first reports, a frame or so after the page loads.

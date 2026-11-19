@@ -75,7 +75,19 @@ What compiling WebAssembly in a frame lets component code do that its JavaScript
 
 ## Open points
 
-1. **What Oniguruma costs a frame:** loading 232 KB from the cache and compiling it, once per frame. The spike measured it once per page (host mode); a page with many frames (host mode with many strict uses, each highlighting its slots' code) pays it per frame. To measure with the follow-up, before choosing B instead.
+1. **What Oniguruma costs a frame** (measured 2026-11-19, CMD-260; [the spike](../spikes/highlight-perf/README.md), *Each frame's first block*): twelve frames, one after the other, each a document of its own that makes the sandbox's highlighter and highlights one TypeScript block, the files from the cache after the first.
+
+   | | First frame | Each frame after | Longest after | Blocked, all twelve | Long frames |
+   |---|---|---|---|---|---|
+   | WebKit, JavaScript engine | 660 ms | 31 ms | 436 ms | 1230 ms | 4–5 |
+   | WebKit, Oniguruma | 56 ms | 84 ms | 122 ms | 312 ms | 9–10 |
+   | Chromium, JavaScript engine | 49 ms | 32 ms | 65 ms | 0 | 0 |
+   | Chromium, Oniguruma | 63 ms | 87 ms | 126 ms | 50 ms | 2–4 |
+
+   - **Oniguruma's cost is each frame's own:** about 85 ms a frame in both browsers, compiling its WebAssembly again, where the JavaScript engine's frames after the first take about 30 ms (WebKit keeps the regexes it compiled for the frames after; its first frame pays 0.66 s).
+   - **In WebKit, for twelve frames, Oniguruma blocks a quarter as long** (0.3 s against 1.2 s) and no frame takes over 130 ms, against 0.4–0.6 s; but every frame is long (over 50 ms), where most of the JavaScript engine's aren't.
+   - **So it doesn't scale:** at about 35 ms blocked per frame, Oniguruma blocks longer than the JavaScript engine from about 35 frames on, in WebKit. In Chromium it is slower at any number.
+   - This is what alternative B avoids: one Oniguruma, the host's, for every frame.
 
 ## Follow-ups, once decided
 

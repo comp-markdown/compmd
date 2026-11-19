@@ -48,6 +48,9 @@ const VARIANTS: Record<string, string> = {
   "sheet-insert": "highlight=off&churn=1&sheet=insert",
   "sheet-none": "highlight=off&churn=1&sheet=none",
   "churn-styled-nowrite": "highlight=off&churn=1&styled=1&nowrite=1",
+  // Twelve frames, each highlighting its first block with a highlighter of its own (CMD-260).
+  "frames-js": "highlight=off&churn=1&frames=12",
+  "frames-wasm": "highlight=off&churn=1&frames=12&wasm=1",
 };
 
 const options = process.argv.slice(2).filter((argument) => argument.startsWith("--"));
