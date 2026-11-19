@@ -297,8 +297,9 @@
       },
       {
         "id": "Packs & Blog",
-        "state": "planned",
-        "goal": "Wrapping an npm package as a pack takes one command; a first set of packs, shown on the website; a blog section with its first posts."
+        "state": "active",
+        "goal": "Wrapping an npm package as a pack takes one command; a first set of packs, shown on the website; a blog section with its first posts.",
+        "start": "2026-11-19T16:35:06Z"
       }
     ],
     "archived": 102
@@ -461,11 +462,18 @@
         "docs/wrapping-an-npm-package.md"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-19T16:36:50Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "with": "user",
-      "number": 8
+      "number": 8,
+      "sprint_history": [
+        {
+          "sprint": "Packs & Blog",
+          "from": "2026-11-19T16:36:50Z"
+        }
+      ],
+      "sprint": "Packs & Blog"
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68e63c5137a7",
@@ -522,11 +530,18 @@
         "docs/first-components.md"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-19T16:36:50Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "with": "user",
-      "number": 10
+      "number": 10,
+      "sprint_history": [
+        {
+          "sprint": "Packs & Blog",
+          "from": "2026-11-19T16:36:50Z"
+        }
+      ],
+      "sprint": "Packs & Blog"
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68e81c39ce10",
@@ -771,11 +786,18 @@
         "spec/compmd-spec-v1.md"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-18T01:19:02Z",
+      "updated_at": "2026-11-19T16:36:50Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "with": "user",
-      "number": 17
+      "number": 17,
+      "sprint_history": [
+        {
+          "sprint": "Packs & Blog",
+          "from": "2026-11-19T16:36:50Z"
+        }
+      ],
+      "sprint": "Packs & Blog"
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68efa9d8fbb8",
