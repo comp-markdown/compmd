@@ -8,7 +8,7 @@
 2. **Oniguruma, as WebAssembly, where the page allows WebAssembly.** WebKit's cost is the JavaScript engine compiling TypeScript's regexes the first time they run: a 1.1 s frame on opening, and later long frames as new rules first match. With Oniguruma, shared, the first tokenizing takes 30 ms, and the page meets the host's targets: 83 ms blocked on opening, its longest frame 133 ms, 10 ms blocked over the skim. In Chromium it is as fast as the JavaScript engine once shared.
 3. **Tokenizing in slices, a block per task, those on screen first,** as a guard: with Oniguruma it takes opening's last 83 ms to 0, and it bounds a frame to one block however many blocks render at once.
 4. **Not carried over:** grammars prepared ahead (no gain in WebKit, which still compiles each regex on first use), a cache of tokens (nothing left to save once Shiki is shared: a run tokenizes in about 1 ms), and a worker (as smooth as Oniguruma on the page's thread, but a run waits 1.1 s on opening with the JavaScript engine, and it needs `worker-src` where Oniguruma needs `wasm-unsafe-eval`).
-5. **A finding apart from highlighting:** every `createPage` adopts a stylesheet of its own, with the base rules, so a document with hundreds of mounted pages restyles against hundreds of sheets: 43 s blocked in WebKit over the skim with highlighting off, 304 s with it. The spike doesn't fix it: CMD-253 shares the base rules' sheet among a document's pages.
+5. **A finding apart from highlighting:** every `createPage` adopts a stylesheet of its own, with the base rules, so a document with hundreds of mounted pages restyles against hundreds of sheets: 43 s blocked in WebKit over the skim with highlighting off, 304 s with it. The spike doesn't fix it: CMD-253 does, with one sheet for a document's pages, and measured what each open costs in a large host document ([below](#a-large-host-document-100-pages-opened-and-closed-cmd-253)).
 
 ## The test page
 
@@ -74,6 +74,28 @@ node spikes/highlight-perf/measure.ts 3 today shared     # some variants, three 
 |---|---|---|
 | no highlighting | 43 459 / 1679 ms | 17 300 / 900 ms |
 | shared | 304 346 / 11 708 ms | 24 166 / 1300 ms |
+
+### A large host document: 100 pages opened and closed (CMD-253)
+
+The page above has a small host document, so it missed what each open costs a large one. `?churn=1` adds 20,000 host elements (rows a host's own rules style), then opens 100 pages, one an animation frame, eight live at a time, destroying the oldest, without highlighting: `churn` with a code block each, `churn-styled` with the code in a box with a `width` of its own. It counts what makes the browser style the whole document again: the times the document's sheets are set (`adoptedStyleSheets`), the styles read (`getComputedStyle`) and the sheets written (`replaceSync`). **An open** is from `createPage` to the next animation frame, so 16 ms is one frame. Three runs each, medians; `results-churn-before.json` and `results-churn-after.json` have every run.
+
+| | Sheets set | Styles read | Sheets written | Blocked | An open: first ten / last ten / longest |
+|---|---|---|---|---|---|
+| WebKit, `churn`, before | 192 | 200 | 100 | 2609 ms | 31 / 71 / 94 ms |
+| WebKit, `churn`, after | 1 | 0 | 1 | 0 | 16 / 17 / 18 ms |
+| WebKit, `churn-styled`, before | 192 | 200 | 100 | 2619 ms | 38 / 74 / 93 ms |
+| WebKit, `churn-styled`, after | 1 | 0 | 193 | 0 | 36 / 38 / 45 ms |
+| Chromium, both, before and after | as WebKit's | | | 0 | 16 / 16 / 17 ms |
+
+- **Before, every open set the document's sheets and read a style at once,** which styled all 20,000 elements inside the open: 92 of 100 frames were long in WebKit, and an open grew from 31 ms to 71 ms over the run (why it grows wasn't looked into). The two reads a page are the page's own: one when it is made, one at its render. A sandbox's view in host mode read twice more, at open and at each render.
+- **After, a page of text and code changes nothing in the document's styles:** one sheet set for the first page, no style read, and each open within a frame.
+- **A page with styled blocks still writes the sheet** when it renders and when it is destroyed (193 writes), and in WebKit each takes the open to about two frames (38 ms), without a long frame. Whether writing a rule at a time is cheaper is CMD-254's to measure.
+- **Chromium doesn't show any of it** at this size, before or after.
+- **A real host's document is heavier** than 20,000 plain rows: the host that reported it saw about 1 s for each of these restyles, where this page has 70 ms.
+
+```sh
+pnpm --dir spikes/highlight-perf measure 3 churn churn-styled --out=results-churn.json
+```
 
 ## What the numbers say
 

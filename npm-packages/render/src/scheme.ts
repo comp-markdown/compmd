@@ -23,40 +23,35 @@ export interface SchemeFollower {
 }
 
 /**
- * The scheme of what a page or region renders into, and who follows it. It reads the scheme again on `read()` (at
- * each render, and when the host switches its own theme), when the reader's preference changes, and when printing
- * starts and ends, since print styles may change it.
+ * The scheme of what a page or region renders into, and who follows it. While something follows it, it reads the
+ * scheme again on `read()` (at each render, and when the host switches its own theme), when the reader's preference
+ * changes, and when printing starts and ends, since print styles may change it.
+ *
+ * Reading it asks the browser for the element's style, which makes it style the whole document first if anything in
+ * it changed. So nothing is read, and nothing listened to, for a page with no component to show in a scheme.
  */
 export class Schemes {
-  #current: Scheme;
+  /** The scheme as last read; `undefined` when nothing has asked since the last follower left. */
+  #current: Scheme | undefined;
   readonly #root: Element;
   readonly #followers = new Set<SchemeFollower>();
-  readonly #stop: () => void;
+  #stop: (() => void) | undefined;
 
   constructor(root: Element) {
     this.#root = root;
-    this.#current = schemeOf(root);
-    const view = root.ownerDocument.defaultView;
-    const preference = view?.matchMedia("(prefers-color-scheme: dark)");
-    const read = () => {
-      this.read();
-    };
-    preference?.addEventListener("change", read);
-    view?.addEventListener("beforeprint", read);
-    view?.addEventListener("afterprint", read);
-    this.#stop = () => {
-      preference?.removeEventListener("change", read);
-      view?.removeEventListener("beforeprint", read);
-      view?.removeEventListener("afterprint", read);
-    };
   }
 
+  /** The scheme now: read when nothing has it yet. */
   get current(): Scheme {
-    return this.#current;
+    return (this.#current ??= schemeOf(this.#root));
   }
 
-  /** Reads the scheme again; when it changed, every follower gets it. */
+  /** Reads the scheme again; when it changed, every follower gets it. With no follower, the next `current` reads it. */
   read(): void {
+    if (this.#followers.size === 0) {
+      this.#current = undefined;
+      return;
+    }
     const next = schemeOf(this.#root);
     if (next === this.#current) return;
     this.#current = next;
@@ -65,14 +60,38 @@ export class Schemes {
 
   follow(follower: SchemeFollower): void {
     this.#followers.add(follower);
+    this.#stop ??= this.#listen();
   }
 
   unfollow(follower: SchemeFollower): void {
     this.#followers.delete(follower);
+    if (this.#followers.size === 0) this.#unlisten();
   }
 
   destroy(): void {
-    this.#stop();
+    this.#unlisten();
     this.#followers.clear();
+  }
+
+  /** Reads again at what changes the scheme without a render; returns what stops it. */
+  #listen(): () => void {
+    const view = this.#root.ownerDocument.defaultView;
+    const preference = view?.matchMedia("(prefers-color-scheme: dark)");
+    const read = () => {
+      this.read();
+    };
+    preference?.addEventListener("change", read);
+    view?.addEventListener("beforeprint", read);
+    view?.addEventListener("afterprint", read);
+    return () => {
+      preference?.removeEventListener("change", read);
+      view?.removeEventListener("beforeprint", read);
+      view?.removeEventListener("afterprint", read);
+    };
+  }
+
+  #unlisten(): void {
+    this.#stop?.();
+    this.#stop = undefined;
   }
 }

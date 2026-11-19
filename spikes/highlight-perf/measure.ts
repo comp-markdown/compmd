@@ -3,6 +3,7 @@
 //
 //   node measure.ts [repeats] [variant…]     # each variant `repeats` times (1 by default), all variants without names
 //   node measure.ts 1 today --runs=40        # a smaller page, to try the runner
+//   node measure.ts 3 churn --out=x.json     # written to `x.json` here, not `results.json`
 
 import { readFileSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
@@ -33,6 +34,10 @@ const VARIANTS: Record<string, string> = {
   "shared+sliced+precompiled+cache": "shiki=shared&engine=precompiled&where=main&schedule=sliced&cache=1",
   "shared+sliced+oniguruma+cache": "shiki=shared&engine=oniguruma&where=main&schedule=sliced&cache=1",
   "worker+sliced+precompiled+cache": "shiki=shared&engine=precompiled&where=worker&schedule=sliced&cache=1",
+  // A large host document, and 100 pages opened and closed in it, without highlighting (CMD-253): code only, then
+  // each in a box with rules of its own.
+  churn: "highlight=off&churn=1",
+  "churn-styled": "highlight=off&churn=1&styled=1",
 };
 
 const options = process.argv.slice(2).filter((argument) => argument.startsWith("--"));
@@ -73,9 +78,14 @@ for (const [browserName, type] of BROWSERS) {
         console.log(`  [${browserName} ${name}] error: ${error.message}`);
       });
       await page.goto(`http://localhost:4290/?${query}${runsQuery}`);
-      const result = (await page.evaluate(() => window.spike.run())) as Record<string, unknown>;
+      const churn = query.includes("churn=1");
+      const result = (await page.evaluate((churns) => (churns ? window.spike.churn() : window.spike.run()), churn)) as Record<string, unknown>;
       await page.close();
       results.push({ browser: browserName, variant: name, repeat, ...result });
+      if (churn) {
+        console.log([browserName, name.padEnd(32), JSON.stringify(result)].join("  "));
+        continue;
+      }
       const { open, skim, revisit, costs } = result as Record<string, Record<string, unknown>>;
       console.log(
         [browserName, name.padEnd(32), `open ${String(open?.blockedMs)}ms/${String(open?.longestMs)}ms`, `skim ${String(skim?.blockedMs)}ms/${String(skim?.longestMs)}ms (${String(skim?.longFrames)} long)`, `revisit ${String(revisit?.blockedMs)}ms`, `wait ${String(open?.medianWaitMs)}/${String(skim?.medianWaitMs)}ms`, `tok ${String((costs?.total as Record<string, unknown>).medianTokenizeMs)}ms first ${String((costs?.total as Record<string, unknown>).firstTokenizeMs)}ms`].join("  "),
@@ -85,4 +95,5 @@ for (const [browserName, type] of BROWSERS) {
   await browser.close();
 }
 server.close();
-writeFileSync(join(import.meta.dirname, "results.json"), `${JSON.stringify(results, null, 2)}\n`);
+const outOption = options.find((option) => option.startsWith("--out="));
+writeFileSync(join(import.meta.dirname, outOption ? outOption.slice("--out=".length) : "results.json"), `${JSON.stringify(results, null, 2)}\n`);

@@ -16,6 +16,15 @@ interface Outcome {
   html: string;
 }
 
+/** `html` with its blocks' classes numbered as they come: a block's class is its own in the document, so two runs differ. */
+function withBlocksNumbered(html: string): string {
+  const numbers = new Map<string, number>();
+  return html.replace(/compmd-b\d+/g, (name) => {
+    if (!numbers.has(name)) numbers.set(name, numbers.size);
+    return `compmd-b#${String(numbers.get(name))}`;
+  });
+}
+
 function run(scenario: Scenario, mode: Mode): Outcome {
   const root = document.body.appendChild(document.createElement("main"));
   const log: Mounted[] = [];
@@ -51,7 +60,7 @@ function run(scenario: Scenario, mode: Mode): Outcome {
     moved: [...clicks].filter(([label, count]) => (after.get(label) ?? 0) > 0 && after.get(label) !== count).map(([label]) => label),
     lost: [...clicks].filter(([label]) => after.get(label) === 0).map(([label]) => label),
     notesKept: notes?.value === "typed" && document.activeElement === notes,
-    html: root.innerHTML,
+    html: withBlocksNumbered(root.innerHTML),
   };
   page.destroy();
   root.remove();

@@ -226,9 +226,80 @@ const BASE_RULES = `
 const declarationsText = (declarations: Declarations) => Object.entries(declarations).map(([property, value]) => `${property}: ${value};`).join(" ");
 
 /**
- * The stylesheet of one document, which every layer writes to: each styled block gets a class and its rules, and
- * `flush` writes them all at once. It is a constructed stylesheet, which a sandbox's CSP allows, or a `<style>`
- * element where constructed stylesheets aren't supported.
+ * The one sheet a document has for every {@link Stylesheet} in it: the base rules once, then each one's rules. The
+ * document adopts it with the first and drops it with the last, so a page more is no change to the document's sheets,
+ * which would restyle all of it. It is a constructed stylesheet, which a sandbox's CSP allows, or a `<style>` element
+ * where constructed stylesheets aren't supported.
+ */
+class DocumentSheet {
+  static readonly #all = new WeakMap<Document, DocumentSheet>();
+  readonly #document: Document;
+  readonly #users = new Set<Stylesheet>();
+  #sheet: CSSStyleSheet | undefined;
+  #element: HTMLStyleElement | undefined;
+  #next = 0;
+  #text = "";
+
+  static of(document: Document): DocumentSheet {
+    let sheet = DocumentSheet.#all.get(document);
+    if (!sheet) DocumentSheet.#all.set(document, (sheet = new DocumentSheet(document)));
+    return sheet;
+  }
+
+  private constructor(document: Document) {
+    this.#document = document;
+  }
+
+  /**
+   * A class no block of the document has had: never one used before, a destroyed page's included, so a rule can
+   * only ever match the block it was written for.
+   */
+  name(): string {
+    return `compmd-b${String(this.#next++)}`;
+  }
+
+  join(user: Stylesheet): void {
+    this.#users.add(user);
+    if (this.#users.size > 1) return;
+    this.write();
+    const Sheet = this.#document.defaultView?.CSSStyleSheet;
+    if (Sheet && typeof Sheet.prototype.replaceSync === "function" && "adoptedStyleSheets" in this.#document) {
+      this.#sheet = new Sheet();
+      this.#sheet.replaceSync(this.#text);
+      this.#document.adoptedStyleSheets = [...this.#document.adoptedStyleSheets, this.#sheet];
+    } else {
+      this.#element = this.#document.head.appendChild(this.#document.createElement("style"));
+      this.#element.textContent = this.#text;
+    }
+  }
+
+  leave(user: Stylesheet): void {
+    if (!this.#users.delete(user)) return;
+    if (this.#users.size > 0) {
+      this.write();
+      return;
+    }
+    if (this.#sheet) this.#document.adoptedStyleSheets = this.#document.adoptedStyleSheets.filter((sheet) => sheet !== this.#sheet);
+    this.#element?.remove();
+    this.#sheet = undefined;
+    this.#element = undefined;
+  }
+
+  /** Writes the sheet when its rules changed: a stylesheet whose blocks have none changes nothing. */
+  write(): void {
+    const next = [BASE_RULES, ...[...this.#users].map((user) => user.rules).filter(Boolean)].join("\n");
+    if (next === this.#text) return;
+    this.#text = next;
+    if (this.#sheet) this.#sheet.replaceSync(next);
+    else if (this.#element) this.#element.textContent = next;
+  }
+}
+
+/**
+ * The rules of one page, or of a region with a stylesheet of its own, which every layer of it writes to: each styled
+ * block gets a class and its rules, and `flush` writes them all at once, into the one sheet its document has for all
+ * of them. So many pages in one document share the base rules, and a page whose blocks have no rules never changes
+ * the document's styles.
  *
  * @example
  * const sheet = new Stylesheet(document);
@@ -236,30 +307,22 @@ const declarationsText = (declarations: Declarations) => Object.entries(declarat
  * sheet.flush();
  */
 export class Stylesheet {
-  readonly #document: Document;
-  readonly #sheet: CSSStyleSheet | undefined;
-  readonly #element: HTMLStyleElement | undefined;
+  readonly #shared: DocumentSheet;
   readonly #blocks = new Map<string, BlockCss>();
   readonly #classes = new WeakMap<Element, string>();
-  #next = 0;
+  #rules = "";
   #text = "";
 
   constructor(document: Document) {
-    this.#document = document;
-    const Sheet = document.defaultView?.CSSStyleSheet;
-    if (Sheet && typeof Sheet.prototype.replaceSync === "function" && "adoptedStyleSheets" in document) {
-      this.#sheet = new Sheet();
-      document.adoptedStyleSheets = [...document.adoptedStyleSheets, this.#sheet];
-    } else {
-      this.#element = document.head.appendChild(document.createElement("style"));
-    }
+    this.#shared = DocumentSheet.of(document);
+    this.#shared.join(this);
   }
 
-  /** Sets `element`'s block rules, and returns the class they select it by. */
+  /** Sets `element`'s block rules, and returns the class they select it by, which is its own in the document. */
   style(element: Element, css: BlockCss): string {
     let name = this.#classes.get(element);
     if (name === undefined) {
-      name = `compmd-b${String(this.#next++)}`;
+      name = this.#shared.name();
       this.#classes.set(element, name);
     }
     this.#blocks.set(name, css);
@@ -290,21 +353,23 @@ export class Stylesheet {
       const rules = at.get(name) ?? [];
       return rules.length === 0 ? [] : [`@container (min-width: ${String(width)}px) {\n${rules.join("\n")}\n}`];
     });
-    const next = [BASE_RULES, ...base, ...queries, ...visibility].join("\n");
-    if (next === this.#text) return;
-    this.#text = next;
-    if (this.#sheet) this.#sheet.replaceSync(next);
-    else if (this.#element) this.#element.textContent = next;
+    this.#rules = [...base, ...queries, ...visibility].join("\n");
+    this.#text = [BASE_RULES, ...base, ...queries, ...visibility].join("\n");
+    this.#shared.write();
   }
 
-  /** The rules as written by the last `flush`. */
+  /** Its blocks' rules as the last `flush` wrote them, without the base rules. */
+  get rules(): string {
+    return this.#rules;
+  }
+
+  /** The base rules and its own, as written by the last `flush`: all a page of its own needs, as one built ahead. */
   get text(): string {
     return this.#text;
   }
 
-  /** Removes the stylesheet from its document. */
+  /** Removes its rules from the document, and the document's sheet with the last stylesheet in it. */
   remove(): void {
-    if (this.#sheet) this.#document.adoptedStyleSheets = this.#document.adoptedStyleSheets.filter((sheet) => sheet !== this.#sheet);
-    this.#element?.remove();
+    this.#shared.leave(this);
   }
 }

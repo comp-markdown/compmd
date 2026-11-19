@@ -112,3 +112,86 @@ describe("Stylesheet", () => {
     sheet.remove();
   });
 });
+
+describe("a document's stylesheets", () => {
+  /** The rules the document has adopted, as text. */
+  const adopted = () => document.adoptedStyleSheets.flatMap((sheet) => [...sheet.cssRules]).map((rule) => rule.cssText).join("\n");
+
+  /** Counts the times the document's sheets are set while `run` runs: each restyles the whole document. */
+  function adoptions(run: () => void): number {
+    const own = Object.getOwnPropertyDescriptor(document, "adoptedStyleSheets");
+    let sheets = document.adoptedStyleSheets;
+    let count = 0;
+    Object.defineProperty(document, "adoptedStyleSheets", {
+      configurable: true,
+      get: () => sheets,
+      set: (next: CSSStyleSheet[]) => {
+        count += 1;
+        sheets = next;
+      },
+    });
+    try {
+      run();
+    } finally {
+      if (own) Object.defineProperty(document, "adoptedStyleSheets", own);
+      else Reflect.deleteProperty(document, "adoptedStyleSheets");
+      document.adoptedStyleSheets = sheets;
+    }
+    return count;
+  }
+
+  it("share one sheet, adopted with the first and dropped with the last", () => {
+    const before = document.adoptedStyleSheets.length;
+    const sheets: Stylesheet[] = [];
+    expect(adoptions(() => {
+      for (let i = 0; i < 50; i++) sheets.push(new Stylesheet(document));
+      for (const sheet of sheets) sheet.flush();
+    })).toBe(1);
+    expect(document.adoptedStyleSheets).toHaveLength(before + 1);
+    expect(adoptions(() => {
+      for (const sheet of sheets.slice(1)) sheet.remove();
+    })).toBe(0);
+    expect(document.adoptedStyleSheets).toHaveLength(before + 1);
+    sheets[0]?.remove();
+    expect(document.adoptedStyleSheets).toHaveLength(before);
+  });
+
+  it("have the base rules once, and each its own blocks' rules until it is removed", () => {
+    const [one, two] = [new Stylesheet(document), new Stylesheet(document)];
+    const a = one.style(document.createElement("div"), blockCss([p("width", "40%")], "block"));
+    const b = two.style(document.createElement("div"), blockCss([p("width", "60%")], "block"));
+    one.flush();
+    two.flush();
+    expect(adopted().split(".compmd-page {").length - 1).toBe(1);
+    expect(adopted()).toContain(`.${a} { width: 40%; }`);
+    expect(adopted()).toContain(`.${b} { width: 60%; }`);
+    expect(one.text).not.toContain(b);
+    one.remove();
+    expect(adopted()).not.toContain(`.${a} `);
+    expect(adopted()).toContain(`.${b} { width: 60%; }`);
+    two.remove();
+  });
+
+  it("never give two blocks of a document the same class, a removed stylesheet's included", () => {
+    const names = new Set<string>();
+    for (let i = 0; i < 3; i++) {
+      const sheet = new Stylesheet(document);
+      names.add(sheet.style(document.createElement("div"), blockCss([p("width", "40%")], "block")));
+      names.add(sheet.style(document.createElement("div"), blockCss([p("width", "60%")], "block")));
+      sheet.remove();
+    }
+    expect(names.size).toBe(6);
+  });
+
+  it("are a document's own", () => {
+    const other = document.implementation.createHTMLDocument();
+    const [here, there] = [new Stylesheet(document), new Stylesheet(other)];
+    const name = here.style(document.createElement("div"), blockCss([p("width", "40%")], "block"));
+    here.flush();
+    there.flush();
+    expect(adopted()).toContain(`.${name} `);
+    expect(there.text).not.toContain(name);
+    here.remove();
+    there.remove();
+  });
+});

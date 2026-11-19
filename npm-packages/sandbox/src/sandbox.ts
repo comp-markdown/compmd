@@ -249,9 +249,13 @@ export function createSandbox(given: SandboxOptions): Sandbox {
       );
       const page = options.page === "host" ? hostPage(container, runtime, options, observer, emit) : framePage(container, runtime, options, observer, emit);
       // The frames take the page's colour scheme: when the view opens, when the reader's preference changes, when
-      // printing starts and ends, at each render, and when the host says it switched its own.
+      // printing starts and ends, at each render, and when the host says it switched its own. A page in the host's
+      // page reads its own for its components, so a view with no frame reads nothing here: reading it makes the
+      // browser style the whole host document first, at every view a host opens.
       let scheme: Scheme | undefined;
+      const framed = () => page.frames()[Symbol.iterator]().next().done !== true;
       const followScheme = () => {
+        if (!framed()) return;
         const next = schemeOf(container);
         if (next === scheme) return;
         scheme = next;
@@ -295,12 +299,14 @@ export function createSandbox(given: SandboxOptions): Sandbox {
           changed();
           void ready.then(() => {
             page.render(tree, change);
+            followScheme();
           });
         },
         splice: (splices, change, spliceOptions) => {
           changed();
           void ready.then(() => {
             page.splice(splices, change, spliceOptions);
+            followScheme();
           });
         },
         components: (next) => {
@@ -308,6 +314,7 @@ export function createSandbox(given: SandboxOptions): Sandbox {
           const loading = ready.then(async () => {
             await runtime.set(next);
             page.code();
+            followScheme();
           });
           const nextShape = shapeOf(next);
           if (nextShape !== shape) ready = loading;

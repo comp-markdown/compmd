@@ -144,13 +144,96 @@ const costs = () => ({
   cacheHits: stats.cacheHits,
 });
 
+/** What makes the browser style the whole document again, counted from here on. */
+function counted() {
+  const counts = { adoptions: 0, styleReads: 0, sheetWrites: 0 };
+  const sheets = Object.getOwnPropertyDescriptor(Document.prototype, "adoptedStyleSheets");
+  Object.defineProperty(document, "adoptedStyleSheets", {
+    configurable: true,
+    get: () => sheets?.get?.call(document) as CSSStyleSheet[],
+    set: (next: CSSStyleSheet[]) => {
+      counts.adoptions += 1;
+      sheets?.set?.call(document, next);
+    },
+  });
+  const read = window.getComputedStyle.bind(window);
+  window.getComputedStyle = (...given: Parameters<typeof read>) => {
+    counts.styleReads += 1;
+    return read(...given);
+  };
+  const write = CSSStyleSheet.prototype.replaceSync;
+  CSSStyleSheet.prototype.replaceSync = function (this: CSSStyleSheet, text: string) {
+    counts.sheetWrites += 1;
+    write.call(this, text);
+  };
+  return counts;
+}
+
+const nextFrame = () => new Promise<number>((resolve) => requestAnimationFrame(resolve));
+
+/**
+ * A large host document, then pages opened and closed in it, one a frame, eight live at a time, as a list that mounts
+ * what scrolls into view: what each open costs the page, apart from highlighting. `?host=N` is the host's elements,
+ * `?styled=1` gives each page a box with rules of its own.
+ */
+async function churn(): Promise<unknown> {
+  observer.disconnect();
+  for (const run of slots) unmountNow(run);
+  const host = scroller.appendChild(document.createElement("div"));
+  host.className = "host";
+  const elements = Number(query.get("host") ?? 20_000);
+  for (let i = 0; i < elements / 2; i++) {
+    const row = host.appendChild(document.createElement("div"));
+    row.className = `row r${String(i % 7)}`;
+    row.appendChild(document.createElement("span")).textContent = `Row ${String(i)}`;
+  }
+  await nextFrame();
+  await pause(500);
+  const counts = counted();
+  const styled = query.get("styled") === "1";
+  const live: Run[] = [];
+  const opens: number[] = [];
+  const start = performance.now();
+  for (let i = 0; i < 100; i++) {
+    const run = slots[i];
+    const code = runs[i];
+    if (!run || code === undefined) break;
+    const before = performance.now();
+    run.page = createPage(run.slot);
+    const block = { type: "code" as const, lang: "ts", meta: null, value: code };
+    run.page.render({ type: "root", children: styled ? [{ type: "componentContainer", name: "box", params: [{ key: "width", breakpoint: null, value: `${String(50 + (i % 40))}%` }], children: [block], slots: [] }] : [block] });
+    live.push(run);
+    if (live.length > 8) unmountNow(live.shift());
+    // Until the frame after: the open's own work and the styling it left the browser to do.
+    opens.push((await nextFrame()) - before);
+  }
+  const end = performance.now();
+  return {
+    config: { churn: true, hostElements: elements, styled },
+    counts,
+    totalMs: Math.round(end - start),
+    ...blocked(start, end),
+    firstTenOpenMs: percentile(opens.slice(0, 10), 0.5),
+    lastTenOpenMs: percentile(opens.slice(-10), 0.5),
+    longestOpenMs: Math.round(Math.max(...opens)),
+  };
+}
+
+/** A run's page gone now, whatever `?keep` says. */
+function unmountNow(run: Run | undefined): void {
+  run?.page?.destroy();
+  delete run?.page;
+  run?.slot.replaceChildren();
+}
+
 declare global {
   interface Window {
-    spike: { run(): Promise<unknown> };
+    spike: { run(): Promise<unknown>; churn(): Promise<unknown> };
   }
 }
 
 window.spike = {
+  churn,
   async run() {
     const opened = performance.now();
     // The first runs mount when the observer first reports, a frame or so after the page loads.

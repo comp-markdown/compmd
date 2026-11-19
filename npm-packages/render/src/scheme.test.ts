@@ -109,6 +109,28 @@ describe("a page's components", () => {
     page.destroy();
   });
 
+  it("are the only reason the scheme is read: a page with none never asks for its style, nor listens", () => {
+    const reader = preference(false);
+    const asked = vi.spyOn(window, "getComputedStyle");
+    const page = createPage(place("light dark"));
+    page.render({ type: "root", children: [{ type: "code", lang: null, meta: null, value: "let a = 1;" }] });
+    page.render({ type: "root", children: [{ type: "paragraph", children: [{ type: "text", value: "Text." }] }] });
+    page.scheme();
+    expect(asked).not.toHaveBeenCalled();
+    expect(reader.listeners.size).toBe(0);
+    page.destroy();
+  });
+
+  it("are listened for only while there is one", () => {
+    const reader = preference(false);
+    const page = createPage(place("light dark"), { components: { chart: recording().mount } });
+    page.render(tree);
+    expect(reader.listeners.size).toBe(1);
+    page.render({ type: "root", children: [] });
+    expect(reader.listeners.size).toBe(0);
+    page.destroy();
+  });
+
   it("leave a frame to follow the scheme its own document takes", () => {
     const reader = preference(false);
     const update = vi.fn();

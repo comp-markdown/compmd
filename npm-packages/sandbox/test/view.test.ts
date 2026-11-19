@@ -160,6 +160,30 @@ describe("render and splice", () => {
   });
 });
 
+describe("views in one document (host mode)", () => {
+  /** A document of one box, as wide as `width`. */
+  const boxed = (width: string): ExpandedRoot => ({
+    type: "root",
+    children: [{ type: "componentContainer", name: "box", params: [{ key: "width", breakpoint: null, value: width }], children: [{ type: "paragraph", children: [{ type: "text", value: "A box." }] }], slots: [] }],
+  });
+  const widthOfBox = (area: HTMLElement) => area.querySelector<HTMLElement>(".compmd-box")?.getBoundingClientRect().width;
+
+  it("each style their own blocks, whichever was opened, rendered or closed first", async () => {
+    const [first, second] = [open("host", []), open("host", [])];
+    for (const { area } of [first, second]) area.style.width = "400px";
+    second.view.render(boxed("50%"));
+    first.view.render(boxed("25%"));
+    await Promise.all([first.view.settled(), second.view.settled()]);
+    expect([widthOfBox(first.area), widthOfBox(second.area)]).toEqual([100, 200]);
+    first.view.destroy();
+    const third = open("host", []);
+    third.area.style.width = "400px";
+    third.view.render(boxed("75%"));
+    await third.view.settled();
+    expect([widthOfBox(second.area), widthOfBox(third.area)]).toEqual([200, 300]);
+  });
+});
+
 describe("the page's colour scheme", () => {
   /** `label`, but setting the scheme it is shown in and the one its frame's document has, on each update. */
   const scheme: HostComponent = {
@@ -196,6 +220,26 @@ describe("the page's colour scheme", () => {
       expect(values().at(-1)).toBe("dark dark");
     });
   }
+
+  it("is never read for a view with no component or frame to show in it: reading it styles the whole host page first (host mode)", async () => {
+    const read = window.getComputedStyle.bind(window);
+    let reads = 0;
+    window.getComputedStyle = (...given: Parameters<typeof read>) => {
+      reads += 1;
+      return read(...given);
+    };
+    try {
+      const sheets = document.adoptedStyleSheets.length;
+      const opened = [1, 2, 3].map(() => open("host", []));
+      for (const { view } of opened) view.render({ type: "root", children: [{ type: "code", lang: "js", meta: null, value: "let a = 1;" }] });
+      for (const { view } of opened) view.render({ type: "root", children: [{ type: "paragraph", children: [{ type: "text", value: "Text." }] }] });
+      await Promise.all(opened.map(({ view }) => view.settled()));
+      expect(reads).toBe(0);
+      expect(document.adoptedStyleSheets.length, "one sheet for the three views").toBeLessThanOrEqual(sheets + 1);
+    } finally {
+      window.getComputedStyle = read;
+    }
+  });
 });
 
 describe("a component that fails", () => {
