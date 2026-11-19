@@ -1,0 +1,37 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "0cca59256637853d2dae2311aab1f0fc5778f771",
+    "head": "f636d81d6147074d8a27ac9f82459213a593a34c"
+  },
+  "files": [
+    {
+      "path": "spikes/highlight-perf/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spikes/highlight-perf/measure.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spikes/highlight-perf/results-sheet-styled.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/highlight-perf/results-sheet.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/highlight-perf/src/main.ts",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-19T07:58:00Z"
+}

@@ -1,0 +1,980 @@
+diff --git a/spikes/highlight-perf/README.md b/spikes/highlight-perf/README.md
+index 4140fe8..204a33c 100644
+--- a/spikes/highlight-perf/README.md
++++ b/spikes/highlight-perf/README.md
+@@ -102,12 +102,36 @@ The page above has a small host document, so it missed what each open costs a la
+ 
+ - **Before, every open set the document's sheets and read a style at once,** which styled all 20,000 elements inside the open: 92 of 100 frames were long in WebKit, and an open grew from 31 ms to 71 ms over the run (why it grows wasn't looked into). The two reads a page are the page's own: one when it is made, one at its render. A sandbox's view in host mode read twice more, at open and at each render.
+ - **After, a page of text and code changes nothing in the document's styles:** one sheet set for the first page, no style read, and each open within a frame.
+-- **A page with styled blocks still writes the sheet** when it renders and when it is destroyed (193 writes), and in WebKit each takes the open to about two frames (38 ms), without a long frame. Whether writing a rule at a time is cheaper is CMD-254's to measure.
++- **A page with styled blocks still writes the sheet** when it renders and when it is destroyed (193 writes), and in WebKit an open took about two frames (38 ms) in this run, without a long frame. The writes aren't what that costs ([below](#writing-a-blocks-rules-cmd-254)).
+ - **Chromium doesn't show any of it** at this size, before or after.
+ - **A real host's document is heavier** than 20,000 plain rows: the host that reported it saw about 1 s for each of these restyles, where this page has 70 ms.
+ 
++### Writing a block's rules (CMD-254)
++
++Whether a styled block's rules should be inserted and deleted one by one (`insertRule`, `deleteRule`) rather than the document's sheet written whole (`replaceSync`, as `Stylesheet.flush` does). Two ways, in the same large host document, three runs each, medians; `results-sheet.json` and `results-sheet-styled.json` have every run.
++
++- **The writes alone** (`sheet-none`, `sheet-replace`, `sheet-insert`): one adopted sheet with the base rules, 100 blocks added and removed, eight live, one a frame, each with a rule of its own and one in a container query, written one way or the other, or not at all.
++- **The renderer's pages** (`churn-styled`), against the same with the sheet writes counted but not made (`churn-styled-nowrite`), so what is left is the rest of an open.
++
++| WebKit | Blocked | An open: first ten / last ten / longest |
++|---|---|---|
++| No rules written | 0 | 16 / 16 / 18 ms |
++| The whole sheet each time | 0 | 17 / 18 / 20 ms |
++| Rule by rule | 0 | 17 / 19 / 22 ms |
++| The renderer's styled pages | 0 | 20 / 20 / 24 ms |
++| The same, the writes not made | 0 | 20 / 26 / 30 ms |
++
++Chromium: 16 ms an open in every one.
++
++- **Writing the sheet costs little, either way:** a frame and a millisecond or two with sixteen rules live, and rule by rule is no cheaper than the whole sheet.
++- **What a styled page's open costs beyond a code block's is its own boxes,** not the writes: without them the open is no faster.
++- **So the renderer keeps writing the sheet whole.** Hundreds of styled pages live at once, with hundreds of blocks' rules in the sheet, weren't measured; that is what could change it.
++- This run's styled opens took 20 ms where the CMD-253 run above measured 38 ms, on the same page; why the two runs differ wasn't looked into. The comparisons are within a run.
++
+ ```sh
+ pnpm --dir spikes/highlight-perf measure 3 churn churn-styled --out=results-churn.json
++pnpm --dir spikes/highlight-perf measure 3 sheet-none sheet-replace sheet-insert --out=results-sheet.json
++pnpm --dir spikes/highlight-perf measure 3 churn churn-styled churn-styled-nowrite --out=results-sheet-styled.json
+ pnpm --dir spikes/highlight-perf measure 3 sandbox-per-view sandbox-shared --out=results-sandbox.json   # after building @compmd/sandbox
+ ```
+ 
+diff --git a/spikes/highlight-perf/measure.ts b/spikes/highlight-perf/measure.ts
+index f9c4a6d..9c812b7 100644
+--- a/spikes/highlight-perf/measure.ts
++++ b/spikes/highlight-perf/measure.ts
+@@ -41,6 +41,11 @@ const VARIANTS: Record<string, string> = {
+   // each in a box with rules of its own.
+   churn: "highlight=off&churn=1",
+   "churn-styled": "highlight=off&churn=1&styled=1",
++  // The same document, one sheet, a block's rules written as a whole sheet, rule by rule, or not at all (CMD-254).
++  "sheet-replace": "highlight=off&churn=1&sheet=replace",
++  "sheet-insert": "highlight=off&churn=1&sheet=insert",
++  "sheet-none": "highlight=off&churn=1&sheet=none",
++  "churn-styled-nowrite": "highlight=off&churn=1&styled=1&nowrite=1",
+ };
+ 
+ const options = process.argv.slice(2).filter((argument) => argument.startsWith("--"));
+diff --git a/spikes/highlight-perf/results-sheet-styled.json b/spikes/highlight-perf/results-sheet-styled.json
+new file mode 100644
+index 0000000..ac2ae1d
+--- /dev/null
++++ b/spikes/highlight-perf/results-sheet-styled.json
+@@ -0,0 +1,398 @@
++[
++  {
++    "browser": "webkit",
++    "variant": "churn",
++    "repeat": 0,
++    "config": {
++      "churn": true,
++      "hostElements": 20000,
++      "styled": false
++    },
++    "counts": {
++      "adoptions": 1,
++      "styleReads": 0,
++      "sheetWrites": 1
++    },
++    "totalMs": 1664,
++    "blockedMs": 0,
++    "longestMs": 18,
++    "longFrames": 0,
++    "firstTenOpenMs": 17,
++    "lastTenOpenMs": 17,
++    "longestOpenMs": 18
++  },
++  {
++    "browser": "webkit",
++    "variant": "churn",
++    "repeat": 1,
++    "config": {
++      "churn": true,
++      "hostElements": 20000,
++      "styled": false
++    },
++    "counts": {
++      "adoptions": 1,
++      "styleReads": 0,
++      "sheetWrites": 1
++    },
++    "totalMs": 1656,
++    "blockedMs": 0,
++    "longestMs": 18,
++    "longFrames": 0,
++    "firstTenOpenMs": 16,
++    "lastTenOpenMs": 17,
++    "longestOpenMs": 18
++  },
++  {
++    "browser": "webkit",
++    "variant": "churn",
++    "repeat": 2,
++    "config": {
++      "churn": true,
++      "hostElements": 20000,
++      "styled": false
++    },
++    "counts": {
++      "adoptions": 1,
++      "styleReads": 0,
++      "sheetWrites": 1
++    },
++    "totalMs": 1654,
++    "blockedMs": 0,
++    "longestMs": 18,
++    "longFrames": 0,
++    "firstTenOpenMs": 16,
++    "lastTenOpenMs": 16,
++    "longestOpenMs": 18
++  },
++  {
++    "browser": "webkit",
++    "variant": "churn-styled",
++    "repeat": 0,
++    "config": {
++      "churn": true,
++      "hostElements": 20000,
++      "styled": true
++    },
++    "counts": {
++      "adoptions": 1,
++      "styleReads": 0,
++      "sheetWrites": 193
++    },
++    "totalMs": 2046,
++    "blockedMs": 0,
++    "longestMs": 37,
++    "longFrames": 0,
++    "firstTenOpenMs": 20,
++    "lastTenOpenMs": 20,
++    "longestOpenMs": 24
++  },
++  {
++    "browser": "webkit",
++    "variant": "churn-styled",
++    "repeat": 1,
++    "config": {
++      "churn": true,
++      "hostElements": 20000,
++      "styled": true
++    },
++    "counts": {
++      "adoptions": 1,
++      "styleReads": 0,
++      "sheetWrites": 193
++    },
++    "totalMs": 2001,
++    "blockedMs": 0,
++    "longestMs": 30,
++    "longFrames": 0,
++    "firstTenOpenMs": 20,
++    "lastTenOpenMs": 19,
++    "longestOpenMs": 24
++  },
++  {
++    "browser": "webkit",
++    "variant": "churn-styled",
++    "repeat": 2,
++    "config": {
++      "churn": true,
++      "hostElements": 20000,
++      "styled": true
++    },
++    "counts": {
++      "adoptions": 1,
++      "styleReads": 0,
++      "sheetWrites": 193
++    },
++    "totalMs": 2265,
++    "blockedMs": 0,
++    "longestMs": 43,
++    "longFrames": 0,
++    "firstTenOpenMs": 22,
++    "lastTenOpenMs": 20,
++    "longestOpenMs": 28
++  },
++  {
++    "browser": "webkit",
++    "variant": "churn-styled-nowrite",
++    "repeat": 0,
++    "config": {
++      "churn": true,
++      "hostElements": 20000,
++      "styled": true
++    },
++    "counts": {
++      "adoptions": 1,
++      "styleReads": 0,
++      "sheetWrites": 193
++    },
++    "totalMs": 2159,
++    "blockedMs": 0,
++    "longestMs": 35,
++    "longFrames": 0,
++    "firstTenOpenMs": 20,
++    "lastTenOpenMs": 22,
++    "longestOpenMs": 26
++  },
++  {
++    "browser": "webkit",
++    "variant": "churn-styled-nowrite",
++    "repeat": 1,
++    "config": {
++      "churn": true,
++      "hostElements": 20000,
++      "styled": true
++    },
++    "counts": {
++      "adoptions": 1,
++      "styleReads": 0,
++      "sheetWrites": 193
++    },
++    "totalMs": 2901,
++    "blockedMs": 0,
++    "longestMs": 40,
++    "longFrames": 0,
++    "firstTenOpenMs": 20,
++    "lastTenOpenMs": 35,
++    "longestOpenMs": 39
++  },
++  {
++    "browser": "webkit",
++    "variant": "churn-styled-nowrite",
++    "repeat": 2,
++    "config": {
++      "churn": true,
++      "hostElements": 20000,
++      "styled": true
++    },
++    "counts": {
++      "adoptions": 1,
++      "styleReads": 0,
++      "sheetWrites": 193
++    },
++    "totalMs": 2390,
++    "blockedMs": 0,
++    "longestMs": 37,
++    "longFrames": 0,
++    "firstTenOpenMs": 22,
++    "lastTenOpenMs": 26,
++    "longestOpenMs": 30
++  },
++  {
++    "browser": "chromium",
++    "variant": "churn",
++    "repeat": 0,
++    "config": {
++      "churn": true,
++      "hostElements": 20000,
++      "styled": false
++    },
++    "counts": {
++      "adoptions": 1,
++      "styleReads": 0,
++      "sheetWrites": 1
++    },
++    "totalMs": 1665,
++    "blockedMs": 0,
++    "longestMs": 17,
++    "longFrames": 0,
++    "firstTenOpenMs": 16,
++    "lastTenOpenMs": 16,
++    "longestOpenMs": 17
++  },
++  {
++    "browser": "chromium",
++    "variant": "churn",
++    "repeat": 1,
++    "config": {
++      "churn": true,
++      "hostElements": 20000,
++      "styled": false
++    },
++    "counts": {
++      "adoptions": 1,
++      "styleReads": 0,
++      "sheetWrites": 1
++    },
++    "totalMs": 1661,
++    "blockedMs": 0,
++    "longestMs": 17,
++    "longFrames": 0,
++    "firstTenOpenMs": 16,
++    "lastTenOpenMs": 16,
++    "longestOpenMs": 17
++  },
++  {
++    "browser": "chromium",
++    "variant": "churn",
++    "repeat": 2,
++    "config": {
++      "churn": true,
++      "hostElements": 20000,
++      "styled": false
++    },
++    "counts": {
++      "adoptions": 1,
++      "styleReads": 0,
++      "sheetWrites": 1
++    },
++    "totalMs": 1665,
++    "blockedMs": 0,
++    "longestMs": 17,
++    "longFrames": 0,
++    "firstTenOpenMs": 16,
++    "lastTenOpenMs": 16,
++    "longestOpenMs": 16
++  },
++  {
++    "browser": "chromium",
++    "variant": "churn-styled",
++    "repeat": 0,
++    "config": {
++      "churn": true,
++      "hostElements": 20000,
++      "styled": true
++    },
++    "counts": {
++      "adoptions": 1,
++      "styleReads": 0,
++      "sheetWrites": 193
++    },
++    "totalMs": 1662,
++    "blockedMs": 0,
++    "longestMs": 17,
++    "longFrames": 0,
++    "firstTenOpenMs": 16,
++    "lastTenOpenMs": 16,
++    "longestOpenMs": 17
++  },
++  {
++    "browser": "chromium",
++    "variant": "churn-styled",
++    "repeat": 1,
++    "config": {
++      "churn": true,
++      "hostElements": 20000,
++      "styled": true
++    },
++    "counts": {
++      "adoptions": 1,
++      "styleReads": 0,
++      "sheetWrites": 193
++    },
++    "totalMs": 1661,
++    "blockedMs": 0,
++    "longestMs": 17,
++    "longFrames": 0,
++    "firstTenOpenMs": 15,
++    "lastTenOpenMs": 16,
++    "longestOpenMs": 17
++  },
++  {
++    "browser": "chromium",
++    "variant": "churn-styled",
++    "repeat": 2,
++    "config": {
++      "churn": true,
++      "hostElements": 20000,
++      "styled": true
++    },
++    "counts": {
++      "adoptions": 1,
++      "styleReads": 0,
++      "sheetWrites": 193
++    },
++    "totalMs": 1675,
++    "blockedMs": 0,
++    "longestMs": 33,
++    "longFrames": 0,
++    "firstTenOpenMs": 15,
++    "lastTenOpenMs": 15,
++    "longestOpenMs": 33
++  },
++  {
++    "browser": "chromium",
++    "variant": "churn-styled-nowrite",
++    "repeat": 0,
++    "config": {
++      "churn": true,
++      "hostElements": 20000,
++      "styled": true
++    },
++    "counts": {
++      "adoptions": 1,
++      "styleReads": 0,
++      "sheetWrites": 193
++    },
++    "totalMs": 1707,
++    "blockedMs": 0,
++    "longestMs": 33,
++    "longFrames": 0,
++    "firstTenOpenMs": 16,
++    "lastTenOpenMs": 10,
++    "longestOpenMs": 17
++  },
++  {
++    "browser": "chromium",
++    "variant": "churn-styled-nowrite",
++    "repeat": 1,
++    "config": {
++      "churn": true,
++      "hostElements": 20000,
++      "styled": true
++    },
++    "counts": {
++      "adoptions": 1,
++      "styleReads": 0,
++      "sheetWrites": 193
++    },
++    "totalMs": 1654,
++    "blockedMs": 0,
++    "longestMs": 17,
++    "longFrames": 0,
++    "firstTenOpenMs": 13,
++    "lastTenOpenMs": 16,
++    "longestOpenMs": 17
++  },
++  {
++    "browser": "chromium",
++    "variant": "churn-styled-nowrite",
++    "repeat": 2,
++    "config": {
++      "churn": true,
++      "hostElements": 20000,
++      "styled": true
++    },
++    "counts": {
++      "adoptions": 1,
++      "styleReads": 0,
++      "sheetWrites": 193
++    },
++    "totalMs": 1666,
++    "blockedMs": 0,
++    "longestMs": 17,
++    "longFrames": 0,
++    "firstTenOpenMs": 16,
++    "lastTenOpenMs": 16,
++    "longestOpenMs": 17
++  }
++]
+diff --git a/spikes/highlight-perf/results-sheet.json b/spikes/highlight-perf/results-sheet.json
+new file mode 100644
+index 0000000..f7b9791
+--- /dev/null
++++ b/spikes/highlight-perf/results-sheet.json
+@@ -0,0 +1,416 @@
++[
++  {
++    "browser": "webkit",
++    "variant": "sheet-none",
++    "repeat": 0,
++    "config": {
++      "churnSheet": true,
++      "hostElements": 20000,
++      "sheet": "none"
++    },
++    "counts": {
++      "adoptions": 0,
++      "styleReads": 0,
++      "sheetWrites": 0
++    },
++    "rules": 0,
++    "totalMs": 1663,
++    "blockedMs": 0,
++    "longestMs": 18,
++    "longFrames": 0,
++    "firstTenOpenMs": 16,
++    "lastTenOpenMs": 16,
++    "longestOpenMs": 18
++  },
++  {
++    "browser": "webkit",
++    "variant": "sheet-none",
++    "repeat": 1,
++    "config": {
++      "churnSheet": true,
++      "hostElements": 20000,
++      "sheet": "none"
++    },
++    "counts": {
++      "adoptions": 0,
++      "styleReads": 0,
++      "sheetWrites": 0
++    },
++    "rules": 0,
++    "totalMs": 1659,
++    "blockedMs": 0,
++    "longestMs": 18,
++    "longFrames": 0,
++    "firstTenOpenMs": 17,
++    "lastTenOpenMs": 16,
++    "longestOpenMs": 18
++  },
++  {
++    "browser": "webkit",
++    "variant": "sheet-none",
++    "repeat": 2,
++    "config": {
++      "churnSheet": true,
++      "hostElements": 20000,
++      "sheet": "none"
++    },
++    "counts": {
++      "adoptions": 0,
++      "styleReads": 0,
++      "sheetWrites": 0
++    },
++    "rules": 0,
++    "totalMs": 1658,
++    "blockedMs": 0,
++    "longestMs": 18,
++    "longFrames": 0,
++    "firstTenOpenMs": 16,
++    "lastTenOpenMs": 16,
++    "longestOpenMs": 18
++  },
++  {
++    "browser": "webkit",
++    "variant": "sheet-replace",
++    "repeat": 0,
++    "config": {
++      "churnSheet": true,
++      "hostElements": 20000,
++      "sheet": "replace"
++    },
++    "counts": {
++      "adoptions": 0,
++      "styleReads": 0,
++      "sheetWrites": 100
++    },
++    "rules": 16,
++    "totalMs": 1663,
++    "blockedMs": 0,
++    "longestMs": 26,
++    "longFrames": 0,
++    "firstTenOpenMs": 16,
++    "lastTenOpenMs": 16,
++    "longestOpenMs": 18
++  },
++  {
++    "browser": "webkit",
++    "variant": "sheet-replace",
++    "repeat": 1,
++    "config": {
++      "churnSheet": true,
++      "hostElements": 20000,
++      "sheet": "replace"
++    },
++    "counts": {
++      "adoptions": 0,
++      "styleReads": 0,
++      "sheetWrites": 100
++    },
++    "rules": 16,
++    "totalMs": 1727,
++    "blockedMs": 0,
++    "longestMs": 25,
++    "longFrames": 0,
++    "firstTenOpenMs": 17,
++    "lastTenOpenMs": 18,
++    "longestOpenMs": 20
++  },
++  {
++    "browser": "webkit",
++    "variant": "sheet-replace",
++    "repeat": 2,
++    "config": {
++      "churnSheet": true,
++      "hostElements": 20000,
++      "sheet": "replace"
++    },
++    "counts": {
++      "adoptions": 0,
++      "styleReads": 0,
++      "sheetWrites": 100
++    },
++    "rules": 16,
++    "totalMs": 1887,
++    "blockedMs": 0,
++    "longestMs": 30,
++    "longFrames": 0,
++    "firstTenOpenMs": 18,
++    "lastTenOpenMs": 19,
++    "longestOpenMs": 21
++  },
++  {
++    "browser": "webkit",
++    "variant": "sheet-insert",
++    "repeat": 0,
++    "config": {
++      "churnSheet": true,
++      "hostElements": 20000,
++      "sheet": "insert"
++    },
++    "counts": {
++      "adoptions": 0,
++      "styleReads": 0,
++      "sheetWrites": 0
++    },
++    "rules": 16,
++    "totalMs": 1844,
++    "blockedMs": 0,
++    "longestMs": 26,
++    "longFrames": 0,
++    "firstTenOpenMs": 17,
++    "lastTenOpenMs": 18,
++    "longestOpenMs": 22
++  },
++  {
++    "browser": "webkit",
++    "variant": "sheet-insert",
++    "repeat": 1,
++    "config": {
++      "churnSheet": true,
++      "hostElements": 20000,
++      "sheet": "insert"
++    },
++    "counts": {
++      "adoptions": 0,
++      "styleReads": 0,
++      "sheetWrites": 0
++    },
++    "rules": 16,
++    "totalMs": 1760,
++    "blockedMs": 0,
++    "longestMs": 20,
++    "longFrames": 0,
++    "firstTenOpenMs": 18,
++    "lastTenOpenMs": 19,
++    "longestOpenMs": 20
++  },
++  {
++    "browser": "webkit",
++    "variant": "sheet-insert",
++    "repeat": 2,
++    "config": {
++      "churnSheet": true,
++      "hostElements": 20000,
++      "sheet": "insert"
++    },
++    "counts": {
++      "adoptions": 0,
++      "styleReads": 0,
++      "sheetWrites": 0
++    },
++    "rules": 16,
++    "totalMs": 1861,
++    "blockedMs": 0,
++    "longestMs": 26,
++    "longFrames": 0,
++    "firstTenOpenMs": 16,
++    "lastTenOpenMs": 21,
++    "longestOpenMs": 25
++  },
++  {
++    "browser": "chromium",
++    "variant": "sheet-none",
++    "repeat": 0,
++    "config": {
++      "churnSheet": true,
++      "hostElements": 20000,
++      "sheet": "none"
++    },
++    "counts": {
++      "adoptions": 0,
++      "styleReads": 0,
++      "sheetWrites": 0
++    },
++    "rules": 0,
++    "totalMs": 1666,
++    "blockedMs": 0,
++    "longestMs": 17,
++    "longFrames": 0,
++    "firstTenOpenMs": 15,
++    "lastTenOpenMs": 16,
++    "longestOpenMs": 17
++  },
++  {
++    "browser": "chromium",
++    "variant": "sheet-none",
++    "repeat": 1,
++    "config": {
++      "churnSheet": true,
++      "hostElements": 20000,
++      "sheet": "none"
++    },
++    "counts": {
++      "adoptions": 0,
++      "styleReads": 0,
++      "sheetWrites": 0
++    },
++    "rules": 0,
++    "totalMs": 1664,
++    "blockedMs": 0,
++    "longestMs": 17,
++    "longFrames": 0,
++    "firstTenOpenMs": 16,
++    "lastTenOpenMs": 16,
++    "longestOpenMs": 17
++  },
++  {
++    "browser": "chromium",
++    "variant": "sheet-none",
++    "repeat": 2,
++    "config": {
++      "churnSheet": true,
++      "hostElements": 20000,
++      "sheet": "none"
++    },
++    "counts": {
++      "adoptions": 0,
++      "styleReads": 0,
++      "sheetWrites": 0
++    },
++    "rules": 0,
++    "totalMs": 1664,
++    "blockedMs": 0,
++    "longestMs": 17,
++    "longFrames": 0,
++    "firstTenOpenMs": 16,
++    "lastTenOpenMs": 16,
++    "longestOpenMs": 17
++  },
++  {
++    "browser": "chromium",
++    "variant": "sheet-replace",
++    "repeat": 0,
++    "config": {
++      "churnSheet": true,
++      "hostElements": 20000,
++      "sheet": "replace"
++    },
++    "counts": {
++      "adoptions": 0,
++      "styleReads": 0,
++      "sheetWrites": 100
++    },
++    "rules": 16,
++    "totalMs": 1666,
++    "blockedMs": 0,
++    "longestMs": 17,
++    "longFrames": 0,
++    "firstTenOpenMs": 16,
++    "lastTenOpenMs": 16,
++    "longestOpenMs": 17
++  },
++  {
++    "browser": "chromium",
++    "variant": "sheet-replace",
++    "repeat": 1,
++    "config": {
++      "churnSheet": true,
++      "hostElements": 20000,
++      "sheet": "replace"
++    },
++    "counts": {
++      "adoptions": 0,
++      "styleReads": 0,
++      "sheetWrites": 100
++    },
++    "rules": 16,
++    "totalMs": 1666,
++    "blockedMs": 0,
++    "longestMs": 17,
++    "longFrames": 0,
++    "firstTenOpenMs": 16,
++    "lastTenOpenMs": 16,
++    "longestOpenMs": 17
++  },
++  {
++    "browser": "chromium",
++    "variant": "sheet-replace",
++    "repeat": 2,
++    "config": {
++      "churnSheet": true,
++      "hostElements": 20000,
++      "sheet": "replace"
++    },
++    "counts": {
++      "adoptions": 0,
++      "styleReads": 0,
++      "sheetWrites": 100
++    },
++    "rules": 16,
++    "totalMs": 1665,
++    "blockedMs": 0,
++    "longestMs": 17,
++    "longFrames": 0,
++    "firstTenOpenMs": 16,
++    "lastTenOpenMs": 16,
++    "longestOpenMs": 17
++  },
++  {
++    "browser": "chromium",
++    "variant": "sheet-insert",
++    "repeat": 0,
++    "config": {
++      "churnSheet": true,
++      "hostElements": 20000,
++      "sheet": "insert"
++    },
++    "counts": {
++      "adoptions": 0,
++      "styleReads": 0,
++      "sheetWrites": 0
++    },
++    "rules": 16,
++    "totalMs": 1664,
++    "blockedMs": 0,
++    "longestMs": 17,
++    "longFrames": 0,
++    "firstTenOpenMs": 16,
++    "lastTenOpenMs": 16,
++    "longestOpenMs": 16
++  },
++  {
++    "browser": "chromium",
++    "variant": "sheet-insert",
++    "repeat": 1,
++    "config": {
++      "churnSheet": true,
++      "hostElements": 20000,
++      "sheet": "insert"
++    },
++    "counts": {
++      "adoptions": 0,
++      "styleReads": 0,
++      "sheetWrites": 0
++    },
++    "rules": 16,
++    "totalMs": 1665,
++    "blockedMs": 0,
++    "longestMs": 17,
++    "longFrames": 0,
++    "firstTenOpenMs": 16,
++    "lastTenOpenMs": 16,
++    "longestOpenMs": 17
++  },
++  {
++    "browser": "chromium",
++    "variant": "sheet-insert",
++    "repeat": 2,
++    "config": {
++      "churnSheet": true,
++      "hostElements": 20000,
++      "sheet": "insert"
++    },
++    "counts": {
++      "adoptions": 0,
++      "styleReads": 0,
++      "sheetWrites": 0
++    },
++    "rules": 16,
++    "totalMs": 1664,
++    "blockedMs": 0,
++    "longestMs": 17,
++    "longFrames": 0,
++    "firstTenOpenMs": 16,
++    "lastTenOpenMs": 16,
++    "longestOpenMs": 17
++  }
++]
+diff --git a/spikes/highlight-perf/src/main.ts b/spikes/highlight-perf/src/main.ts
+index effd3cc..2918565 100644
+--- a/spikes/highlight-perf/src/main.ts
++++ b/spikes/highlight-perf/src/main.ts
+@@ -217,6 +217,8 @@ async function churn(): Promise<unknown> {
+   await nextFrame();
+   await pause(500);
+   const counts = counted();
++  // `?nowrite=1`: the renderer's sheet writes counted but not made, to see what they cost apart from the rest.
++  if (query.get("nowrite") === "1") CSSStyleSheet.prototype.replaceSync = () => (counts.sheetWrites += 1, undefined);
+   const styled = query.get("styled") === "1";
+   const live: Run[] = [];
+   const opens: number[] = [];
+@@ -246,6 +248,73 @@ async function churn(): Promise<unknown> {
+   };
+ }
+ 
++/**
++ * What writing a block's rules costs in a large host document, apart from the renderer (CMD-254): one adopted sheet,
++ * the renderer's base rules in it, then 100 blocks added and removed, eight live at a time, one a frame, each with a
++ * rule of its own and one in a container query, as a styled block's. `?sheet=replace` writes the whole sheet's text
++ * each time (`replaceSync`, as `Stylesheet.flush` does), `?sheet=insert` inserts and deletes the block's rules
++ * (`insertRule`, `deleteRule`), `?sheet=none` writes no rule, for the blocks' own cost.
++ */
++async function churnSheet(): Promise<unknown> {
++  observer.disconnect();
++  for (const run of slots) unmountNow(run);
++  const mode = query.get("sheet") ?? "replace";
++  const host = scroller.appendChild(document.createElement("div"));
++  host.className = "host";
++  const elements = Number(query.get("host") ?? 20_000);
++  for (let i = 0; i < elements / 2; i++) {
++    const row = host.appendChild(document.createElement("div"));
++    row.className = `row r${String(i % 7)}`;
++    row.appendChild(document.createElement("span")).textContent = `Row ${String(i)}`;
++  }
++  // The base rules as the renderer has them: what a page's own sheet held before CMD-253.
++  const probe = document.createElement("div");
++  const page = createPage(probe);
++  const base = page.stylesheet.text;
++  page.destroy();
++  const sheet = new CSSStyleSheet();
++  sheet.replaceSync(base);
++  document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet];
++  await nextFrame();
++  await pause(500);
++  const counts = counted();
++  const live: { element: HTMLElement; rules: readonly string[] }[] = [];
++  const opens: number[] = [];
++  const rulesOf = (i: number) => [`.blk${String(i)} { width: ${String(50 + (i % 40))}%; }`, `@container (min-width: 480px) { .blk${String(i)} { padding: ${String(i % 9)}px; } }`];
++  const write = () => {
++    sheet.replaceSync([base, ...live.flatMap(({ rules }) => rules)].join("\n"));
++  };
++  const start = performance.now();
++  for (let i = 0; i < 100; i++) {
++    const before = performance.now();
++    const element = scroller.appendChild(document.createElement("div"));
++    element.className = `compmd-page blk${String(i)}`;
++    element.textContent = runs[i] ?? "";
++    const rules = rulesOf(i);
++    live.push({ element, rules });
++    if (mode === "insert") for (const rule of rules) sheet.insertRule(rule, sheet.cssRules.length);
++    const gone = live.length > 8 ? live.shift() : undefined;
++    gone?.element.remove();
++    if (gone && mode === "insert") {
++      const selector = `.${gone.element.classList[1] ?? ""} {`;
++      for (let at = sheet.cssRules.length - 1; at >= 0; at--) if (sheet.cssRules[at]?.cssText.includes(selector)) sheet.deleteRule(at);
++    }
++    if (mode === "replace") write();
++    opens.push((await nextFrame()) - before);
++  }
++  const end = performance.now();
++  return {
++    config: { churnSheet: true, hostElements: elements, sheet: mode },
++    counts,
++    rules: sheet.cssRules.length,
++    totalMs: Math.round(end - start),
++    ...blocked(start, end),
++    firstTenOpenMs: percentile(opens.slice(0, 10), 0.5),
++    lastTenOpenMs: percentile(opens.slice(-10), 0.5),
++    longestOpenMs: Math.round(Math.max(...opens)),
++  };
++}
++
+ /** A run's page gone now, whatever `?keep` says. */
+ function unmountNow(run: Run | undefined): void {
+   run?.page?.destroy();
+@@ -260,7 +329,7 @@ declare global {
+ }
+ 
+ window.spike = {
+-  churn,
++  churn: () => (query.has("sheet") ? churnSheet() : churn()),
+   async run() {
+     const opened = performance.now();
+     // The first runs mount when the observer first reports, a frame or so after the page loads.
