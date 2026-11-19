@@ -1,0 +1,358 @@
+diff --git a/docs/hosting.md b/docs/hosting.md
+index c64688e..5d92251 100644
+--- a/docs/hosting.md
++++ b/docs/hosting.md
+@@ -81,7 +81,7 @@ Two hosts built so far (a Vite web app and a Tauri app) did the same work twice,
+ 
+ 9. **The page's configuration is the bundle's, plus the origin from the adapter.** What the bundle knows is fixed at build time and reaches the page in its own bundle (`virtual:compmd`: the request's packs and policy, the sandbox's paths and modules, all relative to the origin). The origin is the one thing only the running host knows (a scheme's form differs by platform, a site's user-content domain by deployment), so the adapter gives it: `globalThis.__COMPMD__ = { origin }`, set by a Tauri initialization script, an Electron preload, or a `<meta name="compmd-origin">` a server writes. `createSandbox` reads it; the page passes nothing.
+ 
+-10. **The page's content security policy comes from the bundle too.** `cspFor(origin)` gives the sources a host's page adds: `frame-src` the origin, `script-src` and `connect-src` `<origin>/frames/` (a host-mode page loads Shiki and Temml from there), `script-src` `'wasm-unsafe-eval'` (a host-mode page highlights code with Oniguruma, as WebAssembly; added 2026-11-19), `connect-src` `<origin>/registry/` with `fetch: "host"`, and `frame-ancestors 'none'`. `'wasm-unsafe-eval'` lets the host's page compile WebAssembly, and nothing else (no `eval`); the page runs only its own code and the frames' highlighter, never a pack's. A host may leave it out: its code blocks are then highlighted with Shiki's JavaScript engine, which in WebKit blocks the page for about a second on a first TypeScript block. Never `<origin>/packs/` and never the whole origin: a pack's code runs in frames only. A host whose policy is compiled from a file (`tauri.conf.json`) pastes it; a server sets it from the function.
++10. **The page's content security policy comes from the bundle too.** `cspFor(origin)` gives the sources a host's page adds: `frame-src` the origin, `script-src` and `connect-src` `<origin>/frames/` (a host-mode page loads Shiki and Temml from there), `script-src` `'wasm-unsafe-eval'` (a host-mode page highlights code with Oniguruma, as WebAssembly, outside Chromium; added 2026-11-19), `connect-src` `<origin>/registry/` with `fetch: "host"`, and `frame-ancestors 'none'`. `'wasm-unsafe-eval'` lets the host's page compile WebAssembly, and nothing else (no `eval`); the page runs only its own code and the frames' highlighter, never a pack's. A host may leave it out: its code blocks are then highlighted with Shiki's JavaScript engine, which in WebKit blocks the page for about a second on a first TypeScript block. Never `<origin>/packs/` and never the whole origin: a pack's code runs in frames only. A host whose policy is compiled from a file (`tauri.conf.json`) pastes it; a server sets it from the function.
+ 
+ 11. **Every host runs one check, in its real browser.** `@compmd/sandbox/check` is a page and a document that exercise the host: a strict frame loads from the origin; in it the origin is opaque, there is no host API (the adapter names what to look for: `__TAURI_INTERNALS__`, Electron's `ipcRenderer`), and `fetch` is refused; WebKit's `ipc` message handler is absent, or, where WebKit gives it to every frame and the host refuses a frame's messages (Tauri, by its invoke key), the adapter's check posts a call through it that must run nothing ([the Tauri plugin](tauri-plugin.md#appendix-webkits-ipc-handler-in-a-frame)); a code block is highlighted; a bundled pack's module and a stored one load by URL and draw; files arrive with exactly the contract's headers; a path outside the contract is `404`. It reports passed or failed with what failed, for the adapter to turn into an exit code (the Tauri example's `--check`) or a test. An adapter's CI runs it in the webview or browser that matters (WebKit first, which has the hard cases).
+ 
+diff --git a/docs/running-components-in-the-sandbox.md b/docs/running-components-in-the-sandbox.md
+index 81a0321..4811a2f 100644
+--- a/docs/running-components-in-the-sandbox.md
++++ b/docs/running-components-in-the-sandbox.md
+@@ -234,7 +234,7 @@ Two static documents, which the package builds and the host serves where it like
+ 
+ | | `strict.html` | `permissive.html` |
+ |---|---|---|
+-| First policy, in a `<meta>` | `default-src 'none'`; scripts from the frames' origin, `blob:` modules and the import map by its hash; styles from the frames' origin and inline; `img-src data: blob:`; `font-src` from the frames' origin; `frame-src 'none'`; no objects, forms, workers or `<base>` | the same, without the network directives (`connect-src`, `img-src`, `font-src`, `media-src`, `default-src`) and nested frames |
++| First policy, in a `<meta>` | `default-src 'none'`; scripts from the frames' origin, `blob:` modules and the import map by its hash, and compiling WebAssembly (`'wasm-unsafe-eval'`, added 2026-11-19: [WebAssembly in the frames](webassembly-in-the-frames.md)); styles from the frames' origin and inline; `img-src data: blob:`; `font-src` from the frames' origin; `frame-src 'none'`; no objects, forms, workers or `<base>` | the same, without the network directives (`connect-src`, `img-src`, `font-src`, `media-src`, `default-src`) and nested frames |
+ | Second policy | none: nothing to narrow | added by the frame before any component loads: `default-src 'none'`, the first's directives, the pack's origins its parent sends in `connect-src`, `img-src`, `font-src` and `media-src`, and `frame-src` naming the `strict.html` next to it by its full URL |
+ | May nest | nothing | `strict.html` |
+ 
+diff --git a/docs/webassembly-in-the-frames.md b/docs/webassembly-in-the-frames.md
+index b8bf376..91103a8 100644
+--- a/docs/webassembly-in-the-frames.md
++++ b/docs/webassembly-in-the-frames.md
+@@ -5,7 +5,11 @@
+ ## Decisions
+ 
+ 1. **Both frame documents allow compiling WebAssembly:** `'wasm-unsafe-eval'` in their `script-src`, and nothing else in their policies changes. Against the sandbox's threat model it gives component code nothing it hasn't already: a strict frame runs any code it writes itself today (`blob:` modules), and WebAssembly reaches nothing but through that code (*What it allows*, below). What it adds is the browser's WebAssembly engine as more surface for a browser bug, which every web page already has.
+-2. **The frames' highlighter uses Oniguruma, its WebAssembly inlined in `highlight.js`** (`@shikijs/engine-oniguruma/wasm-inlined`), since a strict frame can fetch nothing, a `.wasm` file included. Where compiling is refused (a host's own frame documents with another policy, or a browser that refuses it), it falls back to the JavaScript engine, so highlighting never depends on it.
++2. **The highlighter uses Oniguruma, its WebAssembly inlined in `highlight.js`** (`@shikijs/engine-oniguruma/wasm-inlined`), since a strict frame can fetch nothing, a `.wasm` file included, **except in Chromium, where it uses the JavaScript engine** (revised 2026-11-19, after measuring each frame's cost, *Open points*). One rule for the frames and for a host-mode page:
++   - **Chromium** (Chrome, Edge, WebView2) runs the JavaScript engine fast, and there Oniguruma only costs more: 87 ms a frame against 32 ms, and its 230 KB. It is told by `navigator.userAgentData`, which only Chromium's browsers have, not by parsing the user agent string.
++   - **Elsewhere** (WebKit, and browsers not measured, such as Firefox) Oniguruma, which is fast in every browser measured: in WebKit it takes the first TypeScript block from about a second to 60 ms, and its tokens were right where the JavaScript engine's weren't (CMD-261).
++   - **A wrong guess costs time, never highlighting:** a Chromium where `userAgentData` is hidden (it is a secure context's) gets Oniguruma; a browser that refuses compiling gets the JavaScript engine (a host's own frame documents with another policy, a host page without `'wasm-unsafe-eval'`).
++   - **The same document may be highlighted a little differently** in Chromium and elsewhere: the JavaScript engine leaves out a grammar's patterns it can't translate.
+ 3. **No worker, no change to the protocol, no change to the spec's rules.** §15's informative note on browsers gains one line: the frames allow WebAssembly, which reaches no more than their scripts.
+ 
+ The alternatives, and why each comes second, are in *What else was weighed*.
+@@ -67,7 +71,7 @@ What compiling WebAssembly in a frame lets component code do that its JavaScript
+ ## What it means
+ 
+ - **The policies** (`npm-packages/sandbox/src/build/policy.ts`): `'wasm-unsafe-eval'` in `common`'s `script-src`, for both documents; their tests say so.
+-- **The frames' highlighter** (`npm-packages/sandbox/src/highlight/highlight.ts`): Oniguruma inlined, the JavaScript engine when compiling is refused; the same tokens either way.
++- **The highlighter** (`npm-packages/sandbox/src/highlight/highlight.ts`), in the frames and in a host-mode page: Oniguruma inlined, the JavaScript engine in Chromium and when compiling is refused (decision 2).
+ - **The browser tests** (Q8 of the sandbox's design) gain one: a strict component that compiles and runs WebAssembly given `fetch` still reaches no origin (T1).
+ - **The serving contract** is unchanged: its header policy is `sandbox allow-scripts` only, and the documents' own policies are in their `<meta>`.
+ - **The protocol** is unchanged.
+@@ -88,8 +92,9 @@ What compiling WebAssembly in a frame lets component code do that its JavaScript
+    - **In WebKit, for twelve frames, Oniguruma blocks a quarter as long** (0.3 s against 1.2 s) and no frame takes over 130 ms, against 0.4–0.6 s; but every frame is long (over 50 ms), where most of the JavaScript engine's aren't.
+    - **So it doesn't scale:** at about 35 ms blocked per frame, Oniguruma blocks longer than the JavaScript engine from about 35 frames on, in WebKit. In Chromium it is slower at any number.
+    - This is what alternative B avoids: one Oniguruma, the host's, for every frame.
++   - **Decided:** the JavaScript engine in Chromium, Oniguruma elsewhere (decision 2). A page of many frames in WebKit (host mode with dozens of strict uses that highlight code) still pays about 85 ms a frame; B is kept for it, as a task of its own (CMD-262).
+ 
+-## Follow-ups, once decided
++## Follow-ups
+ 
+-- The policies and the frames' highlighter, with the browser test above (after CMD-257, which does the same for host mode).
+-- §15's informative note, with its changelog entry.
++- CMD-260: the policies, the highlighter's choice of engine (decision 2) in the frames and in a host-mode page, the browser test above, and §15's informative note with its changelog entry.
++- CMD-262: alternative B, for pages of many frames.
+diff --git a/guides/developers/19-a-tauri-app.md b/guides/developers/19-a-tauri-app.md
+index d613b7b..1f57632 100644
+--- a/guides/developers/19-a-tauri-app.md
++++ b/guides/developers/19-a-tauri-app.md
+@@ -173,7 +173,7 @@ A frame's code must never reach the app: a strict component sees its params and
+ 
+ - **WebKit's `ipc` handler.** On macOS and Linux, WebKit gives every frame Tauri's `ipc` script message handler, and no content security policy governs it. Tauri drops a message without the key, so a frame's call through it runs nothing; the example's check posts one with a guessed key to prove it. [The plugin's design](../../docs/tauri-plugin.md#appendix-webkits-ipc-handler-in-a-frame) has the research.
+ 
+-**If the app sets a content security policy** (`app.security.csp`; Tauri's template sets none), it adds what `cspFor` from `@compmd/vite/config` gives, for both forms of the origin: `frame-src` the origin, `script-src` and `connect-src` its `frames/` (a host-mode page loads Shiki and Temml from there), `script-src` `'wasm-unsafe-eval'` (it highlights code with Oniguruma, as WebAssembly; without it, with Shiki's slower JavaScript engine), never its `packs/`, and `frame-ancestors 'none'`:
++**If the app sets a content security policy** (`app.security.csp`; Tauri's template sets none), it adds what `cspFor` from `@compmd/vite/config` gives, for both forms of the origin: `frame-src` the origin, `script-src` and `connect-src` its `frames/` (a host-mode page loads Shiki and Temml from there), `script-src` `'wasm-unsafe-eval'` (on macOS and Linux it highlights code with Oniguruma, as WebAssembly; without it, with Shiki's JavaScript engine, slower there), never its `packs/`, and `frame-ancestors 'none'`:
+ 
+ ```json snippet=../../../crates/tauri/examples/tauri-app/src-tauri/tauri.conf.json
+ {
+diff --git a/npm-packages/sandbox/README.md b/npm-packages/sandbox/README.md
+index 3beb543..f1f8ed4 100644
+--- a/npm-packages/sandbox/README.md
++++ b/npm-packages/sandbox/README.md
+@@ -183,14 +183,14 @@ view.on("settled", () => print());             // each time it settles again, af
+ 
+ Every code block that shows as code is highlighted, wherever a page renders (the page's frame, a use's frame, the host's page): one of a language no code renderer draws, and a code renderer's fallback, when its component is missing or fails (spec §7.7). It is `@compmd/render`'s `highlight`, given as `shikiHighlight()`, which a host that renders a page itself with `createPage` or `createRegion` can give too.
+ 
+-- **Shiki,** with Oniguruma, as WebAssembly, in a host-mode page whose policy allows compiling it (`'wasm-unsafe-eval'`, which `@compmd/vite`'s `cspFor` gives), and its JavaScript regex engine everywhere else: in the frames, whose policy refuses WebAssembly, and in a page that refuses it. Both give a block's tokens; in WebKit the JavaScript engine compiles each regex the first time it runs, which blocks the page for about a second on a first TypeScript block, where Oniguruma takes 30 ms ([the spike](https://github.com/comp-markdown/compmd/blob/main/spikes/highlight-perf/README.md)). A host that gives `shikiHighlight` itself chooses with `shikiHighlight({ webAssembly: true })`. Its core and engine load the first time a page has a code block; each language's grammar the first time a block of it shows. Until then, and for a block it can't highlight, the text shows as it is. A block is highlighted again only when its text changes. The highlighter gives each line's tokens, and `@compmd/render` draws them into the line's element, which is its own, so a line's height (`view.lineHeights`) holds before and after the tokens come.
++- **Shiki,** with one of two engines, by one rule wherever a page renders ([WebAssembly in the frames](https://github.com/comp-markdown/compmd/blob/main/docs/webassembly-in-the-frames.md), decision 2): Oniguruma, as WebAssembly, where the page compiles it (the frames' policy allows it; a host-mode page's allows it with `'wasm-unsafe-eval'`, which `@compmd/vite`'s `cspFor` gives), except in Chromium; its JavaScript regex engine in Chromium (told by `navigator.userAgentData`) and in a page that refuses WebAssembly. In WebKit the JavaScript engine compiles each regex the first time it runs, which blocks the page for about a second on a first TypeScript block, where Oniguruma takes 60 ms; in Chromium the JavaScript engine is as fast, and Oniguruma would cost each frame 85 ms more ([the spike](https://github.com/comp-markdown/compmd/blob/main/spikes/highlight-perf/README.md)). The JavaScript engine leaves out a grammar's patterns it can't translate, so a block may be highlighted a little differently in Chromium. A host that gives `shikiHighlight` itself chooses with `shikiHighlight({ webAssembly: true })`. Its core and engine load the first time a page has a code block; each language's grammar the first time a block of it shows. Until then, and for a block it can't highlight, the text shows as it is. A block is highlighted again only when its text changes. The highlighter gives each line's tokens, and `@compmd/render` draws them into the line's element, which is its own, so a line's height (`view.lineHeights`) holds before and after the tokens come.
+ - **Light and dark:** GitHub's themes, as the website's spec page. Each token has its colour in both, which the renderer sets as `light-dark(light, dark)` through the CSSOM, so it follows the `color-scheme` every frame takes from the page around it, with nothing drawn again when it changes.
+ - **CompMD's syntax** shows in `md`, `markdown` and `compmd` blocks: component lines, inline components, param lists and `{{paths}}`, by a grammar injected into Markdown's, with a document's frontmatter, or a `compmd` definition's signature, as YAML. The website's spec page uses the same grammar, `@compmd/sandbox/grammar`.
+ - **The languages, by the fence names that mean them:** C (`c`), C++ (`cpp`, `c++`), C# (`csharp`, `c#`, `cs`), Java, Kotlin (`kotlin`, `kt`, `kts`), Scala, Swift, Objective-C (`objective-c`, `objc`), Go, Rust (`rust`, `rs`), Zig, Dart; Python (`python`, `py`), Ruby (`ruby`, `rb`), PHP, Perl, Lua, R, Julia (`julia`, `jl`), PowerShell (`powershell`, `ps`, `ps1`, `pwsh`), shell (`shellscript`, `bash`, `sh`, `shell`, `zsh`), Batch (`bat`, `batch`, `cmd`); Haskell (`haskell`, `hs`), Elixir, Erlang (`erlang`, `erl`), Clojure (`clojure`, `clj`), F# (`fsharp`, `f#`, `fs`), OCaml; JavaScript (`javascript`, `js`, `cjs`, `mjs`), TypeScript (`typescript`, `ts`, `cts`, `mts`), JSX, TSX, HTML, CSS, SCSS, Less, Svelte, Vue, Astro, GraphQL (`graphql`, `gql`); JSON, JSONC, JSON5, YAML (`yaml`, `yml`), TOML, INI (`ini`, `properties`), XML, CSV, SQL, Protocol Buffers (`proto`, `protobuf`); Dockerfile (`docker`, `dockerfile`), Makefile (`make`, `makefile`), CMake, HCL, Nix, Nginx; Diff, Markdown (`markdown`, `md`), CompMD (`compmd`), LaTeX, Mermaid (`mermaid`, `mmd`), MATLAB, Groovy, Solidity. A name is any case; any other language stays plain.
+ 
+ **One copy, the frames'.** Shiki and Temml are built once, with the frame runtime (`dist/frames/`): the frames load them, and so does a host-mode page, from `highlight.js` and `math.js` where the host serves the frame documents (`base`), which share their chunks with the runtime. So the host's own bundle has neither, and a page and its frames load the same files, which the browser caches once. In host mode every view of the page shares one highlighter, so Shiki is made once and each grammar loads once, however many views the page opens: one each made the page pay for each grammar again in every view, which in WebKit blocked for seconds over a list of short code blocks ([the spike](https://github.com/comp-markdown/compmd/blob/main/spikes/highlight-perf/README.md)). A host that renders a page itself with `createPage` and gives it `shikiHighlight()` or `temmlMath()` bundles its own; one that renders many pages makes one `shikiHighlight()` and gives it to them all. A host's page with a content security policy allows scripts from where the frames are served. A library the sandbox comes to load next is added the same way: [libraries in the sandbox](https://github.com/comp-markdown/compmd/blob/main/docs/libraries-in-the-sandbox.md) has the steps.
+ 
+-**What it costs.** Measured on the frame documents' build (`dist/frames/chunks/`, gzipped at level 9), of what a host serves: Shiki's core is 34.6 KB, its JavaScript engine 19.6 KB, the two themes 4.9 KB, and the 63 grammars 406 KB, about 465 KB in all. A page loads the core, the engine, the themes and the grammars of its blocks: about 75 KB for one with a JavaScript block. Oniguruma is 2.5 KB and its WebAssembly 230 KB, which a host-mode page that compiles it loads instead of the JavaScript engine. Most grammars are 1 to 15 KB; the largest are C++ (52.9 KB), PHP (27.9 KB), Objective-C (22.7 KB), JSX, TSX, JavaScript and TypeScript (about 16 KB each, each with what it embeds).
++**What it costs.** Measured on the frame documents' build (`dist/frames/chunks/`, gzipped at level 9), of what a host serves: Shiki's core is 34.6 KB, its JavaScript engine 19.6 KB, the two themes 4.9 KB, and the 63 grammars 406 KB, about 465 KB in all. A page loads the core, the engine, the themes and the grammars of its blocks: about 75 KB for one with a JavaScript block. Oniguruma is 2.5 KB and its WebAssembly 230 KB, which a page that runs it loads instead of the JavaScript engine. Most grammars are 1 to 15 KB; the largest are C++ (52.9 KB), PHP (27.9 KB), Objective-C (22.7 KB), JSX, TSX, JavaScript and TypeScript (about 16 KB each, each with what it embeds).
+ 
+ ## Asking before data from a new origin
+ 
+diff --git a/npm-packages/sandbox/src/build/policy.test.ts b/npm-packages/sandbox/src/build/policy.test.ts
+index 37f7e8b..4b147e1 100644
+--- a/npm-packages/sandbox/src/build/policy.test.ts
++++ b/npm-packages/sandbox/src/build/policy.test.ts
+@@ -6,10 +6,10 @@ const map = '{"imports":{"react":"./libs/react@19.3.0/index.js"}}';
+ const hash = createHash("sha256").update(map).digest("base64");
+ 
+ describe("the frame documents' policies", () => {
+-  it("lets a strict frame run the frames' scripts, compiled components and its import map, and reach nothing", () => {
++  it("lets a strict frame run the frames' scripts, compiled components and its import map, compile WebAssembly, and reach nothing", () => {
+     expect(strictPolicy(map).split("; ")).toEqual([
+       "default-src 'none'",
+-      `script-src 'self' blob: 'sha256-${hash}'`,
++      `script-src 'self' blob: 'sha256-${hash}' 'wasm-unsafe-eval'`,
+       "style-src 'self' 'unsafe-inline'",
+       "object-src 'none'",
+       "base-uri 'none'",
+@@ -24,7 +24,7 @@ describe("the frame documents' policies", () => {
+   it("leaves a permissive frame's network and nested frames to its second policy", () => {
+     const policy = permissivePolicy(map).split("; ");
+     expect(policy).toEqual([
+-      `script-src 'self' blob: 'sha256-${hash}'`,
++      `script-src 'self' blob: 'sha256-${hash}' 'wasm-unsafe-eval'`,
+       "style-src 'self' 'unsafe-inline'",
+       "object-src 'none'",
+       "base-uri 'none'",
+@@ -40,7 +40,7 @@ describe("the frame documents' policies", () => {
+     const source = "app://localhost/frames/";
+     expect(strictPolicy(map, source).split("; ")).toEqual([
+       "default-src 'none'",
+-      `script-src 'self' ${source} blob: 'sha256-${hash}'`,
++      `script-src 'self' ${source} blob: 'sha256-${hash}' 'wasm-unsafe-eval'`,
+       `style-src 'self' ${source} 'unsafe-inline'`,
+       "object-src 'none'",
+       "base-uri 'none'",
+diff --git a/npm-packages/sandbox/src/build/policy.ts b/npm-packages/sandbox/src/build/policy.ts
+index 2744e4e..b4835c5 100644
+--- a/npm-packages/sandbox/src/build/policy.ts
++++ b/npm-packages/sandbox/src/build/policy.ts
+@@ -6,10 +6,14 @@
+ import { createHash } from "node:crypto";
+ import { withSource } from "../frame/source.ts";
+ 
+-/** The directives both documents start with: scripts from the frames' origin and the import map, styles, no objects. */
++/**
++ * The directives both documents start with: scripts from the frames' origin and the import map, compiling
++ * WebAssembly (for the highlighter's Oniguruma, docs/webassembly-in-the-frames.md: it reaches no more than the
++ * frame's scripts), styles, no objects.
++ */
+ function common(importMap: string): string[] {
+   const hash = createHash("sha256").update(importMap).digest("base64");
+-  return [`script-src 'self' blob: 'sha256-${hash}'`, "style-src 'self' 'unsafe-inline'", "object-src 'none'", "base-uri 'none'", "form-action 'none'", "worker-src 'none'"];
++  return [`script-src 'self' blob: 'sha256-${hash}' 'wasm-unsafe-eval'`, "style-src 'self' 'unsafe-inline'", "object-src 'none'", "base-uri 'none'", "form-action 'none'", "worker-src 'none'"];
+ }
+ 
+ /**
+diff --git a/npm-packages/sandbox/src/frame/runtime.ts b/npm-packages/sandbox/src/frame/runtime.ts
+index 3627b5d..15cf951 100644
+--- a/npm-packages/sandbox/src/frame/runtime.ts
++++ b/npm-packages/sandbox/src/frame/runtime.ts
+@@ -36,7 +36,8 @@ for (const name of ["RTCPeerConnection", "webkitRTCPeerConnection", "RTCDataChan
+ /** Math typeset by Temml, which loads the first time a page has math. */
+ const math = temmlMath();
+ /** Code blocks highlighted by Shiki, which loads the first time a page has a code block. */
+-const highlight = shikiHighlight();
++// Oniguruma where the frame compiles WebAssembly, which its policy allows (docs/webassembly-in-the-frames.md).
++const highlight = shikiHighlight({ webAssembly: true });
+ 
+ /** Each component's stylesheet, adopted by the frame's document. */
+ const sheets = new Map<string, CSSStyleSheet>();
+diff --git a/npm-packages/sandbox/src/highlight/highlight.test.ts b/npm-packages/sandbox/src/highlight/highlight.test.ts
+index 98c6c66..446dbb1 100644
+--- a/npm-packages/sandbox/src/highlight/highlight.test.ts
++++ b/npm-packages/sandbox/src/highlight/highlight.test.ts
+@@ -55,9 +55,16 @@ describe("shikiHighlight", () => {
+ });
+ 
+ describe("the engine", () => {
+-  it("is Oniguruma when the highlighter may use it and the page compiles WebAssembly, the JavaScript engine otherwise", async () => {
+-    const [compiles, refuses] = [() => Promise.resolve(true), () => Promise.resolve(false)];
+-    expect(await Promise.all([engineFor(true, compiles), engineFor(true, refuses), engineFor(false, compiles), engineFor(false, refuses)])).toEqual(["oniguruma", "javascript", "javascript", "javascript"]);
++  it("is Oniguruma when the highlighter may use it, the browser isn't Chromium's and the page compiles WebAssembly", async () => {
++    const page = (chromium: boolean, compiles: boolean) => ({ chromium, compiles: () => Promise.resolve(compiles) });
++    expect(
++      await Promise.all([
++        engineFor(true, page(false, true)),
++        engineFor(true, page(true, true)),
++        engineFor(true, page(false, false)),
++        engineFor(false, page(false, true)),
++      ]),
++    ).toEqual(["oniguruma", "javascript", "javascript", "javascript"]);
+   });
+ 
+   it("is asked of the page with an empty module, which a policy without 'wasm-unsafe-eval' refuses", async () => {
+diff --git a/npm-packages/sandbox/src/highlight/highlight.ts b/npm-packages/sandbox/src/highlight/highlight.ts
+index 2b70154..465e038 100644
+--- a/npm-packages/sandbox/src/highlight/highlight.ts
++++ b/npm-packages/sandbox/src/highlight/highlight.ts
+@@ -1,6 +1,6 @@
+ // Code blocks highlighted by Shiki, in both page modes (in the page's frame and use frames, or in the host's page), in
+-// GitHub's light and dark themes. Shiki's core and its regex engine load the first time a page has a code block: the
+-// JavaScript engine in the frames, whose policy refuses WebAssembly, and Oniguruma in a host's page that compiles it;
++// GitHub's light and dark themes. Shiki's core and its regex engine load the first time a page has a code block:
++// Oniguruma where the page compiles WebAssembly, the JavaScript engine in Chromium and where it doesn't (`engineFor`);
+ // each language's grammar loads the first time a block of it shows. It gives each token's text and its colour in each
+ // theme (`tokens.ts`); the renderer draws them.
+ 
+@@ -37,13 +37,31 @@ export async function compilesWebAssembly(): Promise<boolean> {
+   }
+ }
+ 
++/** What the engine is chosen by: the page's browser, and whether the page compiles WebAssembly. */
++export interface EnginePage {
++  /** Whether the browser is Chromium's, which runs the JavaScript engine fast. */
++  chromium: boolean;
++  compiles(): Promise<boolean>;
++}
++
++/**
++ * This page: Chromium's browsers alone have `navigator.userAgentData`, which a secure context has; a Chromium that
++ * hides it is taken for another browser, which costs time, never highlighting.
++ */
++const THIS_PAGE: EnginePage = {
++  chromium: typeof navigator !== "undefined" && "userAgentData" in navigator,
++  compiles: compilesWebAssembly,
++};
++
+ /**
+- * The engine a highlighter runs: Oniguruma, as WebAssembly, when it may (`webAssembly`) and the page compiles it,
+- * otherwise the JavaScript engine. In WebKit the JavaScript engine compiles each of a grammar's regexes the first time
+- * it runs, which blocks the page for a second on a first TypeScript block; Oniguruma doesn't.
++ * The engine a highlighter runs (docs/webassembly-in-the-frames.md, decision 2): Oniguruma, as WebAssembly, when it
++ * may (`webAssembly`), the browser isn't Chromium's and the page compiles it; otherwise the JavaScript engine. In
++ * WebKit the JavaScript engine compiles each of a grammar's regexes the first time it runs, which blocks the page for
++ * a second on a first TypeScript block, where Oniguruma takes 60 ms; in Chromium the JavaScript engine is as fast,
++ * and Oniguruma's compiling only costs more, in each frame.
+  */
+-export async function engineFor(webAssembly: boolean, compiles: () => Promise<boolean> = compilesWebAssembly): Promise<Engine> {
+-  return webAssembly && (await compiles()) ? "oniguruma" : "javascript";
++export async function engineFor(webAssembly: boolean, page: EnginePage = THIS_PAGE): Promise<Engine> {
++  return webAssembly && !page.chromium && (await page.compiles()) ? "oniguruma" : "javascript";
+ }
+ 
+ /** Loads Shiki's core, `engine` and the two themes, and Markdown with CompMD's syntax. */
+@@ -62,9 +80,9 @@ async function loadShikis(engine: Engine): Promise<Shikis> {
+ /** How a highlighter runs. */
+ export interface ShikiOptions {
+   /**
+-   * Oniguruma, as WebAssembly, where the page compiles it; the JavaScript engine where it doesn't, as without. A page
+-   * allows it with `'wasm-unsafe-eval'` in its policy's `script-src`. Its WebAssembly is inlined in a chunk of its own
+-   * (232 KB gzipped), loaded with the first code block where it is used.
++   * Oniguruma, as WebAssembly, where the page compiles it and the browser isn't Chromium's (`engineFor`); the
++   * JavaScript engine otherwise, as without. A page allows it with `'wasm-unsafe-eval'` in its policy's `script-src`.
++   * Its WebAssembly is inlined in a chunk of its own (230 KB gzipped), loaded with the first code block where it is used.
+    */
+   webAssembly?: boolean;
+ }
+diff --git a/npm-packages/sandbox/test/highlight-policy.test.ts b/npm-packages/sandbox/test/highlight-policy.test.ts
+index dff91cd..67fa5c2 100644
+--- a/npm-packages/sandbox/test/highlight-policy.test.ts
++++ b/npm-packages/sandbox/test/highlight-policy.test.ts
+@@ -1,10 +1,11 @@
+ // The frames' highlighter in a host's page (host mode), under the page's own policy: Oniguruma where it allows
+-// WebAssembly (`'wasm-unsafe-eval'`, as `@compmd/vite`'s `cspFor` gives it), the JavaScript engine where it doesn't, and
+-// the same tokens either way. Each page is a frame of this one with that policy, which loads `highlight.js` from where
++// WebAssembly (`'wasm-unsafe-eval'`, as `@compmd/vite`'s `cspFor` gives it) and the browser isn't Chromium's, the
++// JavaScript engine otherwise, and the right tokens either way. Each page is a frame of this one with that policy, which loads `highlight.js` from where
+ // the frames are served, as `framesHighlight` does.
+ 
+ import type { CodeLines } from "@compmd/render";
+ import { afterEach, describe, expect, it } from "vitest";
++import { engineFor } from "../src/highlight/highlight.ts";
+ import { frames } from "./harness.ts";
+ 
+ const placed: HTMLIFrameElement[] = [];
+@@ -48,8 +49,15 @@ const textOf = (lines: CodeLines | undefined) => (lines ?? []).map((line) => lin
+ /** The colour of the token `text`, in each theme. */
+ const colorOf = (lines: CodeLines | undefined, text: string) => lines?.flat().find((token) => token.text === text)?.color;
+ 
++describe("the engine a browser runs", () => {
++  it("is the JavaScript engine in Chrome and Oniguruma in WebKit, on a page that compiles WebAssembly", async () => {
++    const chrome = navigator.userAgent.includes("Chrome");
++    expect(await engineFor(true)).toBe(chrome ? "javascript" : "oniguruma");
++  });
++});
++
+ describe("code highlighted in a host's page", () => {
+-  it("with Oniguruma where its policy allows WebAssembly, and the JavaScript engine where it doesn't", { timeout: 30_000 }, async () => {
++  it("under a policy that allows WebAssembly and under one that doesn't", { timeout: 30_000 }, async () => {
+     const [allowed, refused] = await Promise.all([highlightedUnder("'wasm-unsafe-eval'"), highlightedUnder("")]);
+     expect([allowed.compiles, refused.compiles]).toEqual([true, false]);
+     expect([textOf(allowed.lines), textOf(refused.lines)]).toEqual([CODE, CODE]);
+diff --git a/npm-packages/sandbox/test/strict.test.ts b/npm-packages/sandbox/test/strict.test.ts
+index c949dee..7ba37b8 100644
+--- a/npm-packages/sandbox/test/strict.test.ts
++++ b/npm-packages/sandbox/test/strict.test.ts
+@@ -58,6 +58,21 @@ describe("a strict frame", () => {
+     expect(atHost.filter((kind) => !["font", "style", "prefetch"].includes(kind))).toEqual([]);
+   });
+ 
++  it("compiles WebAssembly, which reaches only what its scripts do: nothing (T1, docs/webassembly-in-the-frames.md)", async () => {
++    const tag = tagged();
++    const result = await run(`async () => {
++      // A module that imports \`env.send\` and calls it as it starts: (import "env" "send" (func)) (start 0).
++      const bytes = new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0, 1, 4, 1, 96, 0, 0, 2, 12, 1, 3, 101, 110, 118, 4, 115, 101, 110, 100, 0, 0, 8, 1, 0]);
++      const sent = [];
++      const send = () => { sent.push(fetch(${JSON.stringify(denied)} + "attempt?${tag}-wasm").then(() => "reached", () => "refused")); };
++      await WebAssembly.instantiate(bytes, { env: { send } });
++      return { compiled: true, sent: await Promise.all(sent) };
++    }`);
++    expect(result).toEqual({ compiled: true, sent: ["refused"] });
++    await pause(200);
++    expect(await hits(denied, tag)).toEqual([]);
++  });
++
+   it("can't reach the host's session or page (T2)", async () => {
+     expect(
+       await run(`async () => {
+diff --git a/spec/CHANGELOG.md b/spec/CHANGELOG.md
+index a2bfc9e..dded67f 100644
+--- a/spec/CHANGELOG.md
++++ b/spec/CHANGELOG.md
+@@ -4,6 +4,10 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
+ 
+ ## Version 1 (draft)
+ 
++### Unreleased
++
++- **WebAssembly in a sandbox (§15).** The informative note on browsers says a sandbox's policy may allow compiling WebAssembly (`'wasm-unsafe-eval'`), since WebAssembly reaches only what the frame's scripts reach. No rule changes. Not breaking.
++
+ ### 1.0-draft.15, 2026-11-18
+ 
+ - **The spec's folder.** The spec, its companion, this changelog and `llms.txt` are in the repository's `spec/` folder, with the complete example in `spec/examples/complete/`; the spec's links to the repository's files follow. The spec itself is unchanged.
+diff --git a/spec/compmd-spec-v1.md b/spec/compmd-spec-v1.md
+index 243a972..b158265 100644
+--- a/spec/compmd-spec-v1.md
++++ b/spec/compmd-spec-v1.md
+@@ -1658,7 +1658,7 @@ A permissive sandbox keeps rules 3 to 5 and adds to rules 1 and 2 only what the
+ - **Reading for others:** a processor that renders for people other than those whose access its components use (a site built with its operator's credentials and published) MUST give `host`, and render trusted components, only in documents it trusts, such as the site's own pages and not a contributor's change. Rendering for the reader with the reader's own access needs no such rule: the reader sees only what they may see.
+ - A component in a strict sandbox gets only the contract and no network (rule 2), so private data passed to it as params has no way out.
+ - Without rule 2, a component that is passed private data and allowed to reach its own origin "for the weather" can send the data with the weather request; a reader can't tell the two apart. With it, private data has no way out of the sandbox.
+-- *Informative:* in a browser, a cross-origin iframe with `sandbox="allow-scripts"` and a content security policy that allows only the processor's runtimes and libraries and the pack's own files; on a server, an isolated JavaScript runtime with no I/O.
++- *Informative:* in a browser, a cross-origin iframe with `sandbox="allow-scripts"` and a content security policy that allows only the processor's runtimes and libraries and the pack's own files; on a server, an isolated JavaScript runtime with no I/O. Such a policy may allow compiling WebAssembly (`'wasm-unsafe-eval'`): WebAssembly has no I/O of its own and reaches only what the frame's scripts reach.
+ 
+ **Privacy.** A fetch made while a reader views a document tells the origin the reader's address, the time, and any input values in the URL, as an image in any Markdown does. A document rendered once at build time reveals no reader. For fetches at view time:
+ 
+diff --git a/spikes/highlight-perf/README.md b/spikes/highlight-perf/README.md
+index 6adb0a6..5047056 100644
+--- a/spikes/highlight-perf/README.md
++++ b/spikes/highlight-perf/README.md
+@@ -119,7 +119,7 @@ The same two variants, with the renderer asking for one block's tokens at a time
+ 
+ ### Each frame's first block (CMD-260)
+ 
+-`?frames=12` (`frames-js`, `frames-wasm`): twelve frames, one after the other, each a `srcdoc` document that imports `frame.js` (`src/frame.ts`), makes the sandbox's highlighter, and highlights one TypeScript run, with the JavaScript engine or with Oniguruma (`&wasm=1`); the time is from importing to the first tokens. Three runs each, medians; `results-frames.json` has every run. The numbers and what they mean are in [WebAssembly in the frames](../../docs/webassembly-in-the-frames.md#open-points): Oniguruma costs about 85 ms a frame, compiled again in each, where the JavaScript engine's frames after the first take about 30 ms.
++`?frames=12` (`frames-js`, `frames-wasm`): twelve frames, one after the other, each a `srcdoc` document that imports `frame.js` (`src/frame.ts`), makes the sandbox's highlighter, and highlights one TypeScript run, with the JavaScript engine or with Oniguruma (`&wasm=1`); the time is from importing to the first tokens. Three runs each, medians; `results-frames.json` has every run. The numbers and what they mean are in [WebAssembly in the frames](../../docs/webassembly-in-the-frames.md#open-points): Oniguruma costs about 85 ms a frame, compiled again in each, where the JavaScript engine's frames after the first take about 30 ms. The first frame is what frame mode's page frame pays for its first block, before CMD-260 and after: 660 ms with the JavaScript engine in WebKit, 56 ms with Oniguruma. These frames have no policy of their own, as `strict.html` has; the work is the same. Since CMD-260 the sandbox's highlighter runs the JavaScript engine in Chromium, so `frames-wasm` there measures it too.
+ 
+ ### A large host document: 100 pages opened and closed (CMD-253)
+ 
