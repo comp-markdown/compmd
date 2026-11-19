@@ -2,12 +2,12 @@
 id = "01a1f4ea-defb-703c-adf7-610af8737886"
 number = 19
 title = "The first components: research and a ranked list"
-status = "open"
+status = "changes_requested"
 tasks = ["CMD-10"]
 author = "claude:79612601"
 reviewers = []
 created = 2026-11-19T17:46:35Z
-updated = 2026-11-19T17:46:35Z
+updated = 2026-11-19T19:23:22Z
 +++
 
 The research for the first components: what 11 documentation frameworks ship, about 60 npm component packages (downloads, licences, sizes), and what CompMD has already, with a ranked first list of 12.

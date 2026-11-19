@@ -1,0 +1,132 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "6c73b32321d7194a60a2744482cf3a0b0c7667ea",
+    "head": "2fb6b8e8d9343442863002e0398ca51797937649"
+  },
+  "files": [
+    {
+      "path": ".github/workflows/pages.yml",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/build.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/build.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/index.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/layout.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/serve.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "website/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "website/blog/blog.config.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "website/blog/index.html",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "website/blog/posts/the-compmd-blog.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "website/blog/theme.css",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "website/build/blog.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "website/build/blog.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "website/build/dev.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "website/build/static.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "website/docs/blog.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "website/package.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "website/scripts/check.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "website/scripts/prerender.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "website/src/BlogLayout.svelte",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "website/src/Header.svelte",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "website/src/server.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "website/vite.config.ts",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-19T18:51:15Z"
+}

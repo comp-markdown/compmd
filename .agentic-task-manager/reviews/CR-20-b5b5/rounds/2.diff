@@ -1,0 +1,886 @@
+diff --git a/.github/workflows/pages.yml b/.github/workflows/pages.yml
+index 01cf8b0..a6afde1 100644
+--- a/.github/workflows/pages.yml
++++ b/.github/workflows/pages.yml
+@@ -1,4 +1,4 @@
+-# The site on GitHub Pages: the landing page, the playground and the spec, built from this repository, checked in
++# The site on GitHub Pages: the landing page, the playground, the spec, the guides and the blog, built from this repository, checked in
+ # Chrome, and deployed (website/docs/design.md).
+ name: Pages
+ 
+@@ -11,6 +11,7 @@ on:
+       - website/**
+       - npm-packages/editor/**
+       - npm-packages/render/**
++      - npm-packages/blog/**
+       - guides/**
+       - npm-packages/wasm/**
+       - crates/processor/**
+diff --git a/npm-packages/blog/src/build.test.ts b/npm-packages/blog/src/build.test.ts
+index 86e1184..e695c52 100644
+--- a/npm-packages/blog/src/build.test.ts
++++ b/npm-packages/blog/src/build.test.ts
+@@ -108,6 +108,10 @@ describe("buildSite", () => {
+       expect(draft).toContain('<section id="comments"');
+       expect(draft).toContain('"data-mapping","pathname"');
+       expect(built.files.get("style.css")).toContain(".mine {}");
++      // A layout given, as a site gives the one it makes, in place of the blog's own.
++      const inSiteLayout = await buildSite(own, { drafts: false, now: NOW, layout: "<html><head></head><body><nav>the site's</nav><!-- content --></body></html>" });
++      expect(inSiteLayout.files.get("index.html")).toContain("<nav>the site's</nav>");
++      expect(inSiteLayout.files.get("index.html")).not.toContain("<nav>mine</nav>");
+     } finally {
+       await rm(own, { recursive: true, force: true });
+     }
+diff --git a/npm-packages/blog/src/build.ts b/npm-packages/blog/src/build.ts
+index 971aeed..fec85cc 100644
+--- a/npm-packages/blog/src/build.ts
++++ b/npm-packages/blog/src/build.ts
+@@ -26,6 +26,11 @@ export interface BuildOptions {
+   now?: string;
+   /** Whether the page's script, once built, is kept for the next build of the same blog: `cblo dev`'s. */
+   reuseClient?: boolean;
++  /**
++   * The layout, in place of the blog's `layout.html`: for a site that makes it from its own pages' header and footer
++   * as it builds them, so the blog's pages stay the same as the site's.
++   */
++  layout?: string;
+ }
+ 
+ /** A blog built: each file by its path in the site, and the build's warnings. */
+@@ -79,13 +84,13 @@ function liveOf(post: Post, script: string): string {
+ }
+ 
+ /** The blog in `dir`, built. @throws BlogError for what is wrong with it, a post's errors among them. */
+-export async function buildSite(dir: string, { drafts, now = new Date().toISOString(), reuseClient = false }: BuildOptions): Promise<Site> {
++export async function buildSite(dir: string, { drafts, now = new Date().toISOString(), reuseClient = false, layout }: BuildOptions): Promise<Site> {
+   const config = await readConfig(dir);
+   const posts = await readPosts(dir, config, { drafts });
+-  const layout = existsSync(join(dir, LAYOUT)) ? await readFile(join(dir, LAYOUT), "utf8") : defaultLayout(config);
++  const pageLayout = layout ?? (existsSync(join(dir, LAYOUT)) ? await readFile(join(dir, LAYOUT), "utf8") : defaultLayout(config));
+   const theme = [await readFile(DEFAULT_THEME, "utf8"), existsSync(join(dir, THEME)) ? await readFile(join(dir, THEME), "utf8") : ""].join("\n");
+   const highlight = await highlighter();
+-  const given = await packsOf(dir);
++  const blogPacks = await packsOf(dir);
+   const base = new URL(config.url).pathname;
+   const warnings: string[] = [];
+   const html = new Map<string, string>();
+@@ -94,7 +99,7 @@ export async function buildSite(dir: string, { drafts, now = new Date().toISOStr
+   let client: Client | undefined;
+   for (const [i, post] of posts.entries()) {
+     // A post's page is a folder below the posts', so its relative links take one `../` more.
+-    const rendered = await renderPost(post, now, highlight, given, "../");
++    const rendered = await renderPost(post, now, highlight, blogPacks, "../");
+     warnings.push(...rendered.warnings);
+     html.set(post.slug, rendered.html);
+     const page = postPage(config, post, rendered, posts[i - 1], posts[i + 1]);
+@@ -111,7 +116,7 @@ export async function buildSite(dir: string, { drafts, now = new Date().toISOStr
+   }
+   const tags = tagsIn(posts);
+   if (tags.size > 0) pages.push(tagsPage(config, tags), ...[...tags].map(([tag, tagged]) => tagPage(config, tag, tagged)));
+-  for (const page of pages) files.set(`${page.path}index.html`, applyLayout(layout, { head: headOf(config, page), content: page.content }));
++  for (const page of pages) files.set(`${page.path}index.html`, applyLayout(pageLayout, { head: headOf(config, page), content: page.content }));
+   files.set("style.css", theme);
+   files.set("feed.xml", atom(config, posts, html));
+   files.set("posts.json", postsJson(config, posts));
+diff --git a/npm-packages/blog/src/index.ts b/npm-packages/blog/src/index.ts
+index 3ac3b41..42d8747 100644
+--- a/npm-packages/blog/src/index.ts
++++ b/npm-packages/blog/src/index.ts
+@@ -2,6 +2,7 @@
+ // are what it is built from, for a site that builds its blog in its own build.
+ export { buildSite, type BuildOptions, type Site } from "./build.ts";
+ export { BlogError, configOf, readConfig, type BlogConfig, type Comments } from "./config.ts";
++export { CONTENT_MARKER } from "./layout.ts";
+ export { newPost } from "./new.ts";
+ export { readPosts, type Post } from "./posts.ts";
+-export { serve, writeSite } from "./serve.ts";
++export { fileFor, sendBlogFile, serve, writeSite } from "./serve.ts";
+diff --git a/npm-packages/blog/src/layout.ts b/npm-packages/blog/src/layout.ts
+index e7dfcde..d864802 100644
+--- a/npm-packages/blog/src/layout.ts
++++ b/npm-packages/blog/src/layout.ts
+@@ -5,7 +5,7 @@ import { BlogError, type BlogConfig } from "./config.ts";
+ import { escape } from "./html.ts";
+ 
+ /** Where a page's content goes in the layout. */
+-export const CONTENT = "<!-- content -->";
++export const CONTENT_MARKER = "<!-- content -->";
+ /** A blog's own layout's file. */
+ export const LAYOUT = "layout.html";
+ 
+@@ -21,7 +21,7 @@ export function defaultLayout(config: BlogConfig): string {
+ <body>
+ <header class="blog-header"><a href="${escape(home)}">${escape(config.title)}</a></header>
+ <main class="blog-main">
+-${CONTENT}
++${CONTENT_MARKER}
+ </main>
+ <footer class="blog-footer">Written in <a href="https://compmd.dev/">CompMD</a>.</footer>
+ </body>
+@@ -31,7 +31,7 @@ ${CONTENT}
+ 
+ /** `layout` with a page's `head` before `</head>` and its `content` where it says. @throws BlogError when it lacks either. */
+ export function applyLayout(layout: string, { head, content }: { head: string; content: string }): string {
+-  if (!layout.includes(CONTENT)) throw new BlogError(`${LAYOUT} has no \`${CONTENT}\` for each page's content`);
++  if (!layout.includes(CONTENT_MARKER)) throw new BlogError(`${LAYOUT} has no \`${CONTENT_MARKER}\` for each page's content`);
+   if (!layout.includes("</head>")) throw new BlogError(`${LAYOUT} has no \`</head>\` for each page's head`);
+-  return layout.replace("</head>", () => `${head}\n</head>`).replace(CONTENT, () => content);
++  return layout.replace("</head>", () => `${head}\n</head>`).replace(CONTENT_MARKER, () => content);
+ }
+diff --git a/npm-packages/blog/src/serve.ts b/npm-packages/blog/src/serve.ts
+index 9eb1f1b..86f8b9d 100644
+--- a/npm-packages/blog/src/serve.ts
++++ b/npm-packages/blog/src/serve.ts
+@@ -2,7 +2,7 @@
+ // again for each page asked for, so a saved post shows when the page is reloaded.
+ 
+ import { mkdir, rm, writeFile } from "node:fs/promises";
+-import { createServer, type Server } from "node:http";
++import { createServer, type Server, type ServerResponse } from "node:http";
+ import { dirname, extname, join } from "node:path";
+ import { CONTRACT_HEADERS } from "@compmd/vite";
+ import { readConfig } from "./config.ts";
+@@ -44,6 +44,16 @@ export function fileFor(site: Site, base: string, pathname: string): string | un
+   return site.files.has(file) ? file : undefined;
+ }
+ 
++/**
++ * Sends `file` of `site` as the response, with its content type, and the sandbox's frames and packs with the headers
++ * every host serves them with (docs/hosting.md, decision 8).
++ */
++export function sendBlogFile(response: ServerResponse, site: Site, file: string): void {
++  const contract = file.startsWith("compmd/frames/") || file.startsWith("compmd/packs/") ? CONTRACT_HEADERS : {};
++  response.writeHead(200, { "content-type": TYPES[extname(file)] ?? "application/octet-stream", ...contract });
++  response.end(site.files.get(file));
++}
++
+ /**
+  * Serves the blog in `dir` on `port`, at its address's path (`/blog/`), on this machine only: each request builds it
+  * again, so a saved post shows when its page is reloaded, and an error in it shows on the page.
+@@ -60,10 +70,7 @@ export async function serve(dir: string, port: number, options: BuildOptions): P
+           response.end(pathname === "/" ? "" : `Not in the blog: ${pathname}`);
+           return;
+         }
+-        // The sandbox's frames and packs, as every host serves them (docs/hosting.md, decision 8).
+-        const contract = file.startsWith("compmd/frames/") || file.startsWith("compmd/packs/") ? CONTRACT_HEADERS : {};
+-        response.writeHead(200, { "content-type": TYPES[extname(file)] ?? "application/octet-stream", ...contract });
+-        response.end(site.files.get(file));
++        sendBlogFile(response, site, file);
+       },
+       (error: unknown) => {
+         response.writeHead(500, { "content-type": "text/plain; charset=utf-8" });
+diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
+index be0f3d7..1b05cdb 100644
+--- a/pnpm-lock.yaml
++++ b/pnpm-lock.yaml
+@@ -993,6 +993,9 @@ importers:
+         specifier: 5.57.2
+         version: 5.57.2(@typescript-eslint/types@8.72.0)
+     devDependencies:
++      '@compmd/blog':
++        specifier: workspace:*
++        version: link:../npm-packages/blog
+       '@compmd/editor':
+         specifier: workspace:*
+         version: link:../npm-packages/editor
+diff --git a/website/README.md b/website/README.md
+index e6c139f..43f0149 100644
+--- a/website/README.md
++++ b/website/README.md
+@@ -6,6 +6,7 @@ The landing page, with the playground and the spec, assembled into one static si
+ |---|---|---|
+ | `/` | The landing page | `src/App.svelte`, with the documents in `content/` |
+ | `/spec/` | The spec: the draft, then the latest release | `compmd-spec-v1.md`, and each `spec-v*` tag |
++| `/blog/` | The blog: its posts, tags and feed | `blog/`, built by `@compmd/blog` |
+ | `/playground/` | The playground | `npm-packages/editor/`'s build |
+ | `/logo/` | The logo files | `branding/` |
+ 
+@@ -17,13 +18,14 @@ The landing page, with the playground and the spec, assembled into one static si
+ - **The spec page** is the spec's Markdown as plain GFM HTML (the processor's `plainHtml`), with the code highlighted by [Shiki](https://shiki.style) at build time (`build/highlight.ts`, with grammars of our own for CompMD's syntax and ABNF in `build/grammars.ts`). It has ids on the headings as GitHub gives them, a link to each heading's source, and the requirement words marked (`build/spec.ts`). It is static HTML: `src/spec.ts` only adds the scroll-spy and the phone menu. Each version goes in a folder of its own (`build/versions.ts`).
+ - **The PDFs.** Each book of the guides and each version of the spec downloads as a PDF typeset as a book, linked from its pages' status line. Chrome (the installed one, through Playwright) prints them at build time (`scripts/pdf.ts`), after Paged.js has laid the page out in pages by the book's stylesheet (`build/book.css`: the trim, the margins, a technical book's type, the cover, the title and copyright pages (`src/FrontMatter.svelte`), the contents with their page numbers, the chapter openers, the running heads), with an outline from the headings; the dev server prints one from the working tree when it is asked for, in a few seconds, without the examples' pictures (`build/print.ts` for both). A book is printed from a page of its own, its cover, title and copyright pages, its contents and then every chapter (`build/book.ts`, `src/Book.svelte`), which is removed once printed, with a picture of what each example renders taken from the playground (`build/previews.ts`); the spec from its page, companion included. The site's print styles (`@media print` in `src/spec.css`) still apply under the book's: they leave out the site's header and navigation, wrap code, and print light, so a single page prints well from the browser too.
+ - **Search.** The Search button in the header of every page, or the `/` key, opens a dialog that searches the site as you type: each section of the landing page, the spec at `/spec/` with its companion, and every page of the guides, from one heading to the next. The prerender writes the index, `search.json`, from the pages as it renders them (`build/search.ts`), and the dev server makes it from the working tree when it is asked for. The browser loads it, with [MiniSearch](https://lucaong.github.io/minisearch/), the first time search opens, so a page that is only read loads neither; titles count more than text, and words match by their start and with a typo (`src/search.ts`). A result names where the section is and shows the text around the words found. Followed, it opens at the first of those words in its section, all of them marked for four seconds with the CSS Custom Highlight API, which changes nothing in the page; a browser without it opens at the section.
++- **The blog** ([its design](docs/blog.md)) is the folder `blog/`: each post a CompMD document in `blog/posts/`, with its configuration and theme. The prerender builds it with [`@compmd/blog`](../npm-packages/blog/README.md) (`build/blog.ts`) in a layout made from the site's header and footer (`src/BlogLayout.svelte`), into `dist/blog/`, with its posts in search and its pages in the sitemap; the dev server builds it from the working tree for each page asked for, drafts included. Each post's comments are a discussion in the repository's "Blog" category, through [giscus](https://giscus.app), loaded once a reader scrolls to them.
+ - **The snippets** of "Use it in your app" are the files in `snippets/`, which tests run as they are written.
+ - **Visits are counted** with [GoatCounter](https://www.goatcounter.com), without cookies (`src/count.ts`). Its script loads once a page has loaded, on the landing page and the spec page, never in the playground's frame. It counts only on the published site: served from this machine, as by `pnpm dev` and `pnpm check`, it doesn't load.
+ 
+ `pnpm build` runs:
+ 1. `vite build`: the two pages' scripts and styles.
+ 2. The server build of the pages.
+-3. `scripts/prerender.ts`: writes the rendered pages, the landing page, each version of the spec, the guides' pages and each book's page to print, and the search index, into `dist/`.
++3. `scripts/prerender.ts`: writes the rendered pages, the landing page, each version of the spec, the guides' pages, the blog and each book's page to print, and the search index, into `dist/`.
+ 4. `scripts/assemble.ts`: copies the playground and the logo in.
+ 5. `scripts/pdf.ts`: prints the PDFs, each book's and each version of the spec's, in Chrome.
+ 
+diff --git a/website/blog/blog.config.json b/website/blog/blog.config.json
+new file mode 100644
+index 0000000..6cfcc32
+--- /dev/null
++++ b/website/blog/blog.config.json
+@@ -0,0 +1,15 @@
++{
++  "title": "The CompMD blog",
++  "url": "https://compmd.dev/blog/",
++  "author": "Hakan Serce",
++  "lang": "en",
++  "description": "Why CompMD is as it is, where it is going, how it compares, and what each release brings.",
++  "comments": {
++    "giscus": {
++      "repo": "comp-markdown/compmd",
++      "repoId": "R_kgDOVWUzzA",
++      "category": "Blog",
++      "categoryId": "DIC_kwDOVWUzzM4DLhHM"
++    }
++  }
++}
+diff --git a/website/blog/index.html b/website/blog/index.html
+new file mode 100644
+index 0000000..c69891f
+--- /dev/null
++++ b/website/blog/index.html
+@@ -0,0 +1,13 @@
++<!doctype html>
++<html lang="en">
++  <head>
++    <meta charset="utf-8" />
++    <meta name="viewport" content="width=device-width, initial-scale=1" />
++    <link rel="icon" href="../logo/icon.svg" type="image/svg+xml" />
++    <!--head-->
++  </head>
++  <body>
++    <!--app-->
++    <script type="module" src="/src/spec.ts"></script>
++  </body>
++</html>
+diff --git a/website/blog/posts/hello-world.comp.md b/website/blog/posts/hello-world.comp.md
+new file mode 100644
+index 0000000..709ffa1
+--- /dev/null
++++ b/website/blog/posts/hello-world.comp.md
+@@ -0,0 +1,52 @@
++---
++title: "Hello, world: introducing CompMD"
++date: 2026-11-19
++summary: Markdown with components, which still reads as Markdown everywhere else. A first look, and what this blog will hold.
++tags: [about]
++---
++
++CompMD is Markdown with components. You write a post, a newsletter or your notes as you would in any Markdown, and
++reach for a component where plain Markdown runs out: a layout, a list made from data, a chart, a diagram. Open the same
++file on GitHub or in any Markdown editor, and it still reads well.
++
++## A first look
++
++A small CompMD document, and what it makes: the posts this blog has coming, written once in its frontmatter and laid
++out as cards.
++
++````compmd {render=both}
++---
++coming:
++  - title: Why CompMD
++    about: what it gives a writer that plain Markdown doesn't, and what it keeps
++  - title: Where CompMD is
++    about: what works today, and what comes next
++  - title: MDX and CompMD
++    about: two answers to components in Markdown, side by side
++---
++
++::: grid {min=12rem gap=m}
++
++::: each {in=(md.doc.coming) as=post}
++
++::: box {padding=m border=subtle border-radius=m}
++
++**{{post.title}}**: {{post.about}}.
++
++::: /box
++
++::: /each
++
++::: /grid
++````
++
++In a plain Markdown renderer, the `:::` lines show as text and the rest reads in order: nothing is lost, only the
++layout. That is the promise CompMD keeps, whatever a document uses.
++
++## What comes here
++
++The spec says what CompMD is, and the guides how to write it and build with it. This blog is for the rest: why CompMD
++is as it is, where it is going, how it compares with what else there is, and what each release brings. Every post is a
++CompMD document like the one above, in [the repository](https://github.com/comp-markdown/compmd/tree/main/website/blog).
++
++To try CompMD now, open [the playground](/playground/), or start with [the Author's Guide](/guides/authors/).
+diff --git a/website/blog/theme.css b/website/blog/theme.css
+new file mode 100644
+index 0000000..30349cc
+--- /dev/null
++++ b/website/blog/theme.css
+@@ -0,0 +1,45 @@
++/* The CompMD blog's look over @compmd/blog's default: the site's own. Its layout, made from the site's header and
++   footer, brings the site's stylesheets, so the blog's colours are the site's tokens, light and dark. */
++
++:root {
++  --blog-text: var(--ink);
++  --blog-muted: var(--ink-secondary);
++  --blog-link: var(--accent);
++  --blog-line: var(--rule);
++  --blog-background: var(--desk);
++}
++
++body {
++  font: 17px/1.55 var(--sans);
++}
++
++/* One column: the blog has no contents beside its text. */
++.reading.blog {
++  grid-template-columns: minmax(0, 1fr);
++}
++
++/* A post's title in the list is a link, not a section: none of a section's rule and room above it. */
++.spec .post-list h2 {
++  margin: 0 0 0.25rem;
++  padding: 0;
++  border: 0;
++  font-size: 1.35rem;
++}
++
++.spec .post-list h2 a {
++  color: var(--ink);
++  text-decoration: none;
++}
++
++.spec .post-list h2 a:hover {
++  color: var(--accent);
++}
++
++/* Under every page: how the blog is made, quieter than the text. */
++.blog .colophon {
++  margin-block: 3rem 0;
++  padding-block-start: 1rem;
++  border-block-start: 1px solid var(--rule);
++  color: var(--ink-secondary);
++  font-size: 0.9rem;
++}
+diff --git a/website/build/blog.test.ts b/website/build/blog.test.ts
+new file mode 100644
+index 0000000..3fbf874
+--- /dev/null
++++ b/website/build/blog.test.ts
+@@ -0,0 +1,38 @@
++// @vitest-environment node
++// The site's blog: its layout made from a page template and the site's header and footer, and the blog built in it,
++// with its posts for the search index and its pages' folders for the sitemap.
++import { CONTENT_MARKER, readConfig, readPosts } from "@compmd/blog";
++import { describe, expect, it } from "vitest";
++import { BLOG_FOLDER, blogLayout, buildBlog } from "./blog.ts";
++
++const TEMPLATE = `<!doctype html><html><head><link rel="icon" href="../logo/icon.svg"><link rel="stylesheet" href="../assets/spec.css"><!--head--></head><body><!--app--><script type="module" src="../assets/spec.js"></script></body></html>`;
++
++describe("blogLayout", () => {
++  const layout = blogLayout(TEMPLATE, ({ content }) => ({ head: "", body: `<header class="site">The site</header><main>${content}</main>` }), (href) => `/* ${href} */`);
++
++  it("puts the site's header around the blog tool's content marker", () => {
++    expect(layout).toContain(`<header class="site">The site</header><main>${CONTENT_MARKER}</main>`);
++  });
++
++  it("inlines the template's stylesheets, and starts its other links at the site's root, for pages at any depth", () => {
++    expect(layout).toContain("<style>/* ../assets/spec.css */</style>");
++    expect(layout).toContain('href="/logo/icon.svg"');
++    expect(layout).toContain('src="/assets/spec.js"');
++    expect(layout).not.toContain('="../');
++  });
++});
++
++describe("buildBlog", () => {
++  const LAYOUT = `<html><head></head><body><nav class="site">The site</nav>${CONTENT_MARKER}</body></html>`;
++
++  it("builds every page in the layout, each post for the search index, and the pages' folders for the sitemap", async () => {
++    const { site, posts, folders } = await buildBlog({ layout: LAYOUT, drafts: false });
++    const published = await readPosts(BLOG_FOLDER, await readConfig(BLOG_FOLDER), { drafts: false });
++    expect(published.length).toBeGreaterThan(0);
++    expect(posts.map(({ url, page }) => [url, page])).toEqual(published.map((post) => [`blog/${post.slug}/`, `Blog: ${post.title}`]));
++    for (const { html } of posts) expect(html).toContain('<nav class="site">The site</nav>');
++    expect(folders).toContain("blog/");
++    expect(folders).toEqual(expect.arrayContaining(published.map((post) => `blog/${post.slug}/`)));
++    expect(site.files.has("feed.xml")).toBe(true);
++  }, 30_000);
++});
+diff --git a/website/build/blog.ts b/website/build/blog.ts
+new file mode 100644
+index 0000000..4ad62d1
+--- /dev/null
++++ b/website/build/blog.ts
+@@ -0,0 +1,46 @@
++// The site's blog (website/docs/blog.md): the folder `blog/`, built by `@compmd/blog` in a layout made from the site's
++// own header and footer, so its pages are the site's. The prerender writes it into `dist/blog/`, with its posts in the
++// search index and its pages in the sitemap; the dev server serves it from the working tree.
++import { buildSite, CONTENT_MARKER, readConfig, readPosts, type BuildOptions, type Site } from "@compmd/blog";
++import { join } from "node:path";
++import { prerendered, relocated, type Rendered } from "./prerender.ts";
++import type { IndexedPage } from "./search.ts";
++
++/** The blog's folder, as `@compmd/blog` reads one. */
++export const BLOG_FOLDER = join(import.meta.dirname, "../blog");
++
++/** The blog's folder in the site. */
++export const BLOG_PATH = "blog/";
++
++/**
++ * The blog's layout: the page `template` (`blog/index.html`, as built) with the site's header and footer that
++ * `renderLayout` renders around the blog tool's content marker, its stylesheets inlined by `readStylesheet` as the
++ * prerender inlines them. Its other links then start at the site's root, since one layout serves the blog's pages at
++ * every depth.
++ */
++export function blogLayout(template: string, renderLayout: (props: { content: string }) => Rendered, readStylesheet: (href: string) => string): string {
++  return relocated(prerendered(template, renderLayout({ content: CONTENT_MARKER }), readStylesheet), "/");
++}
++
++/** The blog, built: its files by their path in the blog, its posts as the search index takes pages, and its pages' folders in the site. */
++export interface BuiltBlog {
++  site: Site;
++  posts: IndexedPage[];
++  folders: string[];
++}
++
++/** The blog built as `options` say, in their layout (`blogLayout`). @throws BlogError for what is wrong with it. */
++export async function buildBlog(options: BuildOptions & { layout: string }): Promise<BuiltBlog> {
++  const site = await buildSite(BLOG_FOLDER, options);
++  const posts = await readPosts(BLOG_FOLDER, await readConfig(BLOG_FOLDER), { drafts: options.drafts });
++  const pageOf = (path: string): string => {
++    const page = site.files.get(path);
++    if (typeof page !== "string") throw new Error(`the blog has no page ${path}`);
++    return page;
++  };
++  return {
++    site,
++    posts: posts.map((post) => ({ url: `${BLOG_PATH}${post.slug}/`, page: `Blog: ${post.title}`, html: pageOf(`${post.slug}/index.html`) })),
++    folders: [...site.files.keys()].filter((path) => path === "index.html" || path.endsWith("/index.html")).map((path) => `${BLOG_PATH}${path.slice(0, -"index.html".length)}`),
++  };
++}
+diff --git a/website/build/dev.test.ts b/website/build/dev.test.ts
+index f82033e..09f7e69 100644
+--- a/website/build/dev.test.ts
++++ b/website/build/dev.test.ts
+@@ -1,5 +1,5 @@
+ // @vitest-environment node
+-// The dev server's spec and guide pages, in Chrome and WebKit: each paints styled from its HTML alone, as the build's
++// The dev server's spec, guide and blog pages, in Chrome and WebKit: each paints styled from its HTML alone, as the build's
+ // prerendered pages do, so following a link shows no unstyled page while its script loads. And its PDFs, printed when
+ // asked for.
+ import { join } from "node:path";
+@@ -8,7 +8,7 @@ import { createServer, type ViteDevServer } from "vite";
+ import { afterAll, beforeAll, describe, expect, it } from "vitest";
+ 
+ const PORT = 4192;
+-const PAGES = ["spec/", "guides/", "guides/developers/", "guides/developers/quick-start/"];
++const PAGES = ["spec/", "guides/", "guides/developers/", "guides/developers/quick-start/", "blog/", "blog/hello-world/"];
+ /** The site's desk colour in the light scheme, `--desk` in `src/base.css`. */
+ const DESK = "rgb(233, 237, 241)";
+ 
+diff --git a/website/build/static.ts b/website/build/static.ts
+index eb79327..d0065ec 100644
+--- a/website/build/static.ts
++++ b/website/build/static.ts
+@@ -10,6 +10,7 @@ const TYPES: Record<string, string> = {
+   ".mjs": "text/javascript; charset=utf-8",
+   ".css": "text/css; charset=utf-8",
+   ".json": "application/json",
++  ".xml": "application/xml",
+   ".svg": "image/svg+xml",
+   ".png": "image/png",
+   ".wasm": "application/wasm",
+diff --git a/website/docs/blog.md b/website/docs/blog.md
+index 3e5ae98..18f03af 100644
+--- a/website/docs/blog.md
++++ b/website/docs/blog.md
+@@ -13,11 +13,14 @@ brings. Its first posts are *Why CompMD*, *Where CompMD is, and its roadmap*, an
+    own pack (`content/app/`) as the landing page does. A post's frontmatter is the tool's: `title`, `date`, `summary`,
+    and optional `author`, `updated`, `tags` and `draft`.
+ 
+-2. **The site's build runs `cblo build`** into `dist/blog/`, beside the guides and the spec, and its dev server serves
+-   the blog's pages from `cblo dev`, as it serves the playground from the playground's.
+-
+-3. **It looks like the rest of the site** with a `layout.html` of its own: the site's header, with "Blog" beside the
+-   guides and the spec, and its footer; and a `theme.css` that takes the site's fonts and colours, light and dark.
++2. **The site's build builds the blog with `@compmd/blog`'s `buildSite`**, the code `cblo build` runs, into
++   `dist/blog/`, beside the guides and the spec (changed 2026-11-19, from running `cblo build` and `cblo dev`). Its dev
++   server builds it in the same way for each page asked for, drafts included, as the guides are, with no second
++   server to run.
++
++3. **It looks like the rest of the site.** Its layout is made as the site is built, from the site's own header, with
++   "Blog" beside the guides and the spec, and its footer (`src/BlogLayout.svelte`), so it never drifts from them; and its
++   `theme.css` gives the blog tool's colours the site's tokens, light and dark.
+ 
+ 4. **Tags from the start**: each post names a few (`release`, `design`, `comparison`), the tool writes their pages at
+    `/blog/tags/<tag>/`, and the feed carries them.
+diff --git a/website/package.json b/website/package.json
+index 9eb3b48..6653e73 100644
+--- a/website/package.json
++++ b/website/package.json
+@@ -23,6 +23,7 @@
+     "svelte": "5.57.2"
+   },
+   "devDependencies": {
++    "@compmd/blog": "workspace:*",
+     "@compmd/editor": "workspace:*",
+     "@compmd/vite": "workspace:*",
+     "@eslint/js": "10.0.1",
+diff --git a/website/scripts/check.ts b/website/scripts/check.ts
+index e32753b..d61cf9c 100644
+--- a/website/scripts/check.ts
++++ b/website/scripts/check.ts
+@@ -16,15 +16,17 @@
+ //   and its companion, a section of the page, linked from the spec and back.
+ // - Search finds sections of the spec and the guides, and opens them with the words found marked; on a phone, its
+ //   dialog fits.
++// - The blog: every page names its feed, the feed and search have every post, and a post's comments load only once
++//   scrolled to.
+ // - The playground opens every document of its menu.
+ // - Shiki and Temml once in each app, the site's and the playground's: in the frames' files, not in its own bundle.
+-// - The budgets (website/docs/design.md): the page before its live parts at most 100 KB gzipped, and painted within one
+-//   second on a mid-range phone over fast 3G. `--no-timing` leaves the paint out, for a shared runner whose timings
++// - The budgets (website/docs/design.md): the page before its live parts at most 100 KB gzipped, and so is a post's,
++//   and painted within one second on a mid-range phone over fast 3G. `--no-timing` leaves the paint out, for a shared runner whose timings
+ //   vary too much to hold a budget (docs/ci.md).
+ import { execFileSync } from "node:child_process";
+ import { existsSync, readdirSync, readFileSync } from "node:fs";
+ import { createServer } from "node:http";
+-import { join } from "node:path";
++import { join, sep } from "node:path";
+ import { gzipSync } from "node:zlib";
+ import { getDocument, OPS } from "pdfjs-dist/legacy/build/pdf.mjs";
+ import { chromium, type Browser, type Page } from "playwright-core";
+@@ -41,7 +43,16 @@ const bookPages = (book: string): string[] => {
+   const chapters = writtenOf(bookOf(readFileSync(join(import.meta.dirname, `../../guides/${book}/README.md`), "utf8")));
+   return [`guides/${book}/`, ...chapters.map(({ slug }) => `guides/${book}/${slug}/`)];
+ };
+-const PAGES = ["", "spec/", "guides/", ...bookPages("authors"), ...bookPages("developers")];
++/** The blog's pages, as the build wrote them: each folder of `dist/blog/` with an `index.html`. */
++const blogPages = (): string[] =>
++  readdirSync(join(DIST, "blog"), { recursive: true, encoding: "utf8" })
++    .filter((path) => path === "index.html" || path.endsWith(`${sep}index.html`))
++    .map((path) => `blog/${path.slice(0, -"index.html".length).split(sep).join("/")}`)
++    .sort();
++const BLOG_PAGES = blogPages();
++/** The blog's posts: its pages that aren't its list or its tags'. */
++const BLOG_POSTS =BLOG_PAGES.filter((path) => path !== "blog/" && !path.startsWith("blog/tags/"));
++const PAGES = ["", "spec/", "guides/", ...bookPages("authors"), ...bookPages("developers"), ...BLOG_PAGES];
+ const VIEWS = [
+   { name: "desktop", width: 1280, height: 860 },
+   { name: "phone", width: 390, height: 844 },
+@@ -56,6 +67,9 @@ function check(condition: boolean, message: string): asserts condition {
+ /** A page that records its errors and failed requests. */
+ async function open(browser: Browser, path: string, options: { width: number; height: number; scheme?: "light" | "dark" }): Promise<{ page: Page; problems: string[] }> {
+   const page = await browser.newPage({ viewport: { width: options.width, height: options.height }, colorScheme: options.scheme ?? "light" });
++  // The blog's comments are giscus's, a service of its own: its script is answered here, empty, so the check sees it
++  // asked for and never depends on giscus, nor on a post's discussion existing yet.
++  await page.route("https://giscus.app/**", (route) => route.fulfill({ status: 200, contentType: "text/javascript", body: "" }));
+   const problems: string[] = [];
+   page.on("pageerror", (error) => problems.push(`page error: ${error.message}`));
+   page.on("console", (message) => {
+@@ -292,7 +306,7 @@ async function links(browser: Browser): Promise<void> {
+       check(response.ok, `/${path} links to ${url.href}, which is ${String(response.status)}`);
+     }
+   }
+-  for (const place of ["", "spec/", "playground/"]) check(seen.has(ROOT + place), `nothing links to /${place}`);
++  for (const place of ["", "spec/", "blog/", "playground/"]) check(seen.has(ROOT + place), `nothing links to /${place}`);
+ }
+ 
+ async function spec(browser: Browser): Promise<void> {
+@@ -355,6 +369,31 @@ async function search(browser: Browser): Promise<void> {
+   await phone.page.close();
+ }
+ 
++/** The blog: every page names its feed; the feed and search have every post; a post's comments load only once a reader scrolls to them. */
++async function blog(browser: Browser): Promise<void> {
++  const feed = await fetch(`${ROOT}blog/feed.xml`);
++  check(feed.ok && (feed.headers.get("content-type") ?? "").includes("xml"), `the blog's feed is ${String(feed.status)}, ${feed.headers.get("content-type") ?? "no type"}`);
++  const entries = await feed.text();
++  for (const post of BLOG_POSTS) check(entries.includes(`https://compmd.dev/${post}`), `the blog's feed lacks /${post}`);
++  const searched = JSON.parse(readFileSync(join(DIST, "search.json"), "utf8")) as { url: string }[];
++  for (const post of BLOG_POSTS) check(searched.some(({ url }) => url.startsWith(post)), `search's index has nothing of /${post}`);
++  for (const path of BLOG_PAGES) {
++    const { page } = await open(browser, path, VIEWS[0]);
++    const named = await page.locator("link[rel='alternate'][type='application/atom+xml']").getAttribute("href");
++    check(named === "/blog/feed.xml", `/${path} names ${named ?? "no feed"}, not the blog's feed`);
++    await page.close();
++  }
++  for (const path of BLOG_POSTS) {
++    // Its HTML doesn't load giscus: its script, scrolled near, does.
++    const html = readFileSync(join(DIST, path, "index.html"), "utf8");
++    check(!/<script[^>]*\ssrc="https:\/\/giscus\.app/.test(html), `/${path} loads its comments with the page, before they are scrolled to`);
++    const { page } = await open(browser, path, VIEWS[0]);
++    await page.locator("#comments").scrollIntoViewIfNeeded();
++    await page.waitForFunction(() => document.querySelector("#comments script[src='https://giscus.app/client.js']") !== null);
++    await page.close();
++  }
++}
++
+ async function playground(browser: Browser): Promise<void> {
+   const { page, problems } = await open(browser, "playground/", VIEWS[0]);
+   const documents = await page.locator("select").first().locator("option").count();
+@@ -368,10 +407,11 @@ async function playground(browser: Browser): Promise<void> {
+   await page.close();
+ }
+ 
+-/** The page's bytes before the live parts, gzipped: the HTML and what it loads itself. */
+-function weight(): number {
+-  const html = readFileSync(join(DIST, "index.html"), "utf8");
+-  const assets = [...html.matchAll(/(?:src|href)="\.\/(assets\/[^"]+\.(?:js|css))"/g)].map(([, path]) => readFileSync(join(DIST, path ?? "")));
++/** The page at `path`'s bytes before its live parts, in KB gzipped: its HTML and the scripts and stylesheets it loads itself. */
++function weightOf(path: string): number {
++  const html = readFileSync(join(DIST, path, "index.html"), "utf8");
++  const loaded = [...html.matchAll(/(?:src|href)="([^"]+\.(?:js|css))"/g)].map(([, href]) => new URL(href ?? "", ROOT + path)).filter((url) => url.href.startsWith(ROOT));
++  const assets = loaded.map((url) => readFileSync(join(DIST, decodeURIComponent(url.pathname))));
+   return [Buffer.from(html), ...assets].reduce((sum, bytes) => sum + gzipSync(bytes).length, 0) / 1024;
+ }
+ 
+@@ -433,6 +473,7 @@ try {
+     ["the links", links],
+     ["the spec", spec],
+     ["search", search],
++    ["the blog", blog],
+     ["the playground", playground],
+   ] as const) {
+     await step(browser);
+@@ -440,9 +481,14 @@ try {
+   }
+   oneCopy();
+   console.log("ok: Shiki and Temml once each, in the frames' files");
+-  const kb = weight();
++  const kb = weightOf("");
+   check(kb <= BUDGET_KB, `the page before its live parts is ${kb.toFixed(1)} KB gzipped, over ${String(BUDGET_KB)} KB`);
+   console.log(`ok: the page before its live parts is ${kb.toFixed(1)} KB gzipped (budget ${String(BUDGET_KB)} KB)`);
++  for (const post of BLOG_POSTS) {
++    const postKb = weightOf(post);
++    check(postKb <= BUDGET_KB, `/${post} is ${postKb.toFixed(1)} KB gzipped, over ${String(BUDGET_KB)} KB`);
++    console.log(`ok: /${post} is ${postKb.toFixed(1)} KB gzipped (budget ${String(BUDGET_KB)} KB)`);
++  }
+   if (!process.argv.includes("--no-timing")) {
+     const ms = await paint(browser);
+     check(ms <= BUDGET_PAINT_MS, `the largest paint is ${ms.toFixed(0)} ms on a phone over fast 3G, over ${String(BUDGET_PAINT_MS)} ms`);
+diff --git a/website/scripts/prerender.ts b/website/scripts/prerender.ts
+index 55971ef..170aa8b 100644
+--- a/website/scripts/prerender.ts
++++ b/website/scripts/prerender.ts
+@@ -1,11 +1,12 @@
+ // Writes the server-rendered pages into the client build, `dist/`: the landing page, each version of the spec with its
+ // companion (`build/versions.ts`, `build/companion.ts`), the draft from the working tree and each release from its tag,
+-// the guides' pages and the page a wrong address gets, `404.html`; the search index of them, `search.json`
+-// (`build/search.ts`); and `sitemap.xml` and `robots.txt` (`build/sitemap.ts`). Runs after `vite build` and the server
+-// build.
++// the guides' pages, the blog (`build/blog.ts`) and the page a wrong address gets, `404.html`; the search index of them,
++// `search.json` (`build/search.ts`); and `sitemap.xml` and `robots.txt` (`build/sitemap.ts`). Runs after `vite build`
++// and the server build.
+ import { execFileSync } from "node:child_process";
+ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+-import { join } from "node:path";
++import { dirname, join } from "node:path";
++import { blogLayout, BLOG_PATH, buildBlog } from "../build/blog.ts";
+ import { renderSpecPage } from "../build/companion.ts";
+ import { bookPages, type BookProps } from "../build/book.ts";
+ import { guidePages } from "../build/guide-pages.ts";
+@@ -26,6 +27,7 @@ const server = (await import(join(import.meta.dirname, "../dist-server/server.js
+   renderSpecPage: (props: ComponentProps<typeof Spec>) => Rendered;
+   renderGuidePage: (props: ComponentProps<typeof Guide>) => Rendered;
+   renderBookPage: (props: BookProps) => Rendered;
++  renderBlogLayout: (props: { content: string }) => Rendered;
+   renderNotFoundPage: () => Rendered;
+ };
+ const git = (...args: string[]) => execFileSync("git", args, { cwd: REPO, encoding: "utf8" });
+@@ -76,9 +78,18 @@ for (const page of guide) {
+   mkdirSync(join(DIST, page.folder), { recursive: true });
+   writeFileSync(join(DIST, page.folder, "index.html"), prerendered(relocated(guideTemplate, page.root), server.renderGuidePage(page.props), stylesheet(page.folder)));
+ }
++// The blog, without its drafts, in the layout made from the site's header and footer.
++const blogTemplate = readFileSync(join(DIST, BLOG_PATH, "index.html"), "utf8");
++const blog = await buildBlog({ layout: blogLayout(blogTemplate, server.renderBlogLayout, stylesheet(BLOG_PATH)), drafts: false });
++for (const warning of blog.site.warnings) console.warn(`blog: ${warning}`);
++for (const [path, content] of blog.site.files) {
++  const file = join(DIST, BLOG_PATH, ...path.split("/"));
++  mkdirSync(dirname(file), { recursive: true });
++  writeFileSync(file, content);
++}
+ // Each book as one page, which `scripts/pdf.ts` prints into the book's PDF, then removes.
+-// The search index: every section of the landing page, the spec at `spec/` and the guides.
+-writeFileSync(join(DIST, "search.json"), JSON.stringify(sectionsOf(sitePages(landing.body, specAtSpec, guide))));
++// The search index: every section of the landing page, the spec at `spec/`, the guides and the blog's posts.
++writeFileSync(join(DIST, "search.json"), JSON.stringify(sectionsOf([...sitePages(landing.body, specAtSpec, guide), ...blog.posts])));
+ const books = await bookPages((path) => readFileSync(join(REPO, "guides", path), "utf8"), `${REPOSITORY}/blob/main/`);
+ for (const page of books) {
+   mkdirSync(join(DIST, page.folder), { recursive: true });
+@@ -87,6 +98,8 @@ for (const page of books) {
+ // The page a wrong address gets, at any depth: the guides' page, with its links and stylesheets from the site's root.
+ writeFileSync(join(DIST, "404.html"), prerendered(relocated(guideTemplate, "/"), server.renderNotFoundPage(), stylesheet("")));
+ // What the site tells search engines: every page made above, and the playground.
+-writeFileSync(join(DIST, "sitemap.xml"), sitemapOf(["", ...versions.map((page) => page.folder), ...guide.map((page) => page.folder), "playground/"]));
++writeFileSync(join(DIST, "sitemap.xml"), sitemapOf(["", ...versions.map((page) => page.folder), ...guide.map((page) => page.folder), ...blog.folders, "playground/"]));
+ writeFileSync(join(DIST, "robots.txt"), ROBOTS);
+-console.log(`Prerendered the landing page, ${String(pages.length)} page(s) of the spec (${pages.map((page) => page.folder).join(", ")}), ${String(guide.length)} of the guides and ${String(books.length)} books to print`);
++console.log(
++  `Prerendered the landing page, ${String(pages.length)} page(s) of the spec (${pages.map((page) => page.folder).join(", ")}), ${String(guide.length)} of the guides, ${String(blog.folders.length)} of the blog and ${String(books.length)} books to print`,
++);
+diff --git a/website/src/BlogLayout.svelte b/website/src/BlogLayout.svelte
+new file mode 100644
+index 0000000..2fd3dbf
+--- /dev/null
++++ b/website/src/BlogLayout.svelte
+@@ -0,0 +1,35 @@
++<!-- The blog's layout, as `@compmd/blog` takes one (`build/blog.ts`): the site's header and footer around the place each
++     page of the blog goes, its text in the guides' column and type, and a line under it on how the blog is made, said
++     once here rather than in every post. One layout for every page of the blog, at any depth, so its links start at the
++     site's root. -->
++<script lang="ts">
++  import Footer from "./Footer.svelte";
++  import Header from "./Header.svelte";
++  import { REPOSITORY } from "./site.ts";
++
++  interface Props {
++    /** What goes where each page's content is: the blog tool's marker for it. */
++    content: string;
++  }
++
++  let { content }: Props = $props();
++
++  /** The site's root, from any page of the blog. */
++  const ROOT = "/";
++</script>
++
++<Header root={ROOT} current="blog" />
++
++<main class="wrap reading blog">
++  <div class="text">
++    <div class="spec">
++      {@html content}
++    </div>
++    <p class="colophon">
++      Every post is a CompMD document, built with <a href="{REPOSITORY}/tree/main/npm-packages/blog">@compmd/blog</a>, CompMD's blog tool. Follow the blog
++      by its <a href="{ROOT}blog/feed.xml">feed</a>.
++    </p>
++  </div>
++</main>
++
++<Footer />
+diff --git a/website/src/Header.svelte b/website/src/Header.svelte
+index dc570d7..da65ab0 100644
+--- a/website/src/Header.svelte
++++ b/website/src/Header.svelte
+@@ -1,5 +1,5 @@
+-<!-- The site's header: the logo, home, the places (the spec, the guides, the playground, GitHub), and search, which
+-     `search.ts` opens. -->
++<!-- The site's header: the logo, home, the places (the spec, the guides, the blog, the playground, GitHub), and search,
++     which `search.ts` opens. -->
+ <script lang="ts">
+   import Logo from "./Logo.svelte";
+   import { REPOSITORY } from "./site.ts";
+@@ -8,7 +8,7 @@
+     /** The path from this page to the site's root: `""`, or `"../"` per folder down. */
+     root?: string;
+     /** The place this page is. */
+-    current?: "spec" | "guides" | "playground" | undefined;
++    current?: "spec" | "guides" | "blog" | "playground" | undefined;
+   }
+ 
+   let { root = "", current }: Props = $props();
+@@ -20,6 +20,7 @@
+     <nav aria-label="The site">
+       <a href="{root}spec/" aria-current={current === "spec" ? "page" : undefined}>Spec</a>
+       <a href="{root}guides/" aria-current={current === "guides" ? "page" : undefined}>Guides</a>
++      <a href="{root}blog/" aria-current={current === "blog" ? "page" : undefined}>Blog</a>
+       <a href="{root}playground/" aria-current={current === "playground" ? "page" : undefined}>Playground</a>
+       <button type="button" class="search" data-root={root} aria-label="Search the site" title="Search (/)">
+         <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5" /><path d="m12.5 12.5 4.5 4.5" /></svg>
+diff --git a/website/src/server.ts b/website/src/server.ts
+index 6977831..3b94ec7 100644
+--- a/website/src/server.ts
++++ b/website/src/server.ts
+@@ -4,6 +4,7 @@ import { render } from "svelte/server";
+ import type { BookProps } from "../build/book.ts";
+ import type { Rendered } from "../build/prerender.ts";
+ import App from "./App.svelte";
++import BlogLayout from "./BlogLayout.svelte";
+ import Book from "./Book.svelte";
+ import Guide from "./Guide.svelte";
+ import NotFound from "./NotFound.svelte";
+@@ -27,6 +28,12 @@ export function renderGuidePage(props: ComponentProps<typeof Guide>): Rendered {
+   return { head, body };
+ }
+ 
++/** The blog's layout, static: the site's header and footer around `content`, where each page of the blog goes. */
++export function renderBlogLayout(props: ComponentProps<typeof BlogLayout>): Rendered {
++  const { head, body } = render(BlogLayout, { props });
++  return { head, body };
++}
++
+ /** The page a wrong address gets, static. */
+ export function renderNotFoundPage(): Rendered {
+   const { head, body } = render(NotFound);
+diff --git a/website/vite.config.ts b/website/vite.config.ts
+index 78dbf5f..642c3f6 100644
+--- a/website/vite.config.ts
++++ b/website/vite.config.ts
+@@ -1,9 +1,11 @@
++import { fileFor, sendBlogFile } from "@compmd/blog";
+ import { compmd } from "@compmd/vite";
+ import { svelte } from "@sveltejs/vite-plugin-svelte";
+ import { readFileSync } from "node:fs";
+ import { join, relative } from "node:path";
+ import { chromium, type Browser } from "playwright-core";
+ import { defineConfig, type Plugin } from "vite";
++import { BLOG_FOLDER, blogLayout, BLOG_PATH, buildBlog } from "./build/blog.ts";
+ import { bookPages, type BookPage, type BookProps } from "./build/book.ts";
+ import { snapshotsOf } from "./build/plugin.ts";
+ import { guidePages, type GuidePage } from "./build/guide-pages.ts";
+@@ -157,6 +159,40 @@ function guideInDev(): Plugin {
+   };
+ }
+ 
++/**
++ * In the dev server, the blog (`build/blog.ts`) from the working tree, drafts included, built again for each page asked
++ * for, as `cblo dev` builds it, in the layout made from the site's header and footer as they are then.
++ */
++function blogInDev(): Plugin {
++  const base = `/${BLOG_PATH}`;
++  return {
++    name: "compmd-blog-dev",
++    apply: "serve",
++    configureServer(server) {
++      server.middlewares.use((request, response, next) => {
++        const pathname = new URL(request.url ?? "/", "http://localhost").pathname;
++        if (!pathname.startsWith(base)) {
++          next();
++          return;
++        }
++        const respond = async () => {
++          const { renderBlogLayout } = (await server.ssrLoadModule("/src/server.ts")) as { renderBlogLayout: (props: { content: string }) => Rendered };
++          const template = await server.transformIndexHtml(base, readFileSync(join(BLOG_FOLDER, "index.html"), "utf8"));
++          const layout = blogLayout(template, (props) => devStylesheets(renderBlogLayout(props)), () => "");
++          const { site } = await buildBlog({ layout, drafts: true, reuseClient: true });
++          const file = fileFor(site, base, pathname);
++          if (file === undefined) {
++            next();
++            return;
++          }
++          sendBlogFile(response, site, file);
++        };
++        respond().catch(next);
++      });
++    },
++  };
++}
++
+ /**
+  * In the dev server, a PDF asked for (the books' and the draft spec's), printed from the working tree's page when it is
+  * asked for, as the build prints it (`build/print.ts`) but for the examples' pictures: a few seconds, in the installed
+@@ -200,10 +236,10 @@ function pdfInDev(): Plugin {
+ export default defineConfig({
+   base: "./",
+   // `compmd()` gives the site its own pack (`app/`, trusted) and the sandbox's frames, under `compmd/`.
+-  plugins: [snapshotsOf(join(import.meta.dirname, "content"), import.meta.dirname), assembled(), specInDev(), guideInDev(), searchInDev(), pdfInDev(), svelte(), compmd()],
++  plugins: [snapshotsOf(join(import.meta.dirname, "content"), import.meta.dirname), assembled(), specInDev(), guideInDev(), blogInDev(), searchInDev(), pdfInDev(), svelte(), compmd()],
+   build: {
+     target: "es2024",
+-    rolldownOptions: { input: { index: "index.html", spec: "spec/index.html", guides: "guides/index.html" } },
++    rolldownOptions: { input: { index: "index.html", spec: "spec/index.html", guides: "guides/index.html", blog: "blog/index.html" } },
+   },
+   server: {
+     fs: { allow: [".."] },
