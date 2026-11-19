@@ -7,7 +7,6 @@
     {
       "id": "3dc0abee-0ea9-891f-9cf2-e398f7798d37",
       "number": 38,
-      "key_final": true,
       "name": "Spec: state the inline math rule exactly",
       "type": "docs",
       "description": "Spec §2.3 says inline math 'follows Pandoc's rule' but leaves out Pandoc's balanced-brace condition, so the spec makes `{{$doc.title}} by {{$doc.author}}` math where Pandoc 3.12.1 doesn't; GitHub's rule differs again (no letter after the closing `$`). Findings in `name-research.md`.\n\n## Steps\n\n1. Settle with the user, with examples, whether the spec states Pandoc's full rule, GitHub's, or its own on purpose.\n2. Write it into §2.3.\n3. Add conformance cases for the boundary examples (balanced braces, a letter or digit after the closing `$`, `$5` and `$10`).\n4. Update an earlier prototype's math tokenizer.\n",
@@ -30,7 +29,6 @@
     {
       "id": "ea4bdc4f-4690-8e29-98e2-376f96112602",
       "number": 39,
-      "key_final": true,
       "name": "Spec: JSON schema for the parse and expanded trees",
       "type": "docs",
       "description": "Write the JSON schema that spec §12.4 promises 'is published with the conformance set'.\n\n## Schema\n\n- **The parse tree** (§12.1, §12.2): mdast plus the component nodes, params, signatures, recovery fields.\n- **The expanded tree** (§12.3): evaluated params with input bindings, the root's inputs, template-slot instances, the component's box.\n\n## Change\n\n- Put it in the conformance folder.\n- Reference it from §12.4 and the conformance README.\n- Make an earlier prototype's conformance runner validate every expected `parse.json` and `expanded.json` against it.\n\n## Done when\n\nEvery case's trees validate and a deliberately broken tree fails.\n",
@@ -53,7 +51,6 @@
     {
       "id": "04444c96-efbb-8327-b72b-ffc57adf0ae5",
       "number": 40,
-      "key_final": true,
       "name": "Spec: changelog and version line",
       "type": "docs",
       "description": "Add `CHANGELOG.md` and a version line in the spec (version 1 draft, with the date of the last change).\n\n## History\n\nRecord the history so far from git and the spec's §17:\n\n- the open issues settled earlier;\n- the parser and processor findings;\n- the component box and inputs in the expanded tree;\n- the rename to CompMD;\n- the math rule (CMD-38).\n\nFrom then on every spec change adds a changelog entry.\n",
@@ -79,7 +76,6 @@
     {
       "id": "62930e0c-8f11-8810-874b-062366492dc4",
       "number": 41,
-      "key_final": true,
       "name": "Spec: version 1 publication checklist",
       "type": "docs",
       "description": "Define what 'version 1 published' means for CompMD and write it as a checklist in `README.md`. Settle the checklist with the user before writing it.\n\n## Checklist\n\n- The JSON schema (CMD-39).\n- A full conformance pass by an implementation.\n- The degradation report clean.\n- A review of the whole spec with the user.\n- No open issues in §17.\n- The changelog.\n- The license files.\n- The move to its own repository under the `comp-markdown` GitHub organization (option C1), after which the app uses it pinned.\n",
@@ -104,7 +100,6 @@
     {
       "id": "1240f989-ff40-8dda-a01e-cf6d24851a5f",
       "number": 42,
-      "key_final": true,
       "name": "Spec: AI authoring guide for CompMD",
       "type": "docs",
       "description": "AI models know MDX, Markdoc and MDC far better than CompMD, so an agent writing CompMD needs documentation written for it. The guide is part of the spec and never refers to any application.\n\n## Guide\n\nWrite `llms.txt` (the llms.txt convention: a compact, self-contained reference an AI agent reads before writing):\n\n- the syntax by example (containers, leaves, inline components, slots, params and their kinds, component lines);\n- definitions and signatures;\n- the `md.` namespace and the CEL profile with its functions, `if` and `each`;\n- data imports and inputs;\n- the layout components and common params;\n- the component box and `display=contents`;\n- what plain renderers show;\n- the mistakes models make with their fixes (MDX, Markdoc or MDC habits such as JSX tags, `{% %}` tags, `::` closers, `$` variables), with each diagnostic code mapped to its fix.\n\n## Measure\n\n1. Settle the target rates with the user before measuring.\n2. Have Claude write a set of realistic bodies and app screens from short task descriptions with only the guide.\n3. Run them through an earlier prototype's validator, and record how many are valid on the first try and after one round of diagnostics.\n4. Improve the guide where models fail, and record the setup and results in the guide's README entry.\n\nIf CompMD's syntax itself causes most failures, report it as a finding rather than working around it.\n",
@@ -127,7 +122,6 @@
     {
       "id": "caf548c8-ccb0-85e7-8ebf-b216aaa13cbf",
       "number": 43,
-      "key_final": true,
       "name": "Compmd crate: stage 1 and the conformance runner",
       "type": "feature",
       "description": "Develop the `compmd` crate in `processor/` as the processor's design says, starting from the placeholder CMD-55 set up and starting clean (no spike code).\n\n## Stage 1\n\nImplement stage 1 (parse, spec §11) on the fork of markdown-rs (`compmd-markdown`, CMD-57), as the processor's design decided:\n\n- the tree of spec §12 serialized as the JSON schema in spec §12.4 defines;\n- the parse diagnostics in the machine form of §10.5.\n\n## From an earlier prototype\n\n- **Fields mdast always has:** markdown-rs leaves out `start`, `checked`, `lang`, `meta` and `title` when empty; write them as `null`.\n- **Read the frontmatter before parsing** (F001 and F033 make a document plain), instead of parsing twice as the spike does.\n- **YAML** through `yaml-rust2`'s events, which give where a tag, anchor or alias is for F033.\n- The spike's stage 1 is `spikes/compmd-rust/parser/`: read it, don't copy it.\n\n## Conformance runner\n\nAdd a conformance runner as an integration test that reads every case under `conformance/` and checks the parse-only ones.\n\n## Done when\n\nEvery parse-only case passes (101 since CMD-59) and `cargo make ci` is green (99% coverage).\n",
@@ -181,7 +175,6 @@
     {
       "id": "3d964b48-48ae-87cc-a326-3de9dc53f6ef",
       "number": 44,
-      "key_final": true,
       "name": "Compmd crate: the CEL profile",
       "type": "feature",
       "description": "Implement the CEL profile of spec §8.2 in the `compmd` crate, as our own code (the processor's design).\n\n## Scope\n\n- **A parser, a type-checker that runs before evaluation, and an evaluator** with a work budget (100,000 steps; the spike's costliest expression took 708) and a nesting limit.\n- **Type-checking against declared types:** params are typed by their declaration, not by their value, so an optional `length?` without a value is still a `string`.\n- **`int` and `double` mixing,** as §8.2 has it; dividing two `int`s truncates, with no warning.\n- **F024 with columns and nearest names;** a `double` where an `int` is needed (an index, `%`, a position or count) suggests `int(…)`.\n- **The `md.` functions and list functions,** given to the CEL core through a trait.\n- **Locale formatting with ICU4X and all its compiled data** (the processor's design).\n- **Time zones from the host,** through a trait (the processor's design).\n\n## From an earlier prototype\n\n- Parse an expression once and check it per scope; share types' parts so rebinding variables in `each` is cheap.\n- Open for the spec: how `string()` writes a `double` (`1e21`), and map keys of different number types (`{1: 'a'}[1u]`).\n- The spike's code is `spikes/compmd-rust/cel-own/` and `processor/src/functions.rs`: read it, don't copy it.\n\n## Tests\n\n- an earlier prototype's 60-row table (`spikes/compmd-rust/cel-profile/`), rewritten as the crate's own tests.\n- Differential tests against the `cel` crate as a dev-dependency, as the spike's `cel-profile/tests/differential.rs` does.\n- `cargo make ci` green.\n",
@@ -272,7 +265,6 @@
     {
       "id": "9f1508b1-faa1-82d2-917d-a948f428b637",
       "number": 45,
-      "key_final": true,
       "name": "Compmd crate: resolve and validate",
       "type": "feature",
       "description": "Implement stages 2 and 3 (spec §11).\n\n## Scope\n\n- Imports and exports through a `Files` trait and a registry trait (the processor does no I/O itself).\n- `@compmd/core` built in.\n- Ambient packs.\n- Every resolve and validate diagnostic.\n\n## From an earlier prototype\n\n- **Priority by overwriting:** ambient packs, then `@compmd/core` and wildcard imports, then listed imports, then local definitions.\n- **A component file's signature** comes from the signature fence in the document that imports it.\n- **In a pack the processor provides,** a bare signature fence is a component the processor implements.\n- The spike built none of stage 3's diagnostics; its resolution is `spikes/compmd-rust/processor/src/resolve.rs`: read it, don't copy it.\n\n## Tests\n\nThe conformance runner checks the resolve and validate cases' diagnostics. `cargo make ci` green.\n",
@@ -325,7 +317,6 @@
     {
       "id": "933aef1f-975e-8b63-bcff-a0933af2443b",
       "number": 46,
-      "key_final": true,
       "name": "Compmd crate: load and expand",
       "type": "feature",
       "description": "Implement stages 4a and 4b (spec §11, §12.3).\n\n## Scope\n\n- Data loading through the `Files` trait (YAML, JSON, CSV with schemas, `host:` sources and remote data through traits the caller implements).\n- Inputs.\n- Expansion to the expanded tree, with origins.\n\n## From an earlier prototype\n\nThe spike's expansion matches the complete example's expected tree; these rules took finding:\n\n- **A body's headings are its own:** they don't move the heading the caller's next invocation is under.\n- **Breakpoint values** (§9.3): an expression is evaluated per breakpoint, and a param is added only where its value differs from the previous breakpoint's.\n- **Text nodes** are joined in children, not in a fallback.\n- **Numbers in JSON:** a whole `double` is written as an integer.\n- **`md.input`** isn't in a definition's body.\n- **Origins:** a container closed by recovery has no `closePosition`; it runs to the end of the last content it holds.\n- The spike is `spikes/compmd-rust/processor/`, with its fixtures and tests: read it, don't copy it.\n\n## Done when\n\nThe conformance runner passes every case the crate can run (all except those requiring a host language) and `cargo make ci` is green.\n",
@@ -372,7 +363,6 @@
     {
       "id": "b5910650-186f-85de-9368-1c50f945a916",
       "number": 47,
-      "key_final": true,
       "name": "Compmd crate: WebAssembly build",
       "type": "feature",
       "description": "Add the WebAssembly build of the `compmd` crate with `wasm-bindgen`, size-optimized (`opt-level = \"z\"`, LTO, one codegen unit; the processor's design).\n\n## Scope\n\n- One call that takes the documents and data files by path and a render context, and returns the parse tree, the expanded tree and the diagnostics as JSON, plus TypeScript types.\n- Time zone offsets from the page's `Intl`, through the crate's trait.\n- The wasm build in `cargo make ci`.\n\n## Measure\n\nSize and speed on the complete example, the changelog and the long body against an earlier prototype's thresholds: ≤ 1 MB gzipped; in a worker, p95 ≤ 14 ms for the complete example and ≤ 48 ms for the others, in Chrome and WebKit. an earlier prototype's build gave 424 KB with two locales (606 KB with all), and 5.0 and 26 ms. `spikes/compmd-rust/bench/` shows how it measured.\n",
@@ -419,7 +409,6 @@
     {
       "id": "5f6549d9-4d1b-8b16-8ad4-2ad2c8ed64fa",
       "number": 48,
-      "key_final": true,
       "name": "@compmd/render: the renderer package",
       "type": "feature",
       "description": "Create `@compmd/render` in `render/` (TypeScript, standalone, never refers to any application) with the three layers of the processor's design, as an earlier prototype shaped them. Start clean from spec §7.4 to §7.6 and §9 with what the earlier prototypes learned; no spike code.\n\n## Layers\n\n- **Component:** one component node into a target, with its box, its binding, and slots and a fallback the caller renders; `update` and `destroy`.\n- **Region:** any subtree, components through the component layer, updated in place by key; it takes the inputs, the last heading level before it, the footnotes numbered so far and a place in the page's container.\n- **Page:** the region at the root, plus the container breakpoints query, the theme tokens as `--compmd-*` custom properties, footnote numbering and the inputs; one stylesheet per document.\n\n## Keys\n\nKeys from origins (spec §12.3) by the processor's design's mapping rule, with the edit's range from the caller and a diff only for merged changes.\n\n## Invalid text\n\nThe rules for invalid text (the processor's design):\n\n- the last good page for broken frontmatter;\n- an unclosed top-level container's opener as a paragraph;\n- the last good render of a top-level block with any other error.\n\n## Rendering\n\n- Markdown.\n- `box` with its layout and common params as CSS.\n- Host-language components through the host contract (spec §7.4) with every slot rendered up front.\n- The React, Svelte 5 and plain bindings (spec §7.6).\n- The reference rendering of the built-ins (spec §13.1, informative).\n\nIt renders inside a frame the caller supplies (the editor a sandboxed iframe, the app its sandbox), with a small host and frame protocol.\n\n## Tests\n\nTests from an earlier prototype's cases:\n\n- the identity matrix (every component and its state through the charter's edits);\n- the four invalid-text cases;\n- the page layer against the region layer.\n\nUnit tests in a DOM.\n",
@@ -479,7 +468,6 @@
     {
       "id": "dd4c89d0-07d8-86eb-bd71-81d3c1b41199",
       "number": 49,
-      "key_final": true,
       "name": "Editor: live preview",
       "type": "feature",
       "description": "Create the CompMD editor in `editor/` (static Svelte 5 and Vite site, standalone, never refers to any application). Works offline once loaded.\n\n## Layout\n\n- **Left:** a plain text area (no CodeMirror).\n- **Right:** the rendered page, updated by key as the text changes (an earlier prototype), by the `compmd` crate's WebAssembly build and `@compmd/render`'s page layer in a sandboxed iframe, connected through `@compmd/render/frame` (`serveFrame` in the iframe, `connectFrame` in the editor, over a `MessageChannel`).\n\n## Processing\n\n- The crate runs in a Web Worker, never in the input handler, and changes made while one is processed are merged into the next.\n- Each edit's range comes from the text area's selection before the input and goes to the renderer's keys.\n\n## Budgets\n\nFrom an earlier prototype, measured in a real browser:\n\n- key press to paint p95 ≤ 16 ms for the spec's complete example and ≤ 50 ms for the changelog example and a 50 KB body;\n- the text area's input latency p95 ≤ 50 ms.\n\n## Tests\n\nTests for the processing and update loop; `pnpm lint`, `build` and `test` in its README.\n",
@@ -534,7 +522,6 @@
     {
       "id": "3e58593c-f509-8a4c-9ca1-8fc41ebed5af",
       "number": 50,
-      "key_final": true,
       "name": "Editor: diagnostics and trees",
       "type": "feature",
       "description": "Add to the editor:\n\n- diagnostics listed in a pane (code, position, message; clicking one selects its range in the text area);\n- tabs with the parse tree and the expanded tree as JSON (spec §12).\n",
@@ -581,7 +568,6 @@
     {
       "id": "ffa1c98b-3ba0-805e-83d6-13a5f0439a95",
       "number": 51,
-      "key_final": true,
       "name": "Editor: plain-renderer view and inputs",
       "type": "feature",
       "description": "Add to the editor:\n\n- a tab showing how a plain CommonMark and GFM renderer shows the same text (spec §14);\n- an inputs panel listing the document's inputs with controls by type; changing one renders again with that value (spec §8.7).\n",
@@ -628,7 +614,6 @@
     {
       "id": "50f042f0-8488-8947-966d-dbd0c442ca28",
       "number": 52,
-      "key_final": true,
       "name": "Editor: host-language components",
       "type": "feature",
       "description": "Run host-language components (`jsx`, `tsx`, `svelte`, `js`, `ts`) in the editor: compile them in the browser, load React, ReactDOM and the Svelte runtime into the sandboxed iframe, and mount them through `@compmd/render`, with the sandbox rules of spec §15 (no network, opaque origin). Components that throw render their fallback with W118.\n",
@@ -675,7 +660,6 @@
     {
       "id": "a14728c3-2964-88fa-85e7-8ca8084b2dfa",
       "number": 53,
-      "key_final": true,
       "name": "Editor: examples menu",
       "type": "feature",
       "description": "Settle the set of examples with the user first (each showing one aspect of CompMD: syntax, slots, definitions, expressions, data, inputs, layout, host components, diagnostics), then add them to the editor with their supporting files (data and component files, shown read-only), and a menu that loads one. Every example renders without F diagnostics, checked by a test.\n",
@@ -742,7 +726,6 @@
     {
       "id": "f87b4617-cecb-82f0-bf41-f7af87002ed4",
       "number": 54,
-      "key_final": true,
       "name": "Spec: layout rules from the @compmd/render review",
       "type": "docs",
       "description": "Write into the CompMD spec the layout rules settled with the user in the review of CMD-48's `@compmd/render` (2026-10-27). The spec never refers to any application.\n\n## Decided\n\n1. **Breakpoints follow the nearest box** (§9.3). Replace \"its parent's width\" with the width of its *nearest box*, the term §9.2 already uses for positions. List items, quotes and alerts don't count, so a component in a list item inside a box follows the box.\n2. **A component follows its nearest box, not its own width** (§9.3), and this is intended. Add the example: a `card` fenced `{padding=s md:padding=m}` in `::: grid {min=14rem}` on a 1000 px page gets `m` in every card, since the grid is 1000 px wide, though each card is about 320 px.\n3. **W114 for every block whose width comes from its content** (§9.3, §10.2). This is a block whose children use breakpoints that is:\n   - in a `row` (as now);\n   - positioned (`inset-*`) without a `width`;\n   - or has `align-self` or `justify-self` other than `stretch`.\n\n   Without a `width`, such a block shrinks to nothing.\n4. **A note in §7.4.** A host-language component that lays its slot items out by their content (a toolbar row) gives each item a width when its blocks use breakpoints. A processor can't check this.\n5. **A glossary, §1.1 *Terms*.** One line per term, each with a link to its section:\n   - *processor*, *plain renderer*, *component* and *built-in* (moved from §1);\n   - *host language*, *binding*, *host contract*, *pack*;\n   - *box* and *outer box*, *nearest box*, *item*;\n   - *slot* and *template slot*, *fallback*, *input*;\n   - *parse tree* and *expanded tree*, *origin*, *breakpoint*.\n\n   \"Container\" then means only a `:::` component (§4.1). §9.3's \"is the container they follow\" becomes \"is the box they follow\"; *query container* stays the CSS mechanism, named only in the renderer's README. The two entries settled in the review:\n\n   > **Box.** The rectangle a block is laid out in. Every component invocation that is a block has one *outer box* (section 9.2): a host-language component's `target`, or the box holding a `compmd` component's body. A `display=contents` component has none.\n   >\n   > **Nearest box** (of a block). The closest box around it in the expanded tree (section 12.3): a `box` (a `compmd` component's box among them), a host-language component's outer box, or one item of a host-language component's slot. List items, quotes, table cells, `each`, `if`, the slots of `compmd` components and `display=contents` components don't count. At the top level, it is the area the processor renders into. A positioned block is placed in its nearest box (section 9.2), and its breakpoints follow its nearest box's width (section 9.3).\n\nThe region outside a page was settled in the same review and is done in CMD-48: the caller provides the box.\n\n## Also\n\n- Add conformance cases for each rule and each W114 variant. Re-record the expected trees with a processor, as the W114 change of 2026-10-24 did.\n- Add a short informative part of §9 with the examples from the review: top level, a narrow box, own params only, the card grid, a list item, `display=contents`, a host component's slot, and `each`/`if`.\n- Add a CHANGELOG entry naming the sections, and update `llms.txt` where it states these rules.\n",
@@ -791,7 +774,6 @@
     {
       "id": "2fd883f4-1bfc-8f42-a910-73047bf220e7",
       "number": 55,
-      "key_final": true,
       "name": "Compmd crate: the placeholder in processor/",
       "type": "infra",
       "labels": [],
@@ -829,7 +811,6 @@
     {
       "id": "fcfbc73a-94db-8fb1-b518-f8a275232d91",
       "number": 56,
-      "key_final": true,
       "name": "Claim the compmd crate on crates.io (needs the user)",
       "type": "infra",
       "labels": [],
@@ -863,7 +844,6 @@
     {
       "id": "1f86dd43-5960-8d6e-8f48-b8a0dfe42b16",
       "number": 57,
-      "key_final": true,
       "name": "Markdown-rs fork: comp-markdown/markdown-rs, a submodule of compmd",
       "type": "infra",
       "labels": [],
@@ -920,7 +900,6 @@
     {
       "id": "d2a2b54c-9ab3-8925-ba11-29d44147a286",
       "number": 59,
-      "key_final": true,
       "name": "Spec: Pandoc's math rule in full; code spans in fallbacks",
       "type": "docs",
       "labels": [],
@@ -969,7 +948,6 @@
     {
       "id": "e6d564bd-9f5c-846c-a725-da4a8dc024eb",
       "number": 61,
-      "key_final": true,
       "name": "[A.1] Pass Sources to resolve, not to Processor::new",
       "type": "refactor",
       "labels": [],
@@ -1017,7 +995,6 @@
     {
       "id": "4fef77d7-9c0c-8691-8d4b-521d11d64af2",
       "number": 62,
-      "key_final": true,
       "name": "[A.2] One public host module; the rest of resolve internal",
       "type": "refactor",
       "labels": [],
@@ -1097,7 +1074,6 @@
     {
       "id": "d60fbb09-3c8c-807c-8a76-434bc2440a62",
       "number": 63,
-      "key_final": true,
       "name": "[A.3] Decide whether cel and md stay public",
       "type": "refactor",
       "labels": [],
@@ -1148,7 +1124,6 @@
     {
       "id": "5cfe9906-dbc4-8b52-a9ba-041187ecbb10",
       "number": 64,
-      "key_final": true,
       "name": "[A.4] Decide where the JSON request lives",
       "type": "refactor",
       "labels": [],
@@ -1218,7 +1193,6 @@
     {
       "id": "e0d39fe6-0566-8181-8b2b-381c58ba5d23",
       "number": 65,
-      "key_final": true,
       "name": "[A.5] One type for what to fetch",
       "type": "refactor",
       "labels": [],
@@ -1269,7 +1243,6 @@
     {
       "id": "111ce5cd-0444-8b96-a363-ad2dec5a16c9",
       "number": 66,
-      "key_final": true,
       "name": "[A.6] Small public leftovers",
       "type": "refactor",
       "labels": [],
@@ -1322,7 +1295,6 @@
     {
       "id": "cb63398e-e337-8aa6-aa6e-ce1476ef217a",
       "number": 67,
-      "key_final": true,
       "name": "[B.7] Validate decides whether an invocation renders",
       "type": "refactor",
       "labels": [],
@@ -1370,7 +1342,6 @@
     {
       "id": "abe27d2d-1472-80c4-9edb-74cf25a98792",
       "number": 68,
-      "key_final": true,
       "name": "[B.8] One display=contents check",
       "type": "refactor",
       "labels": [],
@@ -1417,7 +1388,6 @@
     {
       "id": "01033b5c-6503-8294-9c92-4c29206f9c78",
       "number": 69,
-      "key_final": true,
       "name": "[B.9] One rule for which scope a document's body sees",
       "type": "refactor",
       "labels": [],
@@ -1465,7 +1435,6 @@
     {
       "id": "1e249836-fc2f-8bea-b88b-3b4e18c00bcb",
       "number": 70,
-      "key_final": true,
       "name": "[B.10] Expand uses resolve's recursion result",
       "type": "refactor",
       "labels": [],
@@ -1513,7 +1482,6 @@
     {
       "id": "57ac5217-51e9-8943-abd5-21da6652c4e1",
       "number": 71,
-      "key_final": true,
       "name": "[B.11] Parse each expression once",
       "type": "refactor",
       "labels": [],
@@ -1560,7 +1528,6 @@
     {
       "id": "3cbd6d1e-4fc6-8b0e-94f7-a55161e9cc55",
       "number": 72,
-      "key_final": true,
       "name": "[C.12] md is built in five places",
       "type": "refactor",
       "labels": [],
@@ -1609,7 +1576,6 @@
     {
       "id": "28ea6f56-aac8-881c-9598-4a51ec9c8ab5",
       "number": 73,
-      "key_final": true,
       "name": "[C.13] Declared type names as one enum",
       "type": "refactor",
       "labels": [],
@@ -1660,7 +1626,6 @@
     {
       "id": "8b7c8394-7657-8f48-8c94-eaeb60a9ddf4",
       "number": 74,
-      "key_final": true,
       "name": "[C.14] Read the frontmatter's YAML once",
       "type": "refactor",
       "labels": [],
@@ -1708,7 +1673,6 @@
     {
       "id": "e96aeec7-2575-89c1-b5b6-e0fb0a8b8b42",
       "number": 75,
-      "key_final": true,
       "name": "[C.15] One way to find places in a document's lines",
       "type": "refactor",
       "labels": [],
@@ -1761,7 +1725,6 @@
     {
       "id": "6d0aaae9-0b39-8b71-981c-375e55220176",
       "number": 76,
-      "key_final": true,
       "name": "[C.16] One walk over the expanded tree's child lists",
       "type": "refactor",
       "labels": [],
@@ -1810,7 +1773,6 @@
     {
       "id": "1e3f7d4e-f2a4-8302-bb52-a1a4daf0aca4",
       "number": 77,
-      "key_final": true,
       "name": "[C.17] Constants and small functions defined twice",
       "type": "refactor",
       "labels": [],
@@ -1860,7 +1822,6 @@
     {
       "id": "2059ad0e-e28c-8e89-86a9-a12a15a7c738",
       "number": 78,
-      "key_final": true,
       "name": "[C.18] One JSON writer for CEL values",
       "type": "refactor",
       "labels": [],
@@ -1907,7 +1868,6 @@
     {
       "id": "cc84f387-6c8d-8129-95f6-52c6cb43f44a",
       "number": 79,
-      "key_final": true,
       "name": "[C.19] Merge Checked and Verdict",
       "type": "refactor",
       "labels": [],
@@ -1953,7 +1913,6 @@
     {
       "id": "d68a6c6c-3376-8868-83a9-91fa40b84569",
       "number": 80,
-      "key_final": true,
       "name": "[C.20] Drop the Functions: FunctionTypes supertrait",
       "type": "refactor",
       "labels": [],
@@ -2000,7 +1959,6 @@
     {
       "id": "a2a70c23-ea1a-839a-8576-a827048fa188",
       "number": 81,
-      "key_final": true,
       "name": "[D.21] Tests use the crate's own test doubles",
       "type": "refactor",
       "labels": [],
@@ -2050,7 +2008,6 @@
     {
       "id": "662a05ae-ca5e-8c8a-98bd-5033a44fad4e",
       "number": 82,
-      "key_final": true,
       "name": "[D.22] Shared test helpers",
       "type": "refactor",
       "labels": [],
@@ -2096,7 +2053,6 @@
     {
       "id": "ea7bef55-1bec-8b36-82f0-ae2467141de3",
       "number": 83,
-      "key_final": true,
       "name": "[D.23] Drop serialization tests conformance covers",
       "type": "refactor",
       "labels": [],
@@ -2148,7 +2104,6 @@
     {
       "id": "b79e3a53-c2b4-820c-853a-5b682130092e",
       "number": 85,
-      "key_final": true,
       "name": "Report type names outside the spec's grammar",
       "type": "feature",
       "labels": [],
@@ -2202,7 +2157,6 @@
     {
       "id": "b1d7e3ba-25ed-8b92-bab5-477025039ebd",
       "number": 86,
-      "key_final": true,
       "name": "Design incremental processing",
       "type": "docs",
       "labels": [],
@@ -2259,7 +2213,6 @@
     {
       "id": "4fb4e292-2a26-8a51-b4dc-1597c4204644",
       "number": 87,
-      "key_final": true,
       "name": "Incremental processing, phase 1: parsing",
       "type": "feature",
       "labels": [],
@@ -2310,7 +2263,6 @@
     {
       "id": "625fecd0-c9ad-839b-9f18-e0f95976bc68",
       "number": 88,
-      "key_final": true,
       "name": "Incremental processing, phase 2: the other stages",
       "type": "feature",
       "labels": [],
@@ -2362,7 +2314,6 @@
     {
       "id": "e9cea5c9-721e-851d-b42d-449e43fa84a6",
       "number": 89,
-      "key_final": true,
       "name": "Incremental processing, phase 3: the WebAssembly binding",
       "type": "feature",
       "labels": [],
@@ -2412,7 +2363,6 @@
     {
       "id": "7e367597-6a67-8141-a7e7-28782ed5e96d",
       "number": 90,
-      "key_final": true,
       "name": "Fork: unclosed frontmatter breaks later lines",
       "type": "bugfix",
       "labels": [],
@@ -2465,7 +2415,6 @@
     {
       "id": "1afa9a4b-6fbd-87ed-830f-f18a0dcc0364",
       "number": 91,
-      "key_final": true,
       "name": "Fork: a definition then dash lines panics",
       "type": "bugfix",
       "labels": [],
@@ -2512,7 +2461,6 @@
     {
       "id": "ba0fe9a0-cb9a-8dcc-af6b-a25c421a26c0",
       "number": 92,
-      "key_final": true,
       "name": "Type-check Svelte components in the compmd packages",
       "type": "infra",
       "labels": [],
@@ -2561,7 +2509,6 @@
     {
       "id": "7827a634-dd7a-8ed3-b698-7b893c19794e",
       "number": 93,
-      "key_final": true,
       "name": "@compmd/render: trim margins at the edges of a box in the reference CSS",
       "type": "bugfix",
       "labels": [],
@@ -2613,7 +2560,6 @@
     {
       "id": "17336e11-806e-89fd-b93c-e4874a2ff031",
       "number": 94,
-      "key_final": true,
       "name": "Editor: send splices, not whole trees, from the worker to the frame",
       "type": "feature",
       "priority": "P0",
@@ -2664,7 +2610,6 @@
     {
       "id": "fbe5893e-6a28-8b00-8119-e6b66770354c",
       "number": 95,
-      "key_final": true,
       "name": "Processor: diagnostics that say what a param value takes",
       "type": "feature",
       "priority": "P1",
@@ -2718,7 +2663,6 @@
     {
       "id": "d5f8445c-d291-8959-84ba-d1d2ac1325e6",
       "number": 96,
-      "key_final": true,
       "name": "Help at the caret: what a param takes, from the processor, shown in the editor",
       "type": "feature",
       "priority": "P1",
@@ -2774,7 +2718,6 @@
     {
       "id": "7ddf1e19-bcf0-812e-8038-d0afc9ff7593",
       "number": 97,
-      "key_final": true,
       "name": "CI on GitHub for the Rust and TypeScript checks",
       "type": "infra",
       "priority": "P1",
@@ -2827,7 +2770,6 @@
     {
       "id": "2157887c-d9a6-84d8-a844-019a9beedbca",
       "number": 100,
-      "key_final": true,
       "name": "Editor: a finished look, and a split that moves and collapses",
       "type": "polish",
       "priority": "P2",
@@ -2874,7 +2816,6 @@
     {
       "id": "32e4e6de-ddd8-80eb-8abf-2e013268931d",
       "number": 101,
-      "key_final": true,
       "name": "Editor: data view, foldable trees, host stylesheets and an introduction",
       "type": "feature",
       "priority": "P2",
@@ -2923,7 +2864,6 @@
     {
       "id": "8cd509dd-1b38-8a36-96d2-6b8c63ad41fb",
       "number": 102,
-      "key_final": true,
       "name": "Editor: a Components tab",
       "type": "feature",
       "labels": [],
@@ -2971,7 +2911,6 @@
     {
       "id": "b8be83ab-8b91-862d-9d24-3e47c29cddde",
       "number": 103,
-      "key_final": true,
       "name": "Playground: publish it as a website",
       "type": "infra",
       "labels": [],
@@ -3024,7 +2963,6 @@
     {
       "id": "12b4b8fc-80d2-850e-aa55-6e1db1f2b0df",
       "number": 104,
-      "key_final": true,
       "name": "Playground: typeset math",
       "type": "feature",
       "labels": [],
@@ -3070,7 +3008,6 @@
     {
       "id": "c63a1b69-794d-829b-b084-f53f93492c9d",
       "number": 105,
-      "key_final": true,
       "name": "Playground: an animated d3 bookshelf in the tutorial",
       "type": "feature",
       "labels": [],
@@ -3116,7 +3053,6 @@
     {
       "id": "8d26d8f4-e4fc-823e-bd5a-8fa06783e4da",
       "number": 106,
-      "key_final": true,
       "name": "Playground: Try it links that select the linked part of the source",
       "type": "feature",
       "labels": [],
@@ -3162,7 +3098,6 @@
     {
       "id": "ae1412ac-5b62-8416-a185-4bd9d8b6771b",
       "number": 107,
-      "key_final": true,
       "name": "Design a logo",
       "type": "feature",
       "labels": [],
@@ -3209,7 +3144,6 @@
     {
       "id": "c49370f8-31ae-807d-bf07-1efca6e20fcc",
       "number": 108,
-      "key_final": true,
       "name": "Playground: Components tab links to where a component is defined",
       "type": "feature",
       "labels": [],
@@ -3256,7 +3190,6 @@
     {
       "id": "a0158641-e7b7-8c02-a8cc-0457da5435b2",
       "number": 109,
-      "key_final": true,
       "name": "Render: the frame listener ignores messages it does not know",
       "type": "bugfix",
       "labels": [],
@@ -3302,7 +3235,6 @@
     {
       "id": "cbd80c2b-9418-86e9-8904-4e536558e5ef",
       "number": 110,
-      "key_final": true,
       "name": "Playground: four more host stylesheets, and the picker beside the document",
       "type": "feature",
       "labels": [],
@@ -3356,7 +3288,6 @@
     {
       "id": "69a818c2-3c60-84a3-8968-d6ad21ed876e",
       "number": 111,
-      "key_final": true,
       "name": "Processor: F014 says when a key lost its value to a colon without a space",
       "type": "feature",
       "labels": [],
@@ -3402,7 +3333,6 @@
     {
       "id": "f86716b6-4763-8952-adae-3d33704dbcc7",
       "number": 112,
-      "key_final": true,
       "name": "Publish @compmd/render and @compmd/processor on npm",
       "type": "infra",
       "labels": [],
@@ -3450,7 +3380,6 @@
     {
       "id": "750c5b30-4de5-8be6-8793-74da998f0ea7",
       "number": 113,
-      "key_final": true,
       "name": "Publish the compmd crate on crates.io",
       "type": "infra",
       "labels": [],
@@ -3503,7 +3432,6 @@
     {
       "id": "bd1d363f-79ae-85a4-803f-6b1fd4a630f0",
       "number": 115,
-      "key_final": true,
       "name": "A Mermaid pack (code renderer, built module) and a playground document",
       "type": "feature",
       "labels": [],
@@ -3609,7 +3537,6 @@
     {
       "id": "3da36a75-e573-8b04-ad99-9bcaf175b918",
       "number": 116,
-      "key_final": true,
       "name": "Components from apps and packs: a design (security, speed and size, experience)",
       "type": "docs",
       "labels": [],
@@ -3655,7 +3582,6 @@
     {
       "id": "5374c516-cdb3-8646-ae71-9fb09bebedcd",
       "number": 117,
-      "key_final": true,
       "name": "Website: count visits with GoatCounter",
       "type": "feature",
       "labels": [],
@@ -3709,7 +3635,6 @@
     {
       "id": "a05f3410-db0f-80a1-8b39-02aa3c0ed864",
       "number": 118,
-      "key_final": true,
       "name": "Website: move it to compmd.hakanserce.com (Route 53, GitHub Pages)",
       "type": "infra",
       "labels": [],
@@ -3755,7 +3680,6 @@
     {
       "id": "a6402cc4-8ebb-8d81-9f68-0f9aae251095",
       "number": 119,
-      "key_final": true,
       "name": "RELEASING.md, and release v0.1.1 to validate the release workflow",
       "type": "infra",
       "labels": [],
@@ -3803,7 +3727,6 @@
     {
       "id": "dd844ba1-3393-8eac-812c-7837df8c9894",
       "number": 121,
-      "key_final": true,
       "name": "Spec: trust levels and host components",
       "type": "feature",
       "priority": "P1",
@@ -3853,7 +3776,6 @@
     {
       "id": "236adb97-351e-8785-aead-ae5f8690adbd",
       "number": 122,
-      "key_final": true,
       "name": "Spec: any npm pack in the strict sandbox, and built modules",
       "type": "feature",
       "priority": "P1",
@@ -3904,7 +3826,6 @@
     {
       "id": "596f61cc-abcf-8b81-b97b-117a3e71fe7d",
       "number": 123,
-      "key_final": true,
       "name": "Spec: code renderers",
       "type": "feature",
       "priority": "P1",
@@ -3954,7 +3875,6 @@
     {
       "id": "ea486876-d694-8e04-8d95-51c6ef4c79a1",
       "number": 124,
-      "key_final": true,
       "name": "Processor: code renderers",
       "type": "feature",
       "priority": "P1",
@@ -4017,7 +3937,6 @@
     {
       "id": "8828b2ef-aff9-8985-9293-fb81e0ae49b5",
       "number": 125,
-      "key_final": true,
       "name": "Processor: packs and trust from the host's configuration",
       "type": "feature",
       "priority": "P1",
@@ -4074,7 +3993,6 @@
     {
       "id": "670b697e-c90b-89cf-b5fa-cb3233714ecc",
       "number": 126,
-      "key_final": true,
       "name": "@compmd/sandbox",
       "type": "feature",
       "priority": "P1",
@@ -4142,7 +4060,6 @@
     {
       "id": "c244958a-fb20-898f-ac9b-267356302f51",
       "number": 127,
-      "key_final": true,
       "name": "Compmd.config.json and @compmd/vite",
       "type": "feature",
       "priority": "P1",
@@ -4208,7 +4125,6 @@
     {
       "id": "68c5e017-c534-8558-bf85-835b522f1cb2",
       "number": 128,
-      "key_final": true,
       "name": "@compmd/create-pack, the pack template",
       "type": "feature",
       "priority": "P1",
@@ -4274,7 +4190,6 @@
     {
       "id": "1f7f62cb-1ec6-8ff0-8d53-4ad6d187ab31",
       "number": 129,
-      "key_final": true,
       "name": "Playground: packs from its configuration, built modules by URL",
       "type": "feature",
       "priority": "P1",
@@ -4323,7 +4238,6 @@
     {
       "id": "99106c59-0119-808f-870e-655f8b178ab1",
       "number": 130,
-      "key_final": true,
       "name": "Website: Use it in your app, with a pack folder and a live stars",
       "type": "feature",
       "priority": "P1",
@@ -4404,7 +4318,6 @@
     {
       "id": "f06ce15b-f76c-8466-aab3-98eb46a7a6ff",
       "number": 131,
-      "key_final": true,
       "name": "Packs from a registry at run time (design)",
       "type": "docs",
       "priority": "P1",
@@ -4483,7 +4396,6 @@
     {
       "id": "6210b30e-707e-8286-a30d-30f264a6c017",
       "number": 133,
-      "key_final": true,
       "name": "A code renderers lesson in Learn CompMD (playground, website)",
       "type": "docs",
       "priority": "P1",
@@ -4534,7 +4446,6 @@
     {
       "id": "bf238f77-8c6c-89a2-80ae-9ee1a9f90817",
       "number": 134,
-      "key_final": true,
       "name": "A design for the Developer Tools",
       "type": "docs",
       "priority": "P1",
@@ -4617,7 +4528,6 @@
     {
       "id": "a0c302b2-1232-89dd-8bdd-220dbab0ddca",
       "number": 135,
-      "key_final": true,
       "name": "The Developer Tools editor, on the sandbox observer",
       "type": "feature",
       "priority": "P1",
@@ -4684,7 +4594,6 @@
     {
       "id": "83a9929a-936a-817e-9da5-f562b5fae258",
       "number": 136,
-      "key_final": true,
       "name": "Author’s Guide: Part I, Writing",
       "type": "docs",
       "priority": "P1",
@@ -4731,7 +4640,6 @@
     {
       "id": "018fd859-3e16-8177-be17-23db0c27000a",
       "number": 137,
-      "key_final": true,
       "name": "Spec: what a component’s imports resolve to (runtimes, host libraries, S1)",
       "type": "docs",
       "priority": "P1",
@@ -4804,7 +4712,6 @@
     {
       "id": "25912983-ec2e-812f-b1d7-009ee7e865b0",
       "number": 139,
-      "key_final": true,
       "name": "Spec: packs on a registry (companion doc, privacy exception)",
       "type": "docs",
       "priority": "P1",
@@ -4862,7 +4769,6 @@
     {
       "id": "eb56b45d-f519-83aa-b6df-f51a77a89861",
       "number": 140,
-      "key_final": true,
       "name": "Processor: sources lists the packs a request doesn't hold",
       "type": "feature",
       "priority": "P1",
@@ -4918,7 +4824,6 @@
     {
       "id": "6f07e68f-495c-8102-a5b3-27862885b8f8",
       "number": 141,
-      "key_final": true,
       "name": "@compmd/registry (Registry, NpmRegistry, resolvePacks)",
       "type": "feature",
       "priority": "P1",
@@ -5000,7 +4905,6 @@
     {
       "id": "379f8514-c66f-8d54-b43c-c74a8d0828a5",
       "number": 142,
-      "key_final": true,
       "name": "Sandbox: built modules given as code (blob: modules)",
       "type": "feature",
       "priority": "P1",
@@ -5056,7 +4960,6 @@
     {
       "id": "e7c276e4-f869-8961-9af1-67f2f0976e88",
       "number": 143,
-      "key_final": true,
       "name": "Library packs shared between packs (L2)",
       "type": "feature",
       "priority": "P2",
@@ -5164,7 +5067,6 @@
     {
       "id": "83b1d7b0-f35b-8d95-bc8d-2380476564d9",
       "number": 144,
-      "key_final": true,
       "name": "Vite: registries, fetch and the size cap in the configuration",
       "type": "feature",
       "priority": "P1",
@@ -5220,7 +5122,6 @@
     {
       "id": "e9d4b0be-2dc9-8470-a2e7-a5bda3b3e4ea",
       "number": 145,
-      "key_final": true,
       "name": "Create-pack: registry conventions and a library-pack template",
       "type": "feature",
       "priority": "P2",
@@ -5277,7 +5178,6 @@
     {
       "id": "37969889-024c-8921-ae9a-e703c8db752b",
       "number": 146,
-      "key_final": true,
       "name": "Playground: documents that import published packs",
       "type": "feature",
       "priority": "P1",
@@ -5341,7 +5241,6 @@
     {
       "id": "01c5b343-89e6-83f8-91c1-1659ea67a63c",
       "number": 151,
-      "key_final": true,
       "name": "Writing a pack with no routine code (@compmd/pack, the host contract's scheme and fail)",
       "type": "feature",
       "priority": "P1",
@@ -5414,7 +5313,6 @@
     {
       "id": "dc815c89-8f2f-8be3-8aff-11109b8f3d9e",
       "number": 153,
-      "key_final": true,
       "name": "First npm publishes (the new @compmd packages and @comp-markdown/mermaid)",
       "type": "infra",
       "priority": "P1",
