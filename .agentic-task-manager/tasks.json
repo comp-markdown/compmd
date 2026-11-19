@@ -8927,7 +8927,7 @@
       "description": "In frame mode the page's frame highlights its own code blocks, with Shiki's JavaScript engine, which in WebKit blocks for about a second on the first TypeScript block (the spike CMD-252, [its README](spikes/highlight-perf/README.md)). Oniguruma, as WebAssembly, doesn't; but the frames' policy refuses WebAssembly (`npm-packages/sandbox/build/policy.ts`: no `'wasm-unsafe-eval'`, `worker-src 'none'`), and a strict frame runs code from documents.\n\n## The design\nA design document in `docs/`, its decisions first, for the maintainer to decide. It answers:\n- What `'wasm-unsafe-eval'` in a strict frame's `script-src` lets a component's code do that JavaScript there can't: against each threat of [the sandbox's design](docs/running-components-in-the-sandbox.md) (T1 to T10), and spec §15's five rules. Stopping a component that runs too long (rule 5, T9) and timing side channels are looked at in particular.\n- The alternatives: the host's page tokenizing for its frames and sending tokens (after CMD-251, a highlighter gives tokens), a frame of its own for highlighting, a worker (`worker-src`), or staying with the JavaScript engine in frames, with what each costs and measures (the spike has the worker's numbers).\n- What changes in the frames' policies, the protocol and the spec's informative note on browsers, if anything.\n\nNo code. Its follow-up tasks are added once it is decided.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [
         "01a1f0f9-76de-73fc-b8ae-e07bc47777fc"
       ],
@@ -8936,7 +8936,7 @@
         "npm-packages/sandbox/build/policy.ts"
       ],
       "created_at": "2026-11-19T07:25:13Z",
-      "updated_at": "2026-11-19T08:05:21Z",
+      "updated_at": "2026-11-19T08:06:53Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -8950,7 +8950,24 @@
       "number": 258,
       "key_final": false,
       "started_at": "2026-11-19T08:05:21Z",
-      "started_by": "claude:79612601"
+      "started_by": "claude:79612601",
+      "commit": "899dc0c1516f8bfd6e4a533349593f211d76963d",
+      "code_reviews": [
+        {
+          "id": "01a1f2d8-2491-732f-8283-85204fc820ea",
+          "ref": "CR-13"
+        }
+      ],
+      "review_requested_at": "2026-11-19T08:06:53Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-19T08:06:53Z",
+          "kind": "review",
+          "text": "CR-13: Design: WebAssembly in the frames",
+          "by": "claude:79612601"
+        }
+      ]
     },
     {
       "id": "01a1f2b1-fd0d-721c-bf49-5edc8890af56",
