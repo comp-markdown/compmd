@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 347,
+    "next_number": 348,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -12801,6 +12801,32 @@
       ],
       "review_requested_at": "2026-11-20T12:16:16Z",
       "review_state": "waiting"
+    },
+    {
+      "id": "01a1f9ca-ad61-762d-a15d-84f121843da1",
+      "name": "Design: asking about remote images with less friction",
+      "type": "docs",
+      "priority": "P2",
+      "labels": [
+        "spec",
+        "security"
+      ],
+      "description": "A revision of [remote images, asked about](docs/remote-images.md), and the spec change it needs, so a reader keeps CompMD's privacy for documents from others with less friction than a dialog that opens as soon as a page draws.\n\n## Why\nAn image in a document from someone else works as a read receipt: its server learns the reader's address, the time and that the document was opened. Mail apps ask about remote images for the same reason, or load them through a proxy. CompMD asks too (spec §8.6, §15), but by a dialog the moment the first image is drawn ([decision 4](docs/remote-images.md#:~:text=The%20question%20is%20asked%20when%20the%20image%20is%20first%20drawn)), which is noise for many documents.\n\n## What exists\n- A host configures origins, or allows every origin for documents it publishes itself (`\"any\"`, CMD-308).\n- A refused image is already inline: its alt text and a \"Show images from …\" button.\n- A host can replace the dialog through `ask`.\n\n## Research (light)\nWhat mail apps do: Gmail, Apple Mail, Thunderbird, Outlook, Fastmail. Their defaults, inline prompts, per-sender \"always\", and image proxies (Gmail's, Apple's Mail Privacy Protection).\n\n## Decide, with the user\n- **When the reader is asked:** inline first and asked only on a click, in place of the dialog at first draw. This changes the spec's wording (\"the first time a document needs an origin\").\n- **The inline prompt:** a bar or the image's own button; a \"Show all images in this document\" action; per-origin \"always\".\n- **A reader's default:** always, ask or never, kept by the host beside the per-origin answers. Whether the spec lets a reader allow every origin at once.\n- **Data and images:** they share the answers today, but a component needs its data to draw. Does data keep asking up front?\n- **A host's image proxy:** the image's server sees the host, not the reader, so nothing is asked; a spec line that allows it. Likely a later task.\n- Not per document in place of per origin (it weakens what an answer means), unless the examples show otherwise.\n\nEach decision tested on example documents (a post with a remote photo, a shared notes app, a review tool, a weather post), with the gaps listed up front.\n\n## Output\nThe design revised, decisions first; the spec change drafted with its changelog entry and conformance cases, for the user's go; then the implementation tasks, split as the decisions fall.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "docs/remote-images.md",
+        "spec/compmd-spec-v1.md",
+        "spec/CHANGELOG.md"
+      ],
+      "created_at": "2026-11-20T16:29:31Z",
+      "updated_at": "2026-11-20T16:29:31Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "with": "user",
+      "number": 347
     }
   ]
 }
