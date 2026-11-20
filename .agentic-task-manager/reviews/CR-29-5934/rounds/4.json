@@ -1,0 +1,122 @@
+{
+  "number": 4,
+  "kind": {
+    "kind": "range",
+    "base": "3a94bade77c78d3ec07f22c6cec589fb8c357c71",
+    "head": "a4fb69f8c6ee2ee434a9ed325d261894e0249b43"
+  },
+  "files": [
+    {
+      "path": "docs/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/sizing-components.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "docs/wrapping-an-npm-package.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/writing-a-pack.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/layerchart/demo.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/qrcode/demo.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/qrcode/src/qr-svg.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/react-qr-code/compmd.wrap.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/react-qr-code/demo.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/react-qr-code/index.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/react-qr-code/src/qr-code.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/results.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/screenshots/layerchart-chrome.png",
+      "status": "modified",
+      "binary": true
+    },
+    {
+      "path": "spikes/wrap-npm-package/screenshots/layerchart-webkit.png",
+      "status": "modified",
+      "binary": true
+    },
+    {
+      "path": "spikes/wrap-npm-package/screenshots/model-viewer-chrome.png",
+      "status": "modified",
+      "binary": true
+    },
+    {
+      "path": "spikes/wrap-npm-package/screenshots/model-viewer-webkit.png",
+      "status": "modified",
+      "binary": true
+    },
+    {
+      "path": "spikes/wrap-npm-package/screenshots/qrcode-chrome.png",
+      "status": "modified",
+      "binary": true
+    },
+    {
+      "path": "spikes/wrap-npm-package/screenshots/qrcode-webkit.png",
+      "status": "modified",
+      "binary": true
+    },
+    {
+      "path": "spikes/wrap-npm-package/screenshots/react-qr-code-chrome.png",
+      "status": "modified",
+      "binary": true
+    },
+    {
+      "path": "spikes/wrap-npm-package/screenshots/react-qr-code-webkit.png",
+      "status": "modified",
+      "binary": true
+    },
+    {
+      "path": "spikes/wrap-npm-package/try.ts",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-20T19:56:57Z"
+}

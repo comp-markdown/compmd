@@ -1,0 +1,1335 @@
+diff --git a/docs/README.md b/docs/README.md
+index 9d21c15..1a5355b 100644
+--- a/docs/README.md
++++ b/docs/README.md
+@@ -35,6 +35,8 @@ The designs behind the spec and its implementation. Each starts with its status
+ - [Resolving registry packs](resolving-registry-packs.md): how `@compmd/registry` resolves, fetches and checks packs; builds decisions 1 to 3 and 5 of *packs from a registry*.
+ - [Sharing library packs](sharing-library-packs.md): how the processor, `@compmd/registry` and `@compmd/sandbox` let packs share a library pack; builds decision 8 of *packs from a registry*.
+ - [Writing a pack](writing-a-pack.md): [`@compmd/pack`](../npm-packages/pack/README.md), which holds what every pack would otherwise copy (the build, the publish check, the test page, component helpers and a testing kit), and the host contract's `scheme` and `fail`.
++  - [Sizing a component in its box](sizing-components.md): proposed, a component fitting its box, which the use's common params size, a pack's box defaults on its signature fence, and the sandbox's frames giving a use exactly its box.
++- [Wrapping an npm package as a pack](wrapping-an-npm-package.md): proposed, `npm create @compmd/pack -- --from <package>`: the glue written once, the signature generated at each build from the package's types, and what a strict frame refuses; with [its spike](../spikes/wrap-npm-package/README.md), four packages wrapped and run.
+ - [The Developer Tools](devtools.md): `@compmd/devtools`, the playground's tools as a part any page embeds, with the sandbox's observer and tabs for its frames, a console and the messages.
+ - [The Mermaid pack](mermaid-pack.md): `@comp-markdown/mermaid`, a code renderer as a registry pack; builds the Mermaid example of *code renderers*.
+ 
+diff --git a/docs/sizing-components.md b/docs/sizing-components.md
+new file mode 100644
+index 0000000..34d3360
+--- /dev/null
++++ b/docs/sizing-components.md
+@@ -0,0 +1,157 @@
++# Sizing a component in its box
++
++**Status: proposed (2026-11-20, CMD-8, CR-29).** How an author sizes a host-language component, whatever library draws
++it, and what the spec, the sandbox and `@compmd/pack` change for it. It comes from [the spike of wrapping an npm
++package](../spikes/wrap-npm-package/README.md), whose QR codes were the column's width with no way the author could
++see to make them smaller, and whose frames scrolled once a use had a `width` and a border. It replaces decision 8 of
++[writing a pack](writing-a-pack.md) as first written there ("fills its box's width"), which a box with a height broke.
++
++**Terms.** A use's **box** is its outer box, the component's `target` (spec §7.4, §9.2), which the common params size:
++`width`, `height`, `min-width`, `max-width`, `aspect-ratio`, `fill`. Its **inside** is the box less its border and
++padding. A drawing's **aspect ratio** is its own when it has one (a QR code is square, an SVG has its `viewBox`); a
++chart or a map has none. **Fit** (CSS's `object-fit: contain`): as large as the inside allows with the aspect ratio
++kept, centred. **Fill**: the whole inside, both ways.
++
++## Decisions
++
++1. **A component fits its box** (spec §7.4, a new rule, SHOULD for components). It takes the inside's width. It takes
++   the inside's height too when the box has one (from `height`, `aspect-ratio`, `fill`, or a grid row that stretches
++   it); otherwise the box is as tall as what it draws. A drawing with an aspect ratio of its own fits the inside; one
++   without fills it. So an author sizes every component the same way, with the common params, and a component has no
++   size params of its own (`size`, `width` or `height` in pixels).
++2. **The box a component sees is exactly the use's box** (spec §7.4, MUST for processors): its params applied once,
++   `target`'s inside the box's inside. A processor that draws a use somewhere else (the sandbox's frame for each use)
++   gives it a `target` the box's inside's size and none of the box's params again. Today the sandbox applies them twice
++   (*The sandbox*, below), which is the frames' scroll bars.
++3. **A signature fence may give the component's box its defaults,** as a host-language definition fence already may
++   (spec §7, *The component's box*): ```` ```compmd component=qr-code signature {width=12rem max-width=100%} ````, the caller's params over
++   them as for a definition's fence (§12.3). A pack's component is a built module with no definition fence, so its
++   signature fence is the only place for them, and a QR code without a `width` is then 12rem, not the column. It takes
++   what a host-language definition fence takes: the common params, `class`, `id`, `lang` and `dir`; any other key is
++   F008. **F036 changes meaning:** today "a param list on a signature fence"; now "a component whose box both its
++   definition fence and its signature fence style", reported at the signature fence's `{`, the definition fence's list
++   kept.
++4. **The common params' names are the processor's, as `class` and `id` are:** a signature that declares one, or `lang`
++   or `dir`, is F013 (§5.1). The processor applies them to the box and never passes them on (§7.4), so such a param
++   could never reach the component: the spike's layerchart `height` was dropped without a word. `lang` and `dir`,
++   which §5.1 already calls the processor's, join `class` and `id` in F013.
++5. **Sizes include padding and border** (§9.2): "`width`, `max-width` and `aspect-ratio` measure the block with its
++   padding and border", as the renderer does already (`box-sizing: border-box`). The spec says padding only.
++6. **Not now: covering, stretching and placing.** Filling the inside and cropping (`object-fit: cover`), stretching
++   out of the aspect ratio (`fill`), and placing a smaller drawing at a start or end (`object-position`) aren't in the
++   common params. Nothing in [the first components](first-components.md) needs them: a chart has no aspect ratio, and a
++   QR code or a diagram must never be cropped or stretched. A component that needs one (a photo, a map) takes a param
++   of its own, `fit`; a common param waits until several do.
++
++## What it looks like
++
++````md
++<!-- in the pack's index.comp.md -->
++```compmd component=qr-code signature {width=12rem max-width=100%}
++params:
++  value: string
++```
++
++<!-- in a document -->
++:: qr-code[Our site] {value="https://compmd.dev/"}                                12rem wide, square
++:: qr-code[Our site] {value="https://compmd.dev/" width=6rem}                     6rem
++:: qr-code[Our site] {value="https://compmd.dev/" height=6rem}                    6rem tall, centred in a 12rem box
++:: chart[Sales] {rows=(md.data.sales) x=month y=total height=20rem}               the column's width, 20rem tall
++:: chart[Sales] {rows=(md.data.sales) x=month y=total aspect-ratio=3/1}           the column's width, a third as tall
++````
++
++## Tried on the spike
++
++Each use with a magenta border (`border="2px solid #e5007d"`), in Chrome and WebKit, the drawing measured against the
++box's inside (`spikes/wrap-npm-package/try.ts`); the QR codes are react-qr-code's and qrcode's, the chart layerchart's
++`BarChart`:
++
++| The use | QR codes | Chart |
++|---|---|---|
++| no size | the column (760 px) square: too big, which decision 3 fixes | the column, its default height |
++| `width=10rem` | 156 × 156, fills the inside | — |
++| `width=20rem` | — | fills 316 × 288 |
++| `height=6rem` | 92 × 92, centred in 760 × 92 | fills 760 × 124 (`height=8rem`) |
++| `width=16rem height=6rem` | 92 × 92, centred in 252 × 92 | fills 380 × 156 (`width=24rem height=10rem`) |
++| `width=6rem height=12rem` | 92 × 92, centred in 92 × 188 | — |
++| `width=12rem aspect-ratio=2/1` | 92 × 92, centred in 188 × 92 | fills 760 × 251 (`aspect-ratio=3/1`) |
++
++Chrome's numbers; WebKit's are the same but with `aspect-ratio`, where its box is 4 px taller (188 × 96, and the
++chart's 760 × 255): it takes the ratio from the inside rather than from the box with its border, which decision 5
++makes the measure. A browser test of decision 5 keeps the two apart.
++
++What it found besides:
++
++- **Fitting only the width fails** once a box has a height: the drawing overflows it (react-qr-code's `size`, an SVG at
++  `width: 100%; height: auto`). Fitting both ways is SVG's own default, `meet`, at `width: 100%; height: 100%`; with no
++  height, `100%` is the drawing's own and the box follows it.
++- **`draw()` of `@compmd/pack` breaks it:** it puts the drawing in a `div` with no height, so a drawing can't take the
++  box's height through it; qrcode's overflowed until its glue wrote into `target` itself.
++- **Every framed use with a `width` scrolled by its border** (4 px, a 2 px border each side), in both browsers: the
++  sandbox's double box (decision 2).
++
++## Conformance cases
++
++All the cases were read for these decisions (`conformance/`, stages 1 to 4b). Decisions 1, 2, 5 and 6 are about layout,
++which the set doesn't cover; their tests are browser tests (*The sandbox*, *`@compmd/pack`*). Decisions 3 and 4 change
++these:
++
++| Case | Today | With this design |
++|---|---|---|
++| `definitions/fence-params` | F036 at 11:38, a parser case: `chart`'s signature fence has `{height=16rem}` | `chart` has a definition fence with `{height=16rem}` too, so F036 still applies, but at resolving, since which fences a component has is known only then (a signature may attach to a definition imported from a component file, §7.1). The case loses its F036 (it stays a parser case, for F011 and F017), and its `parse.json` gains the signature fence's `params`. |
++| `definitions/signature-types` | declares `width: length?` | F013 under decision 4; the case is about types, so the param becomes `stroke: length?` (its `parse.json` with it) |
++| `resolve/params-differ-in-dash-F013` | `max-width` and `max_width`: one F013, at 1:1 | `max-width` would be a second F013; the case is about `-` and `_`, so they become `line-width` and `line_width`, the one diagnostic as it is |
++| `expand/host-component-box` | the definition fence's box params under the caller's | unchanged |
++| `validate/code-renderer-render-F009-F013-W101` | `class` and `id` declared: F013 | unchanged |
++| `validate/params-and-common-params`, `expand/component-box` | the common params on uses | unchanged |
++| **new** `resolve/signature-and-definition-box-F036` | — | a host-language definition fence and its signature fence both with box params: F036 at the signature's `{` |
++| **new** `expand/signature-box-defaults` | — | a component with a signature fence's `{width=12rem max-width=100%}` and no definition fence's list, used with no params, with `width=6rem`, and with `md:width=8rem`: the expanded `params` as `host-component-box`'s |
++| **new** `validate/signature-box-unknown-F008` | — | `{title=x}` on a signature fence: F008 |
++| **new** `resolve/common-param-declared-F013` | — | a signature declaring `width`, `height`, `padding`, `lang` and `dir`, and a `compmd` definition declaring `border`: F013 at each |
++
++**The tree schema:** a signature fence's node (`componentSignature`) gains `params`, as written, the same shape as a
++definition fence's (§12.1), so a tool reads a pack's box defaults from its parse tree. `conformance/README.md`'s rows
++for `definitions/`, `resolve/` and `validate/` say so.
++
++## What changes
++
++**The spec** (for the maintainer's go; a changelog entry under *Unreleased*):
++
++- §7.4, the host contract: decisions 1 and 2, beside *The outer box is the processor's*.
++- §7, *The component's box*: decision 3, the signature fence's param list; §10.2's F036 row.
++- §5.1 and §10.2's F013 row: decision 4.
++- §9.2: decision 5, "padding and border".
++- §12.1: the signature fence's `params`.
++
++**The sandbox** (`@compmd/sandbox`, `@compmd/render`), the scroll bars:
++
++- In a use's frame, the part's box takes none of the use's box params: the page's box has them, and the part fills the
++  frame (`createRegion`'s `part` gives the box no params).
++- When the page's box has a height of its own, the frame takes it (`height: 100%`) instead of its content's; otherwise
++  the frame is as tall as its content, as today ([running components in the sandbox](running-components-in-the-sandbox.md), Q5).
++- Browser tests, in Chrome and WebKit: a framed use with a border, with each case of the table above; no frame scrolls,
++  and the frame's inside is the box's.
++
++**`@compmd/pack`:**
++
++- `draw()`'s `div` fills the box (`display: block; width: 100%; height: 100%`).
++- `fitBox(svg)` in `@compmd/pack/component`: an SVG element or markup given the style that fits it, for the packs that
++  draw SVG.
++- The test page gets a **Show boxes** switch, which outlines every use's box, so an author sees the box against the
++  drawing without borders in the demo.
++- `create-pack`'s templates fit their box, and their demos have a use with `width` and one with `height`.
++- [Wrapping an npm package](wrapping-an-npm-package.md): the glue of each kind fits the box; decision 6 leaves out
++  size props, and the common params' names, which decision 4 makes F013.
++
++**[Writing a pack](writing-a-pack.md), decision 8,** points here.
++
++## Gaps
++
++- **S1. A box's height in a grid row.** A use in a `grid` whose row stretches it has a height its params don't give;
++  the frame reports its content's height, so the row's stretch doesn't reach the component. Decision 1 counts it as a
++  height; the sandbox's fix sees only the box's own. To check with the `columns` component (CMD-348), whose columns
++  are such boxes.
++- **S2. Inline components** (`:qr-code[…]` in text) have a box too, laid out inline; decision 1 holds for them, and
++  their frames report a width already. Not tried in the spike.
++- **S3. Printing.** A box sized in `rem` prints at that size; a drawing that fits it prints sharp if it's SVG. A canvas
++  drawing prints at screen resolution ([printing a document](printing.md)).
+diff --git a/docs/wrapping-an-npm-package.md b/docs/wrapping-an-npm-package.md
+index 1cc3f31..0d65043 100644
+--- a/docs/wrapping-an-npm-package.md
++++ b/docs/wrapping-an-npm-package.md
+@@ -23,7 +23,8 @@ packs it was tried on, built and run.
+    component; anything else is a library. `--kind` overrides it.
+ 3. **The glue is the pack's own code, in the plain binding** (spec §7.6), as every built module is: `src/<component>.ts`
+    mounts the package's component in a box of its own in `target` (the renderer owns `target`'s classes and style)
+-   with the params as its props, updates it, and unmounts it on `destroy`. A web component's glue passes its `error`
++   with the params as its props, makes its drawing fit that box ([sizing a component](sizing-components.md), decision 1),
++   updates it, and unmounts it on `destroy`. A web component's glue passes its `error`
+    event to `fail`, since such an element reports a failure without throwing.
+    React, React DOM and Svelte stay external, from the frames' import map, so they are one copy whatever loads them
+    (create-pack, decision 3). The command writes it once; it is plain code the author may change, and the build
+@@ -53,7 +54,8 @@ packs it was tried on, built and run.
+    | an array, a plain object | `array`, `object` |
+    | a CSS colour type (`CSSProperties["color"]`) | `color` (spec §9.4) |
+    | a CSS length type | `string` |
+-   | named like a common param (`height`, `width`, `background`, `border`, `padding`, spec §9.2) | none: the use's box takes it, and the component fills its box; listed |
++   | named like a common param (`height`, `width`, `background`, `border`, `padding`, spec §9.2) | none: the use's box takes it, and the component fits its box; listed (declaring one is F013, [sizing a component](sizing-components.md), decision 4) |
++   | a size in pixels (react-qr-code's `size`) | none: the component fits its box, which the use sizes ([sizing a component](sizing-components.md), decision 1); listed |
+    | a union with one usable branch (`string \| ((d) => any)`, `boolean \| Snippet`) | that branch, with a note in the build's report |
+    | callbacks, `ref`, `style`, `className`, components, snippets with arguments | none: left out, and listed |
+ 
+@@ -89,13 +91,12 @@ writes the template's files ([the pack template](create-pack.md), *What it write
+ in `dependencies` and ([the spike's pack](../spikes/wrap-npm-package/react-qr-code/), built and run):
+ 
+ ```jsonc
+-// compmd.wrap.json; the author added the default of `size`
++// compmd.wrap.json; `size` is left out: the QR code fits its box, which the use sizes (decision 6)
+ {
+   "from": "react-qr-code",
+   "export": "default",
+   "kind": "react",
+-  "params": ["value", "size", "bgColor", "fgColor", "level", "title"],
+-  "overrides": { "size": { "default": 256 } },
++  "params": ["value", "bgColor", "fgColor", "level", "title"],
+   "label": "title"
+ }
+ ```
+@@ -107,10 +108,13 @@ import { createRoot } from "react-dom/client";
+ import QRCode from "react-qr-code";
+ import { component } from "@compmd/pack/component";
+ 
++/** The drawing fits its box, its aspect ratio kept (sizing a component, decision 1). */
++const FILL = { display: "block", width: "100%", height: "100%" };
++
+ export default component<Params>((target, { params, fallback }) => {
+   const root = createRoot(target);
+   const draw = (next: Params) => {
+-    root.render(createElement(QRCode, { ...next, title: next.title ?? fallback.text }));
++    root.render(createElement(QRCode, { ...next, title: next.title ?? fallback.text, style: FILL }));
+   };
+   draw(params);
+   return { update: draw, destroy: () => root.unmount() };
+@@ -122,7 +126,6 @@ export default component<Params>((target, { params, fallback }) => {
+ ```compmd component=qr-code signature
+ params:
+   value: string
+-  size: number = 256
+   bgColor: color?
+   fgColor: color?
+   level: L | M | H | Q?
+@@ -131,6 +134,8 @@ params:
+ <!-- /compmd-pack:generated -->
+ ````
+ 
++A document sizes it as any component: `:: qr-code[Our site] {value="https://compmd.dev/" width=10rem}`.
++
+ Moving to react-qr-code 2.3.0 is `npm install react-qr-code@2.3.0` and `npm run build`: the signature follows its
+ types, and the build lists what changed.
+ 
+@@ -138,11 +143,12 @@ types, and the build lists what changed.
+ 
+ [The spike](../spikes/wrap-npm-package/README.md) read four packages' files and types, wrote by hand the packs the
+ command would write, built them as `compmd-pack build` does and opened each demo in strict frames, in Chrome and
+-WebKit (2026-11-20). Its findings are in decisions 3, 4, 5, 6 and 10 and in gaps G6 and G7.
++WebKit (2026-11-20). Its findings are in decisions 3, 4, 5, 6 and 10, in gaps G6 to G8, and in [sizing a component in its
++box](sizing-components.md).
+ 
+ | Package | Kind | What derives | What the author writes | In a strict frame |
+ |---|---|---|---|---|
+-| `react-qr-code` 2.2.0 (MIT) | React | 6 own props, cleanly, once `SVGProps`' are left out | the fallback; the default `size` (its comment is wrong) | draws; 8.9 KB gzipped, React from the import map |
++| `react-qr-code` 2.2.0 (MIT) | React | 6 own props, cleanly, once `SVGProps`' are left out; 5 params, `size` left out for the box | the fallback; the drawing fitting its box | draws; 8.9 KB gzipped, React from the import map |
+ | `layerchart` 2.11.0 (MIT), `BarChart` | Svelte 5, ships `.svelte` sources | the scalar and enum props of about 90, with JSDoc defaults; not `height`, the box's | which of the 90 to keep; `x`, `y` as field names (their `string` branch); the theme's colours from `context.scheme` | draws, once compiled with its CSS injected; d3 and friends bundled, 164.5 KB gzipped |
+ | `@google/model-viewer` 4.4.0 (Apache-2.0) | web component, no `custom-elements.json` | about 50 properties, from the types | attribute names and defaults (they are in its sources, not its types); the slots | doesn't: the frame refuses the model's fetch and its WebAssembly; the glue shows the fallback, with W118 |
+ | `qrcode` 1.5.4 (MIT) | library, CommonJS | nothing | the glue: `toString(value, { type: "svg" })` into the target, and its params | draws; 9.3 KB gzipped |
+@@ -165,6 +171,9 @@ WebKit (2026-11-20). Its findings are in decisions 3, 4, 5, 6 and 10 and in gaps
+   confirm in the spec before the build writes it.
+ - **G7, settled. How the generated fence is marked:** a word after `signature` in the info string would need the spec
+   to say what other words there mean; comments before and after the fence need nothing (decision 4).
++- **G8. A component's size when the use gives none** is its box's, the column's width: [sizing a component](sizing-components.md),
++  decision 3, proposes box defaults on the signature fence, a spec change; the build would carry them from
++  `compmd.wrap.json` into the generated fence.
+ 
+ ## What changes
+ 
+diff --git a/docs/writing-a-pack.md b/docs/writing-a-pack.md
+index 319408f..79f050b 100644
+--- a/docs/writing-a-pack.md
++++ b/docs/writing-a-pack.md
+@@ -14,6 +14,7 @@
+    - **A throw in `update`** is the same as `fail`: the component is still mounted, so it is updated again at the next change (S4). A throw in `mount` stays as it is.
+ 6. **Helpers for what remains** (`@compmd/pack/component`, B), bundled into the module (a few KB): `draw(render, options)` runs an asynchronous `render(params, { scheme, signal })` that returns an element or SVG/HTML text. It drops a draw that a newer one overtakes, optionally runs one draw at a time per frame (for libraries with a global configuration, as Mermaid has), sets the text alternative from `fallback.text`, empties `target` on `destroy`, and calls `context.fail` when `render` throws. A component that draws synchronously writes plain `mount`, as today.
+ 7. **A testing kit** (`@compmd/pack/testing`): `mountForTest(component, { params, fallback, scheme })` runs a component through the contract in happy-dom, and returns `update`, `setScheme`, `settled()` (waits for its draws), what it `set` and what it `fail`ed. Tests need no stubs for `matchMedia` or the frame's document.
++8. **A component fits its box, which an author sizes with the common params** (proposed 2026-11-20, CR-29): [sizing a component in its box](sizing-components.md). It takes the box's width, and its height when the box has one, its aspect ratio kept; it has no size params of its own; a pack's signature fence gives its box defaults (`{width=12rem}`). `draw()` fits its box, `fitBox()` fits an SVG, and the test page's **Show boxes** outlines every box.
+ 
+ ## Scenarios
+ 
+diff --git a/spikes/wrap-npm-package/README.md b/spikes/wrap-npm-package/README.md
+index de2b62d..fd3bbc4 100644
+--- a/spikes/wrap-npm-package/README.md
++++ b/spikes/wrap-npm-package/README.md
+@@ -14,6 +14,9 @@
+ 8. **Svelte's props can't change from a plain module:** `$state` needs a `.svelte` file, so the glue mounts the chart again on each update.
+ 9. **An optional enum works:** `level: L | M | H | Q?` is accepted, and `level=H` checked (the design's gap G6, which still has no conformance case).
+ 10. **`generated` after `signature` in the fence's info string,** the first way the spike marked the build's fence, is ignored by the processor, but the spec doesn't say what other words there mean. The design settled on comments before and after the fence instead (decision 4), which the packs here use.
++11. **A component fits its box, which the use sizes** ([sizing a component in its box](../../docs/sizing-components.md), which has the numbers): each demo has uses with `width`, `height`, both, and `aspect-ratio`, their boxes bordered in magenta, and `try.ts` measures each drawing against its box's inside. The QR codes fit (`width: 100%; height: 100%`, SVG's `meet`), the chart fills; fitting the width only overflowed every box with a height. react-qr-code's own `size` is left out. Without a size, a use is the column's width (760 px here), since a pack can't give its box a default yet: a spec change, proposed there.
++12. **`draw()`'s `div` has no height,** so a drawing can't take its box's height through it: qrcode's overflowed until its glue wrote into `target` itself.
++13. **A framed use with a `width` scrolls by its border** (4 px), in both browsers: the sandbox applies the box's params to the page's box and again inside the frame. `try.ts` reports how far each frame's document goes past the frame.
+ 
+ ## The packs
+ 
+@@ -21,15 +24,15 @@ Each folder is what the command would write, with the glue as written once, and
+ 
+ | Folder | Package | Kind | Built (gzipped) | Imports left | Drew, Chrome and WebKit | What the frame refused |
+ |---|---|---|---|---|---|---|
+-| [`react-qr-code/`](react-qr-code/) | `react-qr-code` 2.2.0 | React | 8.9 KB | `react`, `react-dom/client` | 2 of 2 | nothing |
++| [`react-qr-code/`](react-qr-code/) | `react-qr-code` 2.2.0 | React | 8.9 KB | `react`, `react-dom/client` | 3 of 3 | nothing |
+ | [`layerchart/`](layerchart/) | `layerchart` 2.11.0, `BarChart` | Svelte 5, `.svelte` sources | 164.5 KB | nine of `svelte`'s | 2 of 2 | nothing |
+ | [`model-viewer/`](model-viewer/) | `@google/model-viewer` 4.4.0, with `three` 0.183.2 | web component | 289.3 KB | none | 0 of 1: its fallback, with W118 | the model's fetch (`connect-src`), and WebAssembly (`wasm-unsafe-eval`) |
+-| [`qrcode/`](qrcode/) | `qrcode` 1.5.4 | library, CommonJS | 9.3 KB | none | 2 of 2 | nothing |
++| [`qrcode/`](qrcode/) | `qrcode` 1.5.4 | library, CommonJS | 9.3 KB | none | 3 of 3 | nothing |
+ 
+-- **react-qr-code:** six params from its six own props; `size`'s default, 256, is the author's (its types' comment says 128). React and React DOM stay imports, which the frames' import map gives.
++- **react-qr-code:** five params from its six own props, `size` left out: the glue makes the SVG fill its box (finding 11). React and React DOM stay imports, which the frames' import map gives.
+ - **layerchart:** five params of about 90, the allowlist; `x` and `y` as field names, their `string` branch. Its `.svelte` sources compile with the frames' Svelte, and d3 and its other dependencies are bundled.
+ - **model-viewer:** the strict frame refuses what the design expected, and the page shows the label in its place. Its decoders from a CDN never came up: the model didn't load.
+-- **qrcode:** nothing derives; the author wrote the call, `toString(value, { type: "svg" })`, and the signature, which has no `compmd-pack:generated` comments. Its SVG takes the frame's width; `width=10rem` on the use sizes it.
++- **qrcode:** nothing derives; the author wrote the call, `toString(value, { type: "svg" })`, and the signature, which has no `compmd-pack:generated` comments. Its SVG has no size of its own, so it fills its box with no glue for it.
+ 
+ `results.json` has each run's numbers, and `screenshots/` each page.
+ 
+diff --git a/spikes/wrap-npm-package/layerchart/demo.comp.md b/spikes/wrap-npm-package/layerchart/demo.comp.md
+index 4bdb475..0e683b2 100644
+--- a/spikes/wrap-npm-package/layerchart/demo.comp.md
++++ b/spikes/wrap-npm-package/layerchart/demo.comp.md
+@@ -12,10 +12,24 @@ sales:
+ 
+ # layerchart's BarChart, wrapped
+ 
+-The month's sales:
++Each use's box has a magenta border. A chart has no aspect ratio of its own, so it fills its box both ways.
+ 
+-:: bar-chart[Sales by month: January 12, February 18, March 9, April 22] {data=(md.doc.sales) x=month y=total}
++**No size:** the column's width, the chart's default height (18rem).
+ 
+-Sideways, with thinner bars:
++:: bar-chart[Sales by month: January 12, February 18, March 9, April 22] {data=(md.doc.sales) x=month y=total border="2px solid #e5007d"}
+ 
+-:: bar-chart[Sales by month, sideways] {data=(md.doc.sales) x=total y=month orientation=horizontal bandPadding=0.6 height=12rem}
++**Width only,** `width=20rem`: the default height.
++
++:: bar-chart[Sales by month, narrow] {data=(md.doc.sales) x=month y=total width=20rem border="2px solid #e5007d"}
++
++**Height only,** `height=8rem`, sideways with thinner bars:
++
++:: bar-chart[Sales by month, sideways] {data=(md.doc.sales) x=total y=month orientation=horizontal bandPadding=0.6 height=8rem border="2px solid #e5007d"}
++
++**Fill a box,** `width=24rem height=10rem`:
++
++:: bar-chart[Sales by month, in a box] {data=(md.doc.sales) x=month y=total width=24rem height=10rem border="2px solid #e5007d"}
++
++**A box by its aspect ratio,** `aspect-ratio=3/1`:
++
++:: bar-chart[Sales by month, three to one] {data=(md.doc.sales) x=month y=total aspect-ratio=3/1 border="2px solid #e5007d"}
+diff --git a/spikes/wrap-npm-package/qrcode/demo.comp.md b/spikes/wrap-npm-package/qrcode/demo.comp.md
+index 180a49a..86f81e2 100644
+--- a/spikes/wrap-npm-package/qrcode/demo.comp.md
++++ b/spikes/wrap-npm-package/qrcode/demo.comp.md
+@@ -7,8 +7,28 @@ md:
+ 
+ # qrcode, wrapped
+ 
+-:: qr-svg[CompMD's website] {value="https://compmd.dev/"}
++Each use's box has a magenta border, so the box shows beside what is drawn in it.
+ 
+-With the most error correction and no margin:
++**No size:** the box is the column's width, as tall as the drawing.
+ 
+-:: qr-svg[CompMD's website, robust] {value="https://compmd.dev/" level=H margin=0}
++:: qr-svg[No size] {value="https://compmd.dev/" border="2px solid #e5007d"}
++
++**Fit to width,** `width=10rem`:
++
++:: qr-svg[Fit to width] {value="https://compmd.dev/" width=10rem border="2px solid #e5007d"}
++
++**Fit to height,** `height=6rem`: the box keeps the column's width.
++
++:: qr-svg[Fit to height] {value="https://compmd.dev/" height=6rem border="2px solid #e5007d"}
++
++**Fit to a wide box,** `width=16rem height=6rem`:
++
++:: qr-svg[Fit to a wide box] {value="https://compmd.dev/" width=16rem height=6rem border="2px solid #e5007d"}
++
++**Fit to a tall box,** `width=6rem height=12rem`:
++
++:: qr-svg[Fit to a tall box] {value="https://compmd.dev/" width=6rem height=12rem border="2px solid #e5007d"}
++
++**A box by its aspect ratio,** `width=12rem aspect-ratio=2/1`:
++
++:: qr-svg[A box by its aspect ratio] {value="https://compmd.dev/" width=12rem aspect-ratio=2/1 border="2px solid #e5007d"}
+diff --git a/spikes/wrap-npm-package/qrcode/src/qr-svg.ts b/spikes/wrap-npm-package/qrcode/src/qr-svg.ts
+index 53a90c5..cbdb25a 100644
+--- a/spikes/wrap-npm-package/qrcode/src/qr-svg.ts
++++ b/spikes/wrap-npm-package/qrcode/src/qr-svg.ts
+@@ -1,7 +1,10 @@
+ // `qr-svg`: a QR code drawn by the library qrcode as SVG markup. The command writes a `draw()` that imports the library
+ // (docs/writing-a-pack.md, decision 6); the author wrote the call and the params, since a library has no props.
++//
++// Plain `component`, not `draw()`: `draw()` puts the drawing in a `div` of its own with no height, so a drawing can't
++// take its box's height through it (finding 12 in the README). Once the helper's `div` fills its box, this is `draw()`.
+ import { toString } from "qrcode";
+-import { draw } from "@compmd/pack/component";
++import { component } from "@compmd/pack/component";
+ 
+ /** The params, as the signature in `index.comp.md` declares them, written by the author. */
+ export interface Params {
+@@ -10,4 +13,23 @@ export interface Params {
+   margin: number;
+ }
+ 
+-export default draw<Params>(({ value, level, margin }) => toString(value, { type: "svg", errorCorrectionLevel: level, margin }), { role: "img" });
++/**
++ * The drawing fits its box (docs/writing-a-pack.md, decision 8): as large as the box's width and height allow, its
++ * aspect ratio kept (SVG's default `meet`) and centred; with no height, the box is as tall as the drawing.
++ */
++const FIT = "display: block; width: 100%; height: 100%";
++
++export default component<Params>((target, { params, fallback, fail, busy }) => {
++  const draw = ({ value, level, margin }: Params) => {
++    const drawn = toString(value, { type: "svg", errorCorrectionLevel: level, margin }).then((svg) => {
++      target.innerHTML = svg;
++      const drawing = target.querySelector("svg");
++      drawing?.setAttribute("style", FIT);
++      drawing?.setAttribute("role", "img");
++      drawing?.setAttribute("aria-label", fallback.text);
++    });
++    busy(drawn.catch((error: unknown) => fail(error instanceof Error ? error.message : String(error))));
++  };
++  draw(params);
++  return { update: draw, destroy: () => target.replaceChildren() };
++});
+diff --git a/spikes/wrap-npm-package/react-qr-code/compmd.wrap.json b/spikes/wrap-npm-package/react-qr-code/compmd.wrap.json
+index 69be8f3..d63e23e 100644
+--- a/spikes/wrap-npm-package/react-qr-code/compmd.wrap.json
++++ b/spikes/wrap-npm-package/react-qr-code/compmd.wrap.json
+@@ -2,9 +2,6 @@
+   "from": "react-qr-code",
+   "export": "default",
+   "kind": "react",
+-  "params": ["value", "size", "bgColor", "fgColor", "level", "title"],
+-  "overrides": {
+-    "size": { "default": 256 }
+-  },
++  "params": ["value", "bgColor", "fgColor", "level", "title"],
+   "label": "title"
+ }
+diff --git a/spikes/wrap-npm-package/react-qr-code/demo.comp.md b/spikes/wrap-npm-package/react-qr-code/demo.comp.md
+index f28f5d2..d0ac825 100644
+--- a/spikes/wrap-npm-package/react-qr-code/demo.comp.md
++++ b/spikes/wrap-npm-package/react-qr-code/demo.comp.md
+@@ -7,10 +7,28 @@ md:
+ 
+ # react-qr-code, wrapped
+ 
+-The defaults:
++Each use's box has a magenta border, so the box shows beside what is drawn in it.
+ 
+-:: qr-code[CompMD's website] {value="https://compmd.dev/"}
++**No size:** the box is the column's width, as tall as the drawing.
+ 
+-Every param:
++:: qr-code[No size] {value="https://compmd.dev/" border="2px solid #e5007d"}
+ 
+-:: qr-code[A small one, dark on yellow] {value="https://compmd.dev/" size=128 bgColor="#ffd33d" fgColor="#24292f" level=H}
++**Fit to width,** `width=10rem`, with every param:
++
++:: qr-code[Fit to width] {value="https://compmd.dev/" bgColor="#ffd33d" fgColor="#24292f" level=H width=10rem border="2px solid #e5007d"}
++
++**Fit to height,** `height=6rem`: the box keeps the column's width.
++
++:: qr-code[Fit to height] {value="https://compmd.dev/" height=6rem border="2px solid #e5007d"}
++
++**Fit to a wide box,** `width=16rem height=6rem`:
++
++:: qr-code[Fit to a wide box] {value="https://compmd.dev/" width=16rem height=6rem border="2px solid #e5007d"}
++
++**Fit to a tall box,** `width=6rem height=12rem`:
++
++:: qr-code[Fit to a tall box] {value="https://compmd.dev/" width=6rem height=12rem border="2px solid #e5007d"}
++
++**A box by its aspect ratio,** `width=12rem aspect-ratio=2/1`:
++
++:: qr-code[A box by its aspect ratio] {value="https://compmd.dev/" width=12rem aspect-ratio=2/1 border="2px solid #e5007d"}
+diff --git a/spikes/wrap-npm-package/react-qr-code/index.comp.md b/spikes/wrap-npm-package/react-qr-code/index.comp.md
+index 7c7409e..baa0f4c 100644
+--- a/spikes/wrap-npm-package/react-qr-code/index.comp.md
++++ b/spikes/wrap-npm-package/react-qr-code/index.comp.md
+@@ -11,13 +11,12 @@ md:
+ 
+ # @spike/qr-code
+ 
+-`qr-code` draws a QR code of `value` with [react-qr-code](https://www.npmjs.com/package/react-qr-code) 2.2.0. A reader without it sees the label, which is also the drawing's title.
++`qr-code` draws a QR code of `value` with [react-qr-code](https://www.npmjs.com/package/react-qr-code) 2.2.0. It fills its box: `width=10rem` on the use sizes it. A reader without it sees the label, which is also the drawing's title.
+ 
+ <!-- compmd-pack:generated from react-qr-code 2.2.0's types and compmd.wrap.json; edits between these comments are overwritten at each build -->
+ ```compmd component=qr-code signature
+ params:
+   value: string
+-  size: number = 256
+   bgColor: color?
+   fgColor: color?
+   level: L | M | H | Q?
+diff --git a/spikes/wrap-npm-package/react-qr-code/src/qr-code.ts b/spikes/wrap-npm-package/react-qr-code/src/qr-code.ts
+index f530cd3..56a100f 100644
+--- a/spikes/wrap-npm-package/react-qr-code/src/qr-code.ts
++++ b/spikes/wrap-npm-package/react-qr-code/src/qr-code.ts
+@@ -8,18 +8,24 @@ import { component } from "@compmd/pack/component";
+ /** The params, as the generated signature in `index.comp.md` declares them. */
+ export interface Params {
+   value: string;
+-  size: number;
+   bgColor?: string;
+   fgColor?: string;
+   level?: "L" | "M" | "H" | "Q";
+   title?: string;
+ }
+ 
++/**
++ * The drawing fits its box (docs/writing-a-pack.md, decision 8): as large as the box's width and height allow, its
++ * aspect ratio kept (SVG's default `meet`) and centred; with no height, the box is as tall as the drawing. `size` is
++ * left out.
++ */
++const FILL = { display: "block", width: "100%", height: "100%" };
++
+ export default component<Params>((target, { params, fallback }) => {
+   const root = createRoot(target);
+   // `title` is the label (`compmd.wrap.json`): the use's fallback text when the document gives no `title`.
+   const draw = (next: Params) => {
+-    root.render(createElement(QRCode, { ...next, title: next.title ?? fallback.text }));
++    root.render(createElement(QRCode, { ...next, title: next.title ?? fallback.text, style: FILL }));
+   };
+   draw(params);
+   return { update: draw, destroy: () => root.unmount() };
+diff --git a/spikes/wrap-npm-package/results.json b/spikes/wrap-npm-package/results.json
+index 6381458..4d81091 100644
+--- a/spikes/wrap-npm-package/results.json
++++ b/spikes/wrap-npm-package/results.json
+@@ -2,8 +2,8 @@
+   "react-qr-code": {
+     "built": {
+       "ok": true,
+-      "bytes": 24858,
+-      "gzipBytes": 8889,
++      "bytes": 24913,
++      "gzipBytes": 8916,
+       "imports": [
+         "react",
+         "react-dom/client"
+@@ -11,21 +11,103 @@
+     },
+     "opened": {
+       "Chrome": {
+-        "uses": 2,
+-        "drawn": 2,
++        "uses": 6,
++        "drawn": 6,
+         "frames": [
+           {
+-            "frameHeight": 260,
++            "frameHeight": 764,
++            "box": {
++              "width": 760,
++              "height": 760
++            },
+             "drawing": {
+-              "width": 256,
+-              "height": 256
++              "width": 760,
++              "height": 760
++            },
++            "fit": "fills both",
++            "overflow": {
++              "width": 0,
++              "height": 0
+             }
+           },
+           {
+-            "frameHeight": 132,
++            "frameHeight": 160,
++            "box": {
++              "width": 156,
++              "height": 156
++            },
+             "drawing": {
+-              "width": 128,
+-              "height": 128
++              "width": 156,
++              "height": 156
++            },
++            "fit": "fills both",
++            "overflow": {
++              "width": 4,
++              "height": 0
++            }
++          },
++          {
++            "frameHeight": 96,
++            "box": {
++              "width": 760,
++              "height": 92
++            },
++            "drawing": {
++              "width": 92,
++              "height": 92
++            },
++            "fit": "fits height",
++            "overflow": {
++              "width": 0,
++              "height": 0
++            }
++          },
++          {
++            "frameHeight": 96,
++            "box": {
++              "width": 252,
++              "height": 92
++            },
++            "drawing": {
++              "width": 92,
++              "height": 92
++            },
++            "fit": "fits height",
++            "overflow": {
++              "width": 4,
++              "height": 0
++            }
++          },
++          {
++            "frameHeight": 192,
++            "box": {
++              "width": 92,
++              "height": 188
++            },
++            "drawing": {
++              "width": 92,
++              "height": 92
++            },
++            "fit": "fits width",
++            "overflow": {
++              "width": 4,
++              "height": 0
++            }
++          },
++          {
++            "frameHeight": 96,
++            "box": {
++              "width": 188,
++              "height": 92
++            },
++            "drawing": {
++              "width": 92,
++              "height": 92
++            },
++            "fit": "fits height",
++            "overflow": {
++              "width": 4,
++              "height": 0
+             }
+           }
+         ],
+@@ -34,21 +116,103 @@
+         "diagnostics": []
+       },
+       "WebKit": {
+-        "uses": 2,
+-        "drawn": 2,
++        "uses": 6,
++        "drawn": 6,
+         "frames": [
+           {
+-            "frameHeight": 260,
++            "frameHeight": 764,
++            "box": {
++              "width": 760,
++              "height": 760
++            },
++            "drawing": {
++              "width": 760,
++              "height": 760
++            },
++            "fit": "fills both",
++            "overflow": {
++              "width": 0,
++              "height": 0
++            }
++          },
++          {
++            "frameHeight": 160,
++            "box": {
++              "width": 156,
++              "height": 156
++            },
++            "drawing": {
++              "width": 156,
++              "height": 156
++            },
++            "fit": "fills both",
++            "overflow": {
++              "width": 4,
++              "height": 0
++            }
++          },
++          {
++            "frameHeight": 96,
++            "box": {
++              "width": 760,
++              "height": 92
++            },
+             "drawing": {
+-              "width": 256,
+-              "height": 256
++              "width": 92,
++              "height": 92
++            },
++            "fit": "fits height",
++            "overflow": {
++              "width": 0,
++              "height": 0
+             }
+           },
+           {
+-            "frameHeight": 132,
++            "frameHeight": 96,
++            "box": {
++              "width": 252,
++              "height": 92
++            },
+             "drawing": {
+-              "width": 128,
+-              "height": 128
++              "width": 92,
++              "height": 92
++            },
++            "fit": "fits height",
++            "overflow": {
++              "width": 4,
++              "height": 0
++            }
++          },
++          {
++            "frameHeight": 192,
++            "box": {
++              "width": 92,
++              "height": 188
++            },
++            "drawing": {
++              "width": 92,
++              "height": 92
++            },
++            "fit": "fits width",
++            "overflow": {
++              "width": 4,
++              "height": 0
++            }
++          },
++          {
++            "frameHeight": 100,
++            "box": {
++              "width": 188,
++              "height": 96
++            },
++            "drawing": {
++              "width": 96,
++              "height": 96
++            },
++            "fit": "fits height",
++            "overflow": {
++              "width": 4,
++              "height": 0
+             }
+           }
+         ],
+@@ -77,21 +241,87 @@
+     },
+     "opened": {
+       "Chrome": {
+-        "uses": 2,
+-        "drawn": 2,
++        "uses": 5,
++        "drawn": 5,
+         "frames": [
+           {
+-            "frameHeight": 288,
++            "frameHeight": 292,
++            "box": {
++              "width": 760,
++              "height": 288
++            },
+             "drawing": {
+-              "width": 768,
++              "width": 760,
+               "height": 288
++            },
++            "fit": "fills both",
++            "overflow": {
++              "width": 0,
++              "height": 0
+             }
+           },
+           {
+-            "frameHeight": 192,
++            "frameHeight": 292,
++            "box": {
++              "width": 316,
++              "height": 288
++            },
++            "drawing": {
++              "width": 316,
++              "height": 288
++            },
++            "fit": "fills both",
++            "overflow": {
++              "width": 4,
++              "height": 0
++            }
++          },
++          {
++            "frameHeight": 128,
++            "box": {
++              "width": 760,
++              "height": 124
++            },
++            "drawing": {
++              "width": 760,
++              "height": 124
++            },
++            "fit": "fills both",
++            "overflow": {
++              "width": 0,
++              "height": 0
++            }
++          },
++          {
++            "frameHeight": 160,
++            "box": {
++              "width": 380,
++              "height": 156
++            },
++            "drawing": {
++              "width": 380,
++              "height": 156
++            },
++            "fit": "fills both",
++            "overflow": {
++              "width": 4,
++              "height": 0
++            }
++          },
++          {
++            "frameHeight": 255,
++            "box": {
++              "width": 760,
++              "height": 251
++            },
+             "drawing": {
+-              "width": 768,
+-              "height": 192
++              "width": 760,
++              "height": 251
++            },
++            "fit": "fills both",
++            "overflow": {
++              "width": 0,
++              "height": 0
+             }
+           }
+         ],
+@@ -100,21 +330,87 @@
+         "diagnostics": []
+       },
+       "WebKit": {
+-        "uses": 2,
+-        "drawn": 2,
++        "uses": 5,
++        "drawn": 5,
+         "frames": [
+           {
+-            "frameHeight": 288,
++            "frameHeight": 292,
++            "box": {
++              "width": 760,
++              "height": 288
++            },
+             "drawing": {
+-              "width": 768,
++              "width": 760,
+               "height": 288
++            },
++            "fit": "fills both",
++            "overflow": {
++              "width": 0,
++              "height": 0
+             }
+           },
+           {
+-            "frameHeight": 192,
++            "frameHeight": 292,
++            "box": {
++              "width": 316,
++              "height": 288
++            },
+             "drawing": {
+-              "width": 768,
+-              "height": 192
++              "width": 316,
++              "height": 288
++            },
++            "fit": "fills both",
++            "overflow": {
++              "width": 4,
++              "height": 0
++            }
++          },
++          {
++            "frameHeight": 128,
++            "box": {
++              "width": 760,
++              "height": 124
++            },
++            "drawing": {
++              "width": 760,
++              "height": 124
++            },
++            "fit": "fills both",
++            "overflow": {
++              "width": 0,
++              "height": 0
++            }
++          },
++          {
++            "frameHeight": 160,
++            "box": {
++              "width": 380,
++              "height": 156
++            },
++            "drawing": {
++              "width": 380,
++              "height": 156
++            },
++            "fit": "fills both",
++            "overflow": {
++              "width": 4,
++              "height": 0
++            }
++          },
++          {
++            "frameHeight": 259,
++            "box": {
++              "width": 760,
++              "height": 255
++            },
++            "drawing": {
++              "width": 760,
++              "height": 255
++            },
++            "fit": "fills both",
++            "overflow": {
++              "width": 0,
++              "height": 0
+             }
+           }
+         ],
+@@ -138,7 +434,10 @@
+         "frames": [
+           {
+             "frameHeight": 18,
++            "box": null,
+             "drawing": null,
++            "fit": "none",
++            "overflow": null,
+             "markup": "\n    <main id=\"page\" class=\"compmd-page\"></main>\n    <div id=\"part\"><div class=\"compmd-component compmd-b0\"><span>A triangle</span></div></div>\n  \n\n"
+           }
+         ],
+@@ -160,7 +459,10 @@
+         "frames": [
+           {
+             "frameHeight": 18,
++            "box": null,
+             "drawing": null,
++            "fit": "none",
++            "overflow": null,
+             "markup": "\n    <main id=\"page\" class=\"compmd-page\"></main>\n    <div id=\"part\"><div class=\"compmd-component compmd-b0\"><span>A triangle</span></div></div>\n  \n\n"
+           }
+         ],
+@@ -180,27 +482,109 @@
+   "qrcode": {
+     "built": {
+       "ok": true,
+-      "bytes": 25033,
+-      "gzipBytes": 9322,
++      "bytes": 24541,
++      "gzipBytes": 9104,
+       "imports": []
+     },
+     "opened": {
+       "Chrome": {
+-        "uses": 2,
+-        "drawn": 2,
++        "uses": 6,
++        "drawn": 6,
+         "frames": [
+           {
+-            "frameHeight": 772,
++            "frameHeight": 764,
++            "box": {
++              "width": 760,
++              "height": 760
++            },
++            "drawing": {
++              "width": 760,
++              "height": 760
++            },
++            "fit": "fills both",
++            "overflow": {
++              "width": 0,
++              "height": 0
++            }
++          },
++          {
++            "frameHeight": 160,
++            "box": {
++              "width": 156,
++              "height": 156
++            },
++            "drawing": {
++              "width": 156,
++              "height": 156
++            },
++            "fit": "fills both",
++            "overflow": {
++              "width": 4,
++              "height": 0
++            }
++          },
++          {
++            "frameHeight": 96,
++            "box": {
++              "width": 760,
++              "height": 92
++            },
++            "drawing": {
++              "width": 92,
++              "height": 92
++            },
++            "fit": "fits height",
++            "overflow": {
++              "width": 0,
++              "height": 0
++            }
++          },
++          {
++            "frameHeight": 96,
++            "box": {
++              "width": 252,
++              "height": 92
++            },
+             "drawing": {
+-              "width": 768,
+-              "height": 768
++              "width": 92,
++              "height": 92
++            },
++            "fit": "fits height",
++            "overflow": {
++              "width": 4,
++              "height": 0
+             }
+           },
+           {
+-            "frameHeight": 772,
++            "frameHeight": 192,
++            "box": {
++              "width": 92,
++              "height": 188
++            },
+             "drawing": {
+-              "width": 768,
+-              "height": 768
++              "width": 92,
++              "height": 92
++            },
++            "fit": "fits width",
++            "overflow": {
++              "width": 4,
++              "height": 0
++            }
++          },
++          {
++            "frameHeight": 96,
++            "box": {
++              "width": 188,
++              "height": 92
++            },
++            "drawing": {
++              "width": 92,
++              "height": 92
++            },
++            "fit": "fits height",
++            "overflow": {
++              "width": 4,
++              "height": 0
+             }
+           }
+         ],
+@@ -209,21 +593,103 @@
+         "diagnostics": []
+       },
+       "WebKit": {
+-        "uses": 2,
+-        "drawn": 2,
++        "uses": 6,
++        "drawn": 6,
+         "frames": [
+           {
+-            "frameHeight": 772,
++            "frameHeight": 764,
++            "box": {
++              "width": 760,
++              "height": 760
++            },
++            "drawing": {
++              "width": 760,
++              "height": 760
++            },
++            "fit": "fills both",
++            "overflow": {
++              "width": 0,
++              "height": 0
++            }
++          },
++          {
++            "frameHeight": 160,
++            "box": {
++              "width": 156,
++              "height": 156
++            },
++            "drawing": {
++              "width": 156,
++              "height": 156
++            },
++            "fit": "fills both",
++            "overflow": {
++              "width": 4,
++              "height": 0
++            }
++          },
++          {
++            "frameHeight": 96,
++            "box": {
++              "width": 760,
++              "height": 92
++            },
++            "drawing": {
++              "width": 92,
++              "height": 92
++            },
++            "fit": "fits height",
++            "overflow": {
++              "width": 0,
++              "height": 0
++            }
++          },
++          {
++            "frameHeight": 96,
++            "box": {
++              "width": 252,
++              "height": 92
++            },
++            "drawing": {
++              "width": 92,
++              "height": 92
++            },
++            "fit": "fits height",
++            "overflow": {
++              "width": 4,
++              "height": 0
++            }
++          },
++          {
++            "frameHeight": 192,
++            "box": {
++              "width": 92,
++              "height": 188
++            },
+             "drawing": {
+-              "width": 768,
+-              "height": 768
++              "width": 92,
++              "height": 92
++            },
++            "fit": "fits width",
++            "overflow": {
++              "width": 4,
++              "height": 0
+             }
+           },
+           {
+-            "frameHeight": 772,
++            "frameHeight": 100,
++            "box": {
++              "width": 188,
++              "height": 96
++            },
+             "drawing": {
+-              "width": 768,
+-              "height": 768
++              "width": 96,
++              "height": 96
++            },
++            "fit": "fits height",
++            "overflow": {
++              "width": 4,
++              "height": 0
+             }
+           }
+         ],
+diff --git a/spikes/wrap-npm-package/screenshots/layerchart-chrome.png b/spikes/wrap-npm-package/screenshots/layerchart-chrome.png
+index f74e05f..c6276e8 100644
+Binary files a/spikes/wrap-npm-package/screenshots/layerchart-chrome.png and b/spikes/wrap-npm-package/screenshots/layerchart-chrome.png differ
+diff --git a/spikes/wrap-npm-package/screenshots/layerchart-webkit.png b/spikes/wrap-npm-package/screenshots/layerchart-webkit.png
+index 995f9cd..2a82d1c 100644
+Binary files a/spikes/wrap-npm-package/screenshots/layerchart-webkit.png and b/spikes/wrap-npm-package/screenshots/layerchart-webkit.png differ
+diff --git a/spikes/wrap-npm-package/screenshots/model-viewer-chrome.png b/spikes/wrap-npm-package/screenshots/model-viewer-chrome.png
+index c824c74..fb879a9 100644
+Binary files a/spikes/wrap-npm-package/screenshots/model-viewer-chrome.png and b/spikes/wrap-npm-package/screenshots/model-viewer-chrome.png differ
+diff --git a/spikes/wrap-npm-package/screenshots/model-viewer-webkit.png b/spikes/wrap-npm-package/screenshots/model-viewer-webkit.png
+index 89b6f9a..0475ba0 100644
+Binary files a/spikes/wrap-npm-package/screenshots/model-viewer-webkit.png and b/spikes/wrap-npm-package/screenshots/model-viewer-webkit.png differ
+diff --git a/spikes/wrap-npm-package/screenshots/qrcode-chrome.png b/spikes/wrap-npm-package/screenshots/qrcode-chrome.png
+index 7bdbfbc..fda38b1 100644
+Binary files a/spikes/wrap-npm-package/screenshots/qrcode-chrome.png and b/spikes/wrap-npm-package/screenshots/qrcode-chrome.png differ
+diff --git a/spikes/wrap-npm-package/screenshots/qrcode-webkit.png b/spikes/wrap-npm-package/screenshots/qrcode-webkit.png
+index b839a9b..c174d41 100644
+Binary files a/spikes/wrap-npm-package/screenshots/qrcode-webkit.png and b/spikes/wrap-npm-package/screenshots/qrcode-webkit.png differ
+diff --git a/spikes/wrap-npm-package/screenshots/react-qr-code-chrome.png b/spikes/wrap-npm-package/screenshots/react-qr-code-chrome.png
+index 013a530..831745e 100644
+Binary files a/spikes/wrap-npm-package/screenshots/react-qr-code-chrome.png and b/spikes/wrap-npm-package/screenshots/react-qr-code-chrome.png differ
+diff --git a/spikes/wrap-npm-package/screenshots/react-qr-code-webkit.png b/spikes/wrap-npm-package/screenshots/react-qr-code-webkit.png
+index 8cf367e..72100d5 100644
+Binary files a/spikes/wrap-npm-package/screenshots/react-qr-code-webkit.png and b/spikes/wrap-npm-package/screenshots/react-qr-code-webkit.png differ
+diff --git a/spikes/wrap-npm-package/try.ts b/spikes/wrap-npm-package/try.ts
+index ccc2159..1ca2a8d 100644
+--- a/spikes/wrap-npm-package/try.ts
++++ b/spikes/wrap-npm-package/try.ts
+@@ -41,9 +41,21 @@ interface Built {
+ }
+ 
+ /** A use's frame: its height in the page, and its drawing's size, in CSS pixels. */
++interface Size {
++  width: number;
++  height: number;
++}
++
+ interface UseFrame {
+   frameHeight: number;
+-  drawing: { width: number; height: number } | null;
++  /** The inside of the use's box, the component's `target`, which the use's common params size (spec §9.2). */
++  box: Size | null;
++  /** What is drawn: an SVG's `viewBox` as it is scaled into the element, else the element. */
++  drawing: Size | null;
++  /** How the drawing sits in its box (docs/writing-a-pack.md, decision 8). */
++  fit: "fills both" | "fits width" | "fits height" | "inside" | "overflows" | "none";
++  /** How far the frame's document goes past the frame: anything above 0 scrolls. */
++  overflow: Size | null;
+   /** The start of the frame's markup, when it didn't draw. */
+   markup?: string;
+ }
+@@ -104,6 +116,41 @@ function testPage(pack: Pack): Plugin {
+   };
+ }
+ 
++/** In a use's frame: the inside of its box, and what is drawn in it. Runs in the page, so it is self-contained. */
++function measureUse(): { box: Size; drawing: Size; overflow: Size } | null {
++  const box = document.querySelector(".compmd-component");
++  const element = box?.querySelector("svg, canvas");
++  if (!box || !element) return null;
++  // How far the frame's document goes past the frame, which a reader sees as scroll bars.
++  const root = document.documentElement;
++  const overflow = { width: root.scrollWidth - root.clientWidth, height: root.scrollHeight - root.clientHeight };
++  const style = getComputedStyle(box);
++  const inside = {
++    width: box.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight),
++    height: box.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom),
++  };
++  const shown = element.getBoundingClientRect();
++  let drawing = { width: shown.width, height: shown.height };
++  // An SVG scaled into its element (`meet`, the default) draws its `viewBox` only as large as both sides allow.
++  if (element instanceof SVGSVGElement && element.viewBox.baseVal.width > 0 && element.getAttribute("preserveAspectRatio") !== "none") {
++    const view = element.viewBox.baseVal;
++    const scale = Math.min(shown.width / view.width, shown.height / view.height);
++    drawing = { width: view.width * scale, height: view.height * scale };
++  }
++  const round = (size: Size) => ({ width: Math.round(size.width), height: Math.round(size.height) });
++  return { box: round(inside), drawing: round(drawing), overflow };
++}
++
++/** How a drawing sits in its box, a pixel either way counting as equal. */
++function fitOf(measured: { box: Size; drawing: Size; overflow: Size } | null): UseFrame["fit"] {
++  if (!measured) return "none";
++  const { box, drawing } = measured;
++  if (drawing.width > box.width + 1 || drawing.height > box.height + 1) return "overflows";
++  const width = Math.abs(drawing.width - box.width) <= 1;
++  const height = Math.abs(drawing.height - box.height) <= 1;
++  return width && height ? "fills both" : width ? "fits width" : height ? "fits height" : "inside";
++}
++
+ /** The demo in `page`, once every use drew or `DRAW_MS` passed. */
+ async function openDemo(page: Page, url: string, uses: number): Promise<Opened> {
+   const refused: string[] = [];
+@@ -120,8 +167,8 @@ async function openDemo(page: Page, url: string, uses: number): Promise<Opened>
+     Promise.all(
+       page.frames().slice(1).map(async (frame) => {
+         const frameHeight = (await (await frame.frameElement()).boundingBox())?.height ?? 0;
+-        const box = await frame.locator("svg, canvas").first().boundingBox({ timeout: 100 }).catch(() => null);
+-        return { frameHeight, drawing: box && { width: Math.round(box.width), height: Math.round(box.height) } };
++        const measured = await frame.evaluate(measureUse).catch(() => null);
++        return { frameHeight, box: measured?.box ?? null, drawing: measured?.drawing ?? null, fit: fitOf(measured), overflow: measured?.overflow ?? null };
+       }),
+     );
+   const isDrawn = (use: UseFrame) => use.frameHeight > 0 && (use.drawing?.width ?? 0) > 0 && (use.drawing?.height ?? 0) > 0;
+@@ -156,11 +203,14 @@ for (const [index, name] of chosen.entries()) {
+   const uses = readFileSync(join(dir, "demo.comp.md"), "utf8").split("\n").filter((line) => line.startsWith(":: ")).length;
+   for (const [browserName, type, options] of BROWSERS) {
+     const browser = await type.launch({ headless: true, ...options });
+-    const page = await browser.newPage({ viewport: { width: 900, height: 900 } });
++    // Tall enough for every demo, so every frame is on screen and painted when the screenshot is taken.
++    const page = await browser.newPage({ viewport: { width: 900, height: 2600 } });
+     const opened = await openDemo(page, `http://localhost:${String(port)}/`, uses);
+     await page.screenshot({ path: join(HERE, "screenshots", `${name}-${browserName.toLowerCase()}.png`), fullPage: true });
+     results[name].opened[browserName] = opened;
+-    console.log(`  ${browserName}: ${String(opened.drawn)} of ${String(opened.uses)} drawn; ${String(opened.refused.length)} refused; ${String(opened.errors.length)} errors; diagnostics: ${opened.diagnostics.join(" | ") || "none"}`);
++    const size = (s: Size) => `${String(s.width)}×${String(s.height)}`;
++    const sizes = opened.frames.map((use) => (use.drawing && use.box ? `\n    ${size(use.drawing)} in a ${size(use.box)} box: ${use.fit}${use.overflow && (use.overflow.width > 0 || use.overflow.height > 0) ? `; the frame scrolls by ${size(use.overflow)}` : ""}` : "\n    nothing drawn")).join("");
++    console.log(`  ${browserName}: ${String(opened.drawn)} of ${String(opened.uses)} drawn; ${String(opened.refused.length)} refused; ${String(opened.errors.length)} errors; diagnostics: ${opened.diagnostics.join(" | ") || "none"}${sizes}`);
+     await browser.close();
+   }
+   await server.close();
