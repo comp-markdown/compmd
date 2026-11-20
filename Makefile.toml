@@ -139,6 +139,12 @@ clear = true
 command = "node"
 args = ["tools/packs/release-packs.ts", "${@}"]
 
+[tasks.approve-packs]
+description = "Approve what npm has staged of the packs (docs/releases.md, decision 8): checkboxes, every version waiting for you chosen; Enter approves the chosen ones in the order they were staged, with one one-time code. With `--dry-run`, lists them and approves nothing"
+clear = true
+command = "node"
+args = ["tools/packs/approve-packs.ts", "${@}"]
+
 [tasks.pack-placeholders]
 description = "Create new packs on npm (docs/releases.md, decision 8): for each named pack npm doesn't have, publish a 0.0.0 placeholder and set its trusted publisher to release-packs.yml, staging only. `cargo make pack-placeholders card chart`; with `--dry-run`, say what it would do and do nothing"
 clear = true

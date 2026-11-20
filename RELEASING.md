@@ -122,8 +122,15 @@ Each pack in `compmd-packs/` (`@comp-markdown/mermaid`, `@comp-markdown/wirefram
    cargo make release-packs
    ```
 
-   When a pack's files don't have its version yet, it writes them and stops: commit them, push, and run it again. It then lists every pack whose version npm doesn't have, and on your yes tags each `<pack>-v<version>` at `main`'s commit, which must be pushed and match yours, pushes the tags, and runs `release-packs.yml` once (`gh workflow run`). The workflow runs `cargo make ci` once, then packs and stages every pack tagged at its commit whose version npm doesn't have, with trusted publishing. A run that stopped halfway can run again: a tag already at the commit is kept, and a version npm has is skipped.
-2. **Approve them**, with two-factor authentication: `(cd ~ && npm stage list @comp-markdown/<pack>)`, then `npm stage approve <stage-id>` for each.
+   When a pack's files don't have its version yet, it writes them and stops: commit them, push, and run it again. It then lists every pack whose version npm doesn't have, and on your yes tags each `<pack>-v<version>` at `main`'s commit, which must be pushed and match yours, pushes the tags, and runs `release-packs.yml` once (`gh workflow run`). The workflow runs `cargo make ci` once, then packs and stages every pack tagged at its commit whose version npm doesn't have, with trusted publishing, for you to approve (step 2). A run that stopped halfway can run again: a tag already at the commit is kept, and a version npm has is skipped.
+2. **Approve them**, once the workflow is green:
+
+   ```sh
+   cargo make approve-packs --dry-run   # what is staged, and what it would approve: nothing done
+   cargo make approve-packs
+   ```
+
+   It lists what npm has staged of the packs as checkboxes, every version waiting for you chosen (space toggles one, `a` all), and Enter approves the chosen ones in the order they were staged, so a pack is never on npm before one staged before it. It asks for your one-time code once and passes it to each approval; npm asks for a new one when it expires. With a security key, press Enter at the code, and npm asks for it itself.
 3. Check: `curl -s https://registry.npmjs.org/-/package/@comp-markdown%2f<pack>/dist-tags` gives the new version as `latest`.
 
 **The Mermaid and wireframe packs' trusted publishers, once** (with this workflow, 2026-11-20): each was set for a workflow of its own, `release-mermaid.yml` and `release-wireframe.yml`, which are gone. A package has one trusted publisher, whose workflow can't be changed, so each is revoked and set again, from outside the repository:

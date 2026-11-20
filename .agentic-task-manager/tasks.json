@@ -13097,7 +13097,7 @@
       "description": "[Releases](docs/releases.md), decision 8: `cargo make approve-packs`, with `--dry-run`.\n\n## Do\n- List what is staged for every pack (`npm stage list`) as checkboxes (`@inquirer/checkbox`, MIT), all chosen; space toggles, Enter approves the chosen ones (`npm stage approve`) in the order they were staged.\n- A pinned npm with staging; one one-time code, asked again only when it expires.\n- `--dry-run` shows the list and what it would approve, and approves nothing.\n- RELEASING.md says to run it after `release-packs`.\n\n## Tests\nThe order it approves in and what it skips, with npm's answers stubbed.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68e81c39ce10"
       ],
@@ -13107,9 +13107,9 @@
         "RELEASING.md"
       ],
       "created_at": "2026-11-20T19:14:20Z",
-      "updated_at": "2026-11-20T19:14:20Z",
+      "updated_at": "2026-11-20T21:02:27Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "sprint_history": [
         {
           "sprint": "Packs 1: the pack tool, no-code components",
@@ -13117,7 +13117,9 @@
         }
       ],
       "sprint": "Packs 1: the pack tool, no-code components",
-      "number": 352
+      "number": 352,
+      "started_at": "2026-11-20T21:02:27Z",
+      "started_by": "claude:79612601"
     },
     {
       "id": "01a1faa3-d27f-73b4-9632-1832108aba7b",

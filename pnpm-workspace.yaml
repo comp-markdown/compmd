@@ -19,6 +19,8 @@ packages:
   - guides
   - website
   - website/blog
+  # The packs' release tools, for the checkboxes they show; no scripts, as the spikes.
+  - tools/packs
   # Spikes: measurements, not packages; they have no build, lint or test script, so the workspace's runs skip them.
   - spikes/*
   - spikes/wrap-npm-package/*

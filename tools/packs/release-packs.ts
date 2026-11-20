@@ -131,4 +131,11 @@ function realSteps(root: string): Steps {
   };
 }
 
-if (import.meta.main) process.exitCode = await releasePacks({ dryRun: process.argv.includes("--dry-run") }, realSteps(join(import.meta.dirname, "../..")));
+if (import.meta.main) {
+  try {
+    process.exitCode = await releasePacks({ dryRun: process.argv.includes("--dry-run") }, realSteps(join(import.meta.dirname, "../..")));
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exitCode = 1;
+  }
+}

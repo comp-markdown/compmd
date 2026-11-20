@@ -1,5 +1,9 @@
 {
+  "name": "@compmd-tools/packs",
   "private": true,
-  "description": "The tools that release this repository's packs (docs/releases.md, decision 8), run by Node as they are (TypeScript, its types stripped): not a workspace package.",
-  "type": "module"
+  "description": "The tools that release this repository's packs (docs/releases.md, decision 8), run by Node as they are (TypeScript, its types stripped). A workspace member only for its one dependency: no build, lint or test script, so the workspace's runs leave it out; `cargo make scripts` tests it.",
+  "type": "module",
+  "dependencies": {
+    "@inquirer/checkbox": "5.2.8"
+  }
 }

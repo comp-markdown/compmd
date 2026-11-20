@@ -88,10 +88,15 @@ const realSteps: Steps = {
 if (import.meta.main) {
   const args = process.argv.slice(2);
   const license = readFileSync(join(import.meta.dirname, "../../LICENSE-CODE"), "utf8");
-  process.exitCode = await placeholders(
-    args.filter((arg) => arg !== "--dry-run"),
-    license,
-    { dryRun: args.includes("--dry-run") },
-    realSteps,
-  );
+  try {
+    process.exitCode = await placeholders(
+      args.filter((arg) => arg !== "--dry-run"),
+      license,
+      { dryRun: args.includes("--dry-run") },
+      realSteps,
+    );
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exitCode = 1;
+  }
 }
