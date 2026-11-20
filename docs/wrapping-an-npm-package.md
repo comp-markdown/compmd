@@ -29,8 +29,12 @@ packs it was tried on, built and run.
    (create-pack, decision 3). The command writes it once; it is plain code the author may change, and the build
    doesn't touch it again.
 4. **The signature is generated at every build** (decided 2026-11-20). `compmd-pack build` reads the package's
-   TypeScript types with the TypeScript checker and writes the signature fence of `index.comp.md`, the one marked
-   `generated` in its info string, leaving the document's prose as it is. Updating the package to its next version is a
+   TypeScript types with the TypeScript checker and writes the signature fence of `index.comp.md` that stands between
+   two comments, `<!-- compmd-pack:generated … -->` before it and `<!-- /compmd-pack:generated -->` after it, leaving
+   the document's prose as it is (decided 2026-11-20, CR-29: comments, which need no spec change and which plain
+   renderers hide; the opening one says what the fence is generated from and that edits to it are overwritten). The
+   build fails on a pair with anything but one signature fence between, or on a comment without its pair. Removing
+   the pair hands the fence to the author: the build then leaves it, and reports where it differs from the types. Updating the package to its next version is a
    version bump: the build writes the params its types now give, and says what changed (a param added to the package,
    one gone, one whose type changed), and a param that went fails the build where a demo or the overrides still name it.
 5. **The params are an allowlist,** `params` in `compmd.wrap.json` beside `package.json`, which the command writes
@@ -114,8 +118,8 @@ export default component<Params>((target, { params, fallback }) => {
 ```
 
 ````md
-<!-- index.comp.md: the fence below is rewritten at each build -->
-```compmd component=qr-code signature generated
+<!-- compmd-pack:generated from react-qr-code 2.2.0's types and compmd.wrap.json; edits between these comments are overwritten at each build -->
+```compmd component=qr-code signature
 params:
   value: string
   size: number = 256
@@ -124,6 +128,7 @@ params:
   level: L | M | H | Q?
   title: string?
 ```
+<!-- /compmd-pack:generated -->
 ````
 
 Moving to react-qr-code 2.3.0 is `npm install react-qr-code@2.3.0` and `npm run build`: the signature follows its
@@ -133,7 +138,7 @@ types, and the build lists what changed.
 
 [The spike](../spikes/wrap-npm-package/README.md) read four packages' files and types, wrote by hand the packs the
 command would write, built them as `compmd-pack build` does and opened each demo in strict frames, in Chrome and
-WebKit (2026-11-20). Its findings are in decisions 3, 5, 6 and 10 and in gaps G6 and G7.
+WebKit (2026-11-20). Its findings are in decisions 3, 4, 5, 6 and 10 and in gaps G6 and G7.
 
 | Package | Kind | What derives | What the author writes | In a strict frame |
 |---|---|---|---|---|
@@ -158,9 +163,8 @@ WebKit (2026-11-20). Its findings are in decisions 3, 5, 6 and 10 and in gaps G6
 - **G6. An optional enum** (`level: L | M | H | Q?`): the spec's grammar puts `?` after a type, and an enum is one,
   and the processor accepts it (the spike's `qr-code`), but neither the spec nor a conformance case shows one. To
   confirm in the spec before the build writes it.
-- **G7. The `generated` flag** after `signature` in the fence's info string: the processor ignores it, but the spec
-  doesn't say what other words there mean. Either the spec says a signature fence's other flags are for tools and
-  ignored, or the build marks its fence another way (a comment line before it, which needs no spec change).
+- **G7, settled. How the generated fence is marked:** a word after `signature` in the info string would need the spec
+  to say what other words there mean; comments before and after the fence need nothing (decision 4).
 
 ## What changes
 

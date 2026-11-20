@@ -13,7 +13,7 @@ md:
 
 `qr-svg` draws a QR code of `value` as SVG with the library [qrcode](https://www.npmjs.com/package/qrcode) 1.5.4. A reader without it sees the label.
 
-<!-- No `generated`: a library has no props to read, so the author writes this signature, and the build leaves it. -->
+<!-- Not between `compmd-pack:generated` comments: a library has no props to read, so the author writes this signature, and the build leaves it. -->
 
 ```compmd component=qr-svg signature
 params:

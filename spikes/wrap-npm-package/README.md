@@ -13,11 +13,11 @@
 7. **A Svelte package's CSS goes into the module.** Compiled with Svelte's default, the CSS went to a file of its own, which the frame never loads, and the chart drew unstyled; compiled with `css: "injected"`, the module adds it. Its theme's colours (`--color-primary`) are still unset: the bars are `currentColor` (the design's gap G3).
 8. **Svelte's props can't change from a plain module:** `$state` needs a `.svelte` file, so the glue mounts the chart again on each update.
 9. **An optional enum works:** `level: L | M | H | Q?` is accepted, and `level=H` checked (the design's gap G6, which still has no conformance case).
-10. **`generated` after `signature` in the fence's info string** is ignored by the processor, but the spec doesn't say what other words there mean: a gap for the design (G7).
+10. **`generated` after `signature` in the fence's info string,** the first way the spike marked the build's fence, is ignored by the processor, but the spec doesn't say what other words there mean. The design settled on comments before and after the fence instead (decision 4), which the packs here use.
 
 ## The packs
 
-Each folder is what the command would write, with the glue as written once, and the demo it would write a use of each param into. The signatures marked `generated` are written by hand as the build would write them from the package's types.
+Each folder is what the command would write, with the glue as written once, and the demo it would write a use of each param into. The signatures between `compmd-pack:generated` comments are written by hand as the build would write them from the package's types.
 
 | Folder | Package | Kind | Built (gzipped) | Imports left | Drew, Chrome and WebKit | What the frame refused |
 |---|---|---|---|---|---|---|
@@ -29,7 +29,7 @@ Each folder is what the command would write, with the glue as written once, and 
 - **react-qr-code:** six params from its six own props; `size`'s default, 256, is the author's (its types' comment says 128). React and React DOM stay imports, which the frames' import map gives.
 - **layerchart:** five params of about 90, the allowlist; `x` and `y` as field names, their `string` branch. Its `.svelte` sources compile with the frames' Svelte, and d3 and its other dependencies are bundled.
 - **model-viewer:** the strict frame refuses what the design expected, and the page shows the label in its place. Its decoders from a CDN never came up: the model didn't load.
-- **qrcode:** nothing derives; the author wrote the call, `toString(value, { type: "svg" })`, and the signature, which isn't marked `generated`. Its SVG takes the frame's width; `width=10rem` on the use sizes it.
+- **qrcode:** nothing derives; the author wrote the call, `toString(value, { type: "svg" })`, and the signature, which has no `compmd-pack:generated` comments. Its SVG takes the frame's width; `width=10rem` on the use sizes it.
 
 `results.json` has each run's numbers, and `screenshots/` each page.
 

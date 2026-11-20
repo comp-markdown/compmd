@@ -13,9 +13,8 @@ md:
 
 `model-viewer` shows the 3D model at `src` with [@google/model-viewer](https://www.npmjs.com/package/@google/model-viewer) 4.4.0. A reader without it sees the label, which is also the model's `alt`.
 
-<!-- The fence below is the build's: it is written again from @google/model-viewer's types at each build. -->
-
-```compmd component=model-viewer signature generated
+<!-- compmd-pack:generated from @google/model-viewer 4.4.0's types and compmd.wrap.json; edits between these comments are overwritten at each build -->
+```compmd component=model-viewer signature
 params:
   src: string
   alt: string?
@@ -23,3 +22,4 @@ params:
   cameraControls: boolean = false
   autoRotate: boolean = false
 ```
+<!-- /compmd-pack:generated -->

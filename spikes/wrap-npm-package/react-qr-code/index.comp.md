@@ -13,9 +13,8 @@ md:
 
 `qr-code` draws a QR code of `value` with [react-qr-code](https://www.npmjs.com/package/react-qr-code) 2.2.0. A reader without it sees the label, which is also the drawing's title.
 
-<!-- The fence below is the build's: it is written again from react-qr-code's types at each build. -->
-
-```compmd component=qr-code signature generated
+<!-- compmd-pack:generated from react-qr-code 2.2.0's types and compmd.wrap.json; edits between these comments are overwritten at each build -->
+```compmd component=qr-code signature
 params:
   value: string
   size: number = 256
@@ -24,3 +23,4 @@ params:
   level: L | M | H | Q?
   title: string?
 ```
+<!-- /compmd-pack:generated -->
