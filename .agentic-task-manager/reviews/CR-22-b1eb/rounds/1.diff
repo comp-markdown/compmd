@@ -1,0 +1,1756 @@
+diff --git a/conformance/README.md b/conformance/README.md
+index 836d041..1f24329 100644
+--- a/conformance/README.md
++++ b/conformance/README.md
+@@ -23,6 +23,6 @@ The set covers stages 1 to 4b (§11): parsing, resolving, validating, loading an
+ 
+ **The tree schema.** [`compmd-tree.schema.json`](compmd-tree.schema.json) (JSON Schema 2020-12) defines the parse tree (`#/$defs/parseRoot`) and the expanded tree (`#/$defs/expandedRoot`) of §12.4. Every `parse.json` and `expanded.json` here fits it, and a runner SHOULD check that it does.
+ 
+-A processor case's `context.json` may hold `registry` (pack name to releases: `version`, `path` to its folder in the case, the `integrity` the registry publishes), `ambient` (pack name to folder, which replaces a `registry` pack of the same name, as the processor's own pack does: §6.3) with `reportAmbient`, `policy` (the host's policy for packs, §6.4 and §15: `packs` with their trust, `imports` as `any` or `listed`, `deny` with each pack's `version` range and `reason`, and `refused`, each pack the host left out with why), `allowedOrigins`, and for stage 4: `now` (the render time), `tz`, `inputs` (values given for this render), `urls` (remote URL to a file in the case) and `host` (a `host:` source to a file). `pending` names what the host is still getting (§6.4, §8.6): `packs` by name, `remote` URLs and `host` sources.
++A processor case's `context.json` may hold `registry` (pack name to releases: `version`, `path` to its folder in the case, the `integrity` the registry publishes), `ambient` (pack name to folder, which replaces a `registry` pack of the same name, as the processor's own pack does: §6.3) with `reportAmbient`, `policy` (the host's policy for packs, §6.4 and §15: `packs` with their trust, `imports` as `any` or `listed`, `deny` with each pack's `version` range and `reason`, and `refused`, each pack the host left out with why), `allowedOrigins` (the origins remote data may come from, or `"any"` for every origin, §15), and for stage 4: `now` (the render time), `tz`, `inputs` (values given for this render), `urls` (remote URL to a file in the case) and `host` (a `host:` source to a file). `pending` names what the host is still getting (§6.4, §8.6): `packs` by name, `remote` URLs and `host` sources.
+ 
+ Licensed [MIT](https://opensource.org/license/mit).
+diff --git a/conformance/expand/every-origin/case.json b/conformance/expand/every-origin/case.json
+new file mode 100644
+index 0000000..a64f35d
+--- /dev/null
++++ b/conformance/expand/every-origin/case.json
+@@ -0,0 +1 @@
++{"requires": ["processor", "remote-data"]}
+diff --git a/conformance/expand/every-origin/context.json b/conformance/expand/every-origin/context.json
+new file mode 100644
+index 0000000..a676ef1
+--- /dev/null
++++ b/conformance/expand/every-origin/context.json
+@@ -0,0 +1 @@
++{"allowedOrigins": "any", "urls": {"https://status.example.com/today.json": "today.json", "https://team.example.org/people.json": "people.json"}}
+diff --git a/conformance/expand/every-origin/expanded.json b/conformance/expand/every-origin/expanded.json
+new file mode 100644
+index 0000000..fbc17ad
+--- /dev/null
++++ b/conformance/expand/every-origin/expanded.json
+@@ -0,0 +1,23 @@
++{
++  "type": "root",
++  "children": [
++    {
++      "type": "paragraph",
++      "children": [
++        {
++          "type": "text",
++          "value": "Today: All good"
++        }
++      ]
++    },
++    {
++      "type": "paragraph",
++      "children": [
++        {
++          "type": "text",
++          "value": "On call: Kenji"
++        }
++      ]
++    }
++  ]
++}
+diff --git a/conformance/expand/every-origin/input.comp.md b/conformance/expand/every-origin/input.comp.md
+new file mode 100644
+index 0000000..161f58f
+--- /dev/null
++++ b/conformance/expand/every-origin/input.comp.md
+@@ -0,0 +1,12 @@
++---
++md:
++  data:
++    - from: https://status.example.com/today.json
++      as: status
++    - from: https://team.example.org/people.json
++      as: team
++---
++
++Today: {{md.data.status.summary}}
++
++On call: {{md.data.team.oncall}}
+diff --git a/conformance/expand/every-origin/people.json b/conformance/expand/every-origin/people.json
+new file mode 100644
+index 0000000..c78156b
+--- /dev/null
++++ b/conformance/expand/every-origin/people.json
+@@ -0,0 +1 @@
++{"oncall": "Kenji"}
+diff --git a/conformance/expand/every-origin/today.json b/conformance/expand/every-origin/today.json
+new file mode 100644
+index 0000000..fb859e6
+--- /dev/null
++++ b/conformance/expand/every-origin/today.json
+@@ -0,0 +1 @@
++{"summary": "All good"}
+diff --git a/crates/processor/src/allowed_origins.rs b/crates/processor/src/allowed_origins.rs
+new file mode 100644
+index 0000000..10cef7d
+--- /dev/null
++++ b/crates/processor/src/allowed_origins.rs
+@@ -0,0 +1,63 @@
++//! The origins a document's remote data may come from (spec §8.6, §15): those the host or its user named, or every
++//! origin, which a host allows only for documents it publishes itself, such as a static site's or a blog's.
++
++/// Where a processor may fetch a document's remote data from; any other origin is F028.
++///
++/// ```
++/// use compmd::AllowedOrigins;
++///
++/// let named = AllowedOrigins::from(&["https://api.example.com".to_string()]);
++/// assert!(named.allows("https://api.example.com"));
++/// assert!(!named.allows("https://elsewhere.example"));
++/// assert!(AllowedOrigins::Every.allows("https://elsewhere.example"));
++/// assert!(!AllowedOrigins::default().allows("https://api.example.com"));
++/// ```
++#[derive(Clone, Debug, PartialEq, Eq)]
++pub enum AllowedOrigins {
++    /// The origins named, each `https://host[:port]`; none by default.
++    Listed(Vec<String>),
++    /// Every origin: no origin of a document's data is F028.
++    Every,
++}
++
++impl AllowedOrigins {
++    /// Whether a document's remote data may come from `origin`, `https://host[:port]`.
++    #[must_use]
++    pub fn allows(&self, origin: &str) -> bool {
++        match self {
++            Self::Listed(origins) => origins.iter().any(|allowed| allowed == origin),
++            Self::Every => true,
++        }
++    }
++}
++
++impl Default for AllowedOrigins {
++    /// No origin.
++    fn default() -> Self {
++        Self::Listed(Vec::new())
++    }
++}
++
++impl From<&[String]> for AllowedOrigins {
++    fn from(origins: &[String]) -> Self {
++        Self::Listed(origins.to_vec())
++    }
++}
++
++impl<const N: usize> From<&[String; N]> for AllowedOrigins {
++    fn from(origins: &[String; N]) -> Self {
++        Self::Listed(origins.to_vec())
++    }
++}
++
++impl From<&Vec<String>> for AllowedOrigins {
++    fn from(origins: &Vec<String>) -> Self {
++        Self::Listed(origins.clone())
++    }
++}
++
++impl From<&Self> for AllowedOrigins {
++    fn from(origins: &Self) -> Self {
++        origins.clone()
++    }
++}
+diff --git a/crates/processor/src/lib.rs b/crates/processor/src/lib.rs
+index ee1174d..c86241d 100644
+--- a/crates/processor/src/lib.rs
++++ b/crates/processor/src/lib.rs
+@@ -20,6 +20,7 @@
+ //! assert_eq!(json["children"][0]["type"], "componentLeaf");
+ //! ```
+ 
++mod allowed_origins;
+ mod breakpoint;
+ mod cel;
+ pub mod components;
+@@ -48,6 +49,7 @@ mod validate;
+ pub mod values;
+ 
+ /// The names packs and their files are known by: `PackName`, `ReleaseId`, `FilePath`, `Place`, `Integrity`.
++pub use allowed_origins::AllowedOrigins;
+ pub use compmd_pack as pack;
+ pub use parse::{ParseOptions, TextEdit};
+ pub use processor::Processor;
+diff --git a/crates/processor/src/load.rs b/crates/processor/src/load.rs
+index 0b97547..8771fb3 100644
+--- a/crates/processor/src/load.rs
++++ b/crates/processor/src/load.rs
+@@ -11,6 +11,7 @@ mod from;
+ mod inputs;
+ mod schema;
+ 
++use crate::AllowedOrigins;
+ use crate::cel::{Key, Value};
+ use crate::context::RenderContext;
+ use crate::diagnostic::{Code, Diagnostic, Location, Stage};
+@@ -52,12 +53,12 @@ impl Loaded {
+ }
+ 
+ /// The remote and `host:` sources a render with `context` needs, each once, in the order they are first written; the
+-/// remote URLs of origins `allowed_origins` leaves out; and the packs resolving found no release for.
++/// remote URLs of origins `allowed_origins` doesn't allow; and the packs resolving found no release for.
+ pub(crate) fn sources(
+     resolved: &Resolved,
+     validated: &Validated,
+     context: &RenderContext,
+-    allowed_origins: &[String],
++    allowed_origins: &AllowedOrigins,
+ ) -> Needed {
+     let (inputs, _) = inputs::of(resolved, context);
+     let input = inputs.value();
+@@ -70,9 +71,7 @@ pub(crate) fn sources(
+         let (list, source) = match from::target(resolved, id, import, &input) {
+             Ok(Target::Remote(url)) if !refused => (&mut needed.remote, url),
+             Ok(Target::Remote(url))
+-                if origin(&url).is_some_and(|origin| {
+-                    !allowed_origins.iter().any(|allowed| allowed == origin)
+-                }) =>
++                if origin(&url).is_some_and(|origin| !allowed_origins.allows(origin)) =>
+             {
+                 (&mut needed.disallowed, url)
+             }
+diff --git a/crates/processor/src/processor.rs b/crates/processor/src/processor.rs
+index aa47d6a..1260545 100644
+--- a/crates/processor/src/processor.rs
++++ b/crates/processor/src/processor.rs
+@@ -44,6 +44,7 @@
+ //! assert_eq!(card.name, "card");
+ //! ```
+ 
++use crate::AllowedOrigins;
+ use crate::context::RenderContext;
+ use crate::diagnostic::Diagnostic;
+ use crate::expanded::{self, Inputs};
+@@ -137,7 +138,7 @@ pub struct Validated {
+     /// How many diagnostics stages 1 to 3 gave, which a reload keeps.
+     kept: usize,
+     edit_context: EditContext,
+-    allowed_origins: Vec<String>,
++    allowed_origins: AllowedOrigins,
+ }
+ 
+ /// What stage 4 runs with: the render context, and the host's remote and `host:` data.
+@@ -360,10 +361,12 @@ impl Processor<Parsed> {
+ }
+ 
+ impl Processor<Resolved> {
+-    /// Stage 3, validating, with the origins remote data may come from (`https://api.example.com`; any other is
+-    /// F028): checks every invocation, slot, interpolation path, expression, bound input and data source.
++    /// Stage 3, validating, with the origins remote data may come from: a list of them (`&["https://api.example.com"
++    /// .into()]`; any other is F028), or [`AllowedOrigins::Every`] for a host's own documents (spec §15). Checks every
++    /// invocation, slot, interpolation path, expression, bound input and data source.
+     #[must_use]
+-    pub fn validate(self, allowed_origins: &[String]) -> Processor<Validated> {
++    pub fn validate(self, allowed_origins: impl Into<AllowedOrigins>) -> Processor<Validated> {
++        let allowed_origins = allowed_origins.into();
+         self.then(
+             |Resolved {
+                  store,
+@@ -371,13 +374,13 @@ impl Processor<Resolved> {
+                  edit_context,
+              },
+              diagnostics| {
+-                let checks = validate::validate(&resolved, allowed_origins);
++                let checks = validate::validate(&resolved, &allowed_origins);
+                 diagnostics.extend(checks.diagnostics().cloned());
+                 let examples = examples::Examples::of(
+                     &resolved,
+                     &store,
+                     &edit_context,
+-                    allowed_origins,
++                    &allowed_origins,
+                     diagnostics,
+                 );
+                 Validated {
+@@ -387,7 +390,7 @@ impl Processor<Resolved> {
+                     examples,
+                     kept: diagnostics.len(),
+                     edit_context,
+-                    allowed_origins: allowed_origins.to_vec(),
++                    allowed_origins,
+                 }
+             },
+         )
+diff --git a/crates/processor/src/processor/examples.rs b/crates/processor/src/processor/examples.rs
+index 35e76f9..5d3e6d0 100644
+--- a/crates/processor/src/processor/examples.rs
++++ b/crates/processor/src/processor/examples.rs
+@@ -5,6 +5,7 @@
+ //! block's text is written. Inside an example, a ` ```compmd ` block that would render shows its source (W123).
+ 
+ use super::{EditContext, Expanded, HostFiles, Loaded, Processor, RenderInputs, Validated, back};
++use crate::AllowedOrigins;
+ use crate::diagnostic::{Code, Diagnostic, Location, Range};
+ use crate::expanded::{self, Root};
+ use crate::host::{Needed, Pending};
+@@ -179,7 +180,7 @@ impl Examples {
+         resolved: &Resolved,
+         store: &HostFiles,
+         context: &EditContext,
+-        allowed_origins: &[String],
++        allowed_origins: &AllowedOrigins,
+         diagnostics: &mut Vec<Diagnostic>,
+     ) -> Self {
+         let document = resolved.document(resolved.main);
+diff --git a/crates/processor/src/validate.rs b/crates/processor/src/validate.rs
+index 55fca95..11c778d 100644
+--- a/crates/processor/src/validate.rs
++++ b/crates/processor/src/validate.rs
+@@ -11,6 +11,7 @@ pub(crate) mod params;
+ pub(crate) mod scope;
+ pub(crate) mod universal;
+ 
++use crate::AllowedOrigins;
+ use crate::cel::{self, Program};
+ use crate::diagnostic::{Code, Diagnostic, Fix, Location, Stage};
+ use crate::lines::Lines;
+@@ -139,7 +140,7 @@ impl Validated {
+         &mut self,
+         resolved: &Resolved,
+         spliced: &Spliced,
+-        allowed_origins: &[String],
++        allowed_origins: &AllowedOrigins,
+     ) -> bool {
+         let main = resolved.main;
+         let moved = spliced.moved;
+@@ -187,7 +188,7 @@ impl Validated {
+ 
+     /// Checks the processed document's inputs and data imports, which may not interpolate inputs its blocks bind to
+     /// host-language components.
+-    fn check_imports(&mut self, resolved: &Resolved, allowed_origins: &[String]) {
++    fn check_imports(&mut self, resolved: &Resolved, allowed_origins: &AllowedOrigins) {
+         let bound = self
+             .blocks
+             .iter()
+@@ -203,8 +204,8 @@ impl Validated {
+ }
+ 
+ /// Validates a resolved document, stage 3 of spec §11: gives its diagnostics, and what they refused. Remote data
+-/// from an origin other than `allowed_origins` is F028 (spec §8.6).
+-pub(crate) fn validate(resolved: &Resolved, allowed_origins: &[String]) -> Validated {
++/// from an origin `allowed_origins` doesn't allow is F028 (spec §8.6).
++pub(crate) fn validate(resolved: &Resolved, allowed_origins: &AllowedOrigins) -> Validated {
+     let mut validated = Validated::default();
+     for id in resolved.ids() {
+         let document = resolved.document(id);
+diff --git a/crates/processor/src/validate/data.rs b/crates/processor/src/validate/data.rs
+index 0801538..6eb4d2c 100644
+--- a/crates/processor/src/validate/data.rs
++++ b/crates/processor/src/validate/data.rs
+@@ -4,6 +4,7 @@
+ 
+ use super::Checker;
+ use super::scope::Scope;
++use crate::AllowedOrigins;
+ use crate::diagnostic::{Code, Location};
+ use crate::parse::params::interpolations;
+ 
+@@ -43,7 +44,7 @@ pub(crate) fn origin(from: &str) -> Option<&str> {
+ }
+ 
+ impl Checker<'_, '_> {
+-    pub(super) fn data(&mut self, allowed_origins: &[String]) {
++    pub(super) fn data(&mut self, allowed_origins: &AllowedOrigins) {
+         let resolved = self.resolved;
+         let settings = &resolved.document(self.id).settings;
+         let scope = Scope::body(resolved, self.id);
+@@ -56,9 +57,7 @@ impl Checker<'_, '_> {
+                 loadable &= self.data_path(&path, at_char < literal, at, &scope);
+             }
+             let from = &import.from.value;
+-            if let Some(origin) = origin(from)
+-                .filter(|origin| !allowed_origins.iter().any(|allowed| allowed == origin))
+-            {
++            if let Some(origin) = origin(from).filter(|origin| !allowed_origins.allows(origin)) {
+                 self.report(
+                     Code::F028,
+                     import.from.at,
+diff --git a/crates/processor/tests/common.rs b/crates/processor/tests/common.rs
+index b4f8487..87b61ae 100644
+--- a/crates/processor/tests/common.rs
++++ b/crates/processor/tests/common.rs
+@@ -10,7 +10,7 @@ use compmd::expand::Options;
+ use compmd::host::{Fetched, LoadedRelease, Time, WithPending};
+ use compmd::policy::Policy;
+ use compmd::processor::Expanded;
+-use compmd::{Ambient, ParseOptions, Processor};
++use compmd::{AllowedOrigins, Ambient, ParseOptions, Processor};
+ use serde_json::{Map, Value, json};
+ use std::collections::HashMap;
+ use std::fs;
+@@ -172,7 +172,7 @@ pub(crate) struct Setup {
+     packs: Rc<WithPending<HashMap<String, Vec<LoadedRelease>>>>,
+     ambient: Ambient,
+     policy: Policy,
+-    allowed_origins: Vec<String>,
++    allowed_origins: AllowedOrigins,
+     render: RenderContext,
+     remote: Rc<WithPending<HashMap<String, Fetched>>>,
+     host: Rc<WithPending<HashMap<String, Value>>>,
+@@ -219,7 +219,12 @@ impl Setup {
+                 .get("policy")
+                 .map(|policy| serde_json::from_value(policy.clone()).expect("a policy"))
+                 .unwrap_or_default(),
+-            allowed_origins: strings("allowedOrigins"),
++            // Every origin, for a host's own documents (spec §15), or those named.
++            allowed_origins: if context["allowedOrigins"] == json!("any") {
++                AllowedOrigins::Every
++            } else {
++                AllowedOrigins::Listed(strings("allowedOrigins"))
++            },
+             render: RenderContext {
+                 now: parse_time(context["now"].as_str().unwrap_or("2026-01-01T00:00:00Z"))
+                     .expect("a time"),
+diff --git a/docs/blog-tool.md b/docs/blog-tool.md
+index ca59e37..91c6b54 100644
+--- a/docs/blog-tool.md
++++ b/docs/blog-tool.md
+@@ -19,7 +19,7 @@ Anyone who writes in CompMD gets a blog from it in a few minutes; the CompMD web
+ 
+    ```text
+    my-blog/
+-     blog.config.json          # the blog's title, its address, its author, its language, comments
++     blog.config.json          # the blog's title, its address, its author, its language, comments, its share image
+      posts/
+        why-compmd.comp.md      # a post: its slug is its file's name
+        why-compmd/             # a post's own files: data, images
+@@ -28,8 +28,17 @@ Anyone who writes in CompMD gets a blog from it in a few minutes; the CompMD web
+    ```
+ 
+    A post's frontmatter: `title`, `date` (a day), `summary`, and optional `author` (the blog's by default), `updated`,
+-   `tags` (a list of names) and `draft` (shown by `dev`, left out of `build`). Anything else is the post's own, as
+-   `md.doc` (spec §2.1).
++   `tags` (a list of names), `draft` (shown by `dev`, left out of `build`) and `image` (the blog's by default).
++   Anything else is the post's own, as `md.doc` (spec §2.1).
++
++   A **share image** is the image a link to a page shows on social sites and in chats (its Open Graph image): a `url`,
++   an http(s) address or one relative to the blog's address, and an `alt`. The blog's, `image` in
++   `blog.config.json`, is every page's; a post's own `image` is its page's instead.
++
++   A blog publishes its own posts, so it is a host that may allow every origin (spec §15): its own origin always,
++   the `origins` of its `compmd.config.json`, or every origin with `"any"`. Its posts' data and images from them come
++   without asking a reader, at build time and in a live post's page alike; an image from any other origin shows its
++   alt text, and the build warns.
+ 
+ 3. **Three commands:**
+    - `cblo new "Why CompMD"`: a new post, `posts/why-compmd.comp.md` (its slug from the title), its frontmatter filled
+@@ -50,7 +59,8 @@ Anyone who writes in CompMD gets a blog from it in a few minutes; the CompMD web
+      by every page in a `<link rel="alternate">`;
+    - `posts.json`, the posts as data (title, date, summary, tags, author and address, newest first), for a site to show
+      its blog's latest posts elsewhere, as the CompMD website's landing page may;
+-   - `sitemap.xml`, and each page's title, description and Open Graph tags from the post.
++   - `sitemap.xml`, and each page's title, description and Open Graph tags from the post, with its share image as a
++     large card when there is one.
+ 
+ 5. **Built on CompMD's packages, as a host is** ([hosting](hosting.md)): each post is processed by
+    `@compmd/processor` in strict mode, so an error fails the build, and rendered to static HTML by `@compmd/render`, the
+diff --git a/docs/remote-images.md b/docs/remote-images.md
+index 79d41b1..3ef8982 100644
+--- a/docs/remote-images.md
++++ b/docs/remote-images.md
+@@ -41,7 +41,8 @@ allow it. This is how `@compmd/render` and `@compmd/sandbox` do it, in frame mod
+    as for `loadData`: its pages show remote images only from configured origins. A host that wants them at build time
+    configures their origins.
+ 10. **A host that never fetches data still asks about images**, by default, as the spec says. One that doesn't want the
+-    dialog configures the origins, or passes its own `ask`.
++    dialog configures the origins, or, for documents it publishes itself, allows every origin (`configured: "any"`,
++    spec §15); a host that shows documents others write keeps asking.
+ 
+ ## Changes
+ 
+diff --git a/docs/vite.md b/docs/vite.md
+index 1fe7927..6a8bedf 100644
+--- a/docs/vite.md
++++ b/docs/vite.md
+@@ -54,10 +54,11 @@
+ | `libraries` | npm package names, installed in the app, that the frames offer components through their import map, besides React and Svelte | `buildLibraries`; with their versions, `policy.libraries` |
+ | `registries` | the npm registries packs the app doesn't install come from, by scope (`@kit`), with `*` for every other scope, each named in full (`https:`, or `http:` for localhost), with no credentials | `registry.registries` |
+ | `fetch` | who reaches them: `host` (the default), through the app's proxy; `direct`, the reader's browser | `registry.fetch` |
++| `origins` | the origins documents' remote data and images come from without asking the reader, each `https://host[:port]`, or `"any"`, every origin, for documents the app publishes itself (spec §15) | `allowedOrigins`; the sandbox's `origins.configured` |
+ 
+ - A folder pack's name is its `package.json`'s `name`, which its document's `export.pack` matches (F022): the policy and `ambient` use that name, so documents can import `@acme/app` by name too (decision 7 of the design: a configured name is the host's).
+ - `ambient` is per pack, not a list of names, so a folder pack needs no second spelling.
+-- `network` takes origins only: a path, a wildcard or `http:` other than `localhost` stops the build.
++- `network` and `origins` take origins only: a path, a wildcard or `http:` other than `localhost` stops the build. `"any"` in `origins` is every origin, which an app that shows documents others write leaves out (spec §15).
+ - `libraries` names npm packages, as `npm install` does: `"d3"` is the package `d3`, which the app installs (`npm install d3`). The plugin builds each one once into the frames' `libs/` (`compmd/frames/<hash>/libs/`), and the frames' import map resolves a component's `import * as d3 from "d3"` to that copy, as the playground offers d3 today. A package whose components import more than its name gives its import names: `{ "name": "d3", "imports": ["d3", "d3-scale"] }`. A library that isn't installed stops the build.
+ - The request's `policy.runtimes` and `policy.libraries` are the frames' library definition (`@compmd/sandbox`'s `libraryDefinition`): the runtimes the frames have and the libraries the configuration offers, each with its version. So the processor reports a component on a runtime the frames don't have (W102) and a pack whose `peerDependencies` they can't meet (W121, spec §6.4), and a document's import of an offered library isn't portable (spec §6.3).
+ 
+diff --git a/npm-packages/blog/README.md b/npm-packages/blog/README.md
+index 62363b4..0850ad0 100644
+--- a/npm-packages/blog/README.md
++++ b/npm-packages/blog/README.md
+@@ -32,10 +32,19 @@ my-blog/
+   "author": "Ada Lovelace",
+   "lang": "en",
+   "description": "Things written down.",
+-  "comments": { "giscus": { "repo": "ada/notes", "repoId": "R_…", "category": "Blog", "categoryId": "DIC_…" } }
++  "comments": { "giscus": { "repo": "ada/notes", "repoId": "R_…", "category": "Blog", "categoryId": "DIC_…" } },
++  "image": { "url": "card.png", "alt": "Notes, by Ada Lovelace" }
+ }
+ ```
+ 
++A post's images and remote data from the blog's own origin show without asking its readers; those of the origins its
++`compmd.config.json` names in `origins` too, and with `"origins": "any"` every one, as for a site's own pages (spec
++§15). An image from another origin shows its alt text, and the build says so.
++
++`image` is optional: the image a link to any page of the blog shows on social sites and in chats (its Open Graph
++image, as a large card), its `url` an http(s) address or one in the blog (`card.png` is `posts/card.png`, written at
++the blog's root). A post's own `image`, in its frontmatter, takes its place for that post.
++
+ `comments` is optional, and names its provider: with `giscus`, the one there is so far, each post's comments are a
+ discussion of the repository's GitHub Discussions, through [giscus](https://giscus.app) (its page gives the ids), one
+ per post, loaded when a reader scrolls to them.
+@@ -51,6 +60,7 @@ tags: [design, intro]        # optional
+ author: Grace Hopper         # optional: the blog's author otherwise
+ updated: 2026-12-01          # optional: when it changed after it was published
+ draft: true                  # optional: shown by `cblo dev`, left out of `cblo build`
++image: {url: why-compmd/cover.png, alt: A page and its source}   # optional: in place of the blog's image
+ ---
+ ```
+ 
+diff --git a/npm-packages/blog/src/build.test.ts b/npm-packages/blog/src/build.test.ts
+index e695c52..c3942bd 100644
+--- a/npm-packages/blog/src/build.test.ts
++++ b/npm-packages/blog/src/build.test.ts
+@@ -117,6 +117,56 @@ describe("buildSite", () => {
+     }
+   });
+ 
++  it("gives every page the blog's share image, and a post with its own that one, and none without either", async () => {
++    expect(page("index.html").querySelector('meta[property="og:image"]')).toBeNull();
++    const config = { title: "N", url: "https://example.com/blog/", author: "A", image: { url: "card.png", alt: "The <card>" } };
++    const own = { title: "Own", date: "2026-11-03", image: { url: "own/cover.png", alt: "A cover" } };
++    const imaged = await writeBlog({ ...BLOG, "blog.config.json": JSON.stringify(config), "posts/own.comp.md": post(own) });
++    try {
++      const built = await buildSite(imaged, { drafts: false, now: NOW });
++      const head = (path: string) => {
++        const window = new Window();
++        window.document.write(built.files.get(path) as string);
++        const document = window.document as unknown as Document;
++        const content = (selector: string) => document.querySelector(selector)?.getAttribute("content");
++        return [content('meta[property="og:image"]'), content('meta[property="og:image:alt"]'), content('meta[name="twitter:card"]')];
++      };
++      expect(head("index.html")).toEqual(["https://example.com/blog/card.png", "The <card>", "summary_large_image"]);
++      expect(head("first/index.html")).toEqual(["https://example.com/blog/card.png", "The <card>", "summary_large_image"]);
++      expect(head("own/index.html")).toEqual(["https://example.com/blog/own/cover.png", "A cover", "summary_large_image"]);
++    } finally {
++      await rm(imaged, { recursive: true, force: true });
++    }
++  });
++
++  it("shows a post's images from the blog's own origin, and those of another origin as their alt text, with a warning", async () => {
++    const body = "![ours](https://example.com/blog/card.png) and ![theirs](https://elsewhere.example/p.png)\n";
++    const imaged = await writeBlog({ ...BLOG, "posts/images.comp.md": post({ title: "Images", date: "2026-11-04" }, body) });
++    try {
++      const built = await buildSite(imaged, { drafts: false, now: NOW });
++      const window = new Window();
++      window.document.write(built.files.get("images/index.html") as string);
++      const article = window.document.querySelector(".post-body");
++      expect([...(article?.querySelectorAll("img") ?? [])].map((image) => image.getAttribute("src"))).toEqual(["https://example.com/blog/card.png"]);
++      expect(article?.querySelector(".compmd-image-refused")?.textContent).toContain("theirs");
++      expect(built.warnings).toEqual(["posts/images.comp.md: its images from https://elsewhere.example show their alt text: compmd.config.json's `origins` doesn't name https://elsewhere.example"]);
++    } finally {
++      await rm(imaged, { recursive: true, force: true });
++    }
++  });
++
++  it("shows every image, with no warning, when the blog's compmd.config.json allows every origin", async () => {
++    const body = "![theirs](https://elsewhere.example/p.png)\n";
++    const every = await writeBlog({ ...BLOG, "compmd.config.json": JSON.stringify({ origins: "any" }), "package.json": "{}", "posts/images.comp.md": post({ title: "Images", date: "2026-11-04" }, body) });
++    try {
++      const built = await buildSite(every, { drafts: false, now: NOW });
++      expect(built.files.get("images/index.html")).toContain('<img src="https://elsewhere.example/p.png"');
++      expect(built.warnings).toEqual([]);
++    } finally {
++      await rm(every, { recursive: true, force: true });
++    }
++  });
++
+   it("fails on a post with an error, naming it, and on a layout without its content", async () => {
+     const broken = await writeBlog({ ...BLOG, "posts/broken.comp.md": post({ title: "Broken", date: "2026-11-02" }, ":: nowhere[Nothing]\n") });
+     const noContent = await writeBlog({ ...BLOG, "layout.html": "<html><head></head><body></body></html>" });
+diff --git a/npm-packages/blog/src/build.ts b/npm-packages/blog/src/build.ts
+index 3a5f84c..b0c52a7 100644
+--- a/npm-packages/blog/src/build.ts
++++ b/npm-packages/blog/src/build.ts
+@@ -12,8 +12,10 @@ import { applyLayout, defaultLayout, LAYOUT } from "./layout.ts";
+ import { addressOf, listPage, postPage, tagPage, tagsIn, tagsPage, type Page } from "./pages.ts";
+ import { POST_DATA } from "./client-data.ts";
+ import { buildClient, packsOf, type Client } from "./live.ts";
++import { blogOrigins } from "./origins.ts";
+ import { EXTENSION, POSTS, readPosts, type Post } from "./posts.ts";
+ import { renderPost } from "./render.ts";
++import { shareImageTags } from "./share-image.ts";
+ 
+ /** A blog's own stylesheet's file, after the default's. */
+ export const THEME = "theme.css";
+@@ -47,7 +49,7 @@ export interface Site {
+ /** The default stylesheet, shipped with the package. */
+ const DEFAULT_THEME = new URL("../theme/default.css", import.meta.url);
+ 
+-/** A page's head: its title, description, address, Open Graph tags, the feed, and its stylesheets. */
++/** A page's head: its title, description, address, Open Graph tags and share image, the feed, and its stylesheets. */
+ function headOf(config: BlogConfig, page: Page): string {
+   const address = addressOf(config, page.path);
+   const lines = [
+@@ -59,6 +61,7 @@ function headOf(config: BlogConfig, page: Page): string {
+     `<meta property="og:url" content="${escape(address)}">`,
+     `<meta property="og:type" content="${page.article ? "article" : "website"}">`,
+     ...(page.article ? [`<meta property="article:published_time" content="${page.article.date}">`] : []),
++    ...shareImageTags(page.article?.image ?? config.image),
+     `<link rel="alternate" type="application/atom+xml" title="${escape(config.title)}" href="${escape(new URL("feed.xml", config.url).pathname)}">`,
+     `<link rel="stylesheet" href="${escape(new URL("style.css", config.url).pathname)}">`,
+     ...(page.css ? [`<style>${page.css}</style>`] : []),
+@@ -81,10 +84,13 @@ async function postFiles(dir: string): Promise<Map<string, Uint8Array>> {
+ /** The page's script, built once for each blog while a `cblo dev` runs. */
+ const clients = new Map<string, Promise<Client>>();
+ 
+-/** What a live post's page adds: its document and files for the script, as JSON, and the script. */
+-function liveOf(post: Post, script: string): string {
++/**
++ * What a live post's page adds: its document and files for the script, and the origins it reaches without asking a
++ * reader, as the build rendered it with, as JSON; and the script.
++ */
++function liveOf(post: Post, script: string, origins: string[] | "any"): string {
+   // `<` written as `<`, so nothing in the post's text ends the element.
+-  const data = JSON.stringify({ path: post.path, files: post.files }).replace(/</g, "\\u003c");
++  const data = JSON.stringify({ path: post.path, files: post.files, origins }).replace(/</g, "\\u003c");
+   return `<script type="application/json" id="${POST_DATA}">${data}</script><script type="module" src="${escape(script)}"></script>`;
+ }
+ 
+@@ -96,6 +102,8 @@ export async function buildSite(dir: string, { drafts, now = new Date().toISOStr
+   const theme = [await readFile(DEFAULT_THEME, "utf8"), existsSync(join(dir, THEME)) ? await readFile(join(dir, THEME), "utf8") : ""].join("\n");
+   const highlight = await highlighter();
+   const blogPacks = await packsOf(dir);
++  const origins = blogOrigins(config, blogPacks.allowedOrigins);
++  const given = { ...blogPacks, allowedOrigins: origins };
+   const base = new URL(config.url).pathname;
+   const warnings: string[] = [];
+   const html = new Map<string, string>();
+@@ -104,7 +112,7 @@ export async function buildSite(dir: string, { drafts, now = new Date().toISOStr
+   let client: Client | undefined;
+   for (const [i, post] of posts.entries()) {
+     // A post's page is a folder below the posts', so its relative links take one `../` more.
+-    const rendered = await renderPost(post, now, highlight, blogPacks, "../");
++    const rendered = await renderPost(post, now, highlight, given, "../");
+     warnings.push(...rendered.warnings);
+     html.set(post.slug, rendered.html);
+     const page = postPage(config, post, rendered, posts[i - 1], posts[i + 1]);
+@@ -115,7 +123,7 @@ export async function buildSite(dir: string, { drafts, now = new Date().toISOStr
+         client = await building;
+         for (const [path, content] of client.files) files.set(path, content);
+       }
+-      page.content += liveOf(post, `${base}${client.script}`);
++      page.content += liveOf(post, `${base}${client.script}`, origins);
+     }
+     pages.push(page);
+   }
+diff --git a/npm-packages/blog/src/client.ts b/npm-packages/blog/src/client.ts
+index 242eb1b..44fb3a1 100644
+--- a/npm-packages/blog/src/client.ts
++++ b/npm-packages/blog/src/client.ts
+@@ -9,20 +9,28 @@ import { createSandbox } from "@compmd/sandbox";
+ import { request, sandbox } from "virtual:compmd";
+ import { POST_DATA } from "./client-data.ts";
+ 
++/** A live post's data: its document and files, and the origins it reaches without asking a reader, as it was built. */
++interface PostData {
++  path: string;
++  files: Record<string, string>;
++  origins: string[] | "any";
++}
++
+ /** Renders the post live, in place of `body`, the static post. */
+-async function live(body: HTMLElement, { path, files }: { path: string; files: Record<string, string> }): Promise<void> {
++async function live(body: HTMLElement, { path, files, origins }: PostData): Promise<void> {
+   await init();
+   let inputs: Record<string, unknown> = {};
+   /** What the reader set in each example (spec §7.8), by its number: the example's own, never the post's inputs. */
+   let exampleInputs: Record<number, Record<string, unknown>> = {};
+-  const open = () => new OpenDocument({ ...request, path, files, now: new Date().toISOString(), inputs, exampleInputs });
++  const open = () => new OpenDocument({ ...request, path, files, allowedOrigins: origins, now: new Date().toISOString(), inputs, exampleInputs });
+   let document_ = open();
+   // Laid out, so the components size themselves, but out of sight until they have drawn.
+   const target = document.createElement("div");
+   target.className = body.className;
+   target.style.cssText = "position:absolute;visibility:hidden;inset-inline:0";
+   body.after(target);
+-  const view = createSandbox({ ...sandbox, page: "host" }).open(target, { components: document_.components });
++  // The images of the origins the blog reaches are never asked about, as the build showed them (spec §15).
++  const view = createSandbox({ ...sandbox, page: "host", origins: { configured: origins } }).open(target, { components: document_.components });
+   let rendered = false;
+   let loaded = false;
+   const show = () => {
+@@ -56,4 +64,4 @@ async function live(body: HTMLElement, { path, files }: { path: string; files: R
+ 
+ const data = document.getElementById(POST_DATA);
+ const body = document.querySelector<HTMLElement>(".post-body");
+-if (data?.textContent && body) void live(body, JSON.parse(data.textContent) as { path: string; files: Record<string, string> });
++if (data?.textContent && body) void live(body, JSON.parse(data.textContent) as PostData);
+diff --git a/npm-packages/blog/src/config.test.ts b/npm-packages/blog/src/config.test.ts
+index 4498c2d..60313ae 100644
+--- a/npm-packages/blog/src/config.test.ts
++++ b/npm-packages/blog/src/config.test.ts
+@@ -12,11 +12,19 @@ describe("configOf", () => {
+     expect(configOf({ title: "N", url: "https://example.com/", author: "A", lang: "de", description: "D", comments })).toMatchObject({ lang: "de", description: "D", comments });
+   });
+ 
++  it("takes a share image, its address made absolute against the blog's", () => {
++    expect(configOf({ title: "N", url: "https://example.com/blog/", author: "A", image: { url: "card.png", alt: "The card" } }).image).toEqual({ url: "https://example.com/blog/card.png", alt: "The card" });
++    expect(configOf({ title: "N", url: "https://example.com/blog/", author: "A", image: { url: "https://cdn.example/c.png", alt: "C" } }).image?.url).toBe("https://cdn.example/c.png");
++  });
++
+   it("names every field that is missing or wrong", () => {
+     expect(() => configOf({ url: "https://example.com/blog" })).toThrow(new BlogError("blog.config.json: `title` is missing; `author` is missing; `url` is an http(s) address ending in `/`"));
+     expect(() => configOf({ title: "N", url: "https://example.com/", author: "A", lang: 1, comments: { giscus: { repo: "a/b" } } })).toThrow(/`lang` is text; `comments.giscus` has `repo`, `repoId`/);
+     expect(() => configOf({ title: "N", url: "https://example.com/", author: "A", comments: { disqus: {} } })).toThrow(/`comments` names its provider: `giscus` is the one there is/);
+     expect(() => configOf(null)).toThrow(/`title` is missing/);
++    for (const image of [{ url: "card.png" }, { url: "javascript:alert(1)", alt: "A" }, "card.png"]) {
++      expect(() => configOf({ title: "N", url: "https://example.com/", author: "A", image })).toThrow(/`image` has a `url` \(an http\(s\) address, or one in the blog\) and an `alt`/);
++    }
+   });
+ });
+ 
+diff --git a/npm-packages/blog/src/config.ts b/npm-packages/blog/src/config.ts
+index 1f7d88f..85e5f28 100644
+--- a/npm-packages/blog/src/config.ts
++++ b/npm-packages/blog/src/config.ts
+@@ -1,8 +1,9 @@
+-// A blog's `blog.config.json` (docs/blog-tool.md, decision 2): its title, address, author and language, and its
+-// comments.
++// A blog's `blog.config.json` (docs/blog-tool.md, decision 2): its title, address, author and language, its
++// comments, and its share image.
+ 
+ import { readFile } from "node:fs/promises";
+ import { join } from "node:path";
++import { shareImageOf, type ShareImage } from "./share-image.ts";
+ 
+ /** A blog's comments, by their provider: giscus alone for now, each other a key of its own (decision 7). */
+ export interface Comments {
+@@ -34,6 +35,8 @@ export interface BlogConfig {
+   description?: string;
+   /** Its comments; none when it has no `comments`. */
+   comments?: Comments;
++  /** The image a link to any of its pages shows, when a post has none of its own; none when it has no `image`. */
++  image?: ShareImage;
+ }
+ 
+ /** What is wrong with a blog: its configuration, a post, a command's arguments. Its message says what to fix. */
+@@ -62,10 +65,13 @@ export function configOf(given: unknown): BlogConfig {
+   else if (comments !== undefined && !["repo", "repoId", "category", "categoryId"].every((name) => isText(giscus?.[name]))) {
+     problems.push("`comments.giscus` has `repo`, `repoId`, `category` and `categoryId`, as giscus.app gives them");
+   }
++  const image = fields.image === undefined || !isText(fields.url) ? undefined : shareImageOf(fields.image, "image", fields.url);
++  if (image && "problem" in image) problems.push(image.problem);
+   if (problems.length > 0) throw new BlogError(`${CONFIG}: ${problems.join("; ")}`);
+   const config: BlogConfig = { title: fields.title as string, url: fields.url as string, author: fields.author as string, lang: (fields.lang as string | undefined) ?? "en" };
+   if (isText(fields.description)) config.description = fields.description;
+   if (giscus !== undefined) config.comments = { giscus: { repo: giscus.repo as string, repoId: giscus.repoId as string, category: giscus.category as string, categoryId: giscus.categoryId as string } };
++  if (image && "image" in image) config.image = image.image;
+   return config;
+ }
+ 
+diff --git a/npm-packages/blog/src/live.test.ts b/npm-packages/blog/src/live.test.ts
+index 7e6f4b0..ce8bb97 100644
+--- a/npm-packages/blog/src/live.test.ts
++++ b/npm-packages/blog/src/live.test.ts
+@@ -78,11 +78,12 @@ describe("a post with a trusted Svelte pack's component", () => {
+ });
+ 
+ describe("a post with host-language components", () => {
+-  it("shows the component's fallback, and gives the page its document and the script that mounts it", () => {
++  it("shows the component's fallback, and gives the page its document, the origins it reaches and the script that mounts it", () => {
+     const page = site.files.get("live/index.html") as string;
+     expect(page).toContain("Hello, reader");
+     const data = /<script type="application\/json" id="cblo-post">(.*?)<\/script>/.exec(page)?.[1];
+-    expect(JSON.parse(data!)).toEqual({ path: "live.comp.md", files: { "live.comp.md": LIVE } });
++    // The blog's own origin: its readers are there already, so its images and data need no question.
++    expect(JSON.parse(data!)).toEqual({ path: "live.comp.md", files: { "live.comp.md": LIVE }, origins: ["https://example.com"] });
+     const script = /<script type="module" src="\/blog\/([^"]+)"><\/script>/.exec(page)?.[1];
+     expect(site.files.has(script!)).toBe(true);
+   });
+diff --git a/npm-packages/blog/src/live.ts b/npm-packages/blog/src/live.ts
+index 3efb8df..0764398 100644
+--- a/npm-packages/blog/src/live.ts
++++ b/npm-packages/blog/src/live.ts
+@@ -26,11 +26,11 @@ export interface Client {
+ /** The script's source, beside this module: `client.ts` here, `client.js` once built. */
+ const CLIENT = fileURLToPath(new URL(`./client${extname(fileURLToPath(import.meta.url))}`, import.meta.url));
+ 
+-/** What the blog in `dir` gives its posts: its packs, when it has a `compmd.config.json`. */
++/** What the blog in `dir` gives its posts: its packs and the origins it names, when it has a `compmd.config.json`. */
+ export async function packsOf(dir: string): Promise<Given> {
+   if (!existsSync(join(dir, PACKS))) return {};
+   const { request } = await loadApp(dir);
+-  return { packs: request.packs, ambient: request.ambient, policy: request.policy };
++  return { packs: request.packs, ambient: request.ambient, policy: request.policy, allowedOrigins: request.allowedOrigins };
+ }
+ 
+ /** The files under `dir`, by their `/`-separated paths there, but Vite's own (`.vite/`). */
+diff --git a/npm-packages/blog/src/origins.ts b/npm-packages/blog/src/origins.ts
+new file mode 100644
+index 0000000..24d2bbe
+--- /dev/null
++++ b/npm-packages/blog/src/origins.ts
+@@ -0,0 +1,18 @@
++// The origins a blog's posts reach without asking a reader (spec §15, a host's own documents): those its
++// `compmd.config.json` names, or every origin; and always the blog's own, where its readers already are.
++
++import type { BlogConfig } from "./config.ts";
++
++/**
++ * The origins the blog `config`'s posts reach without a question: `configured` (the `origins` of its
++ * `compmd.config.json`) and the blog's own origin, or `"any"`.
++ *
++ * @example
++ * blogOrigins({ url: "https://example.com/blog/", … }, ["https://cdn.example.com"]);
++ * // ["https://cdn.example.com", "https://example.com"]
++ */
++export function blogOrigins(config: BlogConfig, configured: readonly string[] | "any" = []): string[] | "any" {
++  if (configured === "any") return "any";
++  const own = new URL(config.url).origin;
++  return configured.includes(own) ? [...configured] : [...configured, own];
++}
+diff --git a/npm-packages/blog/src/post-images.ts b/npm-packages/blog/src/post-images.ts
+new file mode 100644
+index 0000000..6194ca7
+--- /dev/null
++++ b/npm-packages/blog/src/post-images.ts
+@@ -0,0 +1,50 @@
++// A post's images at build time (spec §15): an image of the post's own files, or from an origin the blog reaches
++// without asking (`origins.ts`), shows; any other shows its alt text, with the button a live page's script answers,
++// so the built page loads no image the live one would ask a reader about.
++
++import type { ImageSource, Refused } from "@compmd/render";
++
++/** Where a relative `src` resolves while the origin is worked out: no image is ever fetched from it. */
++const OWN = "https://post.invalid/";
++
++/** The origin of `src` when it is another site's image, `https:` or `http:`; `undefined` for the post's own files. */
++function remoteOrigin(src: string): string | undefined {
++  try {
++    const url = new URL(src, OWN);
++    return (url.protocol === "https:" || url.protocol === "http:") && url.origin !== new URL(OWN).origin ? url.origin : undefined;
++  } catch {
++    return undefined;
++  }
++}
++
++/** The images of one post's render: what it shows, and the origins it refused. */
++export class PostImages {
++  /** The origins of the images it refused, for the build's warnings. */
++  readonly refused = new Set<string>();
++  readonly #allowed: readonly string[] | "any";
++  readonly #answers: Promise<unknown>[] = [];
++
++  /** @param allowed The origins the blog reaches without asking, or `"any"`. */
++  constructor(allowed: readonly string[] | "any") {
++    this.#allowed = allowed;
++  }
++
++  /** The renderer's image source: an image's `src` when it shows, its origin refused otherwise. */
++  readonly source: ImageSource = (src) => {
++    const answer = Promise.resolve(this.#answer(src));
++    this.#answers.push(answer);
++    return answer;
++  };
++
++  /** Resolves once every image asked about has its answer, and the renderer has drawn it. */
++  async settled(): Promise<void> {
++    await Promise.all(this.#answers);
++  }
++
++  #answer(src: string): string | Refused {
++    const origin = remoteOrigin(src);
++    if (origin === undefined || this.#allowed === "any" || this.#allowed.includes(origin)) return src;
++    this.refused.add(origin);
++    return { refused: origin };
++  }
++}
+diff --git a/npm-packages/blog/src/posts.test.ts b/npm-packages/blog/src/posts.test.ts
+index 50f2ac3..e0cf530 100644
+--- a/npm-packages/blog/src/posts.test.ts
++++ b/npm-packages/blog/src/posts.test.ts
+@@ -12,9 +12,16 @@ describe("postOf", () => {
+     expect(postOf("why.comp.md", files, CONFIG)).toEqual({ slug: "why", path: "why.comp.md", title: "Why", date: "2026-11-20", updated: "2026-11-21", summary: "S", author: "Ada", tags: ["a"], draft: false, files });
+   });
+ 
++  it("reads a post's own share image, its address in the blog", () => {
++    const files = { "why.comp.md": post({ title: "Why", date: "2026-11-20", image: { url: "why/cover.png", alt: "A cover" } }) };
++    expect(postOf("why.comp.md", files, CONFIG).image).toEqual({ url: "https://example.com/why/cover.png", alt: "A cover" });
++  });
++
+   it("names what a frontmatter lacks or has wrong", () => {
+-    const files = { "x.comp.md": post({ date: "20 Nov", updated: "soon", tags: "a", draft: "yes" }) };
+-    expect(() => postOf("x.comp.md", files, CONFIG)).toThrow("posts/x.comp.md: `title` is missing; `date` is a day, `YYYY-MM-DD`; `updated` is a day, `YYYY-MM-DD`; `tags` is a list of names; `draft` is `true` or `false`");
++    const files = { "x.comp.md": post({ date: "20 Nov", updated: "soon", tags: "a", draft: "yes", image: { url: "c.png" } }) };
++    expect(() => postOf("x.comp.md", files, CONFIG)).toThrow(
++      "posts/x.comp.md: `title` is missing; `date` is a day, `YYYY-MM-DD`; `updated` is a day, `YYYY-MM-DD`; `tags` is a list of names; `draft` is `true` or `false`; `image` has a `url` (an http(s) address, or one in the blog) and an `alt`",
++    );
+   });
+ });
+ 
+diff --git a/npm-packages/blog/src/posts.ts b/npm-packages/blog/src/posts.ts
+index ca0268c..cfae57c 100644
+--- a/npm-packages/blog/src/posts.ts
++++ b/npm-packages/blog/src/posts.ts
+@@ -6,6 +6,7 @@ import { join, relative, sep } from "node:path";
+ import { frontmatterOf } from "@compmd/processor";
+ import { BlogError, type BlogConfig } from "./config.ts";
+ import { loadProcessor } from "./processor.ts";
++import { shareImageOf, type ShareImage } from "./share-image.ts";
+ 
+ /** A blog's posts' folder. */
+ export const POSTS = "posts";
+@@ -27,6 +28,8 @@ export interface Post {
+   author: string;
+   tags: string[];
+   draft: boolean;
++  /** The image a link to it shows, in place of the blog's, when it has one. */
++  image?: ShareImage;
+   /** Its files, by their `/`-separated paths in the posts' folder: its document, and those of its own folder (`<slug>/`). */
+   files: Record<string, string>;
+ }
+@@ -63,6 +66,8 @@ export function postOf(path: string, files: Record<string, string>, config: Blog
+   const tags = doc.tags ?? [];
+   if (!Array.isArray(tags) || !tags.every((tag) => typeof tag === "string" && tag.trim() !== "")) problems.push("`tags` is a list of names");
+   if (doc.draft !== undefined && typeof doc.draft !== "boolean") problems.push("`draft` is `true` or `false`");
++  const image = doc.image === undefined ? undefined : shareImageOf(doc.image, "image", config.url);
++  if (image && "problem" in image) problems.push(image.problem);
+   if (problems.length > 0) throw new BlogError(`${POSTS}/${path}: ${problems.join("; ")}`);
+   const post: Post = {
+     slug: path.slice(0, -EXTENSION.length),
+@@ -76,6 +81,7 @@ export function postOf(path: string, files: Record<string, string>, config: Blog
+     files,
+   };
+   if (updated !== undefined) post.updated = updated;
++  if (image && "image" in image) post.image = image.image;
+   return post;
+ }
+ 
+diff --git a/npm-packages/blog/src/render.ts b/npm-packages/blog/src/render.ts
+index e536993..7a41fc5 100644
+--- a/npm-packages/blog/src/render.ts
++++ b/npm-packages/blog/src/render.ts
+@@ -1,12 +1,14 @@
+ // A post rendered at build time (docs/blog-tool.md, decision 5): processed by the processor in strict mode, so an
+ // error fails the build, and rendered to static HTML by `@compmd/render` in happy-dom's DOM, with its code highlighted.
+-// A host-language component shows its fallback here; the page's script mounts it live.
++// A host-language component shows its fallback here; the page's script mounts it live. Its images are those the blog
++// reaches without asking a reader (`post-images.ts`).
+ 
+ import { OpenDocument, process, type Diagnostic, type Request } from "@compmd/processor";
+ import { createPage } from "@compmd/render";
+ import { Window } from "happy-dom";
+ import { BlogError } from "./config.ts";
+ import type { Highlight } from "./highlight.ts";
++import { PostImages } from "./post-images.ts";
+ import { POSTS, type Post } from "./posts.ts";
+ import { loadProcessor } from "./processor.ts";
+ 
+@@ -22,8 +24,11 @@ export interface Rendered {
+   live: boolean;
+ }
+ 
+-/** What the blog gives its posts besides their files: its packs, as `@compmd/vite` reads them. */
+-export type Given = Pick<Request, "packs" | "ambient" | "policy">;
++/**
++ * What the blog gives its posts besides their files: its packs, as `@compmd/vite` reads them, and the origins its
++ * posts' data and images come from without asking a reader (`origins.ts`).
++ */
++export type Given = Pick<Request, "packs" | "ambient" | "policy" | "allowedOrigins">;
+ 
+ /** A diagnostic as a line of the build's output. */
+ const lineOf = (post: Post, { code, message, file, range }: Diagnostic): string => `${POSTS}/${file ?? post.path}:${String(range.start.line)}:${String(range.start.column)}: ${code} ${message}`;
+@@ -65,8 +70,10 @@ export async function renderPost(post: Post, now: string, highlight: Highlight,
+   try {
+     // happy-dom's elements are the DOM's, as the renderer takes them.
+     const root = window.document.body.appendChild(window.document.createElement("div")) as unknown as HTMLElement;
+-    const page = createPage(root);
++    const images = new PostImages(given.allowedOrigins ?? []);
++    const page = createPage(root, { images: images.source });
+     page.render(expanded);
++    await images.settled();
+     highlight.highlight(root);
+     // An input's state is in its properties, which HTML doesn't hold; its attributes give it to the page.
+     for (const input of root.querySelectorAll("input")) {
+@@ -74,7 +81,8 @@ export async function renderPost(post: Post, now: string, highlight: Highlight,
+       else input.setAttribute("value", input.value);
+     }
+     rebase(root, up);
+-    return { html: root.innerHTML, css: page.stylesheet.text, warnings: diagnostics.map((diagnostic) => lineOf(post, diagnostic)), live };
++    const refused = [...images.refused].map((origin) => `${POSTS}/${post.path}: its images from ${origin} show their alt text: compmd.config.json's \`origins\` doesn't name ${origin}`);
++    return { html: root.innerHTML, css: page.stylesheet.text, warnings: [...diagnostics.map((diagnostic) => lineOf(post, diagnostic)), ...refused], live };
+   } finally {
+     window.close();
+   }
+diff --git a/npm-packages/blog/src/share-image.ts b/npm-packages/blog/src/share-image.ts
+new file mode 100644
+index 0000000..3128c13
+--- /dev/null
++++ b/npm-packages/blog/src/share-image.ts
+@@ -0,0 +1,49 @@
++// The image a link to a page shows on social sites and in chats, its Open Graph image (docs/blog-tool.md, decisions 2
++// and 4): the blog's, in `blog.config.json`, for every page; a post's own, in its frontmatter, for its page.
++
++import { escape } from "./html.ts";
++
++/** A page's share image. */
++export interface ShareImage {
++  /** Where it is: an http(s) address, or one relative to the blog's address (`why-compmd/cover.png`). */
++  url: string;
++  /** What it shows, for a reader who can't see it. */
++  alt: string;
++}
++
++const isText = (value: unknown): value is string => typeof value === "string" && value.trim() !== "";
++
++/** `url`, an image's, as an absolute address, against the blog's address `base`; `undefined` when it isn't http(s). */
++function addressIn(base: string, url: string): string | undefined {
++  try {
++    const address = new URL(url, base);
++    return address.protocol === "https:" || address.protocol === "http:" ? address.href : undefined;
++  } catch {
++    return undefined;
++  }
++}
++
++/**
++ * `given`, the field `field`, read as a share image, its address made absolute against the blog's address `base`; or
++ * what is wrong with it.
++ *
++ * @example
++ * shareImageOf({ url: "cover.png", alt: "A cover" }, "image", "https://example.com/blog/");
++ * // { image: { url: "https://example.com/blog/cover.png", alt: "A cover" } }
++ */
++export function shareImageOf(given: unknown, field: string, base: string): { image: ShareImage } | { problem: string } {
++  const fields = (typeof given === "object" && given !== null ? given : {}) as Record<string, unknown>;
++  const url = isText(fields.url) ? addressIn(base, fields.url) : undefined;
++  if (url === undefined || !isText(fields.alt)) return { problem: `\`${field}\` has a \`url\` (an http(s) address, or one in the blog) and an \`alt\`` };
++  return { image: { url, alt: fields.alt } };
++}
++
++/** A page's head tags for its share image: the Open Graph image and its alt, and the large card; none without one. */
++export function shareImageTags(image: ShareImage | undefined): string[] {
++  if (image === undefined) return [];
++  return [
++    `<meta property="og:image" content="${escape(image.url)}">`,
++    `<meta property="og:image:alt" content="${escape(image.alt)}">`,
++    `<meta name="twitter:card" content="summary_large_image">`,
++  ];
++}
+diff --git a/npm-packages/sandbox/README.md b/npm-packages/sandbox/README.md
+index 7b1cfd5..d2a2a7b 100644
+--- a/npm-packages/sandbox/README.md
++++ b/npm-packages/sandbox/README.md
+@@ -208,6 +208,8 @@ view.render(process({ ...request, ...loaded }).expanded); // { allowedOrigins, r
+ 
+ A host that fetches on its own uses `allowOrigins(urls, options)`, which asks and gives the allowed origins alone. With no reader to ask (a server, a build), give an `ask` that denies: nothing is fetched then but from the configured origins.
+ 
++A host that publishes its own documents, such as a static site or a blog, may allow every origin instead (spec §15): `configured: "any"`, here and in the view's `origins`. Then no origin of the document's data or images is asked about, and `loadData` gives `allowedOrigins: "any"`. A host that shows documents others write keeps naming its origins: the question is what keeps such a document from reaching an origin its reader hasn't agreed to.
++
+ - **Configured origins** are never asked about. Every other origin is asked about once, however many renders need it at once, and the answer, allow or deny, is kept per origin for every document: in `localStorage` by default (`localAnswers()`), or in a store the host gives (`answers`), such as one on its server.
+ - **The question** is a plain `<dialog>` (`askWithDialog`): *This document wants to load data from api.example.com. Allow?*, with what the site learns, the values the reader picked, and the buttons *Allow* and *Don't allow*. A host asks in its own UI with `ask`, and `originQuestion(origin)` gives the words.
+ - **Changing an answer:** `localAnswers().list()` gives every answer, and `forget(origin)` makes the next render ask again, for a page where the reader reviews them.
+diff --git a/npm-packages/sandbox/src/image-gate.ts b/npm-packages/sandbox/src/image-gate.ts
+index a8b306d..924aa89 100644
+--- a/npm-packages/sandbox/src/image-gate.ts
++++ b/npm-packages/sandbox/src/image-gate.ts
+@@ -4,12 +4,15 @@
+ // answers as the document's data (`origins.ts`), and is refused, showing its alt text, until its origin is allowed.
+ 
+ import { urlScheme } from "@compmd/render";
+-import { answerFor, askWithDialog, localAnswers, originOf, type AskOrigin, type OriginAnswers } from "./origins.ts";
++import { answerFor, askWithDialog, localAnswers, originOf, type AskOrigin, type ConfiguredOrigins, type OriginAnswers } from "./origins.ts";
+ 
+ /** Who asks the reader about images' origins, and where the answers are kept: what a host gives `loadData` too. */
+ export interface ImageGateOptions {
+-  /** The origins the host configured, which need no question. */
+-  configured?: readonly string[];
++  /**
++   * The origins the host configured, which need no question; or `"any"`, every origin, for a host's own documents,
++   * such as a static site's or a blog's (spec §15): then no image is asked about.
++   */
++  configured?: ConfiguredOrigins;
+   /** What the question calls the document: its title or path. */
+   document?: string;
+   /** How the reader is asked; a plain dialog by default. A host without a reader gives one that refuses. */
+@@ -30,14 +33,14 @@ export type ImageDecision = { show: true } | { refused: string };
+  * gate.onAllowed((origin) => page.imagesAllowed(origin));
+  */
+ export class ImageGate {
+-  readonly #configured: ReadonlySet<string>;
++  readonly #configured: ReadonlySet<string> | "any";
+   readonly #document: string;
+   readonly #ask: AskOrigin;
+   readonly #answers: OriginAnswers;
+   readonly #listeners = new Set<(origin: string) => void>();
+ 
+   constructor(options: ImageGateOptions = {}) {
+-    this.#configured = new Set(options.configured ?? []);
++    this.#configured = options.configured === "any" ? "any" : new Set(options.configured ?? []);
+     this.#document = options.document ?? "this document";
+     this.#ask = options.ask ?? askWithDialog;
+     this.#answers = options.answers ?? localAnswers();
+@@ -52,7 +55,7 @@ export class ImageGate {
+     const scheme = urlScheme(src);
+     if (scheme !== "http" && scheme !== "https") return { show: true };
+     const origin = originOf(src);
+-    if (origin === undefined || this.#configured.has(origin)) return { show: true };
++    if (origin === undefined || this.#isConfigured(origin)) return { show: true };
+     const answer = await answerFor(origin, ["images"], this.#document, this.#answers, this.#ask);
+     return answer === "allow" ? { show: true } : { refused: origin };
+   }
+@@ -62,13 +65,18 @@ export class ImageGate {
+    * they are asked again; when they allow it, each listener hears of it. Resolves to whether they did.
+    */
+   async allow(origin: string): Promise<boolean> {
+-    if (this.#configured.has(origin)) return true;
++    if (this.#isConfigured(origin)) return true;
+     this.#answers.forget(origin);
+     const allowed = (await answerFor(origin, ["images"], this.#document, this.#answers, this.#ask)) === "allow";
+     if (allowed) for (const listener of this.#listeners) listener(origin);
+     return allowed;
+   }
+ 
++  /** Whether the host configured `origin`, by name or by allowing every origin. */
++  #isConfigured(origin: string): boolean {
++    return this.#configured === "any" || this.#configured.has(origin);
++  }
++
+   /** Calls `listener` with each origin the reader allows from now on; gives what stops it. */
+   onAllowed(listener: (origin: string) => void): () => void {
+     this.#listeners.add(listener);
+diff --git a/npm-packages/sandbox/src/images.test.ts b/npm-packages/sandbox/src/images.test.ts
+index 5770e66..e83d70f 100644
+--- a/npm-packages/sandbox/src/images.test.ts
++++ b/npm-packages/sandbox/src/images.test.ts
+@@ -142,6 +142,22 @@ describe("hostImages", () => {
+     expect(await images("https://photos.example.com/b.png")).toEqual({ refused: "https://photos.example.com" });
+     expect(await images("app:file/3")).toBe("app:file/3");
+   });
++
++  it("shows every remote image, asking about none, when the host allows every origin (spec §15)", async () => {
++    let asked = 0;
++    const gate = new ImageGate({
++      configured: "any",
++      ask: () => {
++        asked += 1;
++        return Promise.resolve("deny");
++      },
++      answers: localAnswers(undefined),
++    });
++    const images = hostImages([], undefined, gate);
++    expect(await images("https://photos.example.com/b.png")).toBe("https://photos.example.com/b.png");
++    expect(await gate.allow("https://photos.example.com")).toBe(true);
++    expect(asked).toBe(0);
++  });
+ });
+ 
+ describe("remote images in a page frame (spec §15)", () => {
+diff --git a/npm-packages/sandbox/src/index.ts b/npm-packages/sandbox/src/index.ts
+index 4fd9ff4..798d0c0 100644
+--- a/npm-packages/sandbox/src/index.ts
++++ b/npm-packages/sandbox/src/index.ts
+@@ -17,6 +17,7 @@ export {
+   originQuestion,
+   type AllowOriginsOptions,
+   type AskOrigin,
++  type ConfiguredOrigins,
+   type LoadDataOptions,
+   type LoadedData,
+   type OriginAnswer,
+diff --git a/npm-packages/sandbox/src/origins.ts b/npm-packages/sandbox/src/origins.ts
+index 15f5b63..c36841c 100644
+--- a/npm-packages/sandbox/src/origins.ts
++++ b/npm-packages/sandbox/src/origins.ts
+@@ -123,9 +123,15 @@ export const askWithDialog: AskOrigin = (origin, _document, kinds) =>
+     dialog.showModal();
+   });
+ 
++/**
++ * The origins a host configured, which need no question: a list of them, or `"any"`, every origin, for a host's own
++ * documents, such as a static site's or a blog's (spec §15).
++ */
++export type ConfiguredOrigins = readonly string[] | "any";
++
+ export interface AllowOriginsOptions {
+   /** The origins the host configured, which need no question. */
+-  configured: readonly string[];
++  configured: ConfiguredOrigins;
+   /** What the question calls the document: its title or path. */
+   document: string;
+   /** How the reader is asked; a plain dialog by default. */
+@@ -158,13 +164,15 @@ export async function answerFor(origin: string, kinds: readonly OriginKind[], do
+  * The origins a render may fetch from: those the host configured, and those the reader allowed, asking about each
+  * origin of `urls` (the remote URLs the processor's `sources` lists, `remote` and `disallowed`) the reader hasn't
+  * decided on. For a host that fetches on its own; `loadData` also fetches. A host renders at once without them, then
+- * again with what this gives: until then, the new origins are F028 and show the `fallback`.
++ * again with what this gives: until then, the new origins are F028 and show the `fallback`. With `configured` `"any"`,
++ * `"any"`, and nothing is asked.
+  *
+  * @example
+  * const { remote, disallowed } = sources(request);
+  * const allowedOrigins = await allowOrigins([...remote, ...disallowed], { configured: config.allowedOrigins, document: request.path });
+  */
+-export async function allowOrigins(urls: readonly string[], options: AllowOriginsOptions): Promise<string[]> {
++export async function allowOrigins(urls: readonly string[], options: AllowOriginsOptions): Promise<string[] | "any"> {
++  if (options.configured === "any") return "any";
+   const answers = options.answers ?? localAnswers();
+   const ask = options.ask ?? askWithDialog;
+   const allowed = new Set(options.configured);
+@@ -178,7 +186,7 @@ export async function allowOrigins(urls: readonly string[], options: AllowOrigin
+ 
+ /** What `loadData` gives a request: the origins it may fetch from, and what was fetched, by URL. */
+ export interface LoadedData {
+-  allowedOrigins: string[];
++  allowedOrigins: string[] | "any";
+   remote: Record<string, Fetched>;
+ }
+ 
+@@ -204,13 +212,13 @@ export interface LoadDataOptions extends AllowOriginsOptions {
+  */
+ export async function loadData(urls: readonly string[], options: LoadDataOptions): Promise<LoadedData> {
+   const allowedOrigins = await allowOrigins(urls, options);
+-  const allowed = new Set(allowedOrigins);
++  const allowed = allowedOrigins === "any" ? "any" : new Set(allowedOrigins);
+   const get = options.fetch ?? globalThis.fetch.bind(globalThis);
+   const fetched = await Promise.all(
+     [...new Set(urls)]
+       .filter((url) => {
+         const origin = originOf(url);
+-        return origin !== undefined && allowed.has(origin);
++        return origin !== undefined && (allowed === "any" || allowed.has(origin));
+       })
+       .map(async (url): Promise<[string, Fetched] | undefined> => {
+         try {
+diff --git a/npm-packages/sandbox/test/origins.test.ts b/npm-packages/sandbox/test/origins.test.ts
+index e303833..8272f42 100644
+--- a/npm-packages/sandbox/test/origins.test.ts
++++ b/npm-packages/sandbox/test/origins.test.ts
+@@ -48,6 +48,12 @@ describe("allowOrigins", () => {
+     expect(asked).toEqual([]);
+   });
+ 
++  it("asks about nothing, and allows every origin, when the host does (spec §15)", async () => {
++    const { ask, asked } = reader("deny");
++    expect(await allowOrigins(["https://api.example.com/a.json"], { configured: "any", document: "a.comp.md", ask })).toBe("any");
++    expect(asked).toEqual([]);
++  });
++
+   it("asks again once the answer is forgotten", async () => {
+     const { ask, asked } = reader("deny");
+     await allowOrigins(["https://api.example.com/a.json"], { configured: [], document: "a.comp.md", ask });
+@@ -112,6 +118,18 @@ describe("loadData", () => {
+     expect(refused.text).toContain("[cached]");
+   });
+ 
++  it("fetches from every origin, asking nothing, when the host allows every origin, and the processor refuses none", async () => {
++    const tag = tagged();
++    const asked: AskOrigin = () => Promise.reject(new Error("asked"));
++    const url = `${allowed}${tag}.json`;
++    const request = documentFrom(url);
++    const loaded = await loadData([url], { configured: "any", document: request.path, ask: asked });
++    expect(loaded.allowedOrigins).toBe("any");
++    expect(loaded.remote[url]?.text).toBe("probed");
++    expect(await hits(allowed, tag)).toHaveLength(1);
++    expect(process({ ...request, ...loaded }).diagnostics.map(({ code }) => code)).not.toContain("F028");
++  });
++
+   it("fetches nothing but from the configured origins when no reader can be asked", async () => {
+     const tag = tagged();
+     const deny: AskOrigin = () => Promise.resolve("deny");
+diff --git a/npm-packages/vite/README.md b/npm-packages/vite/README.md
+index 5ee0704..7f0d48a 100644
+--- a/npm-packages/vite/README.md
++++ b/npm-packages/vite/README.md
+@@ -91,8 +91,9 @@ view.render(document.expanded);
+ | `libraries` | npm packages, installed in the app, that the frames offer components through their import map, besides React and Svelte: `"d3"`, or `{ "name": "d3", "imports": ["d3", "d3-scale"] }` |
+ | `registries` | the npm registries packs the app doesn't install come from, by scope (`"@kit"`), with `"*"` for every other scope, each named in full |
+ | `fetch` | who reaches them: `host` (the default), through the app's proxy at `compmd/registry/`; `direct`, the reader's browser |
++| `origins` | the origins documents' remote data and images come from without asking the reader, each `https://host[:port]`; or `"any"`, every origin, for documents the app publishes itself, such as a static site's or a blog's (spec §15). None by default: the reader is asked about each |
+ 
+-`@compmd/vite/config` reads and translates the same configuration without Vite or Node, for a host that isn't a Vite app: `readConfig(json)` checks it and lists every problem, and `policyOf(config, nameOf)` gives the processor's `policy` and `ambient`.
++`@compmd/vite/config` reads and translates the same configuration without Vite or Node, for a host that isn't a Vite app: `readConfig(json)` checks it and lists every problem, and `policyOf(config, nameOf)` gives the processor's `policy`, `ambient` and `allowedOrigins`.
+ 
+ ## The app's own components
+ 
+diff --git a/npm-packages/vite/compmd.config.schema.json b/npm-packages/vite/compmd.config.schema.json
+index b5c3489..f833229 100644
+--- a/npm-packages/vite/compmd.config.schema.json
++++ b/npm-packages/vite/compmd.config.schema.json
+@@ -41,6 +41,13 @@
+       "description": "Who fetches from the registries: host (the default), through the app's own proxy at compmd/registry/, so the registry learns nothing about readers; direct, the reader's browser, which the host tells its readers.",
+       "enum": ["host", "direct"]
+     },
++    "origins": {
++      "description": "The origins documents' remote data and images may come from without asking the reader, each https://host[:port]; or \"any\", every origin, for documents the app publishes itself, such as a static site's or a blog's (spec §15). None by default: the reader is asked about each.",
++      "oneOf": [
++        { "const": "any" },
++        { "type": "array", "items": { "type": "string", "pattern": "^https?://[^/?#*]+$" } }
++      ]
++    },
+     "maxPackSize": {
+       "description": "A pack whose files are larger is left out: bytes, or a size such as \"5 MB\". For a pack from a registry, its unpacked size, before it is downloaded; 10 MB there when not given.",
+       "oneOf": [
+diff --git a/npm-packages/vite/src/config.test.ts b/npm-packages/vite/src/config.test.ts
+index 3b719e4..b86eb33 100644
+--- a/npm-packages/vite/src/config.test.ts
++++ b/npm-packages/vite/src/config.test.ts
+@@ -15,7 +15,17 @@ function problemsOf(value: unknown): readonly string[] {
+ describe("readConfig", () => {
+   it("fills in every default", () => {
+     const config = readConfig({});
+-    expect(config).toEqual({ packs: new Map(), imports: "any", deny: [], libraries: [], registries: {}, fetch: "host" });
++    expect(config).toEqual({ packs: new Map(), imports: "any", deny: [], libraries: [], registries: {}, fetch: "host", origins: [] });
++  });
++
++  it("reads the origins documents may reach without a question: a list of https origins, or every origin", () => {
++    expect(readConfig({ origins: ["https://cdn.example.com/", "http://localhost:8080"] }).origins).toEqual(["https://cdn.example.com", "http://localhost:8080"]);
++    expect(readConfig({ origins: "any" }).origins).toBe("any");
++    expect(problemsOf({ origins: "all" })).toEqual(['origins: a list of origins, such as `["https://cdn.example.com"]`, or `"any"` for every origin']);
++    expect(problemsOf({ origins: ["http://cdn.example.com", "https://*.example.com"] })).toEqual([
++      "origins: `http://cdn.example.com` must be `https:` (`http:` only for localhost)",
++      "origins: `https://*.example.com` has a wildcard: name each origin",
++    ]);
+   });
+ 
+   it("reads the registries by scope, each URL ending in `/`, and who fetches", () => {
+@@ -112,7 +122,7 @@ describe("readConfig", () => {
+         libraries: ["D3!", { name: "d3" }],
+       }),
+     ).toEqual([
+-      "pack: not a key of the configuration; it takes $schema, packs, imports, deny, maxPackSize, libraries, registries, fetch",
++      "pack: not a key of the configuration; it takes $schema, packs, imports, deny, maxPackSize, libraries, registries, fetch, origins",
+       'packs["acme-maps"]: a pack is a scoped name (`@scope/pack`) or a folder path (`./components`)',
+       'packs["acme-maps"].trsut: not an option; a pack takes trust, network, host, ambient, version',
+       'packs["acme-maps"].ambient: true or false',
+@@ -168,6 +178,12 @@ describe("policyOf", () => {
+     expect(ambient).toEqual(["@acme/app"]);
+     expect(policyOf(readConfig({}), (key) => key).policy).toEqual({ packs: {}, imports: "any", deny: [] });
+   });
++
++  it("gives the processor the origins remote data may come from", () => {
++    expect(policyOf(readConfig({}), (key) => key).allowedOrigins).toEqual([]);
++    expect(policyOf(readConfig({ origins: ["https://cdn.example.com"] }), (key) => key).allowedOrigins).toEqual(["https://cdn.example.com"]);
++    expect(policyOf(readConfig({ origins: "any" }), (key) => key).allowedOrigins).toBe("any");
++  });
+ });
+ 
+ describe("isFolder", () => {
+diff --git a/npm-packages/vite/src/config.ts b/npm-packages/vite/src/config.ts
+index ebaf732..40164ab 100644
+--- a/npm-packages/vite/src/config.ts
++++ b/npm-packages/vite/src/config.ts
+@@ -47,6 +47,12 @@ export interface Config {
+   registries?: Record<string, string>;
+   /** Who fetches from them: `host` (the default), through the app's own proxy; `direct`, the reader's browser. */
+   fetch?: "host" | "direct";
++  /**
++   * The origins documents' remote data and images may come from without asking the reader, each `https://host[:port]`;
++   * or `"any"`, every origin, for documents the app publishes itself, such as a static site's or a blog's (spec §15).
++   * None by default: the reader is asked about each.
++   */
++  origins?: string[] | "any";
+ }
+ 
+ /** A pack's trust, as the processor takes it. */
+@@ -71,6 +77,8 @@ export interface ReadConfig {
+   /** Each registry's URL, ending in `/`, by scope or `*`; empty for none. */
+   registries: Record<string, string>;
+   fetch: "host" | "direct";
++  /** The origins documents' data and images need no question for, normalized; or `"any"`; empty for none. */
++  origins: string[] | "any";
+ }
+ 
+ /** What is wrong with a configuration: every problem found, each with where it is. */
+@@ -92,13 +100,13 @@ const PACKAGE = /^(?:@[a-z0-9][a-z0-9._~-]*\/)?[a-z0-9][a-z0-9._~-]*$/;
+ const SIZE = /^(\d+(?:\.\d+)?)\s*(B|KB|MB|GB)$/i;
+ const UNITS: Record<string, number> = { B: 1, KB: 1e3, MB: 1e6, GB: 1e9 };
+ const SCOPE = /^@[a-z0-9~-][a-z0-9._~-]*$/;
+-const TOP_KEYS = new Set(["$schema", "packs", "imports", "deny", "maxPackSize", "libraries", "registries", "fetch"]);
++const TOP_KEYS = new Set(["$schema", "packs", "imports", "deny", "maxPackSize", "libraries", "registries", "fetch", "origins"]);
+ const PACK_KEYS = new Set(["trust", "network", "host", "ambient", "version"]);
+ 
+ const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
+ const isStrings = (value: unknown): value is string[] => Array.isArray(value) && value.every((item) => typeof item === "string");
+ 
+-/** `origin` as `https://host[:port]`, or why it isn't one a pack may be given. */
++/** `origin` as `https://host[:port]`, or why it isn't one a pack may be given or documents may reach. */
+ function originOf(origin: string): { origin: string } | { problem: string } {
+   let url: URL;
+   try {
+@@ -144,6 +152,23 @@ function readRegistries(registries: unknown, problems: string[]): Record<string,
+   return read;
+ }
+ 
++/** The origins documents may reach without a question, read, adding what's wrong with them to `problems`. */
++function readOrigins(origins: unknown, problems: string[]): string[] | "any" {
++  if (origins === "any") return "any";
++  if (!isStrings(origins)) {
++    problems.push('origins: a list of origins, such as `["https://cdn.example.com"]`, or `"any"` for every origin');
++    return [];
++  }
++  return origins.flatMap((written) => {
++    const read = originOf(written);
++    if ("problem" in read) {
++      problems.push(`origins: ${read.problem}`);
++      return [];
++    }
++    return [read.origin];
++  });
++}
++
+ /** `size` in bytes, or `undefined` when it isn't a size. */
+ function bytesOf(size: unknown): number | undefined {
+   if (typeof size === "number") return Number.isFinite(size) && size > 0 ? size : undefined;
+@@ -236,6 +261,7 @@ export function readConfig(value: unknown, where = "compmd.config.json"): ReadCo
+   const registries = value.registries === undefined ? {} : readRegistries(value.registries, problems);
+   const fetch = value.fetch ?? "host";
+   if (fetch !== "host" && fetch !== "direct") problems.push("fetch: `host` or `direct`");
++  const origins = value.origins === undefined ? [] : readOrigins(value.origins, problems);
+   if (problems.length > 0) throw new ConfigError(where, problems);
+   return {
+     packs,
+@@ -245,13 +271,18 @@ export function readConfig(value: unknown, where = "compmd.config.json"): ReadCo
+     libraries,
+     registries,
+     fetch: fetch === "direct" ? "direct" : "host",
++    origins,
+   };
+ }
+ 
+-/** What the processor takes from a configuration: the policy and the ambient packs (`Request.policy`, `Request.ambient`). */
++/**
++ * What the processor takes from a configuration: the policy, the ambient packs and the origins remote data may come
++ * from (`Request.policy`, `Request.ambient`, `Request.allowedOrigins`).
++ */
+ export interface Translated {
+   policy: Policy;
+   ambient: string[];
++  allowedOrigins: string[] | "any";
+ }
+ 
+ /**
+@@ -261,8 +292,8 @@ export interface Translated {
+  * @param nameOf The pack name of a pack key: a folder pack's `package.json` name; a pack name is its own.
+  * @param refused Packs the host left out, each with why, such as being larger than `maxPackSize`.
+  * @example
+- * const { policy, ambient } = policyOf(config, (key) => (isFolder(key) ? "@acme/app" : key));
+- * process({ path, files, now, policy, ambient });
++ * const { policy, ambient, allowedOrigins } = policyOf(config, (key) => (isFolder(key) ? "@acme/app" : key));
++ * process({ path, files, now, policy, ambient, allowedOrigins });
+  */
+ export function policyOf(config: ReadConfig, nameOf: (key: string) => string, refused: Readonly<Record<string, string>> = {}): Translated {
+   const packs: NonNullable<Policy["packs"]> = {};
+@@ -274,5 +305,5 @@ export function policyOf(config: ReadConfig, nameOf: (key: string) => string, re
+   }
+   const policy: Policy = { packs, imports: config.imports, deny: config.deny };
+   if (Object.keys(refused).length > 0) policy.refused = { ...refused };
+-  return { policy, ambient };
++  return { policy, ambient, allowedOrigins: config.origins === "any" ? "any" : [...config.origins] };
+ }
+diff --git a/npm-packages/vite/src/plugin.ts b/npm-packages/vite/src/plugin.ts
+index e8a53df..e8d3f29 100644
+--- a/npm-packages/vite/src/plugin.ts
++++ b/npm-packages/vite/src/plugin.ts
+@@ -74,6 +74,8 @@ export function moduleCode(app: App, folder: string | undefined, frames: Bundled
+     `  frames: ${JSON.stringify(`frames/${frames.hash}/`)},`,
+     `  trusted: { ${trusted.join(", ")} },`,
+     "  modules: (module) => MODULES[`${module.pack}@${module.version}/${module.path}`],",
++    // The origins the configuration lets documents reach without asking the reader, for their images (spec §15).
++    ...(app.config.origins.length === 0 ? [] : [`  origins: { configured: ${JSON.stringify(app.config.origins)} },`]),
+     "};",
+     ...registryCode(app.config),
+     "",
+diff --git a/npm-packages/vite/test/registry.test.ts b/npm-packages/vite/test/registry.test.ts
+index 7bc3c18..5430403 100644
+--- a/npm-packages/vite/test/registry.test.ts
++++ b/npm-packages/vite/test/registry.test.ts
+@@ -148,3 +148,27 @@ describe("no registries", () => {
+     }
+   }, 60_000);
+ });
++
++// Not registries, but the same app and its `virtual:compmd`: the origins its documents reach without a question.
++describe("origins", () => {
++  it("gives the processor's request and the sandbox's image gate the configuration's origins, and neither any without", async () => {
++    const loaded = async (config: object) => {
++      await writeApp(config);
++      const dev = await createServer(viteConfig(PORT));
++      try {
++        return (await dev.ssrLoadModule("virtual:compmd")) as { request: { allowedOrigins: unknown }; sandbox: { origins?: { configured: unknown } } };
++      } finally {
++        await dev.close();
++      }
++    };
++    const every = await loaded({ origins: "any" });
++    expect(every.request.allowedOrigins).toBe("any");
++    expect(every.sandbox.origins).toEqual({ configured: "any" });
++    const named = await loaded({ origins: ["https://cdn.example.com"] });
++    expect(named.request.allowedOrigins).toEqual(["https://cdn.example.com"]);
++    expect(named.sandbox.origins).toEqual({ configured: ["https://cdn.example.com"] });
++    const none = await loaded({});
++    expect(none.request.allowedOrigins).toEqual([]);
++    expect(none.sandbox.origins).toBeUndefined();
++  }, 60_000);
++});
+diff --git a/npm-packages/wasm/src/index.ts b/npm-packages/wasm/src/index.ts
+index bc42034..1e8d0d5 100644
+--- a/npm-packages/wasm/src/index.ts
++++ b/npm-packages/wasm/src/index.ts
+@@ -38,8 +38,11 @@ export interface Request {
+   reportAmbient?: boolean;
+   /** The host's policy for packs: those it lists with their trust, which a document may import, those it denies. */
+   policy?: Policy;
+-  /** The origins remote data may come from, such as `https://status.example.org`. */
+-  allowedOrigins?: string[];
++  /**
++   * The origins remote data may come from, such as `https://status.example.org`; or `"any"`, every origin, for a
++   * host's own documents, such as a static site's or a blog's (spec §15). None by default.
++   */
++  allowedOrigins?: string[] | "any";
+   /** Remote data fetched beforehand, by URL; {@link sources} lists the URLs a render needs. */
+   remote?: Record<string, Fetched>;
+   /** The host's data, by source without `host:`; {@link sources} lists the sources a render needs. */
+diff --git a/npm-packages/wasm/src/request.rs b/npm-packages/wasm/src/request.rs
+index 575c72e..bcda04f 100644
+--- a/npm-packages/wasm/src/request.rs
++++ b/npm-packages/wasm/src/request.rs
+@@ -7,7 +7,7 @@ use compmd::expand::Options;
+ use compmd::host::{CacheKey, Fetched, LoadedRelease, Time, WithPending};
+ use compmd::policy::Policy;
+ use compmd::processor::{Expanded, Validated};
+-use compmd::{Ambient, ParseOptions, Processor, expanded, tree};
++use compmd::{AllowedOrigins, Ambient, ParseOptions, Processor, expanded, tree};
+ use serde::de::Error as _;
+ use serde::{Deserialize, Deserializer, Serialize};
+ use serde_json::{Map, Value as Json};
+@@ -35,9 +35,9 @@ struct Request {
+     /// The host's policy for packs: those it lists with their trust, which it allows, denies and left out.
+     #[serde(default)]
+     policy: Policy,
+-    /// The origins remote data may come from.
+-    #[serde(default)]
+-    allowed_origins: Vec<String>,
++    /// The origins remote data may come from, or `"any"`: every origin, for a host's own documents (spec §15).
++    #[serde(default, deserialize_with = "allowed_origins")]
++    allowed_origins: AllowedOrigins,
+     /// Remote data fetched beforehand, by URL.
+     #[serde(default)]
+     remote: HashMap<String, Fetched>,
+@@ -244,6 +244,23 @@ fn time<'de, D: Deserializer<'de>>(deserializer: D) -> Result<i128, D::Error> {
+     parse_time(&text).ok_or_else(|| D::Error::custom(format!("`{text}` isn't an RFC 3339 time")))
+ }
+ 
++/// `allowedOrigins`: a list of origins, or `"any"`, every origin.
++fn allowed_origins<'de, D: Deserializer<'de>>(deserializer: D) -> Result<AllowedOrigins, D::Error> {
++    #[derive(Deserialize)]
++    #[serde(untagged)]
++    enum Written {
++        Listed(Vec<String>),
++        Every(String),
++    }
++    match Written::deserialize(deserializer)? {
++        Written::Listed(origins) => Ok(AllowedOrigins::Listed(origins)),
++        Written::Every(any) if any == "any" => Ok(AllowedOrigins::Every),
++        Written::Every(other) => Err(D::Error::custom(format!(
++            "`allowedOrigins` is a list of origins or `\"any\"`, not `{other}`"
++        ))),
++    }
++}
++
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+@@ -414,6 +431,33 @@ mod tests {
+         );
+     }
+ 
++    #[test]
++    fn a_host_may_allow_every_origin() {
++        let text = "---\nmd:\n  data:\n    - from: https://a.org/x.json\n      as: x\n---\n\n{{md.data.x.v}}\n";
++        let processed = |allowed: Json| -> Result<Json, String> {
++            let request = json!({
++                "path": "a.comp.md",
++                "files": { "a.comp.md": text },
++                "allowedOrigins": allowed,
++                "remote": { "https://a.org/x.json": { "text": "{\"v\": \"fetched\"}" } },
++                "now": "2026-10-22T09:00:00Z"
++            });
++            process(&request.to_string(), Rc::new(()))
++                .map(|text| serde_json::from_str(&text).expect("JSON"))
++                .map_err(|error| error.to_string())
++        };
++        let every = processed(json!("any")).expect("processed");
++        assert_eq!(every["diagnostics"], json!([]));
++        assert_eq!(
++            every["expanded"]["children"][0]["children"][0]["value"],
++            "fetched"
++        );
++        let none = processed(json!([])).expect("processed");
++        assert_eq!(none["diagnostics"][0]["code"], "F028");
++        let wrong = processed(json!("all")).expect_err("refused");
++        assert!(wrong.contains("a list of origins or `\"any\"`"), "{wrong}");
++    }
++
+     #[test]
+     fn the_newest_matching_version_skips_what_isnt_semver() {
+         let versions = ["1.0.0", "1.3.0", "latest", "2.0.0"].map(String::from);
+diff --git a/spec/CHANGELOG.md b/spec/CHANGELOG.md
+index 61b1bfc..9d3dc3e 100644
+--- a/spec/CHANGELOG.md
++++ b/spec/CHANGELOG.md
+@@ -4,6 +4,10 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
+ 
+ ## Version 1 (draft)
+ 
++### Unreleased
++
++- **Every origin, for a host's own documents (§8.6, §15).** A host MAY allow every origin instead of naming them: then no origin of a document's data or images is disallowed (F028) or asked about. It fits documents the host publishes itself, such as a static site's or a blog's; a host that shows documents others write SHOULD NOT. URL schemes, a data `from`'s literal scheme and host, credentials and sandboxes' network are unchanged. Not breaking.
++
+ ### 1.0-draft.16, 2026-11-19
+ 
+ - **WebAssembly in a sandbox (§15).** The informative note on browsers says a sandbox's policy may allow compiling WebAssembly (`'wasm-unsafe-eval'`), since WebAssembly reaches only what the frame's scripts reach. No rule changes. Not breaking.
+diff --git a/spec/compmd-spec-v1.md b/spec/compmd-spec-v1.md
+index 6d8fcf9..dabd746 100644
+--- a/spec/compmd-spec-v1.md
++++ b/spec/compmd-spec-v1.md
+@@ -1098,8 +1098,8 @@ md:
+ 
+ - Only `https://` URLs are allowed. The scheme and host MUST be literal; values from inputs go only into the path and query (see "Values in `from`" above).
+ - The origin learns the values the reader picked, since they are part of the request.
+-- A processor fetches only from origins allowed by its user or host configuration; the document cannot grant access. A disallowed origin is F028.
+-- A processor that fetches while a reader views the document MUST ask the reader the first time a document needs an origin the reader hasn't decided on, and remember the answer; the same answer covers the document's images from that origin (section 15). Origins the host configured need no question. Until the reader allows the origin, it is disallowed (F028), and the document renders with the `fallback`.
++- A processor fetches only from origins allowed by its user or host configuration; the document cannot grant access. A host MAY allow every origin, for documents it publishes itself (section 15). A disallowed origin is F028.
++- A processor that fetches while a reader views the document MUST ask the reader the first time a document needs an origin the reader hasn't decided on, and remember the answer; the same answer covers the document's images from that origin (section 15). Origins the host configured need no question, and none does when the host allows every origin. Until the reader allows the origin, it is disallowed (F028), and the document renders with the `fallback`.
+ - Documents carry no credentials. Authenticated sources are configured per origin by the host, or reached through a host-language component.
+ - A failed fetch uses `fallback` if present; otherwise it is F026 and the data is `null` (an `each` over it renders its `empty` slot), in either mode: strict mode fails processing on it, as on any `F` error (section 10.1).
+ - A source the host is still getting is pending (section 6.4): it loads as a failed fetch does, its `fallback` or `null`, but without F026. The document renders again when it arrives, and when the host gives up on it, it is a failed fetch.
+@@ -1637,6 +1637,7 @@ Code from a host-language component runs at one of three **trust levels**. The p
+ - Interpolated text values MUST be escaped for the output format; they are never parsed as Markdown or HTML.
+ - **URL schemes.** A processor renders a URL a document writes (a link, a link reference, a wiki link or an image, in Markdown or in raw HTML, section 2.3) only when it is relative or uses `https:`, `http:` or `mailto:`, or a scheme its host names as its own, such as an application's `app:` for its own pages and files; a link with any other renders its text without the link, and an image its alt text. A host MUST NOT name `javascript:`, `vbscript:`, `data:`, `blob:` or `file:`, which run code or carry content of their own. A URL of the host's own scheme is the host's to resolve: a reader's click on such a link is the host's to handle, and such an image is the host's to load. Interpolation never produces a scheme, the host's included (section 8.1).
+ - A processor MUST NOT fetch remote data unless the user or host configuration allows that origin; a document can never grant itself access (section 8.6). Packs come only from the registry the processor is configured with, and only those its configuration allows (section 6.4).
++- **Every origin, for a host's own documents.** Instead of naming origins, a host MAY allow every origin: then no origin of a document's data or images is disallowed or asked about (section 8.6, and Privacy below). It fits documents the host publishes itself, such as a static site's pages or a blog's posts, which a reader opens as any web page, whose images load without a question. A host that shows documents others write SHOULD NOT allow every origin: the question is what keeps such a document from reaching an origin its reader hasn't agreed to. Nothing else changes: URL schemes (above), a data `from`'s literal scheme and host, credentials, and a sandbox's network (rule 2 below, and what a permissive pack is given) stay as they are. A host that allows every origin lets its documents' authors send the input values a `from` holds to any origin they name.
+ 
+ **The sandbox.** The spec states what a sandbox guarantees, not how it is built. Code in a strict sandbox:
+ 
+@@ -1662,8 +1663,8 @@ A permissive sandbox keeps rules 3 to 5 and adds to rules 1 and 2 only what the
+ 
+ **Privacy.** A fetch made while a reader views a document tells the origin the reader's address, the time, and any input values in the URL, as an image in any Markdown does. A document rendered once at build time reveals no reader. For fetches at view time:
+ 
+-- The reader decides which origins a document may reach, the first time each is needed (section 8.6); the document's author cannot.
+-- A document's images with a remote URL, in Markdown or raw HTML, are such fetches, in every way a processor shows them: the processor MUST ask the reader about the image's origin as it asks about data, and one answer per origin covers both. Until the reader allows the origin, the image shows its alt text, with a way for the reader to allow the origin. Images with a relative URL (the document's own files, a pack's), images of a scheme the host names as its own, and images from origins the host configured need no question.
++- The reader decides which origins a document may reach, the first time each is needed (section 8.6), unless the host configured them or allows every origin (above); the document's author cannot.
++- A document's images with a remote URL, in Markdown or raw HTML, are such fetches, in every way a processor shows them: the processor MUST ask the reader about the image's origin as it asks about data, and one answer per origin covers both. Until the reader allows the origin, the image shows its alt text, with a way for the reader to allow the origin. Images with a relative URL (the document's own files, a pack's), images of a scheme the host names as its own, and images from origins the host configured need no question, nor does any image when the host allows every origin.
+ - Processors MUST NOT send cookies or other credentials with document fetches, except those the host configured for that origin, and SHOULD send no `Referer`.
+ - Processors SHOULD share cached copies between readers when the URL is the same, so a cache hit tells the origin nothing.
+ - Packs are fetched by the processor, not the reader's browser (section 6.4), unless the processor's configuration lets the browser fetch them from the registries it names. A registry the browser fetches from learns the reader's address, the time, and the names and versions of the packs the document imports; never the document, what it shows or its inputs. Such fetches send no credentials, and the processor SHOULD tell its readers.
+diff --git a/website/blog/blog.config.json b/website/blog/blog.config.json
+index 6cfcc32..60d764b 100644
+--- a/website/blog/blog.config.json
++++ b/website/blog/blog.config.json
+@@ -11,5 +11,6 @@
+       "category": "Blog",
+       "categoryId": "DIC_kwDOVWUzzM4DLhHM"
+     }
+-  }
++  },
++  "image": { "url": "https://compmd.dev/og.png", "alt": "CompMD: Markdown with components. Readable as text, rendered as a page." }
+ }
+diff --git a/website/blog/compmd.config.json b/website/blog/compmd.config.json
+index 9df98a6..24d975c 100644
+--- a/website/blog/compmd.config.json
++++ b/website/blog/compmd.config.json
+@@ -3,5 +3,6 @@
+   "packs": {
+     "../app": { "trust": "trusted", "ambient": true }
+   },
+-  "libraries": ["d3"]
++  "libraries": ["d3"],
++  "origins": "any"
+ }
+diff --git a/website/blog/posts/hello-world.comp.md b/website/blog/posts/hello-world.comp.md
+index 8352521..81aae78 100644
+--- a/website/blog/posts/hello-world.comp.md
++++ b/website/blog/posts/hello-world.comp.md
+@@ -1,18 +1,22 @@
+ ---
+ title: "Hello, world: introducing CompMD"
+ date: 2026-11-19
++updated: 2026-11-20
+ summary: Markdown with components, which still reads as Markdown everywhere else. A first look, and what this blog will hold.
+ tags: [about]
+ ---
+ 
+-CompMD is Markdown with components. You write a post, a newsletter or your notes as you would in any Markdown, and
++[CompMD](https://compmd.dev) is Markdown with components. You write a post, a newsletter or your notes as you would in any Markdown, and
+ reach for a component where plain Markdown runs out: a layout, a list made from data, a chart, a diagram. Open the same
+ file on GitHub or in any Markdown editor, and it still reads well.
+ 
++CompMD is still in an early stage, but development is progressing fast on [GitHub](https://github.com/comp-markdown/compmd). It has a detailed [spec](https://compmd.dev/spec/), with its security model part of it from the start, has a [playground](https://compmd.dev/playground/) with many examples to try out what it can do already, and guides for [authors](https://compmd.dev/guides/authors/) and [developers](https://compmd.dev/guides/developers/). We even have a lightweight static blog generator for CompMD posts, [@compmd/blog](https://www.npmjs.com/package/@compmd/blog). A lot more is coming up very soon.
++
++In this post we will have a very quick look at some examples, and there are many more in the links above. Feel free to roam around the website.
++
+ ## A first look
+ 
+-A book club's page, as its organizer might write it: a paragraph, a shelf of the books the club has read, and what
+-it made of the one picked. Each example here shows the document, then what it makes. Pick a cover.
++Let's say you are preparing a book club's page, and would like to have it a bit more colorful and interactive, and also want to keep it maintainable. You get the looks with a small shelf component, and you separate the books data to a CSV that you maintain using a spreadsheet app separately. Check this out below, first the `.comp.md` source, and then how it looks. _Check [the playground](https://compmd.dev/playground/?doc=book-club) for a fuller version of this example._
+ 
+ ````compmd {render=both}
+ ---
+@@ -50,12 +54,9 @@ params:
+ ```
+ ````
+ 
+-The books are a spreadsheet beside the page, the shelf is a small script, and the rest is the text a club would write
+-anyway. In a plain Markdown renderer, it all still reads in order.
+-
+ A layout is a few lines too. Three steps side by side on a wide screen, one under another on a phone:
+ 
+-````compmd {render=both}
++```compmd {render=both}
+ ::: grid {min=7rem gap=s}
+ ::: box {padding=s background=subtle border-radius=m}
+ **Plan**
+@@ -67,11 +68,11 @@ A layout is a few lines too. Three steps side by side on a wide screen, one unde
+ **Ship**
+ ::: /box
+ ::: /grid
+-````
++```
+ 
+-And the two together: the posts this blog has coming, written once in the frontmatter and laid out as cards.
++You can avoid repetition with `each`, which loops through a list. See below an example where we put the two together: the posts this blog has coming, written once in the frontmatter and laid out as cards.
+ 
+-````compmd {render=both}
++```compmd {render=both}
+ ---
+ coming:
+   - title: Why CompMD
+@@ -95,15 +96,15 @@ coming:
+ ::: /each
+ 
+ ::: /grid
+-````
++```
+ 
+ In a plain Markdown renderer, the `:::` lines show as text and the rest reads in order: nothing is lost, only the
+ layout. That is the promise CompMD keeps, whatever a document uses.
+ 
+-## What comes here
++## What's next
++
++CompMD is early stage, and a lot of development is focusing on fixing gaps and adding development tools, editor integrations and finalizing the v1 spec. I would really appreciate any constructive feedback from Markdown authors, note taking enthusiasts, Markdown integration developers, in the comments below or in [an issue on GitHub](https://github.com/comp-markdown/compmd/issues). Your feedback here can help us prioritize what to focus on in the early days and you can make a big impact in the direction we take.
+ 
+-The spec says what CompMD is, and the guides how to write it and build with it. This blog is for the rest: why CompMD
+-is as it is, where it is going, how it compares with what else there is, and what each release brings. Every post is a
+-CompMD document like the one above, in [the repository](https://github.com/comp-markdown/compmd/tree/main/website/blog).
++Until next time...
+ 
+-To try CompMD now, open [the playground](/playground/), or start with [the Author's Guide](/guides/authors/).
++Hakan Serce

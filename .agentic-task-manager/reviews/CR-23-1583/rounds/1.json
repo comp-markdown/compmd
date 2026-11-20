@@ -1,0 +1,286 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "working",
+    "base": "7f3fc5d291d36f4a273c9fa664670b55ecf08b4f"
+  },
+  "files": [
+    {
+      "path": "conformance/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/every-origin/case.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/every-origin/context.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/every-origin/expanded.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/every-origin/input.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/every-origin/people.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/every-origin/today.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/allowed_origins.rs",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/lib.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/load.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/processor.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/processor/examples.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/validate.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/validate/data.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/tests/common.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/blog-tool.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/remote-images.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/vite.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/developers/21-the-configurations-reference.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/build.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/build.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/client.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/config.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/config.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/live.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/live.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/origins.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/post-images.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/posts.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/posts.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/render.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/social-image.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/editor.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/editor.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/editor/src/documents.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/image-gate.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/images.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/index.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/origins.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/origins.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/compmd.config.schema.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/src/config.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/src/config.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/src/plugin.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/test/registry.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/wasm/src/index.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/wasm/src/request.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spec/CHANGELOG.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spec/compmd-spec-v1.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "website/blog/blog.config.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "website/blog/compmd.config.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "website/blog/posts/hello-world.comp.md",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-20T09:21:30Z"
+}

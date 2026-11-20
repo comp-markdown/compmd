@@ -11130,7 +11130,7 @@
       "description": "A static site or a blog publishes its own documents, so asking its readers about each image's or data's origin protects no one, and the question gets in the way (the first post's book club opened it over the page, and the site check couldn't click a cover). Spec §15 already lets a host configure origins; this lets a host allow every origin, and the tools use it.\n\n## Spec (§8.6, §15)\nA host MAY allow every origin instead of naming them: no origin of a document's data or images is then disallowed (F028) or asked about. It fits documents the host publishes itself; a host that shows documents others write SHOULD NOT. URL schemes, a data `from`'s literal scheme and host, credentials and sandboxes' network are unchanged. Changelog entry under Unreleased; a conformance case where `allowedOrigins: \"any\"` loads remote data without F028.\n\n## Code\n- **Processor:** `allowedOrigins` is a list of origins or `\"any\"`, in the Rust API, the WebAssembly request and its TypeScript types; the conformance README says so.\n- **`@compmd/sandbox`:** the image gate takes `\"any\"`.\n- **`@compmd/vite`:** `compmd.config.json` takes `\"origins\"`, `\"any\"` or a list of `https` origins, given to the processor's request and to the sandbox.\n- **`@compmd/blog`:**\n  - its own origin is always allowed;\n  - the build-time render shows only images from allowed origins, any other its alt text with the button, so the built page loads no image the live one would ask about;\n  - a share image (`image: {url, alt}`) in `blog.config.json` for every page, a post's own in its frontmatter, written as `og:image`, its alt and a large card.\n- **The website:** the blog's share image is the site's card (`og.png`), not in a post's text; `website/blog` allows every origin.\n- **The first post:** the review's corrections (links, capitalisation, wording, `updated`).\n\n## Tests\nThe processor and the conformance case; the gate with `any`; the Vite config; the blog's share image, own origin, and a remote image refused at build time; `cargo make site`.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [],
       "files": [
         "spec/compmd-spec-v1.md",
@@ -11145,9 +11145,9 @@
         "website/blog/"
       ],
       "created_at": "2026-11-20T08:20:43Z",
-      "updated_at": "2026-11-20T09:22:26Z",
+      "updated_at": "2026-11-20T09:28:38Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "sprint_history": [
         {
           "sprint": "Packs & Blog",
@@ -11165,7 +11165,6 @@
         }
       ],
       "review_requested_at": "2026-11-20T09:21:31Z",
-      "review_state": "approved",
       "notes": [
         {
           "at": "2026-11-20T09:21:31Z",
@@ -11178,9 +11177,24 @@
           "kind": "note",
           "text": "Approved: in CR-23 (round 1)",
           "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-20T09:28:38Z",
+          "kind": "outcome",
+          "text": "Approved in CR-23 (CR-22, the live review, before it): spec §8.6 and §15 let a host allow every origin; AllowedOrigins in the processor, origins in compmd.config.json, the blog’s own origin and social images.",
+          "by": "claude:79612601"
         }
       ],
-      "reviewed_at": "2026-11-20T09:22:26Z"
+      "commit": "0d6ba9b42200ba8b3074435531cc2b3f520f787a",
+      "reviews": [
+        {
+          "from": "2026-11-20T09:21:31Z",
+          "to": "2026-11-20T09:22:26Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-20T09:28:38Z",
+      "completed_by": "claude:79612601"
     }
   ]
 }
