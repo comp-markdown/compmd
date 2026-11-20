@@ -111,6 +111,10 @@ What the renderer and the sandbox do for decision 2, tried in
   an animation frame, and never from its own observers alone: a browser pauses both in a frame that is off screen
   (Chrome), and its box would have no size until it is scrolled to. The page's observer of the sizer is never paused,
   and a message is always delivered.
+- **The page's message carries the width of the box's inside (`box {width}`), and the frame measures its height at
+  that width,** not at its own: off screen, Chrome doesn't give a frame its new size either, so a box whose width
+  comes from its content (in a row, inline) would keep the height it had at its first width, a pixel. Found by
+  `@compmd/sandbox`'s comparison test (CMD-355); the prototype measured at the frame's width.
 - **The frame's document never scrolls** (`overflow: hidden`), unless the box has `scroll`.
 - **`fit`** goes to the frame with the part, resolved by the page.
 

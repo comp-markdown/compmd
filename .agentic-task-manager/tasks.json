@@ -13501,7 +13501,7 @@
       "description": "[Sizing a component in its box](docs/sizing-components.md), decision 2 and *The mechanism*, in `@compmd/sandbox`, as [the prototype](spikes/wrap-npm-package/sizing/page.html) does it. Today a use's box params are applied to the page's box and again inside its frame, so a use with a `width` and a border scrolls.\n\n## Do\n- The sizer, with the frame positioned over it, in place of a frame as tall as its content.\n- In the frame: `target` the frame's size; the part with none of the box's params; no scrolling without `scroll`.\n- The natural size measured height first, then width with `target` laid out anew as a block; reported when mounted, when the content changes size, and when the page says the box did.\n- The protocol, version 3: `size` with the natural width and height, `box` from the page (on load, and when the sizer changes size), `fit` with the part; `docs/sandbox-protocol.md` and the schema.\n- [Running components in the sandbox](docs/running-components-in-the-sandbox.md), Q5, says it.\n\n## Tests\nBrowser tests in Chrome and WebKit: each of the prototype's 28 uses drawn by a trusted component in the page and by the same component framed, compared, and the grid rows after they shrink; with most frames off screen; and the four the prototype doesn't run: `object-position` right to left, `scroll`, an `img` or `canvas` drawing, and a script-sized drawing that doesn't contain its size.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [
         "01a1faa3-d27f-73b4-9632-1833aa21548d"
       ],
@@ -13511,9 +13511,9 @@
         "docs/running-components-in-the-sandbox.md"
       ],
       "created_at": "2026-11-20T20:26:42Z",
-      "updated_at": "2026-11-20T22:45:38Z",
+      "updated_at": "2026-11-20T23:53:59Z",
       "created_by": "Hakan Serce",
-      "updated_by": "claude:79612601",
+      "updated_by": "Hakan Serce",
       "sprint_history": [
         {
           "sprint": "Packs 1: the pack tool, no-code components",
@@ -13523,7 +13523,31 @@
       "sprint": "Packs 1: the pack tool, no-code components",
       "number": 355,
       "started_at": "2026-11-20T22:45:38Z",
-      "started_by": "claude:79612601"
+      "started_by": "claude:79612601",
+      "commit": "b348821345b78a4d1a301ec5233713db876388ca",
+      "code_reviews": [
+        {
+          "id": "01a1fb58-f859-7639-983d-4dbae78dbcd0",
+          "ref": "CR-39"
+        }
+      ],
+      "review_requested_at": "2026-11-20T23:44:34Z",
+      "review_state": "approved",
+      "notes": [
+        {
+          "at": "2026-11-20T23:44:34Z",
+          "kind": "review",
+          "text": "CR-39: Sizing: a framed use is laid out as in the page",
+          "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-20T23:53:59Z",
+          "kind": "note",
+          "text": "Approved: in CR-39 (round 1)",
+          "by": "Hakan Serce"
+        }
+      ],
+      "reviewed_at": "2026-11-20T23:53:59Z"
     },
     {
       "id": "01a1faa3-d27f-73b4-9632-1835b3071707",
@@ -13537,7 +13561,7 @@
       "description": "[Sizing a component in its box](docs/sizing-components.md), *What changes*, `@compmd/pack`.\n\n## Do\n- `draw()` fits what it is given from `context.fit`: an SVG by its `preserveAspectRatio`, an `img` or a `canvas` by CSS's `object-fit`; its own `div` is the box's size.\n- `fitBox(element, fit)` and `fillBox(element)` in `@compmd/pack/component`: the second contains its size (`contain: size`, CSS's 300 by 150 as its natural size).\n- `mountForTest` takes `fit`, and has `setFit`.\n- The test page's **Show boxes** switch, which outlines every use's box.\n- `create-pack`'s templates fit their box; their demos have a use with `width`, one with `height` and one with `object-fit=cover`.\n- The Mermaid and wireframe packs checked in a sized box, and their demos given such a use.\n- [Writing a pack](docs/writing-a-pack.md) and the Developer's Guide say it.\n\n## Tests\nUnit tests of each helper and each mode; the test page's switch in its browser test.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a1faa3-d27f-73b4-9632-1833aa21548d"
       ],
@@ -13550,9 +13574,9 @@
         "guides/"
       ],
       "created_at": "2026-11-20T20:26:42Z",
-      "updated_at": "2026-11-20T20:26:42Z",
+      "updated_at": "2026-11-20T23:44:34Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "sprint_history": [
         {
           "sprint": "Packs 1: the pack tool, no-code components",
@@ -13560,7 +13584,9 @@
         }
       ],
       "sprint": "Packs 1: the pack tool, no-code components",
-      "number": 356
+      "number": 356,
+      "started_at": "2026-11-20T23:44:34Z",
+      "started_by": "claude:79612601"
     },
     {
       "id": "01a1faf1-2a8d-7287-a198-24ee970289c1",
@@ -13783,7 +13809,7 @@
       "description": "[What `compmd` definitions need for the no-code components](docs/no-code-components.md), decisions 1 to 6, *What changes*. The spec's text needs the maintainer's go before it is pushed.\n\n## The spec\n- §8.6, *Relative paths*: a destination that starts with a param, a field of one, or an `each` or template slot name over one resolves against the caller (decision 1).\n- §7.2 and §8.1: `md.fallback` in a leaf's or inline invocation's body, F014 in a container's; interpolation in image alt text (decision 2).\n- §7.2 and §12.3: an inline invocation is one inline box, styled by its fence under the caller's, a `componentInline` named `box`; layout params left out (decision 4).\n- §7.2 and §8.1: `md.slots.<name>` in a definition's expressions (decision 5).\n- §9.2, §9.4 and §10: `stretch-link` with W124 (decision 3); `shadow`, `rotate`, and `border`'s four logical sides in the cascade as `padding`'s (decision 6).\n- The changelog under *Unreleased*.\n\n## Conformance\nThe design's table: the eight new cases, and the existing ones it lists unchanged. Before the spec text, check *Gaps left*'s second point: where the processor or the host resolves a pack's relative destinations.\n\n## Done when\n`cargo make ci` is green, and the guides' chapters on definitions and the common params say it.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a1fb1a-5845-722a-88c3-17bf2a8c3273"
       ],
@@ -13795,7 +13821,7 @@
         "guides/"
       ],
       "created_at": "2026-11-20T22:47:59Z",
-      "updated_at": "2026-11-20T22:47:59Z",
+      "updated_at": "2026-11-20T23:53:59Z",
       "created_by": "claude:79612601",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -13805,7 +13831,9 @@
         }
       ],
       "sprint": "Packs 1: the pack tool, no-code components",
-      "number": 360
+      "number": 360,
+      "started_at": "2026-11-20T23:53:59Z",
+      "started_by": "claude:79612601"
     },
     {
       "id": "01a1fb25-2be2-70ce-b996-5795d8c8fb48",
