@@ -12578,7 +12578,7 @@
         "spec/CHANGELOG.md"
       ],
       "created_at": "2026-11-20T11:18:00Z",
-      "updated_at": "2026-11-20T11:18:09Z",
+      "updated_at": "2026-11-20T11:20:07Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 345,
@@ -12590,7 +12590,8 @@
       ],
       "sprint": "Packs & Blog",
       "started_at": "2026-11-20T11:18:09Z",
-      "started_by": "claude:79612601"
+      "started_by": "claude:79612601",
+      "commit": "c56910591c4f912d8550a97f67e4cf1334ef07f9"
     }
   ]
 }
