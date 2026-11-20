@@ -1,0 +1,32 @@
+{
+  "name": "@comp-markdown/card",
+  "version": "0.1.0",
+  "description": "A CompMD pack: card, a box with an image on top, then its text, then a footer. A compmd definition, with no code.",
+  "keywords": ["compmd", "compmd-pack", "card"],
+  "homepage": "https://compmd.dev/",
+  "bugs": "https://github.com/comp-markdown/compmd/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/comp-markdown/compmd.git",
+    "directory": "compmd-packs/card"
+  },
+  "author": "Hakan Serce",
+  "license": "MIT",
+  "type": "module",
+  "compmd": "./index.comp.md",
+  "files": ["index.comp.md", "README.md"],
+  "scripts": {
+    "build": "compmd-pack build",
+    "dev": "compmd-pack dev",
+    "test": "compmd-pack build && vitest run --dir test",
+    "lint": "tsc --noEmit",
+    "prepublishOnly": "compmd-pack build"
+  },
+  "devDependencies": {
+    "@compmd/pack": "workspace:*",
+    "@compmd/processor": "workspace:*",
+    "@types/node": "26.6.5",
+    "typescript": "6.0.3",
+    "vitest": "5.0.5"
+  }
+}

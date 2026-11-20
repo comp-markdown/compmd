@@ -13,6 +13,7 @@ packages:
   - npm-packages/wasm
   - npm-packages/editor
   - npm-packages/editor/packs/minimermaid
+  - compmd-packs/card
   - compmd-packs/mermaid
   - compmd-packs/wireframe
   - crates/tauri/examples/tauri-app
