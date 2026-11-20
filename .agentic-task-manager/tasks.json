@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 359,
+    "next_number": 360,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -11775,7 +11775,7 @@
       "description": "Item 4 of [the first list](docs/first-components.md#:~:text=8%20of%2011%20frameworks%20ship%20cards): a card that is a link, a `compmd` definition on `card`: a title, a description and where it goes, the whole card the link. Its fallback is the link.\n\n## Do\nThe definition, a demo, tests of its expanded tree.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "blocked",
       "dependencies": [
         "01a1f870-9ad9-761a-afe5-57c89c4468ad"
       ],
@@ -11783,7 +11783,7 @@
         "compmd-packs/link-card/"
       ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T22:31:35Z",
+      "updated_at": "2026-11-20T22:33:31Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 314,
@@ -11795,7 +11795,13 @@
       ],
       "sprint": "Packs 1: the pack tool, no-code components",
       "started_at": "2026-11-20T22:31:35Z",
-      "started_by": "claude:79612601"
+      "started_by": "claude:79612601",
+      "waiting_on": "user",
+      "questions": [
+        "The whole card as the link: Markdown links are inline, so a link can’t hold the card’s heading and text. Should (a) the title alone be the link, (b) the title be the link with CSS stretching its click area over the card, which a no-code pack can’t ship today (a spec change: a pack’s styles, or a box param for it), or (c) something else?",
+        "Where the link goes: a relative destination in a definition’s body resolves against the pack’s file (spec, Relative paths), so `href=harbour.comp.md` would point into the pack. The processor keeps it as written; the host resolves it. Should the caller write the link themselves (the title as a Markdown link in the card, so its path is theirs, as slot content’s is), or should the spec say a destination made from a param resolves where the param was written?"
+      ],
+      "blocked_at": "2026-11-20T22:33:31Z"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57ca797541ca",
@@ -11809,7 +11815,7 @@
       "description": "Item 4 of [the first list](docs/first-components.md#:~:text=A%20gallery%20is%20a%20grid%20of%20cards): a grid of cards, each an image, a title and a description, a `compmd` definition, so it needs no code and its images are the document's. A zoom or a lightbox waits for CMD-266.\n\n## Do\nThe definition (over a slot's items or a list in data), a demo, tests of its expanded tree.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "blocked",
       "dependencies": [
         "01a1f870-9ad9-761a-afe5-57c89c4468ad"
       ],
@@ -11817,7 +11823,7 @@
         "compmd-packs/gallery/"
       ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T16:20:54Z",
+      "updated_at": "2026-11-20T22:34:19Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 315,
@@ -11827,7 +11833,14 @@
           "from": "2026-11-20T10:26:02Z"
         }
       ],
-      "sprint": "Packs 1: the pack tool, no-code components"
+      "sprint": "Packs 1: the pack tool, no-code components",
+      "started_at": "2026-11-20T22:33:32Z",
+      "started_by": "claude:79612601",
+      "waiting_on": "user",
+      "questions": [
+        "What should gallery add over `::: grid {min=14rem gap=m}` of cards? A definition places a slot’s items all at once, so it can’t make each item a card. (a) a grid with a template slot over data rows, the caller’s template per item; (b) a spec change so a definition wraps each item in a box, and gallery makes the cards; (c) no gallery: the grid of cards in the Author’s Guide."
+      ],
+      "blocked_at": "2026-11-20T22:34:19Z"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57cb4e452c2e",
@@ -11841,7 +11854,7 @@
       "description": "Item 5 of [the first list](docs/first-components.md#:~:text=Posts%20and%20newsletters%20caption%20their%20images): an image and its caption, the caption its text alternative too, a `compmd` definition. Posts and newsletters caption their images.\n\n## Do\nThe definition, a demo, print, tests of its expanded tree.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "blocked",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68e81c39ce10"
       ],
@@ -11849,7 +11862,7 @@
         "compmd-packs/figure/"
       ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T16:20:54Z",
+      "updated_at": "2026-11-20T22:34:35Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 316,
@@ -11859,7 +11872,14 @@
           "from": "2026-11-20T10:26:02Z"
         }
       ],
-      "sprint": "Packs 1: the pack tool, no-code components"
+      "sprint": "Packs 1: the pack tool, no-code components",
+      "started_at": "2026-11-20T22:34:11Z",
+      "started_by": "claude:79612601",
+      "waiting_on": "user",
+      "questions": [
+        "One text as both caption and alt needs the image’s path as a param (`:: figure[Boats at dusk] {src=\"harbour.jpg\"}`), and a caller’s relative path in a param resolves against the pack, as in CMD-314’s second question. Should figure wait for that answer, or take the image as a slot (the caller’s own Markdown image) with the caption written separately?"
+      ],
+      "blocked_at": "2026-11-20T22:34:35Z"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57cc97043c32",
@@ -11873,7 +11893,7 @@
       "description": "Item 6 of [the first list](docs/first-components.md#:~:text=6%20of%2011%20frameworks): an inline `compmd` definition, \"new\", \"beta\", a version, its tone from the visual tokens.\n\n## Do\nThe definition (inline), a demo, tests of its expanded tree.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "blocked",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68e81c39ce10"
       ],
@@ -11881,7 +11901,7 @@
         "compmd-packs/badge/"
       ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T16:20:55Z",
+      "updated_at": "2026-11-20T22:35:16Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 317,
@@ -11891,7 +11911,14 @@
           "from": "2026-11-20T10:26:02Z"
         }
       ],
-      "sprint": "Packs 1: the pack tool, no-code components"
+      "sprint": "Packs 1: the pack tool, no-code components",
+      "started_at": "2026-11-20T22:34:36Z",
+      "started_by": "claude:79612601",
+      "waiting_on": "user",
+      "questions": [
+        "An inline invocation of a compmd definition has no box, so its fence’s params don’t apply (spec §7.2), and the spec has no inline `box`: a no-code badge can’t take a tone (background, border, radius) from the visual tokens. Should the spec add an inline box (`:box[beta]{background=accent border-radius=full}`, or an inline invocation’s box styled by its fence), or should badge be a strict component with its own code?"
+      ],
+      "blocked_at": "2026-11-20T22:35:16Z"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57cd298ee930",
@@ -12968,7 +12995,7 @@
       "description": "Item 4b of [the first list](docs/first-components.md#:~:text=Two%20or%20three%20columns): a `compmd` definition on `grid` (no code), in its own pack. The first column is the default slot, `:: #middle` and `:: #end` the others, so a column holds any blocks with no `box`; `split=even | wide-start | wide-middle | wide-end` sets the widths (`wide-middle` for three only), and below `md` the columns stack. Slot names are logical (spec §9.2).\n\n## Do\nThe definition with its signature; a demo with two and three columns and each `split`, in a right-to-left document too; plain-renderer reading checked (the columns in order); a conformance-style test of its expanded tree.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "blocked",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68e81c39ce10"
       ],
@@ -12976,7 +13003,7 @@
         "compmd-packs/columns/"
       ],
       "created_at": "2026-11-20T19:03:19Z",
-      "updated_at": "2026-11-20T19:04:35Z",
+      "updated_at": "2026-11-20T22:35:55Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -12986,7 +13013,14 @@
         }
       ],
       "sprint": "Packs 1: the pack tool, no-code components",
-      "number": 348
+      "number": 348,
+      "started_at": "2026-11-20T22:35:24Z",
+      "started_by": "claude:79612601",
+      "waiting_on": "user",
+      "questions": [
+        "A compmd definition can’t tell whether `:: #middle` was given (no expression or `if` sees a slot), so columns can’t choose two tracks or three, and an empty middle box would still take a track. Should columns take the count as a param (`::: columns {count=3 split=wide-middle}`), or should the spec let a definition test a slot (`md.slots.middle`, true when given)?"
+      ],
+      "blocked_at": "2026-11-20T22:35:55Z"
     },
     {
       "id": "01a1fa57-79f1-7065-863a-4b38065cfa68",
@@ -13331,7 +13365,7 @@
       "description": "[Sizing a component in its box](docs/sizing-components.md), *What changes*, `@compmd/render`.\n\n## Do\n- A host-language component's box is a grid of one column (`grid-template-columns: minmax(0, 1fr)`, `grid-auto-rows: minmax(0, auto)`; inline, an inline grid), as [the prototype](spikes/wrap-npm-package/sizing/page.html)'s `.box` is.\n- `object-fit` and `object-position` resolved with the box's direction and given as `context.fit` (`{ mode, x, y }`), with an `update` when they change, as `scheme` is.\n- The contract's type; the React and Svelte bindings pass `compmd.fit`.\n\n## Tests\nUnit tests of the resolving, right to left too; browser tests, in Chrome and WebKit, of a trusted component in a box with each way of sizing it, the prototype's cases.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [
         "01a1faa3-d27f-73b4-9632-1832108aba7b"
       ],
@@ -13339,7 +13373,7 @@
         "npm-packages/render/src/"
       ],
       "created_at": "2026-11-20T20:26:42Z",
-      "updated_at": "2026-11-20T22:11:08Z",
+      "updated_at": "2026-11-20T22:32:20Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -13351,7 +13385,24 @@
       "sprint": "Packs 1: the pack tool, no-code components",
       "number": 354,
       "started_at": "2026-11-20T22:11:08Z",
-      "started_by": "claude:79612601"
+      "started_by": "claude:79612601",
+      "commit": "7a4147491ee27233a3fb279c1144e71de21b3714",
+      "code_reviews": [
+        {
+          "id": "01a1fb16-d884-71ea-a0e5-301be5173e44",
+          "ref": "CR-36"
+        }
+      ],
+      "review_requested_at": "2026-11-20T22:32:20Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-20T22:32:20Z",
+          "kind": "review",
+          "text": "CR-36: Sizing: a component’s box is a grid, and it gets its fit",
+          "by": "claude:79612601"
+        }
+      ]
     },
     {
       "id": "01a1faa3-d27f-73b4-9632-183483697925",
@@ -13522,6 +13573,40 @@
       ],
       "sprint": "Packs 1: the pack tool, no-code components",
       "number": 358
+    },
+    {
+      "id": "01a1fb1a-5845-722a-88c3-17bf2a8c3273",
+      "name": "Design: what compmd definitions need for the no-code components",
+      "type": "docs",
+      "priority": "P1",
+      "labels": [
+        "spec",
+        "packs",
+        "design"
+      ],
+      "description": "The no-code components of [the first list](docs/first-components.md) stop at the same few gaps in the `compmd` definition language (spec §7.2). Each blocked task asks its own question:\n\n- CMD-314 `link-card`: a link around the whole card; a caller's relative path in a param, linked in the pack's body, resolves against the pack (spec, *Relative paths*).\n- CMD-315 `gallery`: a definition can't place each item of a slot in a box of its own.\n- CMD-316 `figure`: one text as the caption and the image's alt needs the image's path as a param (the same path question).\n- CMD-317 `badge`: an inline invocation has no box, and there is no inline `box`.\n- CMD-348 `columns`: a definition can't test whether a slot was given.\n- CMD-318 `sticky-note`: a tilt and a shadow aren't box params.\n\n## Do\nA design doc, `docs/no-code-components.md`, decisions first: for each gap, the options and a recommendation, tried on the real example documents of each component, with the conformance cases each change adds or changes. One review with the maintainer; the spec changes wait for their go, and the blocked tasks are answered from it.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "in_progress",
+      "dependencies": [],
+      "files": [
+        "docs/no-code-components.md",
+        "docs/README.md"
+      ],
+      "created_at": "2026-11-20T22:36:10Z",
+      "updated_at": "2026-11-20T22:36:16Z",
+      "created_by": "claude:79612601",
+      "updated_by": "claude:79612601",
+      "sprint_history": [
+        {
+          "sprint": "Packs 1: the pack tool, no-code components",
+          "from": "2026-11-20T22:36:10Z"
+        }
+      ],
+      "sprint": "Packs 1: the pack tool, no-code components",
+      "number": 359,
+      "started_at": "2026-11-20T22:36:16Z",
+      "started_by": "claude:79612601"
     }
   ]
 }
