@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 348,
+    "next_number": 350,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -721,9 +721,9 @@
         "compmd-packs/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-20T16:21:21Z",
+      "updated_at": "2026-11-20T18:56:16Z",
       "created_by": "Hakan Serce",
-      "updated_by": "claude:79612601",
+      "updated_by": "Hakan Serce",
       "sprint_history": [
         {
           "sprint": "Rendering optimizations",
@@ -752,15 +752,22 @@
         }
       ],
       "review_requested_at": "2026-11-20T16:21:21Z",
-      "review_state": "waiting",
+      "review_state": "changes_requested",
       "notes": [
         {
           "at": "2026-11-20T16:21:21Z",
           "kind": "review",
           "text": "CR-28: The first packs: one per component, and WebAssembly in the frames again",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-20T18:56:16Z",
+          "kind": "rejection",
+          "text": "CR-28 round 1: 3 open comments",
+          "by": "Hakan Serce"
         }
-      ]
+      ],
+      "reviewed_at": "2026-11-20T18:56:16Z"
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68e96cefc8f6",
@@ -11910,7 +11917,7 @@
         "packs",
         "component"
       ],
-      "description": "Item 10 of [the first list](docs/first-components.md#charts): a leaf over `md.data` rows, drawn by Observable Plot (ISC, 95 KB), strict. [Charts](docs/first-components.md#charts) has the params (`type`, `rows`, `x`, `y`, `color`, `stack`, `size`, `value`, `horizontal`, labels, `legend`, `height`, `description`) and why Plot; pie and donut with d3-shape.\n\n## Do\nThe pack with the command from CMD-9, every `type` in the demo, the colour scheme followed, print, the label as its accessible name, tests in Chrome and WebKit.",
+      "description": "Item 10 of [the first list](docs/first-components.md#charts): a leaf over `md.data` rows, drawn by Observable Plot (ISC, 95 KB), strict. [Charts](docs/first-components.md#charts) has the params (`type`, `rows`, `x`, `y`, `color`, `stack`, `size`, `value`, `horizontal`, labels, `legend`, `description`) and why Plot; pie and donut with d3-shape. Its height is its box's (`height=20rem` on the use, spec §9.2): the chart fills its box.\n\n## Do\nThe pack with the command from CMD-9, every `type` in the demo, the colour scheme followed, print, the label as its accessible name, tests in Chrome and WebKit.\n",
       "requirements": [],
       "use_cases": [],
       "status": "todo",
@@ -11922,7 +11929,7 @@
         "compmd-packs/chart/"
       ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T16:20:57Z",
+      "updated_at": "2026-11-20T19:03:19Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 321,
@@ -12846,6 +12853,72 @@
       "updated_by": "Hakan Serce",
       "with": "user",
       "number": 347
+    },
+    {
+      "id": "01a1fa57-79f1-7065-863a-4b37c9e0e203",
+      "name": "Component: columns",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "packs",
+        "component"
+      ],
+      "description": "Item 4b of [the first list](docs/first-components.md#:~:text=Two%20or%20three%20columns): a `compmd` definition on `grid` (no code), in its own pack. The first column is the default slot, `:: #middle` and `:: #end` the others, so a column holds any blocks with no `box`; `split=even | wide-start | wide-end` sets the widths, and below `md` the columns stack. Slot names are logical (spec §9.2).\n\n## Do\nThe definition with its signature; a demo with two and three columns and each `split`, in a right-to-left document too; plain-renderer reading checked (the columns in order); a conformance-style test of its expanded tree.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68e81c39ce10"
+      ],
+      "files": [
+        "compmd-packs/columns/"
+      ],
+      "created_at": "2026-11-20T19:03:19Z",
+      "updated_at": "2026-11-20T19:03:19Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Packs 1: the pack tool, no-code components",
+          "from": "2026-11-20T19:03:19Z"
+        }
+      ],
+      "sprint": "Packs 1: the pack tool, no-code components",
+      "number": 348
+    },
+    {
+      "id": "01a1fa57-79f1-7065-863a-4b38065cfa68",
+      "name": "Component: word-cloud",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "packs",
+        "component"
+      ],
+      "description": "Item 10b of [the first list](docs/first-components.md#:~:text=Words%20sized%20by%20their%20weight): a leaf over `md.data` rows (`rows`, `text`, `size`), laid out by `d3-cloud` (BSD-3) and drawn as SVG by the component, strict. The label is its accessible name; its fallback the words by weight.\n\n## First\nCheck `d3-cloud`'s size and that its text measuring (a canvas) works in a strict frame, in Chrome and WebKit; write what was found into the first list's row.\n\n## Do\nThe pack with the command from CMD-9, the colour scheme followed, print, tests in Chrome and WebKit.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68e81c39ce10",
+        "01a1ebb5-4120-7007-85a3-68e63c5137a7"
+      ],
+      "files": [
+        "compmd-packs/word-cloud/",
+        "docs/first-components.md"
+      ],
+      "created_at": "2026-11-20T19:03:19Z",
+      "updated_at": "2026-11-20T19:03:19Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Packs 2: the basics, and data",
+          "from": "2026-11-20T19:03:19Z"
+        }
+      ],
+      "sprint": "Packs 2: the basics, and data",
+      "number": 349
     }
   ]
 }

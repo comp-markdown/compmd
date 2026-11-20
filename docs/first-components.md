@@ -1,6 +1,6 @@
 # The first components
 
-**Status: proposed (2026-11-19); the packs decided (2026-11-20, CMD-11, decisions 10 and 11).** Which components CompMD should have first, so an author
+**Status: proposed (2026-11-19); the packs decided (2026-11-20, CMD-11, decisions 10 and 11); `columns` and `word-cloud` added (CR-28).** Which components CompMD should have first, so an author
 finds what they reach for: what documentation frameworks ship, which npm component packages are used most, the widgets
 pages have, and what CompMD covers already, with the list, each component's package, and how it runs.
 
@@ -10,7 +10,7 @@ pages have, and what CompMD covers already, with the list, each component's pack
    notes as well as docs, so the frameworks' counts (below) are one signal; a figure with a caption, a chart or a
    calendar ranks higher than a framework count gives it, and an API field table, which only API docs need, lower.
 2. **What CompMD has is not listed again.** Callouts are GitHub's alerts (spec §2.3), math is in the base syntax (the
-   sandbox draws it with Temml), columns and card grids are `row` and `grid` (spec §9), Mermaid and wireframes are packs,
+   sandbox draws it with Temml), card grids are `grid` (spec §9), Mermaid and wireframes are packs,
    and code blocks are highlighted by the host.
 3. **A component without code is a `compmd` definition**, styled with the visual tokens (spec §9.4), as the spec's own
    `card` and `callout` are: no code, no sandbox, nothing to load, and its images are the document's own. Code is for
@@ -73,12 +73,14 @@ pages have, and what CompMD covers already, with the list, each component's pack
 | 2 | `details` (a collapsible) | its own code | — | built in | 9 of 11 frameworks. Raw HTML's `<details>` exists, but HTML is opaque (spec §2.3): no components or Markdown structure inside it. Its fallback is its content, under its summary. |
 | 3 | `steps` | its own code | — | built in | 7 of 11 frameworks, and how-tos in posts. Numbers its items and draws the line between them; its fallback is the items in order. |
 | 4 | `card`, `link-card`, `gallery` | `compmd` definitions on `box`, in a `grid` | — | no code | 8 of 11 frameworks ship cards. A gallery is a grid of cards, each an image, a title and a description, so it needs no code and its images are the document's. |
+| 4b | `columns` | a `compmd` definition on `grid` | — | no code | 4 of 11 frameworks. Two or three columns without writing a grid's tracks and breakpoints: the first column is the default slot, `:: #middle` and `:: #end` the others, so a column holds any blocks with no `box` around them. `split=even \| wide-start \| wide-end` sets the widths; below `md` the columns stack. Slot names are logical (spec §9.2), so it reads right to left too. Its fallback is the columns in order. |
 | 5 | `figure` | a `compmd` definition | — | no code | Posts and newsletters caption their images: an image and its caption, the caption its text alternative too. |
 | 6 | `badge` | a `compmd` definition, inline | — | no code | 6 of 11 frameworks; "new", "beta", a version. |
 | 7 | `sticky-note` | a `compmd` definition | — | no code | A note pinned on the page: a tinted box, tilted, with a shadow, placed with `inset-*` (spec §9.2) where it should sit. |
 | 8 | `timeline` | `compmd` definitions on `box` | — | no code | Dates and what happened, in a post or notes; a list of items is enough. |
 | 9 | `rating` | its own code | — | strict | Stars from a value, half stars included, read-only: a few dozen lines, no package worth one. |
 | 10 | `chart` | a leaf over data rows | `@observablehq/plot` (ISC, 95 KB) | strict | Charts from `md.data` are what data imports are for (spec §8.6). [Charts](#charts) has the params and the comparison. |
+| 10b | `word-cloud` | a leaf over data rows | `d3-cloud` (BSD-3, the layout only) | strict | Words sized by their weight: `:: word-cloud[What readers asked about most] {rows=(md.data.topics) text=topic size=count}`. Its own component, not a `chart` type, since its data is words and weights, not x and y (*Left out of `chart`*). The component draws the layout as SVG, so it prints, follows the colour scheme and its words stay text; its fallback is the words by weight. Its size, and its measuring text in a strict frame, are checked first. |
 | 11 | `calendar` | a leaf over data rows | — | strict | A month, or several, with dates marked and their events listed, from data: about 150 lines over `Intl.DateTimeFormat`; `vanilla-calendar-pro` (MIT, 25 KB) if it grows. |
 | 12 | `weather` | a leaf over a data import | Meteocons icons (MIT) | strict | A forecast: the document imports it from Open-Meteo, which needs no key, and the reader allows the origin once (decision 5). [Weather](#weather). |
 | 13 | `graphviz` | a code renderer for ```` ```dot ```` | `@viz-js/viz` (MIT, 486 KB) | strict | The other text-to-diagram language people write, as Mermaid is; WebAssembly, which the frames allow again (decision 11), no network. |
@@ -114,7 +116,11 @@ How they are grouped into packs is the packs' design (CMD-11): the basics are `@
 | `horizontal` | bars and boxes across instead of up |
 | `xlabel`, `ylabel` | the axes' titles; the field's name otherwise |
 | `legend` | `auto` or `none` |
-| `height`, `description` | the chart's height; a longer text alternative than its label |
+| `description` | a longer text alternative than its label |
+
+The chart's height is its box's: `height=20rem` on the use, a common param (spec §9.2), which the renderer applies to
+the box and never passes to the component ([the spike of CMD-8](../spikes/wrap-npm-package/README.md), finding 2), so
+the chart fills its box.
 
 **Observable Plot draws them.** Each param is a Plot channel or option almost one to one (`fill` for `color`, `r` for
 `size`, its stack transform and facets for stacked and grouped, `bin`, `cell`, `box`), it takes records as they are,
@@ -262,6 +268,13 @@ From CR-19's comments, in round 2 and, for c30, round 3:
 | c7: tabs and the rest built in, not in the spec | Decision 6, which settles round 1's G4 |
 | c8, c24: a permissive embeds pack, with the details | `embeds` (21), [Embeds](#embeds), G2 |
 | c30: the packs built in for a host, configured once, as for the blog | Decision 9, and G10, what it needs first |
+
+From CR-28's comments, in its round 2:
+
+| Comment | Where it is |
+|---|---|
+| c1: columns, two or three, with a slot each | `columns` (4b); decision 2 no longer counts columns as covered |
+| c2: a word cloud | `word-cloud` (10b) |
 
 ## The research
 
