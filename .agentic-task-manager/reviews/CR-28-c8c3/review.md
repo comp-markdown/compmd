@@ -2,12 +2,12 @@
 id = "01a1f9c3-335d-70a7-804a-1577c4ebc8c3"
 number = 28
 title = "The first packs: one per component, and WebAssembly in the frames again"
-status = "open"
+status = "approved"
 tasks = ["CMD-11"]
 author = "claude:79612601"
 reviewers = []
 created = 2026-11-20T16:21:21Z
-updated = 2026-11-20T19:14:32Z
+updated = 2026-11-20T19:26:18Z
 +++
 
 Round 3: releasing many packs (c5, c11), and the column examples (c8).

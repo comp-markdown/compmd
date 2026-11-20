@@ -1,0 +1,162 @@
+diff --git a/docs/wrapping-an-npm-package.md b/docs/wrapping-an-npm-package.md
+index aae7e25..1cc3f31 100644
+--- a/docs/wrapping-an-npm-package.md
++++ b/docs/wrapping-an-npm-package.md
+@@ -29,8 +29,12 @@ packs it was tried on, built and run.
+    (create-pack, decision 3). The command writes it once; it is plain code the author may change, and the build
+    doesn't touch it again.
+ 4. **The signature is generated at every build** (decided 2026-11-20). `compmd-pack build` reads the package's
+-   TypeScript types with the TypeScript checker and writes the signature fence of `index.comp.md`, the one marked
+-   `generated` in its info string, leaving the document's prose as it is. Updating the package to its next version is a
++   TypeScript types with the TypeScript checker and writes the signature fence of `index.comp.md` that stands between
++   two comments, `<!-- compmd-pack:generated … -->` before it and `<!-- /compmd-pack:generated -->` after it, leaving
++   the document's prose as it is (decided 2026-11-20, CR-29: comments, which need no spec change and which plain
++   renderers hide; the opening one says what the fence is generated from and that edits to it are overwritten). The
++   build fails on a pair with anything but one signature fence between, or on a comment without its pair. Removing
++   the pair hands the fence to the author: the build then leaves it, and reports where it differs from the types. Updating the package to its next version is a
+    version bump: the build writes the params its types now give, and says what changed (a param added to the package,
+    one gone, one whose type changed), and a param that went fails the build where a demo or the overrides still name it.
+ 5. **The params are an allowlist,** `params` in `compmd.wrap.json` beside `package.json`, which the command writes
+@@ -114,8 +118,8 @@ export default component<Params>((target, { params, fallback }) => {
+ ```
+ 
+ ````md
+-<!-- index.comp.md: the fence below is rewritten at each build -->
+-```compmd component=qr-code signature generated
++<!-- compmd-pack:generated from react-qr-code 2.2.0's types and compmd.wrap.json; edits between these comments are overwritten at each build -->
++```compmd component=qr-code signature
+ params:
+   value: string
+   size: number = 256
+@@ -124,6 +128,7 @@ params:
+   level: L | M | H | Q?
+   title: string?
+ ```
++<!-- /compmd-pack:generated -->
+ ````
+ 
+ Moving to react-qr-code 2.3.0 is `npm install react-qr-code@2.3.0` and `npm run build`: the signature follows its
+@@ -133,7 +138,7 @@ types, and the build lists what changed.
+ 
+ [The spike](../spikes/wrap-npm-package/README.md) read four packages' files and types, wrote by hand the packs the
+ command would write, built them as `compmd-pack build` does and opened each demo in strict frames, in Chrome and
+-WebKit (2026-11-20). Its findings are in decisions 3, 5, 6 and 10 and in gaps G6 and G7.
++WebKit (2026-11-20). Its findings are in decisions 3, 4, 5, 6 and 10 and in gaps G6 and G7.
+ 
+ | Package | Kind | What derives | What the author writes | In a strict frame |
+ |---|---|---|---|---|
+@@ -158,9 +163,8 @@ WebKit (2026-11-20). Its findings are in decisions 3, 5, 6 and 10 and in gaps G6
+ - **G6. An optional enum** (`level: L | M | H | Q?`): the spec's grammar puts `?` after a type, and an enum is one,
+   and the processor accepts it (the spike's `qr-code`), but neither the spec nor a conformance case shows one. To
+   confirm in the spec before the build writes it.
+-- **G7. The `generated` flag** after `signature` in the fence's info string: the processor ignores it, but the spec
+-  doesn't say what other words there mean. Either the spec says a signature fence's other flags are for tools and
+-  ignored, or the build marks its fence another way (a comment line before it, which needs no spec change).
++- **G7, settled. How the generated fence is marked:** a word after `signature` in the info string would need the spec
++  to say what other words there mean; comments before and after the fence need nothing (decision 4).
+ 
+ ## What changes
+ 
+diff --git a/spikes/wrap-npm-package/README.md b/spikes/wrap-npm-package/README.md
+index 0493402..de2b62d 100644
+--- a/spikes/wrap-npm-package/README.md
++++ b/spikes/wrap-npm-package/README.md
+@@ -13,11 +13,11 @@
+ 7. **A Svelte package's CSS goes into the module.** Compiled with Svelte's default, the CSS went to a file of its own, which the frame never loads, and the chart drew unstyled; compiled with `css: "injected"`, the module adds it. Its theme's colours (`--color-primary`) are still unset: the bars are `currentColor` (the design's gap G3).
+ 8. **Svelte's props can't change from a plain module:** `$state` needs a `.svelte` file, so the glue mounts the chart again on each update.
+ 9. **An optional enum works:** `level: L | M | H | Q?` is accepted, and `level=H` checked (the design's gap G6, which still has no conformance case).
+-10. **`generated` after `signature` in the fence's info string** is ignored by the processor, but the spec doesn't say what other words there mean: a gap for the design (G7).
++10. **`generated` after `signature` in the fence's info string,** the first way the spike marked the build's fence, is ignored by the processor, but the spec doesn't say what other words there mean. The design settled on comments before and after the fence instead (decision 4), which the packs here use.
+ 
+ ## The packs
+ 
+-Each folder is what the command would write, with the glue as written once, and the demo it would write a use of each param into. The signatures marked `generated` are written by hand as the build would write them from the package's types.
++Each folder is what the command would write, with the glue as written once, and the demo it would write a use of each param into. The signatures between `compmd-pack:generated` comments are written by hand as the build would write them from the package's types.
+ 
+ | Folder | Package | Kind | Built (gzipped) | Imports left | Drew, Chrome and WebKit | What the frame refused |
+ |---|---|---|---|---|---|---|
+@@ -29,7 +29,7 @@ Each folder is what the command would write, with the glue as written once, and
+ - **react-qr-code:** six params from its six own props; `size`'s default, 256, is the author's (its types' comment says 128). React and React DOM stay imports, which the frames' import map gives.
+ - **layerchart:** five params of about 90, the allowlist; `x` and `y` as field names, their `string` branch. Its `.svelte` sources compile with the frames' Svelte, and d3 and its other dependencies are bundled.
+ - **model-viewer:** the strict frame refuses what the design expected, and the page shows the label in its place. Its decoders from a CDN never came up: the model didn't load.
+-- **qrcode:** nothing derives; the author wrote the call, `toString(value, { type: "svg" })`, and the signature, which isn't marked `generated`. Its SVG takes the frame's width; `width=10rem` on the use sizes it.
++- **qrcode:** nothing derives; the author wrote the call, `toString(value, { type: "svg" })`, and the signature, which has no `compmd-pack:generated` comments. Its SVG takes the frame's width; `width=10rem` on the use sizes it.
+ 
+ `results.json` has each run's numbers, and `screenshots/` each page.
+ 
+diff --git a/spikes/wrap-npm-package/layerchart/index.comp.md b/spikes/wrap-npm-package/layerchart/index.comp.md
+index e0ae1fc..5c9dd7e 100644
+--- a/spikes/wrap-npm-package/layerchart/index.comp.md
++++ b/spikes/wrap-npm-package/layerchart/index.comp.md
+@@ -13,9 +13,8 @@ md:
+ 
+ `bar-chart` draws `data`'s rows as bars with [layerchart](https://www.npmjs.com/package/layerchart) 2.11.0's `BarChart`: `x` names the field the bars are placed by, `y` the field their length is. The chart is as tall as its box: `height=12rem` on the use, 18rem without. A reader without it sees the label.
+ 
+-<!-- The fence below is the build's: it is written again from layerchart's types at each build. -->
+-
+-```compmd component=bar-chart signature generated
++<!-- compmd-pack:generated from layerchart 2.11.0's types and compmd.wrap.json; edits between these comments are overwritten at each build -->
++```compmd component=bar-chart signature
+ params:
+   data: array?
+   x: string?
+@@ -23,3 +22,4 @@ params:
+   orientation: horizontal | vertical = vertical
+   bandPadding: number = 0.4
+ ```
++<!-- /compmd-pack:generated -->
+diff --git a/spikes/wrap-npm-package/model-viewer/index.comp.md b/spikes/wrap-npm-package/model-viewer/index.comp.md
+index ecc3704..7a58aff 100644
+--- a/spikes/wrap-npm-package/model-viewer/index.comp.md
++++ b/spikes/wrap-npm-package/model-viewer/index.comp.md
+@@ -13,9 +13,8 @@ md:
+ 
+ `model-viewer` shows the 3D model at `src` with [@google/model-viewer](https://www.npmjs.com/package/@google/model-viewer) 4.4.0. A reader without it sees the label, which is also the model's `alt`.
+ 
+-<!-- The fence below is the build's: it is written again from @google/model-viewer's types at each build. -->
+-
+-```compmd component=model-viewer signature generated
++<!-- compmd-pack:generated from @google/model-viewer 4.4.0's types and compmd.wrap.json; edits between these comments are overwritten at each build -->
++```compmd component=model-viewer signature
+ params:
+   src: string
+   alt: string?
+@@ -23,3 +22,4 @@ params:
+   cameraControls: boolean = false
+   autoRotate: boolean = false
+ ```
++<!-- /compmd-pack:generated -->
+diff --git a/spikes/wrap-npm-package/qrcode/index.comp.md b/spikes/wrap-npm-package/qrcode/index.comp.md
+index 268f69e..605a9cf 100644
+--- a/spikes/wrap-npm-package/qrcode/index.comp.md
++++ b/spikes/wrap-npm-package/qrcode/index.comp.md
+@@ -13,7 +13,7 @@ md:
+ 
+ `qr-svg` draws a QR code of `value` as SVG with the library [qrcode](https://www.npmjs.com/package/qrcode) 1.5.4. A reader without it sees the label.
+ 
+-<!-- No `generated`: a library has no props to read, so the author writes this signature, and the build leaves it. -->
++<!-- Not between `compmd-pack:generated` comments: a library has no props to read, so the author writes this signature, and the build leaves it. -->
+ 
+ ```compmd component=qr-svg signature
+ params:
+diff --git a/spikes/wrap-npm-package/react-qr-code/index.comp.md b/spikes/wrap-npm-package/react-qr-code/index.comp.md
+index 03338d7..7c7409e 100644
+--- a/spikes/wrap-npm-package/react-qr-code/index.comp.md
++++ b/spikes/wrap-npm-package/react-qr-code/index.comp.md
+@@ -13,9 +13,8 @@ md:
+ 
+ `qr-code` draws a QR code of `value` with [react-qr-code](https://www.npmjs.com/package/react-qr-code) 2.2.0. A reader without it sees the label, which is also the drawing's title.
+ 
+-<!-- The fence below is the build's: it is written again from react-qr-code's types at each build. -->
+-
+-```compmd component=qr-code signature generated
++<!-- compmd-pack:generated from react-qr-code 2.2.0's types and compmd.wrap.json; edits between these comments are overwritten at each build -->
++```compmd component=qr-code signature
+ params:
+   value: string
+   size: number = 256
+@@ -24,3 +23,4 @@ params:
+   level: L | M | H | Q?
+   title: string?
+ ```
++<!-- /compmd-pack:generated -->

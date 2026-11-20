@@ -1,7 +1,7 @@
 ## docs/first-components.md:74-75 · round 1 · t1
 > 4	card, link-card, gallery	compmd definitions on box, in a grid	—	no code	8 of 11 frameworks ship cards. A gallery is a grid of cards, each an image, a title and a description, so it needs no code and its images are the document's.
 
-- [ ] **Hakan Serce** · 2026-11-20T18:43:17Z · c1
+- [x] **Hakan Serce** · 2026-11-20T18:43:17Z · c1
   What about, columns (like two-column, three-column) to make authors life easier. I know these are possilbe with containers/boxes already, but it still takes a lot compared to just one consistent two-columns with left and right slots, etc. Thoughts?
 
   Actually can you give me two examples showing two column and three column layouts for a section of a document here using existing spec defined capabilities rows/grid etc?
@@ -99,7 +99,7 @@
 ## docs/first-components.md:107 · round 1 · t2
 > type
 
-- [ ] **Hakan Serce** · 2026-11-20T18:44:35Z · c2
+- [x] **Hakan Serce** · 2026-11-20T18:44:35Z · c2
   what about a Word Cloud?
   - **claude:79612601** · 2026-11-20T18:52:45Z · c4
     Yes, I think it belongs, as a component of its own rather than a `chart` type: its data is words with weights, not x and y, the same reason radar and sankey are left out of `chart` (*Left out of `chart`*). My proposal: `word-cloud`, a leaf over data rows, `:: word-cloud[What readers asked about most] {rows=(md.data.topics) text=topic size=count}`, the label its text alternative and its fallback a list of the words by weight. Laid out with `d3-cloud` (BSD-3, layout only), drawn as SVG by the component, so it prints, follows the colour scheme and its words stay text. Its size and how it measures text in a strict frame are to check before the task, as the research table does for the others. A `text=` param that counts the words of a passage itself could come later. If you agree it goes in the list with its task.
@@ -109,7 +109,7 @@
         Added in round 2: row 10b, and its task CMD-349 in Packs 2, after the wrap command (CMD-9).
 
 ## (the review) · round 1 · t3
-- [ ] **Hakan Serce** · 2026-11-20T18:56:11Z · c5
+- [x] **Hakan Serce** · 2026-11-20T18:56:11Z · c5
   The publishing pain is real with 25 packs, versioning, publishing, approving staged packages, etc.
 
   I don't want to version them all together, I want them versioned separately. But what I need is automation scripts for these:

@@ -1,0 +1,42 @@
+{
+  "number": 3,
+  "kind": {
+    "kind": "range",
+    "base": "4ab2184dc128c7cd54fa1fc3846baf8be0bc841f",
+    "head": "f15846e9f7fddaf067347cce8913026c51552ddf"
+  },
+  "files": [
+    {
+      "path": "docs/wrapping-an-npm-package.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/layerchart/index.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/model-viewer/index.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/qrcode/index.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/react-qr-code/index.comp.md",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-20T19:30:11Z"
+}
