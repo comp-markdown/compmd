@@ -2,12 +2,12 @@
 id = "01a1f8ba-be48-7059-889f-0140db244ac5"
 number = 26
 title = "Release 0.9.0"
-status = "open"
+status = "approved"
 tasks = ["CMD-345"]
 author = "claude:79612601"
 reviewers = []
 created = 2026-11-20T11:32:30Z
-updated = 2026-11-20T11:32:30Z
+updated = 2026-11-20T11:38:58Z
 +++
 
 Release 0.9.0, as [releases](docs/releases.md) says: every npm package and the crates at one version, a minor one since it breaks.
