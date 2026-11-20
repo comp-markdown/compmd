@@ -12567,7 +12567,7 @@
       "description": "Release CompMD 0.9.0 as [releases](docs/releases.md) and `RELEASING.md` say: every npm package and the crates at one version. A minor version, since it breaks (below).\n\n## Before the tag\n- **The spec's revision:** the spec is dirty (§8.6 and §15, every origin for a host's own documents, CMD-308), so `cargo make spec-revision` cuts `1.0-draft.17`, and `SPEC_VERSION` (crate and `@compmd/processor`) and the packages' READMEs name it.\n- **Release notes**, in each package's README version list:\n  - Breaking: the sandbox's frame protocol is version 2 (`highlight`, `highlighted`), so a host's page and the frame documents it serves are upgraded together; the frames' policies no longer allow `'wasm-unsafe-eval'`, since the host's page highlights for them (CMD-262).\n  - New: the host's own code highlighter, `highlight`, in both page modes; Shiki made once for a page and all its frames (CMD-262). A host may allow every origin for its own documents (`allowedOrigins: \"any\"`, `origins: \"any\"` in `compmd.config.json`), and the blog's share image (`defaultSocialImage`, `socialImage`) (CMD-308). A document's host components are only those it uses (CMD-268).\n- `cargo make ci` green on `main`, the Tauri check on Linux CI and `cargo make tauri-check` by hand on macOS.\n\n## The release\nThe version in every `package.json` and the crates' `Cargo.toml` in one commit, the Tauri lockfiles after it; the tag `v0.9.0`; the release workflow stages the npm packages and waits for the crates' approval.\n\nEvery push and every publish needs the user's go; the push order is the markdown-rs fork (if it changed), then `compmd`, with `--follow-tags` for the spec's tag.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [
         "01a1f328-b4f9-7563-a426-a1b0b5a0ead4",
         "01a1f5ac-46f1-7265-8aef-db1a0db26768",
@@ -12578,7 +12578,7 @@
         "spec/CHANGELOG.md"
       ],
       "created_at": "2026-11-20T11:18:00Z",
-      "updated_at": "2026-11-20T11:21:16Z",
+      "updated_at": "2026-11-20T11:32:30Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 345,
@@ -12591,7 +12591,23 @@
       "sprint": "Packs & Blog",
       "started_at": "2026-11-20T11:18:09Z",
       "started_by": "claude:79612601",
-      "commit": "8a7cb679021fd5d77f7dd83e1f0e422249ed87a8"
+      "commit": "87032ac311f67d3d86cae0689782a9404960a036",
+      "code_reviews": [
+        {
+          "id": "01a1f8ba-be48-7059-889f-0140db244ac5",
+          "ref": "CR-26"
+        }
+      ],
+      "review_requested_at": "2026-11-20T11:32:30Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-20T11:32:30Z",
+          "kind": "review",
+          "text": "CR-26: Release 0.9.0",
+          "by": "claude:79612601"
+        }
+      ]
     }
   ]
 }

@@ -1,0 +1,572 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index bcf6bb9..bb9f53c 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -321,7 +321,7 @@ checksum = "1c133bc6a41be0d194c306b5506d15e6feeea7b1d6604bd3f8310dfb2ca96486"
+ 
+ [[package]]
+ name = "compmd"
+-version = "0.8.0"
++version = "0.9.0"
+ dependencies = [
+  "cel",
+  "compmd-markdown",
+@@ -343,7 +343,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "compmd-host"
+-version = "0.8.0"
++version = "0.9.0"
+ dependencies = [
+  "compmd",
+  "compmd-pack",
+@@ -374,7 +374,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "compmd-pack"
+-version = "0.8.0"
++version = "0.9.0"
+ dependencies = [
+  "semver",
+  "serde",
+diff --git a/crates/host/Cargo.toml b/crates/host/Cargo.toml
+index 768a976..f180340 100644
+--- a/crates/host/Cargo.toml
++++ b/crates/host/Cargo.toml
+@@ -1,6 +1,6 @@
+ [package]
+ name = "compmd-host"
+-version = "0.8.0"
++version = "0.9.0"
+ description = "What every host of CompMD documents shares: the bundle and its manifest, the pack store, and the serving contract, for any platform's adapter. In development."
+ readme = "README.md"
+ homepage = "https://compmd.dev/"
+@@ -20,9 +20,9 @@ processor = ["dep:compmd"]
+ all-features = true
+ 
+ [dependencies]
+-compmd = { path = "../processor", version = "0.8.0", optional = true }
++compmd = { path = "../processor", version = "0.9.0", optional = true }
+ # The names packs and their files are known by, as the processor has them.
+-compmd-pack = { path = "../pack-types", version = "0.8.0" }
++compmd-pack = { path = "../pack-types", version = "0.9.0" }
+ # Requests and responses, as every Rust web stack and Tauri's custom schemes speak them.
+ http = "1.3.1"
+ semver = { version = "1.0.28", features = ["serde"] }
+diff --git a/crates/host/README.md b/crates/host/README.md
+index 589808b..3734544 100644
+--- a/crates/host/README.md
++++ b/crates/host/README.md
+@@ -22,6 +22,7 @@ Adapters: [`tauri-plugin-compmd`](https://github.com/comp-markdown/compmd/blob/m
+ In development, released with CompMD's packages at the same version.
+ 
+ **Versions:**
++- **0.9.0:** the same as 0.8.0.
+ - **0.8.0:** the serving contract's decision apart from its answer: `route`, a path's `Route`, a `Refusal` saying why, and `served_headers` and `refusal_headers`, which `@compmd/host` shares as WebAssembly; `respond` answers as before.
+ - **0.7.1:** the same as 0.7.0; its homepage and links name the website's new address, [compmd.dev](https://compmd.dev/).
+ - **0.7.0:** the first version.
+diff --git a/crates/pack-types/Cargo.toml b/crates/pack-types/Cargo.toml
+index c1842c4..4ae0749 100644
+--- a/crates/pack-types/Cargo.toml
++++ b/crates/pack-types/Cargo.toml
+@@ -1,6 +1,6 @@
+ [package]
+ name = "compmd-pack"
+-version = "0.8.0"
++version = "0.9.0"
+ description = "The names CompMD packs and their files are known by: a pack's name, a release, a file's path and place, an integrity. In development."
+ readme = "README.md"
+ homepage = "https://compmd.dev/"
+diff --git a/crates/pack-types/README.md b/crates/pack-types/README.md
+index 19d71e3..e5482b1 100644
+--- a/crates/pack-types/README.md
++++ b/crates/pack-types/README.md
+@@ -15,6 +15,7 @@ The processor (`compmd`, which re-exports it as `compmd::pack`) and `compmd-host
+ In development, released with CompMD's packages at the same version.
+ 
+ **Versions:**
++- **0.9.0:** the same as 0.8.0.
+ - **0.8.0:** the same as 0.7.1.
+ - **0.7.1:** the same as 0.7.0; its homepage and links name the website's new address, [compmd.dev](https://compmd.dev/).
+ - **0.7.0:** the first version.
+diff --git a/crates/processor/Cargo.toml b/crates/processor/Cargo.toml
+index 1b9cab1..bb77a37 100644
+--- a/crates/processor/Cargo.toml
++++ b/crates/processor/Cargo.toml
+@@ -1,6 +1,6 @@
+ [package]
+ name = "compmd"
+-version = "0.8.0"
++version = "0.9.0"
+ description = "The CompMD processor: parses, validates and expands CompMD (Component Markdown) documents. In development."
+ readme = "README.md"
+ homepage = "https://compmd.dev/"
+@@ -12,7 +12,7 @@ repository.workspace = true
+ 
+ [dependencies]
+ # The names packs and their files are known by, shared with hosts (re-exported as `compmd::pack`).
+-compmd-pack = { path = "../pack-types", version = "0.8.0" }
++compmd-pack = { path = "../pack-types", version = "0.9.0" }
+ # CSV and TSV data (spec §8.6), as RFC 4180 reads it.
+ csv = "1.3.1"
+ fixed_decimal = { version = "0.7.3", features = ["ryu"] }
+diff --git a/crates/processor/README.md b/crates/processor/README.md
+index 5000885..9ee1c54 100644
+--- a/crates/processor/README.md
++++ b/crates/processor/README.md
+@@ -1,12 +1,13 @@
+ # compmd
+ 
+-The [CompMD](https://compmd.dev/) processor, in Rust: it parses, validates and expands documents written in CompMD (Component Markdown), as the [specification](https://github.com/comp-markdown/compmd/blob/main/spec/compmd-spec-v1.md) describes. It implements the spec's version **1.0-draft.16** (`compmd::SPEC_VERSION`); the spec is versioned on its own, apart from this crate.
++The [CompMD](https://compmd.dev/) processor, in Rust: it parses, validates and expands documents written in CompMD (Component Markdown), as the [specification](https://github.com/comp-markdown/compmd/blob/main/spec/compmd-spec-v1.md) describes. It implements the spec's version **1.0-draft.17** (`compmd::SPEC_VERSION`); the spec is versioned on its own, apart from this crate.
+ 
+ **Website:** [compmd.dev](https://compmd.dev/), with the spec and a playground to try CompMD in.
+ 
+ **Status: in development.** The processor implements stages 1 to 4b of the spec (§11) and its CEL profile (§8.2), does no I/O of its own, and passes every case of the [conformance set](https://github.com/comp-markdown/compmd/tree/main/conformance) that needs no host language: it is a "compmd/1 processor with remote data and origins" (§13.1). Running host-language components is a renderer's job; the processor expands their invocations to nodes for it.
+ 
+ **Versions:**
++- **0.9.0:** the spec's draft `1.0-draft.17`, which `SPEC_VERSION` names: `AllowedOrigins`, a host's listed origins or every origin, for documents it publishes itself (§8.6, §15), which `validate` takes as a list too. The host components are only those the document uses (invokes or draws a code block with, in any branch, through its `compmd` definitions), no longer every one an ambient pack gives.
+ - **0.8.0:** the spec's draft `1.0-draft.16` ([its changelog](https://github.com/comp-markdown/compmd/blob/main/spec/CHANGELOG.md), drafts 13 to 16), which `SPEC_VERSION`, new, names: TOML frontmatter between `+++` lines; printing, a signature's `print: fallback` (W122); examples, ` ```compmd ` blocks that render as documents of their own (W123); `render=source|output|both` on a block a code renderer draws; `plain::text`, a document's text as a reader reads it. On `compmd-markdown` 0.2.0. Breaking, for documents only: an unquoted short-form default followed by text is F011, a `+++` block at the start is the frontmatter, and a signature that declares `class` or `id`, or a code renderer's that declares `alt` or `render`, is F013.
+ - **0.7.1:** the same as 0.7.0; its homepage and links name the website's new address, [compmd.dev](https://compmd.dev/).
+ - **0.7.0:** the spec's draft as of 2026-11-12 ([its changelog](https://github.com/comp-markdown/compmd/blob/main/spec/CHANGELOG.md)); the host API names packs, releases, places and integrities with `compmd-pack`'s types, re-exported as `compmd::pack`; a pack's source component's `HostComponent` names its `place` too, so a host that compiled it ahead (spec §6.4) gives the renderer the compiled module.
+diff --git a/crates/processor/src/lib.rs b/crates/processor/src/lib.rs
+index c86241d..a1b5439 100644
+--- a/crates/processor/src/lib.rs
++++ b/crates/processor/src/lib.rs
+@@ -61,7 +61,7 @@ pub use resolve::{Ambient, Language};
+ /// ```
+ /// assert!(compmd::SPEC_VERSION.starts_with("1.0"));
+ /// ```
+-pub const SPEC_VERSION: &str = "1.0-draft.16";
++pub const SPEC_VERSION: &str = "1.0-draft.17";
+ 
+ #[cfg(test)]
+ mod tests {
+diff --git a/crates/tauri/Cargo.lock b/crates/tauri/Cargo.lock
+index 4556828..bb5bbc4 100644
+--- a/crates/tauri/Cargo.lock
++++ b/crates/tauri/Cargo.lock
+@@ -350,7 +350,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "compmd"
+-version = "0.8.0"
++version = "0.9.0"
+ dependencies = [
+  "compmd-markdown",
+  "compmd-pack",
+@@ -369,7 +369,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "compmd-host"
+-version = "0.8.0"
++version = "0.9.0"
+ dependencies = [
+  "compmd",
+  "compmd-pack",
+@@ -389,7 +389,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "compmd-pack"
+-version = "0.8.0"
++version = "0.9.0"
+ dependencies = [
+  "semver",
+  "serde",
+@@ -3624,7 +3624,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "tauri-plugin-compmd"
+-version = "0.8.0"
++version = "0.9.0"
+ dependencies = [
+  "compmd-host",
+  "serde_json",
+diff --git a/crates/tauri/Cargo.toml b/crates/tauri/Cargo.toml
+index 16e3b54..8759cbc 100644
+--- a/crates/tauri/Cargo.toml
++++ b/crates/tauri/Cargo.toml
+@@ -1,6 +1,6 @@
+ [package]
+ name = "tauri-plugin-compmd"
+-version = "0.8.0"
++version = "0.9.0"
+ description = "The Tauri adapter of CompMD's hosting: embeds the bundle @compmd/vite writes, serves it on a scheme of the app's own, and gives the page its origin. In development."
+ readme = "README.md"
+ homepage = "https://compmd.dev/"
+@@ -23,7 +23,7 @@ build = []
+ processor = ["compmd-host/processor"]
+ 
+ [dependencies]
+-compmd-host = { path = "../host", version = "0.8.0" }
++compmd-host = { path = "../host", version = "0.9.0" }
+ serde_json = "1.0.145"
+ tauri = "2.12"
+ thiserror = "2.0.18"
+diff --git a/crates/tauri/README.md b/crates/tauri/README.md
+index b077ad1..0e051c5 100644
+--- a/crates/tauri/README.md
++++ b/crates/tauri/README.md
+@@ -9,6 +9,7 @@ It shares its version with the `@compmd` packages: use `@compmd/vite` and `@comp
+ - **0.7.0:** the hosting adapter. The app embeds the bundle its own page's build writes (`build::bundle`, `include_bundle!`, `init(bundle)` in place of `init()` and `Builder`); the scheme is the one the bundle was built for; the page gets the origin, `__COMPMD__ = { origin }`; the scheme serves `compmd-host`'s contract, frames under their hash and packs at `packs/<place>`. The crate's own frames, `frames_dir`, the `base` command and the permissions are gone.
+ - **0.7.1:** the same as 0.7.0; its homepage and links name the website's new address, [compmd.dev](https://compmd.dev/).
+ - **0.8.0:** the same adapter as 0.7.1, serving the sandbox's 0.8.0 frames, whose policies let them compile WebAssembly; an app with a policy of its own adds `'wasm-unsafe-eval'` to its `script-src`, as `cspFor` gives it, for code highlighted with Oniguruma on macOS and Linux.
++- **0.9.0:** the same adapter as 0.8.0, serving the sandbox's 0.9.0 frames, which ask the app's page to highlight their code and no longer compile WebAssembly; an app's own policy keeps `'wasm-unsafe-eval'` in its `script-src`, as `cspFor` gives it, since its page now highlights every frame's code.
+ 
+ ## Use
+ 
+diff --git a/crates/tauri/examples/tauri-app/src-tauri/Cargo.lock b/crates/tauri/examples/tauri-app/src-tauri/Cargo.lock
+index 7fc1855..0817485 100644
+--- a/crates/tauri/examples/tauri-app/src-tauri/Cargo.lock
++++ b/crates/tauri/examples/tauri-app/src-tauri/Cargo.lock
+@@ -350,7 +350,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "compmd"
+-version = "0.8.0"
++version = "0.9.0"
+ dependencies = [
+  "compmd-markdown",
+  "compmd-pack",
+@@ -369,7 +369,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "compmd-host"
+-version = "0.8.0"
++version = "0.9.0"
+ dependencies = [
+  "compmd",
+  "compmd-pack",
+@@ -389,7 +389,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "compmd-pack"
+-version = "0.8.0"
++version = "0.9.0"
+ dependencies = [
+  "semver",
+  "serde",
+@@ -3635,7 +3635,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "tauri-plugin-compmd"
+-version = "0.8.0"
++version = "0.9.0"
+ dependencies = [
+  "compmd-host",
+  "serde_json",
+diff --git a/npm-packages/blog/README.md b/npm-packages/blog/README.md
+index 0cf508f..86c5e7b 100644
+--- a/npm-packages/blog/README.md
++++ b/npm-packages/blog/README.md
+@@ -10,6 +10,7 @@ the page as it was built, and are drawn live once its script loads, through the
+ script. Its tests open a live post in Chrome and WebKit.
+ 
+ **Versions:**
++- **0.9.0:** a post's share image, `socialImage` in its frontmatter or the blog's `defaultSocialImage`, as `og:image` and a large Twitter card; the blog's own origin always allowed, and with `origins: "any"` in its `compmd.config.json` every origin, so no image asks the reader, and an image of an origin not allowed is a warning at build; a post's script only for the components it uses; a trusted pack's Svelte components built into the page's script; `sharedFiles`, files a site shares with its posts, and `fileFor`, `sendBlogFile` and `CONTENT_MARKER`, for a site that builds and serves its blog itself.
+ - **0.8.0:** the first version: `cblo new`, `cblo dev` and `cblo build`, the posts' pages, tags, an Atom feed and comments, each page within its size budget, and a post's host-language components drawn live. (`0.0.0` is a placeholder with no code.)
+ 
+ ## A blog
+diff --git a/npm-packages/blog/package.json b/npm-packages/blog/package.json
+index ba56d3f..6591ae3 100644
+--- a/npm-packages/blog/package.json
++++ b/npm-packages/blog/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "@compmd/blog",
+-  "version": "0.8.0",
++  "version": "0.9.0",
+   "description": "A blog in CompMD: a folder of CompMD documents made a static blog, with a page per post, tags, an Atom feed and comments. cblo new, cblo dev, cblo build",
+   "keywords": [
+     "compmd",
+diff --git a/npm-packages/create-blog/README.md b/npm-packages/create-blog/README.md
+index 8b95b03..752236f 100644
+--- a/npm-packages/create-blog/README.md
++++ b/npm-packages/create-blog/README.md
+@@ -17,6 +17,7 @@ Options, after `--`: `--title "My notes"` (the folder's name by default), `--aut
+ this package's version, as the two are released together.
+ 
+ **Versions:**
++- **0.9.0:** the same as 0.8.0, writing a blog on `@compmd/blog` 0.9.0.
+ - **0.8.0:** the first version. (`0.0.0` is a placeholder with no code.)
+ 
+ ## Licence
+diff --git a/npm-packages/create-blog/package.json b/npm-packages/create-blog/package.json
+index e0fb9f4..f11d4f2 100644
+--- a/npm-packages/create-blog/package.json
++++ b/npm-packages/create-blog/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "@compmd/create-blog",
+-  "version": "0.8.0",
++  "version": "0.9.0",
+   "description": "Writes a blog in CompMD: its configuration and a first post, built with @compmd/blog. npm create @compmd/blog <folder>",
+   "keywords": [
+     "compmd",
+diff --git a/npm-packages/create-pack/package.json b/npm-packages/create-pack/package.json
+index 1f4d9bd..c09eea5 100644
+--- a/npm-packages/create-pack/package.json
++++ b/npm-packages/create-pack/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "@compmd/create-pack",
+-  "version": "0.8.0",
++  "version": "0.9.0",
+   "description": "Writes a CompMD pack: a component as one built module, its signature, a test page in the sandbox, and the steps to publish it. npm create @compmd/pack <folder>",
+   "keywords": [
+     "compmd",
+diff --git a/npm-packages/devtools/README.md b/npm-packages/devtools/README.md
+index e81580d..483ff60 100644
+--- a/npm-packages/devtools/README.md
++++ b/npm-packages/devtools/README.md
+@@ -5,6 +5,7 @@ The [CompMD](https://compmd.dev/) Developer Tools as a part any page embeds ([th
+ **Status: in development,** as the processor is; first released at 0.3.0, with the sandbox's observer it reads, and versioned with the other packages. Two ways to embed it (decision 3): the editor, below, and the inspector, attached to a view a host app already renders (*The inspector*).
+ 
+ **Versions:**
++- **0.9.0:** the same tools as 0.8.0, on the sandbox's 0.9.0, with a host that allows every origin.
+ - **0.8.0:** the same tools as 0.7.1, on the sandbox's 0.8.0.
+ - **0.7.1:** the same as 0.7.0; its homepage and links name the website's new address, [compmd.dev](https://compmd.dev/).
+ - **0.7.0:** the same tools as 0.6.0, on the sandbox's 0.7.0.
+diff --git a/npm-packages/devtools/package.json b/npm-packages/devtools/package.json
+index 7739806..f7a6869 100644
+--- a/npm-packages/devtools/package.json
++++ b/npm-packages/devtools/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "@compmd/devtools",
+-  "version": "0.8.0",
++  "version": "0.9.0",
+   "description": "The CompMD Developer Tools as a part any page embeds: a document's text and its page side by side, the views of what the processor makes of it, and what its sandbox does: its frames, a console and the messages between them.",
+   "keywords": [
+     "compmd",
+diff --git a/npm-packages/host-js/README.md b/npm-packages/host-js/README.md
+index 4bd3eef..381f154 100644
+--- a/npm-packages/host-js/README.md
++++ b/npm-packages/host-js/README.md
+@@ -23,4 +23,5 @@ const answer = await respond(request, bundle);   // a Response
+ It shares its version with the other `@compmd` packages ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
+ 
+ **Versions:**
++- **0.9.0:** the same as 0.8.0.
+ - **0.8.0:** the first version: `respond`, `compmd-host`'s decision as WebAssembly, with `init` and `initSync`, and `@compmd/host/node`'s `folderBundle`. (`0.0.0` is a placeholder with no code.)
+diff --git a/npm-packages/host-js/package.json b/npm-packages/host-js/package.json
+index 85a8dd5..628f596 100644
+--- a/npm-packages/host-js/package.json
++++ b/npm-packages/host-js/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "@compmd/host",
+-  "version": "0.8.0",
++  "version": "0.9.0",
+   "description": "The serving contract of a CompMD host over the Fetch API: a bundle's frames and the packs it or a store holds, with the headers that sandbox them, and a refusal saying why for anything else. For workers, Node and dev servers.",
+   "keywords": [
+     "compmd",
+diff --git a/npm-packages/pack/README.md b/npm-packages/pack/README.md
+index d48a28e..6d383c8 100644
+--- a/npm-packages/pack/README.md
++++ b/npm-packages/pack/README.md
+@@ -12,6 +12,7 @@ Everything a [CompMD](https://compmd.dev/) pack would otherwise copy into itself
+ `npm create @compmd/pack` writes a pack on it ([`@compmd/create-pack`](https://github.com/comp-markdown/compmd/blob/main/npm-packages/create-pack/README.md)). It shares its version with the other `@compmd` packages.
+ 
+ **Versions:**
++- **0.9.0:** the same as 0.8.0, on the sandbox's 0.9.0.
+ - **0.8.0:** the same as 0.7.1, on the sandbox's 0.8.0.
+ - **0.7.1:** the same as 0.7.0; its homepage and links name the website's new address, [compmd.dev](https://compmd.dev/).
+ - **0.7.0:** the same as 0.6.0, on the sandbox's 0.7.0.
+diff --git a/npm-packages/pack/package.json b/npm-packages/pack/package.json
+index 5c57fae..b2b0b1f 100644
+--- a/npm-packages/pack/package.json
++++ b/npm-packages/pack/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "@compmd/pack",
+-  "version": "0.8.0",
++  "version": "0.9.0",
+   "description": "Everything a CompMD pack would otherwise copy: compmd-pack builds, checks, tests and serves a pack's test page, with helpers for components that draw asynchronously and a kit to test them.",
+   "keywords": [
+     "compmd",
+diff --git a/npm-packages/registry/README.md b/npm-packages/registry/README.md
+index b4dcedc..ad97d03 100644
+--- a/npm-packages/registry/README.md
++++ b/npm-packages/registry/README.md
+@@ -13,7 +13,7 @@ Packs for [CompMD](https://compmd.dev/) documents from an npm registry. A docume
+ npm install @compmd/registry @compmd/processor
+ ```
+ 
+-It implements version **1.0-draft.16** of the [CompMD specification](https://compmd.dev/spec/) and its companion on registries, which are versioned on their own, and shares its version with the other `@compmd/` packages ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
++It implements version **1.0-draft.17** of the [CompMD specification](https://compmd.dev/spec/) and its companion on registries, which are versioned on their own, and shares its version with the other `@compmd/` packages ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
+ 
+ **Versions:**
+ - **0.4.0:** `timeout`, after which `resolvePacks` stops waiting for a pack and lists it in `problems`, for a host that renders with its packs pending meanwhile.
+diff --git a/npm-packages/registry/package.json b/npm-packages/registry/package.json
+index 8b38eeb..8e94533 100644
+--- a/npm-packages/registry/package.json
++++ b/npm-packages/registry/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "@compmd/registry",
+-  "version": "0.8.0",
++  "version": "0.9.0",
+   "description": "Packs for CompMD documents from an npm registry: resolved as the processor asks, the host's policy applied before anything is downloaded, each tarball checked against its integrity, and cached.",
+   "keywords": [
+     "compmd",
+diff --git a/npm-packages/render/README.md b/npm-packages/render/README.md
+index 90786a3..97446c2 100644
+--- a/npm-packages/render/README.md
++++ b/npm-packages/render/README.md
+@@ -15,9 +15,10 @@ It renders trees; it doesn't process documents. A processor (stages 1 to 4b, spe
+ npm install @compmd/render @compmd/processor
+ ```
+ 
+-It implements version **1.0-draft.16** of the [CompMD specification](https://compmd.dev/spec/); the spec is versioned on its own. Its versions are `0.x` until the spec's version 1 is published, and it shares its version with `@compmd/processor` ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
++It implements version **1.0-draft.17** of the [CompMD specification](https://compmd.dev/spec/); the spec is versioned on its own. Its versions are `0.x` until the spec's version 1 is published, and it shares its version with `@compmd/processor` ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
+ 
+ **Versions:**
++- **0.9.0:** the spec's draft `1.0-draft.17`, whose changes are the processor's and the sandbox's; `codeBlocks`, a tree's code blocks as a highlighter is asked for them, and `nextTask`, for a host that answers its frames' highlighting.
+ - **0.8.0:** the spec's draft as of 2026-11-19, `1.0-draft.16` ([its changelog](https://github.com/comp-markdown/compmd/blob/main/spec/CHANGELOG.md)): printing (`page.print()`, `printsFallback`, the print styles); a host's own URL schemes for links and images (`ownSchemes`); a remote image shown as its alt text, with a button, until the reader allows its origin (`page.imagesAllowed`); examples, ` ```compmd ` blocks that render, and `render=source|output|both` on a rendered code block. A code block's lines are elements of their own, with their boxes in `lines()` and `page.lineHeights()` to size them. A highlighter gives tokens and the page draws them, a block at a time, those on screen first, and `page.drawn()` waits for them. Many pages in one document share one stylesheet, and read the colour scheme only when a component needs it, so a page of text and code costs only its content. Breaking: `highlight` is `(code, language) => lines` of tokens, no longer a function that writes into the block; the frame protocol is version 5 (`lineHeights`), so a page and a frame of 0.7 refuse each other.
+ - **0.7.1:** the same as 0.7.0; its homepage and links name the website's new address, [compmd.dev](https://compmd.dev/).
+ - **0.7.0:** the same renderer as 0.6.0, released with CompMD's hosting (`@compmd/vite`'s bundle, the sandbox on it, `tauri-plugin-compmd` as the Tauri adapter).
+diff --git a/npm-packages/render/package.json b/npm-packages/render/package.json
+index 16bcf39..c3d0a18 100644
+--- a/npm-packages/render/package.json
++++ b/npm-packages/render/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "@compmd/render",
+-  "version": "0.8.0",
++  "version": "0.9.0",
+   "description": "Renders a CompMD expanded tree as a live page: Markdown, layout, inputs and host-language components through the host contract.",
+   "keywords": [
+     "compmd",
+diff --git a/npm-packages/sandbox/README.md b/npm-packages/sandbox/README.md
+index c6d9f87..e64c345 100644
+--- a/npm-packages/sandbox/README.md
++++ b/npm-packages/sandbox/README.md
+@@ -13,9 +13,10 @@ Runs a [CompMD](https://compmd.dev/) document's components in a browser at the t
+ npm install @compmd/sandbox @compmd/render @compmd/processor
+ ```
+ 
+-It implements version **1.0-draft.16** of the [CompMD specification](https://compmd.dev/spec/), which is versioned on its own, and shares its version with `@compmd/render` and `@compmd/processor` ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
++It implements version **1.0-draft.17** of the [CompMD specification](https://compmd.dev/spec/), which is versioned on its own, and shares its version with `@compmd/render` and `@compmd/processor` ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
+ 
+ **Versions:**
++- **0.9.0:** the spec's draft `1.0-draft.17`. The host's own code highlighter, `highlight`, in both page modes, so a page shows its editor's colours; without it, Shiki, now made once in the host's page for the page and all its frames, which ask it for each block's tokens, only of what it sent them, one block a task ([the host's code highlighter](https://github.com/comp-markdown/compmd/blob/main/docs/host-highlighter.md)): in WebKit, ten frames block the page 0.4 s instead of 2.8 s. A host may allow every origin for documents it publishes itself (`origins: { configured: "any" }`, and `"any"` in `allowOrigins` and `loadData`), so no image or data asks the reader. Breaking: the frames speak the sandbox protocol's version 2 (`highlight`, `highlighted`), so a host's page and the frame documents it serves are upgraded together; the frames load no highlighter and their policies no longer allow `'wasm-unsafe-eval'`; a host's page in frame mode loads `highlight.js` from where the frames are served, which `cspFor` allows.
+ - **0.8.0:** printing (`view.print()`, a component's `print: fallback`); a host's own URL schemes (`ownSchemes`, `ownImages`); a document's remote images asked about with its data's answers (`origins`, `ImageGate`); examples' own components and inputs (`exampleSet`); compiled code kept by its source (`CompiledCache`). A code block's lines through `view.lines()`, and `view.lineHeights()` to size them. Code highlighted with one Shiki for the views of a page, a block at a time, those on screen first, with Oniguruma where the page compiles WebAssembly and outside Chromium (the frames' policies allow it, and `shikiHighlight({ webAssembly: true })` asks for it), and `settled()` waits for it. Many views in one page share one stylesheet and read the colour scheme only when a frame or component needs it. Breaking: `shikiHighlight` gives tokens, which the renderer draws; the frames speak `@compmd/render`'s frame protocol version 5, so a host's page and the frame documents it serves are upgraded together.
+ - **0.7.1:** the same as 0.7.0; its homepage and links name the website's new address, [compmd.dev](https://compmd.dev/).
+ - **0.7.0:** on the hosting bundle ([hosting](https://github.com/comp-markdown/compmd/blob/main/docs/hosting.md)): `createSandbox` takes the bundle's `frames` and `modules`, paths `@compmd/vite` gives in `virtual:compmd`, under the origin the host's adapter gives (`globalThis.__COMPMD__.origin`), so a page passes nothing; `modules` may answer a module's path under that origin; a pack's source component compiled ahead loads by its place; `buildFrames({ source, packs })` names where the packs are served beside the frames, so a frame on a host's own scheme loads their modules; `compile`, for a host's build; the hosting check, `@compmd/sandbox/check`, which every host runs, and the serving contract's `CONTRACT_HEADERS`. Breaking: the page is given an origin, no longer a `base` (`__COMPMD__.base` is gone), and the frames are served under a hash of their files.
+diff --git a/npm-packages/sandbox/package.json b/npm-packages/sandbox/package.json
+index 0ace1e4..f7d167e 100644
+--- a/npm-packages/sandbox/package.json
++++ b/npm-packages/sandbox/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "@compmd/sandbox",
+-  "version": "0.8.0",
++  "version": "0.9.0",
+   "description": "Runs CompMD components in a browser at the trust levels of the spec: strict and permissive frames, trusted code inline, so no host writes a sandbox policy itself.",
+   "keywords": [
+     "compmd",
+diff --git a/npm-packages/vite/README.md b/npm-packages/vite/README.md
+index 7f0d48a..125b646 100644
+--- a/npm-packages/vite/README.md
++++ b/npm-packages/vite/README.md
+@@ -16,6 +16,7 @@ npm install @compmd/vite @compmd/processor @compmd/sandbox
+ It implements the draft of the [CompMD specification](https://compmd.dev/spec/), version 1, and shares its version with `@compmd/render`, `@compmd/processor` and `@compmd/sandbox` ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)). It needs Vite 8 or later.
+ 
+ **Versions:**
++- **0.9.0:** `origins` in `compmd.config.json`, the origins a host allows its documents' images and data from, or `"any"` for a host's own documents, given to the processor and to `virtual:compmd`'s sandbox; on the sandbox's 0.9.0, whose frames ask the page to highlight their code, so a page in frame mode loads `highlight.js` too, which `cspFor` allows.
+ - **0.8.0:** `cspFor` adds `'wasm-unsafe-eval'` to `script-src`, so a host-mode page highlights code with Oniguruma; the dev server serves the bundle with `@compmd/host`'s `respond`, as every host does; the build reports a listed pack's components against their signatures (W104). An app whose own policy doesn't come from `cspFor` adds `'wasm-unsafe-eval'` itself, or keeps Shiki's JavaScript engine.
+ - **0.7.1:** the same as 0.7.0; its homepage and links name the website's new address, [compmd.dev](https://compmd.dev/).
+ - **0.7.0:** the bundle ([hosting](https://github.com/comp-markdown/compmd/blob/main/docs/hosting.md)): the frames under a hash of their files, `frames/<hash>/`, each pack's files by its place with its source components compiled ahead, and `manifest.json`; `out` and `source` for a desktop app's adapter; `buildBundle` for a host without Vite; `cspFor`; a `_headers` file; every file served with the serving contract's headers; `virtual:compmd`'s paths relative to the bundle's origin. Breaking: the frames move from `compmd/strict.html` to `compmd/frames/<hash>/`, and `virtual:compmd`'s `sandbox` gives `frames` and an `origin`, no longer a `base`. An app that uses `virtual:compmd` and `cspFor` changes nothing; one that wrote `compmd/` paths into its own policy or server rules updates them.
+diff --git a/npm-packages/vite/package.json b/npm-packages/vite/package.json
+index 3f59621..397abd1 100644
+--- a/npm-packages/vite/package.json
++++ b/npm-packages/vite/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "@compmd/vite",
+-  "version": "0.8.0",
++  "version": "0.9.0",
+   "description": "A Vite plugin for CompMD: reads compmd.config.json, gives the processor the app's packs, serves the sandbox and the packs' files, and bundles the app's own trusted components.",
+   "keywords": [
+     "compmd",
+diff --git a/npm-packages/wasm/README.md b/npm-packages/wasm/README.md
+index aa6ed04..fd7a8e5 100644
+--- a/npm-packages/wasm/README.md
++++ b/npm-packages/wasm/README.md
+@@ -13,9 +13,10 @@ The [CompMD](https://compmd.dev/) [processor](https://github.com/comp-markdown/c
+ npm install @compmd/processor @compmd/render
+ ```
+ 
+-It implements version **1.0-draft.16** of the [CompMD specification](https://compmd.dev/spec/) (`SPEC_VERSION`), as the crate [`compmd`](https://crates.io/crates/compmd) does; the spec is versioned on its own. Its versions are `0.x` until the spec's version 1 is published, and it shares its version with `@compmd/render` ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
++It implements version **1.0-draft.17** of the [CompMD specification](https://compmd.dev/spec/) (`SPEC_VERSION`), as the crate [`compmd`](https://crates.io/crates/compmd) does; the spec is versioned on its own. Its versions are `0.x` until the spec's version 1 is published, and it shares its version with `@compmd/render` ([how releases work](https://github.com/comp-markdown/compmd/blob/main/docs/releases.md)).
+ 
+ **Versions:**
++- **0.9.0:** the spec's draft `1.0-draft.17`, which `SPEC_VERSION` names: a host may allow every origin for documents it publishes itself, `allowedOrigins: "any"` (§8.6, §15). `hostComponents` lists only the components a document uses (invokes or draws a code block with, in any branch, through its `compmd` definitions), no longer every one an ambient pack gives, so a host builds and loads no more than the document needs.
+ - **0.8.0:** the spec's draft `1.0-draft.16` ([its changelog](https://github.com/comp-markdown/compmd/blob/main/spec/CHANGELOG.md), drafts 13 to 16), which `SPEC_VERSION` names: TOML frontmatter between `+++` lines; printing, a signature's `print: fallback` (W122 for any other value), given as a component's `print`; examples, ` ```compmd ` blocks with `render=output` or `both`, processed as documents of their own (W123), with `exampleInputs` for what a reader set in one and each example's components by its `example`; `render=source|output|both` on a block a code renderer draws; the drafts' changes that are the renderer's and the sandbox's (a host's own URL schemes, remote images asked about) are in their notes. Breaking, for documents only: an unquoted short-form default followed by text is F011, a `+++` block at the start is the frontmatter, and a signature that declares `class` or `id`, or a code renderer's that declares `alt` or `render`, is F013.
+ - **0.7.1:** the same as 0.7.0; its homepage and links name the website's new address, [compmd.dev](https://compmd.dev/).
+ - **0.7.0:** the spec's draft as of 2026-11-12 ([its changelog](https://github.com/comp-markdown/compmd/blob/main/spec/CHANGELOG.md)): a pack a host installed or keeps is a registry pack all the same, and a pack's source may be compiled ahead; a pack's source component in `hostComponents` names its `place`, by which a host gives the module it compiled ahead. Released with CompMD's hosting: `@compmd/vite`'s bundle, the sandbox on it, and `tauri-plugin-compmd` as the Tauri adapter.
+diff --git a/npm-packages/wasm/package.json b/npm-packages/wasm/package.json
+index 8c96c2a..d9aa704 100644
+--- a/npm-packages/wasm/package.json
++++ b/npm-packages/wasm/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "@compmd/processor",
+-  "version": "0.8.0",
++  "version": "0.9.0",
+   "description": "The CompMD processor as WebAssembly: parses, validates and expands a CompMD document in the browser.",
+   "keywords": ["compmd", "markdown", "components", "commonmark", "webassembly"],
+   "homepage": "https://compmd.dev/",
+diff --git a/npm-packages/wasm/src/index.ts b/npm-packages/wasm/src/index.ts
+index 246d8b8..7c914ad 100644
+--- a/npm-packages/wasm/src/index.ts
++++ b/npm-packages/wasm/src/index.ts
+@@ -22,7 +22,7 @@ export type { ExpandedInput, ExpandedRoot, Splice, TextEdit } from "@compmd/rend
+  * draft, `1.0-draft.N`, until the spec's version 1 is released. The spec is versioned on its own, apart from this
+  * package.
+  */
+-export const SPEC_VERSION = "1.0-draft.16";
++export const SPEC_VERSION = "1.0-draft.17";
+ 
+ /** A document to process, with everything it needs. Only `path` and `now` are required. */
+ export interface Request {
+diff --git a/spec/CHANGELOG.md b/spec/CHANGELOG.md
+index 9d3dc3e..280d7fb 100644
+--- a/spec/CHANGELOG.md
++++ b/spec/CHANGELOG.md
+@@ -4,7 +4,7 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
+ 
+ ## Version 1 (draft)
+ 
+-### Unreleased
++### 1.0-draft.17, 2026-11-20
+ 
+ - **Every origin, for a host's own documents (§8.6, §15).** A host MAY allow every origin instead of naming them: then no origin of a document's data or images is disallowed (F028) or asked about. It fits documents the host publishes itself, such as a static site's or a blog's; a host that shows documents others write SHOULD NOT. URL schemes, a data `from`'s literal scheme and host, credentials and sandboxes' network are unchanged. Not breaking.
+ 
+diff --git a/spec/compmd-registry-v1.md b/spec/compmd-registry-v1.md
+index 8540e8a..71571fe 100644
+--- a/spec/compmd-registry-v1.md
++++ b/spec/compmd-registry-v1.md
+@@ -2,7 +2,7 @@
+ 
+ A companion to the [CompMD specification](compmd-spec-v1.md), for pack authors and for hosts that fetch packs from a registry. The spec says what a pack is to a document (§6.4); this document says what a pack published to an npm registry must be, how a host reads one, and what a library pack is. It is versioned with the spec: version 1 of each goes together, and every change to it has an entry in the [changelog](CHANGELOG.md).
+ 
+-**Version 1.0-draft.16, with the spec. Last changed 2026-11-18, in 1.0-draft.15.**
++**Version 1.0-draft.17, with the spec. Last changed 2026-11-18, in 1.0-draft.15.**
+ 
+ ## 1. Conventions
+ 
+diff --git a/spec/compmd-spec-v1.md b/spec/compmd-spec-v1.md
+index dabd746..3638ab6 100644
+--- a/spec/compmd-spec-v1.md
++++ b/spec/compmd-spec-v1.md
+@@ -7,7 +7,7 @@
+ 
+ CompMD (Component Markdown) is a Markdown flavor that adds components, containers, slots and CSS-like layout to CommonMark + GFM, while staying readable in any plain Markdown renderer.
+ 
+-**Version 1.0-draft.16. Last changed 2026-11-19.** Every change is listed in the [changelog](CHANGELOG.md).
++**Version 1.0-draft.17. Last changed 2026-11-20.** Every change is listed in the [changelog](CHANGELOG.md).
+ 
+ **Author:** Hakan Serce.
+ 

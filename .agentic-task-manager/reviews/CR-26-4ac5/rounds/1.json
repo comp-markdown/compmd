@@ -1,0 +1,197 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "69d1ac817de4543b0fa5f26a398094a00c5c5af4",
+    "head": "87032ac311f67d3d86cae0689782a9404960a036"
+  },
+  "files": [
+    {
+      "path": "Cargo.lock",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/host/Cargo.toml",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/host/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/pack-types/Cargo.toml",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/pack-types/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/Cargo.toml",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/lib.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/tauri/Cargo.lock",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/tauri/Cargo.toml",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/tauri/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/tauri/examples/tauri-app/src-tauri/Cargo.lock",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/package.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-blog/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-blog/package.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/create-pack/package.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/package.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/host-js/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/host-js/package.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/pack/package.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/package.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/package.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/package.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/vite/package.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/wasm/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/wasm/package.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/wasm/src/index.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spec/CHANGELOG.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spec/compmd-registry-v1.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spec/compmd-spec-v1.md",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-20T11:32:30Z"
+}
