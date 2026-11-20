@@ -9,6 +9,7 @@ It shares its version with the `@compmd` packages: use `@compmd/vite` and `@comp
 - **0.7.0:** the hosting adapter. The app embeds the bundle its own page's build writes (`build::bundle`, `include_bundle!`, `init(bundle)` in place of `init()` and `Builder`); the scheme is the one the bundle was built for; the page gets the origin, `__COMPMD__ = { origin }`; the scheme serves `compmd-host`'s contract, frames under their hash and packs at `packs/<place>`. The crate's own frames, `frames_dir`, the `base` command and the permissions are gone.
 - **0.7.1:** the same as 0.7.0; its homepage and links name the website's new address, [compmd.dev](https://compmd.dev/).
 - **0.8.0:** the same adapter as 0.7.1, serving the sandbox's 0.8.0 frames, whose policies let them compile WebAssembly; an app with a policy of its own adds `'wasm-unsafe-eval'` to its `script-src`, as `cspFor` gives it, for code highlighted with Oniguruma on macOS and Linux.
+- **0.9.0:** the same adapter as 0.8.0, serving the sandbox's 0.9.0 frames, which ask the app's page to highlight their code and no longer compile WebAssembly; an app's own policy keeps `'wasm-unsafe-eval'` in its `script-src`, as `cspFor` gives it, since its page now highlights every frame's code.
 
 ## Use
 

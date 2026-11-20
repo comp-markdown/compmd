@@ -22,6 +22,7 @@ Adapters: [`tauri-plugin-compmd`](https://github.com/comp-markdown/compmd/blob/m
 In development, released with CompMD's packages at the same version.
 
 **Versions:**
+- **0.9.0:** the same as 0.8.0.
 - **0.8.0:** the serving contract's decision apart from its answer: `route`, a path's `Route`, a `Refusal` saying why, and `served_headers` and `refusal_headers`, which `@compmd/host` shares as WebAssembly; `respond` answers as before.
 - **0.7.1:** the same as 0.7.0; its homepage and links name the website's new address, [compmd.dev](https://compmd.dev/).
 - **0.7.0:** the first version.

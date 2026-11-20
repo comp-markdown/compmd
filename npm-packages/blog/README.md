@@ -10,6 +10,7 @@ the page as it was built, and are drawn live once its script loads, through the 
 script. Its tests open a live post in Chrome and WebKit.
 
 **Versions:**
+- **0.9.0:** a post's share image, `socialImage` in its frontmatter or the blog's `defaultSocialImage`, as `og:image` and a large Twitter card; the blog's own origin always allowed, and with `origins: "any"` in its `compmd.config.json` every origin, so no image asks the reader, and an image of an origin not allowed is a warning at build; a post's script only for the components it uses; a trusted pack's Svelte components built into the page's script; `sharedFiles`, files a site shares with its posts, and `fileFor`, `sendBlogFile` and `CONTENT_MARKER`, for a site that builds and serves its blog itself.
 - **0.8.0:** the first version: `cblo new`, `cblo dev` and `cblo build`, the posts' pages, tags, an Atom feed and comments, each page within its size budget, and a post's host-language components drawn live. (`0.0.0` is a placeholder with no code.)
 
 ## A blog

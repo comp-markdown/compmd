@@ -17,6 +17,7 @@ Options, after `--`: `--title "My notes"` (the folder's name by default), `--aut
 this package's version, as the two are released together.
 
 **Versions:**
+- **0.9.0:** the same as 0.8.0, writing a blog on `@compmd/blog` 0.9.0.
 - **0.8.0:** the first version. (`0.0.0` is a placeholder with no code.)
 
 ## Licence
