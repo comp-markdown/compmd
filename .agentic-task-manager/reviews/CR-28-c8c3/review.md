@@ -7,7 +7,7 @@ tasks = ["CMD-11"]
 author = "claude:79612601"
 reviewers = []
 created = 2026-11-20T16:21:21Z
-updated = 2026-11-20T16:21:21Z
+updated = 2026-11-20T18:52:45Z
 +++
 
 The first packs, as decided in the conversation (2026-11-20): one pack per component, and the frames compile WebAssembly again for graphviz and jq.

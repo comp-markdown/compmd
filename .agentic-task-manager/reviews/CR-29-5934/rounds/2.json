@@ -1,0 +1,212 @@
+{
+  "number": 2,
+  "kind": {
+    "kind": "range",
+    "base": "0fd5054ed8b13d8a6106e0f5b86f8acc2408028d",
+    "head": "6813d56c0dcfcb95fdce4d798af10b8ea4e45bd0"
+  },
+  "files": [
+    {
+      "path": "docs/wrapping-an-npm-package.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "pnpm-workspace.yaml",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/README.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/layerchart/compmd.wrap.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/layerchart/demo.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/layerchart/index.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/layerchart/package.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/layerchart/src/bar-chart.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/layerchart/tsconfig.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/model-viewer/compmd.wrap.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/model-viewer/demo.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/model-viewer/index.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/model-viewer/package.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/model-viewer/src/model-viewer.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/model-viewer/triangle.gltf",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/model-viewer/tsconfig.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/package.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/qrcode/compmd.wrap.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/qrcode/demo.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/qrcode/index.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/qrcode/package.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/qrcode/src/qr-svg.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/qrcode/tsconfig.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/react-qr-code/compmd.wrap.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/react-qr-code/demo.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/react-qr-code/index.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/react-qr-code/package.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/react-qr-code/src/qr-code.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/react-qr-code/tsconfig.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/results.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/screenshots/layerchart-chrome.png",
+      "status": "added",
+      "binary": true
+    },
+    {
+      "path": "spikes/wrap-npm-package/screenshots/layerchart-webkit.png",
+      "status": "added",
+      "binary": true
+    },
+    {
+      "path": "spikes/wrap-npm-package/screenshots/model-viewer-chrome.png",
+      "status": "added",
+      "binary": true
+    },
+    {
+      "path": "spikes/wrap-npm-package/screenshots/model-viewer-webkit.png",
+      "status": "added",
+      "binary": true
+    },
+    {
+      "path": "spikes/wrap-npm-package/screenshots/qrcode-chrome.png",
+      "status": "added",
+      "binary": true
+    },
+    {
+      "path": "spikes/wrap-npm-package/screenshots/qrcode-webkit.png",
+      "status": "added",
+      "binary": true
+    },
+    {
+      "path": "spikes/wrap-npm-package/screenshots/react-qr-code-chrome.png",
+      "status": "added",
+      "binary": true
+    },
+    {
+      "path": "spikes/wrap-npm-package/screenshots/react-qr-code-webkit.png",
+      "status": "added",
+      "binary": true
+    },
+    {
+      "path": "spikes/wrap-npm-package/try.ts",
+      "status": "added",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-20T18:52:11Z"
+}

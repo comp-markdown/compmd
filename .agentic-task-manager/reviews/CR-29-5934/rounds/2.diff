@@ -1,0 +1,2482 @@
+diff --git a/docs/wrapping-an-npm-package.md b/docs/wrapping-an-npm-package.md
+new file mode 100644
+index 0000000..aae7e25
+--- /dev/null
++++ b/docs/wrapping-an-npm-package.md
+@@ -0,0 +1,175 @@
++# Wrapping an npm package as a pack
++
++**Status: proposed (2026-11-20, CMD-8).** Making a pack of an existing npm package should take one command, and moving
++to the package's next version a version bump. This builds on [the pack template](create-pack.md) and
++[writing a pack](writing-a-pack.md); CMD-9 builds it. [The spike](../spikes/wrap-npm-package/README.md) has the four
++packs it was tried on, built and run.
++
++## Decisions
++
++1. **One command, beside the template's others:** `npm create @compmd/pack <folder> -- --from <package>[@<version>]
++   [--export <name>] [--name @scope/pack] [--component <name>]`. It asks nothing, as the template doesn't (create-pack,
++   decision 1). `--export` picks the package's export when it has more than one component (`BarChart`); by default its
++   default export, else the only one.
++2. **Two kinds, both served** (decided 2026-11-20):
++   - **A ready-made component** (React, Svelte 5, or a web component): a complete pack. Its props become the
++     signature's params, and a demo uses it. The author writes the fallback and reads what was derived.
++   - **A plain library** (Observable Plot, gridjs, qrcode, abcjs, what most of [the first components](first-components.md)
++     wrap): the pack with the library installed and bundled, and a `draw()` skeleton that imports it
++     ([writing a pack](writing-a-pack.md), decision 6), for the author to finish, as `create-pack`'s leaf template is.
++
++   The kind is read from the package: `react` in its peer dependencies is React; `svelte` there, or a `svelte` export
++   condition, is Svelte; a custom element in its types (`HTMLElementTagNameMap`) or a `custom-elements.json` is a web
++   component; anything else is a library. `--kind` overrides it.
++3. **The glue is the pack's own code, in the plain binding** (spec §7.6), as every built module is: `src/<component>.ts`
++   mounts the package's component in a box of its own in `target` (the renderer owns `target`'s classes and style)
++   with the params as its props, updates it, and unmounts it on `destroy`. A web component's glue passes its `error`
++   event to `fail`, since such an element reports a failure without throwing.
++   React, React DOM and Svelte stay external, from the frames' import map, so they are one copy whatever loads them
++   (create-pack, decision 3). The command writes it once; it is plain code the author may change, and the build
++   doesn't touch it again.
++4. **The signature is generated at every build** (decided 2026-11-20). `compmd-pack build` reads the package's
++   TypeScript types with the TypeScript checker and writes the signature fence of `index.comp.md`, the one marked
++   `generated` in its info string, leaving the document's prose as it is. Updating the package to its next version is a
++   version bump: the build writes the params its types now give, and says what changed (a param added to the package,
++   one gone, one whose type changed), and a param that went fails the build where a demo or the overrides still name it.
++5. **The params are an allowlist,** `params` in `compmd.wrap.json` beside `package.json`, which the command writes
++   with every prop it could map, and the build keeps to: a package's new prop is reported, never added on its own.
++   The wrap's settings are a file of their own, which the pack doesn't publish, because `package.json`'s `compmd`
++   field is the pack's document already (companion `compmd-registry-v1.md`, sections 2 and 5). Only a prop declared
++   in the package's own files counts (layerchart's `x`, from its `ChartProps`), never one from React's, Svelte's or
++   the DOM's types (`SVGProps`, `HTMLAttributes`): react-qr-code would otherwise give several hundred.
++6. **What maps, and how** (spec §7.3):
++
++   | The prop's type | The param |
++   |---|---|
++   | `string`, `number`, `boolean`, `Date` | `string`, `number`, `boolean`, `date` |
++   | a union of string literals | an enum (`L \| M \| H \| Q`) |
++   | optional (`?`) | the type with `?` |
++   | an array, a plain object | `array`, `object` |
++   | a CSS colour type (`CSSProperties["color"]`) | `color` (spec §9.4) |
++   | a CSS length type | `string` |
++   | named like a common param (`height`, `width`, `background`, `border`, `padding`, spec §9.2) | none: the use's box takes it, and the component fills its box; listed |
++   | a union with one usable branch (`string \| ((d) => any)`, `boolean \| Snippet`) | that branch, with a note in the build's report |
++   | callbacks, `ref`, `style`, `className`, components, snippets with arguments | none: left out, and listed |
++
++   A default comes from JSDoc `@default` only; a default written in a comment is never trusted (react-qr-code's says
++   128, its code uses 256). Anything else is the overrides'.
++7. **Overrides, in `compmd.wrap.json`:** a param's name (`fgColor` as `color`), its type, its default, its `doc`; which
++   prop is an input, with the callback that reports it (`"input": { "value": "onChange" }` makes `value` an
++   `input<…>`); which prop takes the fallback's text when the package has one (a `title`, an `alt`); and which plain
++   children are a slot (`"slots": { "default": "children" }`), since snippets and children that take arguments
++   rarely are Markdown. A web component's attribute names are its properties' in kebab case unless a
++   `custom-elements.json` says otherwise or the overrides do.
++8. **The pack has its own version** (decided 2026-11-20): `0.1.0`, `0.2.0` and on, apart from the package's. It
++   names the package at an exact version in its `dependencies` and in its README, so a pack's version always means
++   one build of the package; moving to the package's next version is a release of the pack.
++9. **What can't run in a strict frame is said at once.** The command and the build look for what the frame refuses
++   (spec §15): a URL to a CDN or another origin in the bundle, a `new Worker`, `eval` or `new Function`, WebGL, and a
++   component whose main input is a URL (a model, a video). Each is a warning naming where it is, and the README the
++   command writes says what the pack then needs: its assets in the pack ([the first components](first-components.md),
++   decision 5), a permissive level with the origins it reaches, or another package.
++10. **The build makes one module of any package:** CommonJS is converted, dynamic imports are inlined (code splitting
++    is off already, create-pack decision 3), a package that ships `.svelte` sources is compiled with the Svelte the
++    frames provide, and its CSS is bundled into the module (Svelte's `css: "injected"`; as a file of its own, the frame
++    never loads it). A peer dependency beyond the runtimes (model-viewer's
++    `three`) is bundled, or named as a library pack ([sharing library packs](sharing-library-packs.md)).
++
++## In use
++
++```sh
++npm create @compmd/pack qr-code -- --from react-qr-code --name @comp-markdown/qr-code
++```
++
++writes the template's files ([the pack template](create-pack.md), *What it writes*), with `"react-qr-code": "2.2.0"`
++in `dependencies` and ([the spike's pack](../spikes/wrap-npm-package/react-qr-code/), built and run):
++
++```jsonc
++// compmd.wrap.json; the author added the default of `size`
++{
++  "from": "react-qr-code",
++  "export": "default",
++  "kind": "react",
++  "params": ["value", "size", "bgColor", "fgColor", "level", "title"],
++  "overrides": { "size": { "default": 256 } },
++  "label": "title"
++}
++```
++
++```ts
++// src/qr-code.ts, written once
++import { createElement } from "react";
++import { createRoot } from "react-dom/client";
++import QRCode from "react-qr-code";
++import { component } from "@compmd/pack/component";
++
++export default component<Params>((target, { params, fallback }) => {
++  const root = createRoot(target);
++  const draw = (next: Params) => {
++    root.render(createElement(QRCode, { ...next, title: next.title ?? fallback.text }));
++  };
++  draw(params);
++  return { update: draw, destroy: () => root.unmount() };
++});
++```
++
++````md
++<!-- index.comp.md: the fence below is rewritten at each build -->
++```compmd component=qr-code signature generated
++params:
++  value: string
++  size: number = 256
++  bgColor: color?
++  fgColor: color?
++  level: L | M | H | Q?
++  title: string?
++```
++````
++
++Moving to react-qr-code 2.3.0 is `npm install react-qr-code@2.3.0` and `npm run build`: the signature follows its
++types, and the build lists what changed.
++
++## Trying it on four packages
++
++[The spike](../spikes/wrap-npm-package/README.md) read four packages' files and types, wrote by hand the packs the
++command would write, built them as `compmd-pack build` does and opened each demo in strict frames, in Chrome and
++WebKit (2026-11-20). Its findings are in decisions 3, 5, 6 and 10 and in gaps G6 and G7.
++
++| Package | Kind | What derives | What the author writes | In a strict frame |
++|---|---|---|---|---|
++| `react-qr-code` 2.2.0 (MIT) | React | 6 own props, cleanly, once `SVGProps`' are left out | the fallback; the default `size` (its comment is wrong) | draws; 8.9 KB gzipped, React from the import map |
++| `layerchart` 2.11.0 (MIT), `BarChart` | Svelte 5, ships `.svelte` sources | the scalar and enum props of about 90, with JSDoc defaults; not `height`, the box's | which of the 90 to keep; `x`, `y` as field names (their `string` branch); the theme's colours from `context.scheme` | draws, once compiled with its CSS injected; d3 and friends bundled, 164.5 KB gzipped |
++| `@google/model-viewer` 4.4.0 (Apache-2.0) | web component, no `custom-elements.json` | about 50 properties, from the types | attribute names and defaults (they are in its sources, not its types); the slots | doesn't: the frame refuses the model's fetch and its WebAssembly; the glue shows the fallback, with W118 |
++| `qrcode` 1.5.4 (MIT) | library, CommonJS | nothing | the glue: `toString(value, { type: "svg" })` into the target, and its params | draws; 9.3 KB gzipped |
++
++## Gaps
++
++- **G1. A component that needs the network or the page's files** (model-viewer) can't be wrapped as a strict pack.
++  Decision 9 says so; running it waits for a component reading the document's files (CMD-266) and WebGL in the
++  frames ([the first components](first-components.md), *Later*).
++- **G2. Generic props** (layerchart's `BarChart<TData>`) resolve with their constraint (`any`), which maps to
++  `array` or `object`, never to the rows' fields.
++- **G3. A theme's colours** come from CSS variables a package defines (`--color-primary`); mapping them to
++  CompMD's visual tokens and `context.scheme` is the glue's, by hand.
++- **G4. A Svelte package's sources must compile with the frames' Svelte:** one that needs a newer Svelte than the
++  frames' fails the build, with which it needs.
++- **G5. The checker costs each build** a TypeScript program over the package's types, not measured yet; only the
++  build pays it, never a reader.
++- **G6. An optional enum** (`level: L | M | H | Q?`): the spec's grammar puts `?` after a type, and an enum is one,
++  and the processor accepts it (the spike's `qr-code`), but neither the spec nor a conformance case shows one. To
++  confirm in the spec before the build writes it.
++- **G7. The `generated` flag** after `signature` in the fence's info string: the processor ignores it, but the spec
++  doesn't say what other words there mean. Either the spec says a signature fence's other flags are for tools and
++  ignored, or the build marks its fence another way (a comment line before it, which needs no spec change).
++
++## What changes
++
++- `@compmd/create-pack`: `--from`, the kind, the glue per kind, `compmd.wrap.json` with the allowlist, the warnings
++  of decision 9.
++- `@compmd/pack`: the build writes the generated signature (the TypeScript checker, the mapping, the overrides, the
++  report of what changed), and the checks of decisions 9 and 10.
++- [The pack template](create-pack.md), whose question C3 (a React or Svelte component) this answers, and
++  [writing a pack](writing-a-pack.md).
++- Not CMD-2: that is a package used as a library from a component's own code, with no pack; this makes a pack.
++- Not the registry ([packs from a registry](packs-from-a-registry.md)): a wrapped pack is a pack like any other, built
++  ahead into one module.
+diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
+index 9e97cde..a4444e8 100644
+--- a/pnpm-lock.yaml
++++ b/pnpm-lock.yaml
+@@ -978,6 +978,110 @@ importers:
+         specifier: 8.3.4
+         version: 8.3.4(@types/node@26.6.5)(yaml@2.9.1)
+ 
++  spikes/wrap-npm-package:
++    dependencies:
++      '@compmd/pack':
++        specifier: workspace:*
++        version: link:../../npm-packages/pack
++      '@compmd/processor':
++        specifier: workspace:*
++        version: link:../../npm-packages/wasm
++      '@compmd/sandbox':
++        specifier: workspace:*
++        version: link:../../npm-packages/sandbox
++      '@compmd/vite':
++        specifier: workspace:*
++        version: link:../../npm-packages/vite
++      '@sveltejs/vite-plugin-svelte':
++        specifier: 7.3.1
++        version: 7.3.1(svelte@5.57.2(@typescript-eslint/types@8.72.0))(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
++      svelte:
++        specifier: 5.57.2
++        version: 5.57.2(@typescript-eslint/types@8.72.0)
++    devDependencies:
++      '@types/node':
++        specifier: 26.6.5
++        version: 26.6.5
++      playwright:
++        specifier: 1.64.1
++        version: 1.64.1
++      vite:
++        specifier: 8.3.4
++        version: 8.3.4(@types/node@26.6.5)(yaml@2.9.1)
++
++  spikes/wrap-npm-package/layerchart:
++    dependencies:
++      layerchart:
++        specifier: 2.11.0
++        version: 2.11.0(svelte@5.57.2(@typescript-eslint/types@8.72.0))
++    devDependencies:
++      '@compmd/pack':
++        specifier: workspace:*
++        version: link:../../../npm-packages/pack
++      svelte:
++        specifier: 5.57.2
++        version: 5.57.2(@typescript-eslint/types@8.72.0)
++      typescript:
++        specifier: 6.0.3
++        version: 6.0.3
++
++  spikes/wrap-npm-package/model-viewer:
++    dependencies:
++      '@google/model-viewer':
++        specifier: 4.4.0
++        version: 4.4.0(three@0.183.2)
++      three:
++        specifier: 0.183.2
++        version: 0.183.2
++    devDependencies:
++      '@compmd/pack':
++        specifier: workspace:*
++        version: link:../../../npm-packages/pack
++      typescript:
++        specifier: 6.0.3
++        version: 6.0.3
++
++  spikes/wrap-npm-package/qrcode:
++    dependencies:
++      qrcode:
++        specifier: 1.5.4
++        version: 1.5.4
++    devDependencies:
++      '@compmd/pack':
++        specifier: workspace:*
++        version: link:../../../npm-packages/pack
++      '@types/qrcode':
++        specifier: 1.5.6
++        version: 1.5.6
++      typescript:
++        specifier: 6.0.3
++        version: 6.0.3
++
++  spikes/wrap-npm-package/react-qr-code:
++    dependencies:
++      react-qr-code:
++        specifier: 2.2.0
++        version: 2.2.0(react@19.3.0)
++    devDependencies:
++      '@compmd/pack':
++        specifier: workspace:*
++        version: link:../../../npm-packages/pack
++      '@types/react':
++        specifier: 19.3.0
++        version: 19.3.0
++      '@types/react-dom':
++        specifier: 19.3.0
++        version: 19.3.0(@types/react@19.3.0)
++      react:
++        specifier: 19.3.0
++        version: 19.3.0
++      react-dom:
++        specifier: 19.3.0
++        version: 19.3.0(react@19.3.0)
++      typescript:
++        specifier: 6.0.3
++        version: 6.0.3
++
+   website:
+     dependencies:
+       '@compmd/processor':
+@@ -1097,6 +1201,12 @@ packages:
+   '@chevrotain/utils@13.2.0':
+     resolution: {integrity: sha512-SzKYY68rseOrb9KILVzPsl6SjkQtdWw01SRGB5aCVI5kFcHltQsOYV3JB0Ffst72DgkvHCyDQ0NLwxtmCCf97Q==}
+ 
++  '@dagrejs/dagre@2.0.4':
++    resolution: {integrity: sha512-J6vCWTNpicHF4zFlZG1cS5DkGzMr9941gddYkakjrg3ZNev4bbqEgLHFTWiFrcJm7UCRu7olO3K6IRDd9gSGhA==}
++
++  '@dagrejs/graphlib@3.0.4':
++    resolution: {integrity: sha512-HxZ7fCvAwTLCWCO0WjDkzAFQze8LdC6iOpKbetDKHIuDfIgMlIzYzqZ4nxwLlclQX+3ZVeZ1K2OuaOE2WWcyOg==}
++
+   '@eslint-community/eslint-utils@4.10.1':
+     resolution: {integrity: sha512-cuadcxVFE8sDK6iWJbs8Sn0av2Nrh2QSGQhVlBW9AaAHqHwjWsZHT8LJ4hFGPh7ASBV2deFdM7H/DPjulmh8rg==}
+     engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
+@@ -1136,6 +1246,21 @@ packages:
+     resolution: {integrity: sha512-IkO+/KEUvwbVpiURZg+P7zF74z5Jxe0UgJxVni+RtoHQ6IZieXaO02kmadomap/q+l6bc/jdPGGqTjhuZnuz1Q==}
+     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
+ 
++  '@floating-ui/core@1.8.0':
++    resolution: {integrity: sha512-0CIZ5itps/8x7BG8dEIhs53BvCUH2PCoogtakwRTut+Arm58sJooJ0AuZhLw2HJYIR5cMLNPBSS728sPho2khQ==}
++
++  '@floating-ui/dom@1.8.0':
++    resolution: {integrity: sha512-yXSrzeHZBTZadLOlfyhCkJHNeLJnHRnRInwdZ40L7ZiaAtrBwoYlsDrX3v5zB1Utk7CLfzcOVnVVWoXEky7Ceg==}
++
++  '@floating-ui/utils@0.2.12':
++    resolution: {integrity: sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww==}
++
++  '@google/model-viewer@4.4.0':
++    resolution: {integrity: sha512-8z1SB5sPlzKoak5mdx/D31brBakPYm3Qi31EfAucHAUrtrHHCbabypkKvSwReYhUpPaxyJ46oT47uWE/hrs1Zw==}
++    engines: {node: '>=6.0.0'}
++    peerDependencies:
++      three: ^0.183.0
++
+   '@humanfs/core@0.19.2':
+     resolution: {integrity: sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA==}
+     engines: {node: '>=18.18.0'}
+@@ -1187,10 +1312,30 @@ packages:
+   '@keyv/serialize@1.1.1':
+     resolution: {integrity: sha512-dXn3FZhPv0US+7dtJsIi2R+c7qWYiReoEh5zUntWCf4oSpMNib8FDhSoed6m3QyZdx5hK7iLFkYk3rNxwt8vTA==}
+ 
++  '@layerstack/svelte-actions@1.0.1-next.20':
++    resolution: {integrity: sha512-OtFteDyvTUR6F7dSKPkpD/S77K7vbCHStApSlx8djJBxDKJHU3zxA4gYP6Z71Nc6HB/wLCfjZopkvxnMblbRRw==}
++
++  '@layerstack/svelte-state@0.1.0-next.25':
++    resolution: {integrity: sha512-K+SO4dYd2D9OSCnj92Ugo6i5OfVKZoHHA1DA7gs2ynigylRKInicniGI/OmRpp+002n3mhE/i2r3Kfctj8eAdw==}
++
++  '@layerstack/utils@2.0.0-next.19':
++    resolution: {integrity: sha512-HyXCEz9pge4rFWklrSgFr3YIwdE1gP8WM6GPetmnKPDfYLF1/oetRFKI9FqiE+dw4brnULGPKJsVhjM3vQfD4A==}
++
++  '@lit-labs/ssr-dom-shim@1.6.0':
++    resolution: {integrity: sha512-VHb0ALPMTlgKjM6yIxxoQNnpKyUKLD04VzeQdsiXkMqkvYlAHxq9glGLmgbb889/1GsohSOAjvQYoiBppXFqrQ==}
++
++  '@lit/reactive-element@2.1.2':
++    resolution: {integrity: sha512-pbCDiVMnne1lYUIaYNN5wrwQXDtHaYtg7YEFPeW+hws6U47WeFvISGUWekPGKWOP1ygrs0ef0o1VJMk1exos5A==}
++
+   '@mermaid-js/parser@2.0.1':
+     resolution: {integrity: sha512-j37dj/h6p6pots1L7pLPPNuABEEu9WP4OYg9pW1g+nYG331j0+3canE9OagtYdytYvdSAMG+2fKU5cxep6LgjA==}
+     engines: {node: '>=22.12.0'}
+ 
++  '@monogrid/gainmap-js@3.7.3':
++    resolution: {integrity: sha512-YjgdH65wZ9lQnzkVWerrR9FJR0JYhn3ahV7DJqDZVtIvR/kWv7XzFbMSIOFS/47+nWbZ5zFTRxsFhq0OX//SuA==}
++    peerDependencies:
++      three: '>= 0.159.0'
++
+   '@napi-rs/canvas-android-arm64@1.1.0':
+     resolution: {integrity: sha512-mKrSmRyhWK4q699Q1xthbZIZi7JBvLtsRNnOZAeFaLPOFT1yo8y82aRC2nNZbXTGJXU7fVDONgGQPr0vo3kerw==}
+     engines: {node: '>= 10'}
+@@ -1545,6 +1690,9 @@ packages:
+   '@types/node@26.6.5':
+     resolution: {integrity: sha512-uMzsv9stDdofIZBx4UGh4Z9ZgXnGC9seRDscilBcTHAeOFk67MZg/k9bWVfO+bk4qZmG+l52hRnLwUiH2LnJTg==}
+ 
++  '@types/qrcode@1.5.6':
++    resolution: {integrity: sha512-te7NQcV2BOvdj2b1hCAHzAoMNuj65kNBMz0KBaxM6c3VGBOhU0dURQKOtH8CFNI/dsKkwlv32p26qYQTWoB5bw==}
++
+   '@types/react-dom@19.3.0':
+     resolution: {integrity: sha512-ZI7bU42mZXXKHn/qNLEw2IrbiINU7X5+vfgdixBHkCNpYWXjKgfQ/P+uyGb5CjOLB9UcnTeg3rylQtV2hym44Q==}
+     peerDependencies:
+@@ -1685,6 +1833,14 @@ packages:
+   ajv@8.20.0:
+     resolution: {integrity: sha512-Thbli+OlOj+iMPYFBVBfJ3OmCAnaSyNn4M1vz9T6Gka5Jt9ba/HIR56joy65tY6kx/FCF5VXNB819Y7/GUrBGA==}
+ 
++  ansi-regex@5.0.1:
++    resolution: {integrity: sha512-quJQXlTSUGL2LH9SUXo8VwsY4soanhgo6LNSm84E1LBcE8s3O0wpdiRzyR9z/ZZJMlMWv37qOOb9pdJlMUEKFQ==}
++    engines: {node: '>=8'}
++
++  ansi-styles@4.3.0:
++    resolution: {integrity: sha512-zbB9rCJAT1rbjiVDb2hqKFHNYLxgtk8NURxZ3IZwD3F6NtxbXZQCnnSi1Lkx+IDohdPlFp222wVALIheZJQSEg==}
++    engines: {node: '>=8'}
++
+   any-promise@1.3.0:
+     resolution: {integrity: sha512-7UvmKalWRt1wgjL1RrGxoSJW/0QZFIegpeGvZG9kjp8vrRu55XTHbwnqq2GpXm9uLbcuhxm3IqX9OB4MZR1b2A==}
+ 
+@@ -1715,6 +1871,10 @@ packages:
+   cacheable@2.5.0:
+     resolution: {integrity: sha512-60cyAOytib/OzBw1JNSoSV/boK1AtHryDIjvVBk7XbN4ugfkM3+Sry7fEjNgPMGgOjuaZPAp8ruZ0Cxafwyq9g==}
+ 
++  camelcase@5.3.1:
++    resolution: {integrity: sha512-L28STB170nwWS63UjtlEOE3dldQApaJXZkOI1uMFfzf3rRuPegHaHesyee+YxQ+W6SvRDQV6UrdOdRiR153wJg==}
++    engines: {node: '>=6'}
++
+   ccount@2.0.1:
+     resolution: {integrity: sha512-eyrF0jiFpY+3drT6383f1qhkbGsLSifNAjA61IUjZjmLCWjItY6LB9ft9YhoDgwfmclB2zhu51Lc7+95b8NRAg==}
+ 
+@@ -1739,10 +1899,20 @@ packages:
+   clear-cut@2.0.2:
+     resolution: {integrity: sha512-WVgn/gSejQ+0aoR8ucbKIdo6icduPZW6AbWwyUmAUgxy63rUYjwa5rj/HeoNPhf0/XPrl82X8bO/hwBkSmsFtg==}
+ 
++  cliui@6.0.0:
++    resolution: {integrity: sha512-t6wbgtoCXvAzst7QgXxJYqPt0usEfbgQdftEPbLL/cvv6HPE5VgvqCuAIDR0NgU52ds6rFwqrgakNLrHEjCbrQ==}
++
+   clsx@2.1.1:
+     resolution: {integrity: sha512-eYm0QWBtUrBWZWG0d386OGAw16Z995PiOVo2B7bjWSbHedGl5e0ZWaq65kOGgUSNesEIDkB9ISbTg/JK9dhCZA==}
+     engines: {node: '>=6'}
+ 
++  color-convert@2.0.1:
++    resolution: {integrity: sha512-RRECPsj7iu/xb5oKYcsFHSppFNnsj/52OVTRKb4zP5onXwVF3zVmmToNcOfGC+CRDpfK/U584fMg38ZHCaElKQ==}
++    engines: {node: '>=7.0.0'}
++
++  color-name@1.1.4:
++    resolution: {integrity: sha512-dOy+3AuW3a2wNbZHIuMZpTcgjGuLU/uBL/ubcZF9OXbDo8ff4O8yVp5Bf0efS8uEoYo5q4Fx7dY9OgQGXgAsQA==}
++
+   comma-separated-tokens@2.0.3:
+     resolution: {integrity: sha512-Fu4hJdvzeylCfQPp9SGWidpzrMs7tTrlu6Vb8XGaRGck8QSNZJJp538Wrb60Lax4fPwR64ViY468OIUTbRlGZg==}
+ 
+@@ -1856,6 +2026,19 @@ packages:
+     resolution: {integrity: sha512-AJDdYOdnyRDV5b6ArilzCPPwc1ejkHcoyFarqlPqT7zRYjhavcT3uSrqcMvsgh2CgoPbK3RCwyHaVyxYcP2Arg==}
+     engines: {node: '>=12'}
+ 
++  d3-geo-polygon@2.0.1:
++    resolution: {integrity: sha512-e+CxAgyQLWaitzftCisJ7DUIYhUzSN8VSbDozouKp3bMb6QbRrRLShplpPLYisuyyZLtrdC1+5yAjpiTOne33g==}
++    engines: {node: '>=18'}
++
++  d3-geo-projection@4.0.0:
++    resolution: {integrity: sha512-p0bK60CEzph1iqmnxut7d/1kyTmm3UWtPlwdkM31AU+LW+BXazd5zJdoCn7VFxNCHXRngPHRnsNn5uGjLRGndg==}
++    engines: {node: '>=12'}
++    hasBin: true
++
++  d3-geo-voronoi@2.1.0:
++    resolution: {integrity: sha512-kqE4yYuOjPbKdBXG0xztCacPwkVSK2REF1opSNrnqqtXJmNcM++UbwQ8SxvwP6IQTj9RvIjjK4qeiVsEfj0Z2Q==}
++    engines: {node: '>=12'}
++
+   d3-geo@3.1.1:
+     resolution: {integrity: sha512-637ln3gXKXOwhalDzinUgY83KzNWZRKbYubaG+fGVuc/dxO64RRljtCTnf5ecMyE1RIdtqpkVcq0IbtU2S8j2Q==}
+     engines: {node: '>=12'}
+@@ -1864,6 +2047,9 @@ packages:
+     resolution: {integrity: sha512-FX/9frcub54beBdugHjDCdikxThEqjnR93Qt7PvQTOHxyiNCAlvMrHhclk3cD5VeAaq9fxmfRp+CnWw9rEMBuA==}
+     engines: {node: '>=12'}
+ 
++  d3-interpolate-path@2.3.0:
++    resolution: {integrity: sha512-tZYtGXxBmbgHsIc9Wms6LS5u4w6KbP8C09a4/ZYc4KLMYYqub57rRBUgpUr2CIarIrJEpdAWWxWQvofgaMpbKQ==}
++
+   d3-interpolate@3.0.1:
+     resolution: {integrity: sha512-3bYs1rOD33uo8aqJfKP3JWPAibgw8Zm2+L9vBKEHJ2Rg+viTR7o5Mmv5mZcieN+FRYaAOWX5SJATX6k1PWz72g==}
+     engines: {node: '>=12'}
+@@ -1909,6 +2095,9 @@ packages:
+     resolution: {integrity: sha512-SaLBuwGm3MOViRq2ABk3eLoxwZELpH6zhl3FbAoJ7Vm1gofKx6El1Ib5z23NUEhF9AsGl7y+dzLe5Cw2AArGTA==}
+     engines: {node: '>=12'}
+ 
++  d3-tile@1.0.0:
++    resolution: {integrity: sha512-79fnTKpPMPDS5xQ0xuS9ir0165NEwwkFpe/DSOmc2Gl9ldYzKKRDWogmTTE8wAJ8NA7PMapNfEcyKhI9Lxdu5Q==}
++
+   d3-time-format@4.1.0:
+     resolution: {integrity: sha512-dJxPBlzC7NugB2PDLwo9Q8JiTR3M3e4/XANkreKSUxF8vvXKqm1Yfq4Q5dl8budlunRVlUUaDUgFt7eA8D6NLg==}
+     engines: {node: '>=12'}
+@@ -1927,6 +2116,10 @@ packages:
+     peerDependencies:
+       d3-selection: 2 - 3
+ 
++  d3-tricontour@1.1.0:
++    resolution: {integrity: sha512-G7gHKj89n2owmkGb6WX6ixcnQ0Kf/0wpa9VIh9DGdbHu8wdrlaHU4ir3/bFNERl8N8nn4G7e7qbtBG8N9caihQ==}
++    engines: {node: '>=12'}
++
+   d3-zoom@3.0.0:
+     resolution: {integrity: sha512-b8AmV3kfQaqWAuacbPuNbL6vahnOJflOhexLzMMNLga62+/nh0JzvJ0aO/5a5MVgUFGS7Hu1P9P03o3fJkDCyw==}
+     engines: {node: '>=12'}
+@@ -1954,6 +2147,10 @@ packages:
+       supports-color:
+         optional: true
+ 
++  decamelize@1.2.0:
++    resolution: {integrity: sha512-z2S+W9X73hAUUki+N+9Za2lBlun89zigOyGrsax+KUQ6wKW4ZoWpEYBkGhQjwAjjDCkWxhY0VKEhk8wzY7F5cA==}
++    engines: {node: '>=0.10.0'}
++
+   deep-is@0.1.4:
+     resolution: {integrity: sha512-oIPzksmTg4/MriiaYGO+okXDT7ztn/w3Eptv/+gSIdMdKsJo0u4CfYNFJPy+4SKMuCqGw2wxnA+URMg3t8a/bQ==}
+ 
+@@ -1978,12 +2175,18 @@ packages:
+   devlop@1.1.0:
+     resolution: {integrity: sha512-RWmIqhcFf1lRYBvNmr7qTNuyCt/7/ns2jbpp1+PalgE/rDQcBT0fioSMUpJ93irlUhC5hrg4cYqe6U+0ImW0rA==}
+ 
++  dijkstrajs@1.0.3:
++    resolution: {integrity: sha512-qiSlmBq9+BCdCA/L46dw8Uy93mloxsPSbwnm5yrKn2vMPiy8KyAskTF6zuV/j5BMsmOGZDPs7KjU+mjb670kfA==}
++
+   dompurify@3.4.17:
+     resolution: {integrity: sha512-B/pSlYVHQ58kqISD/yDjuJ1yfzI34m1gF4lAod2bwSRhiN4K5Cl3H8Af7hqB2PmTL911tdEudnnXn5FnhRoz0w==}
+ 
+   elkjs@0.9.3:
+     resolution: {integrity: sha512-f/ZeWvW/BCXbhGEf1Ujp29EASo/lk1FDnETgNKwJrsVvGZhUWCZyg3xLJjAsxfOmt8KjswHmI5EwCQcPMpOYhQ==}
+ 
++  emoji-regex@8.0.0:
++    resolution: {integrity: sha512-MSjYzcWNOA0ewAHpz0MxpYFvwg6yjy1NG3xteoqz644VCo/RPgnr1/GGt+ic3iJTzQ8Eu3TdM14SawnVUmGE6A==}
++
+   entities@7.0.1:
+     resolution: {integrity: sha512-TWrgLOFUQTH994YUyl1yT4uyavY5nNB5muff+RtWaqNVCAK408b5ZnnbNAUEWLTCpum9w6arT70i1XdQ4UeOPA==}
+     engines: {node: '>=0.12'}
+@@ -2107,6 +2310,10 @@ packages:
+   file-entry-cache@11.1.5:
+     resolution: {integrity: sha512-+PFTHITI08JIGhnNpGNI8T8inUpgZfk3GNEqfT9R2zZV2iFXg3CvqzSl/uEhs7TSGujYRELEANyDvS8Fj7+S7Q==}
+ 
++  find-up@4.1.0:
++    resolution: {integrity: sha512-PpOwAdQ/YlXQ2vj8a3h8IipDuYRi3wceVQQGYWxNINccq40Anw7BlsEXCMbt1Zt+OLA6Fq9suIpIWD0OsnISlw==}
++    engines: {node: '>=8'}
++
+   find-up@5.0.0:
+     resolution: {integrity: sha512-78/PXT1wlLLDgTzDs7sjq9hzz0vXD+zn+7wypEe4fXQxCmdmqfGsEPQxmiCSQI3ajFV91bVSsvNtrJRiW6nGng==}
+     engines: {node: '>=10'}
+@@ -2122,6 +2329,10 @@ packages:
+     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
+     os: [darwin]
+ 
++  get-caller-file@2.0.5:
++    resolution: {integrity: sha512-DyFP3BM/3YHTQOCUL/w0OZHR0lpKeGrxotcHWcqNEdnltqFwXVfhEBQ94eIo34AfQpo0rGki4cyIiftY06h2Fg==}
++    engines: {node: 6.* || 8.* || >= 10.*}
++
+   glob-parent@6.0.2:
+     resolution: {integrity: sha512-XxwI8EOhVQgWp6iDL+3b0r86f4d6AX6zSU55HfB4ydCEuXLXc5FcYeOu+nnGftS4TEju/11rt4KJPTMgbfmv4A==}
+     engines: {node: '>=10.13.0'}
+@@ -2164,6 +2375,9 @@ packages:
+     resolution: {integrity: sha512-wCBiZ77u1tuWde6G/nfOtLaCTYcFDU5yCzARzK10y+rLhzYoL7a7yEemcopcc2Mzow7gZOIjnV2ym1NYmdiJOQ==}
+     engines: {node: '>= 4'}
+ 
++  immediate@3.0.6:
++    resolution: {integrity: sha512-XXOFtyqDjNDAQxVfYxuF7g9Il/IbWmmlQg2MYKOH8ExIT1qg6xc4zyS3HaEEATgs1btfzxq15ciUiY7gjSXRGQ==}
++
+   import-meta-resolve@4.2.0:
+     resolution: {integrity: sha512-Iqv2fzaTQN28s/FwZAoFq0ZSs/7hMAHJVX+w8PZl3cY19Pxk6jFFalxQoIfW2826i/fDLXv8IiEZRIT0lDuWcg==}
+ 
+@@ -2182,16 +2396,26 @@ packages:
+     resolution: {integrity: sha512-SbKbANkN603Vi4jEZv49LeVJMn4yGwsbzZworEoyEiutsN3nJYdbO36zfhGJ6QEDpOZIFkDtnq5JRxmvl3jsoQ==}
+     engines: {node: '>=0.10.0'}
+ 
++  is-fullwidth-code-point@3.0.0:
++    resolution: {integrity: sha512-zymm5+u+sCsSWyD9qNaejV3DFvhCKclKdizYaJUuHA83RLjb7nSuGnddCHGv0hk+KY7BMAlsWeK4Ueg6EV6XQg==}
++    engines: {node: '>=8'}
++
+   is-glob@4.0.3:
+     resolution: {integrity: sha512-xelSayHH36ZgE7ZWhli7pW34hNbNl8Ojv5KVmkJD4hBdD3th8Tfk9vYasLM+mXWOZhFkgZfxhLSnrwRr4elSSg==}
+     engines: {node: '>=0.10.0'}
+ 
++  is-promise@2.2.2:
++    resolution: {integrity: sha512-+lP4/6lKUBfQjZ2pdxThZvLUAafmZb8OAxFb8XXtiQmS35INgr85hdOGoEs124ez1FCnZJt6jau/T+alh58QFQ==}
++
+   is-reference@3.0.3:
+     resolution: {integrity: sha512-ixkJoqQvAP88E6wLydLGGqCJsrFUnqoH6HnaczB8XmDH1oaWU+xxdptvikTgaEhtZ53Ky6YXiBuUI2WXLMCwjw==}
+ 
+   isexe@2.0.0:
+     resolution: {integrity: sha512-RHxMLp9lnKHGHRng9QFhRCMbYAcVpn69smSGcq3f36xjgVVWThj4qqLbTLlq7Ssj8B+fIQ1EuCEGI2lKsyQeIw==}
+ 
++  js-tokens@4.0.0:
++    resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
++
+   json-schema-traverse@0.4.1:
+     resolution: {integrity: sha512-xbbCH5dCYU5T8LcEhhuh7HJ88HXuW3qsI3Y0zOZFKfZEHcpWiHU/Jxzk629Brsab/mMiHQti9wMP+845RPe3Vg==}
+ 
+@@ -2211,6 +2435,11 @@ packages:
+   khroma@2.1.0:
+     resolution: {integrity: sha512-Ls993zuzfayK269Svk9hzpeGUKob/sIgZzyHYdjQoAdQetRKpOLj+k/QQQ/6Qi0Yz65mlROrfd+Ev+1+7dz9Kw==}
+ 
++  layerchart@2.11.0:
++    resolution: {integrity: sha512-j8yFwfF+DbP5stsIfts14c+8gV8cUFTs43yNu0lAZut1EqWaK5Kaa3WT/HxNOVxcxHB+7lpOL9r+doD4P8ekow==}
++    peerDependencies:
++      svelte: ^5.57.0
++
+   layout-base@1.0.2:
+     resolution: {integrity: sha512-8h2oVEZNktL4BH2JCOI90iD1yXwL6iNW7KcCKT2QZgQJR2vbqDsldCTPRU9NifTCqHZci57XvQQ15YTu+sTYPg==}
+ 
+@@ -2221,6 +2450,9 @@ packages:
+     resolution: {integrity: sha512-+bT2uH4E5LGE7h/n3evcS/sQlJXCpIp6ym8OWJ5eV6+67Dsql/LaaT7qJBAt2rzfoa/5QBGBhxDix1dMt2kQKQ==}
+     engines: {node: '>= 0.8.0'}
+ 
++  lie@3.3.0:
++    resolution: {integrity: sha512-UaiMJzeWRlEujzAuw5LokY1L5ecNQYZKfmyZ9L7wDHb/p5etKaxXhohBcrw0EYby+G/NA52vRSN4N39dxHAIwQ==}
++
+   lightningcss-android-arm64@1.33.0:
+     resolution: {integrity: sha512-gEpRTalKdosp4Bb8qWtc2iOgE5SeIHlpS1up9bFq2wAyYhl1UdTObYiHe98zEM9SQvSoqQZ1IQD0JNpg3Ml5pg==}
+     engines: {node: '>= 12.0.0'}
+@@ -2298,9 +2530,22 @@ packages:
+   lines-and-columns@1.2.4:
+     resolution: {integrity: sha512-7ylylesZQ/PV29jhEDl3Ufjo6ZX7gCqJr5F7PKrqc93v7fzSymt1BpwEU8nAUXs8qzzvqhbjhK5QZg6Mt/HkBg==}
+ 
++  lit-element@4.2.2:
++    resolution: {integrity: sha512-aFKhNToWxoyhkNDmWZwEva2SlQia+jfG0fjIWV//YeTaWrVnOxD89dPKfigCUspXFmjzOEUQpOkejH5Ly6sG0w==}
++
++  lit-html@3.3.3:
++    resolution: {integrity: sha512-el8M6jK2o3RXBnrSHX3ZKrsN8zEV63pSExTO1wYJz7QndGYZ8353e2a5PPX+qHe2aGayfnchQmkAojaWAREOIA==}
++
++  lit@3.3.3:
++    resolution: {integrity: sha512-fycuvZg/hkpozL00lm1pEJH5nN/lr9ZXd6mJI2HSN4+Bzc+LDNdEApJ6HFbPkdFNHLvOplIIuJvxkS4XUxqirw==}
++
+   locate-character@3.0.0:
+     resolution: {integrity: sha512-SW13ws7BjaeJ6p7Q6CO2nchbYEc3X3J6WrmTTDto7yMPqVSZTUyY5Tjbid+Ab8gLnATtygYtiDIJGQRRn2ZOiA==}
+ 
++  locate-path@5.0.0:
++    resolution: {integrity: sha512-t7hw9pI+WvuwNJXwk5zVHpyhIqzg2qTlklJOf0mVxGSbe3Fp2VieZcduNYjaLDoy6p9uGpQEGWG87WpMKlNq8g==}
++    engines: {node: '>=8'}
++
+   locate-path@6.0.0:
+     resolution: {integrity: sha512-iPZK6eYjbxRu3uB4/WZ3EsEIMJFMqAoopl3R+zuq0UjcAm/MO6KCweDgPfP3elTztoKP3KtnVHxTn2NHBSDVUw==}
+     engines: {node: '>=10'}
+@@ -2308,6 +2553,10 @@ packages:
+   lodash-es@4.18.1:
+     resolution: {integrity: sha512-J8xewKD/Gk22OZbhpOVSwcs60zhd95ESDwezOFuA3/099925PdHJ7OFHNTGtajL3AlZkykD32HykiMo+BIBI8A==}
+ 
++  loose-envify@1.4.0:
++    resolution: {integrity: sha512-lyuxPGr/Wfhrlem2CL/UcnUc1zcqKAImBDzukY7Y5F/yQiNdko6+fRLevlw1HgMySw7f611UIY408EtxRSoK3Q==}
++    hasBin: true
++
+   magic-string@0.30.21:
+     resolution: {integrity: sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ==}
+ 
+@@ -2325,6 +2574,10 @@ packages:
+   mdn-data@2.0.14:
+     resolution: {integrity: sha512-dn6wd0uw5GsdswPFfsgMp5NSB0/aDe6fK94YJV/AJDYXL6HVLWBsxeq7js7Ad+mU2K9LAlwpk6kN2D5mwCPVow==}
+ 
++  memoize@10.2.0:
++    resolution: {integrity: sha512-DeC6b7QBrZsRs3Y02A6A7lQyzFbsQbqgjI6UW0GigGWV+u1s25TycMr0XHZE4cJce7rY/vyw2ctMQqfDkIhUEA==}
++    engines: {node: '>=18'}
++
+   mermaid@12.2.0:
+     resolution: {integrity: sha512-w7nr/SFrLO7BaVTs3dQTvYSV6nYSBj0Yy9DjBhsIJtAcHqRzXSq4Pg32ujHZ/AdWsAMNEvvhbm5dt9E2tOiHzw==}
+     engines: {node: '>=22.12.0'}
+@@ -2344,6 +2597,10 @@ packages:
+   micromark-util-types@2.0.3:
+     resolution: {integrity: sha512-oxB2Ik03hI0gv+VNn9tnh1t1YEe9MDPptViAEgfdf3YQHsn0pzGTgCdlSCJXcwhqm8phaEuM7zeEu3QQzVBrPg==}
+ 
++  mimic-function@5.0.1:
++    resolution: {integrity: sha512-VP79XUPxV2CigYP3jWwAUFSku2aKqBH7uTAapFWCBqutsbmDo96KY5o8uh6U+/YSIn5OxJnXp73beVkpqMIGhA==}
++    engines: {node: '>=18'}
++
+   minimatch@10.2.6:
+     resolution: {integrity: sha512-vpLQEs+VLCr1nU0BXS07maYoFwlDAH0gngQuuttxIwutDFEMHq2blX+8vpgxDdK3J1PwjCJiep77OitTZ4Ll1A==}
+     engines: {node: 18 || 20 || >=22}
+@@ -2530,14 +2787,26 @@ packages:
+     resolution: {integrity: sha512-6IpQ7mKUxRcZNLIObR0hz7lxsapSSIYNZJwXPGeF0mTVqGKFIXj1DQcMoT22S3ROcLyY/rz0PWaWZ9ayWmad9g==}
+     engines: {node: '>= 0.8.0'}
+ 
++  p-limit@2.3.0:
++    resolution: {integrity: sha512-//88mFWSJx8lxCzwdAABTJL2MyWB12+eIY7MDL2SqLmAkeKU9qxRvWuSyTjm3FUmpBEMuFfckAIqEaVGUDxb6w==}
++    engines: {node: '>=6'}
++
+   p-limit@3.1.0:
+     resolution: {integrity: sha512-TYOanM3wGwNGsZN2cVTYPArw454xnXj5qmWF1bEoAc4+cU/ol7GVh7odevjp1FNHduHc3KZMcFduxU5Xc6uJRQ==}
+     engines: {node: '>=10'}
+ 
++  p-locate@4.1.0:
++    resolution: {integrity: sha512-R79ZZ/0wAxKGu3oYMlz8jy/kbhsNrS7SKZ7PxEHBgJ5+F2mtFW2fK2cOtBh1cHYkQsbzFV7I+EoRKe6Yt0oK7A==}
++    engines: {node: '>=8'}
++
+   p-locate@5.0.0:
+     resolution: {integrity: sha512-LaNjtRWUBY++zB5nE/NwcaoMylSPk+S+ZHNB1TzdbMJMny6dynpAGt7X/tl/QYq3TIeE6nxHppbo2LGymrG5Pw==}
+     engines: {node: '>=10'}
+ 
++  p-try@2.2.0:
++    resolution: {integrity: sha512-R4nPAVTAU0B9D35/Gk3uJf/7XYbQcyohSKdvAxIRSNghFl4e71hVoGnBNQz9cWaXxO2I10KTC+3jMdvvoKw6dQ==}
++    engines: {node: '>=6'}
++
+   package-manager-detector@1.9.0:
+     resolution: {integrity: sha512-zAMfbta9nPA8AKkA4WdmNAT8R8s6Dk0/xwPsqNnRidMFcLo1YkLuPDTgs2f64XdzS8vbLNnoJ+uUIkgbz7oRHA==}
+ 
+@@ -2583,6 +2852,10 @@ packages:
+     engines: {node: '>=20'}
+     hasBin: true
+ 
++  pngjs@5.0.0:
++    resolution: {integrity: sha512-40QW5YalBNfQo5yRYmiw7Yz6TKKVr3h6970B2YE+3fQpsWcrbj1PzJgxeJ19DRQjhMbKPIuMY8rFaXc8moolVw==}
++    engines: {node: '>=10.13.0'}
++
+   pngjs@7.0.0:
+     resolution: {integrity: sha512-LKWqWJRhstyYo9pGvgor/ivk2w94eSjE3RGVuzLGlr3NmD8bf7RcYGze1mNdEHRP6TRP6rMuDHk5t44hnTRyow==}
+     engines: {node: '>=14.19.0'}
+@@ -2601,6 +2874,12 @@ packages:
+     resolution: {integrity: sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g==}
+     engines: {node: '>= 0.8.0'}
+ 
++  promise-worker-transferable@1.0.4:
++    resolution: {integrity: sha512-bN+0ehEnrXfxV2ZQvU2PetO0n4gqBD4ulq3MI1WOPLgr7/Mg9yRQkX5+0v1vagr74ZTsl7XtzlaYDo2EuCeYJw==}
++
++  prop-types@15.8.1:
++    resolution: {integrity: sha512-oj87CgZICdulUohogVAR7AjlC0327U4el4L6eAvOqCeudMDVU0NThNaV+b9Df4dXgSP1gXMTnPdhfe/2qDH5cg==}
++
+   property-information@7.2.0:
+     resolution: {integrity: sha512-IAtzIB6sUiWaJYrX9smp3V46pBGbBeLFRGdh25kg1334VcBlD8HzhPeNIWQH9zhGmo2itIe25EHt9dQP7G5hmg==}
+ 
+@@ -2612,11 +2891,27 @@ packages:
+     resolution: {integrity: sha512-+Owyggi9IxT1ePKGafcI87ubSmxol6smwJ+RAHDQlx9+9cPwFWDiKFFCPuWhr9ignlGpZ9vDQLw67N4dcTVFEA==}
+     engines: {node: '>=20'}
+ 
++  qrcode-generator@2.0.4:
++    resolution: {integrity: sha512-mZSiP6RnbHl4xL2Ap5HfkjLnmxfKcPWpWe/c+5XxCuetEenqmNFf1FH/ftXPCtFG5/TDobjsjz6sSNL0Sr8Z9g==}
++
++  qrcode@1.5.4:
++    resolution: {integrity: sha512-1ca71Zgiu6ORjHqFBDpnSMTR2ReToX4l1Au1VFLyVeBTFavzQnv5JxMFr3ukHVKpSrSA2MCk0lNJSykjUfz7Zg==}
++    engines: {node: '>=10.13.0'}
++    hasBin: true
++
+   react-dom@19.3.0:
+     resolution: {integrity: sha512-JDk8dgif51OjFoDE70+OT9ICyYr+69HlmihNwp1+Nsfbna3t5sIiCa9ZJktDmQ4/1b/rn26hIAR2uYXDMr5r0Q==}
+     peerDependencies:
+       react: ^19.3.0
+ 
++  react-is@16.13.1:
++    resolution: {integrity: sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ==}
++
++  react-qr-code@2.2.0:
++    resolution: {integrity: sha512-e5nS0UUN22K3Nf8KBRUzemfdJ6OmnN5w+kbnj1lvJaol9RyVRFeGl05bCkxSN2ZegbLxjjYjX1+mmAoX9+fAhw==}
++    peerDependencies:
++      react: '*'
++
+   react@19.3.0:
+     resolution: {integrity: sha512-E8LUcbtBWt20bbl2YoHfx4ZDBdxVTfOKtCZn9cDSJ4l6/nuoApcpIBcj47t2wZoVX8g2ZHuMHbiShgCR1T5Sog==}
+     engines: {node: '>=0.10.0'}
+@@ -2637,10 +2932,17 @@ packages:
+   regex@6.1.0:
+     resolution: {integrity: sha512-6VwtthbV4o/7+OaAF9I5L5V3llLEsoPyq9P1JVXkedTP33c7MfCG0/5NOPcSJn0TzXcG9YUrR0gQSWioew3LDg==}
+ 
++  require-directory@2.1.1:
++    resolution: {integrity: sha512-fGxEI7+wsG9xrvdjsrlmL22OMTTiHRwAMroiEeMgq8gzoLC/PQr7RsRDSTLUg/bZAZtF+TVIkHc6/4RIKrui+Q==}
++    engines: {node: '>=0.10.0'}
++
+   require-from-string@2.0.2:
+     resolution: {integrity: sha512-Xf0nWe6RseziFMu+Ap9biiUbmplq6S9/p+7w7YXP/JBHhrUDDUhwa+vANyubuqfZWTveU//DYVGsDG7RKL/vEw==}
+     engines: {node: '>=0.10.0'}
+ 
++  require-main-filename@2.0.0:
++    resolution: {integrity: sha512-NKN5kMDylKuldxYLSUfrbo5Tuzh4hd+2E8NPPX02mZtn1VuREQToYe/ZdlJy+J3uCpfaiGF05e7B8W0iXbQHmg==}
++
+   robust-predicates@3.0.3:
+     resolution: {integrity: sha512-NS3levdsRIUOmiJ8FZWCP7LG3QpJyrs/TE0Zpf1yvZu8cAJJ6QMW92H1c7kWpdIHo8RvmLxN/o2JXTKHp74lUA==}
+ 
+@@ -2670,6 +2972,9 @@ packages:
+     engines: {node: '>=10'}
+     hasBin: true
+ 
++  set-blocking@2.0.0:
++    resolution: {integrity: sha512-KiKBS8AnWGEyLzofFfmvKwpdPzqiy16LvQfK3yv/fVH7Bj13/wl3JSR1J+rfgRE9q7xUJK4qvgS8raSOeLUehw==}
++
+   shebang-command@2.0.0:
+     resolution: {integrity: sha512-kHxr2zZpYtdmrN1qDjrrX/Z1rR1kG8Dx+gkpK1G4eXmvXswmcE1hTWBWYUzlraYw1/yZp6YuDY77YtvbN0dmDA==}
+     engines: {node: '>=8'}
+@@ -2700,9 +3005,17 @@ packages:
+   std-env@4.3.0:
+     resolution: {integrity: sha512-OtU/EgQ1kIm5KwqQpBC6ZEMXrZRui11w8zgfTWp8cdO9B8OaPsbA8bTHO2P+HNo1VlUTGMVBwPhydu6poeXiag==}
+ 
++  string-width@4.2.3:
++    resolution: {integrity: sha512-wKyQRQpjJ0sIp62ErSZdGsjMJWsap5oRNihHhu6G7JVO/9jIB6UyevL+tXuOqrng8j/cxKTWyWUwvSTriiZz/g==}
++    engines: {node: '>=8'}
++
+   stringify-entities@4.0.4:
+     resolution: {integrity: sha512-IwfBptatlO+QCJUo19AqvrPNqlVMpW9YEL2LIVY+Rpv2qsjCGxaDLNRgeGsQWJhfItebuJhsGSLjaBbNSQ+ieg==}
+ 
++  strip-ansi@6.0.1:
++    resolution: {integrity: sha512-Y38VPSHcqkFrCpFnQ9vuSXmquuv5oXOKpGeT6aGrr3o3Gc9AlVa6JBfUSOCnbxGGZF+/0ooI7KrPuUSztUdU5A==}
++    engines: {node: '>=8'}
++
+   stylis@4.4.0:
+     resolution: {integrity: sha512-5Z9ZpRzfuH6l/UAvCPAPUo3665Nk2wLaZU3x+TLHKVzIz33+sbJqbtrYoC3KD4/uVOr2Zp+L0LySezP9OHV9yA==}
+ 
+@@ -2734,6 +3047,9 @@ packages:
+   thenify@3.3.1:
+     resolution: {integrity: sha512-RVZSIV5IG10Hk3enotrhvz0T9em6cyHBLkH/YAZuKqd8hRkKhSfCGIcP2KUY0EPxndzANBmNllzWPwak+bheSw==}
+ 
++  three@0.183.2:
++    resolution: {integrity: sha512-di3BsL2FEQ1PA7Hcvn4fyJOlxRRgFYBpMTcyOgkwJIaDOdJMebEFPA+t98EvjuljDx4hNulAGwF6KIjtwI5jgQ==}
++
+   tinybench@6.2.2:
+     resolution: {integrity: sha512-nIZ2N2dFpjBsg2hgitKu7mA+FvsIJuGJOwysRngmVRRmWgR/UyPjwJj8c/fT/dhm8EkHnF5EOogRf+0Z2qrimA==}
+     engines: {node: '>=20.0.0'}
+@@ -2916,6 +3232,9 @@ packages:
+     resolution: {integrity: sha512-nt+N2dzIutVRxARx1nghPKGv1xHikU7HKdfafKkLNLindmPU/ch3U31NOCGGA/dmPcmb1VlofO0vnKAcsm0o/Q==}
+     engines: {node: '>=12'}
+ 
++  which-module@2.0.1:
++    resolution: {integrity: sha512-iBdZ57RDvnOR9AGBhML2vFZf7h8vmBjhoaZqODJBFWHVtKkDmKuHai3cx5PgVMrX5YDNp27AofYbAwctSS+vhQ==}
++
+   which@2.0.2:
+     resolution: {integrity: sha512-BLI3Tl1TW3Pvl70l3yq3Y64i+awpwXqsGBYWkkqMtnbXgrMD+yj7rhW0kuEDxzJaYXGjEW5ogapKNMEKNMjibA==}
+     engines: {node: '>= 8'}
+@@ -2930,6 +3249,10 @@ packages:
+     resolution: {integrity: sha512-BN22B5eaMMI9UMtjrGd5g5eCYPpCPDUy0FJXbYsaT5zYxjFOckS53SQDE3pWkVoWpHXVb3BrYcEN4Twa55B5cA==}
+     engines: {node: '>=0.10.0'}
+ 
++  wrap-ansi@6.2.0:
++    resolution: {integrity: sha512-r6lPcBGxZXlIcymEu7InxDMhdW0KDxpLgoFLcguasxCaJ/SOIZwINatK9KY/tf+ZrlywOKU0UDj3ATXUBfxJXA==}
++    engines: {node: '>=8'}
++
+   ws@8.22.0:
+     resolution: {integrity: sha512-Ydggc987+RO0AnWtZ/7Wq9FtNvcrL1b/RO0ud9mWjUPgDrsAAwQSF51sm2hm1XofbU/4jkpGEsLFsZZxU+1DOg==}
+     engines: {node: '>=10.0.0'}
+@@ -2942,11 +3265,22 @@ packages:
+       utf-8-validate:
+         optional: true
+ 
++  y18n@4.0.3:
++    resolution: {integrity: sha512-JKhqTOwSrqNA1NY5lSztJ1GrBiUodLMmIZuLiDaMRJ+itFd+ABVE8XBjOvIWL+rSqNDC74LCSFmlb/U4UZ4hJQ==}
++
+   yaml@2.9.1:
+     resolution: {integrity: sha512-3NxN8+78OdzbT7C/WjGsyfPAtJaN3FNDsWxv7Y7mcDsT/oOmgW8BpyQQFFBnvZE3j9Y2Sdz1ULFLezL7Eb2yFw==}
+     engines: {node: '>= 14.6'}
+     hasBin: true
+ 
++  yargs-parser@18.1.3:
++    resolution: {integrity: sha512-o50j0JeToy/4K6OZcaQmW6lyXXKhq7csREXcDwk2omFPJEwUNOVtJKvmDr9EI1fAJZUyZcRF7kxGBWmRXudrCQ==}
++    engines: {node: '>=6'}
++
++  yargs@15.4.1:
++    resolution: {integrity: sha512-aePbxDmcYW++PaqBsJ+HYUFwCdv4LVvdnhBy78E57PIor8/OVvhMrADFFEDh8DHDFRv/O9i3lPhsENjO7QX0+A==}
++    engines: {node: '>=8'}
++
+   yocto-queue@0.1.0:
+     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
+     engines: {node: '>=10'}
+@@ -3002,6 +3336,12 @@ snapshots:
+ 
+   '@chevrotain/utils@13.2.0': {}
+ 
++  '@dagrejs/dagre@2.0.4':
++    dependencies:
++      '@dagrejs/graphlib': 3.0.4
++
++  '@dagrejs/graphlib@3.0.4': {}
++
+   '@eslint-community/eslint-utils@4.10.1(eslint@10.13.0)':
+     dependencies:
+       eslint: 10.13.0
+@@ -3036,6 +3376,23 @@ snapshots:
+       '@eslint/core': 1.2.1
+       levn: 0.4.1
+ 
++  '@floating-ui/core@1.8.0':
++    dependencies:
++      '@floating-ui/utils': 0.2.12
++
++  '@floating-ui/dom@1.8.0':
++    dependencies:
++      '@floating-ui/core': 1.8.0
++      '@floating-ui/utils': 0.2.12
++
++  '@floating-ui/utils@0.2.12': {}
++
++  '@google/model-viewer@4.4.0(three@0.183.2)':
++    dependencies:
++      '@monogrid/gainmap-js': 3.7.3(three@0.183.2)
++      lit: 3.3.3
++      three: 0.183.2
++
+   '@humanfs/core@0.19.2':
+     dependencies:
+       '@humanfs/types': 0.15.0
+@@ -3087,10 +3444,37 @@ snapshots:
+ 
+   '@keyv/serialize@1.1.1': {}
+ 
++  '@layerstack/svelte-actions@1.0.1-next.20':
++    dependencies:
++      '@floating-ui/dom': 1.8.0
++      '@layerstack/utils': 2.0.0-next.19
++      d3-scale: 4.0.2
++
++  '@layerstack/svelte-state@0.1.0-next.25':
++    dependencies:
++      '@layerstack/utils': 2.0.0-next.19
++
++  '@layerstack/utils@2.0.0-next.19':
++    dependencies:
++      d3-array: 3.2.4
++      d3-time: 3.1.0
++      d3-time-format: 4.1.0
++
++  '@lit-labs/ssr-dom-shim@1.6.0': {}
++
++  '@lit/reactive-element@2.1.2':
++    dependencies:
++      '@lit-labs/ssr-dom-shim': 1.6.0
++
+   '@mermaid-js/parser@2.0.1':
+     dependencies:
+       '@chevrotain/types': 13.2.0
+ 
++  '@monogrid/gainmap-js@3.7.3(three@0.183.2)':
++    dependencies:
++      promise-worker-transferable: 1.0.4
++      three: 0.183.2
++
+   '@napi-rs/canvas-android-arm64@1.1.0':
+     optional: true
+ 
+@@ -3396,6 +3780,10 @@ snapshots:
+     dependencies:
+       undici-types: 8.9.0
+ 
++  '@types/qrcode@1.5.6':
++    dependencies:
++      '@types/node': 26.6.5
++
+   '@types/react-dom@19.3.0(@types/react@19.3.0)':
+     dependencies:
+       '@types/react': 19.3.0
+@@ -3406,8 +3794,7 @@ snapshots:
+ 
+   '@types/semver@7.8.0': {}
+ 
+-  '@types/trusted-types@2.0.7':
+-    optional: true
++  '@types/trusted-types@2.0.7': {}
+ 
+   '@types/unist@3.0.3': {}
+ 
+@@ -3597,6 +3984,12 @@ snapshots:
+       json-schema-traverse: 1.0.0
+       require-from-string: 2.0.2
+ 
++  ansi-regex@5.0.1: {}
++
++  ansi-styles@4.3.0:
++    dependencies:
++      color-convert: 2.0.1
++
+   any-promise@1.3.0: {}
+ 
+   aria-query@5.3.1: {}
+@@ -3623,6 +4016,8 @@ snapshots:
+       keyv: 5.6.0
+       qified: 0.10.1
+ 
++  camelcase@5.3.1: {}
++
+   ccount@2.0.1: {}
+ 
+   chai@6.3.0: {}
+@@ -3645,8 +4040,20 @@ snapshots:
+ 
+   clear-cut@2.0.2: {}
+ 
++  cliui@6.0.0:
++    dependencies:
++      string-width: 4.2.3
++      strip-ansi: 6.0.1
++      wrap-ansi: 6.2.0
++
+   clsx@2.1.1: {}
+ 
++  color-convert@2.0.1:
++    dependencies:
++      color-name: 1.1.4
++
++  color-name@1.1.4: {}
++
+   comma-separated-tokens@2.0.3: {}
+ 
+   commander@15.0.0: {}
+@@ -3751,12 +4158,33 @@ snapshots:
+ 
+   d3-format@3.1.2: {}
+ 
++  d3-geo-polygon@2.0.1:
++    dependencies:
++      d3-array: 3.2.4
++      d3-geo: 3.1.1
++      d3-geo-projection: 4.0.0
++
++  d3-geo-projection@4.0.0:
++    dependencies:
++      commander: 7.2.0
++      d3-array: 3.2.4
++      d3-geo: 3.1.1
++
++  d3-geo-voronoi@2.1.0:
++    dependencies:
++      d3-array: 3.2.4
++      d3-delaunay: 6.0.4
++      d3-geo: 3.1.1
++      d3-tricontour: 1.1.0
++
+   d3-geo@3.1.1:
+     dependencies:
+       d3-array: 3.2.4
+ 
+   d3-hierarchy@3.1.2: {}
+ 
++  d3-interpolate-path@2.3.0: {}
++
+   d3-interpolate@3.0.1:
+     dependencies:
+       d3-color: 3.1.0
+@@ -3799,6 +4227,8 @@ snapshots:
+     dependencies:
+       d3-path: 3.1.0
+ 
++  d3-tile@1.0.0: {}
++
+   d3-time-format@4.1.0:
+     dependencies:
+       d3-time: 3.1.0
+@@ -3818,6 +4248,11 @@ snapshots:
+       d3-selection: 3.0.0
+       d3-timer: 3.0.1
+ 
++  d3-tricontour@1.1.0:
++    dependencies:
++      d3-delaunay: 6.0.4
++      d3-scale: 4.0.2
++
+   d3-zoom@3.0.0:
+     dependencies:
+       d3-dispatch: 3.0.1
+@@ -3875,6 +4310,8 @@ snapshots:
+     dependencies:
+       ms: 2.1.3
+ 
++  decamelize@1.2.0: {}
++
+   deep-is@0.1.4: {}
+ 
+   deepmerge@4.3.1: {}
+@@ -3893,12 +4330,16 @@ snapshots:
+     dependencies:
+       dequal: 2.0.3
+ 
++  dijkstrajs@1.0.3: {}
++
+   dompurify@3.4.17:
+     optionalDependencies:
+       '@types/trusted-types': 2.0.7
+ 
+   elkjs@0.9.3: {}
+ 
++  emoji-regex@8.0.0: {}
++
+   entities@7.0.1: {}
+ 
+   es-module-lexer@2.3.2: {}
+@@ -4038,6 +4479,11 @@ snapshots:
+     dependencies:
+       flat-cache: 6.1.23
+ 
++  find-up@4.1.0:
++    dependencies:
++      locate-path: 5.0.0
++      path-exists: 4.0.0
++
+   find-up@5.0.0:
+     dependencies:
+       locate-path: 6.0.0
+@@ -4054,6 +4500,8 @@ snapshots:
+   fsevents@2.3.3:
+     optional: true
+ 
++  get-caller-file@2.0.5: {}
++
+   glob-parent@6.0.2:
+     dependencies:
+       is-glob: 4.0.3
+@@ -4109,6 +4557,8 @@ snapshots:
+ 
+   ignore@7.0.14: {}
+ 
++  immediate@3.0.6: {}
++
+   import-meta-resolve@4.2.0: {}
+ 
+   imurmurhash@0.1.4: {}
+@@ -4119,16 +4569,22 @@ snapshots:
+ 
+   is-extglob@2.1.1: {}
+ 
++  is-fullwidth-code-point@3.0.0: {}
++
+   is-glob@4.0.3:
+     dependencies:
+       is-extglob: 2.1.1
+ 
++  is-promise@2.2.2: {}
++
+   is-reference@3.0.3:
+     dependencies:
+       '@types/estree': 1.0.9
+ 
+   isexe@2.0.0: {}
+ 
++  js-tokens@4.0.0: {}
++
+   json-schema-traverse@0.4.1: {}
+ 
+   json-schema-traverse@1.0.0: {}
+@@ -4145,6 +4601,39 @@ snapshots:
+ 
+   khroma@2.1.0: {}
+ 
++  layerchart@2.11.0(svelte@5.57.2(@typescript-eslint/types@8.72.0)):
++    dependencies:
++      '@dagrejs/dagre': 2.0.4
++      '@layerstack/svelte-actions': 1.0.1-next.20
++      '@layerstack/svelte-state': 0.1.0-next.25
++      '@layerstack/utils': 2.0.0-next.19
++      clsx: 2.1.1
++      d3-array: 3.2.4
++      d3-chord: 3.0.1
++      d3-color: 3.1.0
++      d3-contour: 4.0.2
++      d3-delaunay: 6.0.4
++      d3-dsv: 3.0.1
++      d3-force: 3.0.0
++      d3-geo: 3.1.1
++      d3-geo-polygon: 2.0.1
++      d3-geo-voronoi: 2.1.0
++      d3-hierarchy: 3.1.2
++      d3-interpolate: 3.0.1
++      d3-interpolate-path: 2.3.0
++      d3-path: 3.1.0
++      d3-polygon: 3.0.1
++      d3-quadtree: 3.0.1
++      d3-random: 3.0.1
++      d3-sankey: 0.12.3
++      d3-scale: 4.0.2
++      d3-scale-chromatic: 3.1.0
++      d3-shape: 3.2.0
++      d3-tile: 1.0.0
++      d3-time: 3.1.0
++      memoize: 10.2.0
++      svelte: 5.57.2(@typescript-eslint/types@8.72.0)
++
+   layout-base@1.0.2: {}
+ 
+   layout-base@2.0.1: {}
+@@ -4154,6 +4643,10 @@ snapshots:
+       prelude-ls: 1.2.1
+       type-check: 0.4.0
+ 
++  lie@3.3.0:
++    dependencies:
++      immediate: 3.0.6
++
+   lightningcss-android-arm64@1.33.0:
+     optional: true
+ 
+@@ -4205,14 +4698,38 @@ snapshots:
+ 
+   lines-and-columns@1.2.4: {}
+ 
++  lit-element@4.2.2:
++    dependencies:
++      '@lit-labs/ssr-dom-shim': 1.6.0
++      '@lit/reactive-element': 2.1.2
++      lit-html: 3.3.3
++
++  lit-html@3.3.3:
++    dependencies:
++      '@types/trusted-types': 2.0.7
++
++  lit@3.3.3:
++    dependencies:
++      '@lit/reactive-element': 2.1.2
++      lit-element: 4.2.2
++      lit-html: 3.3.3
++
+   locate-character@3.0.0: {}
+ 
++  locate-path@5.0.0:
++    dependencies:
++      p-locate: 4.1.0
++
+   locate-path@6.0.0:
+     dependencies:
+       p-locate: 5.0.0
+ 
+   lodash-es@4.18.1: {}
+ 
++  loose-envify@1.4.0:
++    dependencies:
++      js-tokens: 4.0.0
++
+   magic-string@0.30.21:
+     dependencies:
+       '@jridgewell/sourcemap-codec': 1.6.0
+@@ -4237,6 +4754,10 @@ snapshots:
+ 
+   mdn-data@2.0.14: {}
+ 
++  memoize@10.2.0:
++    dependencies:
++      mimic-function: 5.0.1
++
+   mermaid@12.2.0:
+     dependencies:
+       '@braintree/sanitize-url': 7.1.2
+@@ -4280,6 +4801,8 @@ snapshots:
+ 
+   micromark-util-types@2.0.3: {}
+ 
++  mimic-function@5.0.1: {}
++
+   minimatch@10.2.6:
+     dependencies:
+       brace-expansion: 5.0.12
+@@ -4329,14 +4852,24 @@ snapshots:
+       type-check: 0.4.0
+       word-wrap: 1.2.5
+ 
++  p-limit@2.3.0:
++    dependencies:
++      p-try: 2.2.0
++
+   p-limit@3.1.0:
+     dependencies:
+       yocto-queue: 0.1.0
+ 
++  p-locate@4.1.0:
++    dependencies:
++      p-limit: 2.3.0
++
+   p-locate@5.0.0:
+     dependencies:
+       p-limit: 3.1.0
+ 
++  p-try@2.2.0: {}
++
+   package-manager-detector@1.9.0: {}
+ 
+   pagedjs@0.4.3:
+@@ -4371,6 +4904,8 @@ snapshots:
+     dependencies:
+       playwright-core: 1.64.1
+ 
++  pngjs@5.0.0: {}
++
+   pngjs@7.0.0: {}
+ 
+   points-on-curve@0.2.0: {}
+@@ -4388,6 +4923,17 @@ snapshots:
+ 
+   prelude-ls@1.2.1: {}
+ 
++  promise-worker-transferable@1.0.4:
++    dependencies:
++      is-promise: 2.2.2
++      lie: 3.3.0
++
++  prop-types@15.8.1:
++    dependencies:
++      loose-envify: 1.4.0
++      object-assign: 4.1.1
++      react-is: 16.13.1
++
+   property-information@7.2.0: {}
+ 
+   punycode@2.3.1: {}
+@@ -4396,11 +4942,27 @@ snapshots:
+     dependencies:
+       hookified: 2.2.0
+ 
++  qrcode-generator@2.0.4: {}
++
++  qrcode@1.5.4:
++    dependencies:
++      dijkstrajs: 1.0.3
++      pngjs: 5.0.0
++      yargs: 15.4.1
++
+   react-dom@19.3.0(react@19.3.0):
+     dependencies:
+       react: 19.3.0
+       scheduler: 0.28.0
+ 
++  react-is@16.13.1: {}
++
++  react-qr-code@2.2.0(react@19.3.0):
++    dependencies:
++      prop-types: 15.8.1
++      qrcode-generator: 2.0.4
++      react: 19.3.0
++
+   react@19.3.0: {}
+ 
+   readdirp@4.1.2: {}
+@@ -4417,8 +4979,12 @@ snapshots:
+     dependencies:
+       regex-utilities: 2.3.0
+ 
++  require-directory@2.1.1: {}
++
+   require-from-string@2.0.2: {}
+ 
++  require-main-filename@2.0.0: {}
++
+   robust-predicates@3.0.3: {}
+ 
+   rolldown@1.2.15:
+@@ -4461,6 +5027,8 @@ snapshots:
+ 
+   semver@7.8.5: {}
+ 
++  set-blocking@2.0.0: {}
++
+   shebang-command@2.0.0:
+     dependencies:
+       shebang-regex: 3.0.0
+@@ -4492,11 +5060,21 @@ snapshots:
+ 
+   std-env@4.3.0: {}
+ 
++  string-width@4.2.3:
++    dependencies:
++      emoji-regex: 8.0.0
++      is-fullwidth-code-point: 3.0.0
++      strip-ansi: 6.0.1
++
+   stringify-entities@4.0.4:
+     dependencies:
+       character-entities-html4: 2.1.0
+       character-entities-legacy: 3.0.0
+ 
++  strip-ansi@6.0.1:
++    dependencies:
++      ansi-regex: 5.0.1
++
+   stylis@4.4.0: {}
+ 
+   sucrase@3.35.1:
+@@ -4552,6 +5130,8 @@ snapshots:
+     dependencies:
+       any-promise: 1.3.0
+ 
++  three@0.183.2: {}
++
+   tinybench@6.2.2: {}
+ 
+   tinyexec@1.3.1: {}
+@@ -4677,6 +5257,8 @@ snapshots:
+ 
+   whatwg-mimetype@3.0.0: {}
+ 
++  which-module@2.0.1: {}
++
+   which@2.0.2:
+     dependencies:
+       isexe: 2.0.0
+@@ -4685,10 +5267,37 @@ snapshots:
+ 
+   word-wrap@1.2.5: {}
+ 
++  wrap-ansi@6.2.0:
++    dependencies:
++      ansi-styles: 4.3.0
++      string-width: 4.2.3
++      strip-ansi: 6.0.1
++
+   ws@8.22.0: {}
+ 
++  y18n@4.0.3: {}
++
+   yaml@2.9.1: {}
+ 
++  yargs-parser@18.1.3:
++    dependencies:
++      camelcase: 5.3.1
++      decamelize: 1.2.0
++
++  yargs@15.4.1:
++    dependencies:
++      cliui: 6.0.0
++      decamelize: 1.2.0
++      find-up: 4.1.0
++      get-caller-file: 2.0.5
++      require-directory: 2.1.1
++      require-main-filename: 2.0.0
++      set-blocking: 2.0.0
++      string-width: 4.2.3
++      which-module: 2.0.1
++      y18n: 4.0.3
++      yargs-parser: 18.1.3
++
+   yocto-queue@0.1.0: {}
+ 
+   zimmerframe@1.1.5: {}
+diff --git a/pnpm-workspace.yaml b/pnpm-workspace.yaml
+index 1d4f837..8d6231c 100644
+--- a/pnpm-workspace.yaml
++++ b/pnpm-workspace.yaml
+@@ -21,6 +21,7 @@ packages:
+   - website/blog
+   # Spikes: measurements, not packages; they have no build, lint or test script, so the workspace's runs skip them.
+   - spikes/*
++  - spikes/wrap-npm-package/*
+ 
+ # Install scripts that never run: Paged.js's old dependencies print banners from them, and need nothing built.
+ allowBuilds:
+diff --git a/spikes/wrap-npm-package/README.md b/spikes/wrap-npm-package/README.md
+new file mode 100644
+index 0000000..0493402
+--- /dev/null
++++ b/spikes/wrap-npm-package/README.md
+@@ -0,0 +1,44 @@
++# Spike: four npm packages wrapped as packs (CMD-8)
++
++**Status: done (2026-11-20).** [Wrapping an npm package as a pack](../../docs/wrapping-an-npm-package.md) proposes `npm create @compmd/pack <folder> -- --from <package>`. The command doesn't exist yet, so this spike writes by hand, for four packages, the packs it would write, builds them as `compmd-pack build` does, and opens each demo in Chrome and WebKit as `compmd-pack dev` serves it, each use in a strict frame of its own. Nothing here changes the packages; what it changes in the design is listed first.
++
++## What it found
++
++1. **`package.json`'s `compmd` field is taken.** The registry companion (section 2) makes it the pack's document (`"./index.comp.md"`) or a library pack's module (`{ "library": … }`), so the design's `compmd.wrap` can't go there. The spike keeps the wrap's settings in `compmd.wrap.json` beside it, which the build reads and the pack doesn't publish.
++2. **A prop named like a common param is the box's.** `width`, `height`, `background`, `border`, `padding` and the rest of spec §9.2 style the use's box, the component's `target`, and never reach the component: layerchart's `height` was dropped, even when the use gave one. A chart that takes its size from its container fills `target`, and a document sizes it with `height=12rem`. The mapping leaves such props out, and lists them.
++3. **CSS colours map to `color`**, the spec's type for CSS colour syntax (§9.4), not `string`: react-qr-code's `bgColor` and `fgColor`.
++4. **"A prop's own declaration" means one in the package's own files.** layerchart's `x` and `y` come from its `ChartProps`, which `BarChartProps` joins with `&`; React's `SVGProps` (react-qr-code) is what is left out.
++5. **The glue mounts in a box of its own.** The renderer owns `target`'s classes and style, so a style the glue sets on `target` may not hold; layerchart's chart is mounted in a `div` the glue adds.
++6. **A web component's failure is an event.** model-viewer reports a model it couldn't load with an `error` event and throws nothing, so without the glue passing it to `fail` the reader sees an empty box and the host gets no W118. The glue the command writes for a web component listens for `error`.
++7. **A Svelte package's CSS goes into the module.** Compiled with Svelte's default, the CSS went to a file of its own, which the frame never loads, and the chart drew unstyled; compiled with `css: "injected"`, the module adds it. Its theme's colours (`--color-primary`) are still unset: the bars are `currentColor` (the design's gap G3).
++8. **Svelte's props can't change from a plain module:** `$state` needs a `.svelte` file, so the glue mounts the chart again on each update.
++9. **An optional enum works:** `level: L | M | H | Q?` is accepted, and `level=H` checked (the design's gap G6, which still has no conformance case).
++10. **`generated` after `signature` in the fence's info string** is ignored by the processor, but the spec doesn't say what other words there mean: a gap for the design (G7).
++
++## The packs
++
++Each folder is what the command would write, with the glue as written once, and the demo it would write a use of each param into. The signatures marked `generated` are written by hand as the build would write them from the package's types.
++
++| Folder | Package | Kind | Built (gzipped) | Imports left | Drew, Chrome and WebKit | What the frame refused |
++|---|---|---|---|---|---|---|
++| [`react-qr-code/`](react-qr-code/) | `react-qr-code` 2.2.0 | React | 8.9 KB | `react`, `react-dom/client` | 2 of 2 | nothing |
++| [`layerchart/`](layerchart/) | `layerchart` 2.11.0, `BarChart` | Svelte 5, `.svelte` sources | 164.5 KB | nine of `svelte`'s | 2 of 2 | nothing |
++| [`model-viewer/`](model-viewer/) | `@google/model-viewer` 4.4.0, with `three` 0.183.2 | web component | 289.3 KB | none | 0 of 1: its fallback, with W118 | the model's fetch (`connect-src`), and WebAssembly (`wasm-unsafe-eval`) |
++| [`qrcode/`](qrcode/) | `qrcode` 1.5.4 | library, CommonJS | 9.3 KB | none | 2 of 2 | nothing |
++
++- **react-qr-code:** six params from its six own props; `size`'s default, 256, is the author's (its types' comment says 128). React and React DOM stay imports, which the frames' import map gives.
++- **layerchart:** five params of about 90, the allowlist; `x` and `y` as field names, their `string` branch. Its `.svelte` sources compile with the frames' Svelte, and d3 and its other dependencies are bundled.
++- **model-viewer:** the strict frame refuses what the design expected, and the page shows the label in its place. Its decoders from a CDN never came up: the model didn't load.
++- **qrcode:** nothing derives; the author wrote the call, `toString(value, { type: "svg" })`, and the signature, which isn't marked `generated`. Its SVG takes the frame's width; `width=10rem` on the use sizes it.
++
++`results.json` has each run's numbers, and `screenshots/` each page.
++
++## Running it
++
++```sh
++pnpm install
++pnpm --dir spikes/wrap-npm-package try                 # every pack
++pnpm --dir spikes/wrap-npm-package try layerchart      # one
++```
++
++`try.ts` builds each pack with `compmd-pack build`'s own configuration (with Svelte's Vite plugin for a Svelte package, which the build doesn't have yet), serves its `demo.comp.md` as `compmd-pack dev` does, and opens it in Playwright's Chrome and WebKit (1.64.1, headless). A use counts as drawn when its frame has a height and its `svg` or `canvas` a size. The packs have no `build` or `test` script, so the workspace's runs leave them out.
+diff --git a/spikes/wrap-npm-package/layerchart/compmd.wrap.json b/spikes/wrap-npm-package/layerchart/compmd.wrap.json
+new file mode 100644
+index 0000000..6f459b3
+--- /dev/null
++++ b/spikes/wrap-npm-package/layerchart/compmd.wrap.json
+@@ -0,0 +1,10 @@
++{
++  "from": "layerchart",
++  "export": "BarChart",
++  "kind": "svelte",
++  "params": ["data", "x", "y", "orientation", "bandPadding"],
++  "overrides": {
++    "x": { "type": "string", "doc": "The field of each row the bars are placed by" },
++    "y": { "type": "string", "doc": "The field of each row the bars' length is" }
++  }
++}
+diff --git a/spikes/wrap-npm-package/layerchart/demo.comp.md b/spikes/wrap-npm-package/layerchart/demo.comp.md
+new file mode 100644
+index 0000000..4bdb475
+--- /dev/null
++++ b/spikes/wrap-npm-package/layerchart/demo.comp.md
+@@ -0,0 +1,21 @@
++---
++md:
++  import:
++    - from: "@spike/bar-chart@0"
++      names: [bar-chart]
++sales:
++  - { month: Jan, total: 12 }
++  - { month: Feb, total: 18 }
++  - { month: Mar, total: 9 }
++  - { month: Apr, total: 22 }
++---
++
++# layerchart's BarChart, wrapped
++
++The month's sales:
++
++:: bar-chart[Sales by month: January 12, February 18, March 9, April 22] {data=(md.doc.sales) x=month y=total}
++
++Sideways, with thinner bars:
++
++:: bar-chart[Sales by month, sideways] {data=(md.doc.sales) x=total y=month orientation=horizontal bandPadding=0.6 height=12rem}
+diff --git a/spikes/wrap-npm-package/layerchart/index.comp.md b/spikes/wrap-npm-package/layerchart/index.comp.md
+new file mode 100644
+index 0000000..e0ae1fc
+--- /dev/null
++++ b/spikes/wrap-npm-package/layerchart/index.comp.md
+@@ -0,0 +1,25 @@
++---
++md:
++  import:
++    - from: ./dist/bar-chart.js
++      names: [bar-chart]
++  export:
++    pack: "@spike/bar-chart"
++    version: "0.1.0"
++    names: [bar-chart]
++---
++
++# @spike/bar-chart
++
++`bar-chart` draws `data`'s rows as bars with [layerchart](https://www.npmjs.com/package/layerchart) 2.11.0's `BarChart`: `x` names the field the bars are placed by, `y` the field their length is. The chart is as tall as its box: `height=12rem` on the use, 18rem without. A reader without it sees the label.
++
++<!-- The fence below is the build's: it is written again from layerchart's types at each build. -->
++
++```compmd component=bar-chart signature generated
++params:
++  data: array?
++  x: string?
++  y: string?
++  orientation: horizontal | vertical = vertical
++  bandPadding: number = 0.4
++```
+diff --git a/spikes/wrap-npm-package/layerchart/package.json b/spikes/wrap-npm-package/layerchart/package.json
+new file mode 100644
+index 0000000..eb931b1
+--- /dev/null
++++ b/spikes/wrap-npm-package/layerchart/package.json
+@@ -0,0 +1,29 @@
++{
++  "name": "@spike/bar-chart",
++  "version": "0.1.0",
++  "private": true,
++  "description": "A CompMD pack of layerchart 2.11.0's BarChart, as `npm create @compmd/pack bar-chart -- --from layerchart --export BarChart` would write it (docs/wrapping-an-npm-package.md). Written by hand: the command doesn't exist yet.",
++  "keywords": [
++    "compmd",
++    "compmd-pack"
++  ],
++  "license": "MIT",
++  "type": "module",
++  "compmd": "./index.comp.md",
++  "files": [
++    "dist",
++    "index.comp.md",
++    "README.md"
++  ],
++  "dependencies": {
++    "layerchart": "2.11.0"
++  },
++  "devDependencies": {
++    "@compmd/pack": "workspace:*",
++    "svelte": "5.57.2",
++    "typescript": "6.0.3"
++  },
++  "peerDependencies": {
++    "svelte": "^5.57.2"
++  }
++}
+diff --git a/spikes/wrap-npm-package/layerchart/src/bar-chart.ts b/spikes/wrap-npm-package/layerchart/src/bar-chart.ts
+new file mode 100644
+index 0000000..96c80fc
+--- /dev/null
++++ b/spikes/wrap-npm-package/layerchart/src/bar-chart.ts
+@@ -0,0 +1,37 @@
++// `bar-chart`: layerchart's `BarChart`, a Svelte 5 component, in the plain binding (spec §7.6), as the command writes it
++// once. Svelte stays an import, which the frames' import map gives; layerchart, compiled from its `.svelte` sources
++// with that Svelte, and d3 are bundled in.
++import { mount, unmount, type ComponentProps } from "svelte";
++import { BarChart } from "layerchart";
++import { component } from "@compmd/pack/component";
++
++/** `BarChart`'s props from the params: its props type has an index signature, which no named type meets. */
++const propsOf = (params: Params) => params as ComponentProps<typeof BarChart>;
++
++/** The params, as the generated signature in `index.comp.md` declares them. */
++export interface Params {
++  data?: Record<string, unknown>[];
++  x?: string;
++  y?: string;
++  orientation?: "horizontal" | "vertical";
++  bandPadding?: number;
++}
++
++/** The chart's height when the use's box has none (`height=12rem` gives it one, spec §9.2). */
++const DEFAULT_HEIGHT = "18rem";
++
++export default component<Params>((target, { params }) => {
++  // layerchart takes its size from its container: the chart fills a box of its own, as tall as the use's box, which
++  // is the renderer's to style.
++  const box = target.appendChild(document.createElement("div"));
++  box.style.height = target.clientHeight > 0 ? "100%" : DEFAULT_HEIGHT;
++  // A plain module can't hold Svelte's `$state`, so a new param mounts the chart again.
++  let chart = mount(BarChart, { target: box, props: propsOf(params) });
++  return {
++    update: (next) => {
++      void unmount(chart);
++      chart = mount(BarChart, { target: box, props: propsOf(next) });
++    },
++    destroy: () => void unmount(chart),
++  };
++});
+diff --git a/spikes/wrap-npm-package/layerchart/tsconfig.json b/spikes/wrap-npm-package/layerchart/tsconfig.json
+new file mode 100644
+index 0000000..0377325
+--- /dev/null
++++ b/spikes/wrap-npm-package/layerchart/tsconfig.json
+@@ -0,0 +1 @@
++{ "extends": "@compmd/pack/tsconfig.json", "include": ["src"] }
+diff --git a/spikes/wrap-npm-package/model-viewer/compmd.wrap.json b/spikes/wrap-npm-package/model-viewer/compmd.wrap.json
+new file mode 100644
+index 0000000..e7ac86d
+--- /dev/null
++++ b/spikes/wrap-npm-package/model-viewer/compmd.wrap.json
+@@ -0,0 +1,11 @@
++{
++  "from": "@google/model-viewer",
++  "export": "model-viewer",
++  "kind": "web-component",
++  "params": ["src", "alt", "poster", "cameraControls", "autoRotate"],
++  "overrides": {
++    "cameraControls": { "default": false },
++    "autoRotate": { "default": false }
++  },
++  "label": "alt"
++}
+diff --git a/spikes/wrap-npm-package/model-viewer/demo.comp.md b/spikes/wrap-npm-package/model-viewer/demo.comp.md
+new file mode 100644
+index 0000000..ba87ab2
+--- /dev/null
++++ b/spikes/wrap-npm-package/model-viewer/demo.comp.md
+@@ -0,0 +1,12 @@
++---
++md:
++  import:
++    - from: "@spike/model-viewer@0"
++      names: [model-viewer]
++---
++
++# @google/model-viewer, wrapped
++
++A model served beside the test page (the glTF sample triangle), which a strict frame can't fetch:
++
++:: model-viewer[A triangle] {src="./triangle.gltf" cameraControls=true autoRotate=true}
+diff --git a/spikes/wrap-npm-package/model-viewer/index.comp.md b/spikes/wrap-npm-package/model-viewer/index.comp.md
+new file mode 100644
+index 0000000..ecc3704
+--- /dev/null
++++ b/spikes/wrap-npm-package/model-viewer/index.comp.md
+@@ -0,0 +1,25 @@
++---
++md:
++  import:
++    - from: ./dist/model-viewer.js
++      names: [model-viewer]
++  export:
++    pack: "@spike/model-viewer"
++    version: "0.1.0"
++    names: [model-viewer]
++---
++
++# @spike/model-viewer
++
++`model-viewer` shows the 3D model at `src` with [@google/model-viewer](https://www.npmjs.com/package/@google/model-viewer) 4.4.0. A reader without it sees the label, which is also the model's `alt`.
++
++<!-- The fence below is the build's: it is written again from @google/model-viewer's types at each build. -->
++
++```compmd component=model-viewer signature generated
++params:
++  src: string
++  alt: string?
++  poster: string?
++  cameraControls: boolean = false
++  autoRotate: boolean = false
++```
+diff --git a/spikes/wrap-npm-package/model-viewer/package.json b/spikes/wrap-npm-package/model-viewer/package.json
+new file mode 100644
+index 0000000..207784a
+--- /dev/null
++++ b/spikes/wrap-npm-package/model-viewer/package.json
+@@ -0,0 +1,19 @@
++{
++  "name": "@spike/model-viewer",
++  "version": "0.1.0",
++  "private": true,
++  "description": "A CompMD pack of @google/model-viewer 4.4.0, as `npm create @compmd/pack model-viewer -- --from @google/model-viewer` would write it (docs/wrapping-an-npm-package.md), to see what a strict frame refuses. Written by hand: the command doesn't exist yet.",
++  "keywords": ["compmd", "compmd-pack"],
++  "license": "Apache-2.0",
++  "type": "module",
++  "compmd": "./index.comp.md",
++  "files": ["dist", "index.comp.md", "README.md"],
++  "dependencies": {
++    "@google/model-viewer": "4.4.0",
++    "three": "0.183.2"
++  },
++  "devDependencies": {
++    "@compmd/pack": "workspace:*",
++    "typescript": "6.0.3"
++  }
++}
+diff --git a/spikes/wrap-npm-package/model-viewer/src/model-viewer.ts b/spikes/wrap-npm-package/model-viewer/src/model-viewer.ts
+new file mode 100644
+index 0000000..4342b14
+--- /dev/null
++++ b/spikes/wrap-npm-package/model-viewer/src/model-viewer.ts
+@@ -0,0 +1,36 @@
++// `model-viewer`: the `<model-viewer>` custom element of @google/model-viewer in the plain binding (spec §7.6), as the
++// command writes it once. Importing the package defines the element; three.js and lit are bundled in.
++import "@google/model-viewer";
++import { component } from "@compmd/pack/component";
++
++/** The params, as the generated signature in `index.comp.md` declares them. */
++export interface Params {
++  src: string;
++  alt?: string;
++  poster?: string;
++  cameraControls: boolean;
++  autoRotate: boolean;
++}
++
++/** The element's attribute for each param: its property in kebab case, as it has no `custom-elements.json`. */
++const ATTRIBUTES: Record<keyof Params, string> = { src: "src", alt: "alt", poster: "poster", cameraControls: "camera-controls", autoRotate: "auto-rotate" };
++
++export default component<Params>((target, { params, fallback, fail }) => {
++  const viewer = document.createElement("model-viewer");
++  // The element reports a model it couldn't load as an event, not a throw: without this, an empty box and no W118.
++  viewer.addEventListener("error", (event: Event) => {
++    const { type, sourceError } = (event as CustomEvent<{ type?: string; sourceError?: unknown }>).detail;
++    fail(`model-viewer couldn't load ${viewer.getAttribute("src") ?? ""}:${type ?? "error"}${sourceError instanceof Error ? `, ${sourceError.message}` : ""}`);
++  });
++  viewer.style.cssText = "display: block; width: 100%; height: 24rem";
++  const draw = (next: Params) => {
++    for (const [param, attribute] of Object.entries(ATTRIBUTES) as [keyof Params, string][]) {
++      const value = param === "alt" ? (next.alt ?? fallback.text) : next[param];
++      if (value === undefined || value === false) viewer.removeAttribute(attribute);
++      else viewer.setAttribute(attribute, value === true ? "" : value);
++    }
++  };
++  draw(params);
++  target.append(viewer);
++  return { update: draw, destroy: () => viewer.remove() };
++});
+diff --git a/spikes/wrap-npm-package/model-viewer/triangle.gltf b/spikes/wrap-npm-package/model-viewer/triangle.gltf
+new file mode 100644
+index 0000000..cc6a2e9
+--- /dev/null
++++ b/spikes/wrap-npm-package/model-viewer/triangle.gltf
+@@ -0,0 +1 @@
++{"scene":0,"scenes":[{"nodes":[0]}],"nodes":[{"mesh":0}],"meshes":[{"primitives":[{"attributes":{"POSITION":1},"indices":0}]}],"buffers":[{"uri":"data:application/octet-stream;base64,AAABAAIAAAAAAAAAAAAAAAAAAAAAAIA/AAAAAAAAAAAAAAAAAACAPwAAAAA=","byteLength":44}],"bufferViews":[{"buffer":0,"byteOffset":0,"byteLength":6,"target":34963},{"buffer":0,"byteOffset":8,"byteLength":36,"target":34962}],"accessors":[{"bufferView":0,"byteOffset":0,"componentType":5123,"count":3,"type":"SCALAR","max":[2],"min":[0]},{"bufferView":1,"byteOffset":0,"componentType":5126,"count":3,"type":"VEC3","max":[1.0,1.0,0.0],"min":[0.0,0.0,0.0]}],"asset":{"version":"2.0"}}
+diff --git a/spikes/wrap-npm-package/model-viewer/tsconfig.json b/spikes/wrap-npm-package/model-viewer/tsconfig.json
+new file mode 100644
+index 0000000..0377325
+--- /dev/null
++++ b/spikes/wrap-npm-package/model-viewer/tsconfig.json
+@@ -0,0 +1 @@
++{ "extends": "@compmd/pack/tsconfig.json", "include": ["src"] }
+diff --git a/spikes/wrap-npm-package/package.json b/spikes/wrap-npm-package/package.json
+new file mode 100644
+index 0000000..838a6da
+--- /dev/null
++++ b/spikes/wrap-npm-package/package.json
+@@ -0,0 +1,22 @@
++{
++  "name": "@spike/wrap-npm-package",
++  "private": true,
++  "description": "CMD-8's spike: four npm packages wrapped as packs by hand, as `npm create @compmd/pack -- --from` would write them, built and opened in strict frames. Not part of the packages: no build, lint or test script, so the workspace's runs leave it out.",
++  "type": "module",
++  "scripts": {
++    "try": "node try.ts"
++  },
++  "dependencies": {
++    "@compmd/pack": "workspace:*",
++    "@compmd/processor": "workspace:*",
++    "@compmd/sandbox": "workspace:*",
++    "@compmd/vite": "workspace:*",
++    "@sveltejs/vite-plugin-svelte": "7.3.1",
++    "svelte": "5.57.2"
++  },
++  "devDependencies": {
++    "@types/node": "26.6.5",
++    "playwright": "1.64.1",
++    "vite": "8.3.4"
++  }
++}
+diff --git a/spikes/wrap-npm-package/qrcode/compmd.wrap.json b/spikes/wrap-npm-package/qrcode/compmd.wrap.json
+new file mode 100644
+index 0000000..de5d411
+--- /dev/null
++++ b/spikes/wrap-npm-package/qrcode/compmd.wrap.json
+@@ -0,0 +1,4 @@
++{
++  "from": "qrcode",
++  "kind": "library"
++}
+diff --git a/spikes/wrap-npm-package/qrcode/demo.comp.md b/spikes/wrap-npm-package/qrcode/demo.comp.md
+new file mode 100644
+index 0000000..180a49a
+--- /dev/null
++++ b/spikes/wrap-npm-package/qrcode/demo.comp.md
+@@ -0,0 +1,14 @@
++---
++md:
++  import:
++    - from: "@spike/qr-svg@0"
++      names: [qr-svg]
++---
++
++# qrcode, wrapped
++
++:: qr-svg[CompMD's website] {value="https://compmd.dev/"}
++
++With the most error correction and no margin:
++
++:: qr-svg[CompMD's website, robust] {value="https://compmd.dev/" level=H margin=0}
+diff --git a/spikes/wrap-npm-package/qrcode/index.comp.md b/spikes/wrap-npm-package/qrcode/index.comp.md
+new file mode 100644
+index 0000000..268f69e
+--- /dev/null
++++ b/spikes/wrap-npm-package/qrcode/index.comp.md
+@@ -0,0 +1,23 @@
++---
++md:
++  import:
++    - from: ./dist/qr-svg.js
++      names: [qr-svg]
++  export:
++    pack: "@spike/qr-svg"
++    version: "0.1.0"
++    names: [qr-svg]
++---
++
++# @spike/qr-svg
++
++`qr-svg` draws a QR code of `value` as SVG with the library [qrcode](https://www.npmjs.com/package/qrcode) 1.5.4. A reader without it sees the label.
++
++<!-- No `generated`: a library has no props to read, so the author writes this signature, and the build leaves it. -->
++
++```compmd component=qr-svg signature
++params:
++  value: string
++  level: L | M | Q | H = M
++  margin: number = 4
++```
+diff --git a/spikes/wrap-npm-package/qrcode/package.json b/spikes/wrap-npm-package/qrcode/package.json
+new file mode 100644
+index 0000000..6854109
+--- /dev/null
++++ b/spikes/wrap-npm-package/qrcode/package.json
+@@ -0,0 +1,19 @@
++{
++  "name": "@spike/qr-svg",
++  "version": "0.1.0",
++  "private": true,
++  "description": "A CompMD pack of the library qrcode 1.5.4, as `npm create @compmd/pack qr-svg -- --from qrcode` would write it and its author would finish it (docs/wrapping-an-npm-package.md). Written by hand: the command doesn't exist yet.",
++  "keywords": ["compmd", "compmd-pack"],
++  "license": "MIT",
++  "type": "module",
++  "compmd": "./index.comp.md",
++  "files": ["dist", "index.comp.md", "README.md"],
++  "dependencies": {
++    "qrcode": "1.5.4"
++  },
++  "devDependencies": {
++    "@compmd/pack": "workspace:*",
++    "@types/qrcode": "1.5.6",
++    "typescript": "6.0.3"
++  }
++}
+diff --git a/spikes/wrap-npm-package/qrcode/src/qr-svg.ts b/spikes/wrap-npm-package/qrcode/src/qr-svg.ts
+new file mode 100644
+index 0000000..53a90c5
+--- /dev/null
++++ b/spikes/wrap-npm-package/qrcode/src/qr-svg.ts
+@@ -0,0 +1,13 @@
++// `qr-svg`: a QR code drawn by the library qrcode as SVG markup. The command writes a `draw()` that imports the library
++// (docs/writing-a-pack.md, decision 6); the author wrote the call and the params, since a library has no props.
++import { toString } from "qrcode";
++import { draw } from "@compmd/pack/component";
++
++/** The params, as the signature in `index.comp.md` declares them, written by the author. */
++export interface Params {
++  value: string;
++  level: "L" | "M" | "Q" | "H";
++  margin: number;
++}
++
++export default draw<Params>(({ value, level, margin }) => toString(value, { type: "svg", errorCorrectionLevel: level, margin }), { role: "img" });
+diff --git a/spikes/wrap-npm-package/qrcode/tsconfig.json b/spikes/wrap-npm-package/qrcode/tsconfig.json
+new file mode 100644
+index 0000000..0377325
+--- /dev/null
++++ b/spikes/wrap-npm-package/qrcode/tsconfig.json
+@@ -0,0 +1 @@
++{ "extends": "@compmd/pack/tsconfig.json", "include": ["src"] }
+diff --git a/spikes/wrap-npm-package/react-qr-code/compmd.wrap.json b/spikes/wrap-npm-package/react-qr-code/compmd.wrap.json
+new file mode 100644
+index 0000000..69be8f3
+--- /dev/null
++++ b/spikes/wrap-npm-package/react-qr-code/compmd.wrap.json
+@@ -0,0 +1,10 @@
++{
++  "from": "react-qr-code",
++  "export": "default",
++  "kind": "react",
++  "params": ["value", "size", "bgColor", "fgColor", "level", "title"],
++  "overrides": {
++    "size": { "default": 256 }
++  },
++  "label": "title"
++}
+diff --git a/spikes/wrap-npm-package/react-qr-code/demo.comp.md b/spikes/wrap-npm-package/react-qr-code/demo.comp.md
+new file mode 100644
+index 0000000..f28f5d2
+--- /dev/null
++++ b/spikes/wrap-npm-package/react-qr-code/demo.comp.md
+@@ -0,0 +1,16 @@
++---
++md:
++  import:
++    - from: "@spike/qr-code@0"
++      names: [qr-code]
++---
++
++# react-qr-code, wrapped
++
++The defaults:
++
++:: qr-code[CompMD's website] {value="https://compmd.dev/"}
++
++Every param:
++
++:: qr-code[A small one, dark on yellow] {value="https://compmd.dev/" size=128 bgColor="#ffd33d" fgColor="#24292f" level=H}
+diff --git a/spikes/wrap-npm-package/react-qr-code/index.comp.md b/spikes/wrap-npm-package/react-qr-code/index.comp.md
+new file mode 100644
+index 0000000..03338d7
+--- /dev/null
++++ b/spikes/wrap-npm-package/react-qr-code/index.comp.md
+@@ -0,0 +1,26 @@
++---
++md:
++  import:
++    - from: ./dist/qr-code.js
++      names: [qr-code]
++  export:
++    pack: "@spike/qr-code"
++    version: "0.1.0"
++    names: [qr-code]
++---
++
++# @spike/qr-code
++
++`qr-code` draws a QR code of `value` with [react-qr-code](https://www.npmjs.com/package/react-qr-code) 2.2.0. A reader without it sees the label, which is also the drawing's title.
++
++<!-- The fence below is the build's: it is written again from react-qr-code's types at each build. -->
++
++```compmd component=qr-code signature generated
++params:
++  value: string
++  size: number = 256
++  bgColor: color?
++  fgColor: color?
++  level: L | M | H | Q?
++  title: string?
++```
+diff --git a/spikes/wrap-npm-package/react-qr-code/package.json b/spikes/wrap-npm-package/react-qr-code/package.json
+new file mode 100644
+index 0000000..8bd59b8
+--- /dev/null
++++ b/spikes/wrap-npm-package/react-qr-code/package.json
+@@ -0,0 +1,33 @@
++{
++  "name": "@spike/qr-code",
++  "version": "0.1.0",
++  "private": true,
++  "description": "A CompMD pack of react-qr-code 2.2.0, as `npm create @compmd/pack qr-code -- --from react-qr-code` would write it (docs/wrapping-an-npm-package.md). Written by hand: the command doesn't exist yet.",
++  "keywords": [
++    "compmd",
++    "compmd-pack"
++  ],
++  "license": "MIT",
++  "type": "module",
++  "compmd": "./index.comp.md",
++  "files": [
++    "dist",
++    "index.comp.md",
++    "README.md"
++  ],
++  "dependencies": {
++    "react-qr-code": "2.2.0"
++  },
++  "devDependencies": {
++    "@compmd/pack": "workspace:*",
++    "@types/react": "19.3.0",
++    "@types/react-dom": "19.3.0",
++    "react": "19.3.0",
++    "react-dom": "19.3.0",
++    "typescript": "6.0.3"
++  },
++  "peerDependencies": {
++    "react": "^19.3.0",
++    "react-dom": "^19.3.0"
++  }
++}
+diff --git a/spikes/wrap-npm-package/react-qr-code/src/qr-code.ts b/spikes/wrap-npm-package/react-qr-code/src/qr-code.ts
+new file mode 100644
+index 0000000..f530cd3
+--- /dev/null
++++ b/spikes/wrap-npm-package/react-qr-code/src/qr-code.ts
+@@ -0,0 +1,26 @@
++// `qr-code`: react-qr-code's `QRCode` in the plain binding (spec §7.6), as the command writes it once. React and React
++// DOM stay imports, which the frames' import map gives; react-qr-code and what it uses are bundled in.
++import { createElement } from "react";
++import { createRoot } from "react-dom/client";
++import QRCode from "react-qr-code";
++import { component } from "@compmd/pack/component";
++
++/** The params, as the generated signature in `index.comp.md` declares them. */
++export interface Params {
++  value: string;
++  size: number;
++  bgColor?: string;
++  fgColor?: string;
++  level?: "L" | "M" | "H" | "Q";
++  title?: string;
++}
++
++export default component<Params>((target, { params, fallback }) => {
++  const root = createRoot(target);
++  // `title` is the label (`compmd.wrap.json`): the use's fallback text when the document gives no `title`.
++  const draw = (next: Params) => {
++    root.render(createElement(QRCode, { ...next, title: next.title ?? fallback.text }));
++  };
++  draw(params);
++  return { update: draw, destroy: () => root.unmount() };
++});
+diff --git a/spikes/wrap-npm-package/react-qr-code/tsconfig.json b/spikes/wrap-npm-package/react-qr-code/tsconfig.json
+new file mode 100644
+index 0000000..0377325
+--- /dev/null
++++ b/spikes/wrap-npm-package/react-qr-code/tsconfig.json
+@@ -0,0 +1 @@
++{ "extends": "@compmd/pack/tsconfig.json", "include": ["src"] }
+diff --git a/spikes/wrap-npm-package/results.json b/spikes/wrap-npm-package/results.json
+new file mode 100644
+index 0000000..6381458
+--- /dev/null
++++ b/spikes/wrap-npm-package/results.json
+@@ -0,0 +1,236 @@
++{
++  "react-qr-code": {
++    "built": {
++      "ok": true,
++      "bytes": 24858,
++      "gzipBytes": 8889,
++      "imports": [
++        "react",
++        "react-dom/client"
++      ]
++    },
++    "opened": {
++      "Chrome": {
++        "uses": 2,
++        "drawn": 2,
++        "frames": [
++          {
++            "frameHeight": 260,
++            "drawing": {
++              "width": 256,
++              "height": 256
++            }
++          },
++          {
++            "frameHeight": 132,
++            "drawing": {
++              "width": 128,
++              "height": 128
++            }
++          }
++        ],
++        "refused": [],
++        "errors": [],
++        "diagnostics": []
++      },
++      "WebKit": {
++        "uses": 2,
++        "drawn": 2,
++        "frames": [
++          {
++            "frameHeight": 260,
++            "drawing": {
++              "width": 256,
++              "height": 256
++            }
++          },
++          {
++            "frameHeight": 132,
++            "drawing": {
++              "width": 128,
++              "height": 128
++            }
++          }
++        ],
++        "refused": [],
++        "errors": [],
++        "diagnostics": []
++      }
++    }
++  },
++  "layerchart": {
++    "built": {
++      "ok": true,
++      "bytes": 587404,
++      "gzipBytes": 164504,
++      "imports": [
++        "svelte",
++        "svelte/internal/client",
++        "svelte/store",
++        "svelte/motion",
++        "svelte/internal/disclose-version",
++        "svelte/transition",
++        "svelte/easing",
++        "svelte/reactivity",
++        "svelte/events"
++      ]
++    },
++    "opened": {
++      "Chrome": {
++        "uses": 2,
++        "drawn": 2,
++        "frames": [
++          {
++            "frameHeight": 288,
++            "drawing": {
++              "width": 768,
++              "height": 288
++            }
++          },
++          {
++            "frameHeight": 192,
++            "drawing": {
++              "width": 768,
++              "height": 192
++            }
++          }
++        ],
++        "refused": [],
++        "errors": [],
++        "diagnostics": []
++      },
++      "WebKit": {
++        "uses": 2,
++        "drawn": 2,
++        "frames": [
++          {
++            "frameHeight": 288,
++            "drawing": {
++              "width": 768,
++              "height": 288
++            }
++          },
++          {
++            "frameHeight": 192,
++            "drawing": {
++              "width": 768,
++              "height": 192
++            }
++          }
++        ],
++        "refused": [],
++        "errors": [],
++        "diagnostics": []
++      }
++    }
++  },
++  "model-viewer": {
++    "built": {
++      "ok": true,
++      "bytes": 1031918,
++      "gzipBytes": 289278,
++      "imports": []
++    },
++    "opened": {
++      "Chrome": {
++        "uses": 1,
++        "drawn": 0,
++        "frames": [
++          {
++            "frameHeight": 18,
++            "drawing": null,
++            "markup": "\n    <main id=\"page\" class=\"compmd-page\"></main>\n    <div id=\"part\"><div class=\"compmd-component compmd-b0\"><span>A triangle</span></div></div>\n  \n\n"
++          }
++        ],
++        "refused": [
++          "Connecting to 'http://localhost:4232/compmd/frames/46a58ee51e855ab7/triangle.gltf' violates the following Content Security Policy directive: \"default-src 'none'\". Note that 'connect-src' was not explicitly set, so 'default-src' is used as a fallback. The action has been blocked.",
++          "Fetch API cannot load http://localhost:4232/compmd/frames/46a58ee51e855ab7/triangle.gltf. Refused to connect because it violates the document's Content Security Policy."
++        ],
++        "errors": [
++          "WebAssembly.instantiate(): Compiling or instantiating WebAssembly module violates the following Content Security policy directive because 'unsafe-eval' is not an allowed source of script in the following Content Security Policy directive: \"script-src 'self' blob: 'sha256-6vLq5v1ASXgidMgy6NHLvbGNv0brCQt2KMfyLTc2GcQ='\".",
++          "TypeError: Failed to fetch\n    at Hc.load (http://localhost:4232/compmd/packs/@spike/model-viewer@0.1.0/dist/model-viewer.js:6:23901)\n    at Zp.load (http://localhost:4232/compmd/packs/@spike/model-viewer@0.1.0/dist/model-viewer.js:4463:6278)\n    at http://localhost:4232/compmd/packs/@spike/model-viewer@0.1.0/dist/model-viewer.js:4464:12006\n    at new Promise (<anonymous>)\n    at Lh (http://localhost:4232/compmd/packs/@spike/model-viewer@0.1.0/dist/model-viewer.js:4464:11984)\n    at Xh.preload (http://localhost:4232/compmd/packs/@spike/model-viewer@0.1.0/dist/model-viewer.js:4464:13408)\n    at Xh.load (http://localhost:4232/compmd/packs/@spike/model-viewer@0.1.0/dist/model-viewer.js:4464:13621)\n    at http://localhost:4232/compmd/packs/@spike/model-viewer@0.1.0/dist/model-viewer.js:4664:7060\n    at Array.map (<anonymous>)\n    at http://localhost:4232/compmd/packs/@spike/model-viewer@0.1.0/dist/model-viewer.js:4664:7029 (http://localhost:4232/compmd/packs/@spike/model-viewer@0.1.0/dist/model-viewer.js)"
++        ],
++        "diagnostics": [
++          "W118: model-viewer: model-viewer couldn't load ./triangle.gltf:loadfailure, Cannot read properties of undefined (reading 'scene')"
++        ]
++      },
++      "WebKit": {
++        "uses": 1,
++        "drawn": 0,
++        "frames": [
++          {
++            "frameHeight": 18,
++            "drawing": null,
++            "markup": "\n    <main id=\"page\" class=\"compmd-page\"></main>\n    <div id=\"part\"><div class=\"compmd-component compmd-b0\"><span>A triangle</span></div></div>\n  \n\n"
++          }
++        ],
++        "refused": [
++          "Refused to connect to http://localhost:4232/compmd/frames/46a58ee51e855ab7/triangle.gltf because it appears in neither the connect-src directive nor the default-src directive of the Content Security Policy."
++        ],
++        "errors": [
++          "CompileError: Refused to create a WebAssembly object because 'unsafe-eval' or 'wasm-unsafe-eval' is not an allowed source of script in the following Content Security Policy directive: \"script-src 'sel...",
++          "TypeError: Load failed (http://localhost:4232/compmd/packs/@spike/model-viewer@0.1.0/dist/model-viewer.js)"
++        ],
++        "diagnostics": [
++          "W118: model-viewer: model-viewer couldn't load ./triangle.gltf:loadfailure, undefined is not an object (evaluating 'this[eb].scene')"
++        ]
++      }
++    }
++  },
++  "qrcode": {
++    "built": {
++      "ok": true,
++      "bytes": 25033,
++      "gzipBytes": 9322,
++      "imports": []
++    },
++    "opened": {
++      "Chrome": {
++        "uses": 2,
++        "drawn": 2,
++        "frames": [
++          {
++            "frameHeight": 772,
++            "drawing": {
++              "width": 768,
++              "height": 768
++            }
++          },
++          {
++            "frameHeight": 772,
++            "drawing": {
++              "width": 768,
++              "height": 768
++            }
++          }
++        ],
++        "refused": [],
++        "errors": [],
++        "diagnostics": []
++      },
++      "WebKit": {
++        "uses": 2,
++        "drawn": 2,
++        "frames": [
++          {
++            "frameHeight": 772,
++            "drawing": {
++              "width": 768,
++              "height": 768
++            }
++          },
++          {
++            "frameHeight": 772,
++            "drawing": {
++              "width": 768,
++              "height": 768
++            }
++          }
++        ],
++        "refused": [],
++        "errors": [],
++        "diagnostics": []
++      }
++    }
++  }
++}
+diff --git a/spikes/wrap-npm-package/screenshots/layerchart-chrome.png b/spikes/wrap-npm-package/screenshots/layerchart-chrome.png
+new file mode 100644
+index 0000000..f74e05f
+Binary files /dev/null and b/spikes/wrap-npm-package/screenshots/layerchart-chrome.png differ
+diff --git a/spikes/wrap-npm-package/screenshots/layerchart-webkit.png b/spikes/wrap-npm-package/screenshots/layerchart-webkit.png
+new file mode 100644
+index 0000000..995f9cd
+Binary files /dev/null and b/spikes/wrap-npm-package/screenshots/layerchart-webkit.png differ
+diff --git a/spikes/wrap-npm-package/screenshots/model-viewer-chrome.png b/spikes/wrap-npm-package/screenshots/model-viewer-chrome.png
+new file mode 100644
+index 0000000..c824c74
+Binary files /dev/null and b/spikes/wrap-npm-package/screenshots/model-viewer-chrome.png differ
+diff --git a/spikes/wrap-npm-package/screenshots/model-viewer-webkit.png b/spikes/wrap-npm-package/screenshots/model-viewer-webkit.png
+new file mode 100644
+index 0000000..89b6f9a
+Binary files /dev/null and b/spikes/wrap-npm-package/screenshots/model-viewer-webkit.png differ
+diff --git a/spikes/wrap-npm-package/screenshots/qrcode-chrome.png b/spikes/wrap-npm-package/screenshots/qrcode-chrome.png
+new file mode 100644
+index 0000000..7bdbfbc
+Binary files /dev/null and b/spikes/wrap-npm-package/screenshots/qrcode-chrome.png differ
+diff --git a/spikes/wrap-npm-package/screenshots/qrcode-webkit.png b/spikes/wrap-npm-package/screenshots/qrcode-webkit.png
+new file mode 100644
+index 0000000..b839a9b
+Binary files /dev/null and b/spikes/wrap-npm-package/screenshots/qrcode-webkit.png differ
+diff --git a/spikes/wrap-npm-package/screenshots/react-qr-code-chrome.png b/spikes/wrap-npm-package/screenshots/react-qr-code-chrome.png
+new file mode 100644
+index 0000000..013a530
+Binary files /dev/null and b/spikes/wrap-npm-package/screenshots/react-qr-code-chrome.png differ
+diff --git a/spikes/wrap-npm-package/screenshots/react-qr-code-webkit.png b/spikes/wrap-npm-package/screenshots/react-qr-code-webkit.png
+new file mode 100644
+index 0000000..8cf367e
+Binary files /dev/null and b/spikes/wrap-npm-package/screenshots/react-qr-code-webkit.png differ
+diff --git a/spikes/wrap-npm-package/try.ts b/spikes/wrap-npm-package/try.ts
+new file mode 100644
+index 0000000..ccc2159
+--- /dev/null
++++ b/spikes/wrap-npm-package/try.ts
+@@ -0,0 +1,169 @@
++// CMD-8's spike (docs/wrapping-an-npm-package.md, *Trying it on four packages*): builds each pack here as
++// `compmd-pack build` does, then opens its demo in Chrome and WebKit as `compmd-pack dev` serves it (host mode, each use
++// in a strict frame of its own), and writes what was built, what drew, what the strict policy refused and what the page
++// reported to `results.json`, with a screenshot of each page in `screenshots/`.
++//
++//   pnpm --dir spikes/wrap-npm-package try [<pack folder>...]
++
++import { mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
++import { join } from "node:path";
++import { gzipSync } from "node:zlib";
++import { readPack, type Pack } from "@compmd/pack";
++import { compmd } from "@compmd/vite";
++import { svelte } from "@sveltejs/vite-plugin-svelte";
++import { chromium, webkit, type BrowserType, type LaunchOptions, type Page } from "playwright";
++import { build, createServer, type Plugin } from "vite";
++// The pack tool's own build and test page, which its package doesn't export. The spike compiles a Svelte package's
++// sources, which `compmd-pack build` doesn't yet (decision 10), so it can't call `servePack`, which builds first.
++import { moduleConfig } from "../../npm-packages/pack/src/build.ts";
++import { PAGE_SCRIPT, pageConfig, pageHtml } from "../../npm-packages/pack/src/dev.ts";
++
++const HERE = import.meta.dirname;
++const PACKS = ["react-qr-code", "layerchart", "model-viewer", "qrcode"];
++const BROWSERS: [string, BrowserType, LaunchOptions][] = [
++  ["Chrome", chromium, { channel: "chrome" }],
++  ["WebKit", webkit, {}],
++];
++/** How long a page has to draw every use of its demo. */
++const DRAW_MS = 20_000;
++
++interface Wrap {
++  kind: "react" | "svelte" | "web-component" | "library";
++}
++
++interface Built {
++  ok: boolean;
++  error?: string;
++  bytes?: number;
++  gzipBytes?: number;
++  /** What the module still imports: the runtimes the frames' import map gives. */
++  imports?: string[];
++}
++
++/** A use's frame: its height in the page, and its drawing's size, in CSS pixels. */
++interface UseFrame {
++  frameHeight: number;
++  drawing: { width: number; height: number } | null;
++  /** The start of the frame's markup, when it didn't draw. */
++  markup?: string;
++}
++
++interface Opened {
++  uses: number;
++  /** The uses whose drawing has a size, in a frame with a height. */
++  drawn: number;
++  frames: UseFrame[];
++  refused: string[];
++  errors: string[];
++  diagnostics: string[];
++}
++
++const wrapOf = (dir: string): Wrap => JSON.parse(readFileSync(join(dir, "compmd.wrap.json"), "utf8")) as Wrap;
++
++/** The pack's modules built as `compmd-pack build` builds them, a Svelte package's sources compiled first. */
++async function buildPack(pack: Pack, wrap: Wrap): Promise<Built> {
++  try {
++    // A Svelte package's CSS goes into the module, which injects it (decision 10): a frame loads only the module.
++    const plugins = wrap.kind === "svelte" ? [svelte({ configFile: false, emitCss: false, compilerOptions: { css: "injected" } })] : [];
++    for (const module of pack.modules) await build({ ...moduleConfig(pack, module), plugins });
++  } catch (error) {
++    return { ok: false, error: (error instanceof Error ? error.message : String(error)).split("\n")[0] };
++  }
++  const out = join(pack.dir, ...(pack.modules[0]?.out ?? "").split("/"));
++  const code = readFileSync(out);
++  // Module syntax only: `import"x"` and `from"x"` after a statement's end, never the same words inside a string.
++  const imports = [...new Set([...code.toString("utf8").matchAll(/(?:^|[;}])\s*import\s*(?:[^"';]*?from\s*)?"([^"./][^"]*)"/g)].map((match) => match[1] ?? ""))];
++  return { ok: true, bytes: statSync(out).size, gzipBytes: gzipSync(code).length, imports };
++}
++
++/** The test page of `compmd-pack dev`, its script's `@compmd/` imports resolved from here. */
++function testPage(pack: Pack): Plugin {
++  const PAGE = "/@spike/page.ts";
++  const RESOLVED = "\0spike-page";
++  return {
++    name: "spike:page",
++    resolveId(id, importer) {
++      if (id === PAGE) return RESOLVED;
++      if (importer === RESOLVED && id.startsWith("@compmd/")) return this.resolve(id, join(HERE, "try.ts"), { skipSelf: true });
++      return undefined;
++    },
++    load: (id) => (id === RESOLVED ? PAGE_SCRIPT : undefined),
++    configureServer(server) {
++      server.middlewares.use((request, response, next) => {
++        const path = new URL(request.url ?? "/", "http://localhost").pathname;
++        if (path !== "/") {
++          next();
++          return;
++        }
++        void server.transformIndexHtml(path, pageHtml(pack.manifest.name).replace("/@compmd-pack/page.ts", PAGE)).then((html) => {
++          response.setHeader("Content-Type", "text/html");
++          response.end(html);
++        }, next);
++      });
++    },
++  };
++}
++
++/** The demo in `page`, once every use drew or `DRAW_MS` passed. */
++async function openDemo(page: Page, url: string, uses: number): Promise<Opened> {
++  const refused: string[] = [];
++  const errors: string[] = [];
++  page.on("pageerror", (error) => errors.push(error.message));
++  page.on("console", (message) => {
++    const text = message.text();
++    if (/Content.Security.Policy|Refused to/i.test(text)) refused.push(text);
++    // The test page has no icon, which Chrome asks for: not a component's.
++    else if (message.type() === "error" && !message.location().url.endsWith("/favicon.ico")) errors.push(`${text} (${message.location().url})`);
++  });
++  await page.goto(url);
++  const useFrames = async (): Promise<UseFrame[]> =>
++    Promise.all(
++      page.frames().slice(1).map(async (frame) => {
++        const frameHeight = (await (await frame.frameElement()).boundingBox())?.height ?? 0;
++        const box = await frame.locator("svg, canvas").first().boundingBox({ timeout: 100 }).catch(() => null);
++        return { frameHeight, drawing: box && { width: Math.round(box.width), height: Math.round(box.height) } };
++      }),
++    );
++  const isDrawn = (use: UseFrame) => use.frameHeight > 0 && (use.drawing?.width ?? 0) > 0 && (use.drawing?.height ?? 0) > 0;
++  const until = Date.now() + DRAW_MS;
++  let frames = await useFrames();
++  while (frames.filter(isDrawn).length < uses && Date.now() < until) {
++    await page.waitForTimeout(250);
++    frames = await useFrames();
++  }
++  const diagnostics = await page.locator("#diagnostics li").allInnerTexts();
++  const useFrameList = page.frames().slice(1);
++  for (const [index, use] of frames.entries()) {
++    if (!isDrawn(use)) use.markup = (await useFrameList[index]?.locator("body").innerHTML().catch(() => ""))?.slice(0, 1500);
++  }
++  return { uses, drawn: frames.filter(isDrawn).length, frames, refused: [...new Set(refused)], errors: [...new Set(errors)], diagnostics };
++}
++
++const results: Record<string, { built: Built; opened: Record<string, Opened> }> = {};
++const chosen = process.argv.slice(2).length > 0 ? process.argv.slice(2) : PACKS;
++mkdirSync(join(HERE, "screenshots"), { recursive: true });
++
++for (const [index, name] of chosen.entries()) {
++  const dir = join(HERE, name);
++  const pack = await readPack(dir);
++  const built = await buildPack(pack, wrapOf(dir));
++  results[name] = { built, opened: {} };
++  console.log(`${name}: ${built.ok ? `built, ${String(built.gzipBytes)} bytes gzipped, importing ${built.imports?.join(", ") || "nothing"}` : `not built: ${built.error ?? ""}`}`);
++  if (!built.ok) continue;
++  const port = 4230 + index;
++  const server = await createServer({ configFile: false, root: dir, logLevel: "warn", appType: "custom", server: { port, strictPort: true }, plugins: [compmd({ config: await pageConfig(pack) }), testPage(pack)] });
++  await server.listen();
++  const uses = readFileSync(join(dir, "demo.comp.md"), "utf8").split("\n").filter((line) => line.startsWith(":: ")).length;
++  for (const [browserName, type, options] of BROWSERS) {
++    const browser = await type.launch({ headless: true, ...options });
++    const page = await browser.newPage({ viewport: { width: 900, height: 900 } });
++    const opened = await openDemo(page, `http://localhost:${String(port)}/`, uses);
++    await page.screenshot({ path: join(HERE, "screenshots", `${name}-${browserName.toLowerCase()}.png`), fullPage: true });
++    results[name].opened[browserName] = opened;
++    console.log(`  ${browserName}: ${String(opened.drawn)} of ${String(opened.uses)} drawn; ${String(opened.refused.length)} refused; ${String(opened.errors.length)} errors; diagnostics: ${opened.diagnostics.join(" | ") || "none"}`);
++    await browser.close();
++  }
++  await server.close();
++}
++
++writeFileSync(join(HERE, "results.json"), `${JSON.stringify(results, null, 2)}\n`);

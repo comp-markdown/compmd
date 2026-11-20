@@ -7,17 +7,20 @@ tasks = ["CMD-8"]
 author = "claude:79612601"
 reviewers = []
 created = 2026-11-20T17:20:26Z
-updated = 2026-11-20T17:20:26Z
+updated = 2026-11-20T18:52:11Z
 +++
 
-The design of wrapping an npm package as a pack, with the three choices settled in conversation (2026-11-20): both kinds served, the signature generated at each build, and the pack's own version.
+Round 2: the spike is in the project, `spikes/wrap-npm-package/`, and the design takes what it found.
+
+The four packages are now packs written by hand as `--from` would write them, each with its `compmd.wrap.json`, glue, generated signature and demo. `try.ts` builds them as `compmd-pack build` does and opens each demo in strict frames in Chrome and WebKit (`pnpm --dir spikes/wrap-npm-package try`); `results.json` and `screenshots/` are its last run. react-qr-code, layerchart's `BarChart` and qrcode draw in both; model-viewer shows its fallback with W118, the frame refusing its model's fetch and its WebAssembly.
 
 What to check:
 
-- **Decisions 1 to 3:** the command (`--from`), how the kind is read from the package, and the glue written once in the plain binding.
-- **Decisions 4 and 5, mine to propose:** the build rewrites only the signature fence marked `generated`, and the params are an allowlist in `compmd.wrap.params`, so a package's new prop is reported, never added on its own. The spike showed why: react-qr-code inherits several hundred SVG props, layerchart's `BarChart` has about 90 of its own.
-- **Decision 6, the mapping table,** and that defaults come from JSDoc `@default` only (react-qr-code's comment says 128, its code uses 256).
-- **Decision 7, the overrides:** names, types, defaults, an input with its callback, the fallback's prop, plain children as a slot.
-- **Decision 9:** what can't run in a strict frame is a warning at once, not a silent pack (model-viewer).
-- **The spike's four packages** and **the gaps** (G1 to G6); G6 is a question for the spec: whether `?` after an enum is valid, which no example shows.
-- **For CMD-9:** the work lands in `@compmd/create-pack` and `@compmd/pack` (the build's signature generation). It may be worth two tasks rather than one; say if you'd like it split.
+- **The spike's README, *What it found*:** ten findings, the first six changing the design.
+- **Decision 5:** the wrap's settings move to `compmd.wrap.json`, not published, since `package.json`'s `compmd` field is the pack's document already (registry companion, sections 2 and 5). "Own declaration" now means declared in the package's own files.
+- **Decision 6, two rows:** CSS colours map to `color` (spec §9.4); a prop named like a common param (`height`, `width`, `background`, …) is the box's, never a param: layerchart's `height` never reached the component.
+- **Decision 3:** the glue mounts in a box of its own; a web component's glue passes its `error` event to `fail`.
+- **Decision 10:** Svelte's CSS injected into the module.
+- **"In use"** now matches the spike's react-qr-code pack.
+- **Gaps:** G6 (the processor accepts an optional enum; no conformance case yet) and a new G7: the `generated` flag in the fence's info string, which the spec doesn't define. A spec line, or a comment before the fence instead: your call.
+- The workspace now lists `spikes/wrap-npm-package/*`, and the lockfile has the four packages; the packs have no build, lint or test script, so the workspace's runs skip them.

@@ -536,7 +536,7 @@
         "docs/wrapping-an-npm-package.md"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-20T17:20:26Z",
+      "updated_at": "2026-11-20T18:51:49Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "with": "user",
@@ -555,7 +555,7 @@
       "sprint": "Packs 1: the pack tool, no-code components",
       "started_at": "2026-11-20T16:34:08Z",
       "started_by": "claude:79612601",
-      "commit": "ba381b6ac8eb12501b3b46b897506720a4fc0304",
+      "commit": "6813d56c0dcfcb95fdce4d798af10b8ea4e45bd0",
       "code_reviews": [
         {
           "id": "01a1f9f9-495f-7382-af67-556e44d45934",
