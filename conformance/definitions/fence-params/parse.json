@@ -148,6 +148,26 @@
         "slots": null,
         "headings": "relative"
       },
+      "params": [
+        {
+          "key": "height",
+          "breakpoint": null,
+          "kind": "bare",
+          "value": "16rem",
+          "position": {
+            "start": {
+              "line": 11,
+              "column": 38,
+              "offset": 240
+            },
+            "end": {
+              "line": 11,
+              "column": 50,
+              "offset": 252
+            }
+          }
+        }
+      ],
       "position": {
         "start": {
           "line": 11,

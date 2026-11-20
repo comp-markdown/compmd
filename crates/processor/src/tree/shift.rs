@@ -241,6 +241,7 @@ impl Shift for Node {
             Self::ComponentInline(leaf) | Self::ComponentLeaf(leaf) => leaf.shift(by),
             Self::ComponentSignature(fence) => {
                 fence.signature.shift(by);
+                fence.params.shift(by);
                 fence.position.shift(by);
             }
             Self::ComponentSlot(slot) => {

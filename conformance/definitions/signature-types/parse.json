@@ -3,6 +3,7 @@
   "children": [
     {
       "type": "componentSignature",
+      "params": [],
       "name": "chart",
       "signature": {
         "params": [
@@ -41,7 +42,7 @@
             "doc": null
           },
           {
-            "name": "width",
+            "name": "stroke",
             "type": "length",
             "optional": true,
             "default": null,

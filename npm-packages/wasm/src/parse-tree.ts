@@ -93,10 +93,12 @@ export interface Definition {
   position?: Position;
 }
 
+/** A signature fence: `params`, its param list, gives the box of the component it attaches to its defaults (spec §7). */
 export interface SignatureFence {
   type: "componentSignature";
   name: string;
   signature: Signature | null;
+  params: Param[];
   position?: Position;
 }
 

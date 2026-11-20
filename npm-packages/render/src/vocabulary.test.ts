@@ -27,8 +27,8 @@ const PASSED_THROUGH: Record<string, string[]> = {
   "flex-wrap": ["wrap", "nowrap"],
 };
 
-/** Tokens that mean no CSS at all. */
-const NOTHING: Record<string, string[]> = { sticky: ["none"] };
+/** Tokens that mean no CSS at all; `object-fit` and `object-position` are the component's, as `fit` (spec §7.4). */
+const NOTHING: Record<string, string[]> = { sticky: ["none"], "object-fit": ["contain", "cover", "fill"], "object-position": ["start", "center", "end"] };
 
 const names = (list: Known[]) => list.map((param) => param.name);
 

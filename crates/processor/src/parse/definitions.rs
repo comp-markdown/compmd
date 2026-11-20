@@ -4,7 +4,7 @@ use super::params::{self, is_name};
 use super::source::right;
 use super::yaml;
 use super::{Converter, Labels};
-use crate::diagnostic::{Code, Location};
+use crate::diagnostic::Location;
 use crate::tree::{
     Declaration, DeclaredType, DefaultValue, Definition, DefinitionBody, Headings, Node, Param,
     Point, Position, Print, Signature, SignatureFence, SlotDeclaration, TypeName, Unquoted,
@@ -47,16 +47,11 @@ impl Converter<'_, '_> {
             }));
         }
         if attributes.contains(&"signature") {
-            if let Some(first) = fence_params.first().and_then(|param| param.position) {
-                self.diagnose(
-                    Code::F036,
-                    first.start,
-                    "a signature fence takes no param list; ignored (style the component's box on its definition)",
-                );
-            }
+            // Whether the component's definition fence styles its box too (F036) is known once it is resolved.
             return Some(Node::ComponentSignature(SignatureFence {
                 name: name.to_string(),
                 signature: self.signature(&code.value, start.line + 1),
+                params: fence_params,
                 position,
             }));
         }

@@ -140,8 +140,12 @@ Every block, whatever its component, has a box around it, and every component ta
 | `background` | `none`, `subtle`, `strong`, `accent`, or a color such as `#e9f3ff` |
 | `width`, `max-width`, `min-width`, `height` | a length, a percentage, or `auto`: `max-width=32rem` |
 | `aspect-ratio` | width over height, such as `16/9`, or `none` |
+| `object-fit` | how a drawing sits in its box: `contain` (as large as fits, the default), `cover` (filling the box, cropped), `fill` (stretched to it) |
+| `object-position` | where a drawing smaller or larger than its box sits: one or two of `start`, `center`, `end`, the top-to-bottom one first; `center` by default |
 
-A length is a number with `px`, `rem`, `em` or `%`; `1rem` is the page's text size. A width or height counts the padding in it.
+A length is a number with `px`, `rem`, `em` or `%`; `1rem` is the page's text size. A width or height counts the padding and the border in it.
+
+A component that draws, a chart or a QR code, fills its box, so its box's params size it: `:: qr-code[Our site] {value="https://compmd.dev/" width=10rem}` is 10rem wide, and with `height=6rem` too it is as large as fits in that box, in its middle, or at its start with `object-position=start`. `object-fit` and `object-position` take no breakpoint.
 
 The words (`s`, `subtle`, `accent`) follow the look of the app that shows the document, light or dark, so a document written with them fits wherever it is shown. Unless the app changes them, `s`, `m` and `l` are half the text's size, the text's size and twice it (0.5, 1 and 2 rem) for padding, and 4, 8 and 16 pixels for corners; `subtle` and `strong` are faint and stronger tints of the text's own color. A color or a length is the same everywhere: use them when that's what you mean.
 

@@ -166,12 +166,14 @@
       "additionalProperties": false
     },
     "signatureFence": {
-      "required": ["name", "signature"],
+      "description": "A signature fence (§7.1, §12.1): its param list styles the box of the component it attaches to (§7).",
+      "required": ["name", "signature", "params"],
       "properties": {
         "type": true,
         "position": true,
         "name": { "type": "string" },
-        "signature": { "oneOf": [{ "$ref": "#/$defs/signature" }, { "type": "null" }] }
+        "signature": { "oneOf": [{ "$ref": "#/$defs/signature" }, { "type": "null" }] },
+        "params": { "type": "array", "items": { "$ref": "#/$defs/param" } }
       },
       "additionalProperties": false
     },

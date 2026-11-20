@@ -354,7 +354,7 @@ fn templates_bind_their_element_and_md_loop() {
 fn definitions_see_their_params_and_slots_but_not_inputs() {
     assert_eq!(
         codes(
-            "---\nmd:\n  inputs:\n    q: string = \"\"\n---\n\n```compmd component=c\nparams:\n  max-width: length?\n  as: name?\nslots: {default: {}, side: {}}\n---\n{{max_width}} {{as}} {{md.slot.side}} {{md.slot}} {{md.input}} {{md.input.q}}\n```\n\n{{md.input}} {{md.data}} {{md.doc}} {{md}}\n"
+            "---\nmd:\n  inputs:\n    q: string = \"\"\n---\n\n```compmd component=c\nparams:\n  bar-width: length?\n  as: name?\nslots: {default: {}, side: {}}\n---\n{{bar_width}} {{as}} {{md.slot.side}} {{md.slot}} {{md.input}} {{md.input.q}}\n```\n\n{{md.input}} {{md.data}} {{md.doc}} {{md}}\n"
         ),
         [at("F014", 13, 17), at("F014", 13, 53), at("F014", 13, 66)]
     );

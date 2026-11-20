@@ -10,7 +10,7 @@ use crate::reserved::Keyword;
 use crate::resolve::{Binding, Body, Renderer};
 use crate::tree::{
     Code as CodeBlock, Container, Definition, Info, Interpolation, Node, Param, ParamValue,
-    Position, StringPart, start_of,
+    Position, SignatureFence, StringPart, start_of,
 };
 use crate::values::forms::area_names;
 use std::rc::Rc;
@@ -43,6 +43,9 @@ impl<'r> Checker<'r, '_> {
             }
             Node::ComponentDefinition(definition) => {
                 self.within(None, |this| this.definition(definition));
+            }
+            Node::ComponentSignature(fence) => {
+                self.within(None, |this| this.signature_fence(fence));
             }
             Node::Code(code) => self.code_block(code, scope),
             _ => self.within(None, |this| this.nodes(node.children(), scope)),
@@ -245,5 +248,26 @@ impl<'r> Checker<'r, '_> {
         if let Body::Compmd(body) = &component.body {
             self.nodes(body, &scope);
         }
+    }
+
+    /// A signature fence of this document whose param list styles its component's box (spec §7), for a component
+    /// no definition fence of the document defines (a built module's, the processor's own): those params, as a
+    /// definition fence's are. A defined component's box params are checked with its definition.
+    pub(super) fn signature_fence(&mut self, fence: &SignatureFence) {
+        if fence.params.is_empty() {
+            return;
+        }
+        let resolved = self.resolved;
+        let document = resolved.document(self.id);
+        let Some(Binding::Component(id, _)) = document.names.get(&fence.name) else {
+            return;
+        };
+        let component = resolved.component(*id);
+        let undefined = matches!(component.body, Body::File { .. } | Body::Processor);
+        if component.document != self.id || !undefined || component.fence != fence.params {
+            return;
+        }
+        let scope = Scope::definition(&document.settings, component.signature.as_ref());
+        self.fence(component, &scope);
     }
 }

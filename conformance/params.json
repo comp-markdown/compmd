@@ -328,6 +328,34 @@
       "breakpoints": true
     },
     {
+      "name": "object-fit",
+      "tokens": [
+        "contain",
+        "cover",
+        "fill"
+      ],
+      "forms": [],
+      "examples": [],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": false
+    },
+    {
+      "name": "object-position",
+      "tokens": [
+        "start",
+        "center",
+        "end"
+      ],
+      "forms": [],
+      "examples": [],
+      "upTo": 2,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": false
+    },
+    {
       "name": "inset-inline-start",
       "tokens": [
         "auto"

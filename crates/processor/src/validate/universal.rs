@@ -26,6 +26,8 @@ named! {
         AlignSelf = "align-self",
         JustifySelf = "justify-self",
         AspectRatio = "aspect-ratio",
+        ObjectFit = "object-fit",
+        ObjectPosition = "object-position",
         InsetInlineStart = "inset-inline-start",
         InsetInlineEnd = "inset-inline-end",
         InsetBlockStart = "inset-block-start",
@@ -68,6 +70,8 @@ impl Universal {
             Self::AlignSelf => Kind::one_of(&["start", "center", "end", "stretch"][..]),
             Self::JustifySelf => Kind::one_of(&["start", "center", "end"][..]),
             Self::AspectRatio => Kind::RATIO,
+            Self::ObjectFit => Kind::one_of(&["contain", "cover", "fill"][..]),
+            Self::ObjectPosition => Kind::POSITIONS,
             Self::Scroll | Self::Fill => Kind::BOOLEAN,
             Self::Sticky => Kind::one_of(&["top", "bottom", "none"][..]),
             Self::Show | Self::Hide => Kind::one_of(&["sm", "md", "lg"][..]),
@@ -77,10 +81,13 @@ impl Universal {
         }
     }
 
-    /// Whether it may carry a breakpoint (spec §9.3).
+    /// Whether it may carry a breakpoint (spec §9.3). `object-fit` and `object-position` reach the component as
+    /// values (spec §7.4), which a breakpoint, CSS's to resolve, isn't.
     pub(crate) fn takes_breakpoint(self) -> bool {
         match self {
             Self::GridArea
+            | Self::ObjectFit
+            | Self::ObjectPosition
             | Self::Scroll
             | Self::Fill
             | Self::Show
@@ -138,6 +145,8 @@ impl Universal {
             | Self::AlignSelf
             | Self::JustifySelf
             | Self::AspectRatio
+            | Self::ObjectFit
+            | Self::ObjectPosition
             | Self::InsetInlineStart
             | Self::InsetInlineEnd
             | Self::InsetBlockStart
@@ -175,6 +184,8 @@ impl Universal {
             | Self::AlignSelf
             | Self::JustifySelf
             | Self::AspectRatio
+            | Self::ObjectFit
+            | Self::ObjectPosition
             | Self::InsetInlineStart
             | Self::InsetInlineEnd
             | Self::InsetBlockStart

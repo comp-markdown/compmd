@@ -78,7 +78,7 @@ The number of colons tells the form (chapter 3):
 - Params are separated by spaces. Each may be given once (`F017`), counting continuation lines.
 - A bare value can't hold `(`, `)`, `[`, `]`, `{`, `}`, spaces or quotes: quote it, `"repeat(3, 1fr)"`, or make it an expression. `title=` with nothing after it is `F011`; `title=""` is empty text.
 - `{{…}}` works in params only inside quotes: `title="{{md.doc.title}}"`, or `title=(md.doc.title)`.
-- Every component takes `class`, `id`, `lang` and `dir`; every block takes the common params of its box (chapter 3): `width`, `height`, `min-width`, `max-width`, `padding` and its sides, `border`, `border-radius`, `background`, `grid-area`, `order`, `align-self`, `justify-self`, `aspect-ratio`, the `inset-*` positions, `scroll`, `fill`, `sticky`, `show` and `hide`.
+- Every component takes `class`, `id`, `lang` and `dir`; every block takes the common params of its box (chapter 3): `width`, `height`, `min-width`, `max-width`, `padding` and its sides, `border`, `border-radius`, `background`, `grid-area`, `order`, `align-self`, `justify-self`, `aspect-ratio`, `object-fit`, `object-position`, the `inset-*` positions, `scroll`, `fill`, `sticky`, `show` and `hide`.
 
 ## Slots and template slots
 

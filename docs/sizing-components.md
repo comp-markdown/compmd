@@ -29,7 +29,7 @@ frame).
      `center`, `end`, the block position then the inline one, as `padding` orders its two values; one value is
      both. `center` by default. Logical, as every direction in the spec: `object-position="center start"` is the
      left in a left-to-right document and the right in a right-to-left one.
-   - **Both are written without a breakpoint** (F009 with one, as `display=contents`): a component gets them as
+   - **Both are written without a breakpoint** (F008 with one, "a breakpoint the param doesn't take"): a component gets them as
      values, which a breakpoint, CSS's to resolve, isn't. They may be expressions.
    - **The component gets them** in the host contract, as it gets `scheme`: `context.fit`, `{ mode: "contain" |
      "cover" | "fill", x: 0 | 0.5 | 1, y: 0 | 0.5 | 1 }`, the position resolved by the processor to fractions of the
@@ -166,7 +166,7 @@ which the set doesn't cover: their tests are browser tests. Decisions 1, 4 and 5
 | `expand/host-component-box` | the definition fence's box params under the caller's | unchanged |
 | `validate/code-renderer-render-F009-F013-W101` | `class` and `id` declared: F013 | unchanged |
 | `validate/params-and-common-params`, `validate/layout-values`, `expand/component-box` | the common params on uses, and their values | unchanged; no case uses `object-fit` or `object-position` today, as params or as anything else |
-| **new** `validate/object-fit-and-position` | — | every value of both on a leaf, a container and a rendered code block, one and two positions; `object-fit=none`, `object-position=left`, three positions and `md:object-fit=cover`: F009 at each |
+| **new** `validate/object-fit-and-position` | — | every value of both on a leaf and a container, one and two positions; `object-fit=none`, `object-position=left` and three positions: F009 at each; `md:object-fit=cover`: F008 |
 | **new** `expand/object-fit-and-position` | — | both on a host-language leaf, from its signature fence's defaults and the caller's over them, and as an expression: the expanded `params` |
 | **new** `resolve/signature-and-definition-box-F036` | — | a host-language definition fence and its signature fence both with box params: F036 at the signature's `{` |
 | **new** `expand/signature-box-defaults` | — | a signature fence's `{width=12rem max-width=100%}` and no definition fence's list, used with no params, with `width=6rem`, and with `md:width=8rem`: the expanded `params` as `host-component-box`'s |

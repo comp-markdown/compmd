@@ -41,7 +41,6 @@ The document's text alone: no imports, signatures or data.
 | F017 | error | a param given twice, `id` with `#name`, or a code renderer's `code` on a code block's info string | writer | one of them |
 | F032 | error | a closer names a container opened outside its list item or quote | writer | the closer at the container's own level |
 | F033 | error | frontmatter that isn't YAML 1.2 core: tags, anchors, aliases or a repeated key; the file is read as plain CommonMark and GFM | writer | plain YAML |
-| F036 | error | a param list on a signature fence, which is ignored | writer, pack author | moving the params to the definition fence |
 | W101 | warning | a leaf without fallback text, or a rendered code block without `alt`, found in validation | writer | `[the sentence it stands for]`, or `alt="…"` |
 | W106 | warning | `{{` followed by something that isn't a path; kept as text | writer | a path, `\{{` for literal braces, or `:value` for a computed value |
 | W107 | warning | an inline component, a space, then a param list, which is text | writer | the param list right after `]` |
@@ -57,7 +56,7 @@ The imports, packs and names. What a pack's files cause is reported in the pack'
 | Code | Severity | What causes it | Who | What fixes it |
 |---|---|---|---|---|
 | F002 | error | an unknown component name, or a signature fence with nothing to attach to; the message suggests the nearest name | writer | the name, or the import that gives it |
-| F013 | error | a name declared twice, a keyword (`if`, `each`, `value`, `box`) defined, imported or renamed to, `md` declared, a CEL reserved word or type name as a param, `as` name or input, or two params differing only in `-` and `_`; found in validation for names in a body | writer, pack author | another name |
+| F013 | error | a name declared twice, a keyword (`if`, `each`, `value`, `box`) defined, imported or renamed to, `md` declared, a CEL reserved word or type name as a param, `as` name or input, two params differing only in `-` and `_`, or a signature declaring a common param (`width`, `object-fit`, …), `class`, `id`, `lang` or `dir`, which the processor keeps; found in validation for names in a body | writer, pack author | another name, or the common param on the use |
 | F019 | error | a component whose definition invokes itself, directly, through others, or through a code block it renders | writer, pack author | breaking the cycle |
 | F020 | error | an import cycle | writer, pack author | removing the import that closes it |
 | F021 | error | an import names something its source doesn't export | writer | the name the source exports, or `"*"` |
@@ -66,6 +65,7 @@ The imports, packs and names. What a pack's files cause is reported in the pack'
 | F026 | error | an import that can't be loaded: a missing file, no release matching the version, an unscoped name, `@compmd/*` other than core, a path leaving its root, or a pack the host's policy doesn't allow, denies, or left out (its size); for data, found when loading. Never for a pack or data source the request names as `pending`: it waits for the host to give up | writer, host | the path or version; for a pack the host refuses, the host's configuration, or another pack |
 | F029 | error | an exported host-language component without a signature fence | pack author | its signature fence |
 | F035 | error | a pack whose release doesn't match the import's `integrity`, or that the host found broken | writer, host | the integrity npm publishes for that version, or the host giving the release's real integrity |
+| F036 | error | a component's box styled by both its definition fence and its signature fence; the definition fence's param list is kept | writer, pack author | one param list, on either fence |
 | F037 | error | a declaration's type isn't in the type grammar, in a signature, an input or a data `schema`; it takes any value | writer, pack author | the type the message suggests |
 | W105 | warning | a local host-language component, or an imported component file (`./Chart.jsx`), without a signature fence, whose params can't be typed | writer | a signature fence |
 | W112 | warning | a local definition or explicit import shadows a `@compmd/core` component | writer | another name, if it wasn't meant |

@@ -1,0 +1,22 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentLeaf",
+      "name": "qr",
+      "params": [
+        {
+          "key": "width",
+          "breakpoint": null,
+          "value": "12rem"
+        }
+      ],
+      "fallback": [
+        {
+          "type": "text",
+          "value": "Our site"
+        }
+      ]
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 //! A document's definitions and signature fences (spec §7): the components it defines, F002 for a signature fence with
-//! nothing to attach to, F013 and F009 for their params, and F037 for a declaration whose type isn't a type name.
+//! nothing to attach to, F036 for a box styled by both fences, F013 and F009 for their params, and F037 for a
+//! declaration whose type isn't a type name.
 
 use super::{Loader, location};
 use crate::diagnostic::{Code, Fix, Location};
@@ -7,11 +8,12 @@ use crate::nearest::nearest;
 use crate::parse::CODE;
 use crate::reserved;
 use crate::resolve::names::{Binding, Builder, Level};
-use crate::resolve::{Body, Component, DocumentId};
+use crate::resolve::{Body, Component, ComponentId, DocumentId};
 use crate::tree::{
-    Declaration, DeclaredType, Definition, DefinitionBody, Node, Print, Signature, SignatureFence,
-    SlotDeclaration, TypeName,
+    Declaration, DeclaredType, Definition, DefinitionBody, Node, Param, Print, Signature,
+    SignatureFence, SlotDeclaration, TypeName,
 };
+use crate::validate::universal::Universal;
 use std::collections::{HashMap, HashSet};
 
 impl Loader<'_, '_> {
@@ -73,6 +75,26 @@ impl Loader<'_, '_> {
         );
     }
 
+    /// A signature fence's param list styles its component's box (spec §7), unless the component's definition fence
+    /// has one: then that one is kept, with F036 at the signature fence's first param.
+    fn style_box(&mut self, id: DocumentId, component: ComponentId, params: Vec<Param>) {
+        let Some(first) = params.first() else {
+            return;
+        };
+        let at = location(first.position);
+        let fence = &mut self.components[component.0].fence;
+        if fence.is_empty() {
+            *fence = params;
+        } else {
+            self.report(
+                id,
+                Code::F036,
+                at,
+                "the component's definition fence styles its box already, so this param list is ignored: style the box in one place",
+            );
+        }
+    }
+
     /// A signature fence gives its signature to the document's host-language component of that name; in a pack the
     /// processor provides, a fence alone is a component the processor implements (spec §9).
     fn signature_fence(&mut self, id: DocumentId, fence: SignatureFence, names: &mut Builder) {
@@ -91,6 +113,7 @@ impl Loader<'_, '_> {
             self.components[component.0]
                 .signature
                 .get_or_insert(fence.signature.unwrap_or_default());
+            self.style_box(id, component, fence.params);
         } else if self.document(id).provided {
             if self.admit(id, names, &fence.name, at) {
                 let component = self.add(Component {
@@ -98,7 +121,7 @@ impl Loader<'_, '_> {
                     document: id,
                     signature: fence.signature,
                     body: Body::Processor,
-                    fence: Vec::new(),
+                    fence: fence.params,
                     position: fence.position,
                 });
                 names.declare(&fence.name, Binding::Component(component, Level::Local));
@@ -268,13 +291,24 @@ impl Loader<'_, '_> {
     }
 }
 
-/// Why a signature can't declare `name`, when the processor keeps it (spec §5.1): `class` and `id` style any
-/// component's box, and a code renderer's block takes `alt` and `render` for itself, so the component never gets them.
+/// Why a signature can't declare `name`, when the processor keeps it (spec §5.1): the common params, `class`, `id`,
+/// `lang` and `dir` are every component's, applied to its box or its block, and a code renderer's block takes `alt`
+/// and `render` for itself, so the component never gets them.
 fn processors_name(name: &str, renders: bool) -> Option<String> {
+    if let Some(universal) = Universal::from_name(name) {
+        return Some(match universal {
+            Universal::ObjectFit | Universal::ObjectPosition => format!(
+                "`{name}` is a common param, which every component gets as `fit` (spec §7.4), so a signature can't declare it"
+            ),
+            _ if universal.is_common() => format!(
+                "`{name}` is a common param, which styles the component's box, so the component never gets it and a signature can't declare it"
+            ),
+            _ => format!(
+                "`{name}` is every component's own, for its box, so a signature can't declare it"
+            ),
+        });
+    }
     match name {
-        "class" | "id" => Some(format!(
-            "`{name}` is every component's own, for its box, so a signature can't declare it"
-        )),
         "alt" | "render" if renders => Some(format!(
             "`{name}` is a rendered block's own, read by the processor, so a code renderer can't declare it"
         )),

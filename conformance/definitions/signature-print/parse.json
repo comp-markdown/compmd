@@ -3,6 +3,7 @@
   "children": [
     {
       "type": "componentSignature",
+      "params": [],
       "name": "map",
       "signature": {
         "params": [

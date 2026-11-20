@@ -3,6 +3,7 @@
   "children": [
     {
       "type": "componentSignature",
+      "params": [],
       "name": "box",
       "signature": {
         "params": [

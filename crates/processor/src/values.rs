@@ -120,6 +120,15 @@ impl Kind<'static> {
     pub const AREA_NAME: Self = kind(&[], &[Form::AreaName], &["side"]);
     /// `aspect-ratio`: `none` or a width over a height.
     pub const RATIO: Self = kind(&["none"], &[Form::Ratio], &["16/9"]);
+    /// `object-position`: one or two logical positions, the block one then the inline one.
+    pub const POSITIONS: Self = Kind {
+        tokens: Cow::Borrowed(&["start", "center", "end"]),
+        forms: &[],
+        examples: &[],
+        up_to: 2,
+        flag: false,
+        quoted: true,
+    };
     /// `lang`: a language tag.
     pub const LANGUAGE: Self = kind(&[], &[Form::Language], &["en", "de-CH"]);
     /// A number, written bare.
@@ -181,6 +190,7 @@ impl Kind<'static> {
         Self::AREAS,
         Self::AREA_NAME,
         Self::RATIO,
+        Self::POSITIONS,
         Self::LANGUAGE,
         Self::NUMBER,
         Self::BOOLEAN,

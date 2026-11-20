@@ -243,7 +243,7 @@ const TRIGGERS: Record<string, Trigger> = {
   F033: { text: "---\na: &x 1\n---\n\nText.\n" },
   F034: { text: "---\nmd:\n  data:\n    - from: ./rows.json\n      as: rows\n---\n\n::: each {in=(md.data.rows) as=r}\n::: each {in=(md.data.rows) as=c}\n{{r}}.{{c}}\n::: /each\n::: /each\n", files: { "rows.json": numbers } },
   F035: { text: "---\nmd:\n  import:\n    - from: \"@acme/kit@1.0.0\"\n      integrity: sha512-BBBB\n      names: [card]\n---\n\n:: card[C]\n", packs: { "@acme/kit": [release("@acme/kit", "1.0.0", cardPack("@acme/kit", "1.0.0"), {}, "sha512-AAAA")] } },
-  F036: { text: "```compmd component=note signature {padding=s}\nparams: {}\n```\n" },
+  F036: { text: "```js component=note {padding=s}\nexport default function mount() {}\n```\n\n```compmd component=note signature {padding=m}\nparams: {}\n```\n" },
   F037: { text: "```compmd component=note\nparams:\n  n: numbr\n---\nN.\n```\n" },
   W101: { text: fence("note") + ":: note\n" },
   W102: { text: "```vue component=clock\n<template><time /></template>\n```\n\n```compmd component=clock signature\nparams: {}\n```\n\n:: clock[12:00]\n" },

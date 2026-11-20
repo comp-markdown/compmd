@@ -20,6 +20,7 @@ export const COMMON = [
   "width", "height", "min-width", "max-width",
   "padding", "padding-inline", "padding-block", "padding-inline-start", "padding-inline-end", "padding-block-start", "padding-block-end",
   "border", "border-radius", "background", "grid-area", "order", "align-self", "justify-self", "aspect-ratio",
+  "object-fit", "object-position",
   "inset-inline-start", "inset-inline-end", "inset-block-start", "inset-block-end",
   "scroll", "fill", "sticky", "show", "hide",
 ];
@@ -101,6 +102,10 @@ function declarationsOf(key: string, value: unknown, parent: ParentLayout): Decl
       return { order: ORDER[written] ?? written };
     case "aspect-ratio":
       return { "aspect-ratio": written === "none" ? "auto" : written };
+    // What a component draws in its box, which the component gets as `fit` (spec §7.4): nothing for the box itself.
+    case "object-fit":
+    case "object-position":
+      return {};
     case "scroll":
       return value === true ? { overflow: "auto" } : {};
     case "fill":

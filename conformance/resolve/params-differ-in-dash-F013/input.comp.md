@@ -1,7 +1,7 @@
 ```compmd component=chip
 params:
-  max-width: length?
-  max_width: length?
+  line-width: length?
+  line_width: length?
 ---
 Chip.
 ```

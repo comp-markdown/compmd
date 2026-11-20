@@ -1,0 +1,71 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentLeaf",
+      "name": "photo",
+      "params": [
+        {
+          "key": "object-fit",
+          "breakpoint": null,
+          "value": "cover"
+        },
+        {
+          "key": "object-position",
+          "breakpoint": null,
+          "value": "center"
+        }
+      ],
+      "fallback": [
+        {
+          "type": "text",
+          "value": "The pack's defaults"
+        }
+      ]
+    },
+    {
+      "type": "componentLeaf",
+      "name": "photo",
+      "params": [
+        {
+          "key": "object-fit",
+          "breakpoint": null,
+          "value": "contain"
+        },
+        {
+          "key": "object-position",
+          "breakpoint": null,
+          "value": "start"
+        }
+      ],
+      "fallback": [
+        {
+          "type": "text",
+          "value": "Contained at the start"
+        }
+      ]
+    },
+    {
+      "type": "componentLeaf",
+      "name": "photo",
+      "params": [
+        {
+          "key": "object-fit",
+          "breakpoint": null,
+          "value": "cover"
+        },
+        {
+          "key": "object-position",
+          "breakpoint": null,
+          "value": "end start"
+        }
+      ],
+      "fallback": [
+        {
+          "type": "text",
+          "value": "Placed by the document"
+        }
+      ]
+    }
+  ]
+}

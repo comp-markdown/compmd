@@ -292,6 +292,7 @@ Common params, on any container or leaf (they style its outer box):
 - look: `border` (`none subtle strong` or CSS), `border-radius` (`none s m l full` or a length), `background` (`none subtle strong accent` or a CSS color)
 - placement: `grid-area`, `order` (`first last none`), `align-self` (`start center end stretch`), `justify-self` (`start center end`), `inset-inline-start`, `inset-inline-end`, `inset-block-start`, `inset-block-end` (`auto` or a length)
 - behavior: `scroll`, `fill` (flags: alone, or `true` or `false`), `sticky=top|bottom|none`, `show=sm|md|lg`, `hide=sm|md|lg`
+- what a component draws in its box: `object-fit=contain|cover|fill` (as large as fits, the default; filling the box, cropped; stretched), `object-position` one or two of `start center end`, block then inline (`object-position="center start"`; `center` by default); no breakpoint. A component fits its box: size a QR code or a chart with `width`, `height` or `aspect-ratio`, never with a param of its own.
 
 - Spaces (`gap`, padding): tokens `none`, `s`, `m`, `l`, or a length (`px rem em %`). Prefer tokens.
 - Each top-level block in a layout container is one item. Wrap several blocks in `::: box` to make one item.
@@ -380,7 +381,7 @@ export default function Chart({ rows, selected, compmd }) {
 - React and Svelte 5: params are camelCase props, the default slot is `children`, named slots are props of their names, and `compmd` is `{slots, set, fallback, headingLevel, host}`. Plain `js`/`ts`: the default export is `mount(target, {params, slots, set, fallback, headingLevel, host})` returning `{update, destroy}`.
 - A param typed `input<…>` is bound to an input by the caller (`selected=region`); the component calls `compmd.set("selected", "eu")` to change it. This is the only output a component has.
 - The code has no network and sees only its params and slots. Use `fallback.text` as the accessible label of non-text content.
-- A signature fence (`compmd component=<name> signature`) holds only the YAML signature, no `---`, no body, no param list.
+- A signature fence (`compmd component=<name> signature`) holds only the YAML signature, no `---`, no body. Its param list, when it has one, gives the component's box its defaults, as a definition fence's does (`compmd component=qr-code signature {width=12rem max-width=100%}`): the place for them when the component is a built module. A signature never declares a common param (`width`, `height`, `object-fit`, …), `class`, `id`, `lang` or `dir` (F013): the processor keeps them.
 - A component file (`./chart.jsx`) imported by path exports its default export, named after the file stem.
 - A code renderer draws the code blocks of one language: import it (`names: [mermaid]`), then write the block as anywhere, with its params and an `alt` after the language: ```` ```mermaid {alt="Draft, then review"} ````. For source computed from data, use the same component as a leaf, its source as `code`: `:: mermaid[Draft, then review] {code=(…)}`; a code block is never interpolated.
 - A host application may provide components of its own, declared in its pack by a signature alone. Use them like any component, importing the host's pack by name to say so (`from: "@acme/app"`); they work only in that host (W113), so write fallbacks other processors can show.
@@ -457,7 +458,7 @@ F codes are errors, W codes warnings. Each line: what it means → how to fix it
 - F010 required param missing → give it.
 - F011 broken param list → close quotes and brackets; quote values with spaces or parentheses; no `title=` without a value.
 - F012 `::: +` not after an opener, leaf or continuation → move it directly under that line.
-- F013 name clash or reserved name → rename: no `if`, `each`, `value`, `box`, `md`, no CEL reserved words or type names as definition params, `as` names or inputs, no two names differing only in `-` vs `_`.
+- F013 name clash or reserved name → rename: no `if`, `each`, `value`, `box`, `md`, no CEL reserved words or type names as definition params, `as` names or inputs, no two names differing only in `-` vs `_`, and in a signature no common param (`width`, `object-fit`, …), `class`, `id`, `lang` or `dir`, which the processor keeps.
 - F014 unknown `{{path}}` → use `md.doc.`, `md.data.`, `md.input.` or a declared name; write `\{{` for literal braces.
 - F015 slot line outside a container → move it inside, or remove it.
 - F016 malformed component line → exactly `::: name`, `::: /name`, `::: + …`, `:: name[…]`, `:: #name`, with a space after the colons; no scoped names in the body.
@@ -480,7 +481,7 @@ F codes are errors, W codes warnings. Each line: what it means → how to fix it
 - F033 frontmatter not plain YAML 1.2 → remove anchors, aliases, tags and duplicate keys.
 - F034 expansion too large → filter or slice the data (`md.slice`), or nest fewer `each` blocks.
 - F035 pack doesn't match its `integrity` → update the hash or the version.
-- F036 param list on a signature fence → remove it; box params go on the definition fence.
+- F036 a component's box styled by both its definition fence and its signature fence → keep one param list (the definition fence's is used).
 - F037 a declaration's type isn't a type → use one: `string`, `number`, `boolean`, `date`, `array`, `object`, `length`, `space`, `color`, `tracks`, `areas`, `surface`, `border`, `radius`, `name`, an enum `a | b`, or `input<…>`.
 - W101 leaf without fallback → add `[readable text]`.
 - W102 language or runtime not supported → expect the fallback; write a good one.

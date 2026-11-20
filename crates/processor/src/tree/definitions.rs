@@ -53,6 +53,9 @@ pub struct SignatureFence {
     pub name: String,
     /// The signature; `None` when the fence isn't valid YAML.
     pub signature: Option<Signature>,
+    /// The param list that ends the info string, which styles the box of the component it attaches to, as its
+    /// definition fence's would (spec §7); empty without one.
+    pub params: Vec<Param>,
     /// Where the fence is.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub position: Option<Position>,

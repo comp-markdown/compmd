@@ -1,0 +1,91 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentLeaf",
+      "name": "qr",
+      "params": [
+        {
+          "key": "width",
+          "breakpoint": null,
+          "value": "12rem"
+        },
+        {
+          "key": "max-width",
+          "breakpoint": null,
+          "value": "100%"
+        },
+        {
+          "key": "value",
+          "breakpoint": null,
+          "value": "https://compmd.dev/"
+        }
+      ],
+      "fallback": [
+        {
+          "type": "text",
+          "value": "Our site"
+        }
+      ]
+    },
+    {
+      "type": "componentLeaf",
+      "name": "qr",
+      "params": [
+        {
+          "key": "max-width",
+          "breakpoint": null,
+          "value": "100%"
+        },
+        {
+          "key": "value",
+          "breakpoint": null,
+          "value": "https://compmd.dev/"
+        },
+        {
+          "key": "width",
+          "breakpoint": null,
+          "value": "6rem"
+        }
+      ],
+      "fallback": [
+        {
+          "type": "text",
+          "value": "Smaller"
+        }
+      ]
+    },
+    {
+      "type": "componentLeaf",
+      "name": "qr",
+      "params": [
+        {
+          "key": "width",
+          "breakpoint": null,
+          "value": "12rem"
+        },
+        {
+          "key": "max-width",
+          "breakpoint": null,
+          "value": "100%"
+        },
+        {
+          "key": "value",
+          "breakpoint": null,
+          "value": "https://compmd.dev/"
+        },
+        {
+          "key": "width",
+          "breakpoint": "md",
+          "value": "8rem"
+        }
+      ],
+      "fallback": [
+        {
+          "type": "text",
+          "value": "Wider from md"
+        }
+      ]
+    }
+  ]
+}

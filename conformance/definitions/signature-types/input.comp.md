@@ -4,7 +4,7 @@ params:
   as: name
   since: date = (md.today())
   gap: space = m
-  width: length?
+  stroke: length?
   selected: input<string>
   tone: info | warn = info
 ```

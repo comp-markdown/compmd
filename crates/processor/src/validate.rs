@@ -218,8 +218,10 @@ pub(crate) fn validate(resolved: &Resolved, allowed_origins: &AllowedOrigins) ->
         }
         let mut checker = Checker::new(resolved, id, &mut validated.programs);
         for node in &document.root.children {
-            if let Node::ComponentDefinition(definition) = node {
-                checker.definition(definition);
+            match node {
+                Node::ComponentDefinition(definition) => checker.definition(definition),
+                Node::ComponentSignature(fence) => checker.signature_fence(fence),
+                _ => {}
             }
         }
         checker.bound_by_hosts = checker.found.bound_by_hosts.iter().cloned().collect();
