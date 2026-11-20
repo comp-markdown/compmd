@@ -1,0 +1,187 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "b026fa9673f845798305be06f7b58541e9c2bd5c",
+    "head": "96dce94022454a085e96868e00dab61fc4cd76f0"
+  },
+  "files": [
+    {
+      "path": "docs/host-highlighter.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/sandbox-protocol.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/webassembly-in-the-frames.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/developers/07-rendering-and-styling.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/developers/19-a-tauri-app.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/code-blocks.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/code-blocks.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/highlight-queue.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/index.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/next-task.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/protocol.schema.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/scripts/frames.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/build/policy.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/build/policy.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/frame-url.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/frame/runtime.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/frames-highlight.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/frames-highlight.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/from-frames.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/host/runtime.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/images.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/pages.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/frame-end.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/frame-end.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/messages.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/parent-end.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/parent-end.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/schema.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/sent-nodes.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/sent-nodes.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/use.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/host.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/strict.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/view.test.ts",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-20T11:01:16Z"
+}

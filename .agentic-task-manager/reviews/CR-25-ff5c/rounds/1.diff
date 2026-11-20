@@ -1,0 +1,1461 @@
+diff --git a/docs/host-highlighter.md b/docs/host-highlighter.md
+index c47d359..ddff457 100644
+--- a/docs/host-highlighter.md
++++ b/docs/host-highlighter.md
+@@ -1,11 +1,11 @@
+ # The host's code highlighter
+ 
+-**Status: proposed (2026-11-19), for review (CMD-267).** The sandbox takes its code highlighter from its host, in both
++**Status: approved (2026-11-19, CR-21), decision 7 included; built (CMD-262, 2026-11-20).** The sandbox takes its code highlighter from its host, in both
+ page modes, so a host whose editor highlights with its own engine (Lezer, say) shows the same colours in its rendered
+ pages, and languages Shiki doesn't ship. And where the default highlighter, Shiki, should run: in each frame, as today,
+ or in the host's page for all of them. CMD-262 builds what is decided here.
+ 
+-## Decisions (proposed)
++## Decisions
+ 
+ 1. **An option, `highlight`, on the sandbox,** beside `ownImages`: a `CodeHighlighter`, `@compmd/render`'s type,
+    `(code, language) => lines | undefined | Promise<…>`, each token with its text and a colour for each scheme. Without
+@@ -32,7 +32,7 @@ or in the host's page for all of them. CMD-262 builds what is decided here.
+    instead of 14 s. In Chromium with each frame in a process of its own, the frames' own Shikis keep the page's thread
+    free but cost about 27 MB a frame. The frames then load no highlighter at all, so they no longer need
+    `'wasm-unsafe-eval'` for it ([WebAssembly in the frames](webassembly-in-the-frames.md), which this reverses).
+-   *For the user to decide: [Shiki as the default](#shiki-as-the-default) has the comparison.*
++   [Shiki as the default](#shiki-as-the-default) has the comparison it was decided on.
+ 8. **No batching** of several blocks in one message: a round trip costs a frame no more than its own Shiki does (one
+    frame: 184 ms to its first block asking the page, 159 ms with its own, in WebKit), and the queue already orders the
+    blocks.
+@@ -78,8 +78,8 @@ draws the tokens if they are the block's text; keeps the text otherwise
+ ```
+ 
+ - **Which blocks a parent answers for:** each code block's text and language in the trees, splices and parts it sent
+-  the frame (a code renderer's block is its component's, not highlighted). Not a block's position: the same text in
+-  the same language gets the same tokens wherever it is.
++  the frame, a code renderer's block too, whose fallback shows it as a code block. Not a block's position: the same
++  text in the same language gets the same tokens wherever it is.
+ - **`id`** is the frame's own count, so answers can come in any order.
+ - **A parent that isn't H** passes the request up, as its own, and the answer down.
+ - **The host's page and the frames it serves upgrade together,** as they did for the renderer's version 5: the
+diff --git a/docs/sandbox-protocol.md b/docs/sandbox-protocol.md
+index cc22415..e63d16c 100644
+--- a/docs/sandbox-protocol.md
++++ b/docs/sandbox-protocol.md
+@@ -32,7 +32,7 @@ When a frame loads, its parent posts `hello` to its window with one end of a new
+ | Message | Says | To |
+ |---|---|---|
+ | `hello {version}` (a window message, with the port) | this is your port | every frame |
+-| `level {level, policy?}` | your level; for `permissive.html`, the second policy, with the pack's origins, which the frame adds before anything else | every frame, first |
++| `level {level, policy?, schemes?, timeout?}` | your level; for `permissive.html`, the second policy, with the pack's origins, which the frame adds before anything else; the host's own URL schemes; and how long to wait for `highlighted`, in ms (5,000 without it) | every frame, first |
+ | `code {components}` | each component's code: compiled text with its binding (`react`, `svelte`, `plain`) and CSS, a built module's file as a `Blob` with the plain binding and its `place` (`pack@version/path`), or a module's `{url, integrity}`, with a `binding` (`react`, `svelte`) for a pack's source component compiled ahead, whose module exports a Svelte component's CSS as `css`; text and `Blob`s with the library packs they import, in `libraries`, by name, each with its place, its file as a `Blob` and its own `libraries` ([sharing library packs](sharing-library-packs.md)); for a permissive frame, its strict children's code too, which it passes on | P, U |
+ | `render`, `splices` | `@compmd/render`'s | P |
+ | `scheme {scheme}` | the colour scheme of the page around the frame, `light` or `dark`, which the frame sets on its document and passes to its own frames; again when it changes | P, U |
+@@ -46,6 +46,7 @@ When a frame loads, its parent posts `hello` to its window with one end of a new
+ | `compile {name, language, runtime, code}` | compile this | C |
+ | `observe {on}` | record what passes in you and report it, asking your own frames too; or stop ([observing](#observing)) | P, U |
+ | `fetched {url, image?}` | the answer to `image`: the image's file as a `Blob`, or none when H can't or won't give it | P, from H |
++| `highlighted {id, lines?}` | the answer to `highlight` with the same `id`: each line's tokens, or none for a language the host's highlighter doesn't cover, a block the parent didn't send, or a failure ([the host's code highlighter](host-highlighter.md)) | P, U |
+ 
+ **A frame to its parent:**
+ 
+@@ -66,6 +67,7 @@ When a frame loads, its parent posts `hello` to its window with one end of a new
+ | `compiled {name, code, css?}`, `failed {name, message}` | a compile's result | C |
+ | `observed {events}` | what the frame recorded since its last report, its own frames' reports in it; only after `observe {on}` | P, U |
+ | `image {url}` | the page needs an image by its `src`, which it can't fetch: H fetches it, only if it is an image of the trees and splices H sent P, and answers with `fetched` | P |
++| `highlight {id, code, language}` | a code block's tokens, by its text and fence language, `id` the frame's own count: the frame loads no highlighter. The parent answers with `highlighted` only for a block of the trees, splices or part it sent the frame; a permissive U asks H for its strict children's, as its own. H highlights one block a task, for all its frames together. Without an answer within `timeout`, the block keeps its text | P, U |
+ 
+ A parent passes its children's `set`, `link` and `error` up, each with what it knows of where they came from, so H gets them all.
+ 
+@@ -199,12 +201,14 @@ sequenceDiagram
+ 
+ - **A frame:** its port comes in a window message from its parent; it adds the `level` policy before it loads any code; it runs code and renders parts only from its port; it answers `ping`.
+ - **A parent:** it makes children only of a lower level than its own (a permissive frame, only strict ones); it sends each child only its own use's part and code; it checks each `set` against the use's node; it pings its children; it takes `observed` only after it asked, and checks each event.
+-- **H:** it gives `host` only to permissive frames of packs the configuration gives `host`; it never acts on `link` without the reader; it asks P for clicks (`point`) only once its host listens for `pointed`, and passes on only a well-formed source and boxes; it fetches for `image` only the images of the trees and splices it sent P, without credentials or a `Referer`, and answers only with a file that is an image.
++- **H:** it gives `host` only to permissive frames of packs the configuration gives `host`; it never acts on `link` without the reader; it asks P for clicks (`point`) only once its host listens for `pointed`, and passes on only a well-formed source and boxes; it fetches for `image` only the images of the trees and splices it sent P, without credentials or a `Referer`, and answers only with a file that is an image; it highlights for `highlight` only a block of the trees, splices and parts it sent the frame (a permissive U checks its own children's the same way).
+ 
+ ## Versions
+ 
+ The sandbox's version travels in `hello` and `ready`, beside `@compmd/render`'s. A host may serve the frame documents from an older deploy than its page: a frame with another version gets nothing, and its parent reports it.
+ 
++- **Version 2** added `highlight` and `highlighted` and the level's `timeout`: the frames ask the host's page for their code blocks' tokens and load no highlighter ([the host's code highlighter](host-highlighter.md)). A host's page and the frames it serves upgrade together.
++
+ ## From the playground's messages
+ 
+ | Playground (`editor/src/protocol.ts`) | Sandbox |
+@@ -218,6 +222,4 @@ The sandbox's version travels in `hello` and `ready`, beside `@compmd/render`'s.
+ 
+ ## Open
+ 
+-- **Highlighting by the host's page:** `highlight` and `highlighted`, a frame asking its parent for a block's tokens,
+-  proposed in [the host's code highlighter](host-highlighter.md) for the protocol's version 2.
+ - **`@compmd/render`'s protocol** could take the sandbox's messages into its own, or stay as it is with the sandbox's beside it on the same port (recommended, decision 5): a host that builds its own sandbox can still use `connectFrame` and `serveFrame` alone.
+diff --git a/docs/webassembly-in-the-frames.md b/docs/webassembly-in-the-frames.md
+index 91103a8..ce34ac6 100644
+--- a/docs/webassembly-in-the-frames.md
++++ b/docs/webassembly-in-the-frames.md
+@@ -1,6 +1,6 @@
+ # WebAssembly in the frames
+ 
+-**Status: accepted (2026-11-19).** Whether the sandbox's frame documents (`strict.html`, `permissive.html`) allow WebAssembly, so the page's frame can highlight code with Shiki's Oniguruma engine, and what else was weighed. It builds on [running components in the sandbox](running-components-in-the-sandbox.md), whose threats (T1 to T10) it goes through, and on [the spike CMD-252](../spikes/highlight-perf/README.md), which measured the engines.
++**Status: accepted (2026-11-19); decision 1 reversed by [the host's code highlighter](host-highlighter.md), decision 7 (CMD-262, 2026-11-20).** The frames no longer highlight code themselves: they ask the host's page for each block's tokens, and their policies no longer allow `'wasm-unsafe-eval'`. Decision 2's engine rule still holds where Shiki runs, in the host's page. Whether the sandbox's frame documents (`strict.html`, `permissive.html`) allow WebAssembly, so the page's frame can highlight code with Shiki's Oniguruma engine, and what else was weighed. It builds on [running components in the sandbox](running-components-in-the-sandbox.md), whose threats (T1 to T10) it goes through, and on [the spike CMD-252](../spikes/highlight-perf/README.md), which measured the engines.
+ 
+ ## Decisions
+ 
+diff --git a/guides/developers/07-rendering-and-styling.md b/guides/developers/07-rendering-and-styling.md
+index f583cbe..aef1555 100644
+--- a/guides/developers/07-rendering-and-styling.md
++++ b/guides/developers/07-rendering-and-styling.md
+@@ -164,7 +164,8 @@ An app that switches its own theme, with a class or a style as the example does,
+ A code block shows as code when no renderer draws it: a language nothing renders, or a code renderer's block whose component is missing or fails, which shows its code block as its fallback. The sandbox highlights it, in both page modes, with Shiki in GitHub's light and dark themes, in about 60 popular languages, CompMD's own syntax in `md` and `compmd` blocks among them; any other language stays plain ([the sandbox's README](../../npm-packages/sandbox/README.md#code-blocks) lists them). Each language loads the first time a block of it shows, so a page without code blocks loads nothing of it. The colours follow the page's light or dark as frames do, with nothing more to call.
+ 
+ - **A block at a time.** The page asks for one block's tokens, draws them, and asks for the next a task later, those on screen first, so a page of many blocks never highlights them all in one frame. Each block shows its text until its tokens come. `view.settled()` waits for them.
+-- **Two engines.** Shiki runs its grammars with Oniguruma, as WebAssembly, where the page compiles it, and with its JavaScript engine in Chromium and where it doesn't. In Safari the JavaScript engine blocks the page for about a second on a first TypeScript block, where Oniguruma takes 60 ms; in Chromium the two are as fast. The frames compile it; in host mode your page does, when its content security policy has `'wasm-unsafe-eval'` in `script-src`, which `cspFor` gives ([chapter 11](11-the-sandbox-closer.md#serving-compmd)). Without it, the JavaScript engine highlights the same blocks.
++- **Two engines.** Shiki runs its grammars with Oniguruma, as WebAssembly, where the page compiles it, and with its JavaScript engine in Chromium and where it doesn't. In Safari the JavaScript engine blocks the page for about a second on a first TypeScript block, where Oniguruma takes 60 ms; in Chromium the two are as fast. Your page highlights for the frames too, in both modes, so Shiki is made once however many frames it has; it compiles Oniguruma when its content security policy has `'wasm-unsafe-eval'` in `script-src`, which `cspFor` gives ([chapter 11](11-the-sandbox-closer.md#serving-compmd)). Without it, the JavaScript engine highlights the same blocks.
++- **Your own highlighter.** An app whose editor highlights with its own engine gives `createSandbox` its `highlight` option, a function from a block's code and language to each line's tokens, each with a colour for light and one for dark, or `undefined` for a language it lacks. The page then shows the editor's colours, in both modes, and Shiki isn't loaded.
+ 
+ To style it, a stylesheet styles `pre` and `code` as it would any page's: the tokens are spans in the `<code>`, each with its colour.
+ 
+diff --git a/guides/developers/19-a-tauri-app.md b/guides/developers/19-a-tauri-app.md
+index 1f57632..750a093 100644
+--- a/guides/developers/19-a-tauri-app.md
++++ b/guides/developers/19-a-tauri-app.md
+@@ -173,7 +173,7 @@ A frame's code must never reach the app: a strict component sees its params and
+ 
+ - **WebKit's `ipc` handler.** On macOS and Linux, WebKit gives every frame Tauri's `ipc` script message handler, and no content security policy governs it. Tauri drops a message without the key, so a frame's call through it runs nothing; the example's check posts one with a guessed key to prove it. [The plugin's design](../../docs/tauri-plugin.md#appendix-webkits-ipc-handler-in-a-frame) has the research.
+ 
+-**If the app sets a content security policy** (`app.security.csp`; Tauri's template sets none), it adds what `cspFor` from `@compmd/vite/config` gives, for both forms of the origin: `frame-src` the origin, `script-src` and `connect-src` its `frames/` (a host-mode page loads Shiki and Temml from there), `script-src` `'wasm-unsafe-eval'` (on macOS and Linux it highlights code with Oniguruma, as WebAssembly; without it, with Shiki's JavaScript engine, slower there), never its `packs/`, and `frame-ancestors 'none'`:
++**If the app sets a content security policy** (`app.security.csp`; Tauri's template sets none), it adds what `cspFor` from `@compmd/vite/config` gives, for both forms of the origin: `frame-src` the origin, `script-src` and `connect-src` its `frames/` (the page loads Shiki from there, and Temml in host mode), `script-src` `'wasm-unsafe-eval'` (on macOS and Linux it highlights code with Oniguruma, as WebAssembly; without it, with Shiki's JavaScript engine, slower there), never its `packs/`, and `frame-ancestors 'none'`:
+ 
+ ```json snippet=../../../crates/tauri/examples/tauri-app/src-tauri/tauri.conf.json
+ {
+diff --git a/npm-packages/render/src/code-blocks.test.ts b/npm-packages/render/src/code-blocks.test.ts
+new file mode 100644
+index 0000000..3e5598e
+--- /dev/null
++++ b/npm-packages/render/src/code-blocks.test.ts
+@@ -0,0 +1,33 @@
++import { describe, expect, it } from "vitest";
++import { codeBlocks } from "./code-blocks.ts";
++import type { ExpandedNode } from "./tree.ts";
++
++const code = (value: string, lang?: string): ExpandedNode => ({ type: "code", value, ...(lang === undefined ? {} : { lang }) });
++
++describe("codeBlocks", () => {
++  it("lists each code block's text and language, in slots and fallbacks too, a block without a language as \"\"", () => {
++    const nodes: ExpandedNode[] = [
++      code("let a = 1;", "ts"),
++      code("plain text"),
++      {
++        type: "componentContainer",
++        name: "tabs",
++        params: [],
++        children: [code("fn main() {}", "rust")],
++        slots: [{ type: "componentSlot", name: "footer", children: [code("echo hi", "sh")] }],
++      },
++      { type: "componentLeaf", name: "chart", params: [], fallback: [code("a,b", "csv")] },
++    ];
++    expect(codeBlocks(nodes)).toEqual([
++      { code: "let a = 1;", language: "ts" },
++      { code: "plain text", language: "" },
++      { code: "fn main() {}", language: "rust" },
++      { code: "echo hi", language: "sh" },
++      { code: "a,b", language: "csv" },
++    ]);
++  });
++
++  it("lists nothing for a document without code", () => {
++    expect(codeBlocks([{ type: "paragraph", children: [{ type: "text", value: "No code" }] }])).toEqual([]);
++  });
++});
+diff --git a/npm-packages/render/src/code-blocks.ts b/npm-packages/render/src/code-blocks.ts
+new file mode 100644
+index 0000000..0695505
+--- /dev/null
++++ b/npm-packages/render/src/code-blocks.ts
+@@ -0,0 +1,23 @@
++// A document's code blocks, for a page that can't highlight them itself: a page in a frame asks its host for each
++// block's tokens, and the host answers only for the blocks of the trees it sent.
++import { textOf, walk, type ExpandedNode } from "./tree.ts";
++
++/** A code block as a highlighter is asked for it: its text and its fence's language (`""` for none). */
++export interface CodeBlock {
++  code: string;
++  language: string;
++}
++
++/**
++ * Every code block `nodes` hold, slots and branches shown included, as the renderer asks a `CodeHighlighter` for it.
++ *
++ * @example
++ * codeBlocks(tree.children); // [{ code: "let a = 1;", language: "ts" }]
++ */
++export function codeBlocks(nodes: readonly ExpandedNode[]): CodeBlock[] {
++  const blocks: CodeBlock[] = [];
++  walk(nodes, (node) => {
++    if (node.type === "code") blocks.push({ code: textOf(node.value), language: textOf(node.lang) });
++  });
++  return blocks;
++}
+diff --git a/npm-packages/render/src/highlight-queue.ts b/npm-packages/render/src/highlight-queue.ts
+index 32f947c..17f3626 100644
+--- a/npm-packages/render/src/highlight-queue.ts
++++ b/npm-packages/render/src/highlight-queue.ts
+@@ -3,6 +3,7 @@
+ // them all in one frame. Blocks on screen go first, as an `IntersectionObserver` reports them, which reads no layout.
+ // A block whose text changed is asked for again with its new text, and one that is gone is dropped.
+ import { drawTokens, type CodeHighlighter } from "./highlight.ts";
++import { nextTask } from "./next-task.ts";
+ 
+ /** A block waiting: what to ask for, and what to tell once it is drawn or dropped. */
+ interface Job {
+@@ -13,22 +14,6 @@ interface Job {
+   done: () => void;
+ }
+ 
+-/** A task later, after the browser has had its turn: a message, which no timer clamps. */
+-function nextTask(): Promise<void> {
+-  return new Promise((resolve) => {
+-    if (typeof MessageChannel !== "function") {
+-      setTimeout(resolve, 0);
+-      return;
+-    }
+-    const { port1, port2 } = new MessageChannel();
+-    port1.onmessage = () => {
+-      port1.close();
+-      resolve();
+-    };
+-    port2.postMessage(null);
+-  });
+-}
+-
+ /** One document's queue. */
+ class HighlightQueue {
+   static readonly #all = new WeakMap<Document, HighlightQueue>();
+diff --git a/npm-packages/render/src/index.ts b/npm-packages/render/src/index.ts
+index 8beaabe..0bd861a 100644
+--- a/npm-packages/render/src/index.ts
++++ b/npm-packages/render/src/index.ts
+@@ -12,7 +12,9 @@ export { BUSY_MS } from "./busy.ts";
+ export type { Change, Diagnostic } from "./stable.ts";
+ export { footnotesOf, definitionsOf, plainText, type Footnotes, type LinkDefinition } from "./document.ts";
+ export type { CodeRenderer, MathRenderer } from "./render.ts";
++export { codeBlocks, type CodeBlock } from "./code-blocks.ts";
+ export type { CodeHighlighter, CodeLines, CodeToken } from "./highlight.ts";
++export { nextTask } from "./next-task.ts";
+ export { imageSources, type ImageSource, type Refused } from "./images.ts";
+ export { ownSchemes, urlScheme } from "./html.ts";
+ export type * from "./contract.ts";
+diff --git a/npm-packages/render/src/next-task.ts b/npm-packages/render/src/next-task.ts
+new file mode 100644
+index 0000000..aa709ac
+--- /dev/null
++++ b/npm-packages/render/src/next-task.ts
+@@ -0,0 +1,24 @@
++/**
++ * Resolves a task later, after the browser has had its turn: through a message, which no timer clamps, or a timer
++ * where there is no `MessageChannel`.
++ *
++ * @example
++ * for (const block of blocks) {
++ *   await nextTask();
++ *   highlight(block);
++ * }
++ */
++export function nextTask(): Promise<void> {
++  return new Promise((resolve) => {
++    if (typeof MessageChannel !== "function") {
++      setTimeout(resolve, 0);
++      return;
++    }
++    const { port1, port2 } = new MessageChannel();
++    port1.onmessage = () => {
++      port1.close();
++      resolve();
++    };
++    port2.postMessage(null);
++  });
++}
+diff --git a/npm-packages/sandbox/README.md b/npm-packages/sandbox/README.md
+index d2a2a7b..c6d9f87 100644
+--- a/npm-packages/sandbox/README.md
++++ b/npm-packages/sandbox/README.md
+@@ -146,7 +146,7 @@ view.destroy();
+ | Permissive components | their fallbacks, with an error `not-here` | a frame per use, with `host` if the configuration gives it |
+ | Trusted components | their fallbacks, with an error `not-here` | inline, in the host's page, with `host` when the host gives one |
+ | Math | typeset as MathML by Temml, in the page's frame | the same, the frames' own Temml loaded into the host's page from `math.js` where the frames are served, the first time a document has math |
+-| Code blocks | highlighted by Shiki, in the page's frame | the same, the frames' own Shiki loaded into the host's page from `highlight.js` where the frames are served, the first time a document has a code block |
++| Code blocks | highlighted by the host's page, which the page's frame asks for each block's tokens | highlighted in the host's page, and for each use's frame as it asks |
+ | The document's images | fetched by the host's page and shown from `blob:` URLs; alt text until then, and for one it can't have | loaded as any image of the host's page |
+ | For | hosts of others' documents with strict packs | an app with components of its own, or permissive packs |
+ 
+@@ -182,14 +182,15 @@ view.on("settled", () => print());             // each time it settles again, af
+ 
+ ## Code blocks
+ 
+-Every code block that shows as code is highlighted, wherever a page renders (the page's frame, a use's frame, the host's page): one of a language no code renderer draws, and a code renderer's fallback, when its component is missing or fails (spec §7.7). It is `@compmd/render`'s `highlight`, given as `shikiHighlight()`, which a host that renders a page itself with `createPage` or `createRegion` can give too.
++Every code block that shows as code is highlighted, wherever a page renders (the page's frame, a use's frame, the host's page): one of a language no code renderer draws, and a code renderer's fallback, when its component is missing or fails (spec §7.7). **The host's page highlights them all** ([the host's code highlighter](https://github.com/comp-markdown/compmd/blob/main/docs/host-highlighter.md)): the frames load no highlighter, and ask the host's page for each block's tokens, which it gives only for a block of what it sent that frame, one block a task for all the page's frames together. A block shows its text until its tokens come, and keeps it for a language the highlighter doesn't cover, on a failure, and when the host's page doesn't answer within the sandbox's `timeout`; `settled()` waits for the tokens.
+ 
+-- **Shiki,** with one of two engines, by one rule wherever a page renders ([WebAssembly in the frames](https://github.com/comp-markdown/compmd/blob/main/docs/webassembly-in-the-frames.md), decision 2): Oniguruma, as WebAssembly, where the page compiles it (the frames' policy allows it; a host-mode page's allows it with `'wasm-unsafe-eval'`, which `@compmd/vite`'s `cspFor` gives), except in Chromium; its JavaScript regex engine in Chromium (told by `navigator.userAgentData`) and in a page that refuses WebAssembly. In WebKit the JavaScript engine compiles each regex the first time it runs, which blocks the page for about a second on a first TypeScript block, where Oniguruma takes 60 ms; in Chromium the JavaScript engine is as fast, and Oniguruma would cost each frame 85 ms more ([the spike](https://github.com/comp-markdown/compmd/blob/main/spikes/highlight-perf/README.md)). The JavaScript engine leaves out a grammar's patterns it can't translate, so a block may be highlighted a little differently in Chromium. A host that gives `shikiHighlight` itself chooses with `shikiHighlight({ webAssembly: true })`. Its core and engine load the first time a page has a code block; each language's grammar the first time a block of it shows. Until then, and for a block it can't highlight, the text shows as it is. A block is highlighted again only when its text changes. The highlighter gives each line's tokens, and `@compmd/render` draws them into the line's element, which is its own, so a line's height (`view.lineHeights`) holds before and after the tokens come.
++- **The host's own highlighter,** `highlight`, a `CodeHighlighter` of `@compmd/render`, gives the same colours as the host's editor, or languages Shiki doesn't ship: `createSandbox({ highlight: (code, language) => editorTokens(code, language) })`, each line's tokens with a colour for each scheme, or `undefined` for a language it lacks. It runs in the host's page, for the page's own blocks and for every frame's.
++- **Without it, Shiki,** with one of two engines ([WebAssembly in the frames](https://github.com/comp-markdown/compmd/blob/main/docs/webassembly-in-the-frames.md), decision 2): Oniguruma, as WebAssembly, where the host's page compiles it (it allows it with `'wasm-unsafe-eval'`, which `@compmd/vite`'s `cspFor` gives), except in Chromium; its JavaScript regex engine in Chromium (told by `navigator.userAgentData`) and in a page that refuses WebAssembly. In WebKit the JavaScript engine compiles each regex the first time it runs, which blocks the page for about a second on a first TypeScript block, where Oniguruma takes 60 ms; in Chromium the JavaScript engine is as fast, and Oniguruma would cost each frame 85 ms more ([the spike](https://github.com/comp-markdown/compmd/blob/main/spikes/highlight-perf/README.md)). The JavaScript engine leaves out a grammar's patterns it can't translate, so a block may be highlighted a little differently in Chromium. A host that gives `shikiHighlight` itself chooses with `shikiHighlight({ webAssembly: true })`. Its core and engine load the first time a page has a code block; each language's grammar the first time a block of it shows. Until then, and for a block it can't highlight, the text shows as it is. A block is highlighted again only when its text changes. The highlighter gives each line's tokens, and `@compmd/render` draws them into the line's element, which is its own, so a line's height (`view.lineHeights`) holds before and after the tokens come.
+ - **Light and dark:** GitHub's themes, as the website's spec page. Each token has its colour in both, which the renderer sets as `light-dark(light, dark)` through the CSSOM, so it follows the `color-scheme` every frame takes from the page around it, with nothing drawn again when it changes.
+ - **CompMD's syntax** shows in `md`, `markdown` and `compmd` blocks: component lines, inline components, param lists and `{{paths}}`, by a grammar injected into Markdown's, with a document's frontmatter, or a `compmd` definition's signature, as YAML. The website's spec page uses the same grammar, `@compmd/sandbox/grammar`.
+ - **The languages, by the fence names that mean them:** C (`c`), C++ (`cpp`, `c++`), C# (`csharp`, `c#`, `cs`), Java, Kotlin (`kotlin`, `kt`, `kts`), Scala, Swift, Objective-C (`objective-c`, `objc`), Go, Rust (`rust`, `rs`), Zig, Dart; Python (`python`, `py`), Ruby (`ruby`, `rb`), PHP, Perl, Lua, R, Julia (`julia`, `jl`), PowerShell (`powershell`, `ps`, `ps1`, `pwsh`), shell (`shellscript`, `bash`, `sh`, `shell`, `zsh`), Batch (`bat`, `batch`, `cmd`); Haskell (`haskell`, `hs`), Elixir, Erlang (`erlang`, `erl`), Clojure (`clojure`, `clj`), F# (`fsharp`, `f#`, `fs`), OCaml; JavaScript (`javascript`, `js`, `cjs`, `mjs`), TypeScript (`typescript`, `ts`, `cts`, `mts`), JSX, TSX, HTML, CSS, SCSS, Less, Svelte, Vue, Astro, GraphQL (`graphql`, `gql`); JSON, JSONC, JSON5, YAML (`yaml`, `yml`), TOML, INI (`ini`, `properties`), XML, CSV, SQL, Protocol Buffers (`proto`, `protobuf`); Dockerfile (`docker`, `dockerfile`), Makefile (`make`, `makefile`), CMake, HCL, Nix, Nginx; Diff, Markdown (`markdown`, `md`), CompMD (`compmd`), LaTeX, Mermaid (`mermaid`, `mmd`), MATLAB, Groovy, Solidity. A name is any case; any other language stays plain.
+ 
+-**One copy, the frames'.** Shiki and Temml are built once, with the frame runtime (`dist/frames/`): the frames load them, and so does a host-mode page, from `highlight.js` and `math.js` where the host serves the frame documents (`base`), which share their chunks with the runtime. So the host's own bundle has neither, and a page and its frames load the same files, which the browser caches once. In host mode every view of the page shares one highlighter, so Shiki is made once and each grammar loads once, however many views the page opens: one each made the page pay for each grammar again in every view, which in WebKit blocked for seconds over a list of short code blocks ([the spike](https://github.com/comp-markdown/compmd/blob/main/spikes/highlight-perf/README.md)). A host that renders a page itself with `createPage` and gives it `shikiHighlight()` or `temmlMath()` bundles its own; one that renders many pages makes one `shikiHighlight()` and gives it to them all. A host's page with a content security policy allows scripts from where the frames are served. A library the sandbox comes to load next is added the same way: [libraries in the sandbox](https://github.com/comp-markdown/compmd/blob/main/docs/libraries-in-the-sandbox.md) has the steps.
++**One copy, the frames'.** Shiki and Temml are built once, with the frame runtime (`dist/frames/`): the frames load Temml, and the host's page loads both, from `highlight.js` and `math.js` where the host serves the frame documents (`base`), which share their chunks with the runtime. So the host's own bundle has neither, and a page and its frames load the same files, which the browser caches once. Every view of the page and every frame shares one highlighter, so Shiki is made once and each grammar loads once, however many views and frames the page has: one each made the page pay for each grammar again in every view or frame, which in WebKit blocked for seconds: ten frames' Shikis blocked the page 2.8 s, one in the host's page 0.4 s ([the host's code highlighter](https://github.com/comp-markdown/compmd/blob/main/docs/host-highlighter.md)). A host's page in frame mode loads `highlight.js` too, so its content security policy allows scripts from where the frames are served, as `cspFor` gives. A host that renders a page itself with `createPage` and gives it `shikiHighlight()` or `temmlMath()` bundles its own; one that renders many pages makes one `shikiHighlight()` and gives it to them all. A host's page with a content security policy allows scripts from where the frames are served. A library the sandbox comes to load next is added the same way: [libraries in the sandbox](https://github.com/comp-markdown/compmd/blob/main/docs/libraries-in-the-sandbox.md) has the steps.
+ 
+ **What it costs.** Measured on the frame documents' build (`dist/frames/chunks/`, gzipped at level 9), of what a host serves: Shiki's core is 34.6 KB, its JavaScript engine 19.6 KB, the two themes 4.9 KB, and the 63 grammars 406 KB, about 465 KB in all. A page loads the core, the engine, the themes and the grammars of its blocks: about 75 KB for one with a JavaScript block. Oniguruma is 2.5 KB and its WebAssembly 230 KB, which a page that runs it loads instead of the JavaScript engine. Most grammars are 1 to 15 KB; the largest are C++ (52.9 KB), PHP (27.9 KB), Objective-C (22.7 KB), JSX, TSX, JavaScript and TypeScript (about 16 KB each, each with what it embeds).
+ 
+diff --git a/npm-packages/sandbox/protocol.schema.json b/npm-packages/sandbox/protocol.schema.json
+index 994e1b5..1f098f8 100644
+--- a/npm-packages/sandbox/protocol.schema.json
++++ b/npm-packages/sandbox/protocol.schema.json
+@@ -2,7 +2,7 @@
+   "$schema": "https://json-schema.org/draft/2020-12/schema",
+   "$id": "https://compmd.dev/schema/sandbox-protocol.schema.json",
+   "title": "The CompMD sandbox's frame protocol",
+-  "description": "The messages between a frame and its parent, the window that made it (docs/sandbox-protocol.md), version 1. `@compmd/render`'s frame protocol travels on the same port beside them. `host` carries a MessagePort in the message's ports, and `code` may carry a Blob, which JSON can't hold.",
++  "description": "The messages between a frame and its parent, the window that made it (docs/sandbox-protocol.md), version 2. `@compmd/render`'s frame protocol travels on the same port beside them. `host` carries a MessagePort in the message's ports, and `code` may carry a Blob, which JSON can't hold.",
+   "oneOf": [{ "$ref": "#/$defs/toFrame" }, { "$ref": "#/$defs/fromFrame" }],
+   "$defs": {
+     "toFrame": {
+@@ -18,7 +18,8 @@
+         { "$ref": "#/$defs/compile" },
+         { "$ref": "#/$defs/observe" },
+         { "$ref": "#/$defs/fetched" },
+-        { "$ref": "#/$defs/imagesAllowed" }
++        { "$ref": "#/$defs/imagesAllowed" },
++        { "$ref": "#/$defs/highlighted" }
+       ]
+     },
+     "fromFrame": {
+@@ -38,19 +39,21 @@
+         { "$ref": "#/$defs/observed" },
+         { "$ref": "#/$defs/image" },
+         { "$ref": "#/$defs/allowOrigin" },
++        { "$ref": "#/$defs/highlight" },
+         { "$ref": "#/$defs/settled" }
+       ]
+     },
+     "componentLevel": { "description": "A component's trust level.", "enum": ["strict", "permissive", "trusted"] },
+     "print": { "description": "Each use of the component prints its fallback (spec §7.3, §14); absent when it prints as drawn.", "const": "fallback" },
+     "level": {
+-      "description": "The frame's level, first and once; for a permissive frame, the network directives of its second policy (connect-src, img-src, font-src, media-src), which it adds before anything else; and the host's own URL schemes, which the links and images it renders may use (spec §15).",
++      "description": "The frame's level, first and once; for a permissive frame, the network directives of its second policy (connect-src, img-src, font-src, media-src), which it adds before anything else; the host's own URL schemes, which the links and images it renders may use (spec §15); and how long it waits for an answer to its `highlight`, in ms (5000 without it).",
+       "type": "object",
+       "properties": {
+         "type": { "const": "level" },
+         "level": { "enum": ["strict", "permissive"] },
+         "policy": { "type": "string" },
+-        "schemes": { "type": "array", "items": { "type": "string" } }
++        "schemes": { "type": "array", "items": { "type": "string" } },
++        "timeout": { "type": "number", "exclusiveMinimum": 0 }
+       },
+       "required": ["type", "level"],
+       "additionalProperties": false
+@@ -335,6 +338,42 @@
+       "required": ["type", "origin"],
+       "additionalProperties": false
+     },
++    "highlight": {
++      "description": "A frame asks for the tokens of a code block of its page or part, by its text and fence language (\"\" for none), `id` its own count (docs/host-highlighter.md). Code of the frame's level may have asked: its parent answers only for a block of the trees, splices and parts it sent the frame, and a parent that isn't the host's page asks its own parent.",
++      "type": "object",
++      "properties": { "type": { "const": "highlight" }, "id": { "type": "integer" }, "code": { "type": "string" }, "language": { "type": "string" } },
++      "required": ["type", "id", "code", "language"],
++      "additionalProperties": false
++    },
++    "highlighted": {
++      "description": "The answer to `highlight` with the same `id`: each line's tokens, whose texts joined are the line, or no `lines` for a language the host's highlighter doesn't cover, a block it didn't send, or a failure. The frame draws them only when they are the block's text.",
++      "type": "object",
++      "properties": {
++        "type": { "const": "highlighted" },
++        "id": { "type": "integer" },
++        "lines": { "type": "array", "items": { "type": "array", "items": { "$ref": "#/$defs/codeToken" } } }
++      },
++      "required": ["type", "id"],
++      "additionalProperties": false
++    },
++    "codeToken": {
++      "description": "A piece of a line's text, with its colour in each colour scheme as CSS colours, and its style.",
++      "type": "object",
++      "properties": {
++        "text": { "type": "string" },
++        "color": {
++          "type": "object",
++          "properties": { "light": { "type": "string" }, "dark": { "type": "string" } },
++          "required": ["light", "dark"],
++          "additionalProperties": false
++        },
++        "italic": { "type": "boolean" },
++        "bold": { "type": "boolean" },
++        "underline": { "type": "boolean" }
++      },
++      "required": ["text"],
++      "additionalProperties": false
++    },
+     "frameId": { "description": "A frame by its path from the window that recorded it: empty for that window itself, `2` for its second frame, `2/1` for that frame's first.", "type": "string", "pattern": "^([0-9]+(/[0-9]+)*)?$" },
+     "observedEvent": {
+       "description": "One thing a window's observer saw, at `at`, in milliseconds since the epoch.",
+diff --git a/npm-packages/sandbox/scripts/frames.ts b/npm-packages/sandbox/scripts/frames.ts
+index c81c488..e6fc8e1 100644
+--- a/npm-packages/sandbox/scripts/frames.ts
++++ b/npm-packages/sandbox/scripts/frames.ts
+@@ -1,6 +1,6 @@
+-// Builds what the package ships for its frame documents into `dist/frames/`: the frame runtime, with the compilers,
+-// Shiki and Temml as chunks it loads when needed; `highlight.js` and `math.js`, which a host-mode page loads Shiki and
+-// Temml by; and the runtimes every frame shares through its import map. `buildFrames` then writes the documents for a
++// Builds what the package ships for its frame documents into `dist/frames/`: the frame runtime, with the compilers and
++// Temml as chunks it loads when needed; `highlight.js` and `math.js`, which the host's page loads Shiki (in both modes)
++// and Temml (in host mode) by; and the runtimes every frame shares through its import map. `buildFrames` then writes the documents for a
+ // host's origin.
+ 
+ import { svelte } from "@sveltejs/vite-plugin-svelte";
+@@ -34,6 +34,8 @@ await build({
+       // `highlight.js` and `math.js` are what a host-mode page imports from here, so Shiki and Temml are built once,
+       // their chunks shared with the runtime's.
+       input: { runtime: join(ROOT, "src/frame/runtime.ts"), highlight: join(ROOT, "src/highlight/highlight.ts"), math: join(ROOT, "src/math.ts") },
++      // A page imports `highlight.js` and `math.js` by their exports, which no other entry imports: they stay.
++      preserveEntrySignatures: "strict",
+       // The runtimes stay imports, for the frame's import map: one React and one Svelte, whatever loads them.
+       external: [...SHARED],
+       output: { format: "es", entryFileNames: "[name].js", chunkFileNames: "chunks/[name]-[hash].js" },
+diff --git a/npm-packages/sandbox/src/build/policy.test.ts b/npm-packages/sandbox/src/build/policy.test.ts
+index 4b147e1..b410b08 100644
+--- a/npm-packages/sandbox/src/build/policy.test.ts
++++ b/npm-packages/sandbox/src/build/policy.test.ts
+@@ -6,10 +6,10 @@ const map = '{"imports":{"react":"./libs/react@19.3.0/index.js"}}';
+ const hash = createHash("sha256").update(map).digest("base64");
+ 
+ describe("the frame documents' policies", () => {
+-  it("lets a strict frame run the frames' scripts, compiled components and its import map, compile WebAssembly, and reach nothing", () => {
++  it("lets a strict frame run the frames' scripts, compiled components and its import map, and reach nothing, nor compile WebAssembly", () => {
+     expect(strictPolicy(map).split("; ")).toEqual([
+       "default-src 'none'",
+-      `script-src 'self' blob: 'sha256-${hash}' 'wasm-unsafe-eval'`,
++      `script-src 'self' blob: 'sha256-${hash}'`,
+       "style-src 'self' 'unsafe-inline'",
+       "object-src 'none'",
+       "base-uri 'none'",
+@@ -24,7 +24,7 @@ describe("the frame documents' policies", () => {
+   it("leaves a permissive frame's network and nested frames to its second policy", () => {
+     const policy = permissivePolicy(map).split("; ");
+     expect(policy).toEqual([
+-      `script-src 'self' blob: 'sha256-${hash}' 'wasm-unsafe-eval'`,
++      `script-src 'self' blob: 'sha256-${hash}'`,
+       "style-src 'self' 'unsafe-inline'",
+       "object-src 'none'",
+       "base-uri 'none'",
+@@ -40,7 +40,7 @@ describe("the frame documents' policies", () => {
+     const source = "app://localhost/frames/";
+     expect(strictPolicy(map, source).split("; ")).toEqual([
+       "default-src 'none'",
+-      `script-src 'self' ${source} blob: 'sha256-${hash}' 'wasm-unsafe-eval'`,
++      `script-src 'self' ${source} blob: 'sha256-${hash}'`,
+       `style-src 'self' ${source} 'unsafe-inline'`,
+       "object-src 'none'",
+       "base-uri 'none'",
+diff --git a/npm-packages/sandbox/src/build/policy.ts b/npm-packages/sandbox/src/build/policy.ts
+index b4835c5..0749b07 100644
+--- a/npm-packages/sandbox/src/build/policy.ts
++++ b/npm-packages/sandbox/src/build/policy.ts
+@@ -7,13 +7,12 @@ import { createHash } from "node:crypto";
+ import { withSource } from "../frame/source.ts";
+ 
+ /**
+- * The directives both documents start with: scripts from the frames' origin and the import map, compiling
+- * WebAssembly (for the highlighter's Oniguruma, docs/webassembly-in-the-frames.md: it reaches no more than the
+- * frame's scripts), styles, no objects.
++ * The directives both documents start with: scripts from the frames' origin and the import map, styles, no objects.
++ * No WebAssembly: the host's page highlights the frames' code (docs/host-highlighter.md, decision 7).
+  */
+ function common(importMap: string): string[] {
+   const hash = createHash("sha256").update(importMap).digest("base64");
+-  return [`script-src 'self' blob: 'sha256-${hash}' 'wasm-unsafe-eval'`, "style-src 'self' 'unsafe-inline'", "object-src 'none'", "base-uri 'none'", "form-action 'none'", "worker-src 'none'"];
++  return [`script-src 'self' blob: 'sha256-${hash}'`, "style-src 'self' 'unsafe-inline'", "object-src 'none'", "base-uri 'none'", "form-action 'none'", "worker-src 'none'"];
+ }
+ 
+ /**
+diff --git a/npm-packages/sandbox/src/frame-url.ts b/npm-packages/sandbox/src/frame-url.ts
+new file mode 100644
+index 0000000..072309a
+--- /dev/null
++++ b/npm-packages/sandbox/src/frame-url.ts
+@@ -0,0 +1,8 @@
++/**
++ * The file `name` where the host serves the frame documents, `base`, full or relative to the page: a frame document,
++ * or a module the host's page loads from there.
++ *
++ * @example
++ * frameUrl("/compmd/frames/", "strict.html"); // "https://app.example/compmd/frames/strict.html"
++ */
++export const frameUrl = (base: string, name: "strict.html" | "permissive.html" | "highlight.js" | "math.js"): string => new URL(name, new URL(base, location.href)).href;
+diff --git a/npm-packages/sandbox/src/frame/runtime.ts b/npm-packages/sandbox/src/frame/runtime.ts
+index 15cf951..08dbf6e 100644
+--- a/npm-packages/sandbox/src/frame/runtime.ts
++++ b/npm-packages/sandbox/src/frame/runtime.ts
+@@ -17,7 +17,6 @@ import { frameUse } from "../use.ts";
+ import { compile } from "./compile.ts";
+ import { Components } from "./components.ts";
+ import { load } from "./load.ts";
+-import { shikiHighlight } from "../highlight/highlight.ts";
+ import { temmlMath } from "../math.ts";
+ import { narrowed, networkPolicy } from "./narrow.ts";
+ import { withSource } from "./source.ts";
+@@ -35,9 +34,6 @@ for (const name of ["RTCPeerConnection", "webkitRTCPeerConnection", "RTCDataChan
+ 
+ /** Math typeset by Temml, which loads the first time a page has math. */
+ const math = temmlMath();
+-/** Code blocks highlighted by Shiki, which loads the first time a page has a code block. */
+-// Oniguruma where the frame compiles WebAssembly, which its policy allows (docs/webassembly-in-the-frames.md).
+-const highlight = shikiHighlight({ webAssembly: true });
+ 
+ /** Each component's stylesheet, adopted by the frame's document. */
+ const sheets = new Map<string, CSSStyleSheet>();
+@@ -174,6 +170,11 @@ function start(port: MessagePort): void {
+   /** The host's stylesheets, which this frame's nested frames get too. */
+   let stylesheets: readonly string[] = [];
+   // Every callback below runs on a message, after `parent` is set at the end.
++  /**
++   * Code blocks highlighted by the host's page, which the frame asks for each block's tokens: it loads no highlighter
++   * (docs/host-highlighter.md). A nested frame's requests go up the same way, as this frame's own.
++   */
++  const highlight = (code: string, language: string) => parent.highlight(code, language);
+   /** The components' code loading, which a frame waits for before it has drawn. */
+   let loading: Promise<void> = Promise.resolve();
+   /** The frame's size, reported again before it says it settled. */
+@@ -223,6 +224,7 @@ function start(port: MessagePort): void {
+         ...(component.example === undefined ? {} : { example: component.example }),
+         styles: stylesheets,
+         schemes,
++        highlight,
+         ping: { every: 1000, timeout: 5000 },
+         observer,
+         on: {
+diff --git a/npm-packages/sandbox/src/frames-highlight.test.ts b/npm-packages/sandbox/src/frames-highlight.test.ts
+new file mode 100644
+index 0000000..6bfebce
+--- /dev/null
++++ b/npm-packages/sandbox/src/frames-highlight.test.ts
+@@ -0,0 +1,50 @@
++import type { CodeLines, ExpandedNode } from "@compmd/render";
++import { describe, expect, it } from "vitest";
++import { forSent, oneBlockATask, sentBlocks } from "./frames-highlight.ts";
++
++const code = (value: string, lang: string): ExpandedNode => ({ type: "code", value, lang });
++const plain = (text: string): CodeLines => text.split("\n").map((line) => [{ text: line }]);
++
++describe("oneBlockATask", () => {
++  it("asks the highlighter one block at a time, in the order the frames ask, a task apart", async () => {
++    const asked: string[] = [];
++    let running = 0;
++    let most = 0;
++    const highlight = oneBlockATask(async (text) => {
++      running += 1;
++      most = Math.max(most, running);
++      asked.push(text);
++      await Promise.resolve();
++      running -= 1;
++      return plain(text);
++    });
++    const answers = await Promise.all(["a", "b", "c"].map((text) => highlight(text, "ts")));
++    expect(asked).toEqual(["a", "b", "c"]);
++    expect(most).toBe(1);
++    expect(answers).toEqual([plain("a"), plain("b"), plain("c")]);
++  });
++
++  it("answers none for a language it doesn't cover, or when it fails, and goes on with the next", async () => {
++    const highlight = oneBlockATask((text, language) => {
++      if (language === "boom") throw new Error("no grammar");
++      return language === "ts" ? plain(text) : undefined;
++    });
++    expect(await Promise.all([highlight("a", "boom"), highlight("b", "cobol"), highlight("c", "ts")])).toEqual([undefined, undefined, plain("c")]);
++  });
++});
++
++describe("forSent", () => {
++  it("asks only for a block of what was sent, by its text and language", async () => {
++    const blocks = sentBlocks();
++    blocks.rendered([code("let a = 1;", "ts")]);
++    const asked: string[] = [];
++    const highlight = forSent(blocks, (text, language) => {
++      asked.push(`${language}:${text}`);
++      return Promise.resolve(plain(text));
++    });
++    expect(await highlight("let a = 1;", "ts")).toEqual(plain("let a = 1;"));
++    expect(await highlight("let a = 1;", "js")).toBeUndefined();
++    expect(await highlight("secret text", "ts")).toBeUndefined();
++    expect(asked).toEqual(["ts:let a = 1;"]);
++  });
++});
+diff --git a/npm-packages/sandbox/src/frames-highlight.ts b/npm-packages/sandbox/src/frames-highlight.ts
+new file mode 100644
+index 0000000..bb0b3e2
+--- /dev/null
++++ b/npm-packages/sandbox/src/frames-highlight.ts
+@@ -0,0 +1,39 @@
++// The host's page highlights its frames' code blocks (docs/host-highlighter.md): each frame asks for a block's tokens,
++// and the page answers with its highlighter, only for a block of what it sent that frame, and one block a task for all
++// the frames of the window together, so many frames asking at once make no long frame of their requests.
++
++import { codeBlocks, nextTask, type CodeHighlighter, type CodeLines } from "@compmd/render";
++import { SentNodes } from "./sent-nodes.ts";
++
++/** How a frame's request is answered: a block's tokens, or `undefined`. */
++export type FrameHighlight = (code: string, language: string) => Promise<CodeLines | undefined>;
++
++/** A block's key: its language and text, since the same text in the same language gets the same tokens anywhere. */
++const blockKey = (code: string, language: string): string => `${language}\u0000${code}`;
++
++/** The code blocks of the trees, splices and parts a parent sent one frame. */
++export const sentBlocks = (): SentNodes<string> => new SentNodes((nodes) => codeBlocks(nodes).map(({ code, language }) => blockKey(code, language)));
++
++/** The window's requests, answered one after another, each a task after the one before. */
++let queue: Promise<unknown> = Promise.resolve();
++
++/**
++ * `highlight`, asked one block a task, in the order the frames ask, across every frame of the window. A failure, or a
++ * language it doesn't cover, is `undefined`.
++ *
++ * @example
++ * connectChild(port, { level: "strict", binds, highlight: forSent(blocks, oneBlockATask(highlight)) });
++ */
++export function oneBlockATask(highlight: CodeHighlighter): FrameHighlight {
++  return (code, language) => {
++    const answer = queue.then(nextTask).then(async () => (await highlight(code, language)) ?? undefined);
++    const settled = answer.catch(() => undefined);
++    queue = settled;
++    return settled;
++  };
++}
++
++/** `highlight` for the blocks `blocks` holds; any other is `undefined`, unasked: code in the frame may have asked. */
++export function forSent(blocks: SentNodes<string>, highlight: FrameHighlight): FrameHighlight {
++  return (code, language) => (blocks.has(blockKey(code, language)) ? highlight(code, language) : Promise.resolve(undefined));
++}
+diff --git a/npm-packages/sandbox/src/from-frames.ts b/npm-packages/sandbox/src/from-frames.ts
+index 6d9626c..16607fd 100644
+--- a/npm-packages/sandbox/src/from-frames.ts
++++ b/npm-packages/sandbox/src/from-frames.ts
+@@ -3,7 +3,7 @@
+ // copy, which the browser caches once.
+ 
+ import type { CodeHighlighter, MathRenderer } from "@compmd/render";
+-import { frameUrl } from "./host/runtime.ts";
++import { frameUrl } from "./frame-url.ts";
+ 
+ /** A module of the frames' files, imported by its URL: the app's bundler leaves it alone. */
+ const imported = <T>(url: string): Promise<T> => import(/* @vite-ignore */ url) as Promise<T>;
+diff --git a/npm-packages/sandbox/src/host/runtime.ts b/npm-packages/sandbox/src/host/runtime.ts
+index e5efc9d..b2ff107 100644
+--- a/npm-packages/sandbox/src/host/runtime.ts
++++ b/npm-packages/sandbox/src/host/runtime.ts
+@@ -4,7 +4,10 @@
+ // components and to permissive frames of packs given it, sends them the host's events, and stops a frame that stops answering.
+ 
+ import type { HostComponent, Trust } from "@compmd/processor";
+-import { createRegion, ownSchemes, type ExpandedInput, type ExpandedUse, type Mount } from "@compmd/render";
++import { createRegion, ownSchemes, type CodeHighlighter, type ExpandedInput, type ExpandedUse, type Mount } from "@compmd/render";
++import { frameUrl } from "../frame-url.ts";
++import { oneBlockATask, type FrameHighlight } from "../frames-highlight.ts";
++import { framesHighlight } from "../from-frames.ts";
+ import { localHost, serveHost, type HostApi, type HostClient } from "../host-api.ts";
+ import { ImageGate, type ImageGateOptions } from "../image-gate.ts";
+ import { MountSet } from "../mount-set.ts";
+@@ -53,6 +56,13 @@ export interface HostRuntimeOptions {
+    * loads from its `src` in the host's page.
+    */
+   ownImages?: (src: string) => Promise<Blob | undefined>;
++  /**
++   * Highlights the document's code blocks, in the host's page and for every frame, which asks the host's page for each
++   * block's tokens (docs/host-highlighter.md): a host whose editor highlights with its own engine gives it here, so
++   * its pages show the same colours. Without it, Shiki from the frames' `highlight.js`, loaded the first time a page
++   * has a code block.
++   */
++  highlight?: CodeHighlighter;
+   /**
+    * Who asks the reader about the origins of the document's remote images, and where the answers are kept (spec §15):
+    * the same as the host gives `loadData`, so one answer covers an origin's data and images. Each image of an origin
+@@ -85,12 +95,6 @@ export interface HostEvents {
+ 
+ const messageOf = (error: unknown): string => (error instanceof Error ? error.message : String(error));
+ 
+-/**
+- * The file `name` where the host serves the frame documents, `base`, full or relative to the page: a frame document,
+- * or a module a host-mode page loads from there.
+- */
+-export const frameUrl = (base: string, name: "strict.html" | "permissive.html" | "highlight.js" | "math.js"): string => new URL(name, new URL(base, location.href)).href;
+-
+ /**
+  * `code` with its component's `print`, which the frames read to print its uses' fallbacks (spec §7.3), and its
+  * example's number, which the renderers find an example's components by (spec §7.8).
+@@ -133,6 +137,10 @@ export class HostRuntime {
+   #printing = new Set<string>();
+   /** The gate the document's images pass, in the host's page and its page frame (spec §15). */
+   readonly gate: ImageGate;
++  /** What highlights the document's code blocks in the host's page. */
++  readonly highlight: CodeHighlighter;
++  /** What answers a frame's code blocks: `highlight`, one block a task across the window's frames. */
++  readonly framesHighlight: FrameHighlight;
+ 
+   /** @throws Error when `options.ownSchemes` names something that isn't a scheme, or one a host can't name. */
+   constructor(options: HostRuntimeOptions, events: HostEvents) {
+@@ -140,6 +148,8 @@ export class HostRuntime {
+     this.#events = events;
+     this.schemes = ownSchemes(options.ownSchemes ?? []);
+     this.gate = new ImageGate(options.origins);
++    this.highlight = options.highlight ?? framesHighlight(options.base);
++    this.framesHighlight = oneBlockATask(this.highlight);
+     this.#styles = options.stylesheets ?? [];
+     this.#compiled = options.compiled === undefined ? cacheStorage() : options.compiled;
+     this.#local = options.host ? localHost(options.host) : undefined;
+@@ -391,6 +401,7 @@ export class HostRuntime {
+         : {}),
+       styles: this.#styles,
+       schemes: this.schemes,
++      highlight: this.framesHighlight,
+       ping: { every: 1000, timeout: this.#options.timeout ?? 5000 },
+       ...(this.#options.observer ? { observer: this.#options.observer } : {}),
+       on: {
+diff --git a/npm-packages/sandbox/src/images.ts b/npm-packages/sandbox/src/images.ts
+index e464506..a5f5f6a 100644
+--- a/npm-packages/sandbox/src/images.ts
++++ b/npm-packages/sandbox/src/images.ts
+@@ -6,6 +6,7 @@
+ import { imageSources, urlScheme, type ExpandedRoot, type ImageSource, type Refused, type Splice } from "@compmd/render";
+ import { ImageGate } from "./image-gate.ts";
+ import { originOf } from "./origins.ts";
++import { SentNodes } from "./sent-nodes.ts";
+ 
+ /** How long a frame may not ask about an origin again after the reader refused it, in ms (docs/remote-images.md, decision 6). */
+ export const ASK_AGAIN_MS = 60_000;
+@@ -36,9 +37,7 @@ export class PageImages {
+   readonly #own: OwnImages;
+   readonly #gate: ImageGate;
+   /** The images' `src`, as the frame asks for them. */
+-  #sources = new Set<string>();
+-  /** Splices as a processor's JSON text, read only once the frame asks for an image they may have. */
+-  #unread: string[] = [];
++  readonly #sources: SentNodes<string>;
+   /** When the reader last refused an origin the frame asked about, by origin. */
+   readonly #refusedAt = new Map<string, number>();
+ 
+@@ -52,20 +51,17 @@ export class PageImages {
+     this.#base = base;
+     this.#own = own;
+     this.#gate = gate;
++    this.#sources = new SentNodes((nodes) => imageSources(nodes, own.schemes));
+   }
+ 
+   /** The frame renders `tree`: its images are the frame's now. */
+   rendered(tree: ExpandedRoot): void {
+-    this.#sources = new Set(imageSources(tree.children, this.#own.schemes));
+-    this.#unread = [];
++    this.#sources.rendered(tree.children);
+   }
+ 
+   /** The frame applies `splices`: their images are the frame's too. */
+   spliced(splices: readonly (Splice | string)[]): void {
+-    for (const splice of splices) {
+-      if (typeof splice === "string") this.#unread.push(splice);
+-      else this.#add(splice);
+-    }
++    this.#sources.spliced(splices);
+   }
+ 
+   /**
+@@ -74,7 +70,7 @@ export class PageImages {
+    * schemes comes from the host; any other is fetched without credentials and without a `Referer`.
+    */
+   async file(src: string): Promise<Blob | Refused | undefined> {
+-    if (!this.#has(src)) return undefined;
++    if (!this.#sources.has(src)) return undefined;
+     try {
+       if (isOwn(src, this.#own.schemes)) return imageOnly(await this.#own.file?.(src));
+       const decision = await this.#gate.decide(src);
+@@ -91,8 +87,7 @@ export class PageImages {
+    * within `ASK_AGAIN_MS` of refusing it.
+    */
+   async allowOrigin(origin: string, now: () => number = Date.now): Promise<void> {
+-    this.#readSplices();
+-    if (![...this.#sources].some((src) => originOf(src) === origin)) return;
++    if (!this.#sources.some((src) => originOf(src) === origin)) return;
+     const refused = this.#refusedAt.get(origin);
+     if (refused !== undefined && now() - refused < ASK_AGAIN_MS) return;
+     if (!(await this.#gate.allow(origin))) this.#refusedAt.set(origin, now());
+@@ -102,22 +97,6 @@ export class PageImages {
+     const response = await this.#fetch(new URL(src, this.#base), { credentials: "omit", referrerPolicy: "no-referrer" });
+     return response.ok ? response.blob() : undefined;
+   }
+-
+-  #has(src: string): boolean {
+-    if (this.#sources.has(src)) return true;
+-    this.#readSplices();
+-    return this.#sources.has(src);
+-  }
+-
+-  /** Adds the images of the splices given as text, which were left unread until needed. */
+-  #readSplices(): void {
+-    for (const splice of this.#unread) this.#add(JSON.parse(splice) as Splice);
+-    this.#unread = [];
+-  }
+-
+-  #add(splice: Splice): void {
+-    for (const src of imageSources(splice.nodes, this.#own.schemes)) this.#sources.add(src);
+-  }
+ }
+ 
+ /** `file` when it is an image; a file of another type isn't shown. */
+diff --git a/npm-packages/sandbox/src/pages.ts b/npm-packages/sandbox/src/pages.ts
+index c36fee4..d7b19cf 100644
+--- a/npm-packages/sandbox/src/pages.ts
++++ b/npm-packages/sandbox/src/pages.ts
+@@ -3,8 +3,10 @@
+ 
+ import { createPage, reveal, type Change, type ExpandedInput, type ExpandedRoot, type Line, type Page, type Splice } from "@compmd/render";
+ import { connectFrame, type FrameConnection } from "@compmd/render/frame";
+-import { framesHighlight, framesMath } from "./from-frames.ts";
+-import { frameUrl, type HostRuntime } from "./host/runtime.ts";
++import { frameUrl } from "./frame-url.ts";
++import { forSent, sentBlocks } from "./frames-highlight.ts";
++import { framesMath } from "./from-frames.ts";
++import type { HostRuntime } from "./host/runtime.ts";
+ import { hostImages, PageImages } from "./images.ts";
+ import { codeFor } from "./mounts.ts";
+ import type { Observer } from "./observer.ts";
+@@ -53,10 +55,10 @@ export function hostPage(container: HTMLElement, runtime: HostRuntime, options:
+   const page: Page = createPage(container, {
+     components: runtime.mounts,
+     examples: runtime.examples,
+-    // The frames' own Temml and Shiki, from their files, so math and code look the same in both modes, and the app
+-    // ships one copy of each, which this page and its frames share.
++    // The frames' own Temml, from its file, so math looks the same in both modes, and the app ships one copy of it;
++    // code as the runtime highlights it for every frame too.
+     math: framesMath(options.base),
+-    highlight: framesHighlight(options.base),
++    highlight: runtime.highlight,
+     ownSchemes: runtime.schemes,
+     printsFallback: (name) => runtime.printsFallback(name),
+     // Images of the host's own schemes from the host's files; remote ones once the reader allows their origin (spec §15).
+@@ -157,6 +159,8 @@ export function framePage(container: HTMLElement, runtime: HostRuntime, options:
+   /** The document's inputs, which its page may set, from the last tree or splice. */
+   let inputs: Readonly<Record<string, ExpandedInput>> = {};
+   const images = new PageImages(fetch, document.baseURI, { schemes: runtime.schemes, file: options.ownImages }, runtime.gate);
++  /** The code blocks of the trees and splices sent, which alone the frame gets tokens for. */
++  const blocks = sentBlocks();
+   const { port1, port2 } = new MessageChannel();
+   const id = observer.frame("strict", { kind: "page" });
+   const port = observer.port(id, port1);
+@@ -167,6 +171,7 @@ export function framePage(container: HTMLElement, runtime: HostRuntime, options:
+     ping: { every: 1000, timeout: options.timeout ?? 5000 },
+     image: (url) => images.file(url),
+     allowOrigin: (origin) => void images.allowOrigin(origin),
++    highlight: forSent(blocks, runtime.framesHighlight),
+   });
+   const unfollowAllowed = runtime.gate.onAllowed((origin) => {
+     child.imagesAllowed(origin);
+@@ -222,12 +227,14 @@ export function framePage(container: HTMLElement, runtime: HostRuntime, options:
+     render: (tree, change) => {
+       inputs = tree.inputs ?? {};
+       images.rendered(tree);
++      blocks.rendered(tree.children);
+       frame.render(tree, change);
+     },
+     splice: (splices, change, spliceOptions = {}) => {
+       for (const splice of splices) if (typeof splice !== "string" && splice.inputs) inputs = splice.inputs;
+       if (spliceOptions.inputs) inputs = spliceOptions.inputs;
+       images.spliced(splices);
++      blocks.spliced(splices);
+       frame.splice(splices, change, spliceOptions.replace ? { replace: true } : {});
+     },
+     code: () => {
+diff --git a/npm-packages/sandbox/src/protocol/frame-end.test.ts b/npm-packages/sandbox/src/protocol/frame-end.test.ts
+index 45868bc..3cd59c7 100644
+--- a/npm-packages/sandbox/src/protocol/frame-end.test.ts
++++ b/npm-packages/sandbox/src/protocol/frame-end.test.ts
+@@ -214,4 +214,39 @@ describe("the frame's end (serveParent)", () => {
+     parent.postMessage({ type: "fetched", url: "https://photos.example.com/a.png", refused: "https://photos.example.com" });
+     expect(await refused).toEqual({ refused: "https://photos.example.com" });
+   });
++
++  it("asks its parent for a code block's tokens by an id of its own, and takes each answer by its id, in any order", async () => {
++    const { parent, frame, got } = frameChannel();
++    const end = serveParent(frame, { level: () => undefined });
++    parent.postMessage({ type: "level", level: "strict" });
++    await settle();
++    const ts = end.highlight("let a", "ts");
++    const unknown = end.highlight("x", "cobol");
++    const forged = end.highlight("y", "ts");
++    await settle();
++    expect(got.slice(1)).toEqual([
++      { type: "highlight", id: 1, code: "let a", language: "ts" },
++      { type: "highlight", id: 2, code: "x", language: "cobol" },
++      { type: "highlight", id: 3, code: "y", language: "ts" },
++    ]);
++    const lines = [[{ text: "let ", color: { light: "#d73a49", dark: "#f97583" } }, { text: "a" }]];
++    parent.postMessage({ type: "highlighted", id: 2 });
++    parent.postMessage({ type: "highlighted", id: 1, lines });
++    parent.postMessage({ type: "highlighted", id: 3, lines: "not lines" });
++    expect(await ts).toEqual(lines);
++    expect(await unknown).toBeUndefined();
++    expect(await forged).toBeUndefined();
++  });
++
++  it("keeps a block's text when its parent doesn't answer within the level's timeout", async () => {
++    const { parent, frame } = frameChannel();
++    const end = serveParent(frame, { level: () => undefined });
++    parent.postMessage({ type: "level", level: "strict", timeout: 10 });
++    await settle();
++    const waited = end.highlight("let a", "ts");
++    await new Promise((resolve) => setTimeout(resolve, 30));
++    // A late answer finds nothing waiting.
++    parent.postMessage({ type: "highlighted", id: 1, lines: [[{ text: "let a" }]] });
++    expect(await waited).toBeUndefined();
++  });
+ });
+diff --git a/npm-packages/sandbox/src/protocol/frame-end.ts b/npm-packages/sandbox/src/protocol/frame-end.ts
+index 31376bf..b8d1fa3 100644
+--- a/npm-packages/sandbox/src/protocol/frame-end.ts
++++ b/npm-packages/sandbox/src/protocol/frame-end.ts
+@@ -1,7 +1,8 @@
+ // The frame's end of the protocol: it believes its port, which its parent gave it, and keeps the order the protocol
+ // asks for. The level comes first and once: before it, the frame acts on nothing, since its policy isn't narrowed yet.
+ 
+-import { isChange, isMessage, SANDBOX_VERSION, TO_FRAME, type CompileRequest, type ComponentCode, type ErrorReason, type FromFrame, type Level, type Part, type Port, type Scheme, type ToFrame } from "./messages.ts";
++import type { CodeLines } from "@compmd/render";
++import { HIGHLIGHT_MS, isChange, isMessage, SANDBOX_VERSION, TO_FRAME, type CompileRequest, type ComponentCode, type ErrorReason, type FromFrame, type Level, type Part, type Port, type Scheme, type ToFrame } from "./messages.ts";
+ import type { Observed } from "./observed.ts";
+ 
+ /** What the frame does with each message; the frame runtime implements it. */
+@@ -51,6 +52,11 @@ export interface FrameEnd {
+   image(url: string): Promise<Blob | { refused: string } | undefined>;
+   /** The reader asks to see the images of `origin`: the parent asks them, never the frame. */
+   allowOrigin(origin: string): void;
++  /**
++   * Asks the parent for the tokens of a code block of what it sent: a `CodeHighlighter` for the frame's renderer.
++   * `undefined` when the parent gives none, or doesn't answer within the level's `timeout`.
++   */
++  highlight(code: string, language: string): Promise<CodeLines | undefined>;
+   /** How many messages that change what the frame shows it has taken. */
+   readonly seen: number;
+   /** The frame has settled after the first `seen` of them. */
+@@ -75,6 +81,10 @@ export function serveParent(port: Port, handlers: FrameHandlers): FrameEnd {
+   let level: Level | undefined;
+   /** The images asked for and not answered yet, by URL. */
+   const images = new Map<string, ((image: Blob | { refused: string } | undefined) => void)[]>();
++  /** The code blocks asked for and not answered yet, by the request's `id`. */
++  const blocks = new Map<number, (lines: CodeLines | undefined) => void>();
++  let blocksAsked = 0;
++  let highlightTimeout = HIGHLIGHT_MS;
+   let seen = 0;
+   /** Counts a change, `@compmd/render`'s too, which its own listener on the port handles after this one. */
+   const counting = ({ data }: { data: unknown }) => {
+@@ -89,6 +99,7 @@ export function serveParent(port: Port, handlers: FrameHandlers): FrameEnd {
+     if (data.type === "level") {
+       if (level !== undefined) return;
+       handlers.level(data.level, data.policy, Array.isArray(data.schemes) ? data.schemes.filter((scheme) => typeof scheme === "string") : []);
++      if (typeof data.timeout === "number" && data.timeout > 0) highlightTimeout = data.timeout;
+       level = data.level;
+       return;
+     }
+@@ -142,6 +153,13 @@ export function serveParent(port: Port, handlers: FrameHandlers): FrameEnd {
+       case "images-allowed":
+         if (typeof data.origin === "string") handlers.imagesAllowed?.(data.origin);
+         break;
++      case "highlighted": {
++        const answered = blocks.get(data.id);
++        blocks.delete(data.id);
++        // The renderer draws tokens only when their text is the block's: anything else keeps the text.
++        answered?.(Array.isArray(data.lines) ? data.lines : undefined);
++        break;
++      }
+     }
+   };
+   port.addEventListener("message", listener);
+@@ -182,6 +200,19 @@ export function serveParent(port: Port, handlers: FrameHandlers): FrameEnd {
+     allowOrigin: (origin) => {
+       post({ type: "allow-origin", origin });
+     },
++    highlight: (code, language) =>
++      new Promise((resolve) => {
++        const id = ++blocksAsked;
++        const timer = setTimeout(() => {
++          blocks.delete(id);
++          resolve(undefined);
++        }, highlightTimeout);
++        blocks.set(id, (lines) => {
++          clearTimeout(timer);
++          resolve(lines);
++        });
++        post({ type: "highlight", id, code, language });
++      }),
+     get seen() {
+       return seen;
+     },
+diff --git a/npm-packages/sandbox/src/protocol/messages.ts b/npm-packages/sandbox/src/protocol/messages.ts
+index fb93a69..d5e7428 100644
+--- a/npm-packages/sandbox/src/protocol/messages.ts
++++ b/npm-packages/sandbox/src/protocol/messages.ts
+@@ -1,10 +1,13 @@
+ // The sandbox's frame protocol (docs/sandbox-protocol.md): the messages between a frame and its parent, the window
+ // that made it. They travel on the port `@compmd/render`'s frame protocol uses too, beside its own.
+ 
+-import type { ExpandedInput, ExpandedUse } from "@compmd/render";
++import type { CodeLines, ExpandedInput, ExpandedUse } from "@compmd/render";
+ 
+-/** The protocol's version, in `hello` and `ready`: a frame of another version gets nothing. */
+-export const SANDBOX_VERSION = 1;
++/**
++ * The protocol's version, in `hello` and `ready`: a frame of another version gets nothing. 2 added `highlight` and
++ * `highlighted`, and the level's `timeout`.
++ */
++export const SANDBOX_VERSION = 2;
+ 
+ /** What the parent first posts to the frame's window, with the frame's port. */
+ export const HELLO = "compmd-sandbox";
+@@ -98,7 +101,8 @@ export interface CompileRequest {
+ 
+ /** Messages from a parent to its frame, on the frame's port. `host` carries its port in the message's ports. */
+ export type ToFrame =
+-  | { type: "level"; level: Level; policy?: string; schemes?: readonly string[] }
++  /** `timeout`: how long the frame waits for an answer to its `highlight`, in ms (`HIGHLIGHT_MS` without it). */
++  | { type: "level"; level: Level; policy?: string; schemes?: readonly string[]; timeout?: number }
+   | { type: "code"; components: ComponentCode[] }
+   | { type: "part"; part: Part }
+   | { type: "styles"; urls: string[] }
+@@ -114,7 +118,12 @@ export type ToFrame =
+    */
+   | { type: "fetched"; url: string; image?: Blob; refused?: string }
+   /** The reader allowed the origin `origin`: the frame's images refused for it ask again (spec §15). */
+-  | { type: "images-allowed"; origin: string };
++  | { type: "images-allowed"; origin: string }
++  /**
++   * The answer to the frame's `highlight` with the same `id`: the block's tokens, or none for a language the host's
++   * highlighter doesn't cover, a block the parent didn't send, or a failure (docs/host-highlighter.md).
++   */
++  | { type: "highlighted"; id: number; lines?: CodeLines };
+ 
+ /** Why a component shows its fallback: `@compmd/render`'s reasons, code that didn't load, a level the frame can't hold. */
+ export type ErrorReason = "missing" | "threw" | "failed" | "not-here";
+@@ -156,6 +165,11 @@ export type FromFrame =
+    * its own question, and only about an origin of images it sent the frame (spec §15).
+    */
+   | { type: "allow-origin"; origin: string }
++  /**
++   * A frame asks for the tokens of a code block of its page or part, by its text and fence language, `id` its own
++   * count: it loads no highlighter, and the host's page highlights for it, only a block of what it sent the frame.
++   */
++  | { type: "highlight"; id: number; code: string; language: string }
+   /**
+    * The frame has settled after the first `seen` messages that change what it shows (`CHANGES`): its uses drawn, its
+    * own frames settled and sized, its images and fonts loaded, then a frame with nothing moving.
+@@ -163,8 +177,11 @@ export type FromFrame =
+   | { type: "settled"; seen: number };
+ 
+ /** Every message type, each way: what the schema (`protocol.schema.json`) has too. */
+-export const TO_FRAME: readonly ToFrame["type"][] = ["level", "code", "part", "styles", "scheme", "host", "ping", "compile", "observe", "fetched", "images-allowed"];
+-export const FROM_FRAME: readonly FromFrame["type"][] = ["ready", "loaded", "set", "error", "recovered", "link", "rendered", "size", "pong", "compiled", "failed", "observed", "image", "allow-origin", "settled"];
++export const TO_FRAME: readonly ToFrame["type"][] = ["level", "code", "part", "styles", "scheme", "host", "ping", "compile", "observe", "fetched", "images-allowed", "highlighted"];
++export const FROM_FRAME: readonly FromFrame["type"][] = ["ready", "loaded", "set", "error", "recovered", "link", "rendered", "size", "pong", "compiled", "failed", "observed", "image", "allow-origin", "highlight", "settled"];
++
++/** How long a frame waits for its `highlight` to be answered, in ms, when its level doesn't say: the block keeps its text. */
++export const HIGHLIGHT_MS = 5000;
+ 
+ /**
+  * The messages that change what a frame shows, the sandbox's and `@compmd/render`'s: a parent counts those it sends, and
+diff --git a/npm-packages/sandbox/src/protocol/parent-end.test.ts b/npm-packages/sandbox/src/protocol/parent-end.test.ts
+index 4f6e5ce..bb7bb9d 100644
+--- a/npm-packages/sandbox/src/protocol/parent-end.test.ts
++++ b/npm-packages/sandbox/src/protocol/parent-end.test.ts
+@@ -320,4 +320,30 @@ describe("the parent's end (connectChild)", () => {
+     await settle();
+     expect(none.slice(1)).toEqual([{ type: "fetched", url: "./logo.png" }]);
+   });
++
++  it("answers a frame's `highlight` with the tokens `highlight` gives, by its id, or none: without it, when it fails, or for a forged request", async () => {
++    const { parent, frame, got } = parentChannel();
++    const lines = [[{ text: "let a" }]];
++    const highlight = (code: string) => (code === "let a" ? Promise.resolve(lines) : code === "boom" ? Promise.reject(new Error("no grammar")) : Promise.resolve(undefined));
++    connectChild(parent, { level: "strict", binds: () => false, highlight, ping: { every: 60_000, timeout: 3000 } });
++    frame.postMessage({ type: "ready", sandbox: SANDBOX_VERSION });
++    frame.postMessage({ type: "highlight", id: 1, code: "let a", language: "ts" });
++    frame.postMessage({ type: "highlight", id: 2, code: "boom", language: "ts" });
++    frame.postMessage({ type: "highlight", id: 3, code: "x", language: "cobol" });
++    frame.postMessage({ type: "highlight", id: "4", code: "let a", language: "ts" });
++    await settle();
++    // The level says how long the frame may wait for its answers.
++    expect(got[0]).toEqual({ type: "level", level: "strict", timeout: 3000 });
++    expect(got.slice(1)).toEqual([
++      { type: "highlighted", id: 1, lines },
++      { type: "highlighted", id: 2 },
++      { type: "highlighted", id: 3 },
++    ]);
++    const { parent: alone, frame: asking, got: none } = parentChannel();
++    connectChild(alone, { level: "strict", binds: () => false });
++    asking.postMessage({ type: "ready", sandbox: SANDBOX_VERSION });
++    asking.postMessage({ type: "highlight", id: 1, code: "let a", language: "ts" });
++    await settle();
++    expect(none.slice(1)).toEqual([{ type: "highlighted", id: 1 }]);
++  });
+ });
+diff --git a/npm-packages/sandbox/src/protocol/parent-end.ts b/npm-packages/sandbox/src/protocol/parent-end.ts
+index 3e1d1ea..dc7c2d2 100644
+--- a/npm-packages/sandbox/src/protocol/parent-end.ts
++++ b/npm-packages/sandbox/src/protocol/parent-end.ts
+@@ -1,7 +1,7 @@
+ // The parent's end of the protocol, one per frame it made: it waits for the frame's `ready`, gives it its level first,
+ // checks what the frame sends against the part it gave it, and stops a frame that stops answering.
+ 
+-import { BUSY_MS } from "@compmd/render";
++import { BUSY_MS, type CodeLines } from "@compmd/render";
+ import { FROM_FRAME, isChange, isMessage, SANDBOX_VERSION, type ComponentCode, type ErrorReason, type FromFrame, type Level, type Part, type Port, type Scheme, type ToFrame } from "./messages.ts";
+ 
+ export interface ChildOptions {
+@@ -30,6 +30,11 @@ export interface ChildOptions {
+    * have asked, so the parent asks only about an origin of images it sent the frame.
+    */
+   allowOrigin?(origin: string): void;
++  /**
++   * The tokens of a code block the frame asks for, by its text and language, or `undefined`. Strict code may have
++   * asked, so it gives only blocks of what it sent the frame. Without it, the frame's blocks keep their text.
++   */
++  highlight?(code: string, language: string): Promise<CodeLines | undefined>;
+ }
+ 
+ /**
+@@ -195,6 +200,8 @@ export function connectChild(port: Port, options: ChildOptions): ChildEnd {
+         level: options.level,
+         ...(options.policy === undefined ? {} : { policy: options.policy }),
+         ...(options.schemes?.length ? { schemes: [...options.schemes] } : {}),
++        // A frame waits for its blocks' tokens as long as it may take to answer.
++        ...(options.ping ? { timeout: options.ping.timeout } : {}),
+       } satisfies ToFrame);
+       if (options.host) port.postMessage({ type: "host" } satisfies ToFrame, [options.host]);
+       const queued = waiting;
+@@ -264,6 +271,18 @@ export function connectChild(port: Port, options: ChildOptions): ChildEnd {
+         if (typeof origin === "string") options.allowOrigin?.(origin);
+         break;
+       }
++      case "highlight": {
++        // Strict code may have written anything: a request that isn't an id with text gets no answer.
++        const { id, code, language } = data as { id: unknown; code: unknown; language: unknown };
++        if (typeof id !== "number" || typeof code !== "string" || typeof language !== "string") break;
++        void (options.highlight?.(code, language) ?? Promise.resolve(undefined))
++          .catch(() => undefined)
++          .then((lines) => {
++            if (closed) return;
++            port.postMessage({ type: "highlighted", id, ...(lines ? { lines } : {}) } satisfies ToFrame);
++          });
++        break;
++      }
+       case "settled":
+         // For an older change, the frame isn't settled yet: it will say so again for the latest.
+         if (data.seen === changes) {
+diff --git a/npm-packages/sandbox/src/protocol/schema.test.ts b/npm-packages/sandbox/src/protocol/schema.test.ts
+index 0a04db1..e5536f2 100644
+--- a/npm-packages/sandbox/src/protocol/schema.test.ts
++++ b/npm-packages/sandbox/src/protocol/schema.test.ts
+@@ -15,7 +15,7 @@ const typesOf = (direction: "toFrame" | "fromFrame"): string[] =>
+ 
+ /** One of each message, as the protocol's ends send them. */
+ const MESSAGES: (ToFrame | FromFrame)[] = [
+-  { type: "level", level: "permissive", policy: "connect-src https://tiles.example.com" },
++  { type: "level", level: "permissive", policy: "connect-src https://tiles.example.com", timeout: 5000 },
+   {
+     type: "code",
+     components: [
+@@ -41,7 +41,8 @@ const MESSAGES: (ToFrame | FromFrame)[] = [
+   { type: "observe", on: true },
+   { type: "fetched", url: "./logo.png", image: new Blob([], { type: "image/png" }) },
+   { type: "images-allowed", origin: "https://photos.example.com" },
+-  { type: "ready", sandbox: 1 },
++  { type: "highlighted", id: 3, lines: [[{ text: "let ", color: { light: "#d73a49", dark: "#f97583" } }, { text: "a", italic: true }]] },
++  { type: "ready", sandbox: 2 },
+   { type: "loaded" },
+   { type: "set", input: "region", value: "eu" },
+   { type: "error", reason: "not-here", component: "map", message: "a permissive component can't be in a strict frame" },
+@@ -69,6 +70,7 @@ const MESSAGES: (ToFrame | FromFrame)[] = [
+   },
+   { type: "image", url: "./logo.png" },
+   { type: "allow-origin", origin: "https://photos.example.com" },
++  { type: "highlight", id: 3, code: "let a", language: "ts" },
+   { type: "settled", seen: 3 },
+ ];
+ 
+@@ -95,6 +97,8 @@ describe("protocol.schema.json", () => {
+     ["a module by URL has no libraries", { type: "code", components: [{ name: "mermaid", level: "strict", module: { url: "/packs/m.js", integrity: "sha384-x" }, libraries: {} }] }],
+     ["an observed frame's id is a path of numbers", { type: "observed", events: [{ type: "gone", frame: "../1", why: "hung", at: 1 }] }],
+     ["an observed frame is of a frame's level", { type: "observed", events: [{ type: "frame", frame: "1", level: "trusted", renders: { kind: "page" }, at: 1 }] }],
++    ["a token has its text", { type: "highlighted", id: 1, lines: [[{ color: { light: "red", dark: "red" } }]] }],
++    ["a block asked for has its language", { type: "highlight", id: 1, code: "let a" }],
+     ["an observed event is of a known type", { type: "observed", events: [{ type: "other", frame: "", at: 1 }] }],
+   ])("refuses what isn't a message: %s", (_rule, message) => {
+     expect(validate(message), JSON.stringify(message)).toBe(false);
+diff --git a/npm-packages/sandbox/src/sent-nodes.test.ts b/npm-packages/sandbox/src/sent-nodes.test.ts
+new file mode 100644
+index 0000000..561d6e8
+--- /dev/null
++++ b/npm-packages/sandbox/src/sent-nodes.test.ts
+@@ -0,0 +1,36 @@
++import type { ExpandedNode, Splice } from "@compmd/render";
++import { describe, expect, it } from "vitest";
++import { SentNodes } from "./sent-nodes.ts";
++
++const word = (value: string): ExpandedNode => ({ type: "text", value });
++/** The texts of `nodes`: the keys of this test. */
++const words = (nodes: readonly ExpandedNode[]): string[] => nodes.flatMap((node) => (node.type === "text" ? [String(node.value)] : []));
++const splice = (...nodes: ExpandedNode[]): Splice => ({ from: 0, to: 0, nodes, lines: 0, offset: 0 });
++
++describe("SentNodes", () => {
++  it("has the keys of the last tree sent, and not those of the tree before", () => {
++    const sent = new SentNodes(words);
++    sent.rendered([word("a"), word("b")]);
++    expect(sent.has("a")).toBe(true);
++    sent.rendered([word("c")]);
++    expect(sent.has("a")).toBe(false);
++    expect(sent.has("c")).toBe(true);
++  });
++
++  it("adds the keys of splices, those given as JSON text read only when asked", () => {
++    const sent = new SentNodes(words);
++    sent.rendered([word("a")]);
++    sent.spliced([splice(word("b")), JSON.stringify(splice(word("c")))]);
++    expect(sent.has("b")).toBe(true);
++    expect(sent.has("c")).toBe(true);
++    expect(sent.some((key) => key.startsWith("c"))).toBe(true);
++    expect(sent.some((key) => key === "d")).toBe(false);
++  });
++
++  it("drops splices not yet read when a new tree comes", () => {
++    const sent = new SentNodes(words);
++    sent.spliced([JSON.stringify(splice(word("old")))]);
++    sent.rendered([word("new")]);
++    expect(sent.has("old")).toBe(false);
++  });
++});
+diff --git a/npm-packages/sandbox/src/sent-nodes.ts b/npm-packages/sandbox/src/sent-nodes.ts
+new file mode 100644
+index 0000000..62c45d9
+--- /dev/null
++++ b/npm-packages/sandbox/src/sent-nodes.ts
+@@ -0,0 +1,60 @@
++// What a parent sent a frame, as the keys a frame may ask about: an image's `src`, a code block's text and language.
++// Code in the frame could ask too, so the parent answers only for what it sent (docs/remote-images.md,
++// docs/host-highlighter.md, decision 4).
++
++import type { ExpandedNode, Splice } from "@compmd/render";
++
++/**
++ * The keys of the trees and splices a parent sent its frame, by `keysOf`.
++ *
++ * @example
++ * const sources = new SentNodes((nodes) => imageSources(nodes));
++ * sources.rendered(tree.children);
++ * sources.has("./logo.png"); // true
++ */
++export class SentNodes<K> {
++  readonly #keysOf: (nodes: readonly ExpandedNode[]) => Iterable<K>;
++  #keys = new Set<K>();
++  /** Splices as a processor's JSON text, read only once the frame asks about something they may have. */
++  #unread: string[] = [];
++
++  constructor(keysOf: (nodes: readonly ExpandedNode[]) => Iterable<K>) {
++    this.#keysOf = keysOf;
++  }
++
++  /** The frame renders `nodes`, in place of all it had. */
++  rendered(nodes: readonly ExpandedNode[]): void {
++    this.#keys = new Set(this.#keysOf(nodes));
++    this.#unread = [];
++  }
++
++  /** The frame applies `splices`, beside what it had. */
++  spliced(splices: readonly (Splice | string)[]): void {
++    for (const splice of splices) {
++      if (typeof splice === "string") this.#unread.push(splice);
++      else this.#add(splice.nodes);
++    }
++  }
++
++  /** Whether `key` is in what was sent. */
++  has(key: K): boolean {
++    if (this.#keys.has(key)) return true;
++    this.#readSplices();
++    return this.#keys.has(key);
++  }
++
++  /** Whether a key of what was sent is one `matches` takes. */
++  some(matches: (key: K) => boolean): boolean {
++    this.#readSplices();
++    return [...this.#keys].some(matches);
++  }
++
++  #readSplices(): void {
++    for (const splice of this.#unread) this.#add((JSON.parse(splice) as Splice).nodes);
++    this.#unread = [];
++  }
++
++  #add(nodes: readonly ExpandedNode[]): void {
++    for (const key of this.#keysOf(nodes)) this.#keys.add(key);
++  }
++}
+diff --git a/npm-packages/sandbox/src/use.ts b/npm-packages/sandbox/src/use.ts
+index 8312f0f..02a2f2a 100644
+--- a/npm-packages/sandbox/src/use.ts
++++ b/npm-packages/sandbox/src/use.ts
+@@ -4,6 +4,7 @@
+ 
+ import { BUSY_MS, type ExpandedInput, type ExpandedUse } from "@compmd/render";
+ import { networkPolicy } from "./frame/narrow.ts";
++import { forSent, sentBlocks, type FrameHighlight } from "./frames-highlight.ts";
+ import type { Observer } from "./observer.ts";
+ import { boundInputs } from "./protocol/inputs.ts";
+ import { HELLO, SANDBOX_VERSION, type ComponentCode, type Level, type Scheme } from "./protocol/messages.ts";
+@@ -25,6 +26,8 @@ export interface UseFrameOptions {
+   styles?: readonly string[];
+   /** The host's own URL schemes, checked, which the links and images the frame renders may use (spec §15). */
+   schemes?: readonly string[];
++  /** The tokens of a code block in the use's slots, which the frame asks for; asked only for a block of its node. */
++  highlight?: FrameHighlight;
+   ping?: { every: number; timeout: number };
+   on: { [T in keyof ChildEvents]?: (event: ChildEvents[T]) => void };
+   /** The observer of the window the frame is made in, which records the frame and the messages on its port. */
+@@ -72,6 +75,9 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
+   /** The example the use is in (spec §7.8), whose components the frame finds its node's in. */
+   const inExample = options.example === undefined ? {} : { example: options.example };
+   let bound = boundInputs([node]);
++  /** The code blocks of the node sent, which alone the frame gets tokens for. */
++  const blocks = sentBlocks();
++  blocks.rendered([node]);
+   let code = options.code;
+   let styles = options.styles ?? [];
+   let tokens: Readonly<Record<string, string>> | undefined;
+@@ -95,6 +101,7 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
+       ...(options.schemes?.length ? { schemes: options.schemes } : {}),
+       binds: (input) => bound.has(input),
+       ...(options.host ? { host: options.host() } : {}),
++      ...(options.highlight ? { highlight: forSent(blocks, options.highlight) } : {}),
+       ...(options.ping ? { ping: options.ping } : {}),
+     });
+     if (observer && id !== undefined) {
+@@ -141,6 +148,7 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
+       node = next;
+       inputs = nextInputs;
+       bound = boundInputs([next]);
++      blocks.rendered([next]);
+       child?.part({ node, inputs: { ...inputs }, ...inExample });
+     },
+     code: (next) => {
+diff --git a/npm-packages/sandbox/test/host.test.ts b/npm-packages/sandbox/test/host.test.ts
+index 7ad0a1d..20fe6a5 100644
+--- a/npm-packages/sandbox/test/host.test.ts
++++ b/npm-packages/sandbox/test/host.test.ts
+@@ -149,6 +149,34 @@ export default function Chart({ compmd }) {
+     ]);
+   });
+ 
++  it("highlights a code block in a framed use's slot with the host's highlighter, which the frame asks through the host's page", async () => {
++    const asked: string[] = [];
++    const red = { light: "#ff0000", dark: "#ff0000" };
++    const { runtime, area, next } = setup({
++      highlight: (code, language) => {
++        asked.push(`${language}:${code}`);
++        return language === "ts" ? [[{ text: "let", color: red }, { text: " a = 1;" }]] : undefined;
++      },
++    });
++    const body = `async (target, { slots }) => {
++      for (const item of slots.default) target.append(item.element);
++      for (let tries = 0; tries < 200 && !target.querySelector(".compmd-line > span"); tries++) await new Promise((done) => setTimeout(done, 20));
++      const token = target.querySelector(".compmd-line > span");
++      return { text: target.querySelector("pre code")?.textContent, token: token?.textContent, color: token && getComputedStyle(token).color };
++    }`;
++    await runtime.set([plain("tabs", { level: "strict" }, body)]);
++    const tabs: ExpandedComponent = {
++      type: "componentContainer",
++      name: "tabs",
++      params: [{ key: "result", breakpoint: null, value: "", input: "tabs" }],
++      children: [{ type: "code", lang: "ts", meta: null, value: "let a = 1;" }],
++    };
++    const result = next("tabs");
++    runtime.mountUse(area, tabs, { tabs: { type: "string", value: "" } });
++    expect(await result).toEqual({ text: "let a = 1;", token: "let", color: "rgb(255, 0, 0)" });
++    expect(asked).toEqual(["ts:let a = 1;"]);
++  });
++
+   it("gives a handle for each use: `update` sends it new params, `destroy` removes its frame", async () => {
+     const { runtime, area, next } = setup();
+     // It sets its input after an update, not in it: a renderer refuses `set` while it updates.
+diff --git a/npm-packages/sandbox/test/strict.test.ts b/npm-packages/sandbox/test/strict.test.ts
+index 7ba37b8..27bf73e 100644
+--- a/npm-packages/sandbox/test/strict.test.ts
++++ b/npm-packages/sandbox/test/strict.test.ts
+@@ -58,17 +58,15 @@ describe("a strict frame", () => {
+     expect(atHost.filter((kind) => !["font", "style", "prefetch"].includes(kind))).toEqual([]);
+   });
+ 
+-  it("compiles WebAssembly, which reaches only what its scripts do: nothing (T1, docs/webassembly-in-the-frames.md)", async () => {
++  it("can't compile WebAssembly: the host's page highlights its code (docs/host-highlighter.md, decision 7)", async () => {
+     const tag = tagged();
+     const result = await run(`async () => {
+       // A module that imports \`env.send\` and calls it as it starts: (import "env" "send" (func)) (start 0).
+       const bytes = new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0, 1, 4, 1, 96, 0, 0, 2, 12, 1, 3, 101, 110, 118, 4, 115, 101, 110, 100, 0, 0, 8, 1, 0]);
+-      const sent = [];
+-      const send = () => { sent.push(fetch(${JSON.stringify(denied)} + "attempt?${tag}-wasm").then(() => "reached", () => "refused")); };
+-      await WebAssembly.instantiate(bytes, { env: { send } });
+-      return { compiled: true, sent: await Promise.all(sent) };
++      const send = () => fetch(${JSON.stringify(denied)} + "attempt?${tag}-wasm");
++      return { compiled: await WebAssembly.instantiate(bytes, { env: { send } }).then(() => true, () => false) };
+     }`);
+-    expect(result).toEqual({ compiled: true, sent: ["refused"] });
++    expect(result).toEqual({ compiled: false });
+     await pause(200);
+     expect(await hits(denied, tag)).toEqual([]);
+   });
+diff --git a/npm-packages/sandbox/test/view.test.ts b/npm-packages/sandbox/test/view.test.ts
+index 7515422..845254f 100644
+--- a/npm-packages/sandbox/test/view.test.ts
++++ b/npm-packages/sandbox/test/view.test.ts
+@@ -514,6 +514,44 @@ describe("code blocks", () => {
+       }
+     });
+   }
++
++  /** The host's own highlighter: each block's first word in its own colour, each block it is asked for recorded. */
++  const hostHighlighter = () => {
++    const asked: string[] = [];
++    const highlight: SandboxOptions["highlight"] = (code, language) => {
++      asked.push(`${language}:${code}`);
++      const [word = "", ...rest] = code.split(" ");
++      return [[{ text: word, color: { light: "#ff0000", dark: "#00ff00" } }, { text: ` ${rest.join(" ")}` }]];
++    };
++    return { asked, highlight };
++  };
++  const own = { light: "rgb(255, 0, 0)", dark: "rgb(0, 255, 0)" };
++  const askedFor = ["js:const a = 1;", "mermaid:graph LR; A --> B"];
++
++  for (const scheme of ["light", "dark"] as const) {
++    it(`highlights the page's frame's code blocks with the host's highlighter, asked only for the blocks it sent, in the ${scheme} theme (frame mode)`, async () => {
++      const { asked, highlight } = hostHighlighter();
++      const { area, view, until, values } = open("frame", [looking], { highlight });
++      area.style.colorScheme = scheme;
++      view.render({ type: "root", children: [...blocks, use("one")], inputs: RESULT });
++      await until(() => values().length > 0);
++      const [js, mermaid] = values()[0] as Awaited<ReturnType<typeof shown>>;
++      expect(js).toMatchObject({ language: "language-js", text: "const a = 1;", tokens: 2, color: own[scheme] });
++      expect(mermaid).toMatchObject({ language: "language-mermaid", tokens: 2, color: own[scheme] });
++      expect(asked).toEqual(askedFor);
++    });
++
++    it(`highlights the page's code blocks with the host's highlighter, in the ${scheme} theme (host mode)`, async () => {
++      const { asked, highlight } = hostHighlighter();
++      const { area, view } = open("host", [], { highlight });
++      area.style.colorScheme = scheme;
++      view.render({ type: "root", children: blocks });
++      const [js, mermaid] = await shown(area);
++      expect(js).toMatchObject({ language: "language-js", text: "const a = 1;", tokens: 2, color: own[scheme] });
++      expect(mermaid).toMatchObject({ tokens: 2, color: own[scheme] });
++      expect(asked).toEqual(askedFor);
++    });
++  }
+ });
+ 
+ describe("the host's own schemes", () => {
