@@ -1,6 +1,6 @@
 # The first components
 
-**Status: proposed (2026-11-19), round 3 of its review.** Which components CompMD should have first, so an author
+**Status: proposed (2026-11-19); the packs decided (2026-11-20, CMD-11, decisions 10 and 11).** Which components CompMD should have first, so an author
 finds what they reach for: what documentation frameworks ship, which npm component packages are used most, the widgets
 pages have, and what CompMD covers already, with the list, each component's package, and how it runs.
 
@@ -42,16 +42,28 @@ pages have, and what CompMD covers already, with the list, each component's pack
    {
      "packs": {
        "../app": { "trust": "trusted", "ambient": true },
-       "@comp-markdown/charts": { "ambient": true },
+       "@comp-markdown/card": { "ambient": true },
+       "@comp-markdown/chart": { "ambient": true },
        "@comp-markdown/music": { "ambient": true },
-       "@comp-markdown/embeds": { "trust": "permissive", "ambient": true, "network": ["https://www.youtube-nocookie.com", "https://open.spotify.com"] }
+       "@comp-markdown/embed-youtube": { "trust": "permissive", "ambient": true, "network": ["https://www.youtube-nocookie.com"] }
      }
    }
    ```
 
    A minimal host lists none and carries none: the weight is each host's choice, not CompMD's. What a document that
-   uses none of them pays their signatures only (G10, fixed). The packs' names here are
-   placeholders until CMD-11 names them.
+   uses none of them pays their signatures only (G10, fixed).
+10. **One pack per component** (CMD-11, decided 2026-11-20): each component of the first list is a pack of its own,
+    `@comp-markdown/<component>` in `compmd-packs/<component>/`, as the Mermaid and wireframe packs are, with a version
+    of its own, so a fix to one releases that one only, and a host lists exactly the components it wants, each at its
+    own level (an embed permissive, the rest strict). The embeds are one pack per provider (`embed-youtube`, …), sharing
+    the permissive frame's code of CMD-332 as a library. The basics stay one pack, `@compmd/basics`, built into the
+    sandbox (decision 6). With about 25 packs, each one's release is a tag `<pack>-v<version>`, which one workflow
+    publishes for every pack, rather than a workflow each ([releases](releases.md), decision 8).
+11. **The frames compile WebAssembly again** (decided 2026-11-20): `graphviz` and `jq` are WebAssembly
+    (`@viz-js/viz`, `jq-wasm`), so both frame documents' policies get `'wasm-unsafe-eval'` back, in the sprint that
+    brings them (CMD-324). [WebAssembly in the frames](webassembly-in-the-frames.md) found it gives a component
+    nothing it doesn't have already: WebAssembly reaches only what the frame's scripts reach. 0.9.0 had taken it out
+    only because nothing in the frames needed it ([the host's code highlighter](host-highlighter.md), decision 7).
 
 ## The first list
 
@@ -69,7 +81,7 @@ pages have, and what CompMD covers already, with the list, each component's pack
 | 10 | `chart` | a leaf over data rows | `@observablehq/plot` (ISC, 95 KB) | strict | Charts from `md.data` are what data imports are for (spec §8.6). [Charts](#charts) has the params and the comparison. |
 | 11 | `calendar` | a leaf over data rows | — | strict | A month, or several, with dates marked and their events listed, from data: about 150 lines over `Intl.DateTimeFormat`; `vanilla-calendar-pro` (MIT, 25 KB) if it grows. |
 | 12 | `weather` | a leaf over a data import | Meteocons icons (MIT) | strict | A forecast: the document imports it from Open-Meteo, which needs no key, and the reader allows the origin once (decision 5). [Weather](#weather). |
-| 13 | `graphviz` | a code renderer for ```` ```dot ```` | `@viz-js/viz` (MIT, 486 KB) | strict | The other text-to-diagram language people write, as Mermaid is; WebAssembly, which the frames allow, no network. |
+| 13 | `graphviz` | a code renderer for ```` ```dot ```` | `@viz-js/viz` (MIT, 486 KB) | strict | The other text-to-diagram language people write, as Mermaid is; WebAssembly, which the frames allow again (decision 11), no network. |
 | 14 | `data-table` | a leaf over data rows | `gridjs` (MIT, 16 KB) | strict | A table of data the reader sorts and searches. |
 | 15 | `jq` | a code renderer for ```` ```jq ```` | `jq-wasm` (MIT, real jq 1.8, 330 to 500 KB) | strict | A query over JSON with `render=both`: the query, then its output; with an input the reader changes, a playground in the page. [jq](#jq). |
 | 16 | `music` | a code renderer for ```` ```abc ```` | `abcjs` (MIT, 148 KB) | strict, its sound font in the pack | Sheet music from text, which a plain renderer shows as its source, and played offline. [Music](#music). |

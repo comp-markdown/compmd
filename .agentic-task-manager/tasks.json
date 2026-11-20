@@ -694,7 +694,7 @@
       "description": "Name the first packs and say which component goes in which ([the first components](docs/first-components.md), the list and decision 9, whose pack names are placeholders). One task per component follows it (labels `component`); this task only decides the packs.\n\n## Decide\n- **The packs and their names:** for example the `compmd` definitions in one pack (card, link-card, gallery, figure, badge, sticky-note, timeline), the data components in another (chart, calendar, data-table, weather), the diagrams (graphviz, beside the Mermaid pack), the music components together (music, chord, chord-sheet, guitar-tab), jq and qr-code, and the embeds in their own permissive pack; the basics are `@compmd/basics` (decision 6).\n- **The scope** they publish under (`@comp-markdown/`, as the Mermaid and wireframe packs are) and their folders under `compmd-packs/`.\n- **Which components share a pack's version,** so a fix to one releases its pack.\n\n## Do\nWrite the packs into the first components document (replacing the placeholders in decision 9), update each component task's pack with `atm task edit`, and review with the user.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68e7d6fc0e9a"
       ],
@@ -702,7 +702,7 @@
         "compmd-packs/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-20T10:26:02Z",
+      "updated_at": "2026-11-20T16:17:07Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -722,7 +722,9 @@
         }
       ],
       "number": 11,
-      "sprint": "Packs 1: the pack tool, no-code components"
+      "sprint": "Packs 1: the pack tool, no-code components",
+      "started_at": "2026-11-20T16:17:07Z",
+      "started_by": "claude:79612601"
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68e96cefc8f6",
@@ -11527,9 +11529,11 @@
       "dependencies": [
         "01a1f870-9ad9-761a-afe5-57c47890f586"
       ],
-      "files": [],
+      "files": [
+        "npm-packages/sandbox/"
+      ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:26:03Z",
+      "updated_at": "2026-11-20T16:20:52Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 310,
@@ -11557,9 +11561,11 @@
       "dependencies": [
         "01a1f870-9ad9-761a-afe5-57c47890f586"
       ],
-      "files": [],
+      "files": [
+        "npm-packages/sandbox/"
+      ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:26:03Z",
+      "updated_at": "2026-11-20T16:21:09Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 311,
@@ -11587,9 +11593,11 @@
       "dependencies": [
         "01a1f870-9ad9-761a-afe5-57c47890f586"
       ],
-      "files": [],
+      "files": [
+        "npm-packages/sandbox/"
+      ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:26:03Z",
+      "updated_at": "2026-11-20T16:21:10Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 312,
@@ -11617,9 +11625,11 @@
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68e81c39ce10"
       ],
-      "files": [],
+      "files": [
+        "compmd-packs/card/"
+      ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:26:02Z",
+      "updated_at": "2026-11-20T16:20:52Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 313,
@@ -11647,9 +11657,11 @@
       "dependencies": [
         "01a1f870-9ad9-761a-afe5-57c89c4468ad"
       ],
-      "files": [],
+      "files": [
+        "compmd-packs/link-card/"
+      ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:26:02Z",
+      "updated_at": "2026-11-20T16:20:53Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 314,
@@ -11677,9 +11689,11 @@
       "dependencies": [
         "01a1f870-9ad9-761a-afe5-57c89c4468ad"
       ],
-      "files": [],
+      "files": [
+        "compmd-packs/gallery/"
+      ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:26:02Z",
+      "updated_at": "2026-11-20T16:20:54Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 315,
@@ -11707,9 +11721,11 @@
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68e81c39ce10"
       ],
-      "files": [],
+      "files": [
+        "compmd-packs/figure/"
+      ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:26:02Z",
+      "updated_at": "2026-11-20T16:20:54Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 316,
@@ -11737,9 +11753,11 @@
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68e81c39ce10"
       ],
-      "files": [],
+      "files": [
+        "compmd-packs/badge/"
+      ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:26:02Z",
+      "updated_at": "2026-11-20T16:20:55Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 317,
@@ -11767,9 +11785,11 @@
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68e81c39ce10"
       ],
-      "files": [],
+      "files": [
+        "compmd-packs/sticky-note/"
+      ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:26:02Z",
+      "updated_at": "2026-11-20T16:20:55Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 318,
@@ -11797,9 +11817,11 @@
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68e81c39ce10"
       ],
-      "files": [],
+      "files": [
+        "compmd-packs/timeline/"
+      ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:26:02Z",
+      "updated_at": "2026-11-20T16:20:56Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 319,
@@ -11827,9 +11849,11 @@
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68e81c39ce10"
       ],
-      "files": [],
+      "files": [
+        "compmd-packs/rating/"
+      ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:26:02Z",
+      "updated_at": "2026-11-20T16:20:57Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 320,
@@ -11858,9 +11882,11 @@
         "01a1ebb5-4120-7007-85a3-68e81c39ce10",
         "01a1ebb5-4120-7007-85a3-68e63c5137a7"
       ],
-      "files": [],
+      "files": [
+        "compmd-packs/chart/"
+      ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:26:03Z",
+      "updated_at": "2026-11-20T16:20:57Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 321,
@@ -11888,9 +11914,11 @@
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68e81c39ce10"
       ],
-      "files": [],
+      "files": [
+        "compmd-packs/calendar/"
+      ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:26:03Z",
+      "updated_at": "2026-11-20T16:20:58Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 322,
@@ -11918,9 +11946,11 @@
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68e81c39ce10"
       ],
-      "files": [],
+      "files": [
+        "compmd-packs/weather/"
+      ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:26:03Z",
+      "updated_at": "2026-11-20T16:20:58Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 323,
@@ -11941,7 +11971,7 @@
         "packs",
         "component"
       ],
-      "description": "Item 13 of [the first list](docs/first-components.md#:~:text=The%20other%20text%2Dto%2Ddiagram%20language): a code renderer for ` ```dot `, wrapping `@viz-js/viz` (MIT, 486 KB, WebAssembly, which the frames allow), strict, no network, as the Mermaid pack is for Mermaid.\n\n## Do\nThe pack with CMD-9's command, `alt` required as Mermaid's, the scheme followed, a demo, tests in Chrome and WebKit.",
+      "description": "Item 13 of [the first list](docs/first-components.md#:~:text=The%20other%20text%2Dto%2Ddiagram%20language): a code renderer for ` ```dot `, wrapping `@viz-js/viz` (MIT, 486 KB, WebAssembly), strict, no network, as the Mermaid pack is for Mermaid. Its own pack, `@comp-markdown/graphviz` in `compmd-packs/graphviz/` ([decision 10](docs/first-components.md#:~:text=One%20pack%20per%20component)).\n\n## Do\n- **The frames compile WebAssembly again** ([decision 11](docs/first-components.md#:~:text=The%20frames%20compile%20WebAssembly%20again)): `'wasm-unsafe-eval'` back in both frame documents' policies (`npm-packages/sandbox/src/build/policy.ts` and its test), the strict frame's browser test turned back to compiling WebAssembly that reaches nothing (`test/strict.test.ts`), and [WebAssembly in the frames](docs/webassembly-in-the-frames.md)'s status. `jq` (CMD-326) relies on it too.\n- The pack with CMD-9's command, `alt` required as Mermaid's, the scheme followed, a demo, tests in Chrome and WebKit.\n",
       "requirements": [],
       "use_cases": [],
       "status": "todo",
@@ -11949,9 +11979,13 @@
         "01a1ebb5-4120-7007-85a3-68e81c39ce10",
         "01a1ebb5-4120-7007-85a3-68e63c5137a7"
       ],
-      "files": [],
+      "files": [
+        "compmd-packs/graphviz/",
+        "npm-packages/sandbox/src/build/policy.ts",
+        "npm-packages/sandbox/test/strict.test.ts"
+      ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:26:03Z",
+      "updated_at": "2026-11-20T16:20:49Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 324,
@@ -11980,9 +12014,11 @@
         "01a1ebb5-4120-7007-85a3-68e81c39ce10",
         "01a1ebb5-4120-7007-85a3-68e63c5137a7"
       ],
-      "files": [],
+      "files": [
+        "compmd-packs/data-table/"
+      ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:26:03Z",
+      "updated_at": "2026-11-20T16:20:59Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 325,
@@ -12009,11 +12045,14 @@
       "status": "todo",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68e81c39ce10",
-        "01a1ebb5-4120-7007-85a3-68e63c5137a7"
+        "01a1ebb5-4120-7007-85a3-68e63c5137a7",
+        "01a1f870-9ad9-761a-afe5-57d3471661ac"
       ],
-      "files": [],
+      "files": [
+        "compmd-packs/jq/"
+      ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:26:03Z",
+      "updated_at": "2026-11-20T16:20:50Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 326,
@@ -12042,9 +12081,11 @@
         "01a1ebb5-4120-7007-85a3-68e81c39ce10",
         "01a1ebb5-4120-7007-85a3-68e63c5137a7"
       ],
-      "files": [],
+      "files": [
+        "compmd-packs/music/"
+      ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:26:03Z",
+      "updated_at": "2026-11-20T16:21:00Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 327,
@@ -12073,9 +12114,11 @@
         "01a1ebb5-4120-7007-85a3-68e81c39ce10",
         "01a1ebb5-4120-7007-85a3-68e63c5137a7"
       ],
-      "files": [],
+      "files": [
+        "compmd-packs/chord/"
+      ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:26:03Z",
+      "updated_at": "2026-11-20T16:21:00Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 328,
@@ -12103,9 +12146,11 @@
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68e81c39ce10"
       ],
-      "files": [],
+      "files": [
+        "compmd-packs/chord-sheet/"
+      ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:26:03Z",
+      "updated_at": "2026-11-20T16:21:01Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 329,
@@ -12134,9 +12179,11 @@
         "01a1ebb5-4120-7007-85a3-68e81c39ce10",
         "01a1ebb5-4120-7007-85a3-68e63c5137a7"
       ],
-      "files": [],
+      "files": [
+        "compmd-packs/guitar-tab/"
+      ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:26:03Z",
+      "updated_at": "2026-11-20T16:21:02Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 330,
@@ -12165,9 +12212,11 @@
         "01a1ebb5-4120-7007-85a3-68e81c39ce10",
         "01a1ebb5-4120-7007-85a3-68e63c5137a7"
       ],
-      "files": [],
+      "files": [
+        "compmd-packs/qr-code/"
+      ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:26:03Z",
+      "updated_at": "2026-11-20T16:21:02Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 331,
@@ -12230,9 +12279,11 @@
       "dependencies": [
         "01a1f870-9ad9-761a-afe5-57dbe40450cc"
       ],
-      "files": [],
+      "files": [
+        "compmd-packs/embed-youtube/"
+      ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:26:04Z",
+      "updated_at": "2026-11-20T16:21:03Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 333,
@@ -12260,9 +12311,11 @@
       "dependencies": [
         "01a1f870-9ad9-761a-afe5-57dbe40450cc"
       ],
-      "files": [],
+      "files": [
+        "compmd-packs/embed-spotify/"
+      ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:26:04Z",
+      "updated_at": "2026-11-20T16:21:04Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 334,
@@ -12290,9 +12343,11 @@
       "dependencies": [
         "01a1f870-9ad9-761a-afe5-57dbe40450cc"
       ],
-      "files": [],
+      "files": [
+        "compmd-packs/embed-vimeo/"
+      ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:26:04Z",
+      "updated_at": "2026-11-20T16:21:04Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 335,
@@ -12320,9 +12375,11 @@
       "dependencies": [
         "01a1f870-9ad9-761a-afe5-57dbe40450cc"
       ],
-      "files": [],
+      "files": [
+        "compmd-packs/embed-soundcloud/"
+      ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:26:04Z",
+      "updated_at": "2026-11-20T16:21:05Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 336,
@@ -12350,9 +12407,11 @@
       "dependencies": [
         "01a1f870-9ad9-761a-afe5-57dbe40450cc"
       ],
-      "files": [],
+      "files": [
+        "compmd-packs/embed-bluesky/"
+      ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:26:04Z",
+      "updated_at": "2026-11-20T16:21:06Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 337,
@@ -12380,9 +12439,11 @@
       "dependencies": [
         "01a1f870-9ad9-761a-afe5-57dbe40450cc"
       ],
-      "files": [],
+      "files": [
+        "compmd-packs/embed-x/"
+      ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:26:04Z",
+      "updated_at": "2026-11-20T16:21:06Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 338,
@@ -12410,9 +12471,11 @@
       "dependencies": [
         "01a1f870-9ad9-761a-afe5-57dbe40450cc"
       ],
-      "files": [],
+      "files": [
+        "compmd-packs/embed-codepen/"
+      ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:26:04Z",
+      "updated_at": "2026-11-20T16:21:07Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 339,
