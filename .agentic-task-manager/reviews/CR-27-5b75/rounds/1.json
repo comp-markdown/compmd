@@ -1,0 +1,57 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "3d9d24812c90b0c167323cb279cc170cd31c0698",
+    "head": "af2b939ef1f5bc11665879c0ce69405faafd42a1"
+  },
+  "files": [
+    {
+      "path": "compmd-packs/mermaid/test/page.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/sandbox-protocol.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/awake.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/awake.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/compiler.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/parent-end.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/src/protocol/parent-end.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/host.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/sandbox/test/observe.test.ts",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-20T12:16:15Z"
+}

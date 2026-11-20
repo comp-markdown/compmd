@@ -1,0 +1,333 @@
+diff --git a/compmd-packs/mermaid/test/page.test.ts b/compmd-packs/mermaid/test/page.test.ts
+index ad748d9..37e9546 100644
+--- a/compmd-packs/mermaid/test/page.test.ts
++++ b/compmd-packs/mermaid/test/page.test.ts
+@@ -52,7 +52,12 @@ async function frameWith(page: Page, selector: string, log: readonly string[] =
+       .toBe(true);
+   } catch (error) {
+     const frames = page.frames().map((frame) => frame.url());
+-    throw new Error(`No frame has ${selector} after 30 s. The page's ${String(frames.length)} frames: ${frames.join(", ")}. What it logged: ${log.length > 0 ? log.join(" | ") : "nothing"}`, { cause: error });
++    // A frame the host's page stopped says so only in the page's diagnostics.
++    const diagnostics = await page.locator("#diagnostics li").allInnerTexts().catch(() => []);
++    throw new Error(
++      `No frame has ${selector} after 30 s. The page's ${String(frames.length)} frames: ${frames.join(", ")}. Its diagnostics: ${diagnostics.length > 0 ? diagnostics.join(" | ") : "none"}. What it logged: ${log.length > 0 ? log.join(" | ") : "nothing"}`,
++      { cause: error },
++    );
+   }
+   return found as Frame;
+ }
+diff --git a/docs/sandbox-protocol.md b/docs/sandbox-protocol.md
+index e63d16c..2b20dd9 100644
+--- a/docs/sandbox-protocol.md
++++ b/docs/sandbox-protocol.md
+@@ -99,7 +99,7 @@ For a host that waits until its page stops moving ([sandbox README, *When the pa
+ 
+ **An edit.** H sends P `splices` (frame mode) or renders them (host mode), and sends `part` to every frame whose use changed; a frame does the same for its children. Uses keep their frames through edits, as the renderer's keys keep its views, so an edit updates a frame instead of making it again. A use that is gone loses its frame; a new one gets one. When the document's components change, H compiles them in C and sends `code` to the frames that have them, which pass on their children's.
+ 
+-**A frame that hangs.** Each parent pings its frames every second; a frame that hasn't answered within `timeout` is removed, and its use shows its fallback (W118).
++**A frame that hangs.** Each parent pings its frames every second; a frame that hasn't answered within `timeout` is removed, and its use shows its fallback (W118). So is one that hasn't said `ready` within `timeout` (5 s at least) of its document loading: its runtime never loaded. Both times are the parent's awake time, counted a tick at a time: a page and its frames may share a thread (WebKit; Chromium's frames in the page's process), and while it is busy, with another frame's large module say, a frame can neither load nor answer, so a busy stretch of any length counts as one tick against it.
+ 
+ **Strict code tries to break out.**
+ 
+diff --git a/npm-packages/sandbox/src/protocol/awake.test.ts b/npm-packages/sandbox/src/protocol/awake.test.ts
+new file mode 100644
+index 0000000..81cdc5d
+--- /dev/null
++++ b/npm-packages/sandbox/src/protocol/awake.test.ts
+@@ -0,0 +1,47 @@
++import { afterEach, describe, expect, it, vi } from "vitest";
++import { afterAwake, AWAKE_TICK_MS } from "./awake.ts";
++
++afterEach(() => {
++  vi.useRealTimers();
++});
++
++/** Keeps this thread busy for `ms`, as a long task does. */
++function busyFor(ms: number): void {
++  const until = Date.now() + ms;
++  while (Date.now() < until);
++}
++
++const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
++
++describe("afterAwake", () => {
++  it("is done once the thread has been awake that long, and not a tick before", () => {
++    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
++    const done = vi.fn();
++    afterAwake(1000, done);
++    vi.advanceTimersByTime(1000 - AWAKE_TICK_MS);
++    expect(done).not.toHaveBeenCalled();
++    vi.advanceTimersByTime(AWAKE_TICK_MS);
++    expect(done).toHaveBeenCalledTimes(1);
++    vi.advanceTimersByTime(5000);
++    expect(done).toHaveBeenCalledTimes(1);
++  });
++
++  it("is never done once cancelled", () => {
++    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
++    const done = vi.fn();
++    afterAwake(1000, done)();
++    vi.advanceTimersByTime(5000);
++    expect(done).not.toHaveBeenCalled();
++  });
++
++  it("counts a stretch the thread was busy for as one tick, however long", async () => {
++    const done = vi.fn();
++    afterAwake(3 * AWAKE_TICK_MS, done);
++    // Twice the time it is given, by the clock: a timer of that time would be done on the thread's next turn.
++    busyFor(6 * AWAKE_TICK_MS);
++    await pause(AWAKE_TICK_MS / 5);
++    expect(done).not.toHaveBeenCalled();
++    await pause(4 * AWAKE_TICK_MS);
++    expect(done).toHaveBeenCalledTimes(1);
++  });
++});
+diff --git a/npm-packages/sandbox/src/protocol/awake.ts b/npm-packages/sandbox/src/protocol/awake.ts
+new file mode 100644
+index 0000000..773c618
+--- /dev/null
++++ b/npm-packages/sandbox/src/protocol/awake.ts
+@@ -0,0 +1,27 @@
++// Time a frame is given, counted only while this window's thread answers. A page and its frames may share one thread
++// (WebKit, and Chromium's frames in the page's process): while it is busy, with another frame's module say, a frame
++// can neither load nor answer, and a clock's time would count against it. A tick that comes late counts as one tick.
++
++/** How often the awake time is counted, in ms: what a busy stretch of any length counts as, at most. */
++export const AWAKE_TICK_MS = 250;
++
++/**
++ * Calls `done` once this thread has been awake for `ms`, counted in ticks of `AWAKE_TICK_MS`: a stretch the thread was
++ * busy for counts as one tick, however long. Returns what cancels it.
++ *
++ * @example
++ * const cancel = afterAwake(5000, () => stop({ reason: "unloaded" }));
++ * port.addEventListener("message", cancel);
++ */
++export function afterAwake(ms: number, done: () => void): () => void {
++  let awake = 0;
++  const ticks = setInterval(() => {
++    awake += AWAKE_TICK_MS;
++    if (awake < ms) return;
++    clearInterval(ticks);
++    done();
++  }, AWAKE_TICK_MS);
++  return () => {
++    clearInterval(ticks);
++  };
++}
+diff --git a/npm-packages/sandbox/src/protocol/compiler.ts b/npm-packages/sandbox/src/protocol/compiler.ts
+index ae91f12..433924c 100644
+--- a/npm-packages/sandbox/src/protocol/compiler.ts
++++ b/npm-packages/sandbox/src/protocol/compiler.ts
+@@ -1,6 +1,7 @@
+ // The parent's end for the compile frame, a strict frame that runs no components: sources go in, compiled text comes
+ // out, which the parent gives the frames that run it.
+ 
++import { afterAwake } from "./awake.ts";
+ import { FROM_FRAME, isMessage, SANDBOX_VERSION, type CompileRequest, type FromFrame, type Port, type ToFrame } from "./messages.ts";
+ import { failureText, LOAD_MS } from "./parent-end.ts";
+ 
+@@ -46,19 +47,20 @@ export function connectCompiler(port: Port, options: CompilerOptions = {}): Comp
+     port.postMessage({ type: "compile", ...request } satisfies ToFrame);
+   };
+   const { ready } = options;
+-  const timer = ready
+-    ? setTimeout(() => {
++  // This thread's awake time: a busy thread the frame shares keeps it from loading (`awake.ts`).
++  const cancelUnloaded = ready
++    ? afterAwake(Math.max(ready.timeout, LOAD_MS), () => {
+         if (!waiting) return;
+         unloaded = new Error(`the compile frame ${failureText({ reason: "unloaded" }, ready.url)}`);
+         waiting = undefined;
+         for (const answer of pending.values()) answer.reject(unloaded);
+         pending.clear();
+-      }, Math.max(ready.timeout, LOAD_MS))
+-    : undefined;
++      })
++    : () => undefined;
+   const listener = ({ data }: { data: unknown }) => {
+     if (!isMessage<FromFrame>(data, FROM_FRAME)) return;
+     if (data.type === "ready" && waiting && data.sandbox === SANDBOX_VERSION) {
+-      clearTimeout(timer);
++      cancelUnloaded();
+       port.postMessage({ type: "level", level: "strict" } satisfies ToFrame);
+       for (const request of waiting) send(request);
+       waiting = undefined;
+@@ -83,7 +85,7 @@ export function connectCompiler(port: Port, options: CompilerOptions = {}): Comp
+         else send(request);
+       }),
+     close: () => {
+-      clearTimeout(timer);
++      cancelUnloaded();
+       port.removeEventListener("message", listener);
+     },
+   };
+diff --git a/npm-packages/sandbox/src/protocol/parent-end.test.ts b/npm-packages/sandbox/src/protocol/parent-end.test.ts
+index bb7bb9d..3987a69 100644
+--- a/npm-packages/sandbox/src/protocol/parent-end.test.ts
++++ b/npm-packages/sandbox/src/protocol/parent-end.test.ts
+@@ -195,6 +195,37 @@ describe("the parent's end (connectChild)", () => {
+     expect(failed).toEqual([{ reason: "hung" }]);
+   });
+ 
++  it("doesn't count the time its own thread was busy against a frame: the frame may share the thread, and couldn't answer either", async () => {
++    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval", "Date"] });
++    const { port1: parent, port2: frame } = new MessageChannel();
++    let answering = true;
++    frame.addEventListener("message", ({ data }) => {
++      const message = data as { type: string; n: number };
++      if (message.type === "ping" && answering) frame.postMessage({ type: "pong", n: message.n });
++    });
++    frame.start();
++    const child = connectChild(parent, { level: "strict", binds: () => false, ping: { every: 1000, timeout: 3000 } });
++    const failed: unknown[] = [];
++    child.on("failed", (failure) => failed.push(failure));
++    frame.postMessage({ type: "ready", sandbox: SANDBOX_VERSION });
++    await settle();
++    const tick = async () => {
++      vi.advanceTimersByTime(1000);
++      await settle();
++    };
++    await tick();
++    // A ping goes unanswered while the thread is busy for ten seconds, by the clock: no ping is sent meanwhile.
++    answering = false;
++    await tick();
++    vi.setSystemTime(Date.now() + 10_000);
++    await tick();
++    expect(failed, "one more ping unanswered, not ten seconds").toEqual([]);
++    answering = true;
++    await tick();
++    await tick();
++    expect(failed).toEqual([]);
++  });
++
+   it("stops a frame that never says it is ready, since its runtime didn't load, and keeps one that does", async () => {
+     vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval", "Date"] });
+     const silent = parentChannel();
+diff --git a/npm-packages/sandbox/src/protocol/parent-end.ts b/npm-packages/sandbox/src/protocol/parent-end.ts
+index dc7c2d2..553d0dc 100644
+--- a/npm-packages/sandbox/src/protocol/parent-end.ts
++++ b/npm-packages/sandbox/src/protocol/parent-end.ts
+@@ -2,6 +2,7 @@
+ // checks what the frame sends against the part it gave it, and stops a frame that stops answering.
+ 
+ import { BUSY_MS, type CodeLines } from "@compmd/render";
++import { afterAwake } from "./awake.ts";
+ import { FROM_FRAME, isChange, isMessage, SANDBOX_VERSION, type ComponentCode, type ErrorReason, type FromFrame, type Level, type Part, type Port, type Scheme, type ToFrame } from "./messages.ts";
+ 
+ export interface ChildOptions {
+@@ -164,23 +165,30 @@ export function connectChild(port: Port, options: ChildOptions): ChildEnd {
+   let pings: ReturnType<typeof setInterval> | undefined;
+   let sent = 0;
+   let answered = 0;
+-  let lastAnswer = 0;
++  /**
++   * How long the frame has left a ping unanswered, in ms, counted a ping at a time: this window's thread may be the
++   * frame's too, and a stretch it was busy for, when the frame couldn't answer either, counts as one ping (`awake.ts`).
++   */
++  let silentFor = 0;
+   const stop = (failure: ChildFailure) => {
+     close();
+     emit("failed", failure);
+   };
+-  // A frame whose runtime never loads says nothing at all: without this, its use would wait for it forever.
+-  const unloaded = options.ping
+-    ? setTimeout(() => {
++  // A frame whose runtime never loads says nothing at all: without this, its use would wait for it forever. Its time
++  // is this thread's awake time, since a busy thread it shares keeps it from loading.
++  const cancelUnloaded = options.ping
++    ? afterAwake(Math.max(options.ping.timeout, LOAD_MS), () => {
+         if (waiting) stop({ reason: "unloaded" });
+-      }, Math.max(options.ping.timeout, LOAD_MS))
+-    : undefined;
++      })
++    : () => undefined;
+   const startPings = ({ every, timeout }: { every: number; timeout: number }) => {
+-    lastAnswer = Date.now();
+     pings = setInterval(() => {
+-      if (answered < sent && Date.now() - lastAnswer > timeout) {
+-        stop({ reason: "hung" });
+-        return;
++      if (answered < sent) {
++        silentFor += every;
++        if (silentFor >= timeout) {
++          stop({ reason: "hung" });
++          return;
++        }
+       }
+       sent += 1;
+       port.postMessage({ type: "ping", n: sent } satisfies ToFrame);
+@@ -206,7 +214,7 @@ export function connectChild(port: Port, options: ChildOptions): ChildEnd {
+       if (options.host) port.postMessage({ type: "host" } satisfies ToFrame, [options.host]);
+       const queued = waiting;
+       waiting = undefined;
+-      clearTimeout(unloaded);
++      cancelUnloaded();
+       for (const send of queued) send();
+       if (options.ping) startPings(options.ping);
+       return;
+@@ -215,7 +223,7 @@ export function connectChild(port: Port, options: ChildOptions): ChildEnd {
+     switch (data.type) {
+       case "pong":
+         answered = Math.max(answered, data.n);
+-        lastAnswer = Date.now();
++        silentFor = 0;
+         break;
+       case "set":
+         // A frame may set only what one of its uses is bound to; strict code may have written this message.
+@@ -301,7 +309,7 @@ export function connectChild(port: Port, options: ChildOptions): ChildEnd {
+ 
+   function close() {
+     closed = true;
+-    clearTimeout(unloaded);
++    cancelUnloaded();
+     if (pings !== undefined) clearInterval(pings);
+     port.removeEventListener("message", listener);
+     // A frame that went, or was stopped, holds nothing up.
+diff --git a/npm-packages/sandbox/test/host.test.ts b/npm-packages/sandbox/test/host.test.ts
+index 20fe6a5..419fa08 100644
+--- a/npm-packages/sandbox/test/host.test.ts
++++ b/npm-packages/sandbox/test/host.test.ts
+@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it } from "vitest";
+ import type { Compiled, CompiledCache } from "../src/compiled-cache.ts";
+ import type { HostClient } from "../src/host-api.ts";
+ import { HostRuntime, type HostEvents } from "../src/host/runtime.ts";
++import { LOAD_MS } from "../src/protocol/parent-end.ts";
+ import { allowed, frames, leaf, missing, probeCode, refused } from "./harness.ts";
+ 
+ const runtimes: HostRuntime[] = [];
+@@ -177,6 +178,21 @@ export default function Chart({ compmd }) {
+     expect(asked).toEqual(["ts:let a = 1;"]);
+   });
+ 
++  it("keeps a frame that couldn't load while the page's thread was busy: the time counts against no frame", async () => {
++    const { runtime, area, errors, next } = setup();
++    await runtime.set([plain("chart", { level: "strict" }, "async () => 'drawn'")]);
++    const result = next("chart");
++    runtime.mountUse(area, use("chart"), { chart: { type: "string", value: "" } });
++    // Once the frame's document has loaded, when its parent starts waiting for its runtime: busy for longer than a
++    // frame may take to load it, as another frame's large module keeps a shared thread.
++    await new Promise((loaded) => area.querySelector("iframe")?.addEventListener("load", loaded, { once: true }));
++    const until = Date.now() + LOAD_MS + 1000;
++    while (Date.now() < until);
++    expect(await result).toBe("drawn");
++    expect(errors).toEqual([]);
++    expect(area.querySelectorAll("iframe")).toHaveLength(1);
++  }, 30_000);
++
+   it("gives a handle for each use: `update` sends it new params, `destroy` removes its frame", async () => {
+     const { runtime, area, next } = setup();
+     // It sets its input after an update, not in it: a renderer refuses `set` while it updates.
+diff --git a/npm-packages/sandbox/test/observe.test.ts b/npm-packages/sandbox/test/observe.test.ts
+index ef6db39..dd03d7e 100644
+--- a/npm-packages/sandbox/test/observe.test.ts
++++ b/npm-packages/sandbox/test/observe.test.ts
+@@ -62,7 +62,7 @@ function open(page: "frame" | "host", components: HostComponent[], tree: Expande
+  * `vi.waitFor`'s default second.
+  */
+ async function waitFor(check: () => void): Promise<void> {
+-  await vi.waitFor(check, { timeout: 8000, interval: 50 });
++  await vi.waitFor(check, { timeout: 12_000, interval: 50 });
+ }
+ 
+ /** Waits until `done` holds of what `observation` keeps. */
