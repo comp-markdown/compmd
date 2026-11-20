@@ -53,6 +53,12 @@ Each folder is what the command would write, with the glue as written once, and 
 pnpm install
 pnpm --dir spikes/wrap-npm-package try                 # every pack
 pnpm --dir spikes/wrap-npm-package try layerchart      # one
+pnpm --dir spikes/wrap-npm-package try layerchart --serve  # its test page left running, to look at
+```
+
+`compmd-pack dev` serves the other three packs' test pages, but not layerchart's: it builds without Svelte's plugin, which [the design](../../docs/wrapping-an-npm-package.md)'s decision 10 adds. `try --serve` builds as `try.ts` does and leaves the page running.
+
+```sh
 pnpm --dir spikes/wrap-npm-package sizing              # the sizing prototype
 pnpm --dir spikes/wrap-npm-package sizing --height=900 # with most of its frames off screen
 ```

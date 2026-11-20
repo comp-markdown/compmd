@@ -4,6 +4,7 @@
 // reported to `results.json`, with a screenshot of each page in `screenshots/`.
 //
 //   pnpm --dir spikes/wrap-npm-package try [<pack folder>...]
+//   pnpm --dir spikes/wrap-npm-package try layerchart --serve     # its test page left running, for a person
 
 import { mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -187,7 +188,13 @@ async function openDemo(page: Page, url: string, uses: number): Promise<Opened> 
 }
 
 const results: Record<string, { built: Built; opened: Record<string, Opened> }> = {};
-const chosen = process.argv.slice(2).length > 0 ? process.argv.slice(2) : PACKS;
+/**
+ * `--serve`: build the chosen packs as above and leave each test page running, opening no browser, for a person to
+ * look at. `compmd-pack dev` can't yet, for a Svelte package (decision 10): it builds without Svelte's plugin.
+ */
+const SERVE = process.argv.includes("--serve");
+const named = process.argv.slice(2).filter((argument) => argument !== "--serve");
+const chosen = named.length > 0 ? named : PACKS;
 mkdirSync(join(HERE, "screenshots"), { recursive: true });
 
 for (const [index, name] of chosen.entries()) {
@@ -200,6 +207,10 @@ for (const [index, name] of chosen.entries()) {
   const port = 4230 + index;
   const server = await createServer({ configFile: false, root: dir, logLevel: "warn", appType: "custom", server: { port, strictPort: true }, plugins: [compmd({ config: await pageConfig(pack) }), testPage(pack)] });
   await server.listen();
+  if (SERVE) {
+    console.log(`  its test page: http://localhost:${String(port)}/ (Ctrl-C stops it; a change to its sources needs a new run)`);
+    continue;
+  }
   const uses = readFileSync(join(dir, "demo.comp.md"), "utf8").split("\n").filter((line) => line.startsWith(":: ")).length;
   for (const [browserName, type, options] of BROWSERS) {
     const browser = await type.launch({ headless: true, ...options });
@@ -216,4 +227,4 @@ for (const [index, name] of chosen.entries()) {
   await server.close();
 }
 
-writeFileSync(join(HERE, "results.json"), `${JSON.stringify(results, null, 2)}\n`);
+if (!SERVE) writeFileSync(join(HERE, "results.json"), `${JSON.stringify(results, null, 2)}\n`);
