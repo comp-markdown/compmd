@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 350,
+    "next_number": 353,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -12919,6 +12919,112 @@
       ],
       "sprint": "Packs 2: the basics, and data",
       "number": 349
+    },
+    {
+      "id": "01a1fa61-91aa-7105-88cd-9b174f39bb18",
+      "name": "Packs: placeholders and trusted publishers in one command",
+      "type": "infra",
+      "priority": "P1",
+      "labels": [
+        "packs",
+        "release"
+      ],
+      "description": "[Releases](docs/releases.md), decision 8: `cargo make pack-placeholders <pack>...`, with `--dry-run`.\n\n## Do\n- For each named pack npm doesn't have, write the `0.0.0` placeholder of RELEASING.md's *A placeholder first* (a `package.json` that says so, a README pointing to the real versions, the MIT `LICENSE`) outside the repository, and `npm publish` it.\n- Then set its trusted publisher: `npm trust github <package> --file release-packs.yml --repository comp-markdown/compmd --allow-stage-publish --yes`.\n- A pinned npm with `npm trust` and staging (11.15 or newer); one one-time code for the run while it is valid; a pause between packages as npm advises.\n- `--dry-run` lists what it would publish and set, and does nothing.\n- RELEASING.md's steps for a new pack say to run it.\n\n## Tests\nThe placeholder's files and the commands it would run, from `--dry-run`, for a pack npm has and one it doesn't.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68e81c39ce10"
+      ],
+      "files": [
+        "tools/packs/",
+        "Makefile.toml",
+        "RELEASING.md"
+      ],
+      "created_at": "2026-11-20T19:14:20Z",
+      "updated_at": "2026-11-20T19:14:20Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Packs 1: the pack tool, no-code components",
+          "from": "2026-11-20T19:14:20Z"
+        }
+      ],
+      "sprint": "Packs 1: the pack tool, no-code components",
+      "number": 350
+    },
+    {
+      "id": "01a1fa61-91aa-7105-88cd-9b180d18ff67",
+      "name": "Packs: one file of versions, one command and one workflow that release what changed",
+      "type": "infra",
+      "priority": "P1",
+      "labels": [
+        "packs",
+        "release"
+      ],
+      "description": "[Releases](docs/releases.md), decision 8: `compmd-packs/versions.json`, `cargo make release-packs` (with `--dry-run`) and `.github/workflows/release-packs.yml`.\n\n## Do\n- `compmd-packs/versions.json`, the one place a pack's version is written; a check in `cargo make ci` that each pack's `package.json` has it.\n- `cargo make release-packs`: asks npm which versions it doesn't have, shows them, and on a yes writes them into the packs' `package.json` if needed, tags each `<pack>-v<version>`, pushes the tags and starts one run of `release-packs.yml` (`gh workflow run`). `--dry-run` shows what it would release and does nothing.\n- `release-packs.yml`: `cargo make ci` once, then packs and stages (`npm stage publish`) every pack whose version npm doesn't have, with trusted publishing.\n- The Mermaid and wireframe packs move to it: `release-mermaid.yml` and `release-wireframe.yml` go; their trusted publishers are revoked and set again for `release-packs.yml` (with the author, who holds the 2FA). RELEASING.md's pack section rewritten.\n\n## Tests\nWhich packs it releases, from `--dry-run`, with versions npm has and doesn't; the `ci` check failing on a `package.json` that differs.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68e81c39ce10"
+      ],
+      "files": [
+        "compmd-packs/versions.json",
+        "tools/packs/",
+        "Makefile.toml",
+        ".github/workflows/release-packs.yml",
+        ".github/workflows/release-mermaid.yml",
+        ".github/workflows/release-wireframe.yml",
+        "RELEASING.md"
+      ],
+      "created_at": "2026-11-20T19:14:20Z",
+      "updated_at": "2026-11-20T19:14:20Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Packs 1: the pack tool, no-code components",
+          "from": "2026-11-20T19:14:20Z"
+        }
+      ],
+      "sprint": "Packs 1: the pack tool, no-code components",
+      "number": 351
+    },
+    {
+      "id": "01a1fa61-91aa-7105-88cd-9b1907126ded",
+      "name": "Packs: approve what is staged, chosen from a list",
+      "type": "infra",
+      "priority": "P1",
+      "labels": [
+        "packs",
+        "release"
+      ],
+      "description": "[Releases](docs/releases.md), decision 8: `cargo make approve-packs`, with `--dry-run`.\n\n## Do\n- List what is staged for every pack (`npm stage list`) as checkboxes (`@inquirer/checkbox`, MIT), all chosen; space toggles, Enter approves the chosen ones (`npm stage approve`) in the order they were staged.\n- A pinned npm with staging; one one-time code, asked again only when it expires.\n- `--dry-run` shows the list and what it would approve, and approves nothing.\n- RELEASING.md says to run it after `release-packs`.\n\n## Tests\nThe order it approves in and what it skips, with npm's answers stubbed.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68e81c39ce10"
+      ],
+      "files": [
+        "tools/packs/",
+        "Makefile.toml",
+        "RELEASING.md"
+      ],
+      "created_at": "2026-11-20T19:14:20Z",
+      "updated_at": "2026-11-20T19:14:20Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Packs 1: the pack tool, no-code components",
+          "from": "2026-11-20T19:14:20Z"
+        }
+      ],
+      "sprint": "Packs 1: the pack tool, no-code components",
+      "number": 352
     }
   ]
 }

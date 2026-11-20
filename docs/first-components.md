@@ -58,7 +58,9 @@ pages have, and what CompMD covers already, with the list, each component's pack
     own level (an embed permissive, the rest strict). The embeds are one pack per provider (`embed-youtube`, …), sharing
     the permissive frame's code of CMD-332 as a library. The basics stay one pack, `@compmd/basics`, built into the
     sandbox (decision 6). With about 25 packs, each one's release is a tag `<pack>-v<version>`, which one workflow
-    publishes for every pack, rather than a workflow each ([releases](releases.md), decision 8).
+    publishes for every pack, rather than a workflow each; three commands create new packs on npm with their trusted
+    publishers, release every pack whose version in `compmd-packs/versions.json` npm doesn't have, and approve what is
+    staged ([releases](releases.md), decision 8, CR-28's c5).
 11. **The frames compile WebAssembly again** (decided 2026-11-20): `graphviz` and `jq` are WebAssembly
     (`@viz-js/viz`, `jq-wasm`), so both frame documents' policies get `'wasm-unsafe-eval'` back, in the sprint that
     brings them (CMD-324). [WebAssembly in the frames](webassembly-in-the-frames.md) found it gives a component
@@ -275,6 +277,7 @@ From CR-28's comments, in its round 2:
 |---|---|
 | c1: columns, two or three, with a slot each | `columns` (4b); decision 2 no longer counts columns as covered |
 | c2: a word cloud | `word-cloud` (10b) |
+| c5, c11: releasing many packs: placeholders, one file of versions, approving what is staged | Decision 10; [releases](releases.md), decision 8; CMD-350 to CMD-352 |
 
 ## The research
 
