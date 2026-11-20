@@ -249,4 +249,14 @@ describe("loadApp", () => {
       "@acme/app@1.0.0/index.comp.md:20:3: W104 the signature declares `product`, which rating.svelte has no prop for (`product`)",
     ]);
   });
+
+  it("leaves the analysis out when asked, with the same request", async () => {
+    await write({
+      "components/Stars.tsx": "export default function Stars({ value, size }: { value: string; size?: number }) { return null; }",
+      "components/rating.svelte": "<p>no props</p>",
+    });
+    const unanalysed = await loadApp(root, undefined, { analysis: false });
+    expect(unanalysed.warnings).toEqual([]);
+    expect(unanalysed.request).toEqual((await loadApp(root)).request);
+  });
 });

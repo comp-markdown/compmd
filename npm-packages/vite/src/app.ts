@@ -147,12 +147,23 @@ function check(listed: readonly Pack[], request: App["request"], warnings: strin
   if (errors.length > 0) throw new AppError(`the listed packs have errors:\n${errors.map((error) => `- ${lineOf(error)}`).join("\n")}`);
 }
 
+/** How much of the app {@link loadApp} looks at. */
+export interface LoadOptions {
+  /**
+   * Whether to analyse the listed packs' components for W104 (default `true`). It loads TypeScript, most of what loading
+   * the app takes, so a caller that only processes documents with the app's `request` leaves it out.
+   */
+  analysis?: boolean;
+}
+
 /**
  * Everything the plugin gives the app at `root`, with the configuration `given` in the plugin's options, if any.
  *
+ * @example
+ * const { request } = await loadApp(root, undefined, { analysis: false });
  * @throws AppError, ConfigError or PackError, saying what to fix.
  */
-export async function loadApp(root: string, given?: unknown): Promise<App> {
+export async function loadApp(root: string, given?: unknown, { analysis = true }: LoadOptions = {}): Promise<App> {
   const config = await configOf(root, given);
   const folders = [...config.packs.keys()].filter(isFolder);
   const packs = await findPacks(root, folders);
@@ -194,7 +205,7 @@ export async function loadApp(root: string, given?: unknown): Promise<App> {
   check(listed, request, warnings);
   // Component analysis (W104) needs the app's TypeScript, and Svelte's compiler for Svelte components; without them,
   // it is left out, as the optional feature it is (spec §13.1).
-  const compilers = listed.length > 0 ? await loadCompilers() : undefined;
+  const compilers = analysis && listed.length > 0 ? await loadCompilers() : undefined;
   if (compilers) for (const pack of listed) warnings.push(...analysePack(pack, mdOf(pack.files[pack.document] ?? ""), compilers));
   for (const [name, why] of Object.entries(refused)) warnings.push(`${name} is left out: ${why}`);
   // docs/vite.md, V1: the lock file holds every package installed from a registry, so a pack it lacks is a sign the

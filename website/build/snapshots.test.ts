@@ -35,11 +35,11 @@ describe("snapshot", () => {
 });
 
 describe("snapshots", () => {
-  // The site's app, loaded once: loading it is the slow part (under a second alone, several while every package's
-  // browser tests run beside it), and what the test checks is the rendering.
+  // The site's app, loaded once, without the components' analysis: it loads TypeScript, most of what loading the app
+  // takes (over 10 s once while every package's tests ran beside it), and what the test checks is the rendering.
   let request: Awaited<ReturnType<typeof loadApp>>["request"];
   beforeAll(async () => {
-    ({ request } = await loadApp(join(import.meta.dirname, "..")));
+    ({ request } = await loadApp(join(import.meta.dirname, ".."), undefined, { analysis: false }));
   });
 
   it("renders every document of the site's content, each by its name, with the site's packs", () => {
