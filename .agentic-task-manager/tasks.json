@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 353,
+    "next_number": 357,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -586,7 +586,8 @@
       "use_cases": [],
       "status": "todo",
       "dependencies": [
-        "01a1ebb5-4120-7007-85a3-68e5ebcaa0da"
+        "01a1ebb5-4120-7007-85a3-68e5ebcaa0da",
+        "01a1faa3-d27f-73b4-9632-1835b3071707"
       ],
       "files": [
         "docs/create-pack.md",
@@ -594,7 +595,7 @@
         "npm-packages/create-pack/src/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-20T10:26:02Z",
+      "updated_at": "2026-11-20T20:26:48Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -11896,13 +11897,14 @@
       "use_cases": [],
       "status": "todo",
       "dependencies": [
-        "01a1ebb5-4120-7007-85a3-68e81c39ce10"
+        "01a1ebb5-4120-7007-85a3-68e81c39ce10",
+        "01a1faa3-d27f-73b4-9632-1835b3071707"
       ],
       "files": [
         "compmd-packs/rating/"
       ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T16:20:57Z",
+      "updated_at": "2026-11-20T20:26:48Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 320,
@@ -13031,6 +13033,144 @@
       ],
       "sprint": "Packs 1: the pack tool, no-code components",
       "number": 352
+    },
+    {
+      "id": "01a1faa3-d27f-73b4-9632-1832108aba7b",
+      "name": "Sizing: the spec, its conformance cases and the processor",
+      "type": "feature",
+      "priority": "P1",
+      "labels": [
+        "spec",
+        "sizing"
+      ],
+      "description": "[Sizing a component in its box](docs/sizing-components.md), *What changes*, the spec, with the processor that implements it. The spec's text needs the maintainer's go before it is pushed.\n\n## The spec\n- §9.2: `object-fit` (`contain`, `cover`, `fill`) and `object-position` (one or two of `start`, `center`, `end`, block then inline), written without a breakpoint (F009); \"padding and border\" (decisions 1 and 6).\n- §7.4: `fit` in `mount`'s context; a component fits its box; framing is invisible to layout; natural sizes (decisions 1 to 3). §7.6: the bindings pass `compmd.fit`.\n- §7, *The component's box*: a signature fence's param list as the box's defaults; F036's new meaning (decision 4).\n- §5.1 and F013: the common params' names, `lang` and `dir` in a signature (decision 5).\n- §12.1: the signature fence's `params`. The changelog entry under *Unreleased*.\n\n## Conformance\nThe design's table: `definitions/fence-params`, `definitions/signature-types` and `resolve/params-differ-in-dash-F013` changed; the six new cases; `compmd-tree.schema.json` and `conformance/README.md`.\n\n## The processor\nThe signature fence's params parsed and kept; F036 at resolving; F013 for the names; the two params validated; a signature fence's defaults under the caller's in the expanded tree, as a definition fence's are.\n\n## Done when\n`cargo make ci` is green, and the guides' chapters on the common params and on signatures say it.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68e5ebcaa0da"
+      ],
+      "files": [
+        "spec/compmd-spec-v1.md",
+        "spec/CHANGELOG.md",
+        "conformance/",
+        "crates/processor/src/",
+        "guides/"
+      ],
+      "created_at": "2026-11-20T20:26:42Z",
+      "updated_at": "2026-11-20T20:26:42Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Packs 1: the pack tool, no-code components",
+          "from": "2026-11-20T20:26:42Z"
+        }
+      ],
+      "sprint": "Packs 1: the pack tool, no-code components",
+      "number": 353
+    },
+    {
+      "id": "01a1faa3-d27f-73b4-9632-1833aa21548d",
+      "name": "Sizing: the renderer gives a component its box and `fit`",
+      "type": "feature",
+      "priority": "P1",
+      "labels": [
+        "sizing"
+      ],
+      "description": "[Sizing a component in its box](docs/sizing-components.md), *What changes*, `@compmd/render`.\n\n## Do\n- A host-language component's box is a grid of one column (`grid-template-columns: minmax(0, 1fr)`, `grid-auto-rows: minmax(0, auto)`; inline, an inline grid), as [the prototype](spikes/wrap-npm-package/sizing/page.html)'s `.box` is.\n- `object-fit` and `object-position` resolved with the box's direction and given as `context.fit` (`{ mode, x, y }`), with an `update` when they change, as `scheme` is.\n- The contract's type; the React and Svelte bindings pass `compmd.fit`.\n\n## Tests\nUnit tests of the resolving, right to left too; browser tests, in Chrome and WebKit, of a trusted component in a box with each way of sizing it, the prototype's cases.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1faa3-d27f-73b4-9632-1832108aba7b"
+      ],
+      "files": [
+        "npm-packages/render/src/"
+      ],
+      "created_at": "2026-11-20T20:26:42Z",
+      "updated_at": "2026-11-20T20:26:42Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Packs 1: the pack tool, no-code components",
+          "from": "2026-11-20T20:26:42Z"
+        }
+      ],
+      "sprint": "Packs 1: the pack tool, no-code components",
+      "number": 354
+    },
+    {
+      "id": "01a1faa3-d27f-73b4-9632-183483697925",
+      "name": "Sizing: a framed use laid out as in the page (the frames' scroll bars)",
+      "type": "feature",
+      "priority": "P1",
+      "labels": [
+        "sizing",
+        "sandbox"
+      ],
+      "description": "[Sizing a component in its box](docs/sizing-components.md), decision 2 and *The mechanism*, in `@compmd/sandbox`, as [the prototype](spikes/wrap-npm-package/sizing/page.html) does it. Today a use's box params are applied to the page's box and again inside its frame, so a use with a `width` and a border scrolls.\n\n## Do\n- The sizer, with the frame positioned over it, in place of a frame as tall as its content.\n- In the frame: `target` the frame's size; the part with none of the box's params; no scrolling without `scroll`.\n- The natural size measured height first, then width with `target` laid out anew as a block; reported when mounted, when the content changes size, and when the page says the box did.\n- The protocol, version 3: `size` with the natural width and height, `box` from the page (on load, and when the sizer changes size), `fit` with the part; `docs/sandbox-protocol.md` and the schema.\n- [Running components in the sandbox](docs/running-components-in-the-sandbox.md), Q5, says it.\n\n## Tests\nBrowser tests in Chrome and WebKit: each of the prototype's 28 uses drawn by a trusted component in the page and by the same component framed, compared, and the grid rows after they shrink; with most frames off screen; and the four the prototype doesn't run: `object-position` right to left, `scroll`, an `img` or `canvas` drawing, and a script-sized drawing that doesn't contain its size.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1faa3-d27f-73b4-9632-1833aa21548d"
+      ],
+      "files": [
+        "npm-packages/sandbox/src/",
+        "docs/sandbox-protocol.md",
+        "docs/running-components-in-the-sandbox.md"
+      ],
+      "created_at": "2026-11-20T20:26:42Z",
+      "updated_at": "2026-11-20T20:26:42Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Packs 1: the pack tool, no-code components",
+          "from": "2026-11-20T20:26:42Z"
+        }
+      ],
+      "sprint": "Packs 1: the pack tool, no-code components",
+      "number": 355
+    },
+    {
+      "id": "01a1faa3-d27f-73b4-9632-1835b3071707",
+      "name": "Sizing: `@compmd/pack` fits what a component draws, and shows its box",
+      "type": "feature",
+      "priority": "P1",
+      "labels": [
+        "sizing",
+        "packs"
+      ],
+      "description": "[Sizing a component in its box](docs/sizing-components.md), *What changes*, `@compmd/pack`.\n\n## Do\n- `draw()` fits what it is given from `context.fit`: an SVG by its `preserveAspectRatio`, an `img` or a `canvas` by CSS's `object-fit`; its own `div` is the box's size.\n- `fitBox(element, fit)` and `fillBox(element)` in `@compmd/pack/component`: the second contains its size (`contain: size`, CSS's 300 by 150 as its natural size).\n- `mountForTest` takes `fit`, and has `setFit`.\n- The test page's **Show boxes** switch, which outlines every use's box.\n- `create-pack`'s templates fit their box; their demos have a use with `width`, one with `height` and one with `object-fit=cover`.\n- The Mermaid and wireframe packs checked in a sized box, and their demos given such a use.\n- [Writing a pack](docs/writing-a-pack.md) and the Developer's Guide say it.\n\n## Tests\nUnit tests of each helper and each mode; the test page's switch in its browser test.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1faa3-d27f-73b4-9632-1833aa21548d"
+      ],
+      "files": [
+        "npm-packages/pack/src/",
+        "npm-packages/create-pack/template/",
+        "compmd-packs/mermaid/",
+        "compmd-packs/wireframe/",
+        "docs/writing-a-pack.md",
+        "guides/"
+      ],
+      "created_at": "2026-11-20T20:26:42Z",
+      "updated_at": "2026-11-20T20:26:42Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Packs 1: the pack tool, no-code components",
+          "from": "2026-11-20T20:26:42Z"
+        }
+      ],
+      "sprint": "Packs 1: the pack tool, no-code components",
+      "number": 356
     }
   ]
 }
