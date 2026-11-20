@@ -721,9 +721,9 @@
         "compmd-packs/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-20T18:56:16Z",
+      "updated_at": "2026-11-20T19:03:21Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "sprint_history": [
         {
           "sprint": "Rendering optimizations",
@@ -744,7 +744,7 @@
       "sprint": "Packs 1: the pack tool, no-code components",
       "started_at": "2026-11-20T16:17:07Z",
       "started_by": "claude:79612601",
-      "commit": "8acc0e3db1726853f26e235019fe518b1063ba9c",
+      "commit": "bfbcc0554c8f6845f723f0f100a6d982ee2c4914",
       "code_reviews": [
         {
           "id": "01a1f9c3-335d-70a7-804a-1577c4ebc8c3",

@@ -7,7 +7,7 @@ tasks = ["CMD-8"]
 author = "claude:79612601"
 reviewers = []
 created = 2026-11-20T17:20:26Z
-updated = 2026-11-20T18:52:11Z
+updated = 2026-11-20T18:59:35Z
 +++
 
 Round 2: the spike is in the project, `spikes/wrap-npm-package/`, and the design takes what it found.
