@@ -32,13 +32,18 @@ struct Processed {
     needed: Vec<NeededPack>,
 }
 
-/// A document importing every pack of `imports` (`@acme/charts@1`), with `packs` and `policy`.
-fn processed(imports: &[&str], packs: Value, policy: Value) -> Processed {
+/// A document importing every pack of `imports` (`("@acme/charts@1", "chart")`) and using its component, since only
+/// the components a document uses are listed with their libraries, with `packs` and `policy`.
+fn processed(imports: &[(&str, &str)], packs: Value, policy: Value) -> Processed {
+    let uses: String = imports
+        .iter()
+        .flat_map(|(_, component)| [":: ", component, "[", component, "]\n\n"])
+        .collect();
     let imports: String = imports
         .iter()
-        .flat_map(|from| ["    - from: \"", from, "\"\n      names: \"*\"\n"])
+        .flat_map(|(from, _)| ["    - from: \"", from, "\"\n      names: \"*\"\n"])
         .collect();
-    let text = format!("---\nmd:\n  import:\n{imports}---\n");
+    let text = format!("---\nmd:\n  import:\n{imports}---\n\n{uses}");
     let packs: HashMap<String, Vec<LoadedRelease>> = serde_json::from_value(packs).expect("packs");
     let policy: Policy = serde_json::from_value(policy).expect("a policy");
     let context = RenderContext {
@@ -106,7 +111,11 @@ fn packs_share_the_newest_version_every_range_allows() {
             library("@kit/d3", "7.12.0", json!({ "library": "dist/index.js" }), json!({})),
         ],
     });
-    let processed = processed(&["@acme/charts@1", "@acme/maps@1"], packs, json!({}));
+    let processed = processed(
+        &[("@acme/charts@1", "chart"), ("@acme/maps@1", "map")],
+        packs,
+        json!({}),
+    );
     assert_eq!(messages(&processed), Vec::<String>::new());
     assert_eq!(
         chosen(&processed),
@@ -127,13 +136,21 @@ fn ranges_that_share_no_version_get_one_each_unless_the_library_is_single() {
             ],
         })
     };
-    let two = processed(&["@acme/charts@1", "@acme/maps@1"], packs(false), json!({}));
+    let two = processed(
+        &[("@acme/charts@1", "chart"), ("@acme/maps@1", "map")],
+        packs(false),
+        json!({}),
+    );
     assert_eq!(messages(&two), Vec::<String>::new());
     assert_eq!(
         chosen(&two),
         json!({ "chart": ["@kit/three: @kit/three@0.170.2/dist/index.js"], "map": ["@kit/three: @kit/three@0.171.0/dist/index.js"] })
     );
-    let one = processed(&["@acme/charts@1", "@acme/maps@1"], packs(true), json!({}));
+    let one = processed(
+        &[("@acme/charts@1", "chart"), ("@acme/maps@1", "map")],
+        packs(true),
+        json!({}),
+    );
     assert_eq!(
         messages(&one),
         [
@@ -158,7 +175,11 @@ fn a_single_librarys_version_serves_every_range_it_matches() {
         ],
     });
     let processed = processed(
-        &["@acme/charts@1", "@acme/maps@1", "@acme/globe@1"],
+        &[
+            ("@acme/charts@1", "chart"),
+            ("@acme/maps@1", "map"),
+            ("@acme/globe@1", "globe"),
+        ],
         packs,
         json!({}),
     );
@@ -180,7 +201,7 @@ fn a_librarys_own_libraries_are_chosen_with_the_document() {
         ],
     });
     let processed = processed(
-        &["@acme/charts@1"],
+        &[("@acme/charts@1", "chart")],
         packs,
         json!({ "runtimes": [{ "name": "react", "version": "18.3.0" }] }),
     );
@@ -207,7 +228,7 @@ fn libraries_that_name_each_other_are_w121_and_the_cycle_is_cut() {
         "@kit/a": [library("@kit/a", "1.0.0", json!({ "library": "dist/index.js" }), json!({ "@kit/b": "^1" }))],
         "@kit/b": [library("@kit/b", "1.0.0", json!({ "library": "dist/index.js" }), json!({ "@kit/a": "^1" }))],
     });
-    let processed = processed(&["@acme/charts@1"], packs, json!({}));
+    let processed = processed(&[("@acme/charts@1", "chart")], packs, json!({}));
     assert_eq!(
         messages(&processed),
         [
@@ -229,7 +250,7 @@ fn a_library_the_host_hasnt_is_listed_for_it_to_fetch() {
         "@acme/charts": [pack("@acme/charts", "1.0.0", "chart", json!({ "@kit/three": "^0.170", "@kit/plot": "1.0.0", "d3": "^7", "@kit/odd": "not a range" }))],
         "@kit/three": [library("@kit/three", "0.169.0", json!({ "library": "dist/index.js" }), json!({}))],
     });
-    let processed = processed(&["@acme/charts@1"], packs, json!({}));
+    let processed = processed(&[("@acme/charts@1", "chart")], packs, json!({}));
     assert_eq!(
         messages(&processed),
         [
@@ -266,7 +287,7 @@ fn a_library_that_cant_be_used_says_why() {
         "@kit/empty": [{ "version": "1.0.0", "files": { "package.json": "{\"compmd\": {\"library\": \"dist/index.js\"}}" } }],
     });
     let policy = json!({ "refused": { "@kit/refused": "larger than this host serves" }, "deny": [{ "pack": "@kit/denied", "reason": "misuse" }] });
-    let processed = processed(&["@acme/charts@1"], packs, policy);
+    let processed = processed(&[("@acme/charts@1", "chart")], packs, policy);
     let why: Vec<String> = messages(&processed)
         .iter()
         .map(|message| {

@@ -9,6 +9,7 @@ mod libraries;
 mod load;
 mod names;
 mod origin;
+mod reached;
 mod source;
 mod uses;
 
@@ -415,15 +416,16 @@ impl Resolved {
         (std::mem::take(&mut main.text), lines)
     }
 
-    /// Every host-language component one of this processor's bindings runs, by each name a document gives it, with
-    /// its code from `store`; by name. A name two documents give different components is the processed document's,
-    /// or else the first document's in load order.
+    /// Every host-language component the processed document reaches (`reached.rs`) that one of this processor's
+    /// bindings runs, by each name a document gives it, with its code from `store`; by name. A name two documents
+    /// give different components is the processed document's, or else the first document's in load order.
     pub(crate) fn host_components(&self, store: Store<'_>) -> Vec<HostComponent> {
+        let reached = reached::reached(self);
         let mut found: BTreeMap<&str, HostComponent> = BTreeMap::new();
         let main_first = std::iter::once(self.main).chain(self.ids().filter(|id| *id != self.main));
         for id in main_first {
             for (name, component) in self.document(id).names.components() {
-                if found.contains_key(name) {
+                if found.contains_key(name) || !reached.contains(&component) {
                     continue;
                 }
                 let component = self.component(component);

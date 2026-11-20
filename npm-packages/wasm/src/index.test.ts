@@ -199,7 +199,8 @@ describe("a request's options, each as a host gives it", () => {
   const importing = (...froms: string[]) => `---\nmd:\n  import:\n${froms.map((from) => `    - from: "${from}"\n      names: "*"\n`).join("")}---\n`;
 
   it("packs and policy: each component of a pack comes with its built module and its pack's trust", () => {
-    const request = document(importing("@acme/charts@1", "@acme/maps@1"), {
+    // A component comes only when the document uses it.
+    const request = document(`${importing("@acme/charts@1", "@acme/maps@1")}\n:: chart[C]\n\n:: map[M]\n`, {
       packs: { "@acme/charts": [pack("@acme/charts", "chart")], "@acme/maps": [pack("@acme/maps", "map")] },
       policy: { packs: { "@acme/maps": { level: "permissive", network: ["https://tiles.example.com"] } } },
     });
@@ -212,7 +213,7 @@ describe("a request's options, each as a host gives it", () => {
   it("packs: a library pack a pack names comes with its components, once the request has it", () => {
     const bars = pack("@acme/bars", "bars", { peerDependencies: { "@kit/d3": "^7" } });
     const d3 = { version: "7.9.0", integrity: "sha512-d3", files: { "package.json": JSON.stringify({ name: "@kit/d3", version: "7.9.0", compmd: { library: "dist/d3.js" } }), "dist/d3.js": "export {};" } };
-    const without = document(importing("@acme/bars@1"), { packs: { "@acme/bars": [bars] } });
+    const without = document(`${importing("@acme/bars@1")}\n:: bars[B]\n`, { packs: { "@acme/bars": [bars] } });
     expect(sources(without).packs).toEqual([{ pack: "@kit/d3", range: "^7", library: true }]);
     const withIt = { ...without, packs: { ...without.packs, "@kit/d3": [d3] } };
     expect(new OpenDocument(withIt).components[0]?.libraries).toEqual({ "@kit/d3": { pack: "@kit/d3", version: "7.9.0", path: "dist/d3.js" } });

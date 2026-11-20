@@ -18,6 +18,35 @@ fn a_document_imports_a_pack_the_host_gives_and_uses_its_components() {
 }
 
 #[test]
+fn an_ambient_packs_components_are_given_only_to_a_document_that_uses_them() {
+    // Two components in one pack every document gets without importing it (spec §6.3).
+    let two = format!(
+        "{}\n```js component=map\nexport default () => {{}};\n```\n\n```compmd component=map signature\nparams: {{}}\n```\n",
+        js_pack("chart")
+    );
+    let host = Host {
+        ambient: Ambient {
+            packs: vec!["@site/kit".parse().expect("a name")],
+            report: false,
+        },
+        ..Host::default().with("@site/kit", release("@site/kit", "1.0.0", &two, json!({})))
+    };
+    let names = |text: &str| -> Vec<String> {
+        host.process(text)
+            .host_components()
+            .into_iter()
+            .map(|component| component.name)
+            .collect()
+    };
+    assert_eq!(names(":: chart[A chart]\n"), ["chart"]);
+    assert_eq!(names("Plain text, no component.\n"), Vec::<String>::new());
+    assert_eq!(
+        names("````compmd {render=output}\n:: map[A map]\n````\n"),
+        ["map"]
+    );
+}
+
+#[test]
 fn a_missing_pack_is_listed_for_the_host_to_get_and_the_document_processed_again_with_it() {
     let text = importing(&["@acme/kit@^1.1"], ":: card[Card]\n");
     let host = Host::default();

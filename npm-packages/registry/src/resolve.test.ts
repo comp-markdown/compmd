@@ -335,9 +335,15 @@ describe("the cache", () => {
 });
 
 describe("library packs (docs/sharing-library-packs.md, decision 5)", () => {
-  /** Each component's library packs, as `name: pack@version/path`. */
-  const libraries = (request: Request) =>
-    Object.fromEntries(new OpenDocument(request).components.map(({ name, libraries }) => [name, Object.entries(libraries ?? {}).map(([as, { pack, version, path }]) => `${as}: ${pack}@${version}/${path}`)]));
+  /**
+   * Each component's library packs, as `name: pack@version/path`, once the document uses each of `used` (with the
+   * `title` the fixtures' components take): only a component the document uses comes with its code and libraries.
+   */
+  const libraries = (request: Request, used: readonly string[]) => {
+    const text = `${request.files?.[request.path] ?? ""}\n${used.map((name) => `:: ${name}[${name}] {title=${name}}\n`).join("\n")}`;
+    const opened = new OpenDocument({ ...request, files: { ...request.files, [request.path]: text } });
+    return Object.fromEntries(opened.components.map(({ name, libraries }) => [name, Object.entries(libraries ?? {}).map(([as, { pack, version, path }]) => `${as}: ${pack}@${version}/${path}`)]));
+  };
 
   it("are fetched at the version every range asked in a round matches, once", async () => {
     // `@kit/bars` asks `@kit/d3` at `^7.9`, `@kit/lines` at `~7.9.0`: 7.12.0 matches the first only, 7.9.5 both.
@@ -345,7 +351,7 @@ describe("library packs (docs/sharing-library-packs.md, decision 5)", () => {
     expect(problems).toEqual([]);
     expect(downloaded()).toEqual(["@kit/bars@1.0.0", "@kit/lines@1.0.0", "@kit/d3@7.9.5"]);
     expect(diagnostics(ready)).toEqual([]);
-    expect(libraries(ready)).toEqual({ bars: ["@kit/d3: @kit/d3@7.9.5/dist/d3.js"], lines: ["@kit/d3: @kit/d3@7.9.5/dist/d3.js"] });
+    expect(libraries(ready, ["bars", "lines"])).toEqual({ bars: ["@kit/d3: @kit/d3@7.9.5/dist/d3.js"], lines: ["@kit/d3: @kit/d3@7.9.5/dist/d3.js"] });
     expect(await modules({ pack: "@kit/d3", version: "7.9.5", path: "dist/d3.js" })?.code.text()).toContain('"7.9.5"');
   });
 
@@ -355,7 +361,7 @@ describe("library packs (docs/sharing-library-packs.md, decision 5)", () => {
     const { request: ready } = await resolvePacks(importing("@kit/bars@1", "@kit/dashboard@1"), options());
     expect(downloaded()).toEqual(["@kit/bars@1.0.0", "@kit/dashboard@1.0.0", "@kit/lines@1.0.0", "@kit/d3@7.12.0", "@kit/d3@7.9.5"]);
     expect(diagnostics(ready)).toEqual([]);
-    expect(libraries(ready)).toEqual({ bars: ["@kit/d3: @kit/d3@7.9.5/dist/d3.js"], lines: ["@kit/d3: @kit/d3@7.9.5/dist/d3.js"] });
+    expect(libraries(ready, ["bars", "lines"])).toEqual({ bars: ["@kit/d3: @kit/d3@7.9.5/dist/d3.js"], lines: ["@kit/d3: @kit/d3@7.9.5/dist/d3.js"] });
   });
 
   it("follow the policy as packs do: a denied version is W121 on the imports that name it", async () => {

@@ -293,11 +293,14 @@ impl Processor<Expanded> {
         processor
     }
 
-    /// The host-language components the expanded tree can name, with their code, by name: what a renderer that
-    /// runs them needs, since the tree names a component but doesn't hold its code (spec §7.4, §12.3). Those of an
-    /// example (spec §7.8) come after the document's, each with its example's number. Only those
-    /// one of the processor's bindings runs (others render their fallback, W102); a name two documents give
-    /// different components is the processed document's, or else the first loaded.
+    /// The host-language components the document uses, with their code, by name: what a renderer that runs them
+    /// needs, since the tree names a component but doesn't hold its code (spec §7.4, §12.3). Used is invoked, or
+    /// drawing a code block, in the body or in a definition it uses, in any branch or template: so the list doesn't
+    /// change with the inputs, which may show a branch the last render didn't. A component the documents could name
+    /// but the document never uses, such as most of an ambient pack's, isn't listed, so a host loads no code for it.
+    /// Those of an example (spec §7.8) come after the document's, each with its example's number. Only those one of
+    /// the processor's bindings runs (others render their fallback, W102); a name two documents give different
+    /// components is the processed document's, or else the first loaded.
     ///
     /// ```
     /// use compmd::context::RenderContext;

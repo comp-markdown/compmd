@@ -63,7 +63,7 @@ const SVELTE_PACK: Record<string, string> = {
 };
 
 describe("a post with a trusted Svelte pack's component", () => {
-  it("is built with Svelte's compiler into the page's script", async () => {
+  it("is built with Svelte's compiler into the page's script, and the posts that don't use the ambient pack get none", async () => {
     const svelteBlog = await writeBlog({ ...BLOG, ...SVELTE_PACK }, join(import.meta.dirname, "../test/.out"));
     try {
       const built = await buildSite(svelteBlog, { drafts: false, now: "2026-11-25T12:00:00Z" });
@@ -71,6 +71,9 @@ describe("a post with a trusted Svelte pack's component", () => {
       expect(page).toContain("Hello");
       const script = /<script type="module" src="\/blog\/([^"]+)"><\/script>/.exec(page)?.[1];
       expect(built.files.has(script!)).toBe(true);
+      // Every post can name `glow`, an ambient pack's, but only the one that uses it loads its code (G10).
+      expect(built.files.get("first/index.html")).not.toContain('type="module"');
+      expect(built.files.get("second/index.html")).not.toContain('type="module"');
     } finally {
       await rm(svelteBlog, { recursive: true, force: true });
     }

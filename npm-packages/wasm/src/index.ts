@@ -400,9 +400,11 @@ export function plainHtml(text: string): string {
 }
 
 /**
- * A host-language component the expanded tree can name, with its code, for a renderer that runs it (spec §7.4): the
- * tree names a component but doesn't hold its code. A name two documents give different components is the processed
- * document's, or else the first loaded.
+ * A host-language component the document uses, with its code, for a renderer that runs it (spec §7.4): the tree names
+ * a component but doesn't hold its code. Used is invoked, or drawing a code block, in any branch whatever the inputs,
+ * or in a definition it uses; one the documents could name but the document never uses, such as most of an ambient
+ * pack's, isn't listed. A name two documents give different components is the processed document's, or else the first
+ * loaded.
  */
 export interface HostComponent {
   /** The name its nodes have in the expanded tree. */

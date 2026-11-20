@@ -144,7 +144,7 @@ export class OpenDocument {
     return this.#diagnostics;
   }
 
-  /** The host-language components the tree can name, with their code. */
+  /** The host-language components the document uses, in any branch, with their code. */
   get components(): readonly HostComponent[] {
     return this.#components;
   }

@@ -90,7 +90,8 @@ describe("Processing", () => {
 
   it("gives the components when an edit changes them", () => {
     const processing = new Processing(open);
-    const text = "```jsx component=hi runtime=react@19\nexport default () => 'hi';\n```\n";
+    // Used, so the processor gives it (it gives only the components the tree uses).
+    const text = "```jsx component=hi runtime=react@19\nexport default () => 'hi';\n```\n\n:: hi[Hi]\n";
     processing.handle({ type: "open", request: request(text), caret: 0 });
     const at = text.indexOf("'hi'") + 1;
     const answer = processing.handle({ type: "edits", edits: [{ start: at, end: at + 2, text: "yo" }], caret: 0 });

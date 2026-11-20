@@ -115,7 +115,7 @@ fn each_packs_components_have_its_trust_level_strict_unless_listed() {
     );
     let processed = host.process(&importing(
         &["@acme/charts@1", "@acme/maps@1", "@acme/stars@1"],
-        "",
+        ":: chart[C]\n\n:: map[M]\n\n:: stars[S]\n",
     ));
     let trust: BTreeMap<String, Trust> = processed
         .host_components()

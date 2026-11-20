@@ -50,7 +50,7 @@ pages have, and what CompMD covers already, with the list, each component's pack
    ```
 
    A minimal host lists none and carries none: the weight is each host's choice, not CompMD's. What a document that
-   uses none of them should pay is their signatures only, and today it pays more (G10). The packs' names here are
+   uses none of them pays their signatures only (G10, fixed). The packs' names here are
    placeholders until CMD-11 names them.
 
 ## The first list
@@ -228,7 +228,10 @@ does both. Vimeo's, Spotify's and SoundCloud's terms on facades are to read befo
   its page script, frames and all, since a post is live when that list isn't empty (`npm-packages/blog/src/render.ts`):
   that is why the blog's plain first post was given one in its first round. Decision 9 needs the list to hold only the
   components the document's expanded tree uses (its examples' included), so a post that uses none loads nothing:
-  CMD-268, before the packs are many.
+  CMD-268, before the packs are many. **Fixed:** the processor now lists the components the document uses: those its
+  body invokes or draws a code block with, in any branch whatever the inputs, and those the definitions it uses
+  invoke, each example's apart (`crates/processor/src/resolve/reached.rs`). Not the expanded tree's: a branch the
+  last render didn't show, which an input can show, would have no code.
 
 Round 1's G4, tabs and collapsibles in the core pack, is decision 6 now.
 

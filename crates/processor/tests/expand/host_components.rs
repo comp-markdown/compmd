@@ -129,8 +129,39 @@ fn a_packs_built_module_comes_by_its_place_and_components_have_their_packs_trust
 }
 
 #[test]
+fn host_components_are_those_the_document_uses_in_any_branch() {
+    let components = ["chart", "map", "rating", "stars", "unused"]
+        .map(|name| format!("```js component={name}\nexport default () => {{}};\n```\n\n"))
+        .concat();
+    let input = format!(
+        "{components}```compmd component=wrap\n---\n:: map[M]\n```\n\n:: chart[C]\n\n::: if {{when=(false)}}\n:: rating[R]\n::: /if\n\n````compmd {{render=output}}\n```js component=stars\nexport default () => {{}};\n```\n\n```js component=unused\nexport default () => {{}};\n```\n\n:: stars[S]\n````\n"
+    );
+    let rendered = Processor::new("input.comp.md", input.as_str())
+        .parse(&ParseOptions::default())
+        .resolve((), (), &Ambient::default())
+        .validate(&[])
+        .load(context(), (), ())
+        .expand(&expand::Options::default());
+    let listed: Vec<(String, Option<usize>)> = rendered
+        .host_components()
+        .into_iter()
+        .map(|c| (c.name, c.example))
+        .collect();
+    // `rating` is in a branch this render doesn't show, which another may: it is listed. `map` only through `wrap`,
+    // which no one uses, the document's own `stars` and `unused`, and the example's `unused`: none is.
+    assert_eq!(
+        listed,
+        [
+            ("chart".into(), None),
+            ("rating".into(), None),
+            ("stars".into(), Some(1))
+        ]
+    );
+}
+
+#[test]
 fn host_components_leave_out_what_no_binding_runs() {
-    let input = "---\nmd:\n  import:\n    - from: ./gone.jsx\n      names: [e]\n---\n\n```vue component=a\nx\n```\n\n```svelte component=b runtime=svelte@4\nx\n```\n\n```svelte component=c\n<p>c</p>\n```\n\n```compmd component=d\n---\nD\n```\n";
+    let input = "---\nmd:\n  import:\n    - from: ./gone.jsx\n      names: [e]\n---\n\n```vue component=a\nx\n```\n\n```svelte component=b runtime=svelte@4\nx\n```\n\n```svelte component=c\n<p>c</p>\n```\n\n```compmd component=d\n---\nD\n```\n\n:: a[A]\n\n:: b[B]\n\n:: c[C]\n\n:: d[D]\n\n:: e[E]\n";
     let rendered = Processor::new("input.comp.md", input)
         .parse(&ParseOptions::default())
         .resolve((), (), &Ambient::default())
@@ -147,7 +178,7 @@ fn host_components_leave_out_what_no_binding_runs() {
 
 #[test]
 fn host_components_say_when_their_uses_print_their_fallback() {
-    let input = "```js component=map\nexport default () => {};\n```\n\n```compmd component=map signature\nprint: fallback\n```\n\n```js component=chart\nexport default () => {};\n```\n\n```compmd component=chart signature\nprint: drawn\n```\n";
+    let input = "```js component=map\nexport default () => {};\n```\n\n```compmd component=map signature\nprint: fallback\n```\n\n```js component=chart\nexport default () => {};\n```\n\n```compmd component=chart signature\nprint: drawn\n```\n\n:: map[Map]\n\n:: chart[Chart]\n";
     let rendered = Processor::new("input.comp.md", input)
         .parse(&ParseOptions::default())
         .resolve((), (), &Ambient::default())
@@ -173,15 +204,22 @@ fn host_components_say_when_their_uses_print_their_fallback() {
 
 #[test]
 fn a_name_two_documents_give_is_the_processed_documents() {
-    let rendered = render(
-        "---\nmd:\n  import:\n    - from: ./kit.comp.md\n      names: [wrap]\n---\n\n```jsx component=chip\nexport default () => 'mine';\n```\n\n:: wrap[W]\n",
-        Setup {
-            files: vec![(
-                "kit.comp.md",
-                "---\nmd:\n  export:\n    names: [wrap]\n---\n\n```js component=chip\nexport default () => {};\n```\n\n```compmd component=wrap\n---\n:: chip[C]\n```\n",
-            )],
-            ..Setup::default()
-        },
-    );
-    assert_eq!(rendered.components, [("chip".to_string(), Language::Jsx)]);
+    let kit = || Setup {
+        files: vec![(
+            "kit.comp.md",
+            "---\nmd:\n  export:\n    names: [wrap]\n---\n\n```js component=chip\nexport default () => {};\n```\n\n```compmd component=wrap\n---\n:: chip[C]\n```\n",
+        )],
+        ..Setup::default()
+    };
+    let document = |uses_its_own: &str| {
+        format!(
+            "---\nmd:\n  import:\n    - from: ./kit.comp.md\n      names: [wrap]\n---\n\n```jsx component=chip\nexport default () => 'mine';\n```\n\n:: wrap[W]\n{uses_its_own}"
+        )
+    };
+    // Both are used: the processed document's.
+    let both = render(&document("\n:: chip[Mine]\n"), kit());
+    assert_eq!(both.components, [("chip".to_string(), Language::Jsx)]);
+    // Only the kit's, through `wrap`: the kit's.
+    let theirs = render(&document(""), kit());
+    assert_eq!(theirs.components, [("chip".to_string(), Language::Js)]);
 }
