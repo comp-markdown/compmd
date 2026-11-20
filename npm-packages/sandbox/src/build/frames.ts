@@ -5,6 +5,7 @@
 import { cp, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { USE_FRAME_CSS } from "../frame/use-layout.ts";
 import type { Level } from "../protocol/messages.ts";
 import { readLibraries, type BuiltLibrary, type LibraryDefinition } from "./libraries.ts";
 import { permissivePolicy, strictPolicy } from "./policy.ts";
@@ -50,7 +51,7 @@ function frameDocument(level: Level, policy: string, importMap: string, source: 
     <meta http-equiv="Content-Security-Policy" content="${escape(policy)}" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script type="importmap">${importMap}</script>
-    <style>html, body { margin: 0; } body { display: flow-root; } #part:empty, #page:empty { display: none; }</style>
+    <style>html, body { margin: 0; } body { display: flow-root; } #part:empty, #page:empty { display: none; } ${USE_FRAME_CSS}</style>
     <script type="module" src="./runtime.js"></script>
   </head>
   <body>

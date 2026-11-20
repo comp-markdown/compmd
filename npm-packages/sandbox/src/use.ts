@@ -1,14 +1,16 @@
 // One use in a frame of its own: the frame document of its level, the protocol's parent end on the port the parent
-// gives it, and the frame's size set from what it reports. The host's page frames strict and permissive uses this way,
+// gives it, and the frame over a sizer of its component's natural size, which it reports. The host's page frames strict and permissive uses this way,
 // and a permissive frame its strict ones (docs/running-components-in-the-sandbox.md, decision 1).
 
 import { BUSY_MS, type ExpandedInput, type ExpandedUse } from "@compmd/render";
+import { framedNode } from "./framed-node.ts";
 import { networkPolicy } from "./frame/narrow.ts";
 import { forSent, sentBlocks, type FrameHighlight } from "./frames-highlight.ts";
 import type { Observer } from "./observer.ts";
 import { boundInputs } from "./protocol/inputs.ts";
 import { HELLO, SANDBOX_VERSION, type ComponentCode, type Level, type Scheme } from "./protocol/messages.ts";
 import { connectChild, type ChildEnd, type ChildEvents } from "./protocol/parent-end.ts";
+import { sizerIn } from "./sizer.ts";
 
 export interface UseFrameOptions {
   /** The frame document of the use's level: `strict.html` or `permissive.html`. */
@@ -67,9 +69,11 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
   iframe.setAttribute("allow", "");
   iframe.title = options.node.type === "code" ? (options.node.component?.name ?? "") : options.node.name;
   iframe.className = "compmd-frame";
-  // Never 0 tall: WebKit may stop rendering a frame with no area, and its ResizeObserver with it, so a frame whose
-  // first report came before its content drew would never report again.
-  iframe.style.cssText = `border: 0; width: 100%; height: 1px; display: ${options.node.type === "componentInline" ? "inline-block" : "block"};`;
+  // The frame is over the sizer, the box's inside, and adds nothing to its size (docs/sizing-components.md, *The
+  // mechanism*).
+  iframe.style.cssText = "position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block;";
+  const placed = sizerIn(target, options.node.type === "componentInline");
+  const { sizer, natural } = placed;
   let node = options.node;
   let inputs = options.inputs;
   /** The example the use is in (spec §7.8), whose components the frame finds its node's in. */
@@ -114,9 +118,11 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
         observer.refused(id, input);
       });
     }
+    // The component's natural size, which the box takes as if it held the component; never without area: WebKit may
+    // stop rendering a frame with none, and its observers with it.
     end.on("size", ({ width, height }) => {
-      iframe.style.height = `${String(Math.max(1, height))}px`;
-      if (node.type === "componentInline") iframe.style.width = `${String(width)}px`;
+      natural.style.width = `${String(Math.max(1, width))}px`;
+      natural.style.height = `${String(Math.max(1, height))}px`;
     });
     // A use id is its window's: this frame's key goes in front, so ids from different frames never meet.
     const { error, recovered, ...rest } = options.on;
@@ -135,13 +141,21 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
     if (scheme) end.scheme(scheme);
     end.code([...code]);
     if (tokens) end.send({ type: "theme", tokens: { ...tokens } });
-    end.part({ node, inputs: { ...inputs }, ...inExample });
+    end.part({ node: framedNode(node, target), inputs: { ...inputs }, ...inExample });
+    end.box(sizer.getBoundingClientRect().width);
     child = end;
     connected();
   };
+  // The page's observer of the sizer is never paused, unlike the frame's own off screen, and a message always arrives,
+  // with the width, which a frame off screen may not have been given yet: so a box below the fold has its size before
+  // it is scrolled to.
+  const boxes = new ResizeObserver(([entry]) => {
+    if (entry) child?.box(entry.contentRect.width);
+  });
+  boxes.observe(sizer);
   iframe.addEventListener("load", connect);
   iframe.src = options.url;
-  target.append(iframe);
+  sizer.append(iframe);
   return {
     iframe,
     update: (next, nextInputs) => {
@@ -149,7 +163,7 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
       inputs = nextInputs;
       bound = boundInputs([next]);
       blocks.rendered([next]);
-      child?.part({ node, inputs: { ...inputs }, ...inExample });
+      child?.part({ node: framedNode(node, target), inputs: { ...inputs }, ...inExample });
     },
     code: (next) => {
       code = next;
@@ -176,9 +190,10 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
     },
     destroy: () => {
       iframe.removeEventListener("load", connect);
+      boxes.disconnect();
       connected();
       child?.close();
-      iframe.remove();
+      placed.remove();
       if (id !== undefined) observer?.gone(id, "removed");
     },
   };

@@ -47,6 +47,7 @@ When a frame loads, its parent posts `hello` to its window with one end of a new
 | `observe {on}` | record what passes in you and report it, asking your own frames too; or stop ([observing](#observing)) | P, U |
 | `fetched {url, image?}` | the answer to `image`: the image's file as a `Blob`, or none when H can't or won't give it | P, from H |
 | `highlighted {id, lines?}` | the answer to `highlight` with the same `id`: each line's tokens, or none for a language the host's highlighter doesn't cover, a block the parent didn't send, or a failure ([the host's code highlighter](host-highlighter.md)) | P, U |
+| `box {width}` | the width of the use's box's inside, when the frame loads and when the box changes size: the frame measures its component's natural size again and reports it (`size`) | U |
 
 **A frame to its parent:**
 
@@ -61,7 +62,7 @@ When a frame loads, its parent posts `hello` to its window with one end of a new
 | `rendered {ms}` | `@compmd/render`'s | P, U |
 | `rects {id, rects}`, `pointed {source}` | `@compmd/render`'s: the boxes asked for, in P's viewport; the source of what the reader clicked, only after `point {on: true}` | P |
 | `lines {id, lines, done}`, `layout {}`, `drawn {seen}` | `@compmd/render`'s: a batch of lines' places, in P's page, and whether it was the last; what P shows moved, at most once an animation frame; P's uses have drawn | P |
-| `size {width, height}` | the content's size, for the parent to set on the frame | U |
+| `size {width, height}` | a use frame's component's natural size, which the parent gives the use's box ([sizing a component in its box](sizing-components.md)): its height at the width `box` gave, and its width laid out with none | U |
 | `settled {seen}` | the frame has settled after the first `seen` messages that change what it shows (`code`, `render`, `splices`, `part`, `scheme`, `theme`, `styles`): its uses drawn, their `busy` promises settled, its own frames settled and sized, its images, stylesheets and fonts loaded, then a frame with nothing moving ([settled](#settled)) | P, U |
 | `pong {n}` | the answer to `ping` | every frame |
 | `compiled {name, code, css?}`, `failed {name, message}` | a compile's result | C |
@@ -208,6 +209,7 @@ sequenceDiagram
 The sandbox's version travels in `hello` and `ready`, beside `@compmd/render`'s. A host may serve the frame documents from an older deploy than its page: a frame with another version gets nothing, and its parent reports it.
 
 - **Version 2** added `highlight` and `highlighted` and the level's `timeout`: the frames ask the host's page for their code blocks' tokens and load no highlighter ([the host's code highlighter](host-highlighter.md)). A host's page and the frames it serves upgrade together.
+- **Version 3** made a use frame's `size` its component's natural size, and added `box {width}`, with which the parent says the width of the box's inside when the frame loads and when the box changes size ([sizing a component in its box](sizing-components.md)). The parent says it because a browser pauses a frame's own observers while it is off screen, and may not give it its new size then; a message always arrives.
 
 ## From the playground's messages
 

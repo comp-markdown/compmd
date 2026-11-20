@@ -287,7 +287,7 @@ A frame renders its part with `@compmd/render`: the page, or one use and its slo
 
 This needs one thing of `@compmd/render` that it doesn't have: **a component that renders its slots itself.** Today the renderer renders a component's slots and gives it their elements. The sandbox's mount for a framed use takes the slots' nodes instead, and the frame renders them. In `@compmd/render`: a mount marked as taking its slots as nodes, which only the sandbox uses.
 
-A frame's box is the use's outer box (spec §9.2), laid out by the parent as today. The frame fills its width and reports its height, which the parent sets; an inline use's frame reports its width too.
+A frame's box is the use's outer box (spec §9.2), laid out by the parent, and framing is invisible to that layout ([sizing a component in its box](sizing-components.md), decision 2). The box holds a sizer, an invisible block of the component's natural size, and the frame is placed over it, so it is always the box's inside and adds nothing to its size. The frame gets the use without the box's params (the page's box has them), but for `object-fit`, `object-position` and `scroll`, and the box's direction and language. It reports its component's natural size (`size`), its height measured at the width the parent says the box's inside has (`box`), and its document never scrolls unless the box has `scroll`.
 
 ## Q6. Hosts that render in an editor
 

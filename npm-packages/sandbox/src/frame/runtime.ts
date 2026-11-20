@@ -20,6 +20,7 @@ import { load } from "./load.ts";
 import { temmlMath } from "../math.ts";
 import { narrowed, networkPolicy } from "./narrow.ts";
 import { withSource } from "./source.ts";
+import { naturalSize, USE_FRAME } from "./use-layout.ts";
 
 /** The level this document is for, from its root: a strict document stays strict whatever its parent says. */
 const own: Level = document.documentElement.dataset.compmdFrame === "permissive" ? "permissive" : "strict";
@@ -95,27 +96,45 @@ function forwardLinks(parent: FrameEnd): void {
   });
 }
 
+/** A page frame's content's size, for its parent to set on the frame. */
+function contentSize(body: HTMLElement): { width: number; height: number } {
+  // `scrollHeight` is rounded, so a body 282.4px high would get a frame of 282 and a scrollbar: its box, rounded up,
+  // is what the frame needs.
+  const box = body.getBoundingClientRect();
+  return { width: Math.max(body.scrollWidth, Math.ceil(box.width)), height: Math.max(body.scrollHeight, Math.ceil(box.height)) };
+}
+
 /**
- * Reports the content's size, for the parent to size the frame, each time it changes. A browser may not render a frame
- * it doesn't show (below the fold, or too small to see), and a ResizeObserver reports only when the frame renders, so a
+ * Reports the frame's size each time it changes: a use frame's component's natural size, which its parent gives the
+ * use's box, or a page frame's content's size, for its parent to size the frame. A browser may not render a frame it
+ * doesn't show (below the fold, or too small to see), and a ResizeObserver reports only when the frame renders, so a
  * change of its content while it isn't shown would never be reported: a MutationObserver reports those, since
- * measuring the body lays the frame out whether it renders or not.
+ * measuring lays the frame out whether it renders or not, and the parent's `box` does when the box changed.
  */
-function reportSize(parent: FrameEnd): () => void {
+function reportSize(parent: FrameEnd): (inside?: number) => void {
+  const root = document.documentElement;
   const body = document.body;
+  const part = document.getElementById("part");
   let reported = "";
-  const report = () => {
-    // `scrollHeight` is rounded, so a body 282.4px high would get a frame of 282 and a scrollbar: its box, rounded up,
-    // is what the frame needs.
-    const box = body.getBoundingClientRect();
-    const width = Math.max(body.scrollWidth, Math.ceil(box.width));
-    const height = Math.max(body.scrollHeight, Math.ceil(box.height));
+  /** The width of the use's box's inside, as the page last said (`box`). */
+  let given: number | undefined;
+  const report = (inside?: number) => {
+    given = inside ?? given;
+    const { width, height } = part && root.classList.contains(USE_FRAME) ? naturalSize(root, part, given) : contentSize(body);
     if (`${String(width)}x${String(height)}` === reported) return;
     reported = `${String(width)}x${String(height)}`;
     parent.size(width, height);
   };
-  new ResizeObserver(report).observe(body);
-  new MutationObserver(report).observe(body, { subtree: true, childList: true, attributes: true, characterData: true });
+  const sizes = new ResizeObserver(() => {
+    report();
+  });
+  sizes.observe(body);
+  // What the component drew, whose size may change with nothing added or removed (an image that loads).
+  const watch = () => {
+    for (const drawn of part?.firstElementChild?.children ?? []) sizes.observe(drawn);
+    report();
+  };
+  new MutationObserver(watch).observe(body, { subtree: true, childList: true, attributes: true, characterData: true });
   return report;
 }
 
@@ -178,7 +197,7 @@ function start(port: MessagePort): void {
   /** The components' code loading, which a frame waits for before it has drawn. */
   let loading: Promise<void> = Promise.resolve();
   /** The frame's size, reported again before it says it settled. */
-  let sizeNow: () => void = () => undefined;
+  let sizeNow: (inside?: number) => void = () => undefined;
   /** When the frame has settled after what its parent sent: then its size, and `settled` with how much it took. */
   const settling = new Settling(
     {
@@ -324,6 +343,7 @@ function start(port: MessagePort): void {
     part: ({ node, inputs, example }: Part) => {
       const target = document.getElementById("part");
       if (!target) return;
+      document.documentElement.classList.add(USE_FRAME);
       region ??= regionFor(target, example);
       region.render([node], { inputs });
     },
@@ -354,6 +374,9 @@ function start(port: MessagePort): void {
     },
     imagesAllowed: (origin) => {
       page?.imagesAllowed(origin);
+    },
+    box: (width) => {
+      sizeNow(width);
     },
     changed: moved,
   });

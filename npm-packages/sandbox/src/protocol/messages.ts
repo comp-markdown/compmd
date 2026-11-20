@@ -5,9 +5,10 @@ import type { CodeLines, ExpandedInput, ExpandedUse } from "@compmd/render";
 
 /**
  * The protocol's version, in `hello` and `ready`: a frame of another version gets nothing. 2 added `highlight` and
- * `highlighted`, and the level's `timeout`.
+ * `highlighted`, and the level's `timeout`; 3 made a use frame's `size` its component's natural size, and added `box`
+ * (docs/sizing-components.md).
  */
-export const SANDBOX_VERSION = 2;
+export const SANDBOX_VERSION = 3;
 
 /** What the parent first posts to the frame's window, with the frame's port. */
 export const HELLO = "compmd-sandbox";
@@ -123,7 +124,13 @@ export type ToFrame =
    * The answer to the frame's `highlight` with the same `id`: the block's tokens, or none for a language the host's
    * highlighter doesn't cover, a block the parent didn't send, or a failure (docs/host-highlighter.md).
    */
-  | { type: "highlighted"; id: number; lines?: CodeLines };
+  | { type: "highlighted"; id: number; lines?: CodeLines }
+  /**
+   * The use's box changed size, or the frame loaded, with the width of the box's inside: a use frame measures its
+   * component's natural height at that width, and its natural width, and reports them. A browser pauses a frame's own
+   * observers while it is off screen, and may not give it its new size then, never its messages.
+   */
+  | { type: "box"; width: number };
 
 /** Why a component shows its fallback: `@compmd/render`'s reasons, code that didn't load, a level the frame can't hold. */
 export type ErrorReason = "missing" | "threw" | "failed" | "not-here";
@@ -152,6 +159,10 @@ export type FromFrame =
   | { type: "recovered"; component: string; use: string }
   | { type: "link"; url: string }
   | { type: "rendered"; ms: number }
+  /**
+   * A use frame's component's natural size, which the parent gives the use's box (docs/sizing-components.md, *The
+   * mechanism*); a page frame's content's size, which the parent sets on the frame.
+   */
   | { type: "size"; width: number; height: number }
   | { type: "pong"; n: number }
   | { type: "compiled"; name: string; code: string; css?: string }
@@ -177,7 +188,7 @@ export type FromFrame =
   | { type: "settled"; seen: number };
 
 /** Every message type, each way: what the schema (`protocol.schema.json`) has too. */
-export const TO_FRAME: readonly ToFrame["type"][] = ["level", "code", "part", "styles", "scheme", "host", "ping", "compile", "observe", "fetched", "images-allowed", "highlighted"];
+export const TO_FRAME: readonly ToFrame["type"][] = ["level", "code", "part", "styles", "scheme", "host", "ping", "compile", "observe", "fetched", "images-allowed", "highlighted", "box"];
 export const FROM_FRAME: readonly FromFrame["type"][] = ["ready", "loaded", "set", "error", "recovered", "link", "rendered", "size", "pong", "compiled", "failed", "observed", "image", "allow-origin", "highlight", "settled"];
 
 /** How long a frame waits for its `highlight` to be answered, in ms, when its level doesn't say: the block keeps its text. */

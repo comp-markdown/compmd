@@ -13643,13 +13643,13 @@
       "description": "`website/build/snapshots.test.ts` failed in `cargo make ci` on 2026-11-20 (13:57): its `beforeAll`, which runs `loadApp` on the website, timed out at vitest's 10 s hook limit while the other packages' tests ran beside it. `pnpm --dir website test` alone passes (32 s for the package).\n\n## Do\nFind what `loadApp` spends its time on and whether that grows with load (a build, a server start, the WebAssembly). Make the setup not depend on the machine's load: do less in it, or share what the other website tests already build. A longer timeout is a budget, so it needs the maintainer's go. Reproduce it under load first (`cargo make ci`, or `cargo make linux`).",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [],
       "files": [
         "website/build/snapshots.test.ts"
       ],
       "created_at": "2026-11-20T21:59:42Z",
-      "updated_at": "2026-11-20T22:42:09Z",
+      "updated_at": "2026-11-20T23:06:26Z",
       "created_by": "claude:79612601",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -13661,7 +13661,44 @@
       "sprint": "Packs 1: the pack tool, no-code components",
       "number": 358,
       "started_at": "2026-11-20T22:42:09Z",
-      "started_by": "claude:79612601"
+      "started_by": "claude:79612601",
+      "commit": "cdc13fbf910e328ecb4316899a1c3910696d0610",
+      "code_reviews": [
+        {
+          "id": "01a1fb26-cc23-737a-ae99-1ed296263b12",
+          "ref": "CR-38"
+        }
+      ],
+      "review_requested_at": "2026-11-20T22:49:46Z",
+      "notes": [
+        {
+          "at": "2026-11-20T22:49:46Z",
+          "kind": "review",
+          "text": "CR-38: The snapshot test loads the site without the components’ analysis",
+          "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-20T23:05:18Z",
+          "kind": "note",
+          "text": "Approved: in CR-38 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-20T23:06:26Z",
+          "kind": "outcome",
+          "text": "Approved in CR-38: loadApp takes { analysis: false }, which the snapshot test uses, so its setup no longer loads TypeScript.",
+          "by": "claude:79612601"
+        }
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-20T22:49:46Z",
+          "to": "2026-11-20T23:05:18Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-20T23:06:26Z",
+      "completed_by": "claude:79612601"
     },
     {
       "id": "01a1fb1a-5845-722a-88c3-17bf2a8c3273",

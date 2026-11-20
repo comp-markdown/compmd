@@ -164,6 +164,23 @@ describe("the frame's end (serveParent)", () => {
     expect(got.slice(1)).toEqual([{ type: "observed", events: [{ type: "dropped", frame: "", count: 1, at: 1 }] }]);
   });
 
+  it("measures again when its parent says the box changed, at the box's width, after its level, and reports the size", async () => {
+    const { parent, frame, got } = frameChannel();
+    const widths: number[] = [];
+    const end = serveParent(frame, { level: () => undefined, box: (width) => widths.push(width) });
+    parent.postMessage({ type: "box", width: 100 });
+    parent.postMessage({ type: "level", level: "strict" });
+    parent.postMessage({ type: "box", width: 464 });
+    // Strict code may have written these: no width, or none that is a size.
+    parent.postMessage({ type: "box" });
+    parent.postMessage({ type: "box", width: -1 });
+    parent.postMessage({ type: "box", width: "wide" });
+    end.size(300, 150.5);
+    await settle();
+    expect(widths).toEqual([464]);
+    expect(got.slice(1)).toEqual([{ type: "size", width: 300, height: 150.5 }]);
+  });
+
   it("acts on nothing once closed", async () => {
     const { parent, frame } = frameChannel();
     const { calls, handlers } = recording();

@@ -27,6 +27,11 @@ export interface FrameHandlers {
   /** The reader allowed `origin`: the page's images refused for it ask again (spec §15). */
   imagesAllowed?(origin: string): void;
   /**
+   * The use's box changed size, or the frame loaded: a use frame reports its component's natural size again, its
+   * height at `width`, the box's inside.
+   */
+  box?(width: number): void;
+  /**
    * A message that changes what the frame shows came (`CHANGES`), the sandbox's or `@compmd/render`'s, after its own
    * handler: the frame settles again.
    */
@@ -152,6 +157,9 @@ export function serveParent(port: Port, handlers: FrameHandlers): FrameEnd {
       }
       case "images-allowed":
         if (typeof data.origin === "string") handlers.imagesAllowed?.(data.origin);
+        break;
+      case "box":
+        if (typeof data.width === "number" && data.width >= 0) handlers.box?.(data.width);
         break;
       case "highlighted": {
         const answered = blocks.get(data.id);

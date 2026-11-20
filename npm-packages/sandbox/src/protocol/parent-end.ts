@@ -107,6 +107,8 @@ export interface ChildEnd {
   observe(on: boolean): void;
   /** Tells the frame the reader allowed `origin`: its images refused for it ask again. */
   imagesAllowed(origin: string): void;
+  /** Tells a use frame its box changed size, with its inside's `width`: it reports its component's natural size again (`size`). */
+  box(width: number): void;
   /**
    * Resolves once the frame has settled after everything sent it so far (`settled` with that count), once it is
    * closed or stopped, or after `BUSY_MS`: a frame's code may never say it.
@@ -352,6 +354,9 @@ export function connectChild(port: Port, options: ChildOptions): ChildEnd {
     },
     imagesAllowed: (origin) => {
       post({ type: "images-allowed", origin } satisfies ToFrame);
+    },
+    box: (width) => {
+      post({ type: "box", width } satisfies ToFrame);
     },
     settled: () => {
       // Messages waiting for `ready` count once sent: until then the frame isn't settled.

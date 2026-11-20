@@ -49,6 +49,17 @@ describe("the parent's end (connectChild)", () => {
     expect(types(got)).toEqual(["level", "code"]);
   });
 
+  it("tells the frame its box changed, as `box` with its width, and doesn't count it as a change the frame settles after", async () => {
+    const { parent, frame, got } = parentChannel();
+    const child = connectChild(parent, { level: "strict", binds: () => false });
+    frame.postMessage({ type: "ready", sandbox: SANDBOX_VERSION });
+    await settle();
+    child.box(464);
+    await settle();
+    expect(got.slice(1)).toEqual([{ type: "box", width: 464 }]);
+    await expect(child.settled()).resolves.toBeUndefined();
+  });
+
   it("counts the frame settled only after everything it sent, render's messages too, and when it is closed", async () => {
     const { parent, frame } = parentChannel();
     const child = connectChild(parent, { level: "strict", binds: () => false });
