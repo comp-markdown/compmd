@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 309,
+    "next_number": 340,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -467,7 +467,7 @@
         "docs/wrapping-an-npm-package.md"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-19T16:36:50Z",
+      "updated_at": "2026-11-20T10:10:28Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "with": "user",
@@ -475,10 +475,10 @@
       "sprint_history": [
         {
           "sprint": "Packs & Blog",
-          "from": "2026-11-19T16:36:50Z"
+          "from": "2026-11-19T16:36:50Z",
+          "to": "2026-11-20T10:10:28Z"
         }
-      ],
-      "sprint": "Packs & Blog"
+      ]
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68e63c5137a7",
@@ -501,7 +501,7 @@
         "npm-packages/create-pack/src/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-19T10:12:52Z",
+      "updated_at": "2026-11-20T10:10:28Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -512,10 +512,10 @@
         },
         {
           "sprint": "Packs & Blog",
-          "from": "2026-11-19T10:12:52Z"
+          "from": "2026-11-19T10:12:52Z",
+          "to": "2026-11-20T10:10:28Z"
         }
       ],
-      "sprint": "Packs & Blog",
       "number": 9
     },
     {
@@ -606,25 +606,24 @@
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68e81c39ce10",
-      "name": "The first component packs",
+      "name": "The first packs: their names, and which component goes in which",
       "type": "feature",
-      "priority": "P2",
+      "priority": "P1",
       "labels": [
         "packs"
       ],
-      "description": "Build the packs on the list approved in CMD-10, with the command from CMD-9, under `compmd-packs/` as `compmd-packs/mermaid` is: each with its signature, fallbacks, a demo, tests and a README.\n\nIf the list is longer than a few packs, first split this task into one task per pack (through `/atm-create-tasks`), in this sprint, and do them in the list's order.\n\nEach push needs the user's go.",
+      "description": "Name the first packs and say which component goes in which ([the first components](docs/first-components.md), the list and decision 9, whose pack names are placeholders). One task per component follows it (labels `component`); this task only decides the packs.\n\n## Decide\n- **The packs and their names:** for example the `compmd` definitions in one pack (card, link-card, gallery, figure, badge, sticky-note, timeline), the data components in another (chart, calendar, data-table, weather), the diagrams (graphviz, beside the Mermaid pack), the music components together (music, chord, chord-sheet, guitar-tab), jq and qr-code, and the embeds in their own permissive pack; the basics are `@compmd/basics` (decision 6).\n- **The scope** they publish under (`@comp-markdown/`, as the Mermaid and wireframe packs are) and their folders under `compmd-packs/`.\n- **Which components share a pack's version,** so a fix to one releases its pack.\n\n## Do\nWrite the packs into the first components document (replacing the placeholders in decision 9), update each component task's pack with `atm task edit`, and review with the user.\n",
       "requirements": [],
       "use_cases": [],
       "status": "todo",
       "dependencies": [
-        "01a1ebb5-4120-7007-85a3-68e63c5137a7",
         "01a1ebb5-4120-7007-85a3-68e7d6fc0e9a"
       ],
       "files": [
         "compmd-packs/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-19T10:12:52Z",
+      "updated_at": "2026-11-20T10:10:29Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -635,10 +634,10 @@
         },
         {
           "sprint": "Packs & Blog",
-          "from": "2026-11-19T10:12:52Z"
+          "from": "2026-11-19T10:12:52Z",
+          "to": "2026-11-20T10:10:28Z"
         }
       ],
-      "sprint": "Packs & Blog",
       "number": 11
     },
     {
@@ -661,7 +660,7 @@
         "website/build/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-19T10:12:52Z",
+      "updated_at": "2026-11-20T10:10:28Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -672,10 +671,10 @@
         },
         {
           "sprint": "Packs & Blog",
-          "from": "2026-11-19T10:12:52Z"
+          "from": "2026-11-19T10:12:52Z",
+          "to": "2026-11-20T10:10:28Z"
         }
       ],
-      "sprint": "Packs & Blog",
       "with": "user",
       "number": 12
     },
@@ -808,7 +807,7 @@
         "website/blog/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-19T10:12:52Z",
+      "updated_at": "2026-11-20T10:10:28Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -819,10 +818,10 @@
         },
         {
           "sprint": "Packs & Blog",
-          "from": "2026-11-19T10:12:52Z"
+          "from": "2026-11-19T10:12:52Z",
+          "to": "2026-11-20T10:10:28Z"
         }
       ],
-      "sprint": "Packs & Blog",
       "with": "user",
       "number": 14
     },
@@ -845,7 +844,7 @@
         "website/blog/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-19T10:12:52Z",
+      "updated_at": "2026-11-20T10:10:28Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -856,10 +855,10 @@
         },
         {
           "sprint": "Packs & Blog",
-          "from": "2026-11-19T10:12:52Z"
+          "from": "2026-11-19T10:12:52Z",
+          "to": "2026-11-20T10:10:28Z"
         }
       ],
-      "sprint": "Packs & Blog",
       "with": "user",
       "number": 15
     },
@@ -882,7 +881,7 @@
         "website/blog/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-19T10:12:52Z",
+      "updated_at": "2026-11-20T10:10:28Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -893,10 +892,10 @@
         },
         {
           "sprint": "Packs & Blog",
-          "from": "2026-11-19T10:12:52Z"
+          "from": "2026-11-19T10:12:52Z",
+          "to": "2026-11-20T10:10:28Z"
         }
       ],
-      "sprint": "Packs & Blog",
       "with": "user",
       "number": 16
     },
@@ -920,7 +919,7 @@
         "spec/compmd-spec-v1.md"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-19T16:36:50Z",
+      "updated_at": "2026-11-20T10:10:28Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "with": "user",
@@ -928,10 +927,10 @@
       "sprint_history": [
         {
           "sprint": "Packs & Blog",
-          "from": "2026-11-19T16:36:50Z"
+          "from": "2026-11-19T16:36:50Z",
+          "to": "2026-11-20T10:10:28Z"
         }
-      ],
-      "sprint": "Packs & Blog"
+      ]
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68efa9d8fbb8",
@@ -954,7 +953,7 @@
         "compmd-packs/excalidraw/src/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-19T10:12:52Z",
+      "updated_at": "2026-11-20T10:10:28Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -965,10 +964,10 @@
         },
         {
           "sprint": "Packs & Blog",
-          "from": "2026-11-19T10:12:52Z"
+          "from": "2026-11-19T10:12:52Z",
+          "to": "2026-11-20T10:10:28Z"
         }
       ],
-      "sprint": "Packs & Blog",
       "number": 18
     },
     {
@@ -9658,16 +9657,16 @@
         "docs/first-components.md"
       ],
       "created_at": "2026-11-19T19:04:03Z",
-      "updated_at": "2026-11-19T19:04:03Z",
+      "updated_at": "2026-11-20T10:10:28Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "sprint_history": [
         {
           "sprint": "Packs & Blog",
-          "from": "2026-11-19T19:04:03Z"
+          "from": "2026-11-19T19:04:03Z",
+          "to": "2026-11-20T10:10:28Z"
         }
       ],
-      "sprint": "Packs & Blog",
       "number": 266
     },
     {
@@ -11214,6 +11213,736 @@
       ],
       "completed_at": "2026-11-20T09:28:38Z",
       "completed_by": "claude:79612601"
+    },
+    {
+      "id": "01a1f870-9ad9-761a-afe5-57c47890f586",
+      "name": "@compmd/basics: the sandbox's built-in pack",
+      "type": "feature",
+      "priority": "P1",
+      "labels": [
+        "packs",
+        "component"
+      ],
+      "description": "Decision 6 of [the first components](docs/first-components.md): `tabs`, `details` and `steps` are a pack the sandbox ships, `@compmd/basics` (the reserved scope, never fetched from a registry), ambient in every document it renders, and trusted, since it is the host's own code: they run in the page, with no frame to load. The spec doesn't change; a processor without the pack shows their fallbacks.\n\n## Settle first, with the user\n- **Frame mode:** a page frame runs only strict components, so a trusted component there is `not-here` today. Do the basics run in the page frame (shipped in the frames, as the renderer is), or stay fallbacks in frame mode?\n- **How a host gets it:** given by the sandbox to the processor's request as an ambient pack (its files built into `@compmd/sandbox`), and how a host turns it off.\n\n## Do\nThe pack's folder (under `compmd-packs/` or `npm-packages/sandbox/`), its build into the sandbox, the request's `ambient` and `packs`, and a test that a document uses a basic without importing it, in both page modes. The three components are tasks of their own.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68e81c39ce10"
+      ],
+      "files": [
+        "npm-packages/sandbox/src/",
+        "docs/first-components.md"
+      ],
+      "created_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:11:31Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "with": "user",
+      "number": 309
+    },
+    {
+      "id": "01a1f870-9ad9-761a-afe5-57c5218b7632",
+      "name": "Component: tabs, and code groups",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "packs",
+        "component"
+      ],
+      "description": "Item 1 of [the first list](docs/first-components.md#:~:text=10%20of%2011%20frameworks%20ship%20tabs): tabs in `@compmd/basics`, its own code, trusted. A slot's items carry their params (spec §7.4), so each tab's label is its item's; a code group is tabs whose items are code blocks. The selected tab can be an input. Its fallback is every tab in order, under its label.\n\n## Do\nSignature, fallback, keyboard (arrow keys, as the ARIA tabs pattern), print (every tab), a demo, tests in Chrome and WebKit, and its README section.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1f870-9ad9-761a-afe5-57c47890f586"
+      ],
+      "files": [],
+      "created_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:11:31Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "number": 310
+    },
+    {
+      "id": "01a1f870-9ad9-761a-afe5-57c69d23f2a7",
+      "name": "Component: details, a collapsible",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "packs",
+        "component"
+      ],
+      "description": "Item 2 of [the first list](docs/first-components.md#:~:text=9%20of%2011%20frameworks): a collapsible in `@compmd/basics`, its own code, trusted. Raw HTML's `<details>` exists, but its content is opaque (spec §2.3), so components and Markdown inside it need this one. Its fallback is its content, under its summary.\n\n## Do\nSignature (a `summary`, `open`), fallback, print (open), a demo, tests in Chrome and WebKit.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1f870-9ad9-761a-afe5-57c47890f586"
+      ],
+      "files": [],
+      "created_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:11:31Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "number": 311
+    },
+    {
+      "id": "01a1f870-9ad9-761a-afe5-57c79b0ae4a9",
+      "name": "Component: steps",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "packs",
+        "component"
+      ],
+      "description": "Item 3 of [the first list](docs/first-components.md#:~:text=7%20of%2011%20frameworks): numbered steps in `@compmd/basics`, its own code, trusted, for how-tos in posts: numbers its items and draws the line between them. Its fallback is the items in order.\n\n## Do\nSignature, fallback, a demo, tests in Chrome and WebKit.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1f870-9ad9-761a-afe5-57c47890f586"
+      ],
+      "files": [],
+      "created_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:11:31Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "number": 312
+    },
+    {
+      "id": "01a1f870-9ad9-761a-afe5-57c89c4468ad",
+      "name": "Component: card",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "packs",
+        "component"
+      ],
+      "description": "Item 4 of [the first list](docs/first-components.md#:~:text=8%20of%2011%20frameworks%20ship%20cards): a `compmd` definition on `box` (no code), in the pack CMD-11 names: an image, a title and a body, styled with the visual tokens (spec §9.4). Its images are the document's own.\n\n## Do\nThe definition with its signature, a demo in a `grid`, plain-renderer reading checked, and a conformance-style test of its expanded tree.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68e81c39ce10"
+      ],
+      "files": [],
+      "created_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:11:31Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "number": 313
+    },
+    {
+      "id": "01a1f870-9ad9-761a-afe5-57c971faed2b",
+      "name": "Component: link-card",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "packs",
+        "component"
+      ],
+      "description": "Item 4 of [the first list](docs/first-components.md#:~:text=8%20of%2011%20frameworks%20ship%20cards): a card that is a link, a `compmd` definition on `card`: a title, a description and where it goes, the whole card the link. Its fallback is the link.\n\n## Do\nThe definition, a demo, tests of its expanded tree.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1f870-9ad9-761a-afe5-57c89c4468ad"
+      ],
+      "files": [],
+      "created_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:11:31Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "number": 314
+    },
+    {
+      "id": "01a1f870-9ad9-761a-afe5-57ca797541ca",
+      "name": "Component: gallery",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "packs",
+        "component"
+      ],
+      "description": "Item 4 of [the first list](docs/first-components.md#:~:text=A%20gallery%20is%20a%20grid%20of%20cards): a grid of cards, each an image, a title and a description, a `compmd` definition, so it needs no code and its images are the document's. A zoom or a lightbox waits for CMD-266.\n\n## Do\nThe definition (over a slot's items or a list in data), a demo, tests of its expanded tree.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1f870-9ad9-761a-afe5-57c89c4468ad"
+      ],
+      "files": [],
+      "created_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:11:31Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "number": 315
+    },
+    {
+      "id": "01a1f870-9ad9-761a-afe5-57cb4e452c2e",
+      "name": "Component: figure",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "packs",
+        "component"
+      ],
+      "description": "Item 5 of [the first list](docs/first-components.md#:~:text=Posts%20and%20newsletters%20caption%20their%20images): an image and its caption, the caption its text alternative too, a `compmd` definition. Posts and newsletters caption their images.\n\n## Do\nThe definition, a demo, print, tests of its expanded tree.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68e81c39ce10"
+      ],
+      "files": [],
+      "created_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:11:31Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "number": 316
+    },
+    {
+      "id": "01a1f870-9ad9-761a-afe5-57cc97043c32",
+      "name": "Component: badge",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "packs",
+        "component"
+      ],
+      "description": "Item 6 of [the first list](docs/first-components.md#:~:text=6%20of%2011%20frameworks): an inline `compmd` definition, \"new\", \"beta\", a version, its tone from the visual tokens.\n\n## Do\nThe definition (inline), a demo, tests of its expanded tree.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68e81c39ce10"
+      ],
+      "files": [],
+      "created_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:11:31Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "number": 317
+    },
+    {
+      "id": "01a1f870-9ad9-761a-afe5-57cd298ee930",
+      "name": "Component: sticky-note",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "packs",
+        "component"
+      ],
+      "description": "Item 7 of [the first list](docs/first-components.md#:~:text=A%20note%20pinned%20on%20the%20page): a note pinned on the page, a tinted box, tilted, with a shadow, placed with `inset-*` (spec §9.2) where it should sit; a `compmd` definition.\n\n## Do\nThe definition, a demo, print and the phone width checked, tests of its expanded tree.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68e81c39ce10"
+      ],
+      "files": [],
+      "created_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:11:31Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "number": 318
+    },
+    {
+      "id": "01a1f870-9ad9-761a-afe5-57ce340e98a8",
+      "name": "Component: timeline",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "packs",
+        "component"
+      ],
+      "description": "Item 8 of [the first list](docs/first-components.md#:~:text=Dates%20and%20what%20happened): dates and what happened, in a post or notes, `compmd` definitions on `box`; a list of items is enough.\n\n## Do\nThe definitions, a demo, tests of their expanded tree.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68e81c39ce10"
+      ],
+      "files": [],
+      "created_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:11:31Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "number": 319
+    },
+    {
+      "id": "01a1f870-9ad9-761a-afe5-57cf1d3cd690",
+      "name": "Component: rating",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "packs",
+        "component"
+      ],
+      "description": "Item 9 of [the first list](docs/first-components.md#:~:text=Stars%20from%20a%20value): stars from a value, half stars included, read-only, its own code in the plain binding, strict: a few dozen lines. The website's own pack has one (`website/content/app/`); this is the published one.\n\n## Do\nSignature (`value`, `of`), its label as the text alternative (\"Rated 4 of 5\"), fallback, print, a demo, tests in Chrome and WebKit.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68e81c39ce10"
+      ],
+      "files": [],
+      "created_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:11:31Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "number": 320
+    },
+    {
+      "id": "01a1f870-9ad9-761a-afe5-57d0fdf51265",
+      "name": "Component: chart",
+      "type": "feature",
+      "priority": "P1",
+      "labels": [
+        "packs",
+        "component"
+      ],
+      "description": "Item 10 of [the first list](docs/first-components.md#charts): a leaf over `md.data` rows, drawn by Observable Plot (ISC, 95 KB), strict. [Charts](docs/first-components.md#charts) has the params (`type`, `rows`, `x`, `y`, `color`, `stack`, `size`, `value`, `horizontal`, labels, `legend`, `height`, `description`) and why Plot; pie and donut with d3-shape.\n\n## Do\nThe pack with the command from CMD-9, every `type` in the demo, the colour scheme followed, print, the label as its accessible name, tests in Chrome and WebKit.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68e81c39ce10",
+        "01a1ebb5-4120-7007-85a3-68e63c5137a7"
+      ],
+      "files": [],
+      "created_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:11:31Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "number": 321
+    },
+    {
+      "id": "01a1f870-9ad9-761a-afe5-57d19b73104e",
+      "name": "Component: calendar",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "packs",
+        "component"
+      ],
+      "description": "Item 11 of [the first list](docs/first-components.md#:~:text=A%20month%2C%20or%20several): a month, or several, with dates marked and their events listed, from data rows; its own code, about 150 lines over `Intl.DateTimeFormat`, strict, in the document's language.\n\n## Do\nSignature, fallback (the events as a list), print, a demo, tests in Chrome and WebKit.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68e81c39ce10"
+      ],
+      "files": [],
+      "created_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:11:31Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "number": 322
+    },
+    {
+      "id": "01a1f870-9ad9-761a-afe5-57d2f4c2efe3",
+      "name": "Component: weather",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "packs",
+        "component"
+      ],
+      "description": "Item 12 of [the first list](docs/first-components.md#weather): a forecast, a leaf over a data import the document makes from Open-Meteo (no key; the reader allows the origin once, decision 5), with Meteocons icons (MIT) in the pack, strict. Credits Open-Meteo (CC BY 4.0); its free use is non-commercial (G8), which the README says.\n\n## Do\nSignature, fallback, a demo with an example import, tests with fixed data in Chrome and WebKit.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68e81c39ce10"
+      ],
+      "files": [],
+      "created_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:11:31Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "number": 323
+    },
+    {
+      "id": "01a1f870-9ad9-761a-afe5-57d3471661ac",
+      "name": "Component: graphviz",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "packs",
+        "component"
+      ],
+      "description": "Item 13 of [the first list](docs/first-components.md#:~:text=The%20other%20text%2Dto%2Ddiagram%20language): a code renderer for ` ```dot `, wrapping `@viz-js/viz` (MIT, 486 KB, WebAssembly, which the frames allow), strict, no network, as the Mermaid pack is for Mermaid.\n\n## Do\nThe pack with CMD-9's command, `alt` required as Mermaid's, the scheme followed, a demo, tests in Chrome and WebKit.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68e81c39ce10",
+        "01a1ebb5-4120-7007-85a3-68e63c5137a7"
+      ],
+      "files": [],
+      "created_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:11:31Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "number": 324
+    },
+    {
+      "id": "01a1f870-9ad9-761a-afe5-57d4c23094f6",
+      "name": "Component: data-table",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "packs",
+        "component"
+      ],
+      "description": "Item 14 of [the first list](docs/first-components.md#:~:text=A%20table%20of%20data%20the%20reader%20sorts): a table of data rows the reader sorts and searches, wrapping `gridjs` (MIT, 16 KB), strict. Its fallback is the table as Markdown would show it.\n\n## Do\nThe pack with CMD-9's command, columns from the rows or given, print, a demo, tests in Chrome and WebKit.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68e81c39ce10",
+        "01a1ebb5-4120-7007-85a3-68e63c5137a7"
+      ],
+      "files": [],
+      "created_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:11:31Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "number": 325
+    },
+    {
+      "id": "01a1f870-9ad9-761a-afe5-57d520d37f01",
+      "name": "Component: jq",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "packs",
+        "component"
+      ],
+      "description": "Item 15 of [the first list](docs/first-components.md#jq): a code renderer for ` ```jq `, wrapping `jq-wasm` (MIT, jq 1.8; its `inline` entry, nothing fetched, no worker), strict. With `render=both`: the query, then its output, over JSON from a data import or a param; with an input the reader changes, a playground in the page.\n\n## Do\nThe pack, the error shown as jq gives it, a demo, tests in Chrome and WebKit.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68e81c39ce10",
+        "01a1ebb5-4120-7007-85a3-68e63c5137a7"
+      ],
+      "files": [],
+      "created_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:11:31Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "number": 326
+    },
+    {
+      "id": "01a1f870-9ad9-761a-afe5-57d6ed6e5247",
+      "name": "Component: music, sheet music from ABC",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "packs",
+        "component"
+      ],
+      "description": "Item 16 of [the first list](docs/first-components.md#music): a code renderer for ` ```abc `, wrapping `abcjs` (MIT, 148 KB), strict, played offline: a trimmed sound font ships in the pack and loads when the reader presses play ([Music](docs/first-components.md#music)). FluidR3 is CC BY 3.0, credited.\n\n## Do\nThe pack, the play button in its own frame, Web Audio started from the click in Chrome and WebKit (G9), print, a demo, tests.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68e81c39ce10",
+        "01a1ebb5-4120-7007-85a3-68e63c5137a7"
+      ],
+      "files": [],
+      "created_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:11:31Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "number": 327
+    },
+    {
+      "id": "01a1f870-9ad9-761a-afe5-57d77c0c0013",
+      "name": "Component: chord, a guitar or ukulele chord diagram",
+      "type": "feature",
+      "priority": "P3",
+      "labels": [
+        "packs",
+        "component"
+      ],
+      "description": "Item 17 of [the first list](docs/first-components.md#:~:text=A%20guitar%20or%20ukulele%20chord%20diagram): a leaf from a chord's name (`Am7`) or a fingering, wrapping `svguitar` (MIT, 68 KB) with `@tombatossals/chords-db` (MIT), transposed with `chord-symbol` (MIT), strict.\n\n## Do\nThe pack, guitar and ukulele, a demo, tests in Chrome and WebKit.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68e81c39ce10",
+        "01a1ebb5-4120-7007-85a3-68e63c5137a7"
+      ],
+      "files": [],
+      "created_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:11:31Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "number": 328
+    },
+    {
+      "id": "01a1f870-9ad9-761a-afe5-57d8f585a478",
+      "name": "Component: chord-sheet, lyrics with chords",
+      "type": "feature",
+      "priority": "P3",
+      "labels": [
+        "packs",
+        "component"
+      ],
+      "description": "Item 18 of [the first list](docs/first-components.md#:~:text=Lyrics%20with%20chords%20over%20them): a code renderer for ` ```chordpro `: lyrics with chords over them (`[C]` inline chords, the main directives), transposable. Its own parser, since `chordsheetjs` is GPL-2.0 (G7, decision 8).\n\n## Do\nThe parser with unit tests over real songs' ChordPro, transposing, print, a demo, browser tests.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68e81c39ce10"
+      ],
+      "files": [],
+      "created_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:11:31Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "number": 329
+    },
+    {
+      "id": "01a1f870-9ad9-761a-afe5-57d9a242182b",
+      "name": "Component: guitar-tab, tabs and scores",
+      "type": "feature",
+      "priority": "P3",
+      "labels": [
+        "packs",
+        "component"
+      ],
+      "description": "Item 19 of [the first list](docs/first-components.md#music): tabs and scores from Guitar Pro 3 to 8, MusicXML or alphaTex, a leaf over a file or a code renderer for ` ```alphatex `, wrapping `@coderline/alphatab` (MPL-2.0, bundled unmodified; its music font in the pack), strict, drawing only: playing waits for G6.\n\n## Do\nThe pack with alphaTab's workers off, a demo, tests in Chrome and WebKit.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68e81c39ce10",
+        "01a1ebb5-4120-7007-85a3-68e63c5137a7"
+      ],
+      "files": [],
+      "created_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:11:31Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "number": 330
+    },
+    {
+      "id": "01a1f870-9ad9-761a-afe5-57da7bb9f0ca",
+      "name": "Component: qr-code",
+      "type": "feature",
+      "priority": "P3",
+      "labels": [
+        "packs",
+        "component"
+      ],
+      "description": "Item 20 of [the first list](docs/first-components.md#:~:text=A%20link%20on%20paper): a link on paper (newsletters, posters, slides), a leaf wrapping `qrcode` (MIT, 9 KB), strict; its fallback is the link.\n\n## Do\nThe pack, print, a demo, tests in Chrome and WebKit.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68e81c39ce10",
+        "01a1ebb5-4120-7007-85a3-68e63c5137a7"
+      ],
+      "files": [],
+      "created_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:11:31Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "number": 331
+    },
+    {
+      "id": "01a1f870-9ad9-761a-afe5-57dbe40450cc",
+      "name": "Embeds: a permissive frame that opens a provider's player (G2)",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "packs",
+        "security",
+        "component"
+      ],
+      "description": "G2 of [the first components](docs/first-components.md#embeds): the embeds are a permissive pack, but a permissive frame's second policy allows frames from `strict.html` only (`npm-packages/sandbox/src/frame/narrow.ts`), and the host's frame for the pack has to delegate the players' features (`allow=\"autoplay; encrypted-media; fullscreen; picture-in-picture\"`).\n\n## Do\n- A design note, with the user: the pack's configured origins added to `frame-src`, the features delegated, and how that fits the sandbox's threat model.\n- Read Vimeo's, Spotify's and SoundCloud's terms on facades before building (YouTube's are in the document).\n- The facade every provider shares: the label, the provider's name and a play button; the player opens only on a click; the fallback is a link.\n\nEach provider is a task of its own.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68e81c39ce10"
+      ],
+      "files": [
+        "npm-packages/sandbox/src/frame/narrow.ts",
+        "npm-packages/sandbox/src/use.ts"
+      ],
+      "created_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:11:31Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "with": "user",
+      "number": 332
+    },
+    {
+      "id": "01a1f870-9ad9-761a-afe5-57dc2e07c59f",
+      "name": "Component: embed-youtube",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "packs",
+        "component"
+      ],
+      "description": "[Embeds](docs/first-components.md#embeds): a YouTube video from its share URL (`youtu.be/ID`), the player `https://www.youtube-nocookie.com/embed/ID` opened by the facade's play button, as YouTube's terms allow (III.F.3.b), saying it is YouTube's. Its thumbnail only as the reader's choice.\n\n## Do\nThe leaf, a demo, tests in Chrome and WebKit that nothing reaches YouTube before the click.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1f870-9ad9-761a-afe5-57dbe40450cc"
+      ],
+      "files": [],
+      "created_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:11:31Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "number": 333
+    },
+    {
+      "id": "01a1f870-9ad9-761a-afe5-57dd80489563",
+      "name": "Component: embed-spotify",
+      "type": "feature",
+      "priority": "P3",
+      "labels": [
+        "packs",
+        "component"
+      ],
+      "description": "[Embeds](docs/first-components.md#embeds): a Spotify track, album, playlist, episode or show from its URL, the player `https://open.spotify.com/embed/…`, 152 or 352 px tall, opened by the facade.\n\n## Do\nThe leaf, a demo, tests that nothing reaches Spotify before the click.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1f870-9ad9-761a-afe5-57dbe40450cc"
+      ],
+      "files": [],
+      "created_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:11:31Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "number": 334
+    },
+    {
+      "id": "01a1f870-9ad9-761a-afe5-57dee26e5d59",
+      "name": "Component: embed-vimeo",
+      "type": "feature",
+      "priority": "P3",
+      "labels": [
+        "packs",
+        "component"
+      ],
+      "description": "[Embeds](docs/first-components.md#embeds): a Vimeo video from `vimeo.com/ID`, the player `https://player.vimeo.com/video/ID?dnt=1`, opened by the facade.\n\n## Do\nThe leaf, a demo, tests that nothing reaches Vimeo before the click.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1f870-9ad9-761a-afe5-57dbe40450cc"
+      ],
+      "files": [],
+      "created_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:11:31Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "number": 335
+    },
+    {
+      "id": "01a1f870-9ad9-761a-afe5-57dff706534a",
+      "name": "Component: embed-soundcloud",
+      "type": "feature",
+      "priority": "P3",
+      "labels": [
+        "packs",
+        "component"
+      ],
+      "description": "[Embeds](docs/first-components.md#embeds): a SoundCloud track from its URL, the player `https://w.soundcloud.com/player/?url=…`, opened by the facade.\n\n## Do\nThe leaf, a demo, tests that nothing reaches SoundCloud before the click.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1f870-9ad9-761a-afe5-57dbe40450cc"
+      ],
+      "files": [],
+      "created_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:11:31Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "number": 336
+    },
+    {
+      "id": "01a1f870-9ad9-761a-afe5-57e0f4291c04",
+      "name": "Component: embed-bluesky",
+      "type": "feature",
+      "priority": "P3",
+      "labels": [
+        "packs",
+        "component"
+      ],
+      "description": "[Embeds](docs/first-components.md#embeds): a Bluesky post from its URL, `https://embed.bsky.app/embed/…`; the facade is the post's text, which the author quotes in the label.\n\n## Do\nThe leaf, a demo, tests that nothing reaches Bluesky before the click.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1f870-9ad9-761a-afe5-57dbe40450cc"
+      ],
+      "files": [],
+      "created_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:11:31Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "number": 337
+    },
+    {
+      "id": "01a1f870-9ad9-761a-afe5-57e14d51322b",
+      "name": "Component: embed-x",
+      "type": "feature",
+      "priority": "P3",
+      "labels": [
+        "packs",
+        "component"
+      ],
+      "description": "[Embeds](docs/first-components.md#embeds): an X post from its URL, through `platform.twitter.com`; the facade is the post's text, which the author quotes in the label.\n\n## Do\nThe leaf, a demo, tests that nothing reaches X before the click.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1f870-9ad9-761a-afe5-57dbe40450cc"
+      ],
+      "files": [],
+      "created_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:11:31Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "number": 338
+    },
+    {
+      "id": "01a1f870-9ad9-761a-afe5-57e2c628e5b9",
+      "name": "Component: embed-codepen",
+      "type": "feature",
+      "priority": "P3",
+      "labels": [
+        "packs",
+        "component"
+      ],
+      "description": "[Embeds](docs/first-components.md#embeds): a CodePen pen from `codepen.io/U/pen/S`, the player `https://codepen.io/U/embed/S?default-tab=result`, opened by the facade.\n\n## Do\nThe leaf, a demo, tests that nothing reaches CodePen before the click.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1f870-9ad9-761a-afe5-57dbe40450cc"
+      ],
+      "files": [],
+      "created_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:11:31Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "number": 339
     }
   ]
 }
