@@ -52,7 +52,12 @@ async function frameWith(page: Page, selector: string, log: readonly string[] = 
       .toBe(true);
   } catch (error) {
     const frames = page.frames().map((frame) => frame.url());
-    throw new Error(`No frame has ${selector} after 30 s. The page's ${String(frames.length)} frames: ${frames.join(", ")}. What it logged: ${log.length > 0 ? log.join(" | ") : "nothing"}`, { cause: error });
+    // A frame the host's page stopped says so only in the page's diagnostics.
+    const diagnostics = await page.locator("#diagnostics li").allInnerTexts().catch(() => []);
+    throw new Error(
+      `No frame has ${selector} after 30 s. The page's ${String(frames.length)} frames: ${frames.join(", ")}. Its diagnostics: ${diagnostics.length > 0 ? diagnostics.join(" | ") : "none"}. What it logged: ${log.length > 0 ? log.join(" | ") : "nothing"}`,
+      { cause: error },
+    );
   }
   return found as Frame;
 }
