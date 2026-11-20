@@ -2,12 +2,12 @@
 id = "01a1f86d-cb82-7761-a103-4e41b144195c"
 number = 24
 title = "A document’s host components: only those it uses"
-status = "open"
+status = "approved"
 tasks = ["CMD-268"]
 author = "claude:79612601"
 reviewers = []
 created = 2026-11-20T10:08:27Z
-updated = 2026-11-20T10:08:27Z
+updated = 2026-11-20T10:37:27Z
 +++
 
 G10 of the first components: the processor listed every host-language component a document could name, an ambient pack's included, so a host that makes packs built in for every document paid for all of them (the sandbox compiled each, the blog gave every post its script). It now lists those the document uses.
