@@ -12980,7 +12980,7 @@
       "description": "[Releases](docs/releases.md), decision 8: `cargo make pack-placeholders <pack>...`, with `--dry-run`.\n\n## Do\n- For each named pack npm doesn't have, write the `0.0.0` placeholder of RELEASING.md's *A placeholder first* (a `package.json` that says so, a README pointing to the real versions, the MIT `LICENSE`) outside the repository, and `npm publish` it.\n- Then set its trusted publisher: `npm trust github <package> --file release-packs.yml --repository comp-markdown/compmd --allow-stage-publish --yes`.\n- A pinned npm with `npm trust` and staging (11.15 or newer); one one-time code for the run while it is valid; a pause between packages as npm advises.\n- `--dry-run` lists what it would publish and set, and does nothing.\n- RELEASING.md's steps for a new pack say to run it.\n\n## Tests\nThe placeholder's files and the commands it would run, from `--dry-run`, for a pack npm has and one it doesn't.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68e81c39ce10"
       ],
@@ -12990,7 +12990,7 @@
         "RELEASING.md"
       ],
       "created_at": "2026-11-20T19:14:20Z",
-      "updated_at": "2026-11-20T20:39:17Z",
+      "updated_at": "2026-11-20T20:42:20Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -13002,7 +13002,24 @@
       "sprint": "Packs 1: the pack tool, no-code components",
       "number": 350,
       "started_at": "2026-11-20T20:39:17Z",
-      "started_by": "claude:79612601"
+      "started_by": "claude:79612601",
+      "commit": "96abb7a6e79596f92b23fb1777fc3581e95a934b",
+      "code_reviews": [
+        {
+          "id": "01a1fab2-1ffd-7112-88c8-332e635238da",
+          "ref": "CR-30"
+        }
+      ],
+      "review_requested_at": "2026-11-20T20:42:20Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-20T20:42:20Z",
+          "kind": "review",
+          "text": "CR-30: Packs: placeholders and trusted publishers in one command",
+          "by": "claude:79612601"
+        }
+      ]
     },
     {
       "id": "01a1fa61-91aa-7105-88cd-9b180d18ff67",

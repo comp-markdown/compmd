@@ -1,0 +1,450 @@
+diff --git a/Makefile.toml b/Makefile.toml
+index cae898d..a2f10fb 100644
+--- a/Makefile.toml
++++ b/Makefile.toml
+@@ -125,7 +125,13 @@ script = [
+ description = "Test the repository's own tools in `tools/`, with Node's test runner"
+ clear = true
+ command = "node"
+-args = ["--test", "tools/spec-revision/spec-revision.test.ts"]
++args = ["--test", "tools/spec-revision/spec-revision.test.ts", "tools/packs/placeholder.test.ts", "tools/packs/pack-placeholders.test.ts", "tools/packs/registry.test.ts"]
++
++[tasks.pack-placeholders]
++description = "Create new packs on npm (docs/releases.md, decision 8): for each named pack npm doesn't have, publish a 0.0.0 placeholder and set its trusted publisher to release-packs.yml, staging only. `cargo make pack-placeholders card chart`; with `--dry-run`, say what it would do and do nothing"
++clear = true
++command = "node"
++args = ["tools/packs/pack-placeholders.ts", "${@}"]
+ 
+ [tasks.spec-revision]
+ description = "Cut the spec's next revision (docs/releases.md, decision 1): the changelog's `### Unreleased` becomes `1.0-draft.N`, with today's date, in the spec's header and its companion's; commits the three files and tags `spec-v1.0-draft.N`, which `git push --follow-tags` pushes with it. Before a push of spec changes"
+diff --git a/RELEASING.md b/RELEASING.md
+index 3ce9839..243249a 100644
+--- a/RELEASING.md
++++ b/RELEASING.md
+@@ -99,6 +99,19 @@ Run them from this repository's root, where its tags are. Git won't remove a wor
+ 
+ **A placeholder first**, for a crate whose first version needs the release's packages, as `tauri-plugin-compmd` needs the sandbox's frames of the same version: a `0.0.0` with no code, published by hand from outside the repository (a `Cargo.toml` that says so, an empty `lib.rs`, a README pointing to the real versions, and the MIT `LICENSE`; `cargo publish --allow-dirty` outside git). That creates the crate, so its trusted publisher can be set up, and the release workflow publishes its first real version. `tauri-plugin-compmd` 0.0.0 was published so on 2026-11-09, before 0.6.0. Yank the placeholder once the real version is out: `cargo yank --version 0.0.0 tauri-plugin-compmd`.
+ 
++## A new pack
++
++A pack in `compmd-packs/` is created on npm before its first release ([releases](docs/releases.md), decision 8), by one command for any number of packs:
++
++```sh
++cargo make pack-placeholders --dry-run card chart   # what it would publish and set: nothing done
++cargo make pack-placeholders card chart
++```
++
++For each pack npm doesn't have, it publishes a placeholder `0.0.0` (`@comp-markdown/<pack>`, with no code: a `package.json` that says so and names the pack's folder, a README pointing to the real versions, and the MIT `LICENSE`), then sets its trusted publisher with `npm trust github`: the repository `comp-markdown/compmd`, the workflow `release-packs.yml`, staging only. A pack npm has is left as it is. It runs a pinned npm (11.21.1) from a folder outside the repository, in the terminal, so npm asks for the one-time code itself; npm's two-factor window covers about 80 packages, with the pause between packages that npm asks for.
++
++A new trusted publisher that hasn't published in 2 days expires, so the pack's first release follows soon after. Deprecate each placeholder once its first version is out: `(cd ~ && npm deprecate @comp-markdown/card@0.0.0 "A placeholder with no code: install 0.1.0 or later")`.
++
+ ## The Mermaid pack
+ 
+ `@comp-markdown/mermaid` (`compmd-packs/mermaid/`) has a version of its own, for its component's params and forms ([its design](docs/mermaid-pack.md), decision 2).
+diff --git a/tools/packs/npm.ts b/tools/packs/npm.ts
+new file mode 100644
+index 0000000..f968012
+--- /dev/null
++++ b/tools/packs/npm.ts
+@@ -0,0 +1,25 @@
++// npm, pinned to a version with `npm trust` (11.10) and staged publishing (11.15), as the release workflows pin it,
++// and run outside this repository, whose `devEngines` names pnpm (RELEASING.md, *What publishing 0.1.0 taught*).
++
++import { spawnSync } from "node:child_process";
++import { tmpdir } from "node:os";
++
++export const NPM_VERSION = "11.21.1";
++
++/** The command line that runs the pinned npm with `args`. */
++export const npmCommand = (args: readonly string[]): string[] => ["npx", "--yes", `npm@${NPM_VERSION}`, ...args];
++
++/** Runs npm with some arguments; throws when it fails. */
++export type RunNpm = (args: readonly string[]) => void;
++
++/**
++ * Runs the pinned npm with `args` in a folder outside the repository. The terminal is npm's, so npm asks for the
++ * author's one-time code itself, and keeps it for the few minutes npm's two-factor window allows.
++ *
++ * @throws Error when npm exits with anything but 0.
++ */
++export const runNpm: RunNpm = (args) => {
++  const [command = "npx", ...rest] = npmCommand(args);
++  const { status } = spawnSync(command, rest, { cwd: tmpdir(), stdio: "inherit" });
++  if (status !== 0) throw new Error(`${npmCommand(args).join(" ")} failed, exit code ${String(status)}`);
++};
+diff --git a/tools/packs/pack-placeholders.test.ts b/tools/packs/pack-placeholders.test.ts
+new file mode 100644
+index 0000000..8b14941
+--- /dev/null
++++ b/tools/packs/pack-placeholders.test.ts
+@@ -0,0 +1,93 @@
++import assert from "node:assert/strict";
++import { describe, it } from "node:test";
++import { placeholders, publishArgs, trustArgs, type Steps } from "./pack-placeholders.ts";
++
++/** Steps that record what they were asked, with npm having `published`. */
++function stubs(published: readonly string[]) {
++  const done: string[] = [];
++  const log: string[] = [];
++  const written: Record<string, string>[] = [];
++  const steps: Steps = {
++    has: (name) => Promise.resolve(published.includes(name)),
++    write(files) {
++      written.push(files);
++      return `/tmp/placeholder-${String(written.length)}`;
++    },
++    npm: (args) => {
++      done.push(args.join(" "));
++    },
++    pause: () => {
++      done.push("pause");
++      return Promise.resolve();
++    },
++    log: (line) => {
++      log.push(line);
++    },
++  };
++  return { steps, done, log, written };
++}
++
++describe("cargo make pack-placeholders", () => {
++  it("publishes a placeholder for each pack npm doesn't have, then sets its trusted publisher, pausing between", async () => {
++    const { steps, done, written } = stubs(["@comp-markdown/mermaid"]);
++    assert.equal(await placeholders(["card", "mermaid", "chart"], "MIT", { dryRun: false }, steps), 0);
++    assert.deepEqual(done, [
++      publishArgs("/tmp/placeholder-1").join(" "),
++      "pause",
++      trustArgs("@comp-markdown/card").join(" "),
++      "pause",
++      publishArgs("/tmp/placeholder-2").join(" "),
++      "pause",
++      trustArgs("@comp-markdown/chart").join(" "),
++    ]);
++    assert.deepEqual(
++      written.map((files) => (JSON.parse(files["package.json"] ?? "") as { name: string }).name),
++      ["@comp-markdown/card", "@comp-markdown/chart"],
++    );
++  });
++
++  it("sets the publisher to this repository's release-packs.yml, staging only", () => {
++    assert.deepEqual(trustArgs("@comp-markdown/card"), ["trust", "github", "@comp-markdown/card", "--file", "release-packs.yml", "--repository", "comp-markdown/compmd", "--allow-stage-publish", "--yes"]);
++    assert.deepEqual(publishArgs("/tmp/x"), ["publish", "/tmp/x", "--access", "public"]);
++  });
++
++  it("with --dry-run, says what it would run for a pack npm doesn't have, and does nothing", async () => {
++    const { steps, done, log, written } = stubs(["@comp-markdown/mermaid"]);
++    assert.equal(await placeholders(["card", "mermaid"], "MIT", { dryRun: true }, steps), 0);
++    assert.deepEqual(done, []);
++    assert.deepEqual(written, []);
++    assert.deepEqual(log, [
++      "@comp-markdown/card: would publish 0.0.0 (package.json, README.md, LICENSE), then set its trusted publisher:",
++      "  npx --yes npm@11.21.1 publish <a new folder> --access public",
++      "  npx --yes npm@11.21.1 trust github @comp-markdown/card --file release-packs.yml --repository comp-markdown/compmd --allow-stage-publish --yes",
++      "@comp-markdown/mermaid: npm has it already, left as it is",
++    ]);
++  });
++
++  it("says to release within 2 days once it created any, and nothing when npm had them all", async () => {
++    const created = stubs([]);
++    await placeholders(["card"], "MIT", { dryRun: false }, created.steps);
++    assert.match(created.log.at(-1) ?? "", /within 2 days/);
++    const none = stubs(["@comp-markdown/card"]);
++    await placeholders(["card"], "MIT", { dryRun: false }, none.steps);
++    assert.doesNotMatch(none.log.join("\n"), /2 days/);
++  });
++
++  it("does nothing for a name that isn't a pack's, or none", async () => {
++    for (const packs of [["card", "Card"], ["../x"], []]) {
++      const { steps, done } = stubs([]);
++      assert.equal(await placeholders(packs, "MIT", { dryRun: false }, steps), 2);
++      assert.deepEqual(done, []);
++    }
++  });
++
++  it("stops at npm's failure, the packs before it done", async () => {
++    const { steps, done } = stubs([]);
++    steps.npm = (args) => {
++      if (args.includes("@comp-markdown/chart")) throw new Error("npm failed");
++      done.push(args[0] ?? "");
++    };
++    await assert.rejects(placeholders(["card", "chart", "music"], "MIT", { dryRun: false }, steps), /npm failed/);
++    assert.deepEqual(done, ["publish", "pause", "trust", "pause", "publish", "pause"]);
++  });
++});
+diff --git a/tools/packs/pack-placeholders.ts b/tools/packs/pack-placeholders.ts
+new file mode 100644
+index 0000000..2d6ef1f
+--- /dev/null
++++ b/tools/packs/pack-placeholders.ts
+@@ -0,0 +1,97 @@
++// `cargo make pack-placeholders <pack>...` (docs/releases.md, decision 8): creates new packs on npm. For each named
++// pack npm doesn't have, it publishes the placeholder (`placeholder.ts`), then sets its trusted publisher, the
++// repository and `release-packs.yml`, staging only. With `--dry-run` it says what it would do, and does nothing.
++//
++//   node tools/packs/pack-placeholders.ts [--dry-run] <pack>...
++
++import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
++import { tmpdir } from "node:os";
++import { join } from "node:path";
++import { setTimeout as sleep } from "node:timers/promises";
++import { npmCommand, runNpm, type RunNpm } from "./npm.ts";
++import { isPackName, packageOf, placeholderFiles, REPOSITORY, WORKFLOW } from "./placeholder.ts";
++import { versionsOf } from "./registry.ts";
++
++/** npm asks for a pause between packages set up one after the other. */
++const PAUSE_MS = 2000;
++
++/** What `placeholders` does through: each a stub in its tests. */
++export interface Steps {
++  /** Whether npm has the package. */
++  has(name: string): Promise<boolean>;
++  /** Writes `files` to a new folder outside the repository, and gives its path. */
++  write(files: Record<string, string>): string;
++  npm: RunNpm;
++  pause(): Promise<void>;
++  log(line: string): void;
++}
++
++/** npm's arguments that publish a placeholder written to `folder`. */
++export const publishArgs = (folder: string): string[] => ["publish", folder, "--access", "public"];
++
++/** npm's arguments that set `name`'s trusted publisher: this repository's `release-packs.yml`, staging only. */
++export const trustArgs = (name: string): string[] => ["trust", "github", name, "--file", WORKFLOW, "--repository", REPOSITORY, "--allow-stage-publish", "--yes"];
++
++/**
++ * Publishes a placeholder for each of `packs` npm doesn't have, and sets its trusted publisher.
++ *
++ * @returns The exit code: 0, or 2 for a name that isn't a pack's (nothing done then).
++ * @throws Error when npm or the registry fails, after the packs before it are done.
++ */
++export async function placeholders(packs: readonly string[], license: string, options: { dryRun: boolean }, steps: Steps): Promise<number> {
++  const wrong = packs.filter((pack) => !isPackName(pack));
++  if (packs.length === 0 || wrong.length > 0) {
++    steps.log(packs.length === 0 ? "name the packs: cargo make pack-placeholders card chart" : `not a pack's name: ${wrong.join(", ")} (lowercase words joined by "-", as embed-youtube)`);
++    return 2;
++  }
++  const created: string[] = [];
++  for (const pack of packs) {
++    const name = packageOf(pack);
++    if (await steps.has(name)) {
++      steps.log(`${name}: npm has it already, left as it is`);
++      continue;
++    }
++    const files = placeholderFiles(pack, license);
++    if (options.dryRun) {
++      steps.log(`${name}: would publish 0.0.0 (${Object.keys(files).join(", ")}), then set its trusted publisher:`);
++      steps.log(`  ${npmCommand(publishArgs("<a new folder>")).join(" ")}`);
++      steps.log(`  ${npmCommand(trustArgs(name)).join(" ")}`);
++      continue;
++    }
++    if (created.length > 0) await steps.pause();
++    steps.npm(publishArgs(steps.write(files)));
++    await steps.pause();
++    steps.npm(trustArgs(name));
++    created.push(name);
++    steps.log(`${name}: 0.0.0 published, its trusted publisher set (${REPOSITORY}, ${WORKFLOW}, staging only)`);
++  }
++  // A trusted publisher that hasn't published in 2 days expires (RELEASING.md).
++  if (created.length > 0) steps.log(`Release ${created.length === 1 ? "it" : "them"} within 2 days, or the trusted publisher expires: cargo make release-packs. Deprecate each placeholder once its first version is out.`);
++  return 0;
++}
++
++/** The steps as they run: the registry over HTTP, npm in a terminal of its own, folders in the system's temporary one. */
++const realSteps: Steps = {
++  has: async (name) => (await versionsOf(name)).length > 0,
++  write(files) {
++    const folder = mkdtempSync(join(tmpdir(), "compmd-placeholder-"));
++    for (const [file, text] of Object.entries(files)) writeFileSync(join(folder, file), text);
++    return folder;
++  },
++  npm: runNpm,
++  pause: () => sleep(PAUSE_MS),
++  log: (line) => {
++    console.log(line);
++  },
++};
++
++if (import.meta.main) {
++  const args = process.argv.slice(2);
++  const license = readFileSync(join(import.meta.dirname, "../../LICENSE-CODE"), "utf8");
++  process.exitCode = await placeholders(
++    args.filter((arg) => arg !== "--dry-run"),
++    license,
++    { dryRun: args.includes("--dry-run") },
++    realSteps,
++  );
++}
+diff --git a/tools/packs/package.json b/tools/packs/package.json
+new file mode 100644
+index 0000000..ca369be
+--- /dev/null
++++ b/tools/packs/package.json
+@@ -0,0 +1,5 @@
++{
++  "private": true,
++  "description": "The tools that release this repository's packs (docs/releases.md, decision 8), run by Node as they are (TypeScript, its types stripped): not a workspace package.",
++  "type": "module"
++}
+diff --git a/tools/packs/placeholder.test.ts b/tools/packs/placeholder.test.ts
+new file mode 100644
+index 0000000..a08b38d
+--- /dev/null
++++ b/tools/packs/placeholder.test.ts
+@@ -0,0 +1,39 @@
++import assert from "node:assert/strict";
++import { describe, it } from "node:test";
++import { isPackName, packageOf, placeholderFiles } from "./placeholder.ts";
++
++describe("a pack's placeholder", () => {
++  const files = placeholderFiles("card", "MIT License\n");
++  const manifest = JSON.parse(files["package.json"] ?? "") as Record<string, unknown>;
++
++  it("is 0.0.0 of the pack's package, with no code", () => {
++    assert.deepEqual(Object.keys(files).sort(), ["LICENSE", "README.md", "package.json"]);
++    assert.equal(manifest.name, "@comp-markdown/card");
++    assert.equal(manifest.version, "0.0.0");
++    assert.deepEqual(manifest.files, ["README.md", "LICENSE"]);
++    assert.equal(manifest.main, undefined);
++  });
++
++  it("names the repository and the pack's folder, which the trusted publisher's provenance checks", () => {
++    assert.deepEqual(manifest.repository, { type: "git", url: "git+https://github.com/comp-markdown/compmd.git", directory: "compmd-packs/card" });
++  });
++
++  it("is MIT, with the licence it is given, and says it is a placeholder", () => {
++    assert.equal(manifest.license, "MIT");
++    assert.equal(files.LICENSE, "MIT License\n");
++    assert.match(String(manifest.description), /placeholder with no code/);
++    assert.match(files["README.md"] ?? "", /^# @comp-markdown\/card\n/);
++    assert.match(files["README.md"] ?? "", /compmd-packs\/card\)/);
++  });
++});
++
++describe("a pack's name", () => {
++  it("is lowercase words joined by -", () => {
++    for (const name of ["card", "embed-youtube", "qr2"]) assert.equal(isPackName(name), true, name);
++    for (const name of ["", "Card", "embed_youtube", "-card", "card-", "a--b", "@comp-markdown/card", "../card"]) assert.equal(isPackName(name), false, name);
++  });
++
++  it("gives its package in the packs' scope", () => {
++    assert.equal(packageOf("embed-youtube"), "@comp-markdown/embed-youtube");
++  });
++});
+diff --git a/tools/packs/placeholder.ts b/tools/packs/placeholder.ts
+new file mode 100644
+index 0000000..daebce8
+--- /dev/null
++++ b/tools/packs/placeholder.ts
+@@ -0,0 +1,45 @@
++// A pack's placeholder (RELEASING.md, *A placeholder first*): a `0.0.0` with no code, which creates the package on
++// npm, so its trusted publisher can be set and `release-packs.yml` can stage its first real version.
++
++/** The scope of this repository's packs. */
++export const SCOPE = "@comp-markdown";
++/** The repository the packs are released from, as npm's trusted publishers name it. */
++export const REPOSITORY = "comp-markdown/compmd";
++/** The workflow that stages every pack's releases (docs/releases.md, decision 8). */
++export const WORKFLOW = "release-packs.yml";
++
++/** Whether `pack` is a pack's name: lowercase letters and digits, in words joined by `-`, as `embed-youtube`. */
++export const isPackName = (pack: string): boolean => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(pack);
++
++/** The npm package of `pack`: `@comp-markdown/card`. */
++export const packageOf = (pack: string): string => `${SCOPE}/${pack}`;
++
++/**
++ * The placeholder's files, by name: a `package.json` that says what it is, a README pointing to the real versions,
++ * and `license`, the MIT licence the pack's code is under.
++ *
++ * @example
++ * placeholderFiles("card", mit)["package.json"]; // {"name": "@comp-markdown/card", "version": "0.0.0", …}
++ */
++export function placeholderFiles(pack: string, license: string): Record<string, string> {
++  const name = packageOf(pack);
++  const folder = `https://github.com/${REPOSITORY}/tree/main/compmd-packs/${pack}`;
++  // The repository is the one the trusted publisher names: npm's provenance checks the two match.
++  const manifest = {
++    name,
++    version: "0.0.0",
++    description: `A placeholder with no code, which created ${name} on npm: install a later version.`,
++    keywords: ["compmd", "compmd-pack"],
++    homepage: "https://compmd.dev/",
++    repository: { type: "git", url: `git+https://github.com/${REPOSITORY}.git`, directory: `compmd-packs/${pack}` },
++    license: "MIT",
++    files: ["README.md", "LICENSE"],
++  };
++  const readme = `# ${name}
++
++A placeholder with no code. It created the package on npm, so that its versions can be published from [its folder in the CompMD repository](${folder}), by trusted publishing, with their provenance.
++
++Install a later version: \`npm install ${name}@latest\`.
++`;
++  return { "package.json": `${JSON.stringify(manifest, null, 2)}\n`, "README.md": readme, LICENSE: license };
++}
+diff --git a/tools/packs/registry.test.ts b/tools/packs/registry.test.ts
+new file mode 100644
+index 0000000..15b3de2
+--- /dev/null
++++ b/tools/packs/registry.test.ts
+@@ -0,0 +1,30 @@
++import assert from "node:assert/strict";
++import { describe, it } from "node:test";
++import { packageUrl, versionsOf, type Fetch } from "./registry.ts";
++
++/** A registry that answers `status` with `body` for every package, and records what it was asked. */
++function registry(status: number, body: unknown = {}) {
++  const asked: string[] = [];
++  const fetch: Fetch = (url) => {
++    asked.push(url);
++    return Promise.resolve({ status, ok: status >= 200 && status < 300, json: () => Promise.resolve(body) });
++  };
++  return { fetch, asked };
++}
++
++describe("what the registry has of a package", () => {
++  it("is its versions, asked at its address with the scope's slash escaped", async () => {
++    const { fetch, asked } = registry(200, { versions: { "0.0.0": {}, "0.1.0": {} } });
++    assert.deepEqual(await versionsOf("@comp-markdown/mermaid", fetch), ["0.0.0", "0.1.0"]);
++    assert.deepEqual(asked, ["https://registry.npmjs.org/@comp-markdown%2fmermaid"]);
++    assert.equal(packageUrl("@comp-markdown/card"), "https://registry.npmjs.org/@comp-markdown%2fcard");
++  });
++
++  it("is nothing for a package it doesn't have", async () => {
++    assert.deepEqual(await versionsOf("@comp-markdown/card", registry(404).fetch), []);
++  });
++
++  it("fails on any other answer, rather than guessing", async () => {
++    await assert.rejects(versionsOf("@comp-markdown/card", registry(503).fetch), /answered 503 for @comp-markdown\/card/);
++  });
++});
+diff --git a/tools/packs/registry.ts b/tools/packs/registry.ts
+new file mode 100644
+index 0000000..67b53a1
+--- /dev/null
++++ b/tools/packs/registry.ts
+@@ -0,0 +1,25 @@
++// What the npm registry has of a package, asked over HTTP: npm itself doesn't run inside this repository, whose
++// `devEngines` names pnpm (RELEASING.md, *What publishing 0.1.0 taught*).
++
++export const REGISTRY = "https://registry.npmjs.org";
++
++/** What `versionsOf` needs of `fetch`. */
++export type Fetch = (url: string) => Promise<{ status: number; ok: boolean; json(): Promise<unknown> }>;
++
++/** The registry's address of `name`, its scope's slash escaped: `https://registry.npmjs.org/@comp-markdown%2fcard`. */
++export const packageUrl = (name: string): string => `${REGISTRY}/${name.replace("/", "%2f")}`;
++
++/**
++ * The versions the registry has of `name`; empty when it has no such package.
++ *
++ * @throws Error when the registry answers anything but the package or "not found".
++ * @example
++ * await versionsOf("@comp-markdown/mermaid"); // ["0.0.0-stage", "0.1.0", …]
++ */
++export async function versionsOf(name: string, fetch: Fetch = globalThis.fetch): Promise<string[]> {
++  const response = await fetch(packageUrl(name));
++  if (response.status === 404) return [];
++  if (!response.ok) throw new Error(`the registry answered ${String(response.status)} for ${name}`);
++  const { versions = {} } = (await response.json()) as { versions?: Record<string, unknown> };
++  return Object.keys(versions);
++}

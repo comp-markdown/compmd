@@ -2,12 +2,12 @@
 id = "01a1f8e2-ce3b-7593-ab5c-e4bb0d2d5b75"
 number = 27
 title = "A frame’s time counts only while the page’s thread is awake"
-status = "open"
+status = "approved"
 tasks = ["CMD-346"]
 author = "claude:79612601"
 reviewers = []
 created = 2026-11-20T12:16:15Z
-updated = 2026-11-20T12:16:15Z
+updated = 2026-11-20T20:41:26Z
 +++
 
 Two browser tests failed once each while 0.9.0 was released: the Mermaid pack's test page in WebKit on Linux (CI), where two of six diagrams' frames had been removed, and the observer's O6 in Chromium (a local `cargo make ci`). Both passed again on the same code.

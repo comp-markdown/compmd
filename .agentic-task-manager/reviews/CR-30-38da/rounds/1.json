@@ -1,0 +1,62 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "613bbdee0b5b2e3e2269ea1f3c1a3071111a440a",
+    "head": "96abb7a6e79596f92b23fb1777fc3581e95a934b"
+  },
+  "files": [
+    {
+      "path": "Makefile.toml",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "RELEASING.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "tools/packs/npm.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "tools/packs/pack-placeholders.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "tools/packs/pack-placeholders.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "tools/packs/package.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "tools/packs/placeholder.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "tools/packs/placeholder.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "tools/packs/registry.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "tools/packs/registry.ts",
+      "status": "added",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-20T20:42:20Z"
+}
