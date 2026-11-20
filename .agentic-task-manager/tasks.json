@@ -9616,7 +9616,7 @@
       "description": "Build the sandbox's highlighter option as CMD-267's design decides: the host gives the code highlighter, in both page modes, and Shiki stays the default.\n\n## Change\n- **The option** on the sandbox: in host mode a function, `(code, language) => lines`, as the renderer's `CodeHighlighter`.\n- **Frame mode:** a frame sends a block's text to the host's page, which highlights it with the host's highlighter and sends the tokens back, in the frame protocol's next version. The host's page answers only blocks of trees it sent that frame.\n- **What stays:** a block shows its text until its tokens come, and keeps it for a language the highlighter doesn't cover, on a failure, and when the host doesn't answer in time; `settled()` waits for highlighting.\n- **Without the option**, nothing changes.\n- The release notes: the frame protocol's new version, so a host's page and the frames it serves are upgraded together.\n\n## Tests\nBoth modes, light and dark; a language the highlighter doesn't cover; a rejected promise; `settled()` waiting for the tokens; a frame asking about a block it wasn't sent gets nothing; a host that never answers leaves the text; and the pages without the option highlighted as before. In Chrome and WebKit.\n\nReplaces the earlier scope of this task (the host's page tokenizing for its frames, alternative B of [WebAssembly in the frames](docs/webassembly-in-the-frames.md)): whether the default Shiki moves to the host's page too is CMD-267's to decide.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [
         "01a1f2df-0550-7070-8958-7ecfa358d7e5",
         "01a1f58e-3f17-745f-a6cf-bb3826b73142"
@@ -9628,7 +9628,7 @@
         "npm-packages/render/src/"
       ],
       "created_at": "2026-11-19T09:34:53Z",
-      "updated_at": "2026-11-20T11:01:16Z",
+      "updated_at": "2026-11-20T11:16:20Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 262,
@@ -9649,15 +9649,35 @@
         }
       ],
       "review_requested_at": "2026-11-20T11:01:16Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-20T11:01:16Z",
           "kind": "review",
           "text": "CR-25: The host gives the code highlighter; the host’s page highlights for every frame",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-20T11:16:05Z",
+          "kind": "note",
+          "text": "Approved: in CR-25 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-20T11:16:20Z",
+          "kind": "outcome",
+          "text": "Approved in CR-25: the host gives the highlighter (`highlight`), and the host’s page highlights for every frame, Shiki by default, in sandbox protocol version 2. Its release notes go with the next release.",
+          "by": "claude:79612601"
         }
-      ]
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-20T11:01:16Z",
+          "to": "2026-11-20T11:16:05Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-20T11:16:20Z",
+      "completed_by": "claude:79612601"
     },
     {
       "id": "01a1f34b-d7aa-7785-bd1e-e697a34044a4",

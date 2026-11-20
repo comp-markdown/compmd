@@ -2,12 +2,12 @@
 id = "01a1f89e-246e-7337-9254-b1fc9221ff5c"
 number = 25
 title = "The host gives the code highlighter; the host’s page highlights for every frame"
-status = "open"
+status = "approved"
 tasks = ["CMD-262"]
 author = "claude:79612601"
 reviewers = []
 created = 2026-11-20T11:01:16Z
-updated = 2026-11-20T11:01:16Z
+updated = 2026-11-20T11:16:04Z
 +++
 
 The host's code highlighter, as [the design](docs/host-highlighter.md) decides (CR-21, decision 7 included): the host gives the sandbox its highlighter, in both page modes, and the host's page highlights for every frame, Shiki by default.
