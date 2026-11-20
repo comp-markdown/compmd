@@ -12827,9 +12827,9 @@
         "npm-packages/sandbox/src/protocol/parent-end.ts"
       ],
       "created_at": "2026-11-20T12:03:07Z",
-      "updated_at": "2026-11-20T12:16:16Z",
+      "updated_at": "2026-11-20T20:41:26Z",
       "created_by": "Hakan Serce",
-      "updated_by": "claude:79612601",
+      "updated_by": "Hakan Serce",
       "sprint_history": [
         {
           "sprint": "Packs & Blog",
@@ -12855,6 +12855,12 @@
           "kind": "review",
           "text": "CR-27: A frame’s time counts only while the page’s thread is awake",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-20T20:41:26Z",
+          "kind": "note",
+          "text": "Approved: in CR-27 (round 1)",
+          "by": "Hakan Serce"
         }
       ],
       "started_at": "2026-11-20T12:12:42Z",
@@ -12867,7 +12873,8 @@
         }
       ],
       "review_requested_at": "2026-11-20T12:16:16Z",
-      "review_state": "waiting"
+      "review_state": "approved",
+      "reviewed_at": "2026-11-20T20:41:26Z"
     },
     {
       "id": "01a1f9ca-ad61-762d-a15d-84f121843da1",
@@ -12973,7 +12980,7 @@
       "description": "[Releases](docs/releases.md), decision 8: `cargo make pack-placeholders <pack>...`, with `--dry-run`.\n\n## Do\n- For each named pack npm doesn't have, write the `0.0.0` placeholder of RELEASING.md's *A placeholder first* (a `package.json` that says so, a README pointing to the real versions, the MIT `LICENSE`) outside the repository, and `npm publish` it.\n- Then set its trusted publisher: `npm trust github <package> --file release-packs.yml --repository comp-markdown/compmd --allow-stage-publish --yes`.\n- A pinned npm with `npm trust` and staging (11.15 or newer); one one-time code for the run while it is valid; a pause between packages as npm advises.\n- `--dry-run` lists what it would publish and set, and does nothing.\n- RELEASING.md's steps for a new pack say to run it.\n\n## Tests\nThe placeholder's files and the commands it would run, from `--dry-run`, for a pack npm has and one it doesn't.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68e81c39ce10"
       ],
@@ -12983,9 +12990,9 @@
         "RELEASING.md"
       ],
       "created_at": "2026-11-20T19:14:20Z",
-      "updated_at": "2026-11-20T19:14:20Z",
+      "updated_at": "2026-11-20T20:39:17Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "sprint_history": [
         {
           "sprint": "Packs 1: the pack tool, no-code components",
@@ -12993,7 +13000,9 @@
         }
       ],
       "sprint": "Packs 1: the pack tool, no-code components",
-      "number": 350
+      "number": 350,
+      "started_at": "2026-11-20T20:39:17Z",
+      "started_by": "claude:79612601"
     },
     {
       "id": "01a1fa61-91aa-7105-88cd-9b180d18ff67",

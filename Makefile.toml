@@ -125,7 +125,13 @@ script = [
 description = "Test the repository's own tools in `tools/`, with Node's test runner"
 clear = true
 command = "node"
-args = ["--test", "tools/spec-revision/spec-revision.test.ts"]
+args = ["--test", "tools/spec-revision/spec-revision.test.ts", "tools/packs/placeholder.test.ts", "tools/packs/pack-placeholders.test.ts", "tools/packs/registry.test.ts"]
+
+[tasks.pack-placeholders]
+description = "Create new packs on npm (docs/releases.md, decision 8): for each named pack npm doesn't have, publish a 0.0.0 placeholder and set its trusted publisher to release-packs.yml, staging only. `cargo make pack-placeholders card chart`; with `--dry-run`, say what it would do and do nothing"
+clear = true
+command = "node"
+args = ["tools/packs/pack-placeholders.ts", "${@}"]
 
 [tasks.spec-revision]
 description = "Cut the spec's next revision (docs/releases.md, decision 1): the changelog's `### Unreleased` becomes `1.0-draft.N`, with today's date, in the spec's header and its companion's; commits the three files and tags `spec-v1.0-draft.N`, which `git push --follow-tags` pushes with it. Before a push of spec changes"

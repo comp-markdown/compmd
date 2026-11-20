@@ -99,6 +99,19 @@ Run them from this repository's root, where its tags are. Git won't remove a wor
 
 **A placeholder first**, for a crate whose first version needs the release's packages, as `tauri-plugin-compmd` needs the sandbox's frames of the same version: a `0.0.0` with no code, published by hand from outside the repository (a `Cargo.toml` that says so, an empty `lib.rs`, a README pointing to the real versions, and the MIT `LICENSE`; `cargo publish --allow-dirty` outside git). That creates the crate, so its trusted publisher can be set up, and the release workflow publishes its first real version. `tauri-plugin-compmd` 0.0.0 was published so on 2026-11-09, before 0.6.0. Yank the placeholder once the real version is out: `cargo yank --version 0.0.0 tauri-plugin-compmd`.
 
+## A new pack
+
+A pack in `compmd-packs/` is created on npm before its first release ([releases](docs/releases.md), decision 8), by one command for any number of packs:
+
+```sh
+cargo make pack-placeholders --dry-run card chart   # what it would publish and set: nothing done
+cargo make pack-placeholders card chart
+```
+
+For each pack npm doesn't have, it publishes a placeholder `0.0.0` (`@comp-markdown/<pack>`, with no code: a `package.json` that says so and names the pack's folder, a README pointing to the real versions, and the MIT `LICENSE`), then sets its trusted publisher with `npm trust github`: the repository `comp-markdown/compmd`, the workflow `release-packs.yml`, staging only. A pack npm has is left as it is. It runs a pinned npm (11.21.1) from a folder outside the repository, in the terminal, so npm asks for the one-time code itself; npm's two-factor window covers about 80 packages, with the pause between packages that npm asks for.
+
+A new trusted publisher that hasn't published in 2 days expires, so the pack's first release follows soon after. Deprecate each placeholder once its first version is out: `(cd ~ && npm deprecate @comp-markdown/card@0.0.0 "A placeholder with no code: install 0.1.0 or later")`.
+
 ## The Mermaid pack
 
 `@comp-markdown/mermaid` (`compmd-packs/mermaid/`) has a version of its own, for its component's params and forms ([its design](docs/mermaid-pack.md), decision 2).

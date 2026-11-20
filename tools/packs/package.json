@@ -1,0 +1,5 @@
+{
+  "private": true,
+  "description": "The tools that release this repository's packs (docs/releases.md, decision 8), run by Node as they are (TypeScript, its types stripped): not a workspace package.",
+  "type": "module"
+}
