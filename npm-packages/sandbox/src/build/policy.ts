@@ -7,13 +7,12 @@ import { createHash } from "node:crypto";
 import { withSource } from "../frame/source.ts";
 
 /**
- * The directives both documents start with: scripts from the frames' origin and the import map, compiling
- * WebAssembly (for the highlighter's Oniguruma, docs/webassembly-in-the-frames.md: it reaches no more than the
- * frame's scripts), styles, no objects.
+ * The directives both documents start with: scripts from the frames' origin and the import map, styles, no objects.
+ * No WebAssembly: the host's page highlights the frames' code (docs/host-highlighter.md, decision 7).
  */
 function common(importMap: string): string[] {
   const hash = createHash("sha256").update(importMap).digest("base64");
-  return [`script-src 'self' blob: 'sha256-${hash}' 'wasm-unsafe-eval'`, "style-src 'self' 'unsafe-inline'", "object-src 'none'", "base-uri 'none'", "form-action 'none'", "worker-src 'none'"];
+  return [`script-src 'self' blob: 'sha256-${hash}'`, "style-src 'self' 'unsafe-inline'", "object-src 'none'", "base-uri 'none'", "form-action 'none'", "worker-src 'none'"];
 }
 
 /**

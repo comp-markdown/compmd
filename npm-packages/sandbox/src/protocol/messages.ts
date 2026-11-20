@@ -1,10 +1,13 @@
 // The sandbox's frame protocol (docs/sandbox-protocol.md): the messages between a frame and its parent, the window
 // that made it. They travel on the port `@compmd/render`'s frame protocol uses too, beside its own.
 
-import type { ExpandedInput, ExpandedUse } from "@compmd/render";
+import type { CodeLines, ExpandedInput, ExpandedUse } from "@compmd/render";
 
-/** The protocol's version, in `hello` and `ready`: a frame of another version gets nothing. */
-export const SANDBOX_VERSION = 1;
+/**
+ * The protocol's version, in `hello` and `ready`: a frame of another version gets nothing. 2 added `highlight` and
+ * `highlighted`, and the level's `timeout`.
+ */
+export const SANDBOX_VERSION = 2;
 
 /** What the parent first posts to the frame's window, with the frame's port. */
 export const HELLO = "compmd-sandbox";
@@ -98,7 +101,8 @@ export interface CompileRequest {
 
 /** Messages from a parent to its frame, on the frame's port. `host` carries its port in the message's ports. */
 export type ToFrame =
-  | { type: "level"; level: Level; policy?: string; schemes?: readonly string[] }
+  /** `timeout`: how long the frame waits for an answer to its `highlight`, in ms (`HIGHLIGHT_MS` without it). */
+  | { type: "level"; level: Level; policy?: string; schemes?: readonly string[]; timeout?: number }
   | { type: "code"; components: ComponentCode[] }
   | { type: "part"; part: Part }
   | { type: "styles"; urls: string[] }
@@ -114,7 +118,12 @@ export type ToFrame =
    */
   | { type: "fetched"; url: string; image?: Blob; refused?: string }
   /** The reader allowed the origin `origin`: the frame's images refused for it ask again (spec §15). */
-  | { type: "images-allowed"; origin: string };
+  | { type: "images-allowed"; origin: string }
+  /**
+   * The answer to the frame's `highlight` with the same `id`: the block's tokens, or none for a language the host's
+   * highlighter doesn't cover, a block the parent didn't send, or a failure (docs/host-highlighter.md).
+   */
+  | { type: "highlighted"; id: number; lines?: CodeLines };
 
 /** Why a component shows its fallback: `@compmd/render`'s reasons, code that didn't load, a level the frame can't hold. */
 export type ErrorReason = "missing" | "threw" | "failed" | "not-here";
@@ -157,14 +166,22 @@ export type FromFrame =
    */
   | { type: "allow-origin"; origin: string }
   /**
+   * A frame asks for the tokens of a code block of its page or part, by its text and fence language, `id` its own
+   * count: it loads no highlighter, and the host's page highlights for it, only a block of what it sent the frame.
+   */
+  | { type: "highlight"; id: number; code: string; language: string }
+  /**
    * The frame has settled after the first `seen` messages that change what it shows (`CHANGES`): its uses drawn, its
    * own frames settled and sized, its images and fonts loaded, then a frame with nothing moving.
    */
   | { type: "settled"; seen: number };
 
 /** Every message type, each way: what the schema (`protocol.schema.json`) has too. */
-export const TO_FRAME: readonly ToFrame["type"][] = ["level", "code", "part", "styles", "scheme", "host", "ping", "compile", "observe", "fetched", "images-allowed"];
-export const FROM_FRAME: readonly FromFrame["type"][] = ["ready", "loaded", "set", "error", "recovered", "link", "rendered", "size", "pong", "compiled", "failed", "observed", "image", "allow-origin", "settled"];
+export const TO_FRAME: readonly ToFrame["type"][] = ["level", "code", "part", "styles", "scheme", "host", "ping", "compile", "observe", "fetched", "images-allowed", "highlighted"];
+export const FROM_FRAME: readonly FromFrame["type"][] = ["ready", "loaded", "set", "error", "recovered", "link", "rendered", "size", "pong", "compiled", "failed", "observed", "image", "allow-origin", "highlight", "settled"];
+
+/** How long a frame waits for its `highlight` to be answered, in ms, when its level doesn't say: the block keeps its text. */
+export const HIGHLIGHT_MS = 5000;
 
 /**
  * The messages that change what a frame shows, the sandbox's and `@compmd/render`'s: a parent counts those it sends, and

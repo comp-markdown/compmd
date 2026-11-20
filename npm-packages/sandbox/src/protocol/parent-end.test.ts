@@ -320,4 +320,30 @@ describe("the parent's end (connectChild)", () => {
     await settle();
     expect(none.slice(1)).toEqual([{ type: "fetched", url: "./logo.png" }]);
   });
+
+  it("answers a frame's `highlight` with the tokens `highlight` gives, by its id, or none: without it, when it fails, or for a forged request", async () => {
+    const { parent, frame, got } = parentChannel();
+    const lines = [[{ text: "let a" }]];
+    const highlight = (code: string) => (code === "let a" ? Promise.resolve(lines) : code === "boom" ? Promise.reject(new Error("no grammar")) : Promise.resolve(undefined));
+    connectChild(parent, { level: "strict", binds: () => false, highlight, ping: { every: 60_000, timeout: 3000 } });
+    frame.postMessage({ type: "ready", sandbox: SANDBOX_VERSION });
+    frame.postMessage({ type: "highlight", id: 1, code: "let a", language: "ts" });
+    frame.postMessage({ type: "highlight", id: 2, code: "boom", language: "ts" });
+    frame.postMessage({ type: "highlight", id: 3, code: "x", language: "cobol" });
+    frame.postMessage({ type: "highlight", id: "4", code: "let a", language: "ts" });
+    await settle();
+    // The level says how long the frame may wait for its answers.
+    expect(got[0]).toEqual({ type: "level", level: "strict", timeout: 3000 });
+    expect(got.slice(1)).toEqual([
+      { type: "highlighted", id: 1, lines },
+      { type: "highlighted", id: 2 },
+      { type: "highlighted", id: 3 },
+    ]);
+    const { parent: alone, frame: asking, got: none } = parentChannel();
+    connectChild(alone, { level: "strict", binds: () => false });
+    asking.postMessage({ type: "ready", sandbox: SANDBOX_VERSION });
+    asking.postMessage({ type: "highlight", id: 1, code: "let a", language: "ts" });
+    await settle();
+    expect(none.slice(1)).toEqual([{ type: "highlighted", id: 1 }]);
+  });
 });

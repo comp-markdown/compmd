@@ -6,6 +6,7 @@
 import { imageSources, urlScheme, type ExpandedRoot, type ImageSource, type Refused, type Splice } from "@compmd/render";
 import { ImageGate } from "./image-gate.ts";
 import { originOf } from "./origins.ts";
+import { SentNodes } from "./sent-nodes.ts";
 
 /** How long a frame may not ask about an origin again after the reader refused it, in ms (docs/remote-images.md, decision 6). */
 export const ASK_AGAIN_MS = 60_000;
@@ -36,9 +37,7 @@ export class PageImages {
   readonly #own: OwnImages;
   readonly #gate: ImageGate;
   /** The images' `src`, as the frame asks for them. */
-  #sources = new Set<string>();
-  /** Splices as a processor's JSON text, read only once the frame asks for an image they may have. */
-  #unread: string[] = [];
+  readonly #sources: SentNodes<string>;
   /** When the reader last refused an origin the frame asked about, by origin. */
   readonly #refusedAt = new Map<string, number>();
 
@@ -52,20 +51,17 @@ export class PageImages {
     this.#base = base;
     this.#own = own;
     this.#gate = gate;
+    this.#sources = new SentNodes((nodes) => imageSources(nodes, own.schemes));
   }
 
   /** The frame renders `tree`: its images are the frame's now. */
   rendered(tree: ExpandedRoot): void {
-    this.#sources = new Set(imageSources(tree.children, this.#own.schemes));
-    this.#unread = [];
+    this.#sources.rendered(tree.children);
   }
 
   /** The frame applies `splices`: their images are the frame's too. */
   spliced(splices: readonly (Splice | string)[]): void {
-    for (const splice of splices) {
-      if (typeof splice === "string") this.#unread.push(splice);
-      else this.#add(splice);
-    }
+    this.#sources.spliced(splices);
   }
 
   /**
@@ -74,7 +70,7 @@ export class PageImages {
    * schemes comes from the host; any other is fetched without credentials and without a `Referer`.
    */
   async file(src: string): Promise<Blob | Refused | undefined> {
-    if (!this.#has(src)) return undefined;
+    if (!this.#sources.has(src)) return undefined;
     try {
       if (isOwn(src, this.#own.schemes)) return imageOnly(await this.#own.file?.(src));
       const decision = await this.#gate.decide(src);
@@ -91,8 +87,7 @@ export class PageImages {
    * within `ASK_AGAIN_MS` of refusing it.
    */
   async allowOrigin(origin: string, now: () => number = Date.now): Promise<void> {
-    this.#readSplices();
-    if (![...this.#sources].some((src) => originOf(src) === origin)) return;
+    if (!this.#sources.some((src) => originOf(src) === origin)) return;
     const refused = this.#refusedAt.get(origin);
     if (refused !== undefined && now() - refused < ASK_AGAIN_MS) return;
     if (!(await this.#gate.allow(origin))) this.#refusedAt.set(origin, now());
@@ -101,22 +96,6 @@ export class PageImages {
   async #fetched(src: string): Promise<Blob | undefined> {
     const response = await this.#fetch(new URL(src, this.#base), { credentials: "omit", referrerPolicy: "no-referrer" });
     return response.ok ? response.blob() : undefined;
-  }
-
-  #has(src: string): boolean {
-    if (this.#sources.has(src)) return true;
-    this.#readSplices();
-    return this.#sources.has(src);
-  }
-
-  /** Adds the images of the splices given as text, which were left unread until needed. */
-  #readSplices(): void {
-    for (const splice of this.#unread) this.#add(JSON.parse(splice) as Splice);
-    this.#unread = [];
-  }
-
-  #add(splice: Splice): void {
-    for (const src of imageSources(splice.nodes, this.#own.schemes)) this.#sources.add(src);
   }
 }
 

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://compmd.dev/schema/sandbox-protocol.schema.json",
   "title": "The CompMD sandbox's frame protocol",
-  "description": "The messages between a frame and its parent, the window that made it (docs/sandbox-protocol.md), version 1. `@compmd/render`'s frame protocol travels on the same port beside them. `host` carries a MessagePort in the message's ports, and `code` may carry a Blob, which JSON can't hold.",
+  "description": "The messages between a frame and its parent, the window that made it (docs/sandbox-protocol.md), version 2. `@compmd/render`'s frame protocol travels on the same port beside them. `host` carries a MessagePort in the message's ports, and `code` may carry a Blob, which JSON can't hold.",
   "oneOf": [{ "$ref": "#/$defs/toFrame" }, { "$ref": "#/$defs/fromFrame" }],
   "$defs": {
     "toFrame": {
@@ -18,7 +18,8 @@
         { "$ref": "#/$defs/compile" },
         { "$ref": "#/$defs/observe" },
         { "$ref": "#/$defs/fetched" },
-        { "$ref": "#/$defs/imagesAllowed" }
+        { "$ref": "#/$defs/imagesAllowed" },
+        { "$ref": "#/$defs/highlighted" }
       ]
     },
     "fromFrame": {
@@ -38,19 +39,21 @@
         { "$ref": "#/$defs/observed" },
         { "$ref": "#/$defs/image" },
         { "$ref": "#/$defs/allowOrigin" },
+        { "$ref": "#/$defs/highlight" },
         { "$ref": "#/$defs/settled" }
       ]
     },
     "componentLevel": { "description": "A component's trust level.", "enum": ["strict", "permissive", "trusted"] },
     "print": { "description": "Each use of the component prints its fallback (spec §7.3, §14); absent when it prints as drawn.", "const": "fallback" },
     "level": {
-      "description": "The frame's level, first and once; for a permissive frame, the network directives of its second policy (connect-src, img-src, font-src, media-src), which it adds before anything else; and the host's own URL schemes, which the links and images it renders may use (spec §15).",
+      "description": "The frame's level, first and once; for a permissive frame, the network directives of its second policy (connect-src, img-src, font-src, media-src), which it adds before anything else; the host's own URL schemes, which the links and images it renders may use (spec §15); and how long it waits for an answer to its `highlight`, in ms (5000 without it).",
       "type": "object",
       "properties": {
         "type": { "const": "level" },
         "level": { "enum": ["strict", "permissive"] },
         "policy": { "type": "string" },
-        "schemes": { "type": "array", "items": { "type": "string" } }
+        "schemes": { "type": "array", "items": { "type": "string" } },
+        "timeout": { "type": "number", "exclusiveMinimum": 0 }
       },
       "required": ["type", "level"],
       "additionalProperties": false
@@ -333,6 +336,42 @@
       "type": "object",
       "properties": { "type": { "const": "images-allowed" }, "origin": { "type": "string" } },
       "required": ["type", "origin"],
+      "additionalProperties": false
+    },
+    "highlight": {
+      "description": "A frame asks for the tokens of a code block of its page or part, by its text and fence language (\"\" for none), `id` its own count (docs/host-highlighter.md). Code of the frame's level may have asked: its parent answers only for a block of the trees, splices and parts it sent the frame, and a parent that isn't the host's page asks its own parent.",
+      "type": "object",
+      "properties": { "type": { "const": "highlight" }, "id": { "type": "integer" }, "code": { "type": "string" }, "language": { "type": "string" } },
+      "required": ["type", "id", "code", "language"],
+      "additionalProperties": false
+    },
+    "highlighted": {
+      "description": "The answer to `highlight` with the same `id`: each line's tokens, whose texts joined are the line, or no `lines` for a language the host's highlighter doesn't cover, a block it didn't send, or a failure. The frame draws them only when they are the block's text.",
+      "type": "object",
+      "properties": {
+        "type": { "const": "highlighted" },
+        "id": { "type": "integer" },
+        "lines": { "type": "array", "items": { "type": "array", "items": { "$ref": "#/$defs/codeToken" } } }
+      },
+      "required": ["type", "id"],
+      "additionalProperties": false
+    },
+    "codeToken": {
+      "description": "A piece of a line's text, with its colour in each colour scheme as CSS colours, and its style.",
+      "type": "object",
+      "properties": {
+        "text": { "type": "string" },
+        "color": {
+          "type": "object",
+          "properties": { "light": { "type": "string" }, "dark": { "type": "string" } },
+          "required": ["light", "dark"],
+          "additionalProperties": false
+        },
+        "italic": { "type": "boolean" },
+        "bold": { "type": "boolean" },
+        "underline": { "type": "boolean" }
+      },
+      "required": ["text"],
       "additionalProperties": false
     },
     "frameId": { "description": "A frame by its path from the window that recorded it: empty for that window itself, `2` for its second frame, `2/1` for that frame's first.", "type": "string", "pattern": "^([0-9]+(/[0-9]+)*)?$" },

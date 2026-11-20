@@ -3,8 +3,10 @@
 
 import { createPage, reveal, type Change, type ExpandedInput, type ExpandedRoot, type Line, type Page, type Splice } from "@compmd/render";
 import { connectFrame, type FrameConnection } from "@compmd/render/frame";
-import { framesHighlight, framesMath } from "./from-frames.ts";
-import { frameUrl, type HostRuntime } from "./host/runtime.ts";
+import { frameUrl } from "./frame-url.ts";
+import { forSent, sentBlocks } from "./frames-highlight.ts";
+import { framesMath } from "./from-frames.ts";
+import type { HostRuntime } from "./host/runtime.ts";
 import { hostImages, PageImages } from "./images.ts";
 import { codeFor } from "./mounts.ts";
 import type { Observer } from "./observer.ts";
@@ -53,10 +55,10 @@ export function hostPage(container: HTMLElement, runtime: HostRuntime, options: 
   const page: Page = createPage(container, {
     components: runtime.mounts,
     examples: runtime.examples,
-    // The frames' own Temml and Shiki, from their files, so math and code look the same in both modes, and the app
-    // ships one copy of each, which this page and its frames share.
+    // The frames' own Temml, from its file, so math looks the same in both modes, and the app ships one copy of it;
+    // code as the runtime highlights it for every frame too.
     math: framesMath(options.base),
-    highlight: framesHighlight(options.base),
+    highlight: runtime.highlight,
     ownSchemes: runtime.schemes,
     printsFallback: (name) => runtime.printsFallback(name),
     // Images of the host's own schemes from the host's files; remote ones once the reader allows their origin (spec §15).
@@ -157,6 +159,8 @@ export function framePage(container: HTMLElement, runtime: HostRuntime, options:
   /** The document's inputs, which its page may set, from the last tree or splice. */
   let inputs: Readonly<Record<string, ExpandedInput>> = {};
   const images = new PageImages(fetch, document.baseURI, { schemes: runtime.schemes, file: options.ownImages }, runtime.gate);
+  /** The code blocks of the trees and splices sent, which alone the frame gets tokens for. */
+  const blocks = sentBlocks();
   const { port1, port2 } = new MessageChannel();
   const id = observer.frame("strict", { kind: "page" });
   const port = observer.port(id, port1);
@@ -167,6 +171,7 @@ export function framePage(container: HTMLElement, runtime: HostRuntime, options:
     ping: { every: 1000, timeout: options.timeout ?? 5000 },
     image: (url) => images.file(url),
     allowOrigin: (origin) => void images.allowOrigin(origin),
+    highlight: forSent(blocks, runtime.framesHighlight),
   });
   const unfollowAllowed = runtime.gate.onAllowed((origin) => {
     child.imagesAllowed(origin);
@@ -222,12 +227,14 @@ export function framePage(container: HTMLElement, runtime: HostRuntime, options:
     render: (tree, change) => {
       inputs = tree.inputs ?? {};
       images.rendered(tree);
+      blocks.rendered(tree.children);
       frame.render(tree, change);
     },
     splice: (splices, change, spliceOptions = {}) => {
       for (const splice of splices) if (typeof splice !== "string" && splice.inputs) inputs = splice.inputs;
       if (spliceOptions.inputs) inputs = spliceOptions.inputs;
       images.spliced(splices);
+      blocks.spliced(splices);
       frame.splice(splices, change, spliceOptions.replace ? { replace: true } : {});
     },
     code: () => {

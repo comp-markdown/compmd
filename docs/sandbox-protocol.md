@@ -32,7 +32,7 @@ When a frame loads, its parent posts `hello` to its window with one end of a new
 | Message | Says | To |
 |---|---|---|
 | `hello {version}` (a window message, with the port) | this is your port | every frame |
-| `level {level, policy?}` | your level; for `permissive.html`, the second policy, with the pack's origins, which the frame adds before anything else | every frame, first |
+| `level {level, policy?, schemes?, timeout?}` | your level; for `permissive.html`, the second policy, with the pack's origins, which the frame adds before anything else; the host's own URL schemes; and how long to wait for `highlighted`, in ms (5,000 without it) | every frame, first |
 | `code {components}` | each component's code: compiled text with its binding (`react`, `svelte`, `plain`) and CSS, a built module's file as a `Blob` with the plain binding and its `place` (`pack@version/path`), or a module's `{url, integrity}`, with a `binding` (`react`, `svelte`) for a pack's source component compiled ahead, whose module exports a Svelte component's CSS as `css`; text and `Blob`s with the library packs they import, in `libraries`, by name, each with its place, its file as a `Blob` and its own `libraries` ([sharing library packs](sharing-library-packs.md)); for a permissive frame, its strict children's code too, which it passes on | P, U |
 | `render`, `splices` | `@compmd/render`'s | P |
 | `scheme {scheme}` | the colour scheme of the page around the frame, `light` or `dark`, which the frame sets on its document and passes to its own frames; again when it changes | P, U |
@@ -46,6 +46,7 @@ When a frame loads, its parent posts `hello` to its window with one end of a new
 | `compile {name, language, runtime, code}` | compile this | C |
 | `observe {on}` | record what passes in you and report it, asking your own frames too; or stop ([observing](#observing)) | P, U |
 | `fetched {url, image?}` | the answer to `image`: the image's file as a `Blob`, or none when H can't or won't give it | P, from H |
+| `highlighted {id, lines?}` | the answer to `highlight` with the same `id`: each line's tokens, or none for a language the host's highlighter doesn't cover, a block the parent didn't send, or a failure ([the host's code highlighter](host-highlighter.md)) | P, U |
 
 **A frame to its parent:**
 
@@ -66,6 +67,7 @@ When a frame loads, its parent posts `hello` to its window with one end of a new
 | `compiled {name, code, css?}`, `failed {name, message}` | a compile's result | C |
 | `observed {events}` | what the frame recorded since its last report, its own frames' reports in it; only after `observe {on}` | P, U |
 | `image {url}` | the page needs an image by its `src`, which it can't fetch: H fetches it, only if it is an image of the trees and splices H sent P, and answers with `fetched` | P |
+| `highlight {id, code, language}` | a code block's tokens, by its text and fence language, `id` the frame's own count: the frame loads no highlighter. The parent answers with `highlighted` only for a block of the trees, splices or part it sent the frame; a permissive U asks H for its strict children's, as its own. H highlights one block a task, for all its frames together. Without an answer within `timeout`, the block keeps its text | P, U |
 
 A parent passes its children's `set`, `link` and `error` up, each with what it knows of where they came from, so H gets them all.
 
@@ -199,11 +201,13 @@ sequenceDiagram
 
 - **A frame:** its port comes in a window message from its parent; it adds the `level` policy before it loads any code; it runs code and renders parts only from its port; it answers `ping`.
 - **A parent:** it makes children only of a lower level than its own (a permissive frame, only strict ones); it sends each child only its own use's part and code; it checks each `set` against the use's node; it pings its children; it takes `observed` only after it asked, and checks each event.
-- **H:** it gives `host` only to permissive frames of packs the configuration gives `host`; it never acts on `link` without the reader; it asks P for clicks (`point`) only once its host listens for `pointed`, and passes on only a well-formed source and boxes; it fetches for `image` only the images of the trees and splices it sent P, without credentials or a `Referer`, and answers only with a file that is an image.
+- **H:** it gives `host` only to permissive frames of packs the configuration gives `host`; it never acts on `link` without the reader; it asks P for clicks (`point`) only once its host listens for `pointed`, and passes on only a well-formed source and boxes; it fetches for `image` only the images of the trees and splices it sent P, without credentials or a `Referer`, and answers only with a file that is an image; it highlights for `highlight` only a block of the trees, splices and parts it sent the frame (a permissive U checks its own children's the same way).
 
 ## Versions
 
 The sandbox's version travels in `hello` and `ready`, beside `@compmd/render`'s. A host may serve the frame documents from an older deploy than its page: a frame with another version gets nothing, and its parent reports it.
+
+- **Version 2** added `highlight` and `highlighted` and the level's `timeout`: the frames ask the host's page for their code blocks' tokens and load no highlighter ([the host's code highlighter](host-highlighter.md)). A host's page and the frames it serves upgrade together.
 
 ## From the playground's messages
 
@@ -218,6 +222,4 @@ The sandbox's version travels in `hello` and `ready`, beside `@compmd/render`'s.
 
 ## Open
 
-- **Highlighting by the host's page:** `highlight` and `highlighted`, a frame asking its parent for a block's tokens,
-  proposed in [the host's code highlighter](host-highlighter.md) for the protocol's version 2.
 - **`@compmd/render`'s protocol** could take the sandbox's messages into its own, or stay as it is with the sandbox's beside it on the same port (recommended, decision 5): a host that builds its own sandbox can still use `connectFrame` and `serveFrame` alone.

@@ -17,7 +17,6 @@ import { frameUse } from "../use.ts";
 import { compile } from "./compile.ts";
 import { Components } from "./components.ts";
 import { load } from "./load.ts";
-import { shikiHighlight } from "../highlight/highlight.ts";
 import { temmlMath } from "../math.ts";
 import { narrowed, networkPolicy } from "./narrow.ts";
 import { withSource } from "./source.ts";
@@ -35,9 +34,6 @@ for (const name of ["RTCPeerConnection", "webkitRTCPeerConnection", "RTCDataChan
 
 /** Math typeset by Temml, which loads the first time a page has math. */
 const math = temmlMath();
-/** Code blocks highlighted by Shiki, which loads the first time a page has a code block. */
-// Oniguruma where the frame compiles WebAssembly, which its policy allows (docs/webassembly-in-the-frames.md).
-const highlight = shikiHighlight({ webAssembly: true });
 
 /** Each component's stylesheet, adopted by the frame's document. */
 const sheets = new Map<string, CSSStyleSheet>();
@@ -174,6 +170,11 @@ function start(port: MessagePort): void {
   /** The host's stylesheets, which this frame's nested frames get too. */
   let stylesheets: readonly string[] = [];
   // Every callback below runs on a message, after `parent` is set at the end.
+  /**
+   * Code blocks highlighted by the host's page, which the frame asks for each block's tokens: it loads no highlighter
+   * (docs/host-highlighter.md). A nested frame's requests go up the same way, as this frame's own.
+   */
+  const highlight = (code: string, language: string) => parent.highlight(code, language);
   /** The components' code loading, which a frame waits for before it has drawn. */
   let loading: Promise<void> = Promise.resolve();
   /** The frame's size, reported again before it says it settled. */
@@ -223,6 +224,7 @@ function start(port: MessagePort): void {
         ...(component.example === undefined ? {} : { example: component.example }),
         styles: stylesheets,
         schemes,
+        highlight,
         ping: { every: 1000, timeout: 5000 },
         observer,
         on: {

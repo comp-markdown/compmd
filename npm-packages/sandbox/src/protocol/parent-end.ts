@@ -1,7 +1,7 @@
 // The parent's end of the protocol, one per frame it made: it waits for the frame's `ready`, gives it its level first,
 // checks what the frame sends against the part it gave it, and stops a frame that stops answering.
 
-import { BUSY_MS } from "@compmd/render";
+import { BUSY_MS, type CodeLines } from "@compmd/render";
 import { FROM_FRAME, isChange, isMessage, SANDBOX_VERSION, type ComponentCode, type ErrorReason, type FromFrame, type Level, type Part, type Port, type Scheme, type ToFrame } from "./messages.ts";
 
 export interface ChildOptions {
@@ -30,6 +30,11 @@ export interface ChildOptions {
    * have asked, so the parent asks only about an origin of images it sent the frame.
    */
   allowOrigin?(origin: string): void;
+  /**
+   * The tokens of a code block the frame asks for, by its text and language, or `undefined`. Strict code may have
+   * asked, so it gives only blocks of what it sent the frame. Without it, the frame's blocks keep their text.
+   */
+  highlight?(code: string, language: string): Promise<CodeLines | undefined>;
 }
 
 /**
@@ -195,6 +200,8 @@ export function connectChild(port: Port, options: ChildOptions): ChildEnd {
         level: options.level,
         ...(options.policy === undefined ? {} : { policy: options.policy }),
         ...(options.schemes?.length ? { schemes: [...options.schemes] } : {}),
+        // A frame waits for its blocks' tokens as long as it may take to answer.
+        ...(options.ping ? { timeout: options.ping.timeout } : {}),
       } satisfies ToFrame);
       if (options.host) port.postMessage({ type: "host" } satisfies ToFrame, [options.host]);
       const queued = waiting;
@@ -262,6 +269,18 @@ export function connectChild(port: Port, options: ChildOptions): ChildEnd {
         // Strict code may have sent it: the origin is checked against the frame's images where it is asked about.
         const { origin } = data as { origin: unknown };
         if (typeof origin === "string") options.allowOrigin?.(origin);
+        break;
+      }
+      case "highlight": {
+        // Strict code may have written anything: a request that isn't an id with text gets no answer.
+        const { id, code, language } = data as { id: unknown; code: unknown; language: unknown };
+        if (typeof id !== "number" || typeof code !== "string" || typeof language !== "string") break;
+        void (options.highlight?.(code, language) ?? Promise.resolve(undefined))
+          .catch(() => undefined)
+          .then((lines) => {
+            if (closed) return;
+            port.postMessage({ type: "highlighted", id, ...(lines ? { lines } : {}) } satisfies ToFrame);
+          });
         break;
       }
       case "settled":

@@ -149,6 +149,34 @@ export default function Chart({ compmd }) {
     ]);
   });
 
+  it("highlights a code block in a framed use's slot with the host's highlighter, which the frame asks through the host's page", async () => {
+    const asked: string[] = [];
+    const red = { light: "#ff0000", dark: "#ff0000" };
+    const { runtime, area, next } = setup({
+      highlight: (code, language) => {
+        asked.push(`${language}:${code}`);
+        return language === "ts" ? [[{ text: "let", color: red }, { text: " a = 1;" }]] : undefined;
+      },
+    });
+    const body = `async (target, { slots }) => {
+      for (const item of slots.default) target.append(item.element);
+      for (let tries = 0; tries < 200 && !target.querySelector(".compmd-line > span"); tries++) await new Promise((done) => setTimeout(done, 20));
+      const token = target.querySelector(".compmd-line > span");
+      return { text: target.querySelector("pre code")?.textContent, token: token?.textContent, color: token && getComputedStyle(token).color };
+    }`;
+    await runtime.set([plain("tabs", { level: "strict" }, body)]);
+    const tabs: ExpandedComponent = {
+      type: "componentContainer",
+      name: "tabs",
+      params: [{ key: "result", breakpoint: null, value: "", input: "tabs" }],
+      children: [{ type: "code", lang: "ts", meta: null, value: "let a = 1;" }],
+    };
+    const result = next("tabs");
+    runtime.mountUse(area, tabs, { tabs: { type: "string", value: "" } });
+    expect(await result).toEqual({ text: "let a = 1;", token: "let", color: "rgb(255, 0, 0)" });
+    expect(asked).toEqual(["ts:let a = 1;"]);
+  });
+
   it("gives a handle for each use: `update` sends it new params, `destroy` removes its frame", async () => {
     const { runtime, area, next } = setup();
     // It sets its input after an update, not in it: a renderer refuses `set` while it updates.

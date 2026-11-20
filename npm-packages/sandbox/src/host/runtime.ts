@@ -4,7 +4,10 @@
 // components and to permissive frames of packs given it, sends them the host's events, and stops a frame that stops answering.
 
 import type { HostComponent, Trust } from "@compmd/processor";
-import { createRegion, ownSchemes, type ExpandedInput, type ExpandedUse, type Mount } from "@compmd/render";
+import { createRegion, ownSchemes, type CodeHighlighter, type ExpandedInput, type ExpandedUse, type Mount } from "@compmd/render";
+import { frameUrl } from "../frame-url.ts";
+import { oneBlockATask, type FrameHighlight } from "../frames-highlight.ts";
+import { framesHighlight } from "../from-frames.ts";
 import { localHost, serveHost, type HostApi, type HostClient } from "../host-api.ts";
 import { ImageGate, type ImageGateOptions } from "../image-gate.ts";
 import { MountSet } from "../mount-set.ts";
@@ -54,6 +57,13 @@ export interface HostRuntimeOptions {
    */
   ownImages?: (src: string) => Promise<Blob | undefined>;
   /**
+   * Highlights the document's code blocks, in the host's page and for every frame, which asks the host's page for each
+   * block's tokens (docs/host-highlighter.md): a host whose editor highlights with its own engine gives it here, so
+   * its pages show the same colours. Without it, Shiki from the frames' `highlight.js`, loaded the first time a page
+   * has a code block.
+   */
+  highlight?: CodeHighlighter;
+  /**
    * Who asks the reader about the origins of the document's remote images, and where the answers are kept (spec §15):
    * the same as the host gives `loadData`, so one answer covers an origin's data and images. Each image of an origin
    * not configured is asked about the first time it is drawn; a host without a reader gives an `ask` that refuses.
@@ -84,12 +94,6 @@ export interface HostEvents {
 }
 
 const messageOf = (error: unknown): string => (error instanceof Error ? error.message : String(error));
-
-/**
- * The file `name` where the host serves the frame documents, `base`, full or relative to the page: a frame document,
- * or a module a host-mode page loads from there.
- */
-export const frameUrl = (base: string, name: "strict.html" | "permissive.html" | "highlight.js" | "math.js"): string => new URL(name, new URL(base, location.href)).href;
 
 /**
  * `code` with its component's `print`, which the frames read to print its uses' fallbacks (spec §7.3), and its
@@ -133,6 +137,10 @@ export class HostRuntime {
   #printing = new Set<string>();
   /** The gate the document's images pass, in the host's page and its page frame (spec §15). */
   readonly gate: ImageGate;
+  /** What highlights the document's code blocks in the host's page. */
+  readonly highlight: CodeHighlighter;
+  /** What answers a frame's code blocks: `highlight`, one block a task across the window's frames. */
+  readonly framesHighlight: FrameHighlight;
 
   /** @throws Error when `options.ownSchemes` names something that isn't a scheme, or one a host can't name. */
   constructor(options: HostRuntimeOptions, events: HostEvents) {
@@ -140,6 +148,8 @@ export class HostRuntime {
     this.#events = events;
     this.schemes = ownSchemes(options.ownSchemes ?? []);
     this.gate = new ImageGate(options.origins);
+    this.highlight = options.highlight ?? framesHighlight(options.base);
+    this.framesHighlight = oneBlockATask(this.highlight);
     this.#styles = options.stylesheets ?? [];
     this.#compiled = options.compiled === undefined ? cacheStorage() : options.compiled;
     this.#local = options.host ? localHost(options.host) : undefined;
@@ -391,6 +401,7 @@ export class HostRuntime {
         : {}),
       styles: this.#styles,
       schemes: this.schemes,
+      highlight: this.framesHighlight,
       ping: { every: 1000, timeout: this.#options.timeout ?? 5000 },
       ...(this.#options.observer ? { observer: this.#options.observer } : {}),
       on: {

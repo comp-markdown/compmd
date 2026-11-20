@@ -1,6 +1,6 @@
 # WebAssembly in the frames
 
-**Status: accepted (2026-11-19).** Whether the sandbox's frame documents (`strict.html`, `permissive.html`) allow WebAssembly, so the page's frame can highlight code with Shiki's Oniguruma engine, and what else was weighed. It builds on [running components in the sandbox](running-components-in-the-sandbox.md), whose threats (T1 to T10) it goes through, and on [the spike CMD-252](../spikes/highlight-perf/README.md), which measured the engines.
+**Status: accepted (2026-11-19); decision 1 reversed by [the host's code highlighter](host-highlighter.md), decision 7 (CMD-262, 2026-11-20).** The frames no longer highlight code themselves: they ask the host's page for each block's tokens, and their policies no longer allow `'wasm-unsafe-eval'`. Decision 2's engine rule still holds where Shiki runs, in the host's page. Whether the sandbox's frame documents (`strict.html`, `permissive.html`) allow WebAssembly, so the page's frame can highlight code with Shiki's Oniguruma engine, and what else was weighed. It builds on [running components in the sandbox](running-components-in-the-sandbox.md), whose threats (T1 to T10) it goes through, and on [the spike CMD-252](../spikes/highlight-perf/README.md), which measured the engines.
 
 ## Decisions
 

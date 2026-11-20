@@ -3,6 +3,7 @@
 // them all in one frame. Blocks on screen go first, as an `IntersectionObserver` reports them, which reads no layout.
 // A block whose text changed is asked for again with its new text, and one that is gone is dropped.
 import { drawTokens, type CodeHighlighter } from "./highlight.ts";
+import { nextTask } from "./next-task.ts";
 
 /** A block waiting: what to ask for, and what to tell once it is drawn or dropped. */
 interface Job {
@@ -11,22 +12,6 @@ interface Job {
   language: string;
   highlight: CodeHighlighter;
   done: () => void;
-}
-
-/** A task later, after the browser has had its turn: a message, which no timer clamps. */
-function nextTask(): Promise<void> {
-  return new Promise((resolve) => {
-    if (typeof MessageChannel !== "function") {
-      setTimeout(resolve, 0);
-      return;
-    }
-    const { port1, port2 } = new MessageChannel();
-    port1.onmessage = () => {
-      port1.close();
-      resolve();
-    };
-    port2.postMessage(null);
-  });
 }
 
 /** One document's queue. */

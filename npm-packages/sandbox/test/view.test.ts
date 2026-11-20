@@ -514,6 +514,44 @@ describe("code blocks", () => {
       }
     });
   }
+
+  /** The host's own highlighter: each block's first word in its own colour, each block it is asked for recorded. */
+  const hostHighlighter = () => {
+    const asked: string[] = [];
+    const highlight: SandboxOptions["highlight"] = (code, language) => {
+      asked.push(`${language}:${code}`);
+      const [word = "", ...rest] = code.split(" ");
+      return [[{ text: word, color: { light: "#ff0000", dark: "#00ff00" } }, { text: ` ${rest.join(" ")}` }]];
+    };
+    return { asked, highlight };
+  };
+  const own = { light: "rgb(255, 0, 0)", dark: "rgb(0, 255, 0)" };
+  const askedFor = ["js:const a = 1;", "mermaid:graph LR; A --> B"];
+
+  for (const scheme of ["light", "dark"] as const) {
+    it(`highlights the page's frame's code blocks with the host's highlighter, asked only for the blocks it sent, in the ${scheme} theme (frame mode)`, async () => {
+      const { asked, highlight } = hostHighlighter();
+      const { area, view, until, values } = open("frame", [looking], { highlight });
+      area.style.colorScheme = scheme;
+      view.render({ type: "root", children: [...blocks, use("one")], inputs: RESULT });
+      await until(() => values().length > 0);
+      const [js, mermaid] = values()[0] as Awaited<ReturnType<typeof shown>>;
+      expect(js).toMatchObject({ language: "language-js", text: "const a = 1;", tokens: 2, color: own[scheme] });
+      expect(mermaid).toMatchObject({ language: "language-mermaid", tokens: 2, color: own[scheme] });
+      expect(asked).toEqual(askedFor);
+    });
+
+    it(`highlights the page's code blocks with the host's highlighter, in the ${scheme} theme (host mode)`, async () => {
+      const { asked, highlight } = hostHighlighter();
+      const { area, view } = open("host", [], { highlight });
+      area.style.colorScheme = scheme;
+      view.render({ type: "root", children: blocks });
+      const [js, mermaid] = await shown(area);
+      expect(js).toMatchObject({ language: "language-js", text: "const a = 1;", tokens: 2, color: own[scheme] });
+      expect(mermaid).toMatchObject({ tokens: 2, color: own[scheme] });
+      expect(asked).toEqual(askedFor);
+    });
+  }
 });
 
 describe("the host's own schemes", () => {

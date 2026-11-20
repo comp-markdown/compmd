@@ -4,6 +4,7 @@
 
 import { BUSY_MS, type ExpandedInput, type ExpandedUse } from "@compmd/render";
 import { networkPolicy } from "./frame/narrow.ts";
+import { forSent, sentBlocks, type FrameHighlight } from "./frames-highlight.ts";
 import type { Observer } from "./observer.ts";
 import { boundInputs } from "./protocol/inputs.ts";
 import { HELLO, SANDBOX_VERSION, type ComponentCode, type Level, type Scheme } from "./protocol/messages.ts";
@@ -25,6 +26,8 @@ export interface UseFrameOptions {
   styles?: readonly string[];
   /** The host's own URL schemes, checked, which the links and images the frame renders may use (spec §15). */
   schemes?: readonly string[];
+  /** The tokens of a code block in the use's slots, which the frame asks for; asked only for a block of its node. */
+  highlight?: FrameHighlight;
   ping?: { every: number; timeout: number };
   on: { [T in keyof ChildEvents]?: (event: ChildEvents[T]) => void };
   /** The observer of the window the frame is made in, which records the frame and the messages on its port. */
@@ -72,6 +75,9 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
   /** The example the use is in (spec §7.8), whose components the frame finds its node's in. */
   const inExample = options.example === undefined ? {} : { example: options.example };
   let bound = boundInputs([node]);
+  /** The code blocks of the node sent, which alone the frame gets tokens for. */
+  const blocks = sentBlocks();
+  blocks.rendered([node]);
   let code = options.code;
   let styles = options.styles ?? [];
   let tokens: Readonly<Record<string, string>> | undefined;
@@ -95,6 +101,7 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
       ...(options.schemes?.length ? { schemes: options.schemes } : {}),
       binds: (input) => bound.has(input),
       ...(options.host ? { host: options.host() } : {}),
+      ...(options.highlight ? { highlight: forSent(blocks, options.highlight) } : {}),
       ...(options.ping ? { ping: options.ping } : {}),
     });
     if (observer && id !== undefined) {
@@ -141,6 +148,7 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
       node = next;
       inputs = nextInputs;
       bound = boundInputs([next]);
+      blocks.rendered([next]);
       child?.part({ node, inputs: { ...inputs }, ...inExample });
     },
     code: (next) => {

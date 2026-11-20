@@ -1,6 +1,6 @@
-// Builds what the package ships for its frame documents into `dist/frames/`: the frame runtime, with the compilers,
-// Shiki and Temml as chunks it loads when needed; `highlight.js` and `math.js`, which a host-mode page loads Shiki and
-// Temml by; and the runtimes every frame shares through its import map. `buildFrames` then writes the documents for a
+// Builds what the package ships for its frame documents into `dist/frames/`: the frame runtime, with the compilers and
+// Temml as chunks it loads when needed; `highlight.js` and `math.js`, which the host's page loads Shiki (in both modes)
+// and Temml (in host mode) by; and the runtimes every frame shares through its import map. `buildFrames` then writes the documents for a
 // host's origin.
 
 import { svelte } from "@sveltejs/vite-plugin-svelte";
@@ -34,6 +34,8 @@ await build({
       // `highlight.js` and `math.js` are what a host-mode page imports from here, so Shiki and Temml are built once,
       // their chunks shared with the runtime's.
       input: { runtime: join(ROOT, "src/frame/runtime.ts"), highlight: join(ROOT, "src/highlight/highlight.ts"), math: join(ROOT, "src/math.ts") },
+      // A page imports `highlight.js` and `math.js` by their exports, which no other entry imports: they stay.
+      preserveEntrySignatures: "strict",
       // The runtimes stay imports, for the frame's import map: one React and one Svelte, whatever loads them.
       external: [...SHARED],
       output: { format: "es", entryFileNames: "[name].js", chunkFileNames: "chunks/[name]-[hash].js" },

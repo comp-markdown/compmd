@@ -214,4 +214,39 @@ describe("the frame's end (serveParent)", () => {
     parent.postMessage({ type: "fetched", url: "https://photos.example.com/a.png", refused: "https://photos.example.com" });
     expect(await refused).toEqual({ refused: "https://photos.example.com" });
   });
+
+  it("asks its parent for a code block's tokens by an id of its own, and takes each answer by its id, in any order", async () => {
+    const { parent, frame, got } = frameChannel();
+    const end = serveParent(frame, { level: () => undefined });
+    parent.postMessage({ type: "level", level: "strict" });
+    await settle();
+    const ts = end.highlight("let a", "ts");
+    const unknown = end.highlight("x", "cobol");
+    const forged = end.highlight("y", "ts");
+    await settle();
+    expect(got.slice(1)).toEqual([
+      { type: "highlight", id: 1, code: "let a", language: "ts" },
+      { type: "highlight", id: 2, code: "x", language: "cobol" },
+      { type: "highlight", id: 3, code: "y", language: "ts" },
+    ]);
+    const lines = [[{ text: "let ", color: { light: "#d73a49", dark: "#f97583" } }, { text: "a" }]];
+    parent.postMessage({ type: "highlighted", id: 2 });
+    parent.postMessage({ type: "highlighted", id: 1, lines });
+    parent.postMessage({ type: "highlighted", id: 3, lines: "not lines" });
+    expect(await ts).toEqual(lines);
+    expect(await unknown).toBeUndefined();
+    expect(await forged).toBeUndefined();
+  });
+
+  it("keeps a block's text when its parent doesn't answer within the level's timeout", async () => {
+    const { parent, frame } = frameChannel();
+    const end = serveParent(frame, { level: () => undefined });
+    parent.postMessage({ type: "level", level: "strict", timeout: 10 });
+    await settle();
+    const waited = end.highlight("let a", "ts");
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    // A late answer finds nothing waiting.
+    parent.postMessage({ type: "highlighted", id: 1, lines: [[{ text: "let a" }]] });
+    expect(await waited).toBeUndefined();
+  });
 });

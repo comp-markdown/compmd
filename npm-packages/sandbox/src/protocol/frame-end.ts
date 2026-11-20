@@ -1,7 +1,8 @@
 // The frame's end of the protocol: it believes its port, which its parent gave it, and keeps the order the protocol
 // asks for. The level comes first and once: before it, the frame acts on nothing, since its policy isn't narrowed yet.
 
-import { isChange, isMessage, SANDBOX_VERSION, TO_FRAME, type CompileRequest, type ComponentCode, type ErrorReason, type FromFrame, type Level, type Part, type Port, type Scheme, type ToFrame } from "./messages.ts";
+import type { CodeLines } from "@compmd/render";
+import { HIGHLIGHT_MS, isChange, isMessage, SANDBOX_VERSION, TO_FRAME, type CompileRequest, type ComponentCode, type ErrorReason, type FromFrame, type Level, type Part, type Port, type Scheme, type ToFrame } from "./messages.ts";
 import type { Observed } from "./observed.ts";
 
 /** What the frame does with each message; the frame runtime implements it. */
@@ -51,6 +52,11 @@ export interface FrameEnd {
   image(url: string): Promise<Blob | { refused: string } | undefined>;
   /** The reader asks to see the images of `origin`: the parent asks them, never the frame. */
   allowOrigin(origin: string): void;
+  /**
+   * Asks the parent for the tokens of a code block of what it sent: a `CodeHighlighter` for the frame's renderer.
+   * `undefined` when the parent gives none, or doesn't answer within the level's `timeout`.
+   */
+  highlight(code: string, language: string): Promise<CodeLines | undefined>;
   /** How many messages that change what the frame shows it has taken. */
   readonly seen: number;
   /** The frame has settled after the first `seen` of them. */
@@ -75,6 +81,10 @@ export function serveParent(port: Port, handlers: FrameHandlers): FrameEnd {
   let level: Level | undefined;
   /** The images asked for and not answered yet, by URL. */
   const images = new Map<string, ((image: Blob | { refused: string } | undefined) => void)[]>();
+  /** The code blocks asked for and not answered yet, by the request's `id`. */
+  const blocks = new Map<number, (lines: CodeLines | undefined) => void>();
+  let blocksAsked = 0;
+  let highlightTimeout = HIGHLIGHT_MS;
   let seen = 0;
   /** Counts a change, `@compmd/render`'s too, which its own listener on the port handles after this one. */
   const counting = ({ data }: { data: unknown }) => {
@@ -89,6 +99,7 @@ export function serveParent(port: Port, handlers: FrameHandlers): FrameEnd {
     if (data.type === "level") {
       if (level !== undefined) return;
       handlers.level(data.level, data.policy, Array.isArray(data.schemes) ? data.schemes.filter((scheme) => typeof scheme === "string") : []);
+      if (typeof data.timeout === "number" && data.timeout > 0) highlightTimeout = data.timeout;
       level = data.level;
       return;
     }
@@ -142,6 +153,13 @@ export function serveParent(port: Port, handlers: FrameHandlers): FrameEnd {
       case "images-allowed":
         if (typeof data.origin === "string") handlers.imagesAllowed?.(data.origin);
         break;
+      case "highlighted": {
+        const answered = blocks.get(data.id);
+        blocks.delete(data.id);
+        // The renderer draws tokens only when their text is the block's: anything else keeps the text.
+        answered?.(Array.isArray(data.lines) ? data.lines : undefined);
+        break;
+      }
     }
   };
   port.addEventListener("message", listener);
@@ -182,6 +200,19 @@ export function serveParent(port: Port, handlers: FrameHandlers): FrameEnd {
     allowOrigin: (origin) => {
       post({ type: "allow-origin", origin });
     },
+    highlight: (code, language) =>
+      new Promise((resolve) => {
+        const id = ++blocksAsked;
+        const timer = setTimeout(() => {
+          blocks.delete(id);
+          resolve(undefined);
+        }, highlightTimeout);
+        blocks.set(id, (lines) => {
+          clearTimeout(timer);
+          resolve(lines);
+        });
+        post({ type: "highlight", id, code, language });
+      }),
     get seen() {
       return seen;
     },

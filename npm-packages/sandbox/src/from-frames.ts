@@ -3,7 +3,7 @@
 // copy, which the browser caches once.
 
 import type { CodeHighlighter, MathRenderer } from "@compmd/render";
-import { frameUrl } from "./host/runtime.ts";
+import { frameUrl } from "./frame-url.ts";
 
 /** A module of the frames' files, imported by its URL: the app's bundler leaves it alone. */
 const imported = <T>(url: string): Promise<T> => import(/* @vite-ignore */ url) as Promise<T>;

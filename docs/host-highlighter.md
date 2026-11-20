@@ -1,11 +1,11 @@
 # The host's code highlighter
 
-**Status: proposed (2026-11-19), for review (CMD-267).** The sandbox takes its code highlighter from its host, in both
+**Status: approved (2026-11-19, CR-21), decision 7 included; built (CMD-262, 2026-11-20).** The sandbox takes its code highlighter from its host, in both
 page modes, so a host whose editor highlights with its own engine (Lezer, say) shows the same colours in its rendered
 pages, and languages Shiki doesn't ship. And where the default highlighter, Shiki, should run: in each frame, as today,
 or in the host's page for all of them. CMD-262 builds what is decided here.
 
-## Decisions (proposed)
+## Decisions
 
 1. **An option, `highlight`, on the sandbox,** beside `ownImages`: a `CodeHighlighter`, `@compmd/render`'s type,
    `(code, language) => lines | undefined | Promise<…>`, each token with its text and a colour for each scheme. Without
@@ -32,7 +32,7 @@ or in the host's page for all of them. CMD-262 builds what is decided here.
    instead of 14 s. In Chromium with each frame in a process of its own, the frames' own Shikis keep the page's thread
    free but cost about 27 MB a frame. The frames then load no highlighter at all, so they no longer need
    `'wasm-unsafe-eval'` for it ([WebAssembly in the frames](webassembly-in-the-frames.md), which this reverses).
-   *For the user to decide: [Shiki as the default](#shiki-as-the-default) has the comparison.*
+   [Shiki as the default](#shiki-as-the-default) has the comparison it was decided on.
 8. **No batching** of several blocks in one message: a round trip costs a frame no more than its own Shiki does (one
    frame: 184 ms to its first block asking the page, 159 ms with its own, in WebKit), and the queue already orders the
    blocks.
@@ -78,8 +78,8 @@ draws the tokens if they are the block's text; keeps the text otherwise
 ```
 
 - **Which blocks a parent answers for:** each code block's text and language in the trees, splices and parts it sent
-  the frame (a code renderer's block is its component's, not highlighted). Not a block's position: the same text in
-  the same language gets the same tokens wherever it is.
+  the frame, a code renderer's block too, whose fallback shows it as a code block. Not a block's position: the same
+  text in the same language gets the same tokens wherever it is.
 - **`id`** is the frame's own count, so answers can come in any order.
 - **A parent that isn't H** passes the request up, as its own, and the answer down.
 - **The host's page and the frames it serves upgrade together,** as they did for the renderer's version 5: the
