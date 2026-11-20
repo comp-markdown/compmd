@@ -14,6 +14,9 @@
 8. **Svelte's props can't change from a plain module:** `$state` needs a `.svelte` file, so the glue mounts the chart again on each update.
 9. **An optional enum works:** `level: L | M | H | Q?` is accepted, and `level=H` checked (the design's gap G6, which still has no conformance case).
 10. **`generated` after `signature` in the fence's info string,** the first way the spike marked the build's fence, is ignored by the processor, but the spec doesn't say what other words there mean. The design settled on comments before and after the fence instead (decision 4), which the packs here use.
+11. **A component fits its box, which the use sizes** ([sizing a component in its box](../../docs/sizing-components.md), which has the numbers): each demo has uses with `width`, `height`, both, and `aspect-ratio`, their boxes bordered in magenta, and `try.ts` measures each drawing against its box's inside. The QR codes fit (`width: 100%; height: 100%`, SVG's `meet`), the chart fills; fitting the width only overflowed every box with a height. react-qr-code's own `size` is left out. Without a size, a use is the column's width (760 px here), since a pack can't give its box a default yet: a spec change, proposed there.
+12. **`draw()`'s `div` has no height,** so a drawing can't take its box's height through it: qrcode's overflowed until its glue wrote into `target` itself.
+13. **A framed use with a `width` scrolls by its border** (4 px), in both browsers: the sandbox applies the box's params to the page's box and again inside the frame. `try.ts` reports how far each frame's document goes past the frame.
 
 ## The packs
 
@@ -21,15 +24,15 @@ Each folder is what the command would write, with the glue as written once, and 
 
 | Folder | Package | Kind | Built (gzipped) | Imports left | Drew, Chrome and WebKit | What the frame refused |
 |---|---|---|---|---|---|---|
-| [`react-qr-code/`](react-qr-code/) | `react-qr-code` 2.2.0 | React | 8.9 KB | `react`, `react-dom/client` | 2 of 2 | nothing |
+| [`react-qr-code/`](react-qr-code/) | `react-qr-code` 2.2.0 | React | 8.9 KB | `react`, `react-dom/client` | 3 of 3 | nothing |
 | [`layerchart/`](layerchart/) | `layerchart` 2.11.0, `BarChart` | Svelte 5, `.svelte` sources | 164.5 KB | nine of `svelte`'s | 2 of 2 | nothing |
 | [`model-viewer/`](model-viewer/) | `@google/model-viewer` 4.4.0, with `three` 0.183.2 | web component | 289.3 KB | none | 0 of 1: its fallback, with W118 | the model's fetch (`connect-src`), and WebAssembly (`wasm-unsafe-eval`) |
-| [`qrcode/`](qrcode/) | `qrcode` 1.5.4 | library, CommonJS | 9.3 KB | none | 2 of 2 | nothing |
+| [`qrcode/`](qrcode/) | `qrcode` 1.5.4 | library, CommonJS | 9.3 KB | none | 3 of 3 | nothing |
 
-- **react-qr-code:** six params from its six own props; `size`'s default, 256, is the author's (its types' comment says 128). React and React DOM stay imports, which the frames' import map gives.
+- **react-qr-code:** five params from its six own props, `size` left out: the glue makes the SVG fill its box (finding 11). React and React DOM stay imports, which the frames' import map gives.
 - **layerchart:** five params of about 90, the allowlist; `x` and `y` as field names, their `string` branch. Its `.svelte` sources compile with the frames' Svelte, and d3 and its other dependencies are bundled.
 - **model-viewer:** the strict frame refuses what the design expected, and the page shows the label in its place. Its decoders from a CDN never came up: the model didn't load.
-- **qrcode:** nothing derives; the author wrote the call, `toString(value, { type: "svg" })`, and the signature, which has no `compmd-pack:generated` comments. Its SVG takes the frame's width; `width=10rem` on the use sizes it.
+- **qrcode:** nothing derives; the author wrote the call, `toString(value, { type: "svg" })`, and the signature, which has no `compmd-pack:generated` comments. Its SVG has no size of its own, so it fills its box with no glue for it.
 
 `results.json` has each run's numbers, and `screenshots/` each page.
 

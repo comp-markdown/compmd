@@ -41,9 +41,21 @@ interface Built {
 }
 
 /** A use's frame: its height in the page, and its drawing's size, in CSS pixels. */
+interface Size {
+  width: number;
+  height: number;
+}
+
 interface UseFrame {
   frameHeight: number;
-  drawing: { width: number; height: number } | null;
+  /** The inside of the use's box, the component's `target`, which the use's common params size (spec §9.2). */
+  box: Size | null;
+  /** What is drawn: an SVG's `viewBox` as it is scaled into the element, else the element. */
+  drawing: Size | null;
+  /** How the drawing sits in its box (docs/writing-a-pack.md, decision 8). */
+  fit: "fills both" | "fits width" | "fits height" | "inside" | "overflows" | "none";
+  /** How far the frame's document goes past the frame: anything above 0 scrolls. */
+  overflow: Size | null;
   /** The start of the frame's markup, when it didn't draw. */
   markup?: string;
 }
@@ -104,6 +116,41 @@ function testPage(pack: Pack): Plugin {
   };
 }
 
+/** In a use's frame: the inside of its box, and what is drawn in it. Runs in the page, so it is self-contained. */
+function measureUse(): { box: Size; drawing: Size; overflow: Size } | null {
+  const box = document.querySelector(".compmd-component");
+  const element = box?.querySelector("svg, canvas");
+  if (!box || !element) return null;
+  // How far the frame's document goes past the frame, which a reader sees as scroll bars.
+  const root = document.documentElement;
+  const overflow = { width: root.scrollWidth - root.clientWidth, height: root.scrollHeight - root.clientHeight };
+  const style = getComputedStyle(box);
+  const inside = {
+    width: box.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight),
+    height: box.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom),
+  };
+  const shown = element.getBoundingClientRect();
+  let drawing = { width: shown.width, height: shown.height };
+  // An SVG scaled into its element (`meet`, the default) draws its `viewBox` only as large as both sides allow.
+  if (element instanceof SVGSVGElement && element.viewBox.baseVal.width > 0 && element.getAttribute("preserveAspectRatio") !== "none") {
+    const view = element.viewBox.baseVal;
+    const scale = Math.min(shown.width / view.width, shown.height / view.height);
+    drawing = { width: view.width * scale, height: view.height * scale };
+  }
+  const round = (size: Size) => ({ width: Math.round(size.width), height: Math.round(size.height) });
+  return { box: round(inside), drawing: round(drawing), overflow };
+}
+
+/** How a drawing sits in its box, a pixel either way counting as equal. */
+function fitOf(measured: { box: Size; drawing: Size; overflow: Size } | null): UseFrame["fit"] {
+  if (!measured) return "none";
+  const { box, drawing } = measured;
+  if (drawing.width > box.width + 1 || drawing.height > box.height + 1) return "overflows";
+  const width = Math.abs(drawing.width - box.width) <= 1;
+  const height = Math.abs(drawing.height - box.height) <= 1;
+  return width && height ? "fills both" : width ? "fits width" : height ? "fits height" : "inside";
+}
+
 /** The demo in `page`, once every use drew or `DRAW_MS` passed. */
 async function openDemo(page: Page, url: string, uses: number): Promise<Opened> {
   const refused: string[] = [];
@@ -120,8 +167,8 @@ async function openDemo(page: Page, url: string, uses: number): Promise<Opened> 
     Promise.all(
       page.frames().slice(1).map(async (frame) => {
         const frameHeight = (await (await frame.frameElement()).boundingBox())?.height ?? 0;
-        const box = await frame.locator("svg, canvas").first().boundingBox({ timeout: 100 }).catch(() => null);
-        return { frameHeight, drawing: box && { width: Math.round(box.width), height: Math.round(box.height) } };
+        const measured = await frame.evaluate(measureUse).catch(() => null);
+        return { frameHeight, box: measured?.box ?? null, drawing: measured?.drawing ?? null, fit: fitOf(measured), overflow: measured?.overflow ?? null };
       }),
     );
   const isDrawn = (use: UseFrame) => use.frameHeight > 0 && (use.drawing?.width ?? 0) > 0 && (use.drawing?.height ?? 0) > 0;
@@ -156,11 +203,14 @@ for (const [index, name] of chosen.entries()) {
   const uses = readFileSync(join(dir, "demo.comp.md"), "utf8").split("\n").filter((line) => line.startsWith(":: ")).length;
   for (const [browserName, type, options] of BROWSERS) {
     const browser = await type.launch({ headless: true, ...options });
-    const page = await browser.newPage({ viewport: { width: 900, height: 900 } });
+    // Tall enough for every demo, so every frame is on screen and painted when the screenshot is taken.
+    const page = await browser.newPage({ viewport: { width: 900, height: 2600 } });
     const opened = await openDemo(page, `http://localhost:${String(port)}/`, uses);
     await page.screenshot({ path: join(HERE, "screenshots", `${name}-${browserName.toLowerCase()}.png`), fullPage: true });
     results[name].opened[browserName] = opened;
-    console.log(`  ${browserName}: ${String(opened.drawn)} of ${String(opened.uses)} drawn; ${String(opened.refused.length)} refused; ${String(opened.errors.length)} errors; diagnostics: ${opened.diagnostics.join(" | ") || "none"}`);
+    const size = (s: Size) => `${String(s.width)}×${String(s.height)}`;
+    const sizes = opened.frames.map((use) => (use.drawing && use.box ? `\n    ${size(use.drawing)} in a ${size(use.box)} box: ${use.fit}${use.overflow && (use.overflow.width > 0 || use.overflow.height > 0) ? `; the frame scrolls by ${size(use.overflow)}` : ""}` : "\n    nothing drawn")).join("");
+    console.log(`  ${browserName}: ${String(opened.drawn)} of ${String(opened.uses)} drawn; ${String(opened.refused.length)} refused; ${String(opened.errors.length)} errors; diagnostics: ${opened.diagnostics.join(" | ") || "none"}${sizes}`);
     await browser.close();
   }
   await server.close();

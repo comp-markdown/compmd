@@ -35,6 +35,8 @@ The designs behind the spec and its implementation. Each starts with its status 
 - [Resolving registry packs](resolving-registry-packs.md): how `@compmd/registry` resolves, fetches and checks packs; builds decisions 1 to 3 and 5 of *packs from a registry*.
 - [Sharing library packs](sharing-library-packs.md): how the processor, `@compmd/registry` and `@compmd/sandbox` let packs share a library pack; builds decision 8 of *packs from a registry*.
 - [Writing a pack](writing-a-pack.md): [`@compmd/pack`](../npm-packages/pack/README.md), which holds what every pack would otherwise copy (the build, the publish check, the test page, component helpers and a testing kit), and the host contract's `scheme` and `fail`.
+  - [Sizing a component in its box](sizing-components.md): proposed, a component fitting its box, which the use's common params size, a pack's box defaults on its signature fence, and the sandbox's frames giving a use exactly its box.
+- [Wrapping an npm package as a pack](wrapping-an-npm-package.md): proposed, `npm create @compmd/pack -- --from <package>`: the glue written once, the signature generated at each build from the package's types, and what a strict frame refuses; with [its spike](../spikes/wrap-npm-package/README.md), four packages wrapped and run.
 - [The Developer Tools](devtools.md): `@compmd/devtools`, the playground's tools as a part any page embeds, with the sandbox's observer and tabs for its frames, a console and the messages.
 - [The Mermaid pack](mermaid-pack.md): `@comp-markdown/mermaid`, a code renderer as a registry pack; builds the Mermaid example of *code renderers*.
 

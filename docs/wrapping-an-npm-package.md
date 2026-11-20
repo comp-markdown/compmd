@@ -23,7 +23,8 @@ packs it was tried on, built and run.
    component; anything else is a library. `--kind` overrides it.
 3. **The glue is the pack's own code, in the plain binding** (spec §7.6), as every built module is: `src/<component>.ts`
    mounts the package's component in a box of its own in `target` (the renderer owns `target`'s classes and style)
-   with the params as its props, updates it, and unmounts it on `destroy`. A web component's glue passes its `error`
+   with the params as its props, makes its drawing fit that box ([sizing a component](sizing-components.md), decision 1),
+   updates it, and unmounts it on `destroy`. A web component's glue passes its `error`
    event to `fail`, since such an element reports a failure without throwing.
    React, React DOM and Svelte stay external, from the frames' import map, so they are one copy whatever loads them
    (create-pack, decision 3). The command writes it once; it is plain code the author may change, and the build
@@ -53,7 +54,8 @@ packs it was tried on, built and run.
    | an array, a plain object | `array`, `object` |
    | a CSS colour type (`CSSProperties["color"]`) | `color` (spec §9.4) |
    | a CSS length type | `string` |
-   | named like a common param (`height`, `width`, `background`, `border`, `padding`, spec §9.2) | none: the use's box takes it, and the component fills its box; listed |
+   | named like a common param (`height`, `width`, `background`, `border`, `padding`, spec §9.2) | none: the use's box takes it, and the component fits its box; listed (declaring one is F013, [sizing a component](sizing-components.md), decision 4) |
+   | a size in pixels (react-qr-code's `size`) | none: the component fits its box, which the use sizes ([sizing a component](sizing-components.md), decision 1); listed |
    | a union with one usable branch (`string \| ((d) => any)`, `boolean \| Snippet`) | that branch, with a note in the build's report |
    | callbacks, `ref`, `style`, `className`, components, snippets with arguments | none: left out, and listed |
 
@@ -89,13 +91,12 @@ writes the template's files ([the pack template](create-pack.md), *What it write
 in `dependencies` and ([the spike's pack](../spikes/wrap-npm-package/react-qr-code/), built and run):
 
 ```jsonc
-// compmd.wrap.json; the author added the default of `size`
+// compmd.wrap.json; `size` is left out: the QR code fits its box, which the use sizes (decision 6)
 {
   "from": "react-qr-code",
   "export": "default",
   "kind": "react",
-  "params": ["value", "size", "bgColor", "fgColor", "level", "title"],
-  "overrides": { "size": { "default": 256 } },
+  "params": ["value", "bgColor", "fgColor", "level", "title"],
   "label": "title"
 }
 ```
@@ -107,10 +108,13 @@ import { createRoot } from "react-dom/client";
 import QRCode from "react-qr-code";
 import { component } from "@compmd/pack/component";
 
+/** The drawing fits its box, its aspect ratio kept (sizing a component, decision 1). */
+const FILL = { display: "block", width: "100%", height: "100%" };
+
 export default component<Params>((target, { params, fallback }) => {
   const root = createRoot(target);
   const draw = (next: Params) => {
-    root.render(createElement(QRCode, { ...next, title: next.title ?? fallback.text }));
+    root.render(createElement(QRCode, { ...next, title: next.title ?? fallback.text, style: FILL }));
   };
   draw(params);
   return { update: draw, destroy: () => root.unmount() };
@@ -122,7 +126,6 @@ export default component<Params>((target, { params, fallback }) => {
 ```compmd component=qr-code signature
 params:
   value: string
-  size: number = 256
   bgColor: color?
   fgColor: color?
   level: L | M | H | Q?
@@ -131,6 +134,8 @@ params:
 <!-- /compmd-pack:generated -->
 ````
 
+A document sizes it as any component: `:: qr-code[Our site] {value="https://compmd.dev/" width=10rem}`.
+
 Moving to react-qr-code 2.3.0 is `npm install react-qr-code@2.3.0` and `npm run build`: the signature follows its
 types, and the build lists what changed.
 
@@ -138,11 +143,12 @@ types, and the build lists what changed.
 
 [The spike](../spikes/wrap-npm-package/README.md) read four packages' files and types, wrote by hand the packs the
 command would write, built them as `compmd-pack build` does and opened each demo in strict frames, in Chrome and
-WebKit (2026-11-20). Its findings are in decisions 3, 4, 5, 6 and 10 and in gaps G6 and G7.
+WebKit (2026-11-20). Its findings are in decisions 3, 4, 5, 6 and 10, in gaps G6 to G8, and in [sizing a component in its
+box](sizing-components.md).
 
 | Package | Kind | What derives | What the author writes | In a strict frame |
 |---|---|---|---|---|
-| `react-qr-code` 2.2.0 (MIT) | React | 6 own props, cleanly, once `SVGProps`' are left out | the fallback; the default `size` (its comment is wrong) | draws; 8.9 KB gzipped, React from the import map |
+| `react-qr-code` 2.2.0 (MIT) | React | 6 own props, cleanly, once `SVGProps`' are left out; 5 params, `size` left out for the box | the fallback; the drawing fitting its box | draws; 8.9 KB gzipped, React from the import map |
 | `layerchart` 2.11.0 (MIT), `BarChart` | Svelte 5, ships `.svelte` sources | the scalar and enum props of about 90, with JSDoc defaults; not `height`, the box's | which of the 90 to keep; `x`, `y` as field names (their `string` branch); the theme's colours from `context.scheme` | draws, once compiled with its CSS injected; d3 and friends bundled, 164.5 KB gzipped |
 | `@google/model-viewer` 4.4.0 (Apache-2.0) | web component, no `custom-elements.json` | about 50 properties, from the types | attribute names and defaults (they are in its sources, not its types); the slots | doesn't: the frame refuses the model's fetch and its WebAssembly; the glue shows the fallback, with W118 |
 | `qrcode` 1.5.4 (MIT) | library, CommonJS | nothing | the glue: `toString(value, { type: "svg" })` into the target, and its params | draws; 9.3 KB gzipped |
@@ -165,6 +171,9 @@ WebKit (2026-11-20). Its findings are in decisions 3, 4, 5, 6 and 10 and in gaps
   confirm in the spec before the build writes it.
 - **G7, settled. How the generated fence is marked:** a word after `signature` in the info string would need the spec
   to say what other words there mean; comments before and after the fence need nothing (decision 4).
+- **G8. A component's size when the use gives none** is its box's, the column's width: [sizing a component](sizing-components.md),
+  decision 3, proposes box defaults on the signature fence, a spec change; the build would carry them from
+  `compmd.wrap.json` into the generated fence.
 
 ## What changes
 

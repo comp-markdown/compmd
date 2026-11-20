@@ -2,8 +2,8 @@
   "react-qr-code": {
     "built": {
       "ok": true,
-      "bytes": 24858,
-      "gzipBytes": 8889,
+      "bytes": 24913,
+      "gzipBytes": 8916,
       "imports": [
         "react",
         "react-dom/client"
@@ -11,21 +11,103 @@
     },
     "opened": {
       "Chrome": {
-        "uses": 2,
-        "drawn": 2,
+        "uses": 6,
+        "drawn": 6,
         "frames": [
           {
-            "frameHeight": 260,
+            "frameHeight": 764,
+            "box": {
+              "width": 760,
+              "height": 760
+            },
             "drawing": {
-              "width": 256,
-              "height": 256
+              "width": 760,
+              "height": 760
+            },
+            "fit": "fills both",
+            "overflow": {
+              "width": 0,
+              "height": 0
             }
           },
           {
-            "frameHeight": 132,
+            "frameHeight": 160,
+            "box": {
+              "width": 156,
+              "height": 156
+            },
             "drawing": {
-              "width": 128,
-              "height": 128
+              "width": 156,
+              "height": 156
+            },
+            "fit": "fills both",
+            "overflow": {
+              "width": 4,
+              "height": 0
+            }
+          },
+          {
+            "frameHeight": 96,
+            "box": {
+              "width": 760,
+              "height": 92
+            },
+            "drawing": {
+              "width": 92,
+              "height": 92
+            },
+            "fit": "fits height",
+            "overflow": {
+              "width": 0,
+              "height": 0
+            }
+          },
+          {
+            "frameHeight": 96,
+            "box": {
+              "width": 252,
+              "height": 92
+            },
+            "drawing": {
+              "width": 92,
+              "height": 92
+            },
+            "fit": "fits height",
+            "overflow": {
+              "width": 4,
+              "height": 0
+            }
+          },
+          {
+            "frameHeight": 192,
+            "box": {
+              "width": 92,
+              "height": 188
+            },
+            "drawing": {
+              "width": 92,
+              "height": 92
+            },
+            "fit": "fits width",
+            "overflow": {
+              "width": 4,
+              "height": 0
+            }
+          },
+          {
+            "frameHeight": 96,
+            "box": {
+              "width": 188,
+              "height": 92
+            },
+            "drawing": {
+              "width": 92,
+              "height": 92
+            },
+            "fit": "fits height",
+            "overflow": {
+              "width": 4,
+              "height": 0
             }
           }
         ],
@@ -34,21 +116,103 @@
         "diagnostics": []
       },
       "WebKit": {
-        "uses": 2,
-        "drawn": 2,
+        "uses": 6,
+        "drawn": 6,
         "frames": [
           {
-            "frameHeight": 260,
+            "frameHeight": 764,
+            "box": {
+              "width": 760,
+              "height": 760
+            },
             "drawing": {
-              "width": 256,
-              "height": 256
+              "width": 760,
+              "height": 760
+            },
+            "fit": "fills both",
+            "overflow": {
+              "width": 0,
+              "height": 0
             }
           },
           {
-            "frameHeight": 132,
+            "frameHeight": 160,
+            "box": {
+              "width": 156,
+              "height": 156
+            },
             "drawing": {
-              "width": 128,
-              "height": 128
+              "width": 156,
+              "height": 156
+            },
+            "fit": "fills both",
+            "overflow": {
+              "width": 4,
+              "height": 0
+            }
+          },
+          {
+            "frameHeight": 96,
+            "box": {
+              "width": 760,
+              "height": 92
+            },
+            "drawing": {
+              "width": 92,
+              "height": 92
+            },
+            "fit": "fits height",
+            "overflow": {
+              "width": 0,
+              "height": 0
+            }
+          },
+          {
+            "frameHeight": 96,
+            "box": {
+              "width": 252,
+              "height": 92
+            },
+            "drawing": {
+              "width": 92,
+              "height": 92
+            },
+            "fit": "fits height",
+            "overflow": {
+              "width": 4,
+              "height": 0
+            }
+          },
+          {
+            "frameHeight": 192,
+            "box": {
+              "width": 92,
+              "height": 188
+            },
+            "drawing": {
+              "width": 92,
+              "height": 92
+            },
+            "fit": "fits width",
+            "overflow": {
+              "width": 4,
+              "height": 0
+            }
+          },
+          {
+            "frameHeight": 100,
+            "box": {
+              "width": 188,
+              "height": 96
+            },
+            "drawing": {
+              "width": 96,
+              "height": 96
+            },
+            "fit": "fits height",
+            "overflow": {
+              "width": 4,
+              "height": 0
             }
           }
         ],
@@ -77,21 +241,87 @@
     },
     "opened": {
       "Chrome": {
-        "uses": 2,
-        "drawn": 2,
+        "uses": 5,
+        "drawn": 5,
         "frames": [
           {
-            "frameHeight": 288,
-            "drawing": {
-              "width": 768,
+            "frameHeight": 292,
+            "box": {
+              "width": 760,
               "height": 288
+            },
+            "drawing": {
+              "width": 760,
+              "height": 288
+            },
+            "fit": "fills both",
+            "overflow": {
+              "width": 0,
+              "height": 0
             }
           },
           {
-            "frameHeight": 192,
+            "frameHeight": 292,
+            "box": {
+              "width": 316,
+              "height": 288
+            },
             "drawing": {
-              "width": 768,
-              "height": 192
+              "width": 316,
+              "height": 288
+            },
+            "fit": "fills both",
+            "overflow": {
+              "width": 4,
+              "height": 0
+            }
+          },
+          {
+            "frameHeight": 128,
+            "box": {
+              "width": 760,
+              "height": 124
+            },
+            "drawing": {
+              "width": 760,
+              "height": 124
+            },
+            "fit": "fills both",
+            "overflow": {
+              "width": 0,
+              "height": 0
+            }
+          },
+          {
+            "frameHeight": 160,
+            "box": {
+              "width": 380,
+              "height": 156
+            },
+            "drawing": {
+              "width": 380,
+              "height": 156
+            },
+            "fit": "fills both",
+            "overflow": {
+              "width": 4,
+              "height": 0
+            }
+          },
+          {
+            "frameHeight": 255,
+            "box": {
+              "width": 760,
+              "height": 251
+            },
+            "drawing": {
+              "width": 760,
+              "height": 251
+            },
+            "fit": "fills both",
+            "overflow": {
+              "width": 0,
+              "height": 0
             }
           }
         ],
@@ -100,21 +330,87 @@
         "diagnostics": []
       },
       "WebKit": {
-        "uses": 2,
-        "drawn": 2,
+        "uses": 5,
+        "drawn": 5,
         "frames": [
           {
-            "frameHeight": 288,
-            "drawing": {
-              "width": 768,
+            "frameHeight": 292,
+            "box": {
+              "width": 760,
               "height": 288
+            },
+            "drawing": {
+              "width": 760,
+              "height": 288
+            },
+            "fit": "fills both",
+            "overflow": {
+              "width": 0,
+              "height": 0
             }
           },
           {
-            "frameHeight": 192,
+            "frameHeight": 292,
+            "box": {
+              "width": 316,
+              "height": 288
+            },
             "drawing": {
-              "width": 768,
-              "height": 192
+              "width": 316,
+              "height": 288
+            },
+            "fit": "fills both",
+            "overflow": {
+              "width": 4,
+              "height": 0
+            }
+          },
+          {
+            "frameHeight": 128,
+            "box": {
+              "width": 760,
+              "height": 124
+            },
+            "drawing": {
+              "width": 760,
+              "height": 124
+            },
+            "fit": "fills both",
+            "overflow": {
+              "width": 0,
+              "height": 0
+            }
+          },
+          {
+            "frameHeight": 160,
+            "box": {
+              "width": 380,
+              "height": 156
+            },
+            "drawing": {
+              "width": 380,
+              "height": 156
+            },
+            "fit": "fills both",
+            "overflow": {
+              "width": 4,
+              "height": 0
+            }
+          },
+          {
+            "frameHeight": 259,
+            "box": {
+              "width": 760,
+              "height": 255
+            },
+            "drawing": {
+              "width": 760,
+              "height": 255
+            },
+            "fit": "fills both",
+            "overflow": {
+              "width": 0,
+              "height": 0
             }
           }
         ],
@@ -138,7 +434,10 @@
         "frames": [
           {
             "frameHeight": 18,
+            "box": null,
             "drawing": null,
+            "fit": "none",
+            "overflow": null,
             "markup": "\n    <main id=\"page\" class=\"compmd-page\"></main>\n    <div id=\"part\"><div class=\"compmd-component compmd-b0\"><span>A triangle</span></div></div>\n  \n\n"
           }
         ],
@@ -160,7 +459,10 @@
         "frames": [
           {
             "frameHeight": 18,
+            "box": null,
             "drawing": null,
+            "fit": "none",
+            "overflow": null,
             "markup": "\n    <main id=\"page\" class=\"compmd-page\"></main>\n    <div id=\"part\"><div class=\"compmd-component compmd-b0\"><span>A triangle</span></div></div>\n  \n\n"
           }
         ],
@@ -180,27 +482,109 @@
   "qrcode": {
     "built": {
       "ok": true,
-      "bytes": 25033,
-      "gzipBytes": 9322,
+      "bytes": 24541,
+      "gzipBytes": 9104,
       "imports": []
     },
     "opened": {
       "Chrome": {
-        "uses": 2,
-        "drawn": 2,
+        "uses": 6,
+        "drawn": 6,
         "frames": [
           {
-            "frameHeight": 772,
+            "frameHeight": 764,
+            "box": {
+              "width": 760,
+              "height": 760
+            },
             "drawing": {
-              "width": 768,
-              "height": 768
+              "width": 760,
+              "height": 760
+            },
+            "fit": "fills both",
+            "overflow": {
+              "width": 0,
+              "height": 0
             }
           },
           {
-            "frameHeight": 772,
+            "frameHeight": 160,
+            "box": {
+              "width": 156,
+              "height": 156
+            },
             "drawing": {
-              "width": 768,
-              "height": 768
+              "width": 156,
+              "height": 156
+            },
+            "fit": "fills both",
+            "overflow": {
+              "width": 4,
+              "height": 0
+            }
+          },
+          {
+            "frameHeight": 96,
+            "box": {
+              "width": 760,
+              "height": 92
+            },
+            "drawing": {
+              "width": 92,
+              "height": 92
+            },
+            "fit": "fits height",
+            "overflow": {
+              "width": 0,
+              "height": 0
+            }
+          },
+          {
+            "frameHeight": 96,
+            "box": {
+              "width": 252,
+              "height": 92
+            },
+            "drawing": {
+              "width": 92,
+              "height": 92
+            },
+            "fit": "fits height",
+            "overflow": {
+              "width": 4,
+              "height": 0
+            }
+          },
+          {
+            "frameHeight": 192,
+            "box": {
+              "width": 92,
+              "height": 188
+            },
+            "drawing": {
+              "width": 92,
+              "height": 92
+            },
+            "fit": "fits width",
+            "overflow": {
+              "width": 4,
+              "height": 0
+            }
+          },
+          {
+            "frameHeight": 96,
+            "box": {
+              "width": 188,
+              "height": 92
+            },
+            "drawing": {
+              "width": 92,
+              "height": 92
+            },
+            "fit": "fits height",
+            "overflow": {
+              "width": 4,
+              "height": 0
             }
           }
         ],
@@ -209,21 +593,103 @@
         "diagnostics": []
       },
       "WebKit": {
-        "uses": 2,
-        "drawn": 2,
+        "uses": 6,
+        "drawn": 6,
         "frames": [
           {
-            "frameHeight": 772,
+            "frameHeight": 764,
+            "box": {
+              "width": 760,
+              "height": 760
+            },
             "drawing": {
-              "width": 768,
-              "height": 768
+              "width": 760,
+              "height": 760
+            },
+            "fit": "fills both",
+            "overflow": {
+              "width": 0,
+              "height": 0
             }
           },
           {
-            "frameHeight": 772,
+            "frameHeight": 160,
+            "box": {
+              "width": 156,
+              "height": 156
+            },
             "drawing": {
-              "width": 768,
-              "height": 768
+              "width": 156,
+              "height": 156
+            },
+            "fit": "fills both",
+            "overflow": {
+              "width": 4,
+              "height": 0
+            }
+          },
+          {
+            "frameHeight": 96,
+            "box": {
+              "width": 760,
+              "height": 92
+            },
+            "drawing": {
+              "width": 92,
+              "height": 92
+            },
+            "fit": "fits height",
+            "overflow": {
+              "width": 0,
+              "height": 0
+            }
+          },
+          {
+            "frameHeight": 96,
+            "box": {
+              "width": 252,
+              "height": 92
+            },
+            "drawing": {
+              "width": 92,
+              "height": 92
+            },
+            "fit": "fits height",
+            "overflow": {
+              "width": 4,
+              "height": 0
+            }
+          },
+          {
+            "frameHeight": 192,
+            "box": {
+              "width": 92,
+              "height": 188
+            },
+            "drawing": {
+              "width": 92,
+              "height": 92
+            },
+            "fit": "fits width",
+            "overflow": {
+              "width": 4,
+              "height": 0
+            }
+          },
+          {
+            "frameHeight": 100,
+            "box": {
+              "width": 188,
+              "height": 96
+            },
+            "drawing": {
+              "width": 96,
+              "height": 96
+            },
+            "fit": "fits height",
+            "overflow": {
+              "width": 4,
+              "height": 0
             }
           }
         ],
