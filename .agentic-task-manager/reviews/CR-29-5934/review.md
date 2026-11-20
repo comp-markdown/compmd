@@ -2,12 +2,12 @@
 id = "01a1f9f9-495f-7382-af67-556e44d45934"
 number = 29
 title = "Wrapping an npm package as a pack: the design"
-status = "open"
+status = "approved"
 tasks = ["CMD-8"]
 author = "claude:79612601"
 reviewers = []
 created = 2026-11-20T17:20:26Z
-updated = 2026-11-20T20:20:33Z
+updated = 2026-11-20T20:31:30Z
 +++
 
 Round 5: [sizing a component in its box](docs/sizing-components.md) reworked, as asked in conversation: no open gaps, positioning and cover and stretch in scope, and a prototype behind it.

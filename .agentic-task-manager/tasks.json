@@ -530,13 +530,13 @@
       "description": "Asked by the user (2026-11-08): wrapping an existing npm package (a React, Svelte or plain JS/TS component) as a CompMD pack should be extremely easy.\n\n## The design note\nIn `docs/`, decisions first, reviewed with the user before anything is built:\n- **The least repetition in a pack,** so that updating to the package's next version is a version bump and little else: what a pack must state (signatures, fallbacks, demos) and what can be derived from the package itself (its TypeScript prop types, its `package.json`, its exports).\n- **One command to generate a pack** from a package name, if it can be done (for example `npm create @compmd/pack --from <package>`): what it writes, what it asks, what it can't infer.\n- How it fits `create-pack`'s templates (`leaf`, `renderer`, `library`), [writing a pack](docs/writing-a-pack.md), [packs from a registry](docs/packs-from-a-registry.md) and CMD-2 (any npm package through a module loader).\n- Try it on three real packages of different kinds before the review, and list the gaps.\n\nEach push needs the user's go.\n\n## From earlier work\n\nNot started: it is left for a session with the user, since its design is reviewed together.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [],
       "files": [
         "docs/wrapping-an-npm-package.md"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-20T20:20:22Z",
+      "updated_at": "2026-11-20T20:31:44Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "with": "user",
@@ -555,7 +555,7 @@
       "sprint": "Packs 1: the pack tool, no-code components",
       "started_at": "2026-11-20T16:34:08Z",
       "started_by": "claude:79612601",
-      "commit": "5ac3289b2add59130b5eab5b06c9a2308e4786fe",
+      "commit": "7db67a55868d8732bf9711a3ded0aa2b2f42f02f",
       "code_reviews": [
         {
           "id": "01a1f9f9-495f-7382-af67-556e44d45934",
@@ -563,15 +563,35 @@
         }
       ],
       "review_requested_at": "2026-11-20T17:20:26Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-20T17:20:26Z",
           "kind": "review",
           "text": "CR-29: Wrapping an npm package as a pack: the design",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-20T20:31:30Z",
+          "kind": "note",
+          "text": "Approved: in CR-29 (round 5)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-20T20:31:44Z",
+          "kind": "outcome",
+          "text": "Approved in CR-29: the wrapping design, its spike (four packs and the sizing prototype), and sizing a component in its box; built by CMD-9 and CMD-353 to CMD-356",
+          "by": "claude:79612601"
         }
-      ]
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-20T17:20:26Z",
+          "to": "2026-11-20T20:31:30Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-20T20:31:44Z",
+      "completed_by": "claude:79612601"
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68e63c5137a7",
@@ -714,7 +734,7 @@
       "description": "Name the first packs and say which component goes in which ([the first components](docs/first-components.md), the list and decision 9, whose pack names are placeholders). One task per component follows it (labels `component`); this task only decides the packs.\n\n## Decide\n- **The packs and their names:** for example the `compmd` definitions in one pack (card, link-card, gallery, figure, badge, sticky-note, timeline), the data components in another (chart, calendar, data-table, weather), the diagrams (graphviz, beside the Mermaid pack), the music components together (music, chord, chord-sheet, guitar-tab), jq and qr-code, and the embeds in their own permissive pack; the basics are `@compmd/basics` (decision 6).\n- **The scope** they publish under (`@comp-markdown/`, as the Mermaid and wireframe packs are) and their folders under `compmd-packs/`.\n- **Which components share a pack's version,** so a fix to one releases its pack.\n\n## Do\nWrite the packs into the first components document (replacing the placeholders in decision 9), update each component task's pack with `atm task edit`, and review with the user.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68e7d6fc0e9a"
       ],
@@ -722,9 +742,9 @@
         "compmd-packs/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-20T19:26:18Z",
+      "updated_at": "2026-11-20T20:31:44Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "sprint_history": [
         {
           "sprint": "Rendering optimizations",
@@ -753,7 +773,6 @@
         }
       ],
       "review_requested_at": "2026-11-20T16:21:21Z",
-      "review_state": "approved",
       "notes": [
         {
           "at": "2026-11-20T16:21:21Z",
@@ -772,9 +791,23 @@
           "kind": "note",
           "text": "Approved: in CR-28 (round 3)",
           "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-20T20:31:44Z",
+          "kind": "outcome",
+          "text": "Approved in CR-28: one pack per component, WebAssembly back in the frames, columns and word-cloud added, releasing many packs (CMD-350 to CMD-352)",
+          "by": "claude:79612601"
         }
       ],
-      "reviewed_at": "2026-11-20T19:26:18Z"
+      "reviews": [
+        {
+          "from": "2026-11-20T16:21:21Z",
+          "to": "2026-11-20T19:26:18Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-20T20:31:44Z",
+      "completed_by": "claude:79612601"
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68e96cefc8f6",
