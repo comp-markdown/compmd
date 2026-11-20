@@ -1,0 +1,77 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "9528b5d2c845d86ea3322726e471531022e3dbb0",
+    "head": "d03b1ac67329fe18ce2dee69980c1186623fca92"
+  },
+  "files": [
+    {
+      "path": "Makefile.toml",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "RELEASING.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "pnpm-workspace.yaml",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "tools/packs/approve-packs.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "tools/packs/approve-packs.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "tools/packs/npm.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "tools/packs/npm.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "tools/packs/pack-placeholders.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "tools/packs/package.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "tools/packs/release-packs.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "tools/packs/staged.test.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "tools/packs/staged.ts",
+      "status": "added",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-20T21:16:01Z"
+}

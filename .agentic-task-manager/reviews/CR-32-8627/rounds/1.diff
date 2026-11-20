@@ -1,0 +1,676 @@
+diff --git a/Makefile.toml b/Makefile.toml
+index bbac456..c3642c5 100644
+--- a/Makefile.toml
++++ b/Makefile.toml
+@@ -139,6 +139,12 @@ clear = true
+ command = "node"
+ args = ["tools/packs/release-packs.ts", "${@}"]
+ 
++[tasks.approve-packs]
++description = "Approve what npm has staged of the packs (docs/releases.md, decision 8): checkboxes, every version waiting for you chosen; Enter approves the chosen ones in the order they were staged, with one one-time code. With `--dry-run`, lists them and approves nothing"
++clear = true
++command = "node"
++args = ["tools/packs/approve-packs.ts", "${@}"]
++
+ [tasks.pack-placeholders]
+ description = "Create new packs on npm (docs/releases.md, decision 8): for each named pack npm doesn't have, publish a 0.0.0 placeholder and set its trusted publisher to release-packs.yml, staging only. `cargo make pack-placeholders card chart`; with `--dry-run`, say what it would do and do nothing"
+ clear = true
+diff --git a/RELEASING.md b/RELEASING.md
+index 50dd3f7..22ad3db 100644
+--- a/RELEASING.md
++++ b/RELEASING.md
+@@ -122,8 +122,15 @@ Each pack in `compmd-packs/` (`@comp-markdown/mermaid`, `@comp-markdown/wirefram
+    cargo make release-packs
+    ```
+ 
+-   When a pack's files don't have its version yet, it writes them and stops: commit them, push, and run it again. It then lists every pack whose version npm doesn't have, and on your yes tags each `<pack>-v<version>` at `main`'s commit, which must be pushed and match yours, pushes the tags, and runs `release-packs.yml` once (`gh workflow run`). The workflow runs `cargo make ci` once, then packs and stages every pack tagged at its commit whose version npm doesn't have, with trusted publishing. A run that stopped halfway can run again: a tag already at the commit is kept, and a version npm has is skipped.
+-2. **Approve them**, with two-factor authentication: `(cd ~ && npm stage list @comp-markdown/<pack>)`, then `npm stage approve <stage-id>` for each.
++   When a pack's files don't have its version yet, it writes them and stops: commit them, push, and run it again. It then lists every pack whose version npm doesn't have, and on your yes tags each `<pack>-v<version>` at `main`'s commit, which must be pushed and match yours, pushes the tags, and runs `release-packs.yml` once (`gh workflow run`). The workflow runs `cargo make ci` once, then packs and stages every pack tagged at its commit whose version npm doesn't have, with trusted publishing, for you to approve (step 2). A run that stopped halfway can run again: a tag already at the commit is kept, and a version npm has is skipped.
++2. **Approve them**, once the workflow is green:
++
++   ```sh
++   cargo make approve-packs --dry-run   # what is staged, and what it would approve: nothing done
++   cargo make approve-packs
++   ```
++
++   It lists what npm has staged of the packs as checkboxes, every version waiting for you chosen (space toggles one, `a` all), and Enter approves the chosen ones in the order they were staged, so a pack is never on npm before one staged before it. It asks for your one-time code once and passes it to each approval; npm asks for a new one when it expires. With a security key, press Enter at the code, and npm asks for it itself.
+ 3. Check: `curl -s https://registry.npmjs.org/-/package/@comp-markdown%2f<pack>/dist-tags` gives the new version as `latest`.
+ 
+ **The Mermaid and wireframe packs' trusted publishers, once** (with this workflow, 2026-11-20): each was set for a workflow of its own, `release-mermaid.yml` and `release-wireframe.yml`, which are gone. A package has one trusted publisher, whose workflow can't be changed, so each is revoked and set again, from outside the repository:
+diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
+index a4444e8..8717250 100644
+--- a/pnpm-lock.yaml
++++ b/pnpm-lock.yaml
+@@ -1082,6 +1082,12 @@ importers:
+         specifier: 6.0.3
+         version: 6.0.3
+ 
++  tools/packs:
++    dependencies:
++      '@inquirer/checkbox':
++        specifier: 5.2.8
++        version: 5.2.8(@types/node@26.6.5)
++
+   website:
+     dependencies:
+       '@compmd/processor':
+@@ -1287,6 +1293,50 @@ packages:
+   '@iconify/utils@3.1.7':
+     resolution: {integrity: sha512-JZHlwdID+dy+lTgbYC8NEC4zeugqeYsc6jewvzb4c58kHauJn+X7rNwQjxz5p2qSjqaEeQoLkCIQ9v/H4PK0/w==}
+ 
++  '@inquirer/ansi@2.1.0':
++    resolution: {integrity: sha512-63GU5AD9KhNbWM0jlhHoMJTEFck2upFOPxHlnCKf3xYTV3rjTUUQfodihmTnfYQzMLS29oy8lK/gA1eJgu4bhA==}
++    engines: {node: ^22.22.2 || ^24.15.0 || >=26.0.0}
++
++  '@inquirer/checkbox@5.2.8':
++    resolution: {integrity: sha512-NY/S1EalQhlonqhwwsarrcnkH7s9ByQuvjWYdk1jB2Gb9EPQJjKkhCTWjM3yQ0UpHaLm1XbIL89b+32G8rhO5w==}
++    engines: {node: '>=23.5.0 || ^22.13.0 || ^20.17.0'}
++    peerDependencies:
++      '@types/node': '>=18'
++    peerDependenciesMeta:
++      '@types/node':
++        optional: true
++
++  '@inquirer/core@12.1.0':
++    resolution: {integrity: sha512-6H7usRWw4Gdjgpaem10CA5MfZ/xoYPGyInriR1Xubqjv+SVo8LIJ1erpFxW5JgCza6VZVZiKLTko7RtUU3AQMg==}
++    engines: {node: ^22.22.2 || ^24.15.0 || >=26.0.0}
++    peerDependencies:
++      '@types/node': '>=18'
++    peerDependenciesMeta:
++      '@types/node':
++        optional: true
++
++  '@inquirer/figures@2.1.0':
++    resolution: {integrity: sha512-CR9u2PME23jxy2SOyTb117efwAAPm98Zr+LoWI+PiQ55D6U8Yeu/HyFTxwytKhPa6oxAGzdsm2Kg7oLS6B9z8w==}
++    engines: {node: ^22.22.2 || ^24.15.0 || >=26.0.0}
++
++  '@inquirer/type@4.2.1':
++    resolution: {integrity: sha512-lDkPsnv5M5CcYB2T1qTc3dobNTPkVr4DU3Ic2Q6SW8/qVRHgvzdRdmVZ6YqG9Ag1aJTeMsLU0s0WPRh3CZWDQQ==}
++    engines: {node: '>=23.5.0 || ^22.13.0 || ^20.17.0'}
++    peerDependencies:
++      '@types/node': '>=18'
++    peerDependenciesMeta:
++      '@types/node':
++        optional: true
++
++  '@inquirer/type@4.3.0':
++    resolution: {integrity: sha512-/IA8q2nyjgyl0NGSjqiRXB8gh3We7Pzx9C0c+6Zoolu905jFc79anerrUG7+n65+qs310DRK43yi2WDI8nY59A==}
++    engines: {node: ^22.22.2 || ^24.15.0 || >=26.0.0}
++    peerDependencies:
++      '@types/node': '>=18'
++    peerDependenciesMeta:
++      '@types/node':
++        optional: true
++
+   '@jridgewell/gen-mapping@0.3.13':
+     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
+ 
+@@ -1899,6 +1949,10 @@ packages:
+   clear-cut@2.0.2:
+     resolution: {integrity: sha512-WVgn/gSejQ+0aoR8ucbKIdo6icduPZW6AbWwyUmAUgxy63rUYjwa5rj/HeoNPhf0/XPrl82X8bO/hwBkSmsFtg==}
+ 
++  cli-width@4.1.0:
++    resolution: {integrity: sha512-ouuZd4/dm2Sw5Gmqy6bGyNNNe1qt9RpmxveLSO7KcgsTnU7RXfsw+/bukWGo1abgBiMAic068rclZsO4IWmmxQ==}
++    engines: {node: '>= 12'}
++
+   cliui@6.0.0:
+     resolution: {integrity: sha512-t6wbgtoCXvAzst7QgXxJYqPt0usEfbgQdftEPbLL/cvv6HPE5VgvqCuAIDR0NgU52ds6rFwqrgakNLrHEjCbrQ==}
+ 
+@@ -2292,9 +2346,18 @@ packages:
+   fast-levenshtein@2.0.6:
+     resolution: {integrity: sha512-DCXu6Ifhqcks7TZKY3Hxp3y6qphY5SJZmrWMDrKcERSOXWQdMhU9Ig/PYrzyw/ul9jOIyh0N4M0tbC5hodg8dw==}
+ 
++  fast-string-truncated-width@3.0.3:
++    resolution: {integrity: sha512-0jjjIEL6+0jag3l2XWWizO64/aZVtpiGE3t0Zgqxv0DPuxiMjvB3M24fCyhZUO4KomJQPj3LTSUnDP3GpdwC0g==}
++
++  fast-string-width@3.0.2:
++    resolution: {integrity: sha512-gX8LrtNEI5hq8DVUfRQMbr5lpaS4nMIWV+7XEbXk2b8kiQIizgnlr12B4dA3ZEx3308ze0O4Q1R+cHts8kyUJg==}
++
+   fast-uri@3.1.9:
+     resolution: {integrity: sha512-hS/0Wt3Ya043oKXs0sIxrMpKQITXhMLIrVAKKXi4gozGC9v7YRWVnXIZzjNPTO02M9BdxLCWqK1yRXgNziVyJQ==}
+ 
++  fast-wrap-ansi@0.2.2:
++    resolution: {integrity: sha512-7F2Fl+TjRSenLqlU3UjSH0iyqopqoZIu7eZVpEirP2g1GtWa2G/ecEmBdgz31+Mxr+ELclgg6sokpSFIQiZ02Q==}
++
+   fdir@6.5.0:
+     resolution: {integrity: sha512-tIbYtZbucOs0BRGqPJkshJUYdL+SDH7dVM8gjy+ERp3WAUjLEFJE+02kanyHtwjWOnwrKYBiwAmM0p4kLJAnXg==}
+     engines: {node: '>=12.0.0'}
+@@ -2619,6 +2682,10 @@ packages:
+   ms@2.1.3:
+     resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
+ 
++  mute-stream@4.0.0:
++    resolution: {integrity: sha512-gSrprq0fJ3EiOErzjdIZrjysVVmJ4uu1QWfCDss5LypA5OXvrMje5Ym5z6V6RLyJ2eF87lasX7t6a0AnFvZblg==}
++    engines: {node: ^22.22.2 || ^24.15.0 || >=26.0.0}
++
+   mz@2.7.0:
+     resolution: {integrity: sha512-z81GNO7nnYMEhrGh9LeymoE4+Yr0Wn5McHIZMK5cfQCl+NDX08sCZgUc9/6MHni9IWuFLm1Z3HTCXu2z9fN62Q==}
+ 
+@@ -2987,6 +3054,10 @@ packages:
+     resolution: {integrity: sha512-OcRW72ngQvc+MSVWBRIovC/BTW589iUE/Vxav7VeM4RcY9MUjqB+IR6ILG1k9nuW6LiG/nct9uma4/MBtnZbmQ==}
+     engines: {node: '>=20'}
+ 
++  signal-exit@4.1.0:
++    resolution: {integrity: sha512-bzyZ1e88w9O1iNJbKnOlvYTrWPDl46O1bG0D3XInv+9tkPrxrN8jUUTiFlDkkmKWgn1M6CfIA13SuGqOa9Korw==}
++    engines: {node: '>=14'}
++
+   sirv@3.0.2:
+     resolution: {integrity: sha512-2wcC/oGxHis/BoHkkPwldgiPSYcpZK3JU28WoMVv55yHJgcZ8rlXvuG9iZggz+sU1d4bRgIGASwyWqjxu3FM0g==}
+     engines: {node: '>=18'}
+@@ -3417,6 +3488,39 @@ snapshots:
+       '@iconify/types': 2.0.0
+       import-meta-resolve: 4.2.0
+ 
++  '@inquirer/ansi@2.1.0': {}
++
++  '@inquirer/checkbox@5.2.8(@types/node@26.6.5)':
++    dependencies:
++      '@inquirer/ansi': 2.1.0
++      '@inquirer/core': 12.1.0(@types/node@26.6.5)
++      '@inquirer/figures': 2.1.0
++      '@inquirer/type': 4.2.1(@types/node@26.6.5)
++    optionalDependencies:
++      '@types/node': 26.6.5
++
++  '@inquirer/core@12.1.0(@types/node@26.6.5)':
++    dependencies:
++      '@inquirer/ansi': 2.1.0
++      '@inquirer/figures': 2.1.0
++      '@inquirer/type': 4.3.0(@types/node@26.6.5)
++      cli-width: 4.1.0
++      fast-wrap-ansi: 0.2.2
++      mute-stream: 4.0.0
++      signal-exit: 4.1.0
++    optionalDependencies:
++      '@types/node': 26.6.5
++
++  '@inquirer/figures@2.1.0': {}
++
++  '@inquirer/type@4.2.1(@types/node@26.6.5)':
++    optionalDependencies:
++      '@types/node': 26.6.5
++
++  '@inquirer/type@4.3.0(@types/node@26.6.5)':
++    optionalDependencies:
++      '@types/node': 26.6.5
++
+   '@jridgewell/gen-mapping@0.3.13':
+     dependencies:
+       '@jridgewell/sourcemap-codec': 1.6.0
+@@ -4040,6 +4144,8 @@ snapshots:
+ 
+   clear-cut@2.0.2: {}
+ 
++  cli-width@4.1.0: {}
++
+   cliui@6.0.0:
+     dependencies:
+       string-width: 4.2.3
+@@ -4467,8 +4573,18 @@ snapshots:
+ 
+   fast-levenshtein@2.0.6: {}
+ 
++  fast-string-truncated-width@3.0.3: {}
++
++  fast-string-width@3.0.2:
++    dependencies:
++      fast-string-truncated-width: 3.0.3
++
+   fast-uri@3.1.9: {}
+ 
++  fast-wrap-ansi@0.2.2:
++    dependencies:
++      fast-string-width: 3.0.2
++
+   fdir@6.5.0(picomatch@4.0.7):
+     optionalDependencies:
+       picomatch: 4.0.7
+@@ -4815,6 +4931,8 @@ snapshots:
+ 
+   ms@2.1.3: {}
+ 
++  mute-stream@4.0.0: {}
++
+   mz@2.7.0:
+     dependencies:
+       any-promise: 1.3.0
+@@ -5046,6 +5164,8 @@ snapshots:
+       '@shikijs/vscode-textmate': 10.1.0
+       '@types/hast': 3.0.5
+ 
++  signal-exit@4.1.0: {}
++
+   sirv@3.0.2:
+     dependencies:
+       '@polka/url': 1.0.0-next.29
+diff --git a/pnpm-workspace.yaml b/pnpm-workspace.yaml
+index 8d6231c..8c71d5f 100644
+--- a/pnpm-workspace.yaml
++++ b/pnpm-workspace.yaml
+@@ -19,6 +19,8 @@ packages:
+   - guides
+   - website
+   - website/blog
++  # The packs' release tools, for the checkboxes they show; no scripts, as the spikes.
++  - tools/packs
+   # Spikes: measurements, not packages; they have no build, lint or test script, so the workspace's runs skip them.
+   - spikes/*
+   - spikes/wrap-npm-package/*
+diff --git a/tools/packs/approve-packs.test.ts b/tools/packs/approve-packs.test.ts
+new file mode 100644
+index 0000000..e323ba3
+--- /dev/null
++++ b/tools/packs/approve-packs.test.ts
+@@ -0,0 +1,97 @@
++import assert from "node:assert/strict";
++import { describe, it } from "node:test";
++import { approveArgs, approvePacks, type Steps } from "./approve-packs.ts";
++import type { Staged } from "./staged.ts";
++
++const ITEMS = [
++  { id: "c", packageName: "@comp-markdown/chart", version: "0.1.0", createdAt: "2026-11-20T21:05:00Z" },
++  { id: "a", packageName: "@comp-markdown/card", version: "0.2.0", createdAt: "2026-11-20T21:04:00Z" },
++  { id: "m", packageName: "@comp-markdown/mermaid", version: "0.1.3", status: "approved", createdAt: "2026-11-19T10:00:00Z" },
++];
++
++/** Steps over `items`, the author choosing with `pick` (by default what starts chosen) and giving `code`. */
++function stubs(items: unknown[], options: { pick?: (offered: readonly Staged[], chosen: (item: Staged) => boolean) => Staged[]; code?: string } = {}) {
++  const done: string[] = [];
++  const log: string[] = [];
++  const offered: string[] = [];
++  const steps: Steps = {
++    list: () => JSON.stringify(items),
++    choose: (list, chosen) => {
++      offered.push(...list.map((item) => `${chosen(item) ? "[x]" : "[ ]"} ${item.id}`));
++      return Promise.resolve(options.pick ? options.pick(list, chosen) : list.filter(chosen));
++    },
++    code: () => {
++      done.push("code");
++      return Promise.resolve(options.code);
++    },
++    npm: (args) => {
++      done.push(args.join(" "));
++    },
++    log: (line) => {
++      log.push(line);
++    },
++  };
++  return { steps, done, log, offered };
++}
++
++describe("cargo make approve-packs", () => {
++  it("offers every staged pack oldest first, those waiting chosen, and approves the chosen ones with one code", async () => {
++    const { steps, done, offered } = stubs(ITEMS, { code: "123456" });
++    assert.equal(await approvePacks({ dryRun: false }, steps), 0);
++    assert.deepEqual(offered, ["[ ] m", "[x] a", "[x] c"]);
++    assert.deepEqual(done, ["code", "stage approve a --otp 123456", "stage approve c --otp 123456"]);
++  });
++
++  it("approves in the order they were staged, whatever order the choice comes back in", async () => {
++    const { steps, done } = stubs(ITEMS, { pick: (list) => [...list].reverse() });
++    await approvePacks({ dryRun: false }, steps);
++    assert.deepEqual(done, ["code", "stage approve m", "stage approve a", "stage approve c"]);
++  });
++
++  it("approves only what the author left chosen", async () => {
++    const { steps, done } = stubs(ITEMS, { pick: (list) => list.filter((item) => item.id === "c") });
++    await approvePacks({ dryRun: false }, steps);
++    assert.deepEqual(done, ["code", "stage approve c"]);
++  });
++
++  it("asks for no code and approves nothing when nothing is chosen", async () => {
++    const { steps, done, log } = stubs(ITEMS, { pick: () => [] });
++    assert.equal(await approvePacks({ dryRun: false }, steps), 0);
++    assert.deepEqual(done, []);
++    assert.deepEqual(log, ["nothing chosen: nothing approved"]);
++  });
++
++  it("leaves the code to npm when the author gives none", () => {
++    assert.deepEqual(approveArgs({ id: "a", packageName: "p", version: "1.0.0" }), ["stage", "approve", "a"]);
++  });
++
++  it("with --dry-run, lists them as it would offer them, and approves nothing", async () => {
++    const { steps, done, log, offered } = stubs(ITEMS);
++    assert.equal(await approvePacks({ dryRun: true }, steps), 0);
++    assert.deepEqual(done, []);
++    assert.deepEqual(offered, []);
++    assert.deepEqual(log, [
++      "staged, 3; would offer them all, these chosen:",
++      "  [ ] @comp-markdown/mermaid 0.1.3, staged 2026-11-19 10:00 (approved)",
++      "  [x] @comp-markdown/card 0.2.0, staged 2026-11-20 21:04",
++      "  [x] @comp-markdown/chart 0.1.0, staged 2026-11-20 21:05",
++    ]);
++  });
++
++  it("says so when nothing is staged", async () => {
++    const { steps, done, log } = stubs([{ id: "x", packageName: "@compmd/render", version: "0.10.0" }]);
++    assert.equal(await approvePacks({ dryRun: false }, steps), 0);
++    assert.deepEqual(done, []);
++    assert.deepEqual(log, ["npm has nothing staged for the packs"]);
++  });
++
++  it("stops at npm's failure, the versions before it approved", async () => {
++    const { steps, done } = stubs(ITEMS);
++    steps.npm = (args) => {
++      if (args.includes("c")) throw new Error("npm failed");
++      done.push(args.join(" "));
++    };
++    await assert.rejects(approvePacks({ dryRun: false }, steps), /npm failed/);
++    assert.deepEqual(done, ["code", "stage approve a"]);
++  });
++});
+diff --git a/tools/packs/approve-packs.ts b/tools/packs/approve-packs.ts
+new file mode 100644
+index 0000000..bf966de
+--- /dev/null
++++ b/tools/packs/approve-packs.ts
+@@ -0,0 +1,90 @@
++// `cargo make approve-packs` (docs/releases.md, decision 8): what npm has staged of the packs, as checkboxes, every
++// version waiting for you chosen; Enter approves the chosen ones, in the order they were staged, with one one-time
++// code, which npm asks for again once it has expired. With `--dry-run` it lists them and approves nothing.
++//
++//   node tools/packs/approve-packs.ts [--dry-run]
++
++import { createInterface } from "node:readline/promises";
++import checkbox from "@inquirer/checkbox";
++import { readNpm, runNpm, type RunNpm } from "./npm.ts";
++import { describe, stagedPacks, waiting, type Staged } from "./staged.ts";
++
++/** What `approvePacks` does through: each a stub in its tests. */
++export interface Steps {
++  /** `npm stage list --json`'s output. */
++  list(): string;
++  /** The ones the author chooses among `items`, those with `chosen` checked at first. */
++  choose(items: readonly Staged[], chosen: (item: Staged) => boolean): Promise<Staged[]>;
++  /** The author's one-time code, or `undefined` to let npm ask (a security key, a browser). */
++  code(): Promise<string | undefined>;
++  npm: RunNpm;
++  log(line: string): void;
++}
++
++/**
++ * npm's arguments that approve a staged version, with the author's one-time code when there is one. npm uses the
++ * code while it is valid, and asks for a new one itself once it has expired.
++ */
++export const approveArgs = (item: Staged, code?: string): string[] => ["stage", "approve", item.id, ...(code ? ["--otp", code] : [])];
++
++/**
++ * Approves the staged versions the author chooses, oldest first.
++ *
++ * @returns The exit code: 0, also when nothing is staged or nothing chosen.
++ * @throws Error when npm fails, after the versions before it are approved.
++ */
++export async function approvePacks(options: { dryRun: boolean }, steps: Steps): Promise<number> {
++  const staged = stagedPacks(steps.list());
++  if (staged.length === 0) {
++    steps.log("npm has nothing staged for the packs");
++    return 0;
++  }
++  if (options.dryRun) {
++    steps.log(`staged, ${String(staged.length)}; would offer them all, these chosen:`);
++    for (const item of staged) steps.log(`  [${waiting(item) ? "x" : " "}] ${describe(item)}`);
++    return 0;
++  }
++  const chosen = await steps.choose(staged, waiting);
++  // In the order they were staged, whatever order the list gave them back in.
++  const approving = staged.filter((item) => chosen.includes(item));
++  if (approving.length === 0) {
++    steps.log("nothing chosen: nothing approved");
++    return 0;
++  }
++  const code = await steps.code();
++  for (const item of approving) {
++    steps.npm(approveArgs(item, code));
++    steps.log(`approved ${describe(item)}`);
++  }
++  return 0;
++}
++
++/** The steps as they run: the pinned npm, and the checkboxes in the terminal. */
++const realSteps: Steps = {
++  list: () => readNpm(["stage", "list", "--json"]),
++  choose: (items, chosen) =>
++    checkbox<Staged>({
++      message: "Approve, in the order they were staged (space toggles, a toggles all, Enter approves):",
++      choices: items.map((item) => ({ name: describe(item), value: item, checked: chosen(item) })),
++      pageSize: 20,
++    }),
++  async code() {
++    const terminal = createInterface({ input: process.stdin, output: process.stdout });
++    const answer = (await terminal.question("One-time code from your authenticator (Enter to let npm ask, for a security key): ")).trim();
++    terminal.close();
++    return answer === "" ? undefined : answer;
++  },
++  npm: runNpm,
++  log: (line) => {
++    console.log(line);
++  },
++};
++
++if (import.meta.main) {
++  try {
++    process.exitCode = await approvePacks({ dryRun: process.argv.includes("--dry-run") }, realSteps);
++  } catch (error) {
++    console.error(error instanceof Error ? error.message : String(error));
++    process.exitCode = 1;
++  }
++}
+diff --git a/tools/packs/npm.test.ts b/tools/packs/npm.test.ts
+new file mode 100644
+index 0000000..20587e9
+--- /dev/null
++++ b/tools/packs/npm.test.ts
+@@ -0,0 +1,20 @@
++import assert from "node:assert/strict";
++import { describe, it } from "node:test";
++import { npmCommand, npmError } from "./npm.ts";
++
++describe("npm, as the tools run it", () => {
++  it("is the pinned version, through npx", () => {
++    assert.deepEqual(npmCommand(["stage", "list"]), ["npx", "--yes", "npm@11.21.1", "stage", "list"]);
++  });
++
++  it("says what went wrong from its JSON, and how to log in when it isn't", () => {
++    const unauthorized = JSON.stringify({ error: { code: "E401", summary: "Unable to authenticate, your authentication token seems to be invalid." } });
++    assert.equal(npmError(unauthorized), "Unable to authenticate, your authentication token seems to be invalid. Log in from outside the repository: (cd ~ && npm login)");
++    assert.equal(npmError(JSON.stringify({ error: { code: "E404", summary: "Not found" } })), "Not found");
++  });
++
++  it("points to its own message when it gave no JSON", () => {
++    assert.equal(npmError(undefined), "see npm's message above");
++    assert.equal(npmError("not json"), "see npm's message above");
++  });
++});
+diff --git a/tools/packs/npm.ts b/tools/packs/npm.ts
+index f968012..3450708 100644
+--- a/tools/packs/npm.ts
++++ b/tools/packs/npm.ts
+@@ -1,7 +1,7 @@
+ // npm, pinned to a version with `npm trust` (11.10) and staged publishing (11.15), as the release workflows pin it,
+ // and run outside this repository, whose `devEngines` names pnpm (RELEASING.md, *What publishing 0.1.0 taught*).
+ 
+-import { spawnSync } from "node:child_process";
++import { execFileSync, spawnSync } from "node:child_process";
+ import { tmpdir } from "node:os";
+ 
+ export const NPM_VERSION = "11.21.1";
+@@ -23,3 +23,28 @@ export const runNpm: RunNpm = (args) => {
+   const { status } = spawnSync(command, rest, { cwd: tmpdir(), stdio: "inherit" });
+   if (status !== 0) throw new Error(`${npmCommand(args).join(" ")} failed, exit code ${String(status)}`);
+ };
++
++/**
++ * What the pinned npm prints with `args`, run as `runNpm` runs it; what it asks or warns still goes to the terminal.
++ *
++ * @throws Error when npm exits with anything but 0.
++ */
++export function readNpm(args: readonly string[]): string {
++  const [command = "npx", ...rest] = npmCommand(args);
++  try {
++    return execFileSync(command, rest, { cwd: tmpdir(), encoding: "utf8", stdio: ["inherit", "pipe", "inherit"] });
++  } catch (error) {
++    throw new Error(`${npmCommand(args).join(" ")} failed: ${npmError((error as { stdout?: string }).stdout)}`, { cause: error });
++  }
++}
++
++/** What npm said went wrong, from its `--json` output (`{ "error": { "summary": … } }`), else its exit. */
++export function npmError(stdout: string | undefined): string {
++  try {
++    const { error } = JSON.parse(stdout ?? "") as { error?: { code?: string; summary?: string } };
++    if (error?.summary) return `${error.summary}${error.code === "E401" ? " Log in from outside the repository: (cd ~ && npm login)" : ""}`;
++  } catch {
++    // Not npm's JSON: its message went to the terminal.
++  }
++  return "see npm's message above";
++}
+diff --git a/tools/packs/pack-placeholders.ts b/tools/packs/pack-placeholders.ts
+index 2d6ef1f..956b0d5 100644
+--- a/tools/packs/pack-placeholders.ts
++++ b/tools/packs/pack-placeholders.ts
+@@ -88,10 +88,15 @@ const realSteps: Steps = {
+ if (import.meta.main) {
+   const args = process.argv.slice(2);
+   const license = readFileSync(join(import.meta.dirname, "../../LICENSE-CODE"), "utf8");
+-  process.exitCode = await placeholders(
+-    args.filter((arg) => arg !== "--dry-run"),
+-    license,
+-    { dryRun: args.includes("--dry-run") },
+-    realSteps,
+-  );
++  try {
++    process.exitCode = await placeholders(
++      args.filter((arg) => arg !== "--dry-run"),
++      license,
++      { dryRun: args.includes("--dry-run") },
++      realSteps,
++    );
++  } catch (error) {
++    console.error(error instanceof Error ? error.message : String(error));
++    process.exitCode = 1;
++  }
+ }
+diff --git a/tools/packs/package.json b/tools/packs/package.json
+index ca369be..1b12b1a 100644
+--- a/tools/packs/package.json
++++ b/tools/packs/package.json
+@@ -1,5 +1,9 @@
+ {
++  "name": "@compmd-tools/packs",
+   "private": true,
+-  "description": "The tools that release this repository's packs (docs/releases.md, decision 8), run by Node as they are (TypeScript, its types stripped): not a workspace package.",
+-  "type": "module"
++  "description": "The tools that release this repository's packs (docs/releases.md, decision 8), run by Node as they are (TypeScript, its types stripped). A workspace member only for its one dependency: no build, lint or test script, so the workspace's runs leave it out; `cargo make scripts` tests it.",
++  "type": "module",
++  "dependencies": {
++    "@inquirer/checkbox": "5.2.8"
++  }
+ }
+diff --git a/tools/packs/release-packs.ts b/tools/packs/release-packs.ts
+index ba10415..332c37e 100644
+--- a/tools/packs/release-packs.ts
++++ b/tools/packs/release-packs.ts
+@@ -131,4 +131,11 @@ function realSteps(root: string): Steps {
+   };
+ }
+ 
+-if (import.meta.main) process.exitCode = await releasePacks({ dryRun: process.argv.includes("--dry-run") }, realSteps(join(import.meta.dirname, "../..")));
++if (import.meta.main) {
++  try {
++    process.exitCode = await releasePacks({ dryRun: process.argv.includes("--dry-run") }, realSteps(join(import.meta.dirname, "../..")));
++  } catch (error) {
++    console.error(error instanceof Error ? error.message : String(error));
++    process.exitCode = 1;
++  }
++}
+diff --git a/tools/packs/staged.test.ts b/tools/packs/staged.test.ts
+new file mode 100644
+index 0000000..d1074e8
+--- /dev/null
++++ b/tools/packs/staged.test.ts
+@@ -0,0 +1,36 @@
++import assert from "node:assert/strict";
++import { describe as suite, it } from "node:test";
++import { describe, stagedPacks, waiting } from "./staged.ts";
++
++const ITEMS = [
++  { id: "c", packageName: "@comp-markdown/chart", version: "0.1.0", status: "pending", createdAt: "2026-11-20T21:05:00Z" },
++  { id: "x", packageName: "@compmd/render", version: "0.10.0", createdAt: "2026-11-20T20:00:00Z" },
++  { id: "a", packageName: "@comp-markdown/card", version: "0.2.0", createdAt: "2026-11-20T21:04:00Z" },
++  { id: "m", packageName: "@comp-markdown/mermaid", version: "0.1.3", status: "approved", createdAt: "2026-11-19T10:00:00Z" },
++  { packageName: "@comp-markdown/broken", version: "1.0.0" },
++];
++
++suite("what npm has staged of the packs", () => {
++  it("is the packs' versions, oldest first, the others' and anything without an id left out", () => {
++    assert.deepEqual(
++      stagedPacks(JSON.stringify(ITEMS)).map((item) => item.id),
++      ["m", "a", "c"],
++    );
++  });
++
++  it("fails on anything but a list", () => {
++    assert.throws(() => stagedPacks('{"error": "E401"}'), /gave no list/);
++  });
++
++  it("waits for the author unless its status says it is settled", () => {
++    const [mermaid, card, chart] = stagedPacks(JSON.stringify(ITEMS));
++    assert.deepEqual([mermaid, card, chart].map((item) => item && waiting(item)), [false, true, true]);
++    for (const status of ["rejected", "Published", "APPROVED"]) assert.equal(waiting({ id: "i", packageName: "p", version: "1.0.0", status }), false, status);
++  });
++
++  it("is shown with its package, version and when it was staged, and a settled one's status", () => {
++    const [mermaid, card] = stagedPacks(JSON.stringify(ITEMS));
++    assert.equal(card && describe(card), "@comp-markdown/card 0.2.0, staged 2026-11-20 21:04");
++    assert.equal(mermaid && describe(mermaid), "@comp-markdown/mermaid 0.1.3, staged 2026-11-19 10:00 (approved)");
++  });
++});
+diff --git a/tools/packs/staged.ts b/tools/packs/staged.ts
+new file mode 100644
+index 0000000..bb7e329
+--- /dev/null
++++ b/tools/packs/staged.ts
+@@ -0,0 +1,44 @@
++// What npm has staged of the packs, as `npm stage list --json` gives it: the registry's items, whose fields npm's own
++// `npm stage list` prints (`id`, `packageName`, `version`, `status`, `tag`, `createdAt`, npm 11.21.1's
++// `lib/utils/key-values.js`).
++
++import { SCOPE } from "./placeholder.ts";
++
++/** A version staged on npm, waiting for the author. */
++export interface Staged {
++  /** The stage's id, which `npm stage approve` takes. */
++  id: string;
++  packageName: string;
++  version: string;
++  /** npm's state of it; its values aren't documented. */
++  status?: string;
++  createdAt?: string;
++}
++
++/** A status that says the version is settled already: approved, rejected or published. */
++const SETTLED = /approv|reject|publish/i;
++
++/**
++ * The packs' staged versions in `json`, `npm stage list --json`'s output, oldest first: the order they were staged
++ * in, which is the order to approve them in, so a pack is never on npm before one staged before it.
++ *
++ * @throws Error when `json` isn't a list of staged versions.
++ */
++export function stagedPacks(json: string): Staged[] {
++  const items = JSON.parse(json) as unknown;
++  if (!Array.isArray(items)) throw new Error("npm stage list --json gave no list");
++  return (items as Partial<Staged>[])
++    .filter((item): item is Staged => typeof item.id === "string" && typeof item.packageName === "string" && typeof item.version === "string")
++    .filter((item) => item.packageName.startsWith(`${SCOPE}/`))
++    .sort((a, b) => (a.createdAt ?? "").localeCompare(b.createdAt ?? ""));
++}
++
++/** Whether a staged version waits for the author, so the list starts with it chosen. */
++export const waiting = (item: Staged): boolean => item.status === undefined || !SETTLED.test(item.status);
++
++/** How the list shows a staged version: `@comp-markdown/card 0.1.0, staged 2026-11-20 21:04`. */
++export function describe(item: Staged): string {
++  const when = item.createdAt ? `, staged ${item.createdAt.slice(0, 16).replace("T", " ")}` : "";
++  const status = item.status && !waiting(item) ? ` (${item.status})` : "";
++  return `${item.packageName} ${item.version}${when}${status}`;
++}
