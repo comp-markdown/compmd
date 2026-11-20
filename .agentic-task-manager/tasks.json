@@ -11704,7 +11704,7 @@
       "description": "Item 4 of [the first list](docs/first-components.md#:~:text=8%20of%2011%20frameworks%20ship%20cards): a `compmd` definition on `box` (no code), in the pack CMD-11 names: an image, a title and a body, styled with the visual tokens (spec §9.4). Its images are the document's own.\n\n## Do\nThe definition with its signature, a demo in a `grid`, plain-renderer reading checked, and a conformance-style test of its expanded tree.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68e81c39ce10"
       ],
@@ -11712,7 +11712,7 @@
         "compmd-packs/card/"
       ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T22:00:07Z",
+      "updated_at": "2026-11-20T22:13:41Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 313,
@@ -11733,15 +11733,35 @@
         }
       ],
       "review_requested_at": "2026-11-20T22:00:07Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-20T22:00:07Z",
           "kind": "review",
           "text": "CR-34: The card: a box with an image slot, its text and a footer",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-20T22:11:49Z",
+          "kind": "note",
+          "text": "Approved: in CR-34 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-20T22:13:41Z",
+          "kind": "outcome",
+          "text": "Approved in CR-34: @comp-markdown/card, the image a slot, the box’s defaults from its signature fence. Its placeholder and trusted publisher are still for the maintainer (cargo make pack-placeholders card).",
+          "by": "claude:79612601"
         }
-      ]
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-20T22:00:07Z",
+          "to": "2026-11-20T22:11:49Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-20T22:13:41Z",
+      "completed_by": "claude:79612601"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57c971faed2b",
@@ -11755,7 +11775,7 @@
       "description": "Item 4 of [the first list](docs/first-components.md#:~:text=8%20of%2011%20frameworks%20ship%20cards): a card that is a link, a `compmd` definition on `card`: a title, a description and where it goes, the whole card the link. Its fallback is the link.\n\n## Do\nThe definition, a demo, tests of its expanded tree.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a1f870-9ad9-761a-afe5-57c89c4468ad"
       ],
@@ -11763,7 +11783,7 @@
         "compmd-packs/link-card/"
       ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T16:20:53Z",
+      "updated_at": "2026-11-20T22:31:35Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 314,
@@ -11773,7 +11793,9 @@
           "from": "2026-11-20T10:26:02Z"
         }
       ],
-      "sprint": "Packs 1: the pack tool, no-code components"
+      "sprint": "Packs 1: the pack tool, no-code components",
+      "started_at": "2026-11-20T22:31:35Z",
+      "started_by": "claude:79612601"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57ca797541ca",
@@ -13309,7 +13331,7 @@
       "description": "[Sizing a component in its box](docs/sizing-components.md), *What changes*, `@compmd/render`.\n\n## Do\n- A host-language component's box is a grid of one column (`grid-template-columns: minmax(0, 1fr)`, `grid-auto-rows: minmax(0, auto)`; inline, an inline grid), as [the prototype](spikes/wrap-npm-package/sizing/page.html)'s `.box` is.\n- `object-fit` and `object-position` resolved with the box's direction and given as `context.fit` (`{ mode, x, y }`), with an `update` when they change, as `scheme` is.\n- The contract's type; the React and Svelte bindings pass `compmd.fit`.\n\n## Tests\nUnit tests of the resolving, right to left too; browser tests, in Chrome and WebKit, of a trusted component in a box with each way of sizing it, the prototype's cases.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a1faa3-d27f-73b4-9632-1832108aba7b"
       ],
@@ -13317,9 +13339,9 @@
         "npm-packages/render/src/"
       ],
       "created_at": "2026-11-20T20:26:42Z",
-      "updated_at": "2026-11-20T20:26:42Z",
+      "updated_at": "2026-11-20T22:11:08Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "sprint_history": [
         {
           "sprint": "Packs 1: the pack tool, no-code components",
@@ -13327,7 +13349,9 @@
         }
       ],
       "sprint": "Packs 1: the pack tool, no-code components",
-      "number": 354
+      "number": 354,
+      "started_at": "2026-11-20T22:11:08Z",
+      "started_by": "claude:79612601"
     },
     {
       "id": "01a1faa3-d27f-73b4-9632-183483697925",
@@ -13412,13 +13436,13 @@
       "description": "`npm-packages/sandbox/test/observe.test.ts`, *marks a forged report as the frame's, under its id, and acts on none of it (O6)*, failed in `cargo make ci` on 2026-11-20 (13:49), timing out at its 12 s wait, after CMD-346; it passes alone in under 5 s, in Chrome and WebKit.\n\n## What is known\nThe frame's component patches `MessagePort.prototype.postMessage` when it mounts, so the forged events ride on the next `observed` report the frame sends; the test waits for them. If every report the frame sends goes out before the component's code runs, and nothing makes it send another, the forged events never arrive: a race, which a longer wait doesn't fix. Not yet proved: which report the forged events ride on when the test passes, and why none follows the patch under load.\n\n## Do\nFind the race (reproduce it under load, as `cargo make linux` or several workers at once), and fix it at its cause: the test making the frame report after the patch, or the observer, if a frame's report can be lost. No longer wait. CMD-346's way: a test that fails without the fix.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [],
       "files": [
         "npm-packages/sandbox/test/observe.test.ts"
       ],
       "created_at": "2026-11-20T21:51:11Z",
-      "updated_at": "2026-11-20T22:00:21Z",
+      "updated_at": "2026-11-20T22:13:42Z",
       "created_by": "claude:79612601",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -13430,7 +13454,44 @@
       "sprint": "Packs 1: the pack tool, no-code components",
       "number": 357,
       "started_at": "2026-11-20T22:00:21Z",
-      "started_by": "claude:79612601"
+      "started_by": "claude:79612601",
+      "commit": "a0d2259a5391583e06f450cefabb47d4385c5bf1",
+      "code_reviews": [
+        {
+          "id": "01a1fb03-5d24-72c0-8e29-8012732a5ef1",
+          "ref": "CR-35"
+        }
+      ],
+      "review_requested_at": "2026-11-20T22:11:04Z",
+      "notes": [
+        {
+          "at": "2026-11-20T22:11:04Z",
+          "kind": "review",
+          "text": "CR-35: A frame records a component as mounted once its code has run",
+          "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-20T22:12:52Z",
+          "kind": "note",
+          "text": "Approved: in CR-35 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-20T22:13:42Z",
+          "kind": "outcome",
+          "text": "Approved in CR-35: a frame records mounted once the component’s code has run (Components times the loaded mount), so O6’s report always follows the patch.",
+          "by": "claude:79612601"
+        }
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-20T22:11:04Z",
+          "to": "2026-11-20T22:12:52Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-20T22:13:42Z",
+      "completed_by": "claude:79612601"
     },
     {
       "id": "01a1faf8-f4f8-77fd-9de5-17c95ee53259",

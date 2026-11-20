@@ -200,3 +200,52 @@ describe("the colour scheme", () => {
     stylesheet.remove();
   });
 });
+
+describe("the fit (spec §7.4)", () => {
+  const fitted = (fit: string, position: string): ExpandedComponent => ({
+    ...node([1]),
+    params: [...node([1]).params, { key: "object-fit", breakpoint: null, value: fit }, { key: "object-position", breakpoint: null, value: position }],
+  });
+
+  it("is the box's object-fit and object-position, never the component's params, and a change updates it", () => {
+    const fits: string[] = [];
+    const { handle, stylesheet } = setup((_, context) => {
+      fits.push(JSON.stringify(context.fit));
+      return { update: (params) => fits.push(`${JSON.stringify(context.fit)} ${Object.keys(params).join()}`) };
+    });
+    handle.update(fitted("cover", "end start"), { slots: {} });
+    expect(fits).toEqual([JSON.stringify({ mode: "contain", x: 0.5, y: 0.5 }), `${JSON.stringify({ mode: "cover", x: 0, y: 1 })} rows`]);
+    stylesheet.remove();
+  });
+
+  it("stays the same object while the box's params give the same fit", () => {
+    const seen: unknown[] = [];
+    const { handle, stylesheet } = setup((_, context) => ({ update: () => seen.push(context.fit) }));
+    handle.update(fitted("fill", "center"), { slots: {} });
+    handle.update(fitted("fill", "center center"), { slots: {} });
+    expect(seen[0]).toBe(seen[1]);
+    stylesheet.remove();
+  });
+
+  it("counts the inline start from the right in a right-to-left document, read where the component mounts", () => {
+    const page = document.body.appendChild(Object.assign(document.createElement("div"), { dir: "rtl" }));
+    const stylesheet = new Stylesheet(document);
+    const fits: unknown[] = [];
+    let run: () => void = () => undefined;
+    mountComponent(page, fitted("contain", "start"), {
+      mount: (_, context) => {
+        fits.push(context.fit);
+      },
+      slots: {},
+      fallback: { text: "", element: document.createElement("span") },
+      headingLevel: 2,
+      onSet: () => undefined,
+      stylesheet,
+      later: (mount) => (run = mount),
+    });
+    run();
+    expect(fits).toEqual([{ mode: "contain", x: 1, y: 0 }]);
+    page.remove();
+    stylesheet.remove();
+  });
+});

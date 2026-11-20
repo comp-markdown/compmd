@@ -8,7 +8,7 @@ import { react } from "../src/bindings/react.ts";
 import { svelte } from "../src/bindings/svelte.svelte.ts";
 import type { Mount } from "../src/contract.ts";
 import { createPage } from "../src/page.ts";
-import type { ExpandedRoot } from "../src/tree.ts";
+import type { ExpandedComponent, ExpandedRoot } from "../src/tree.ts";
 import Card from "./Card.svelte";
 import Plots from "./Plots.svelte";
 import { seen, type Seen } from "./seen.ts";
@@ -122,6 +122,18 @@ describe.each([
 
     page.render(plots({ number: 4 }));
     expect(root.querySelector("ol")?.textContent).toBe("4");
+    page.destroy();
+  });
+
+  it("passes the box's fit as `compmd.fit`, and the new one when it changes (spec §7.4)", () => {
+    root = document.body.appendChild(document.createElement("main"));
+    const page = createPage(root, { components: { plots: mount } });
+    page.render(plots({ number: 1 }));
+    expect(latest.compmd?.fit).toEqual({ mode: "contain", x: 0.5, y: 0.5 });
+    const [leaf] = plots({ number: 1 }).children as ExpandedComponent[];
+    const params = [...(leaf?.params ?? []), { key: "object-fit", breakpoint: null, value: "cover" }, { key: "object-position", breakpoint: null, value: "end" }];
+    page.render({ type: "root", children: [{ type: "componentLeaf", name: "plots", params, fallback: [] }] });
+    expect(latest.compmd?.fit).toEqual({ mode: "cover", x: 1, y: 1 });
     page.destroy();
   });
 });

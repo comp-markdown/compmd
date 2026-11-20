@@ -190,6 +190,10 @@ export function ownParams(params: readonly ExpandedParam[]): Record<string, unkn
  * host can size one: `.compmd-line { min-height }`), and the look of what Markdown has no CSS for. A box's padding is its own: the margins of its first and last child are trimmed, as
  * `margin-trim: block` would, at the specificity of `:first-child`, so a host's own rules still win.
  *
+ * A host-language component's box is a grid of one column (docs/sizing-components.md, *The mechanism*), so a
+ * percentage height in it is of its cell however the box gets its height; an inline one is an inline grid. At one
+ * class, so the rules that hide a box (`show`, `hide`) still do.
+ *
  * On paper (docs/printing.md): the page is light, a component that prints its fallback shows it instead of itself, a
  * component, a table, a code block or an image is kept whole where it fits, and a heading stays with what follows it;
  * all at no specificity, so a host's print styles win.
@@ -197,6 +201,8 @@ export function ownParams(params: readonly ExpandedParam[]): Record<string, unkn
 const BASE_RULES = `
 .compmd-page { container-type: inline-size; position: relative; }
 .compmd-box, .compmd-item, .compmd-component { position: relative; box-sizing: border-box; min-inline-size: 0; }
+.compmd-component { display: grid; grid-template-columns: minmax(0, 1fr); grid-auto-rows: minmax(0, auto); }
+:where(span).compmd-component { display: inline-grid; }
 .compmd-container { container-type: inline-size; }
 .compmd-fills { display: flex; flex-direction: column; }
 :where(.compmd-both) { display: flex; flex-direction: column; gap: var(--compmd-space-s, 0.5rem); }

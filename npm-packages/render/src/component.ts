@@ -2,6 +2,7 @@
 // (spec §7.4). Its caller renders the slots and the fallback, so a region and an editor's widget can both use it.
 import type { ComponentError, ComponentRecovered, Fallback, Mount, Mounted, MountContext, Scheme, Slots } from "./contract.ts";
 import { applyBox } from "./box.ts";
+import { fitOf, isRtl, sameFit } from "./fit.ts";
 import { ownParams, type ParentLayout, type Stylesheet } from "./styles.ts";
 import type { ExpandedComponent } from "./tree.ts";
 
@@ -63,8 +64,8 @@ export interface ComponentHandle {
 
 /**
  * Mounts `node`'s component into a new outer box at the end of `target`. The box gets the common params (§9.2); the
- * component gets its own params, its slots, `set`, `fail`, its fallback, its heading level and its colour scheme, and
- * owns what is inside the box. A component that fails, or throws while updating, shows its fallback until its next
+ * component gets its own params, its slots, `set`, `fail`, its fallback, its heading level, its colour scheme and its
+ * `fit`, and owns what is inside the box. A component that fails, or throws while updating, shows its fallback until its next
  * update; one that throws while mounting shows it for good.
  *
  * @example
@@ -91,6 +92,8 @@ export function mountComponent(target: ParentNode & Node, node: ExpandedComponen
   let destroyed = false;
   /** Whether the fallback is in the box now: `update` may have called `fail`, which TypeScript can't see. */
   const shows = (): boolean => showing;
+  /** The fit the box's params give, with its direction as it is placed now. */
+  const fitNow = () => fitOf(current.params, isRtl(element));
 
   const showFallback = (lasts: boolean) => {
     element.replaceChildren();
@@ -123,6 +126,7 @@ export function mountComponent(target: ParentNode & Node, node: ExpandedComponen
     fallback: options.fallback,
     headingLevel: options.headingLevel,
     scheme: options.scheme ?? "light",
+    fit: fitNow(),
     fail: (message) => {
       fallBack(new Error(message));
     },
@@ -160,6 +164,8 @@ export function mountComponent(target: ParentNode & Node, node: ExpandedComponen
       // An update before a later mount: the component mounts with what it gives.
       context.params = ownParams(current.params);
       context.slots = slots;
+      // Placed now: its direction is its place's.
+      context.fit = fitNow();
       try {
         mounted = mount(element, context) ?? undefined;
       } catch (error) {
@@ -181,6 +187,8 @@ export function mountComponent(target: ParentNode & Node, node: ExpandedComponen
       slots = nextSlots;
       parent = nextParent ?? parent;
       applyBox(element, next.params, parent, options.stylesheet);
+      const fit = fitNow();
+      if (!sameFit(fit, context.fit)) context.fit = fit;
       runUpdate();
     },
     scheme(next) {

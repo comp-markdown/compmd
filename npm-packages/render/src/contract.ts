@@ -31,6 +31,18 @@ export interface Fallback {
 /** A colour scheme a component is shown in. */
 export type Scheme = "light" | "dark";
 
+/**
+ * How a component fits a drawing with an aspect ratio of its own in its box (spec §7.4): `contain` (as large as
+ * fits), `cover` (the box filled, the rest cropped) or `fill` (stretched); and where it sits, as fractions of the free
+ * space before it, from the left (`x`) and from the top (`y`), the box's direction counted in. A component whose
+ * content flows ignores it.
+ */
+export interface Fit {
+  mode: "contain" | "cover" | "fill";
+  x: 0 | 0.5 | 1;
+  y: 0 | 0.5 | 1;
+}
+
 export interface MountContext {
   params: Params;
   slots: Slots;
@@ -41,6 +53,8 @@ export interface MountContext {
   headingLevel: number;
   /** The colour scheme the component is shown in; when it changes, the renderer sets it and calls `update`. */
   scheme: Scheme;
+  /** How it fits what it draws in its box (`object-fit`, `object-position`); when it changes, the renderer sets it and calls `update`. */
+  fit: Fit;
   /**
    * The component can't draw what it was given, found after `mount` or `update` returned: W118 with `message`, and the
    * fallback in `target` until the next `update`. Not for a resource that may come back.
