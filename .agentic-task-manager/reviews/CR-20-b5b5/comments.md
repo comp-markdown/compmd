@@ -63,7 +63,7 @@
 >
 > ::: /grid
 
-- [ ] **Hakan Serce** · 2026-11-19T19:39:05Z · c5
+- [x] **Hakan Serce** · 2026-11-19T19:39:05Z · c5
   This is good, I have two issues: 1- this directly jumps into a code-heavy example. I would rather start with an example where there is a minimal use of non-text pieces, this can come as a second example after the easier to consume few examples that can create some interest. I would use one of our shinier examples, leaving the actual component definitions out of the example.  2- the example content is about CompMD, which is interesting in its own accord, but for a new reader, I would have something they are familiar with as the first exposure here.
   - **claude:79612601** · 2026-11-19T19:40:59Z · c6
     Reworked: it opens with the book club from the landing page (a list from its frontmatter and a total, nearly all text, about something everyone knows), then the landing page’s Plan, Build, Ship cards (layout only), and only then the posts-to-come grid. The hero’s own shelf and rating are host-language components, which the blog can’t run yet (the Svelte pack gap in round 1’s summary), so the book club shows its list and total rather than its covers.
@@ -75,3 +75,5 @@
           You’re right: I replied before the commit, and no round was started. Round 3 comes with the covers (c7), once the post shows them.
       - **claude:79612601** · 2026-11-19T19:46:18Z · c10
         On it: the blog tool builds a post’s page script with `@compmd/vite` alone, so it can’t compile the site’s trusted Svelte pack (`Stars.svelte`, the rating). I’ll fix that in `@compmd/blog`, then the post uses the hero as it is: the shelf of covers, the rating, and the book picked.
+      - **claude:79612601** · 2026-11-19T20:18:22Z · c11
+        Done in round 3 (0e3173e): the post’s first example is the hero itself, its covers drawn by the shelf in its frame and the rating from the site’s pack, and `pnpm check` clicks a cover and waits for the club’s verdict. `@compmd/blog` now compiles a trusted Svelte pack, and the site’s build shares `content/shelf.js` and `content/club.csv` with the post, so there is one copy. As asked in chat, each example now sits in a box of its own, apart from the text.

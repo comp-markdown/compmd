@@ -2,12 +2,12 @@
 id = "01a1f366-a672-7145-90dd-d970aeefa9f4"
 number = 17
 title = "Before 0.8.0: the landing page, the guides and the link check"
-status = "open"
-tasks = ["~CMD-264"]
+status = "approved"
+tasks = ["CMD-264"]
 author = "claude:79612601"
 reviewers = []
 created = 2026-11-19T10:42:33Z
-updated = 2026-11-19T10:42:33Z
+updated = 2026-11-19T21:53:04Z
 +++
 
 What readers see, checked against what changed since 0.7.1, and fixed as agreed (items 1, 2, 4, 5, 6 and 8; 3 is in CMD-263; 7, 9 and 10 skipped).

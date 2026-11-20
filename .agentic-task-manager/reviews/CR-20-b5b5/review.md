@@ -2,12 +2,12 @@
 id = "01a1f526-12a2-7353-a254-f28756dcb5b5"
 number = 20
 title = "The blog at /blog/, on @compmd/blog, in the site layout"
-status = "changes_requested"
+status = "approved"
 tasks = ["CMD-13"]
 author = "claude:79612601"
 reviewers = []
 created = 2026-11-19T18:51:15Z
-updated = 2026-11-19T19:46:18Z
+updated = 2026-11-19T20:58:44Z
 +++
 
 The blog at `/blog/`, built with `@compmd/blog` in a layout made from the site's header and footer (decision 2 changed as agreed: `buildSite` in the site's build, and the dev server building it for each page, instead of `cblo build` and `cblo dev`).
