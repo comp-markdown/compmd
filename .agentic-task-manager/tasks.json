@@ -694,7 +694,7 @@
       "description": "Name the first packs and say which component goes in which ([the first components](docs/first-components.md), the list and decision 9, whose pack names are placeholders). One task per component follows it (labels `component`); this task only decides the packs.\n\n## Decide\n- **The packs and their names:** for example the `compmd` definitions in one pack (card, link-card, gallery, figure, badge, sticky-note, timeline), the data components in another (chart, calendar, data-table, weather), the diagrams (graphviz, beside the Mermaid pack), the music components together (music, chord, chord-sheet, guitar-tab), jq and qr-code, and the embeds in their own permissive pack; the basics are `@compmd/basics` (decision 6).\n- **The scope** they publish under (`@comp-markdown/`, as the Mermaid and wireframe packs are) and their folders under `compmd-packs/`.\n- **Which components share a pack's version,** so a fix to one releases its pack.\n\n## Do\nWrite the packs into the first components document (replacing the placeholders in decision 9), update each component task's pack with `atm task edit`, and review with the user.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68e7d6fc0e9a"
       ],
@@ -702,7 +702,7 @@
         "compmd-packs/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-20T16:17:07Z",
+      "updated_at": "2026-11-20T16:21:21Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -724,7 +724,24 @@
       "number": 11,
       "sprint": "Packs 1: the pack tool, no-code components",
       "started_at": "2026-11-20T16:17:07Z",
-      "started_by": "claude:79612601"
+      "started_by": "claude:79612601",
+      "commit": "8acc0e3db1726853f26e235019fe518b1063ba9c",
+      "code_reviews": [
+        {
+          "id": "01a1f9c3-335d-70a7-804a-1577c4ebc8c3",
+          "ref": "CR-28"
+        }
+      ],
+      "review_requested_at": "2026-11-20T16:21:21Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-20T16:21:21Z",
+          "kind": "review",
+          "text": "CR-28: The first packs: one per component, and WebAssembly in the frames again",
+          "by": "claude:79612601"
+        }
+      ]
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68e96cefc8f6",
