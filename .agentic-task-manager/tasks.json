@@ -11777,13 +11777,14 @@
       "use_cases": [],
       "status": "blocked",
       "dependencies": [
-        "01a1f870-9ad9-761a-afe5-57c89c4468ad"
+        "01a1f870-9ad9-761a-afe5-57c89c4468ad",
+        "01a1fb1a-5845-722a-88c3-17bf2a8c3273"
       ],
       "files": [
         "compmd-packs/link-card/"
       ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T22:33:31Z",
+      "updated_at": "2026-11-20T22:40:26Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 314,
@@ -11817,13 +11818,14 @@
       "use_cases": [],
       "status": "blocked",
       "dependencies": [
-        "01a1f870-9ad9-761a-afe5-57c89c4468ad"
+        "01a1f870-9ad9-761a-afe5-57c89c4468ad",
+        "01a1fb1a-5845-722a-88c3-17bf2a8c3273"
       ],
       "files": [
         "compmd-packs/gallery/"
       ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T22:34:19Z",
+      "updated_at": "2026-11-20T22:40:27Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 315,
@@ -11856,13 +11858,14 @@
       "use_cases": [],
       "status": "blocked",
       "dependencies": [
-        "01a1ebb5-4120-7007-85a3-68e81c39ce10"
+        "01a1ebb5-4120-7007-85a3-68e81c39ce10",
+        "01a1fb1a-5845-722a-88c3-17bf2a8c3273"
       ],
       "files": [
         "compmd-packs/figure/"
       ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T22:34:35Z",
+      "updated_at": "2026-11-20T22:40:27Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 316,
@@ -11895,13 +11898,14 @@
       "use_cases": [],
       "status": "blocked",
       "dependencies": [
-        "01a1ebb5-4120-7007-85a3-68e81c39ce10"
+        "01a1ebb5-4120-7007-85a3-68e81c39ce10",
+        "01a1fb1a-5845-722a-88c3-17bf2a8c3273"
       ],
       "files": [
         "compmd-packs/badge/"
       ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T22:35:16Z",
+      "updated_at": "2026-11-20T22:40:28Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 317,
@@ -11934,13 +11938,14 @@
       "use_cases": [],
       "status": "todo",
       "dependencies": [
-        "01a1ebb5-4120-7007-85a3-68e81c39ce10"
+        "01a1ebb5-4120-7007-85a3-68e81c39ce10",
+        "01a1fb1a-5845-722a-88c3-17bf2a8c3273"
       ],
       "files": [
         "compmd-packs/sticky-note/"
       ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T16:20:55Z",
+      "updated_at": "2026-11-20T22:40:26Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 318,
@@ -11964,7 +11969,7 @@
       "description": "Item 8 of [the first list](docs/first-components.md#:~:text=Dates%20and%20what%20happened): dates and what happened, in a post or notes, `compmd` definitions on `box`; a list of items is enough.\n\n## Do\nThe definitions, a demo, tests of their expanded tree.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68e81c39ce10"
       ],
@@ -11972,7 +11977,7 @@
         "compmd-packs/timeline/"
       ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T16:20:56Z",
+      "updated_at": "2026-11-20T22:40:34Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 319,
@@ -11982,7 +11987,9 @@
           "from": "2026-11-20T10:26:02Z"
         }
       ],
-      "sprint": "Packs 1: the pack tool, no-code components"
+      "sprint": "Packs 1: the pack tool, no-code components",
+      "started_at": "2026-11-20T22:40:34Z",
+      "started_by": "claude:79612601"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57cf1d3cd690",
@@ -12997,13 +13004,14 @@
       "use_cases": [],
       "status": "blocked",
       "dependencies": [
-        "01a1ebb5-4120-7007-85a3-68e81c39ce10"
+        "01a1ebb5-4120-7007-85a3-68e81c39ce10",
+        "01a1fb1a-5845-722a-88c3-17bf2a8c3273"
       ],
       "files": [
         "compmd-packs/columns/"
       ],
       "created_at": "2026-11-20T19:03:19Z",
-      "updated_at": "2026-11-20T22:35:55Z",
+      "updated_at": "2026-11-20T22:40:28Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -13587,14 +13595,14 @@
       "description": "The no-code components of [the first list](docs/first-components.md) stop at the same few gaps in the `compmd` definition language (spec §7.2). Each blocked task asks its own question:\n\n- CMD-314 `link-card`: a link around the whole card; a caller's relative path in a param, linked in the pack's body, resolves against the pack (spec, *Relative paths*).\n- CMD-315 `gallery`: a definition can't place each item of a slot in a box of its own.\n- CMD-316 `figure`: one text as the caption and the image's alt needs the image's path as a param (the same path question).\n- CMD-317 `badge`: an inline invocation has no box, and there is no inline `box`.\n- CMD-348 `columns`: a definition can't test whether a slot was given.\n- CMD-318 `sticky-note`: a tilt and a shadow aren't box params.\n\n## Do\nA design doc, `docs/no-code-components.md`, decisions first: for each gap, the options and a recommendation, tried on the real example documents of each component, with the conformance cases each change adds or changes. One review with the maintainer; the spec changes wait for their go, and the blocked tasks are answered from it.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [],
       "files": [
         "docs/no-code-components.md",
         "docs/README.md"
       ],
       "created_at": "2026-11-20T22:36:10Z",
-      "updated_at": "2026-11-20T22:36:16Z",
+      "updated_at": "2026-11-20T22:40:18Z",
       "created_by": "claude:79612601",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -13606,7 +13614,24 @@
       "sprint": "Packs 1: the pack tool, no-code components",
       "number": 359,
       "started_at": "2026-11-20T22:36:16Z",
-      "started_by": "claude:79612601"
+      "started_by": "claude:79612601",
+      "commit": "40050cd4df5b6a334ce53151ebb661b6f991f2ed",
+      "code_reviews": [
+        {
+          "id": "01a1fb1e-206a-7149-9886-4acc2eb5395e",
+          "ref": "CR-37"
+        }
+      ],
+      "review_requested_at": "2026-11-20T22:40:18Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-20T22:40:18Z",
+          "kind": "review",
+          "text": "CR-37: What compmd definitions need for the no-code components",
+          "by": "claude:79612601"
+        }
+      ]
     }
   ]
 }

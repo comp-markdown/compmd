@@ -1,11 +1,12 @@
 # What `compmd` definitions need for the no-code components
 
 **Status: proposed (2026-11-20, CMD-359).** The no-code components of [the first list](first-components.md)
-(`link-card`, `gallery`, `figure`, `badge`, `columns`, `sticky-note`) are `compmd` definitions (spec §7.2), so
+(`link-card`, `gallery`, `figure`, `badge`, `columns`, `sticky-note`, `timeline`) are `compmd` definitions (spec §7.2), so
 every processor renders them and a plain Markdown reader reads them. `card` (CMD-313) went in as one. Each of the
 others stops at something the definition language can't say yet. This design lists those gaps and closes them with
 the smallest spec changes that do, tried on each component's own example. The spec text waits for the maintainer's
-go. The blocked tasks (CMD-314, CMD-315, CMD-316, CMD-317, CMD-348) are answered from it, and CMD-318 waits for it.
+go. The blocked tasks (CMD-314, CMD-315, CMD-316, CMD-317, CMD-348) are answered from it, and CMD-318 and CMD-319
+wait for it.
 
 **Terms.** The **caller** is the document whose invocation uses a definition. A **destination** is a link's or an
 image's URL. A **base** is the file a relative destination resolves against (spec §8.6, *Relative paths*): today the
@@ -43,10 +44,12 @@ definition's own file for a destination written in its body, and the caller's fo
    `columns` counts its columns from the slots given, and `::: if {when=(md.slots.middle)}` leaves out an empty one.
    - **Rejected:** a `count` param. It says twice what the slots say, and `count=2` with a `:: #middle` loses the
      middle column without a word.
-6. **`shadow` and `rotate`, two common params** (§9.2): `shadow` is `none`, `s`, `m` or `l`, from the visual tokens
-   (`--compmd-shadow-s` …), as `border-radius` is; `rotate` is an angle in `deg` from `-15deg` to `15deg`, as CSS's
-   `rotate`, which moves nothing around it. Both print. They are for a box that stands out of the page, as a sticky
-   note does; a component can't add them, since a pack ships no CSS.
+6. **`shadow`, `rotate` and `border`'s sides, common params** (§9.2): `shadow` is `none`, `s`, `m` or `l`, from the
+   visual tokens (`--compmd-shadow-s` …), as `border-radius` is; `rotate` is an angle in `deg` from `-15deg` to
+   `15deg`, as CSS's `rotate`, which moves nothing around it; `border-inline-start`, `border-inline-end`,
+   `border-block-start` and `border-block-end` take `border`'s values, as `padding`'s sides take `padding`'s, `border`
+   covering them in the cascade of §7. All print. A sticky note stands out of the page, and a timeline's line runs
+   along its start edge; a component can't add them, since a pack ships no CSS.
    - **Rejected:** letting a pack ship a stylesheet for its definitions. CSS from a pack in the host's page can cover
      the page with its own content and load URLs (`url()`), which the sandbox exists to prevent.
 7. **`gallery` needs no change of its own** once decision 1 is in: it is a leaf over data rows, each one a `card`
@@ -168,6 +171,23 @@ Bring the tide table: the quay floods at high water.
 ::: /sticky-note
 ````
 
+````md
+<!-- timeline (decision 6) -->
+```compmd component=timeline {border-inline-start=strong padding-inline-start=m}
+---
+{{md.slot}}
+```
+
+::: timeline
+- **1897**: the harbour wall is built.
+- **1952**: the quay is rebuilt after the storm.
+- **2024**: the lamps along the quay come back.
+::: /timeline
+````
+
+A list of items is enough, as the first list says. The dates are the caller's text, so a plain reader keeps them,
+and the line is the box's start border, on the right in a right-to-left document.
+
 ## Gaps left
 
 - **A definition can't report a diagnostic of its own.** `columns` with `split=wide-middle` and no middle slot draws
@@ -191,13 +211,14 @@ Bring the tide table: the quay floods at high water.
 | **new** `validate/stretch-link-W124` | 3 | the flag on a box, a component and a fence; without a link in the box, W124 |
 | **new** `expand/inline-invocation-box` | 4 | an inline use of a definition with fence params: a `componentInline` box, the fence's params under the caller's; layout params left out |
 | **new** `expand/md-slots` | 5 | `md.slots.middle` true and false, in a fence param and an `if` |
-| **new** `validate/shadow-and-rotate` | 6 | each `shadow` token, `rotate` at its bounds and past them (F009) |
+| **new** `validate/shadow-rotate-and-border-sides` | 6 | each `shadow` token, `rotate` at its bounds and past them (F009), each border side with each `border` value |
+| **new** `expand/border-sides-cascade` | 6 | a fence's `border` under a caller's `border-inline-start`, and the reverse: per side, as `padding`'s |
 
 **Existing cases.** No case expands an inline use of a `compmd` definition: the inline cases are `:value` and
 parsing (`inline/*`), and `examples/spec-16-release-notes`'s `:badge[beta]{tone=info}` is imported and only parsed, so
 decision 4 changes none. The cases with interpolated destinations (`expand/url-interpolation-W109`,
 `expand/code-renderer-alt-interpolation`) are in documents, not definition bodies, so decision 1 leaves them as they
-are. No case uses `md.fallback`, `md.slots`, `stretch-link`, `shadow` or `rotate`, as a name or a param.
+are. No case uses `md.fallback`, `md.slots`, `stretch-link`, `shadow`, `rotate` or a border side, as a name or a param.
 
 ## What changes
 
@@ -206,6 +227,6 @@ are. No case uses `md.fallback`, `md.slots`, `stretch-link`, `shadow` or `rotate
   `shadow`, `rotate`; their tokens in §9.4), §10 (W124, decision 3), §12.3 (the inline box), the changelog
   under *Unreleased*.
 - **Processor:** the bases of decision 1, `md.fallback`, `md.slots`, the inline box, the three params' validation.
-- **Renderer:** the inline box, `stretch-link`'s CSS, `shadow` and `rotate`.
-- **Packs:** `link-card`, `gallery`, `figure`, `badge`, `columns`, `sticky-note`, each with its demo and tests, as
-  their tasks say.
+- **Renderer:** the inline box, `stretch-link`'s CSS, `shadow`, `rotate` and the border sides.
+- **Packs:** `link-card`, `gallery`, `figure`, `badge`, `columns`, `sticky-note`, `timeline`, each with its demo and
+  tests, as their tasks say.
