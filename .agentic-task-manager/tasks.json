@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 340,
+    "next_number": 345,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -291,15 +291,58 @@
         }
       },
       {
-        "id": "Editor support",
-        "state": "planned",
-        "goal": "CompMD in VS Code, Neovim, Helix, Zed and Emacs: a tree-sitter grammar, a TextMate grammar and a language server"
-      },
-      {
         "id": "Packs & Blog",
         "state": "active",
         "goal": "Wrapping an npm package as a pack takes one command; a first set of packs, shown on the website; a blog section with its first posts.",
         "start": "2026-11-19T16:35:06Z"
+      },
+      {
+        "id": "Packs 1: the pack tool, no-code components",
+        "state": "planned",
+        "goal": "From 2026-11-23. Wrapping an npm package as a pack takes one command; the first packs named; card, link-card, gallery, figure, badge, sticky-note, timeline and rating; the post Why CompMD.",
+        "due": "2026-11-25"
+      },
+      {
+        "id": "Editors 1: Neovim, Helix and Emacs",
+        "state": "planned",
+        "goal": "From 2026-11-26. The language server, the tree-sitter grammar and a browser preview, and CompMD in Neovim, Helix and Emacs; a post on it.",
+        "due": "2026-11-30"
+      },
+      {
+        "id": "Packs 2: the basics, and data",
+        "state": "planned",
+        "goal": "From 2026-12-01. @compmd/basics (tabs, details, steps), chart, calendar, data-table and weather, the website’s components section; the post on where CompMD is and its roadmap.",
+        "due": "2026-12-03"
+      },
+      {
+        "id": "Editors 2: VS Code and Zed",
+        "state": "planned",
+        "goal": "From 2026-12-04. The TextMate grammar, CompMD in VS Code and Zed, Shiki highlighting CompMD, and the language server’s templates, formatter and refactorings; a post on it.",
+        "due": "2026-12-08"
+      },
+      {
+        "id": "Packs 3: diagrams and code",
+        "state": "planned",
+        "goal": "From 2026-12-09. graphviz, jq and qr-code; the post MDX and CompMD.",
+        "due": "2026-12-11"
+      },
+      {
+        "id": "Packs 4: music",
+        "state": "planned",
+        "goal": "From 2026-12-14. Sheet music played offline, chord diagrams, chord sheets and guitar tabs; a post on music notes and songbooks with CompMD and @compmd/blog.",
+        "due": "2026-12-16"
+      },
+      {
+        "id": "Packs 5: embeds",
+        "state": "planned",
+        "goal": "From 2026-12-17. A permissive frame that opens a provider’s player, and YouTube, Spotify, Vimeo, SoundCloud, Bluesky, X and CodePen; images in a component’s frame; a post on embeds.",
+        "due": "2026-12-21"
+      },
+      {
+        "id": "Packs 6: drawing in documents",
+        "state": "planned",
+        "goal": "From 2026-12-22. State a component keeps, and an Excalidraw pack; a post on using CompMD for developer documentation.",
+        "due": "2026-12-24"
       },
       {
         "id": "Audit - Nov19",
@@ -467,7 +510,7 @@
         "docs/wrapping-an-npm-package.md"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-20T10:10:28Z",
+      "updated_at": "2026-11-20T10:26:02Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "with": "user",
@@ -477,8 +520,13 @@
           "sprint": "Packs & Blog",
           "from": "2026-11-19T16:36:50Z",
           "to": "2026-11-20T10:10:28Z"
+        },
+        {
+          "sprint": "Packs 1: the pack tool, no-code components",
+          "from": "2026-11-20T10:26:02Z"
         }
-      ]
+      ],
+      "sprint": "Packs 1: the pack tool, no-code components"
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68e63c5137a7",
@@ -501,7 +549,7 @@
         "npm-packages/create-pack/src/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-20T10:10:28Z",
+      "updated_at": "2026-11-20T10:26:02Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -514,9 +562,14 @@
           "sprint": "Packs & Blog",
           "from": "2026-11-19T10:12:52Z",
           "to": "2026-11-20T10:10:28Z"
+        },
+        {
+          "sprint": "Packs 1: the pack tool, no-code components",
+          "from": "2026-11-20T10:26:02Z"
         }
       ],
-      "number": 9
+      "number": 9,
+      "sprint": "Packs 1: the pack tool, no-code components"
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68e7d6fc0e9a",
@@ -623,7 +676,7 @@
         "compmd-packs/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-20T10:10:29Z",
+      "updated_at": "2026-11-20T10:26:02Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -636,9 +689,14 @@
           "sprint": "Packs & Blog",
           "from": "2026-11-19T10:12:52Z",
           "to": "2026-11-20T10:10:28Z"
+        },
+        {
+          "sprint": "Packs 1: the pack tool, no-code components",
+          "from": "2026-11-20T10:26:02Z"
         }
       ],
-      "number": 11
+      "number": 11,
+      "sprint": "Packs 1: the pack tool, no-code components"
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68e96cefc8f6",
@@ -660,7 +718,7 @@
         "website/build/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-20T10:10:28Z",
+      "updated_at": "2026-11-20T10:26:03Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -673,10 +731,15 @@
           "sprint": "Packs & Blog",
           "from": "2026-11-19T10:12:52Z",
           "to": "2026-11-20T10:10:28Z"
+        },
+        {
+          "sprint": "Packs 2: the basics, and data",
+          "from": "2026-11-20T10:26:03Z"
         }
       ],
       "with": "user",
-      "number": 12
+      "number": 12,
+      "sprint": "Packs 2: the basics, and data"
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68ea9d5906c3",
@@ -807,7 +870,7 @@
         "website/blog/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-20T10:10:28Z",
+      "updated_at": "2026-11-20T10:26:02Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -820,10 +883,15 @@
           "sprint": "Packs & Blog",
           "from": "2026-11-19T10:12:52Z",
           "to": "2026-11-20T10:10:28Z"
+        },
+        {
+          "sprint": "Packs 1: the pack tool, no-code components",
+          "from": "2026-11-20T10:26:02Z"
         }
       ],
       "with": "user",
-      "number": 14
+      "number": 14,
+      "sprint": "Packs 1: the pack tool, no-code components"
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68ecc9cfcfc3",
@@ -844,7 +912,7 @@
         "website/blog/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-20T10:10:28Z",
+      "updated_at": "2026-11-20T10:26:03Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -857,10 +925,15 @@
           "sprint": "Packs & Blog",
           "from": "2026-11-19T10:12:52Z",
           "to": "2026-11-20T10:10:28Z"
+        },
+        {
+          "sprint": "Packs 2: the basics, and data",
+          "from": "2026-11-20T10:26:03Z"
         }
       ],
       "with": "user",
-      "number": 15
+      "number": 15,
+      "sprint": "Packs 2: the basics, and data"
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68ed0184b787",
@@ -881,7 +954,7 @@
         "website/blog/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-20T10:10:28Z",
+      "updated_at": "2026-11-20T10:26:03Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -894,10 +967,15 @@
           "sprint": "Packs & Blog",
           "from": "2026-11-19T10:12:52Z",
           "to": "2026-11-20T10:10:28Z"
+        },
+        {
+          "sprint": "Packs 3: diagrams and code",
+          "from": "2026-11-20T10:26:03Z"
         }
       ],
       "with": "user",
-      "number": 16
+      "number": 16,
+      "sprint": "Packs 3: diagrams and code"
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68ee6b325353",
@@ -919,7 +997,7 @@
         "spec/compmd-spec-v1.md"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-20T10:10:28Z",
+      "updated_at": "2026-11-20T10:26:04Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "with": "user",
@@ -929,8 +1007,13 @@
           "sprint": "Packs & Blog",
           "from": "2026-11-19T16:36:50Z",
           "to": "2026-11-20T10:10:28Z"
+        },
+        {
+          "sprint": "Packs 6: drawing in documents",
+          "from": "2026-11-20T10:26:04Z"
         }
-      ]
+      ],
+      "sprint": "Packs 6: drawing in documents"
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68efa9d8fbb8",
@@ -953,7 +1036,7 @@
         "compmd-packs/excalidraw/src/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-20T10:10:28Z",
+      "updated_at": "2026-11-20T10:26:04Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -966,9 +1049,14 @@
           "sprint": "Packs & Blog",
           "from": "2026-11-19T10:12:52Z",
           "to": "2026-11-20T10:10:28Z"
+        },
+        {
+          "sprint": "Packs 6: drawing in documents",
+          "from": "2026-11-20T10:26:04Z"
         }
       ],
-      "number": 18
+      "number": 18,
+      "sprint": "Packs 6: drawing in documents"
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68f0d62886dc",
@@ -1003,16 +1091,21 @@
       "dependencies": [],
       "files": [],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-20T10:26:02Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "sprint_history": [
         {
           "sprint": "Editor support",
-          "from": "2026-11-17T22:51:26Z"
+          "from": "2026-11-17T22:51:26Z",
+          "to": "2026-11-20T10:26:02Z"
+        },
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-20T10:26:02Z"
         }
       ],
-      "sprint": "Editor support",
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
       "number": 20
     },
     {
@@ -1027,16 +1120,21 @@
       "dependencies": [],
       "files": [],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-20T10:26:03Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "sprint_history": [
         {
           "sprint": "Editor support",
-          "from": "2026-11-17T22:51:26Z"
+          "from": "2026-11-17T22:51:26Z",
+          "to": "2026-11-20T10:26:03Z"
+        },
+        {
+          "sprint": "Editors 2: VS Code and Zed",
+          "from": "2026-11-20T10:26:03Z"
         }
       ],
-      "sprint": "Editor support",
+      "sprint": "Editors 2: VS Code and Zed",
       "number": 21
     },
     {
@@ -1056,16 +1154,21 @@
         "npm-packages/pack/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-18T01:19:02Z",
+      "updated_at": "2026-11-20T10:26:03Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
         {
           "sprint": "Editor support",
-          "from": "2026-11-17T22:51:26Z"
+          "from": "2026-11-17T22:51:26Z",
+          "to": "2026-11-20T10:26:03Z"
+        },
+        {
+          "sprint": "Editors 2: VS Code and Zed",
+          "from": "2026-11-20T10:26:03Z"
         }
       ],
-      "sprint": "Editor support",
+      "sprint": "Editors 2: VS Code and Zed",
       "number": 22
     },
     {
@@ -1082,16 +1185,21 @@
         "crates/processor/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-18T01:19:03Z",
+      "updated_at": "2026-11-20T10:26:02Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
         {
           "sprint": "Editor support",
-          "from": "2026-11-17T22:51:26Z"
+          "from": "2026-11-17T22:51:26Z",
+          "to": "2026-11-20T10:26:02Z"
+        },
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-20T10:26:02Z"
         }
       ],
-      "sprint": "Editor support",
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
       "number": 23
     },
     {
@@ -1108,16 +1216,21 @@
       ],
       "files": [],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-20T10:26:02Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "sprint_history": [
         {
           "sprint": "Editor support",
-          "from": "2026-11-17T22:51:26Z"
+          "from": "2026-11-17T22:51:26Z",
+          "to": "2026-11-20T10:26:02Z"
+        },
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-20T10:26:02Z"
         }
       ],
-      "sprint": "Editor support",
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
       "number": 24
     },
     {
@@ -1138,16 +1251,21 @@
       ],
       "files": [],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-20T10:26:03Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "sprint_history": [
         {
           "sprint": "Editor support",
-          "from": "2026-11-17T22:51:26Z"
+          "from": "2026-11-17T22:51:26Z",
+          "to": "2026-11-20T10:26:03Z"
+        },
+        {
+          "sprint": "Editors 2: VS Code and Zed",
+          "from": "2026-11-20T10:26:03Z"
         }
       ],
-      "sprint": "Editor support",
+      "sprint": "Editors 2: VS Code and Zed",
       "number": 25
     },
     {
@@ -1167,16 +1285,21 @@
       ],
       "files": [],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-20T10:26:02Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "sprint_history": [
         {
           "sprint": "Editor support",
-          "from": "2026-11-17T22:51:26Z"
+          "from": "2026-11-17T22:51:26Z",
+          "to": "2026-11-20T10:26:02Z"
+        },
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-20T10:26:02Z"
         }
       ],
-      "sprint": "Editor support",
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
       "number": 26
     },
     {
@@ -1196,16 +1319,21 @@
       ],
       "files": [],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-20T10:26:02Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "sprint_history": [
         {
           "sprint": "Editor support",
-          "from": "2026-11-17T22:51:26Z"
+          "from": "2026-11-17T22:51:26Z",
+          "to": "2026-11-20T10:26:02Z"
+        },
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-20T10:26:02Z"
         }
       ],
-      "sprint": "Editor support",
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
       "number": 27
     },
     {
@@ -1225,16 +1353,21 @@
       ],
       "files": [],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-20T10:26:03Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "sprint_history": [
         {
           "sprint": "Editor support",
-          "from": "2026-11-17T22:51:26Z"
+          "from": "2026-11-17T22:51:26Z",
+          "to": "2026-11-20T10:26:03Z"
+        },
+        {
+          "sprint": "Editors 2: VS Code and Zed",
+          "from": "2026-11-20T10:26:03Z"
         }
       ],
-      "sprint": "Editor support",
+      "sprint": "Editors 2: VS Code and Zed",
       "number": 28
     },
     {
@@ -1254,16 +1387,21 @@
       ],
       "files": [],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-20T10:26:02Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "sprint_history": [
         {
           "sprint": "Editor support",
-          "from": "2026-11-17T22:51:26Z"
+          "from": "2026-11-17T22:51:26Z",
+          "to": "2026-11-20T10:26:02Z"
+        },
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-20T10:26:02Z"
         }
       ],
-      "sprint": "Editor support",
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
       "number": 29
     },
     {
@@ -1281,16 +1419,21 @@
       ],
       "files": [],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-17T23:53:08Z",
+      "updated_at": "2026-11-20T10:26:02Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
         {
           "sprint": "Editor support",
-          "from": "2026-11-17T22:51:26Z"
+          "from": "2026-11-17T22:51:26Z",
+          "to": "2026-11-20T10:26:02Z"
+        },
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-20T10:26:02Z"
         }
       ],
-      "sprint": "Editor support",
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
       "number": 30
     },
     {
@@ -1315,16 +1458,21 @@
         "npm-packages/sandbox/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-18T01:19:03Z",
+      "updated_at": "2026-11-20T10:26:03Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
         {
           "sprint": "Editor support",
-          "from": "2026-11-17T22:51:26Z"
+          "from": "2026-11-17T22:51:26Z",
+          "to": "2026-11-20T10:26:03Z"
+        },
+        {
+          "sprint": "Editors 2: VS Code and Zed",
+          "from": "2026-11-20T10:26:03Z"
         }
       ],
-      "sprint": "Editor support",
+      "sprint": "Editors 2: VS Code and Zed",
       "number": 31
     },
     {
@@ -1344,16 +1492,21 @@
         "docs/releases.md"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-20T10:26:02Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "sprint_history": [
         {
           "sprint": "Editor support",
-          "from": "2026-11-17T22:51:26Z"
+          "from": "2026-11-17T22:51:26Z",
+          "to": "2026-11-20T10:26:02Z"
+        },
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-20T10:26:02Z"
         }
       ],
-      "sprint": "Editor support",
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
       "number": 32
     },
     {
@@ -1370,16 +1523,21 @@
       ],
       "files": [],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-20T10:26:03Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "sprint_history": [
         {
           "sprint": "Editor support",
-          "from": "2026-11-17T22:51:26Z"
+          "from": "2026-11-17T22:51:26Z",
+          "to": "2026-11-20T10:26:03Z"
+        },
+        {
+          "sprint": "Editors 2: VS Code and Zed",
+          "from": "2026-11-20T10:26:03Z"
         }
       ],
-      "sprint": "Editor support",
+      "sprint": "Editors 2: VS Code and Zed",
       "number": 33
     },
     {
@@ -1396,16 +1554,21 @@
       ],
       "files": [],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-20T10:26:03Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "sprint_history": [
         {
           "sprint": "Editor support",
-          "from": "2026-11-17T22:51:26Z"
+          "from": "2026-11-17T22:51:26Z",
+          "to": "2026-11-20T10:26:03Z"
+        },
+        {
+          "sprint": "Editors 2: VS Code and Zed",
+          "from": "2026-11-20T10:26:03Z"
         }
       ],
-      "sprint": "Editor support",
+      "sprint": "Editors 2: VS Code and Zed",
       "number": 34
     },
     {
@@ -1422,16 +1585,21 @@
       ],
       "files": [],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-17T22:51:26Z",
+      "updated_at": "2026-11-20T10:26:03Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "sprint_history": [
         {
           "sprint": "Editor support",
-          "from": "2026-11-17T22:51:26Z"
+          "from": "2026-11-17T22:51:26Z",
+          "to": "2026-11-20T10:26:03Z"
+        },
+        {
+          "sprint": "Editors 2: VS Code and Zed",
+          "from": "2026-11-20T10:26:03Z"
         }
       ],
-      "sprint": "Editor support",
+      "sprint": "Editors 2: VS Code and Zed",
       "number": 35
     },
     {
@@ -8471,17 +8639,22 @@
         "docs/editor-support.md"
       ],
       "created_at": "2026-11-17T23:47:24Z",
-      "updated_at": "2026-11-17T23:53:05Z",
+      "updated_at": "2026-11-20T10:26:02Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 247,
       "sprint_history": [
         {
           "sprint": "Editor support",
-          "from": "2026-11-17T23:53:05Z"
+          "from": "2026-11-17T23:53:05Z",
+          "to": "2026-11-20T10:26:02Z"
+        },
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-20T10:26:02Z"
         }
       ],
-      "sprint": "Editor support"
+      "sprint": "Editors 1: Neovim, Helix and Emacs"
     },
     {
       "id": "01a1ec8f-a4a9-7227-a145-bb45fdfe91ce",
@@ -9657,7 +9830,7 @@
         "docs/first-components.md"
       ],
       "created_at": "2026-11-19T19:04:03Z",
-      "updated_at": "2026-11-20T10:10:28Z",
+      "updated_at": "2026-11-20T10:26:04Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -9665,9 +9838,14 @@
           "sprint": "Packs & Blog",
           "from": "2026-11-19T19:04:03Z",
           "to": "2026-11-20T10:10:28Z"
+        },
+        {
+          "sprint": "Packs 5: embeds",
+          "from": "2026-11-20T10:26:04Z"
         }
       ],
-      "number": 266
+      "number": 266,
+      "sprint": "Packs 5: embeds"
     },
     {
       "id": "01a1f58e-3f17-745f-a6cf-bb3826b73142",
@@ -11235,11 +11413,18 @@
         "docs/first-components.md"
       ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:26:03Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "with": "user",
-      "number": 309
+      "number": 309,
+      "sprint_history": [
+        {
+          "sprint": "Packs 2: the basics, and data",
+          "from": "2026-11-20T10:26:03Z"
+        }
+      ],
+      "sprint": "Packs 2: the basics, and data"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57c5218b7632",
@@ -11259,10 +11444,17 @@
       ],
       "files": [],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:26:03Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
-      "number": 310
+      "updated_by": "claude:79612601",
+      "number": 310,
+      "sprint_history": [
+        {
+          "sprint": "Packs 2: the basics, and data",
+          "from": "2026-11-20T10:26:03Z"
+        }
+      ],
+      "sprint": "Packs 2: the basics, and data"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57c69d23f2a7",
@@ -11282,10 +11474,17 @@
       ],
       "files": [],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:26:03Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
-      "number": 311
+      "updated_by": "claude:79612601",
+      "number": 311,
+      "sprint_history": [
+        {
+          "sprint": "Packs 2: the basics, and data",
+          "from": "2026-11-20T10:26:03Z"
+        }
+      ],
+      "sprint": "Packs 2: the basics, and data"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57c79b0ae4a9",
@@ -11305,10 +11504,17 @@
       ],
       "files": [],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:26:03Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
-      "number": 312
+      "updated_by": "claude:79612601",
+      "number": 312,
+      "sprint_history": [
+        {
+          "sprint": "Packs 2: the basics, and data",
+          "from": "2026-11-20T10:26:03Z"
+        }
+      ],
+      "sprint": "Packs 2: the basics, and data"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57c89c4468ad",
@@ -11328,10 +11534,17 @@
       ],
       "files": [],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:26:02Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
-      "number": 313
+      "updated_by": "claude:79612601",
+      "number": 313,
+      "sprint_history": [
+        {
+          "sprint": "Packs 1: the pack tool, no-code components",
+          "from": "2026-11-20T10:26:02Z"
+        }
+      ],
+      "sprint": "Packs 1: the pack tool, no-code components"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57c971faed2b",
@@ -11351,10 +11564,17 @@
       ],
       "files": [],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:26:02Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
-      "number": 314
+      "updated_by": "claude:79612601",
+      "number": 314,
+      "sprint_history": [
+        {
+          "sprint": "Packs 1: the pack tool, no-code components",
+          "from": "2026-11-20T10:26:02Z"
+        }
+      ],
+      "sprint": "Packs 1: the pack tool, no-code components"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57ca797541ca",
@@ -11374,10 +11594,17 @@
       ],
       "files": [],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:26:02Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
-      "number": 315
+      "updated_by": "claude:79612601",
+      "number": 315,
+      "sprint_history": [
+        {
+          "sprint": "Packs 1: the pack tool, no-code components",
+          "from": "2026-11-20T10:26:02Z"
+        }
+      ],
+      "sprint": "Packs 1: the pack tool, no-code components"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57cb4e452c2e",
@@ -11397,10 +11624,17 @@
       ],
       "files": [],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:26:02Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
-      "number": 316
+      "updated_by": "claude:79612601",
+      "number": 316,
+      "sprint_history": [
+        {
+          "sprint": "Packs 1: the pack tool, no-code components",
+          "from": "2026-11-20T10:26:02Z"
+        }
+      ],
+      "sprint": "Packs 1: the pack tool, no-code components"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57cc97043c32",
@@ -11420,10 +11654,17 @@
       ],
       "files": [],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:26:02Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
-      "number": 317
+      "updated_by": "claude:79612601",
+      "number": 317,
+      "sprint_history": [
+        {
+          "sprint": "Packs 1: the pack tool, no-code components",
+          "from": "2026-11-20T10:26:02Z"
+        }
+      ],
+      "sprint": "Packs 1: the pack tool, no-code components"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57cd298ee930",
@@ -11443,10 +11684,17 @@
       ],
       "files": [],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:26:02Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
-      "number": 318
+      "updated_by": "claude:79612601",
+      "number": 318,
+      "sprint_history": [
+        {
+          "sprint": "Packs 1: the pack tool, no-code components",
+          "from": "2026-11-20T10:26:02Z"
+        }
+      ],
+      "sprint": "Packs 1: the pack tool, no-code components"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57ce340e98a8",
@@ -11466,10 +11714,17 @@
       ],
       "files": [],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:26:02Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
-      "number": 319
+      "updated_by": "claude:79612601",
+      "number": 319,
+      "sprint_history": [
+        {
+          "sprint": "Packs 1: the pack tool, no-code components",
+          "from": "2026-11-20T10:26:02Z"
+        }
+      ],
+      "sprint": "Packs 1: the pack tool, no-code components"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57cf1d3cd690",
@@ -11489,10 +11744,17 @@
       ],
       "files": [],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:26:02Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
-      "number": 320
+      "updated_by": "claude:79612601",
+      "number": 320,
+      "sprint_history": [
+        {
+          "sprint": "Packs 1: the pack tool, no-code components",
+          "from": "2026-11-20T10:26:02Z"
+        }
+      ],
+      "sprint": "Packs 1: the pack tool, no-code components"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57d0fdf51265",
@@ -11513,10 +11775,17 @@
       ],
       "files": [],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:26:03Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
-      "number": 321
+      "updated_by": "claude:79612601",
+      "number": 321,
+      "sprint_history": [
+        {
+          "sprint": "Packs 2: the basics, and data",
+          "from": "2026-11-20T10:26:03Z"
+        }
+      ],
+      "sprint": "Packs 2: the basics, and data"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57d19b73104e",
@@ -11536,10 +11805,17 @@
       ],
       "files": [],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:26:03Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
-      "number": 322
+      "updated_by": "claude:79612601",
+      "number": 322,
+      "sprint_history": [
+        {
+          "sprint": "Packs 2: the basics, and data",
+          "from": "2026-11-20T10:26:03Z"
+        }
+      ],
+      "sprint": "Packs 2: the basics, and data"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57d2f4c2efe3",
@@ -11559,10 +11835,17 @@
       ],
       "files": [],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:26:03Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
-      "number": 323
+      "updated_by": "claude:79612601",
+      "number": 323,
+      "sprint_history": [
+        {
+          "sprint": "Packs 2: the basics, and data",
+          "from": "2026-11-20T10:26:03Z"
+        }
+      ],
+      "sprint": "Packs 2: the basics, and data"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57d3471661ac",
@@ -11583,10 +11866,17 @@
       ],
       "files": [],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:26:03Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
-      "number": 324
+      "updated_by": "claude:79612601",
+      "number": 324,
+      "sprint_history": [
+        {
+          "sprint": "Packs 3: diagrams and code",
+          "from": "2026-11-20T10:26:03Z"
+        }
+      ],
+      "sprint": "Packs 3: diagrams and code"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57d4c23094f6",
@@ -11607,10 +11897,17 @@
       ],
       "files": [],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:26:03Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
-      "number": 325
+      "updated_by": "claude:79612601",
+      "number": 325,
+      "sprint_history": [
+        {
+          "sprint": "Packs 2: the basics, and data",
+          "from": "2026-11-20T10:26:03Z"
+        }
+      ],
+      "sprint": "Packs 2: the basics, and data"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57d520d37f01",
@@ -11631,10 +11928,17 @@
       ],
       "files": [],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:26:03Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
-      "number": 326
+      "updated_by": "claude:79612601",
+      "number": 326,
+      "sprint_history": [
+        {
+          "sprint": "Packs 3: diagrams and code",
+          "from": "2026-11-20T10:26:03Z"
+        }
+      ],
+      "sprint": "Packs 3: diagrams and code"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57d6ed6e5247",
@@ -11655,10 +11959,17 @@
       ],
       "files": [],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:26:03Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
-      "number": 327
+      "updated_by": "claude:79612601",
+      "number": 327,
+      "sprint_history": [
+        {
+          "sprint": "Packs 4: music",
+          "from": "2026-11-20T10:26:03Z"
+        }
+      ],
+      "sprint": "Packs 4: music"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57d77c0c0013",
@@ -11679,10 +11990,17 @@
       ],
       "files": [],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:26:03Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
-      "number": 328
+      "updated_by": "claude:79612601",
+      "number": 328,
+      "sprint_history": [
+        {
+          "sprint": "Packs 4: music",
+          "from": "2026-11-20T10:26:03Z"
+        }
+      ],
+      "sprint": "Packs 4: music"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57d8f585a478",
@@ -11702,10 +12020,17 @@
       ],
       "files": [],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:26:03Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
-      "number": 329
+      "updated_by": "claude:79612601",
+      "number": 329,
+      "sprint_history": [
+        {
+          "sprint": "Packs 4: music",
+          "from": "2026-11-20T10:26:03Z"
+        }
+      ],
+      "sprint": "Packs 4: music"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57d9a242182b",
@@ -11726,10 +12051,17 @@
       ],
       "files": [],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:26:03Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
-      "number": 330
+      "updated_by": "claude:79612601",
+      "number": 330,
+      "sprint_history": [
+        {
+          "sprint": "Packs 4: music",
+          "from": "2026-11-20T10:26:03Z"
+        }
+      ],
+      "sprint": "Packs 4: music"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57da7bb9f0ca",
@@ -11750,10 +12082,17 @@
       ],
       "files": [],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:26:03Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
-      "number": 331
+      "updated_by": "claude:79612601",
+      "number": 331,
+      "sprint_history": [
+        {
+          "sprint": "Packs 3: diagrams and code",
+          "from": "2026-11-20T10:26:03Z"
+        }
+      ],
+      "sprint": "Packs 3: diagrams and code"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57dbe40450cc",
@@ -11777,11 +12116,18 @@
         "npm-packages/sandbox/src/use.ts"
       ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:26:04Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "with": "user",
-      "number": 332
+      "number": 332,
+      "sprint_history": [
+        {
+          "sprint": "Packs 5: embeds",
+          "from": "2026-11-20T10:26:04Z"
+        }
+      ],
+      "sprint": "Packs 5: embeds"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57dc2e07c59f",
@@ -11801,10 +12147,17 @@
       ],
       "files": [],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:26:04Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
-      "number": 333
+      "updated_by": "claude:79612601",
+      "number": 333,
+      "sprint_history": [
+        {
+          "sprint": "Packs 5: embeds",
+          "from": "2026-11-20T10:26:04Z"
+        }
+      ],
+      "sprint": "Packs 5: embeds"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57dd80489563",
@@ -11824,10 +12177,17 @@
       ],
       "files": [],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:26:04Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
-      "number": 334
+      "updated_by": "claude:79612601",
+      "number": 334,
+      "sprint_history": [
+        {
+          "sprint": "Packs 5: embeds",
+          "from": "2026-11-20T10:26:04Z"
+        }
+      ],
+      "sprint": "Packs 5: embeds"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57dee26e5d59",
@@ -11847,10 +12207,17 @@
       ],
       "files": [],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:26:04Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
-      "number": 335
+      "updated_by": "claude:79612601",
+      "number": 335,
+      "sprint_history": [
+        {
+          "sprint": "Packs 5: embeds",
+          "from": "2026-11-20T10:26:04Z"
+        }
+      ],
+      "sprint": "Packs 5: embeds"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57dff706534a",
@@ -11870,10 +12237,17 @@
       ],
       "files": [],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:26:04Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
-      "number": 336
+      "updated_by": "claude:79612601",
+      "number": 336,
+      "sprint_history": [
+        {
+          "sprint": "Packs 5: embeds",
+          "from": "2026-11-20T10:26:04Z"
+        }
+      ],
+      "sprint": "Packs 5: embeds"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57e0f4291c04",
@@ -11893,10 +12267,17 @@
       ],
       "files": [],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:26:04Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
-      "number": 337
+      "updated_by": "claude:79612601",
+      "number": 337,
+      "sprint_history": [
+        {
+          "sprint": "Packs 5: embeds",
+          "from": "2026-11-20T10:26:04Z"
+        }
+      ],
+      "sprint": "Packs 5: embeds"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57e14d51322b",
@@ -11916,10 +12297,17 @@
       ],
       "files": [],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:26:04Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
-      "number": 338
+      "updated_by": "claude:79612601",
+      "number": 338,
+      "sprint_history": [
+        {
+          "sprint": "Packs 5: embeds",
+          "from": "2026-11-20T10:26:04Z"
+        }
+      ],
+      "sprint": "Packs 5: embeds"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57e2c628e5b9",
@@ -11939,10 +12327,178 @@
       ],
       "files": [],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T10:11:31Z",
+      "updated_at": "2026-11-20T10:26:04Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
+      "number": 339,
+      "sprint_history": [
+        {
+          "sprint": "Packs 5: embeds",
+          "from": "2026-11-20T10:26:04Z"
+        }
+      ],
+      "sprint": "Packs 5: embeds"
+    },
+    {
+      "id": "01a1f87e-62f3-721c-a878-aef58a5a1477",
+      "name": "Blog: CompMD in Vim, Helix and Emacs",
+      "type": "docs",
+      "priority": "P2",
+      "labels": [
+        "website"
+      ],
+      "description": "A post on writing CompMD in Neovim, Helix and Emacs: what the language server gives (diagnostics, hints, completions), the tree-sitter highlighting, the browser preview beside the editor, and how to install each, with screenshots. Written as a CompMD document in `website/blog/posts/`, in plain wording, drafted and reviewed with the user before it is published.\n\nPublishing (the push) needs the user's go.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68f7e63b4bc7",
+        "01a1ebb5-4120-7007-85a3-68f88dfb60a2",
+        "01a1ebb5-4120-7007-85a3-68fa0ba359f5"
+      ],
+      "files": [
+        "website/blog/"
+      ],
+      "created_at": "2026-11-20T10:26:34Z",
+      "updated_at": "2026-11-20T10:26:34Z",
       "created_by": "Hakan Serce",
       "updated_by": "Hakan Serce",
-      "number": 339
+      "sprint_history": [
+        {
+          "sprint": "Editors 1: Neovim, Helix and Emacs",
+          "from": "2026-11-20T10:26:34Z"
+        }
+      ],
+      "sprint": "Editors 1: Neovim, Helix and Emacs",
+      "number": 340
+    },
+    {
+      "id": "01a1f87e-62f3-721c-a878-aef68304fc5f",
+      "name": "Blog: CompMD in VS Code and Zed",
+      "type": "docs",
+      "priority": "P2",
+      "labels": [
+        "website"
+      ],
+      "description": "A post on writing CompMD in VS Code and Zed: the extensions, highlighting, the preview, and the language server's templates, formatter and refactorings, with screenshots. Written as a CompMD document in `website/blog/posts/`, drafted and reviewed with the user before it is published.\n\nPublishing (the push) needs the user's go.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68f60d5336b0",
+        "01a1ebb5-4120-7007-85a3-68f99f7e17b0"
+      ],
+      "files": [
+        "website/blog/"
+      ],
+      "created_at": "2026-11-20T10:26:34Z",
+      "updated_at": "2026-11-20T10:26:34Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Editors 2: VS Code and Zed",
+          "from": "2026-11-20T10:26:34Z"
+        }
+      ],
+      "sprint": "Editors 2: VS Code and Zed",
+      "number": 341
+    },
+    {
+      "id": "01a1f87e-62f3-721c-a878-aef71a97a56a",
+      "name": "Blog: music notes and songbooks with CompMD and @compmd/blog",
+      "type": "docs",
+      "priority": "P2",
+      "labels": [
+        "website"
+      ],
+      "description": "A post on keeping music notes and songbooks in CompMD: sheet music from ABC that plays in the page, chord diagrams, lyrics with chords that transpose, guitar tabs, and a songbook as a blog made with `@compmd/blog`, one song a post. Its examples live in the post, and a plain renderer still shows their text. Drafted and reviewed with the user before it is published.\n\nPublishing (the push) needs the user's go.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1f870-9ad9-761a-afe5-57d6ed6e5247",
+        "01a1f870-9ad9-761a-afe5-57d77c0c0013",
+        "01a1f870-9ad9-761a-afe5-57d8f585a478",
+        "01a1f870-9ad9-761a-afe5-57d9a242182b"
+      ],
+      "files": [
+        "website/blog/"
+      ],
+      "created_at": "2026-11-20T10:26:34Z",
+      "updated_at": "2026-11-20T10:26:34Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Packs 4: music",
+          "from": "2026-11-20T10:26:34Z"
+        }
+      ],
+      "sprint": "Packs 4: music",
+      "number": 342
+    },
+    {
+      "id": "01a1f87e-62f3-721c-a878-aef8351ab5e4",
+      "name": "Blog: embeds, a video or a post in your document without tracking",
+      "type": "docs",
+      "priority": "P2",
+      "labels": [
+        "website"
+      ],
+      "description": "A post on the embeds: a YouTube video, a Spotify playlist, a Bluesky post and the others, each a facade that loads nothing from the provider until the reader clicks, and how a host lists the providers it allows. Drafted and reviewed with the user before it is published.\n\nPublishing (the push) needs the user's go.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1f870-9ad9-761a-afe5-57dc2e07c59f"
+      ],
+      "files": [
+        "website/blog/"
+      ],
+      "created_at": "2026-11-20T10:26:34Z",
+      "updated_at": "2026-11-20T10:26:34Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Packs 5: embeds",
+          "from": "2026-11-20T10:26:34Z"
+        }
+      ],
+      "sprint": "Packs 5: embeds",
+      "number": 343
+    },
+    {
+      "id": "01a1f87e-62f3-721c-a878-aef9f83919b5",
+      "name": "Blog: using CompMD for developer documentation",
+      "type": "docs",
+      "priority": "P2",
+      "labels": [
+        "website"
+      ],
+      "description": "A post on CompMD for developer documentation: wireframes with the wireframe pack, architecture and sequence diagrams with Mermaid, hand-drawn diagrams with Excalidraw, and the rest a design doc or a README needs (tabs, steps, code groups), each readable as text in a pull request. Its examples are a small project's docs. Drafted and reviewed with the user before it is published.\n\nPublishing (the push) needs the user's go.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1ebb5-4120-7007-85a3-68efa9d8fbb8"
+      ],
+      "files": [
+        "website/blog/"
+      ],
+      "created_at": "2026-11-20T10:26:34Z",
+      "updated_at": "2026-11-20T10:26:34Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Packs 6: drawing in documents",
+          "from": "2026-11-20T10:26:34Z"
+        }
+      ],
+      "sprint": "Packs 6: drawing in documents",
+      "number": 344
     }
   ]
 }
