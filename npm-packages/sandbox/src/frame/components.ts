@@ -4,7 +4,9 @@
 
 import type { Mount, Mounted, MountContext, Params, Slots } from "@compmd/render";
 import { MountSet } from "../mount-set.ts";
+import type { Observer } from "../observer.ts";
 import { entryOf, type Libraries, type Runnable } from "../protocol/messages.ts";
+import { timed } from "../timed.ts";
 
 /** A component's code, compiled and loaded: its mount, and a Svelte component's CSS. */
 export interface Loaded {
@@ -18,6 +20,8 @@ export interface ComponentsOptions {
   report: (component: string, reason: "failed" | "threw", message: string) => void;
   /** A component's CSS, or none, in place of what it had; the component as `entryOf` names it. */
   adopt: (component: string, css: string | undefined) => void;
+  /** The frame's observer, which records each instance as its code mounts, and how long that took (`timed`). */
+  observer?: Observer;
 }
 
 /** One instance on the page. */
@@ -103,7 +107,8 @@ export class Components {
       const loaded = await this.#options.load(component);
       if (entry.key !== key) return;
       this.#options.adopt(at, loaded.css);
-      entry.mount = loaded.mount;
+      const { observer } = this.#options;
+      entry.mount = observer ? timed(component.name, loaded.mount, observer) : loaded.mount;
       delete entry.failed;
     } catch (error) {
       if (entry.key !== key) return;

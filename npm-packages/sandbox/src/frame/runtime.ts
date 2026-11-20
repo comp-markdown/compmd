@@ -208,6 +208,7 @@ function start(port: MessagePort): void {
     load,
     adopt,
     report,
+    observer,
   });
   const strictUrl = new URL("strict.html", location.href).href;
   const mounts = new Mounts({
@@ -271,7 +272,6 @@ function start(port: MessagePort): void {
       };
     },
     report,
-    observer,
   });
   /** What a permissive frame's components get as `host`, when the parent gives it, before the first part. */
   let host: HostClient | undefined;

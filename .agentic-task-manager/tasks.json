@@ -11704,7 +11704,7 @@
       "description": "Item 4 of [the first list](docs/first-components.md#:~:text=8%20of%2011%20frameworks%20ship%20cards): a `compmd` definition on `box` (no code), in the pack CMD-11 names: an image, a title and a body, styled with the visual tokens (spec §9.4). Its images are the document's own.\n\n## Do\nThe definition with its signature, a demo in a `grid`, plain-renderer reading checked, and a conformance-style test of its expanded tree.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68e81c39ce10"
       ],
@@ -11712,7 +11712,7 @@
         "compmd-packs/card/"
       ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T21:40:15Z",
+      "updated_at": "2026-11-20T22:00:07Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 313,
@@ -11724,7 +11724,24 @@
       ],
       "sprint": "Packs 1: the pack tool, no-code components",
       "started_at": "2026-11-20T21:40:15Z",
-      "started_by": "claude:79612601"
+      "started_by": "claude:79612601",
+      "commit": "04050900e83e66081873b9400bc3e69a90a24936",
+      "code_reviews": [
+        {
+          "id": "01a1faf9-5838-7685-8858-992b3f900cf5",
+          "ref": "CR-34"
+        }
+      ],
+      "review_requested_at": "2026-11-20T22:00:07Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-20T22:00:07Z",
+          "kind": "review",
+          "text": "CR-34: The card: a box with an image slot, its text and a footer",
+          "by": "claude:79612601"
+        }
+      ]
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57c971faed2b",
@@ -13068,7 +13085,7 @@
       "description": "[Releases](docs/releases.md), decision 8: `compmd-packs/versions.json`, `cargo make release-packs` (with `--dry-run`) and `.github/workflows/release-packs.yml`.\n\n## Do\n- `compmd-packs/versions.json`, the one place a pack's version is written; a check in `cargo make ci` that each pack's `package.json` has it.\n- `cargo make release-packs`: asks npm which versions it doesn't have, shows them, and on a yes writes them into the packs' `package.json` if needed, tags each `<pack>-v<version>`, pushes the tags and starts one run of `release-packs.yml` (`gh workflow run`). `--dry-run` shows what it would release and does nothing.\n- `release-packs.yml`: `cargo make ci` once, then packs and stages (`npm stage publish`) every pack whose version npm doesn't have, with trusted publishing.\n- The Mermaid and wireframe packs move to it: `release-mermaid.yml` and `release-wireframe.yml` go; their trusted publishers are revoked and set again for `release-packs.yml` (with the author, who holds the 2FA). RELEASING.md's pack section rewritten.\n\n## Tests\nWhich packs it releases, from `--dry-run`, with versions npm has and doesn't; the `ci` check failing on a `package.json` that differs.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68e81c39ce10"
       ],
@@ -13082,9 +13099,9 @@
         "RELEASING.md"
       ],
       "created_at": "2026-11-20T19:14:20Z",
-      "updated_at": "2026-11-20T21:51:23Z",
+      "updated_at": "2026-11-20T22:00:16Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "sprint_history": [
         {
           "sprint": "Packs 1: the pack tool, no-code components",
@@ -13103,7 +13120,6 @@
         }
       ],
       "review_requested_at": "2026-11-20T21:02:17Z",
-      "review_state": "approved",
       "notes": [
         {
           "at": "2026-11-20T21:02:17Z",
@@ -13116,9 +13132,23 @@
           "kind": "note",
           "text": "Approved: in CR-31 (round 1)",
           "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-20T22:00:16Z",
+          "kind": "outcome",
+          "text": "Approved in CR-31: versions.json, cargo make release-packs and one release-packs.yml run per batch. Moving Mermaid’s and wireframe’s trusted publishers to release-packs.yml is a step for the maintainer once it is pushed.",
+          "by": "claude:79612601"
         }
       ],
-      "reviewed_at": "2026-11-20T21:51:23Z"
+      "reviews": [
+        {
+          "from": "2026-11-20T21:02:17Z",
+          "to": "2026-11-20T21:51:23Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-20T22:00:16Z",
+      "completed_by": "claude:79612601"
     },
     {
       "id": "01a1fa61-91aa-7105-88cd-9b1907126ded",
@@ -13132,7 +13162,7 @@
       "description": "[Releases](docs/releases.md), decision 8: `cargo make approve-packs`, with `--dry-run`.\n\n## Do\n- List what is staged for every pack (`npm stage list`) as checkboxes (`@inquirer/checkbox`, MIT), all chosen; space toggles, Enter approves the chosen ones (`npm stage approve`) in the order they were staged.\n- A pinned npm with staging; one one-time code, asked again only when it expires.\n- `--dry-run` shows the list and what it would approve, and approves nothing.\n- RELEASING.md says to run it after `release-packs`.\n\n## Tests\nThe order it approves in and what it skips, with npm's answers stubbed.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68e81c39ce10"
       ],
@@ -13142,9 +13172,9 @@
         "RELEASING.md"
       ],
       "created_at": "2026-11-20T19:14:20Z",
-      "updated_at": "2026-11-20T21:58:22Z",
+      "updated_at": "2026-11-20T22:06:09Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "sprint_history": [
         {
           "sprint": "Packs 1: the pack tool, no-code components",
@@ -13163,7 +13193,6 @@
         }
       ],
       "review_requested_at": "2026-11-20T21:16:01Z",
-      "review_state": "approved",
       "notes": [
         {
           "at": "2026-11-20T21:16:01Z",
@@ -13176,9 +13205,23 @@
           "kind": "note",
           "text": "Approved: in CR-32 (round 1)",
           "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-20T22:06:09Z",
+          "kind": "outcome",
+          "text": "Approved in CR-32: cargo make approve-packs, with --dry-run; npm’s login is made outside the workspace.",
+          "by": "claude:79612601"
         }
       ],
-      "reviewed_at": "2026-11-20T21:58:22Z"
+      "reviews": [
+        {
+          "from": "2026-11-20T21:16:01Z",
+          "to": "2026-11-20T21:58:22Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-20T22:06:09Z",
+      "completed_by": "claude:79612601"
     },
     {
       "id": "01a1faa3-d27f-73b4-9632-1832108aba7b",
@@ -13192,7 +13235,7 @@
       "description": "[Sizing a component in its box](docs/sizing-components.md), *What changes*, the spec, with the processor that implements it. The spec's text needs the maintainer's go before it is pushed.\n\n## The spec\n- §9.2: `object-fit` (`contain`, `cover`, `fill`) and `object-position` (one or two of `start`, `center`, `end`, block then inline), written without a breakpoint (F009); \"padding and border\" (decisions 1 and 6).\n- §7.4: `fit` in `mount`'s context; a component fits its box; framing is invisible to layout; natural sizes (decisions 1 to 3). §7.6: the bindings pass `compmd.fit`.\n- §7, *The component's box*: a signature fence's param list as the box's defaults; F036's new meaning (decision 4).\n- §5.1 and F013: the common params' names, `lang` and `dir` in a signature (decision 5).\n- §12.1: the signature fence's `params`. The changelog entry under *Unreleased*.\n\n## Conformance\nThe design's table: `definitions/fence-params`, `definitions/signature-types` and `resolve/params-differ-in-dash-F013` changed; the six new cases; `compmd-tree.schema.json` and `conformance/README.md`.\n\n## The processor\nThe signature fence's params parsed and kept; F036 at resolving; F013 for the names; the two params validated; a signature fence's defaults under the caller's in the expanded tree, as a definition fence's are.\n\n## Done when\n`cargo make ci` is green, and the guides' chapters on the common params and on signatures say it.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68e5ebcaa0da"
       ],
@@ -13204,7 +13247,7 @@
         "guides/"
       ],
       "created_at": "2026-11-20T20:26:42Z",
-      "updated_at": "2026-11-20T21:40:04Z",
+      "updated_at": "2026-11-20T22:06:10Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -13225,15 +13268,35 @@
         }
       ],
       "review_requested_at": "2026-11-20T21:40:04Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-20T21:40:04Z",
           "kind": "review",
           "text": "CR-33: Sizing: the spec, its conformance cases and the processor",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-20T22:01:26Z",
+          "kind": "note",
+          "text": "Approved: in CR-33 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-20T22:06:10Z",
+          "kind": "outcome",
+          "text": "Approved in CR-33, with its spec text: object-fit and object-position, fit in mount’s context, a signature fence’s params as the box’s defaults, F036 and F013.",
+          "by": "claude:79612601"
         }
-      ]
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-20T21:40:04Z",
+          "to": "2026-11-20T22:01:26Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-20T22:06:10Z",
+      "completed_by": "claude:79612601"
     },
     {
       "id": "01a1faa3-d27f-73b4-9632-1833aa21548d",
@@ -13349,13 +13412,13 @@
       "description": "`npm-packages/sandbox/test/observe.test.ts`, *marks a forged report as the frame's, under its id, and acts on none of it (O6)*, failed in `cargo make ci` on 2026-11-20 (13:49), timing out at its 12 s wait, after CMD-346; it passes alone in under 5 s, in Chrome and WebKit.\n\n## What is known\nThe frame's component patches `MessagePort.prototype.postMessage` when it mounts, so the forged events ride on the next `observed` report the frame sends; the test waits for them. If every report the frame sends goes out before the component's code runs, and nothing makes it send another, the forged events never arrive: a race, which a longer wait doesn't fix. Not yet proved: which report the forged events ride on when the test passes, and why none follows the patch under load.\n\n## Do\nFind the race (reproduce it under load, as `cargo make linux` or several workers at once), and fix it at its cause: the test making the frame report after the patch, or the observer, if a frame's report can be lost. No longer wait. CMD-346's way: a test that fails without the fix.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "npm-packages/sandbox/test/observe.test.ts"
       ],
       "created_at": "2026-11-20T21:51:11Z",
-      "updated_at": "2026-11-20T21:51:11Z",
+      "updated_at": "2026-11-20T22:00:21Z",
       "created_by": "claude:79612601",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -13365,7 +13428,9 @@
         }
       ],
       "sprint": "Packs 1: the pack tool, no-code components",
-      "number": 357
+      "number": 357,
+      "started_at": "2026-11-20T22:00:21Z",
+      "started_by": "claude:79612601"
     },
     {
       "id": "01a1faf8-f4f8-77fd-9de5-17c95ee53259",

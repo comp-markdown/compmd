@@ -2,10 +2,11 @@
 // frame of its own where it is used, and one of a higher level shows its fallback, since the frames only go down in
 // trust (docs/running-components-in-the-sandbox.md, decisions 1 and 4, Q2).
 
-import { rendersSlots, type ExpandedInput, type ExpandedUse, type Mount, type NodesMounted, type Params, type Slots } from "@compmd/render";
+import { rendersSlots, type ExpandedInput, type ExpandedUse, type Mount, type NodesMounted } from "@compmd/render";
 import { MountSet } from "./mount-set.ts";
 import type { Observer } from "./observer.ts";
 import type { ComponentCode, ErrorReason, Level, Scheme } from "./protocol/messages.ts";
+import { timed } from "./timed.ts";
 
 /** Where a part renders: in a frame of a level, or in the host's page, where trusted code runs. */
 export type Here = Level | "host";
@@ -41,36 +42,12 @@ export interface MountsOptions {
    * never loaded its runtime (`failed`).
    */
   report(component: string, reason: ErrorReason, message: string): void;
-  /** The window's observer, which records each component mounted here, with how long it took to mount and update. */
+  /**
+   * The window's observer, which records each component mounted here, with how long it took to mount and update: only
+   * where `inline` holds the components' own mounts, as the host's page's trusted ones. A frame's components wait for
+   * their code, so `Components` times them as that code mounts.
+   */
   observer?: Observer;
-}
-
-/**
- * `mount` with each mount and update timed by `observer`. A mount that carries more than a function (`rendersSlots`
- * marks one) is left as it is: the renderer reads what it carries.
- */
-function timed(name: string, mount: Mount, observer: Observer): Mount {
-  if (Object.getOwnPropertySymbols(mount).length > 0) return mount;
-  return (target, context) => {
-    const started = performance.now();
-    const mounted = mount(target, context);
-    const use = observer.mounted(name, performance.now() - started);
-    return {
-      ...(mounted?.update
-        ? {
-            update: (params: Params, slots: Slots) => {
-              const updating = performance.now();
-              mounted.update?.(params, slots);
-              observer.updated(use, performance.now() - updating);
-            },
-          }
-        : {}),
-      destroy: () => {
-        observer.unmounted(use);
-        mounted?.destroy?.();
-      },
-    };
-  };
 }
 
 /**

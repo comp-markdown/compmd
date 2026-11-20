@@ -1,16 +1,17 @@
 // @vitest-environment happy-dom
 import type { Mount, MountContext } from "@compmd/render";
 import { describe, expect, it } from "vitest";
+import { Observer } from "../observer.ts";
 import type { Runnable } from "../protocol/messages.ts";
 import { Components, type Loaded } from "./components.ts";
 
 /** A component whose code is the text it shows; `fail` in its code fails to load, `throw` throws when mounted. */
 const component = (name: string, code: string): Runnable & { code: string } => ({ name, level: "strict", binding: "plain", code });
 
-function setup() {
+/** Components whose code is `component`'s, observed by `observer` if given; what the code does goes in `log`. */
+function setup(observer?: Observer, log: string[] = []) {
   const reports: [string, string, string][] = [];
   const adopted: [string, string | undefined][] = [];
-  const log: string[] = [];
   const load = (loaded: Runnable): Promise<Loaded> => {
     const c = loaded as Runnable & { code: string };
     if (c.code === "fail") return Promise.reject(new Error("does not compile"));
@@ -27,7 +28,7 @@ function setup() {
     };
     return Promise.resolve({ mount, ...(c.code.startsWith("styled") ? { css: "b {}" } : {}) });
   };
-  const components = new Components({ load, report: (name, reason, message) => reports.push([name, reason, message]), adopt: (name, css) => adopted.push([name, css]) });
+  const components = new Components({ load, report: (name, reason, message) => reports.push([name, reason, message]), adopt: (name, css) => adopted.push([name, css]), ...(observer ? { observer } : {}) });
   return { components, reports, adopted, log };
 }
 
@@ -55,6 +56,23 @@ describe("Components", () => {
     expect(log).toHaveLength(3);
     handle?.destroy?.();
     expect(log.at(-1)).toBe("destroy two");
+  });
+
+  it("records an instance as mounted once its code has mounted, not when its use is rendered, and a remount as another", async () => {
+    const log: string[] = [];
+    const observer = new Observer((events) => {
+      for (const event of events) log.push(event.type === "mounted" ? `mounted ${event.component} as ${String(event.use)}` : `${event.type} ${"use" in event ? String(event.use) : ""}`);
+    });
+    observer.start();
+    const { components } = setup(observer, log);
+    const loading = components.set([component("card", "one")]);
+    const handle = components.mounts.mounts.card?.(document.createElement("div"), context(1));
+    expect(log, "rendered before its code loaded").toEqual([]);
+    await loading;
+    handle?.update?.({ n: 2 }, {});
+    await components.set([component("card", "two")]);
+    handle?.destroy?.();
+    expect(log).toEqual(["mount one 1", "mounted card as 1", "updated 1", "unmounted 1", "destroy one", "mount two 2", "mounted card as 2", "unmounted 2", "destroy two"]);
   });
 
   it("gives a component mounted again the renderer's scheme, as the renderer changes it", async () => {
