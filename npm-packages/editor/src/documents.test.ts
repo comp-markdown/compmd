@@ -37,7 +37,7 @@ const LATEST = `${NPM}/@comp-markdown/mermaid/latest`;
 /** `request` as the reader's Allow leaves it: npm's registry allowed, and its answer fetched. */
 const withNpmAllowed = (request: Request): Request => ({
   ...request,
-  allowedOrigins: [...(request.allowedOrigins ?? []), NPM],
+  allowedOrigins: request.allowedOrigins === "any" ? "any" : [...(request.allowedOrigins ?? []), NPM],
   remote: { ...request.remote, [LATEST]: { text: JSON.stringify({ name: "@comp-markdown/mermaid", version: "9.9.9", description: "From npm." }), contentType: "application/json" } },
 });
 

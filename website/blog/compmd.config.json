@@ -3,5 +3,6 @@
   "packs": {
     "../app": { "trust": "trusted", "ambient": true }
   },
-  "libraries": ["d3"]
+  "libraries": ["d3"],
+  "origins": "any"
 }

@@ -12,9 +12,16 @@ describe("postOf", () => {
     expect(postOf("why.comp.md", files, CONFIG)).toEqual({ slug: "why", path: "why.comp.md", title: "Why", date: "2026-11-20", updated: "2026-11-21", summary: "S", author: "Ada", tags: ["a"], draft: false, files });
   });
 
+  it("reads a post's own social image, its address in the blog", () => {
+    const files = { "why.comp.md": post({ title: "Why", date: "2026-11-20", socialImage: { url: "why/cover.png", alt: "A cover" } }) };
+    expect(postOf("why.comp.md", files, CONFIG).socialImage).toEqual({ url: "https://example.com/why/cover.png", alt: "A cover" });
+  });
+
   it("names what a frontmatter lacks or has wrong", () => {
-    const files = { "x.comp.md": post({ date: "20 Nov", updated: "soon", tags: "a", draft: "yes" }) };
-    expect(() => postOf("x.comp.md", files, CONFIG)).toThrow("posts/x.comp.md: `title` is missing; `date` is a day, `YYYY-MM-DD`; `updated` is a day, `YYYY-MM-DD`; `tags` is a list of names; `draft` is `true` or `false`");
+    const files = { "x.comp.md": post({ date: "20 Nov", updated: "soon", tags: "a", draft: "yes", socialImage: { url: "c.png" } }) };
+    expect(() => postOf("x.comp.md", files, CONFIG)).toThrow(
+      "posts/x.comp.md: `title` is missing; `date` is a day, `YYYY-MM-DD`; `updated` is a day, `YYYY-MM-DD`; `tags` is a list of names; `draft` is `true` or `false`; `socialImage` has a `url` (an http(s) address, or one in the blog) and an `alt`",
+    );
   });
 });
 

@@ -142,6 +142,22 @@ describe("hostImages", () => {
     expect(await images("https://photos.example.com/b.png")).toEqual({ refused: "https://photos.example.com" });
     expect(await images("app:file/3")).toBe("app:file/3");
   });
+
+  it("shows every remote image, asking about none, when the host allows every origin (spec §15)", async () => {
+    let asked = 0;
+    const gate = new ImageGate({
+      configured: "any",
+      ask: () => {
+        asked += 1;
+        return Promise.resolve("deny");
+      },
+      answers: localAnswers(undefined),
+    });
+    const images = hostImages([], undefined, gate);
+    expect(await images("https://photos.example.com/b.png")).toBe("https://photos.example.com/b.png");
+    expect(await gate.allow("https://photos.example.com")).toBe(true);
+    expect(asked).toBe(0);
+  });
 });
 
 describe("remote images in a page frame (spec §15)", () => {

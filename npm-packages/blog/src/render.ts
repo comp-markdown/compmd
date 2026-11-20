@@ -1,12 +1,14 @@
 // A post rendered at build time (docs/blog-tool.md, decision 5): processed by the processor in strict mode, so an
 // error fails the build, and rendered to static HTML by `@compmd/render` in happy-dom's DOM, with its code highlighted.
-// A host-language component shows its fallback here; the page's script mounts it live.
+// A host-language component shows its fallback here; the page's script mounts it live. Its images are those the blog
+// reaches without asking a reader (`post-images.ts`).
 
 import { OpenDocument, process, type Diagnostic, type Request } from "@compmd/processor";
 import { createPage } from "@compmd/render";
 import { Window } from "happy-dom";
 import { BlogError } from "./config.ts";
 import type { Highlight } from "./highlight.ts";
+import { PostImages } from "./post-images.ts";
 import { POSTS, type Post } from "./posts.ts";
 import { loadProcessor } from "./processor.ts";
 
@@ -22,8 +24,11 @@ export interface Rendered {
   live: boolean;
 }
 
-/** What the blog gives its posts besides their files: its packs, as `@compmd/vite` reads them. */
-export type Given = Pick<Request, "packs" | "ambient" | "policy">;
+/**
+ * What the blog gives its posts besides their files: its packs, as `@compmd/vite` reads them, and the origins its
+ * posts' data and images come from without asking a reader (`origins.ts`).
+ */
+export type Given = Pick<Request, "packs" | "ambient" | "policy" | "allowedOrigins">;
 
 /** A diagnostic as a line of the build's output. */
 const lineOf = (post: Post, { code, message, file, range }: Diagnostic): string => `${POSTS}/${file ?? post.path}:${String(range.start.line)}:${String(range.start.column)}: ${code} ${message}`;
@@ -65,8 +70,10 @@ export async function renderPost(post: Post, now: string, highlight: Highlight, 
   try {
     // happy-dom's elements are the DOM's, as the renderer takes them.
     const root = window.document.body.appendChild(window.document.createElement("div")) as unknown as HTMLElement;
-    const page = createPage(root);
+    const images = new PostImages(given.allowedOrigins ?? []);
+    const page = createPage(root, { images: images.source });
     page.render(expanded);
+    await images.settled();
     highlight.highlight(root);
     // An input's state is in its properties, which HTML doesn't hold; its attributes give it to the page.
     for (const input of root.querySelectorAll("input")) {
@@ -74,7 +81,8 @@ export async function renderPost(post: Post, now: string, highlight: Highlight, 
       else input.setAttribute("value", input.value);
     }
     rebase(root, up);
-    return { html: root.innerHTML, css: page.stylesheet.text, warnings: diagnostics.map((diagnostic) => lineOf(post, diagnostic)), live };
+    const refused = [...images.refused].map((origin) => `${POSTS}/${post.path}: its images from ${origin} show their alt text: compmd.config.json's \`origins\` doesn't name ${origin}`);
+    return { html: root.innerHTML, css: page.stylesheet.text, warnings: [...diagnostics.map((diagnostic) => lineOf(post, diagnostic)), ...refused], live };
   } finally {
     window.close();
   }

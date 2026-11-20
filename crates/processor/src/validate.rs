@@ -11,6 +11,7 @@ pub(crate) mod params;
 pub(crate) mod scope;
 pub(crate) mod universal;
 
+use crate::AllowedOrigins;
 use crate::cel::{self, Program};
 use crate::diagnostic::{Code, Diagnostic, Fix, Location, Stage};
 use crate::lines::Lines;
@@ -139,7 +140,7 @@ impl Validated {
         &mut self,
         resolved: &Resolved,
         spliced: &Spliced,
-        allowed_origins: &[String],
+        allowed_origins: &AllowedOrigins,
     ) -> bool {
         let main = resolved.main;
         let moved = spliced.moved;
@@ -187,7 +188,7 @@ impl Validated {
 
     /// Checks the processed document's inputs and data imports, which may not interpolate inputs its blocks bind to
     /// host-language components.
-    fn check_imports(&mut self, resolved: &Resolved, allowed_origins: &[String]) {
+    fn check_imports(&mut self, resolved: &Resolved, allowed_origins: &AllowedOrigins) {
         let bound = self
             .blocks
             .iter()
@@ -203,8 +204,8 @@ impl Validated {
 }
 
 /// Validates a resolved document, stage 3 of spec §11: gives its diagnostics, and what they refused. Remote data
-/// from an origin other than `allowed_origins` is F028 (spec §8.6).
-pub(crate) fn validate(resolved: &Resolved, allowed_origins: &[String]) -> Validated {
+/// from an origin `allowed_origins` doesn't allow is F028 (spec §8.6).
+pub(crate) fn validate(resolved: &Resolved, allowed_origins: &AllowedOrigins) -> Validated {
     let mut validated = Validated::default();
     for id in resolved.ids() {
         let document = resolved.document(id);

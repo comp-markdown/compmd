@@ -4,6 +4,7 @@
 
 use super::Checker;
 use super::scope::Scope;
+use crate::AllowedOrigins;
 use crate::diagnostic::{Code, Location};
 use crate::parse::params::interpolations;
 
@@ -43,7 +44,7 @@ pub(crate) fn origin(from: &str) -> Option<&str> {
 }
 
 impl Checker<'_, '_> {
-    pub(super) fn data(&mut self, allowed_origins: &[String]) {
+    pub(super) fn data(&mut self, allowed_origins: &AllowedOrigins) {
         let resolved = self.resolved;
         let settings = &resolved.document(self.id).settings;
         let scope = Scope::body(resolved, self.id);
@@ -56,9 +57,7 @@ impl Checker<'_, '_> {
                 loadable &= self.data_path(&path, at_char < literal, at, &scope);
             }
             let from = &import.from.value;
-            if let Some(origin) = origin(from)
-                .filter(|origin| !allowed_origins.iter().any(|allowed| allowed == origin))
-            {
+            if let Some(origin) = origin(from).filter(|origin| !allowed_origins.allows(origin)) {
                 self.report(
                     Code::F028,
                     import.from.at,

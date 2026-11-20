@@ -74,6 +74,8 @@ export function moduleCode(app: App, folder: string | undefined, frames: Bundled
     `  frames: ${JSON.stringify(`frames/${frames.hash}/`)},`,
     `  trusted: { ${trusted.join(", ")} },`,
     "  modules: (module) => MODULES[`${module.pack}@${module.version}/${module.path}`],",
+    // The origins the configuration lets documents reach without asking the reader, for their images (spec §15).
+    ...(app.config.origins.length === 0 ? [] : [`  origins: { configured: ${JSON.stringify(app.config.origins)} },`]),
     "};",
     ...registryCode(app.config),
     "",

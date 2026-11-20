@@ -38,8 +38,11 @@ export interface Request {
   reportAmbient?: boolean;
   /** The host's policy for packs: those it lists with their trust, which a document may import, those it denies. */
   policy?: Policy;
-  /** The origins remote data may come from, such as `https://status.example.org`. */
-  allowedOrigins?: string[];
+  /**
+   * The origins remote data may come from, such as `https://status.example.org`; or `"any"`, every origin, for a
+   * host's own documents, such as a static site's or a blog's (spec §15). None by default.
+   */
+  allowedOrigins?: string[] | "any";
   /** Remote data fetched beforehand, by URL; {@link sources} lists the URLs a render needs. */
   remote?: Record<string, Fetched>;
   /** The host's data, by source without `host:`; {@link sources} lists the sources a render needs. */

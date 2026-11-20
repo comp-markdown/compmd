@@ -208,6 +208,8 @@ view.render(process({ ...request, ...loaded }).expanded); // { allowedOrigins, r
 
 A host that fetches on its own uses `allowOrigins(urls, options)`, which asks and gives the allowed origins alone. With no reader to ask (a server, a build), give an `ask` that denies: nothing is fetched then but from the configured origins.
 
+A host that publishes its own documents, such as a static site or a blog, may allow every origin instead (spec §15): `configured: "any"`, here and in the view's `origins`. Then no origin of the document's data or images is asked about, and `loadData` gives `allowedOrigins: "any"`. A host that shows documents others write keeps naming its origins: the question is what keeps such a document from reaching an origin its reader hasn't agreed to.
+
 - **Configured origins** are never asked about. Every other origin is asked about once, however many renders need it at once, and the answer, allow or deny, is kept per origin for every document: in `localStorage` by default (`localAnswers()`), or in a store the host gives (`answers`), such as one on its server.
 - **The question** is a plain `<dialog>` (`askWithDialog`): *This document wants to load data from api.example.com. Allow?*, with what the site learns, the values the reader picked, and the buttons *Allow* and *Don't allow*. A host asks in its own UI with `ask`, and `originQuestion(origin)` gives the words.
 - **Changing an answer:** `localAnswers().list()` gives every answer, and `forget(origin)` makes the next render ask again, for a page where the reader reviews them.

@@ -11,5 +11,6 @@
       "category": "Blog",
       "categoryId": "DIC_kwDOVWUzzM4DLhHM"
     }
-  }
+  },
+  "defaultSocialImage": { "url": "https://compmd.dev/og.png", "alt": "CompMD: Markdown with components. Readable as text, rendered as a page." }
 }

@@ -7,7 +7,7 @@ use compmd::expand::Options;
 use compmd::host::{CacheKey, Fetched, LoadedRelease, Time, WithPending};
 use compmd::policy::Policy;
 use compmd::processor::{Expanded, Validated};
-use compmd::{Ambient, ParseOptions, Processor, expanded, tree};
+use compmd::{AllowedOrigins, Ambient, ParseOptions, Processor, expanded, tree};
 use serde::de::Error as _;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::{Map, Value as Json};
@@ -35,9 +35,9 @@ struct Request {
     /// The host's policy for packs: those it lists with their trust, which it allows, denies and left out.
     #[serde(default)]
     policy: Policy,
-    /// The origins remote data may come from.
-    #[serde(default)]
-    allowed_origins: Vec<String>,
+    /// The origins remote data may come from, or `"any"`: every origin, for a host's own documents (spec §15).
+    #[serde(default, deserialize_with = "allowed_origins")]
+    allowed_origins: AllowedOrigins,
     /// Remote data fetched beforehand, by URL.
     #[serde(default)]
     remote: HashMap<String, Fetched>,
@@ -244,6 +244,23 @@ fn time<'de, D: Deserializer<'de>>(deserializer: D) -> Result<i128, D::Error> {
     parse_time(&text).ok_or_else(|| D::Error::custom(format!("`{text}` isn't an RFC 3339 time")))
 }
 
+/// `allowedOrigins`: a list of origins, or `"any"`, every origin.
+fn allowed_origins<'de, D: Deserializer<'de>>(deserializer: D) -> Result<AllowedOrigins, D::Error> {
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum Written {
+        Listed(Vec<String>),
+        Every(String),
+    }
+    match Written::deserialize(deserializer)? {
+        Written::Listed(origins) => Ok(AllowedOrigins::Listed(origins)),
+        Written::Every(any) if any == "any" => Ok(AllowedOrigins::Every),
+        Written::Every(other) => Err(D::Error::custom(format!(
+            "`allowedOrigins` is a list of origins or `\"any\"`, not `{other}`"
+        ))),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -412,6 +429,33 @@ mod tests {
             processed["pending"],
             json!({ "packs": ["@kit/charts"], "remote": ["https://a.org/x.json"], "host": ["tasks"] })
         );
+    }
+
+    #[test]
+    fn a_host_may_allow_every_origin() {
+        let text = "---\nmd:\n  data:\n    - from: https://a.org/x.json\n      as: x\n---\n\n{{md.data.x.v}}\n";
+        let processed = |allowed: Json| -> Result<Json, String> {
+            let request = json!({
+                "path": "a.comp.md",
+                "files": { "a.comp.md": text },
+                "allowedOrigins": allowed,
+                "remote": { "https://a.org/x.json": { "text": "{\"v\": \"fetched\"}" } },
+                "now": "2026-10-22T09:00:00Z"
+            });
+            process(&request.to_string(), Rc::new(()))
+                .map(|text| serde_json::from_str(&text).expect("JSON"))
+                .map_err(|error| error.to_string())
+        };
+        let every = processed(json!("any")).expect("processed");
+        assert_eq!(every["diagnostics"], json!([]));
+        assert_eq!(
+            every["expanded"]["children"][0]["children"][0]["value"],
+            "fetched"
+        );
+        let none = processed(json!([])).expect("processed");
+        assert_eq!(none["diagnostics"][0]["code"], "F028");
+        let wrong = processed(json!("all")).expect_err("refused");
+        assert!(wrong.contains("a list of origins or `\"any\"`"), "{wrong}");
     }
 
     #[test]

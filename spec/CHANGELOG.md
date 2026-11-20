@@ -4,6 +4,10 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
 
 ## Version 1 (draft)
 
+### Unreleased
+
+- **Every origin, for a host's own documents (§8.6, §15).** A host MAY allow every origin instead of naming them: then no origin of a document's data or images is disallowed (F028) or asked about. It fits documents the host publishes itself, such as a static site's or a blog's; a host that shows documents others write SHOULD NOT. URL schemes, a data `from`'s literal scheme and host, credentials and sandboxes' network are unchanged. Not breaking.
+
 ### 1.0-draft.16, 2026-11-19
 
 - **WebAssembly in a sandbox (§15).** The informative note on browsers says a sandbox's policy may allow compiling WebAssembly (`'wasm-unsafe-eval'`), since WebAssembly reaches only what the frame's scripts reach. No rule changes. Not breaking.

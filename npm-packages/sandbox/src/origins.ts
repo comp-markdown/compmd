@@ -123,9 +123,15 @@ export const askWithDialog: AskOrigin = (origin, _document, kinds) =>
     dialog.showModal();
   });
 
+/**
+ * The origins a host configured, which need no question: a list of them, or `"any"`, every origin, for a host's own
+ * documents, such as a static site's or a blog's (spec §15).
+ */
+export type ConfiguredOrigins = readonly string[] | "any";
+
 export interface AllowOriginsOptions {
   /** The origins the host configured, which need no question. */
-  configured: readonly string[];
+  configured: ConfiguredOrigins;
   /** What the question calls the document: its title or path. */
   document: string;
   /** How the reader is asked; a plain dialog by default. */
@@ -158,13 +164,15 @@ export async function answerFor(origin: string, kinds: readonly OriginKind[], do
  * The origins a render may fetch from: those the host configured, and those the reader allowed, asking about each
  * origin of `urls` (the remote URLs the processor's `sources` lists, `remote` and `disallowed`) the reader hasn't
  * decided on. For a host that fetches on its own; `loadData` also fetches. A host renders at once without them, then
- * again with what this gives: until then, the new origins are F028 and show the `fallback`.
+ * again with what this gives: until then, the new origins are F028 and show the `fallback`. With `configured` `"any"`,
+ * `"any"`, and nothing is asked.
  *
  * @example
  * const { remote, disallowed } = sources(request);
  * const allowedOrigins = await allowOrigins([...remote, ...disallowed], { configured: config.allowedOrigins, document: request.path });
  */
-export async function allowOrigins(urls: readonly string[], options: AllowOriginsOptions): Promise<string[]> {
+export async function allowOrigins(urls: readonly string[], options: AllowOriginsOptions): Promise<string[] | "any"> {
+  if (options.configured === "any") return "any";
   const answers = options.answers ?? localAnswers();
   const ask = options.ask ?? askWithDialog;
   const allowed = new Set(options.configured);
@@ -178,7 +186,7 @@ export async function allowOrigins(urls: readonly string[], options: AllowOrigin
 
 /** What `loadData` gives a request: the origins it may fetch from, and what was fetched, by URL. */
 export interface LoadedData {
-  allowedOrigins: string[];
+  allowedOrigins: string[] | "any";
   remote: Record<string, Fetched>;
 }
 
@@ -204,13 +212,13 @@ export interface LoadDataOptions extends AllowOriginsOptions {
  */
 export async function loadData(urls: readonly string[], options: LoadDataOptions): Promise<LoadedData> {
   const allowedOrigins = await allowOrigins(urls, options);
-  const allowed = new Set(allowedOrigins);
+  const allowed = allowedOrigins === "any" ? "any" : new Set(allowedOrigins);
   const get = options.fetch ?? globalThis.fetch.bind(globalThis);
   const fetched = await Promise.all(
     [...new Set(urls)]
       .filter((url) => {
         const origin = originOf(url);
-        return origin !== undefined && allowed.has(origin);
+        return origin !== undefined && (allowed === "any" || allowed.has(origin));
       })
       .map(async (url): Promise<[string, Fetched] | undefined> => {
         try {

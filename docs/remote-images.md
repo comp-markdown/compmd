@@ -41,7 +41,8 @@ allow it. This is how `@compmd/render` and `@compmd/sandbox` do it, in frame mod
    as for `loadData`: its pages show remote images only from configured origins. A host that wants them at build time
    configures their origins.
 10. **A host that never fetches data still asks about images**, by default, as the spec says. One that doesn't want the
-    dialog configures the origins, or passes its own `ask`.
+    dialog configures the origins, or, for documents it publishes itself, allows every origin (`configured: "any"`,
+    spec §15); a host that shows documents others write keeps asking.
 
 ## Changes
 

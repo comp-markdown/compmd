@@ -1,8 +1,9 @@
-// A blog's `blog.config.json` (docs/blog-tool.md, decision 2): its title, address, author and language, and its
-// comments.
+// A blog's `blog.config.json` (docs/blog-tool.md, decision 2): its title, address, author and language, its
+// comments, and its default social image.
 
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { socialImageOf, type SocialImage } from "./social-image.ts";
 
 /** A blog's comments, by their provider: giscus alone for now, each other a key of its own (decision 7). */
 export interface Comments {
@@ -34,6 +35,8 @@ export interface BlogConfig {
   description?: string;
   /** Its comments; none when it has no `comments`. */
   comments?: Comments;
+  /** The image a link to any of its pages shows, when a post has none of its own: `defaultSocialImage`; none without it. */
+  defaultSocialImage?: SocialImage;
 }
 
 /** What is wrong with a blog: its configuration, a post, a command's arguments. Its message says what to fix. */
@@ -62,10 +65,13 @@ export function configOf(given: unknown): BlogConfig {
   else if (comments !== undefined && !["repo", "repoId", "category", "categoryId"].every((name) => isText(giscus?.[name]))) {
     problems.push("`comments.giscus` has `repo`, `repoId`, `category` and `categoryId`, as giscus.app gives them");
   }
+  const image = fields.defaultSocialImage === undefined || !isText(fields.url) ? undefined : socialImageOf(fields.defaultSocialImage, "defaultSocialImage", fields.url);
+  if (image && "problem" in image) problems.push(image.problem);
   if (problems.length > 0) throw new BlogError(`${CONFIG}: ${problems.join("; ")}`);
   const config: BlogConfig = { title: fields.title as string, url: fields.url as string, author: fields.author as string, lang: (fields.lang as string | undefined) ?? "en" };
   if (isText(fields.description)) config.description = fields.description;
   if (giscus !== undefined) config.comments = { giscus: { repo: giscus.repo as string, repoId: giscus.repoId as string, category: giscus.category as string, categoryId: giscus.categoryId as string } };
+  if (image && "image" in image) config.defaultSocialImage = image.image;
   return config;
 }
 

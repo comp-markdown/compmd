@@ -117,6 +117,56 @@ describe("buildSite", () => {
     }
   });
 
+  it("gives every page the blog's default social image, and a post with its own that one, and none without either", async () => {
+    expect(page("index.html").querySelector('meta[property="og:image"]')).toBeNull();
+    const config = { title: "N", url: "https://example.com/blog/", author: "A", defaultSocialImage: { url: "card.png", alt: "The <card>" } };
+    const own = { title: "Own", date: "2026-11-03", socialImage: { url: "own/cover.png", alt: "A cover" } };
+    const imaged = await writeBlog({ ...BLOG, "blog.config.json": JSON.stringify(config), "posts/own.comp.md": post(own) });
+    try {
+      const built = await buildSite(imaged, { drafts: false, now: NOW });
+      const head = (path: string) => {
+        const window = new Window();
+        window.document.write(built.files.get(path) as string);
+        const document = window.document as unknown as Document;
+        const content = (selector: string) => document.querySelector(selector)?.getAttribute("content");
+        return [content('meta[property="og:image"]'), content('meta[property="og:image:alt"]'), content('meta[name="twitter:card"]')];
+      };
+      expect(head("index.html")).toEqual(["https://example.com/blog/card.png", "The <card>", "summary_large_image"]);
+      expect(head("first/index.html")).toEqual(["https://example.com/blog/card.png", "The <card>", "summary_large_image"]);
+      expect(head("own/index.html")).toEqual(["https://example.com/blog/own/cover.png", "A cover", "summary_large_image"]);
+    } finally {
+      await rm(imaged, { recursive: true, force: true });
+    }
+  });
+
+  it("shows a post's images from the blog's own origin, and those of another origin as their alt text, with a warning", async () => {
+    const body = "![ours](https://example.com/blog/card.png) and ![theirs](https://elsewhere.example/p.png)\n";
+    const imaged = await writeBlog({ ...BLOG, "posts/images.comp.md": post({ title: "Images", date: "2026-11-04" }, body) });
+    try {
+      const built = await buildSite(imaged, { drafts: false, now: NOW });
+      const window = new Window();
+      window.document.write(built.files.get("images/index.html") as string);
+      const article = window.document.querySelector(".post-body");
+      expect([...(article?.querySelectorAll("img") ?? [])].map((image) => image.getAttribute("src"))).toEqual(["https://example.com/blog/card.png"]);
+      expect(article?.querySelector(".compmd-image-refused")?.textContent).toContain("theirs");
+      expect(built.warnings).toEqual(["posts/images.comp.md: its images from https://elsewhere.example show their alt text: compmd.config.json's `origins` doesn't name https://elsewhere.example"]);
+    } finally {
+      await rm(imaged, { recursive: true, force: true });
+    }
+  });
+
+  it("shows every image, with no warning, when the blog's compmd.config.json allows every origin", async () => {
+    const body = "![theirs](https://elsewhere.example/p.png)\n";
+    const every = await writeBlog({ ...BLOG, "compmd.config.json": JSON.stringify({ origins: "any" }), "package.json": "{}", "posts/images.comp.md": post({ title: "Images", date: "2026-11-04" }, body) });
+    try {
+      const built = await buildSite(every, { drafts: false, now: NOW });
+      expect(built.files.get("images/index.html")).toContain('<img src="https://elsewhere.example/p.png"');
+      expect(built.warnings).toEqual([]);
+    } finally {
+      await rm(every, { recursive: true, force: true });
+    }
+  });
+
   it("fails on a post with an error, naming it, and on a layout without its content", async () => {
     const broken = await writeBlog({ ...BLOG, "posts/broken.comp.md": post({ title: "Broken", date: "2026-11-02" }, ":: nowhere[Nothing]\n") });
     const noContent = await writeBlog({ ...BLOG, "layout.html": "<html><head></head><body></body></html>" });

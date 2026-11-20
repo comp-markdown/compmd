@@ -19,7 +19,7 @@ Anyone who writes in CompMD gets a blog from it in a few minutes; the CompMD web
 
    ```text
    my-blog/
-     blog.config.json          # the blog's title, its address, its author, its language, comments
+     blog.config.json          # the blog's title, its address, its author, its language, comments, its default social image
      posts/
        why-compmd.comp.md      # a post: its slug is its file's name
        why-compmd/             # a post's own files: data, images
@@ -28,8 +28,17 @@ Anyone who writes in CompMD gets a blog from it in a few minutes; the CompMD web
    ```
 
    A post's frontmatter: `title`, `date` (a day), `summary`, and optional `author` (the blog's by default), `updated`,
-   `tags` (a list of names) and `draft` (shown by `dev`, left out of `build`). Anything else is the post's own, as
-   `md.doc` (spec §2.1).
+   `tags` (a list of names), `draft` (shown by `dev`, left out of `build`) and `socialImage` (the blog's default
+   otherwise). Anything else is the post's own, as `md.doc` (spec §2.1).
+
+   A **social image** is the image a link to a page shows on social sites and in chats (its Open Graph image): a
+   `url`, an http(s) address or one relative to the blog's address, and an `alt`. A post's is its own `socialImage`;
+   `defaultSocialImage` in `blog.config.json` is every other page's, and a post's without one.
+
+   A blog publishes its own posts, so it is a host that may allow every origin (spec §15): its own origin always,
+   the `origins` of its `compmd.config.json`, or every origin with `"any"`. Its posts' data and images from them come
+   without asking a reader, at build time and in a live post's page alike; an image from any other origin shows its
+   alt text, and the build warns.
 
 3. **Three commands:**
    - `cblo new "Why CompMD"`: a new post, `posts/why-compmd.comp.md` (its slug from the title), its frontmatter filled
@@ -50,7 +59,8 @@ Anyone who writes in CompMD gets a blog from it in a few minutes; the CompMD web
      by every page in a `<link rel="alternate">`;
    - `posts.json`, the posts as data (title, date, summary, tags, author and address, newest first), for a site to show
      its blog's latest posts elsewhere, as the CompMD website's landing page may;
-   - `sitemap.xml`, and each page's title, description and Open Graph tags from the post.
+   - `sitemap.xml`, and each page's title, description and Open Graph tags from the post, with its social image as a
+     large card when there is one.
 
 5. **Built on CompMD's packages, as a host is** ([hosting](hosting.md)): each post is processed by
    `@compmd/processor` in strict mode, so an error fails the build, and rendered to static HTML by `@compmd/render`, the

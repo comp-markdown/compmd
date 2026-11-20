@@ -10,7 +10,7 @@ use compmd::expand::Options;
 use compmd::host::{Fetched, LoadedRelease, Time, WithPending};
 use compmd::policy::Policy;
 use compmd::processor::Expanded;
-use compmd::{Ambient, ParseOptions, Processor};
+use compmd::{AllowedOrigins, Ambient, ParseOptions, Processor};
 use serde_json::{Map, Value, json};
 use std::collections::HashMap;
 use std::fs;
@@ -172,7 +172,7 @@ pub(crate) struct Setup {
     packs: Rc<WithPending<HashMap<String, Vec<LoadedRelease>>>>,
     ambient: Ambient,
     policy: Policy,
-    allowed_origins: Vec<String>,
+    allowed_origins: AllowedOrigins,
     render: RenderContext,
     remote: Rc<WithPending<HashMap<String, Fetched>>>,
     host: Rc<WithPending<HashMap<String, Value>>>,
@@ -219,7 +219,12 @@ impl Setup {
                 .get("policy")
                 .map(|policy| serde_json::from_value(policy.clone()).expect("a policy"))
                 .unwrap_or_default(),
-            allowed_origins: strings("allowedOrigins"),
+            // Every origin, for a host's own documents (spec §15), or those named.
+            allowed_origins: if context["allowedOrigins"] == json!("any") {
+                AllowedOrigins::Every
+            } else {
+                AllowedOrigins::Listed(strings("allowedOrigins"))
+            },
             render: RenderContext {
                 now: parse_time(context["now"].as_str().unwrap_or("2026-01-01T00:00:00Z"))
                     .expect("a time"),

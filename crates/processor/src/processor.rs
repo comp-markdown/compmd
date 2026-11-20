@@ -44,6 +44,7 @@
 //! assert_eq!(card.name, "card");
 //! ```
 
+use crate::AllowedOrigins;
 use crate::context::RenderContext;
 use crate::diagnostic::Diagnostic;
 use crate::expanded::{self, Inputs};
@@ -137,7 +138,7 @@ pub struct Validated {
     /// How many diagnostics stages 1 to 3 gave, which a reload keeps.
     kept: usize,
     edit_context: EditContext,
-    allowed_origins: Vec<String>,
+    allowed_origins: AllowedOrigins,
 }
 
 /// What stage 4 runs with: the render context, and the host's remote and `host:` data.
@@ -360,10 +361,12 @@ impl Processor<Parsed> {
 }
 
 impl Processor<Resolved> {
-    /// Stage 3, validating, with the origins remote data may come from (`https://api.example.com`; any other is
-    /// F028): checks every invocation, slot, interpolation path, expression, bound input and data source.
+    /// Stage 3, validating, with the origins remote data may come from: a list of them (`&["https://api.example.com"
+    /// .into()]`; any other is F028), or [`AllowedOrigins::Every`] for a host's own documents (spec §15). Checks every
+    /// invocation, slot, interpolation path, expression, bound input and data source.
     #[must_use]
-    pub fn validate(self, allowed_origins: &[String]) -> Processor<Validated> {
+    pub fn validate(self, allowed_origins: impl Into<AllowedOrigins>) -> Processor<Validated> {
+        let allowed_origins = allowed_origins.into();
         self.then(
             |Resolved {
                  store,
@@ -371,13 +374,13 @@ impl Processor<Resolved> {
                  edit_context,
              },
              diagnostics| {
-                let checks = validate::validate(&resolved, allowed_origins);
+                let checks = validate::validate(&resolved, &allowed_origins);
                 diagnostics.extend(checks.diagnostics().cloned());
                 let examples = examples::Examples::of(
                     &resolved,
                     &store,
                     &edit_context,
-                    allowed_origins,
+                    &allowed_origins,
                     diagnostics,
                 );
                 Validated {
@@ -387,7 +390,7 @@ impl Processor<Resolved> {
                     examples,
                     kept: diagnostics.len(),
                     edit_context,
-                    allowed_origins: allowed_origins.to_vec(),
+                    allowed_origins,
                 }
             },
         )

@@ -1,6 +1,6 @@
 import type { HostComponent } from "@compmd/processor";
 import type { Change } from "@compmd/render";
-import type { ViewEvents, ViewSpliceOptions } from "@compmd/sandbox";
+import type { ConfiguredOrigins, ViewEvents, ViewSpliceOptions } from "@compmd/sandbox";
 import { describe, expect, it } from "vitest";
 import type { DevtoolsDocument } from "./document.ts";
 import { Editor, type Frame } from "./editor.ts";
@@ -128,10 +128,10 @@ describe("Editor", () => {
 
   it("loads the remote data the worker reports, asking about new origins in the page, and opens the document again with it", async () => {
     const worker = new FakeWorker();
-    const asked: { urls: readonly string[]; configured: readonly string[] }[] = [];
-    const load = (urls: readonly string[], { configured }: { configured: readonly string[] }) => {
+    const asked: { urls: readonly string[]; configured: ConfiguredOrigins }[] = [];
+    const load = (urls: readonly string[], { configured }: { configured: ConfiguredOrigins }) => {
       asked.push({ urls, configured });
-      return Promise.resolve({ allowedOrigins: [...configured, "https://api.example.com"], remote: { "https://api.example.com/n.json": { text: "1", contentType: "application/json" } } });
+      return Promise.resolve({ allowedOrigins: configured === "any" ? configured : [...configured, "https://api.example.com"], remote: { "https://api.example.com/n.json": { text: "1", contentType: "application/json" } } });
     };
     const editor = new Editor(worker, new FakeFrame(), () => undefined, new Map(), load);
     const bundled = { "https://status.example.org/s.json": { text: "{}", contentType: "application/json" } };
@@ -147,6 +147,22 @@ describe("Editor", () => {
     if (reopened?.type !== "open") return;
     expect(reopened.request.allowedOrigins).toEqual(["https://status.example.org", "https://api.example.com"]);
     expect(Object.keys(reopened.request.remote ?? {})).toEqual(["https://status.example.org/s.json", "https://api.example.com/n.json"]);
+  });
+
+  it("keeps every origin allowed for a document that came with them, and opens it again with what was fetched", async () => {
+    const worker = new FakeWorker();
+    const load = () => Promise.resolve({ allowedOrigins: "any" as const, remote: { "https://api.example.com/n.json": { text: "1", contentType: "application/json" } } });
+    const editor = new Editor(worker, new FakeFrame(), () => undefined, new Map(), load);
+    editor.open({ request: { ...example.request, allowedOrigins: "any" } });
+    worker.answer(processed(["whole"], { opened: true }));
+    worker.answer({ type: "remote", urls: ["https://api.example.com/n.json"] });
+    await Promise.resolve();
+    await Promise.resolve();
+    const reopened = worker.received.at(-1);
+    expect(reopened?.type).toBe("open");
+    if (reopened?.type !== "open") return;
+    expect(reopened.request.allowedOrigins).toBe("any");
+    expect(Object.keys(reopened.request.remote ?? {})).toEqual(["https://api.example.com/n.json"]);
   });
 
   it("doesn't open the document again when the reader allowed nothing new", async () => {

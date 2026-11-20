@@ -91,8 +91,9 @@ view.render(document.expanded);
 | `libraries` | npm packages, installed in the app, that the frames offer components through their import map, besides React and Svelte: `"d3"`, or `{ "name": "d3", "imports": ["d3", "d3-scale"] }` |
 | `registries` | the npm registries packs the app doesn't install come from, by scope (`"@kit"`), with `"*"` for every other scope, each named in full |
 | `fetch` | who reaches them: `host` (the default), through the app's proxy at `compmd/registry/`; `direct`, the reader's browser |
+| `origins` | the origins documents' remote data and images come from without asking the reader, each `https://host[:port]`; or `"any"`, every origin, for documents the app publishes itself, such as a static site's or a blog's (spec §15). None by default: the reader is asked about each |
 
-`@compmd/vite/config` reads and translates the same configuration without Vite or Node, for a host that isn't a Vite app: `readConfig(json)` checks it and lists every problem, and `policyOf(config, nameOf)` gives the processor's `policy` and `ambient`.
+`@compmd/vite/config` reads and translates the same configuration without Vite or Node, for a host that isn't a Vite app: `readConfig(json)` checks it and lists every problem, and `policyOf(config, nameOf)` gives the processor's `policy`, `ambient` and `allowedOrigins`.
 
 ## The app's own components
 

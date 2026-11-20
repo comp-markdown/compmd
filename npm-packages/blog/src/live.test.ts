@@ -78,11 +78,12 @@ describe("a post with a trusted Svelte pack's component", () => {
 });
 
 describe("a post with host-language components", () => {
-  it("shows the component's fallback, and gives the page its document and the script that mounts it", () => {
+  it("shows the component's fallback, and gives the page its document, the origins it reaches and the script that mounts it", () => {
     const page = site.files.get("live/index.html") as string;
     expect(page).toContain("Hello, reader");
     const data = /<script type="application\/json" id="cblo-post">(.*?)<\/script>/.exec(page)?.[1];
-    expect(JSON.parse(data!)).toEqual({ path: "live.comp.md", files: { "live.comp.md": LIVE } });
+    // The blog's own origin: its readers are there already, so its images and data need no question.
+    expect(JSON.parse(data!)).toEqual({ path: "live.comp.md", files: { "live.comp.md": LIVE }, origins: ["https://example.com"] });
     const script = /<script type="module" src="\/blog\/([^"]+)"><\/script>/.exec(page)?.[1];
     expect(site.files.has(script!)).toBe(true);
   });

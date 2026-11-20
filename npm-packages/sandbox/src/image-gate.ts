@@ -4,12 +4,15 @@
 // answers as the document's data (`origins.ts`), and is refused, showing its alt text, until its origin is allowed.
 
 import { urlScheme } from "@compmd/render";
-import { answerFor, askWithDialog, localAnswers, originOf, type AskOrigin, type OriginAnswers } from "./origins.ts";
+import { answerFor, askWithDialog, localAnswers, originOf, type AskOrigin, type ConfiguredOrigins, type OriginAnswers } from "./origins.ts";
 
 /** Who asks the reader about images' origins, and where the answers are kept: what a host gives `loadData` too. */
 export interface ImageGateOptions {
-  /** The origins the host configured, which need no question. */
-  configured?: readonly string[];
+  /**
+   * The origins the host configured, which need no question; or `"any"`, every origin, for a host's own documents,
+   * such as a static site's or a blog's (spec §15): then no image is asked about.
+   */
+  configured?: ConfiguredOrigins;
   /** What the question calls the document: its title or path. */
   document?: string;
   /** How the reader is asked; a plain dialog by default. A host without a reader gives one that refuses. */
@@ -30,14 +33,14 @@ export type ImageDecision = { show: true } | { refused: string };
  * gate.onAllowed((origin) => page.imagesAllowed(origin));
  */
 export class ImageGate {
-  readonly #configured: ReadonlySet<string>;
+  readonly #configured: ReadonlySet<string> | "any";
   readonly #document: string;
   readonly #ask: AskOrigin;
   readonly #answers: OriginAnswers;
   readonly #listeners = new Set<(origin: string) => void>();
 
   constructor(options: ImageGateOptions = {}) {
-    this.#configured = new Set(options.configured ?? []);
+    this.#configured = options.configured === "any" ? "any" : new Set(options.configured ?? []);
     this.#document = options.document ?? "this document";
     this.#ask = options.ask ?? askWithDialog;
     this.#answers = options.answers ?? localAnswers();
@@ -52,7 +55,7 @@ export class ImageGate {
     const scheme = urlScheme(src);
     if (scheme !== "http" && scheme !== "https") return { show: true };
     const origin = originOf(src);
-    if (origin === undefined || this.#configured.has(origin)) return { show: true };
+    if (origin === undefined || this.#isConfigured(origin)) return { show: true };
     const answer = await answerFor(origin, ["images"], this.#document, this.#answers, this.#ask);
     return answer === "allow" ? { show: true } : { refused: origin };
   }
@@ -62,11 +65,16 @@ export class ImageGate {
    * they are asked again; when they allow it, each listener hears of it. Resolves to whether they did.
    */
   async allow(origin: string): Promise<boolean> {
-    if (this.#configured.has(origin)) return true;
+    if (this.#isConfigured(origin)) return true;
     this.#answers.forget(origin);
     const allowed = (await answerFor(origin, ["images"], this.#document, this.#answers, this.#ask)) === "allow";
     if (allowed) for (const listener of this.#listeners) listener(origin);
     return allowed;
+  }
+
+  /** Whether the host configured `origin`, by name or by allowing every origin. */
+  #isConfigured(origin: string): boolean {
+    return this.#configured === "any" || this.#configured.has(origin);
   }
 
   /** Calls `listener` with each origin the reader allows from now on; gives what stops it. */

@@ -15,7 +15,17 @@ function problemsOf(value: unknown): readonly string[] {
 describe("readConfig", () => {
   it("fills in every default", () => {
     const config = readConfig({});
-    expect(config).toEqual({ packs: new Map(), imports: "any", deny: [], libraries: [], registries: {}, fetch: "host" });
+    expect(config).toEqual({ packs: new Map(), imports: "any", deny: [], libraries: [], registries: {}, fetch: "host", origins: [] });
+  });
+
+  it("reads the origins documents may reach without a question: a list of https origins, or every origin", () => {
+    expect(readConfig({ origins: ["https://cdn.example.com/", "http://localhost:8080"] }).origins).toEqual(["https://cdn.example.com", "http://localhost:8080"]);
+    expect(readConfig({ origins: "any" }).origins).toBe("any");
+    expect(problemsOf({ origins: "all" })).toEqual(['origins: a list of origins, such as `["https://cdn.example.com"]`, or `"any"` for every origin']);
+    expect(problemsOf({ origins: ["http://cdn.example.com", "https://*.example.com"] })).toEqual([
+      "origins: `http://cdn.example.com` must be `https:` (`http:` only for localhost)",
+      "origins: `https://*.example.com` has a wildcard: name each origin",
+    ]);
   });
 
   it("reads the registries by scope, each URL ending in `/`, and who fetches", () => {
@@ -112,7 +122,7 @@ describe("readConfig", () => {
         libraries: ["D3!", { name: "d3" }],
       }),
     ).toEqual([
-      "pack: not a key of the configuration; it takes $schema, packs, imports, deny, maxPackSize, libraries, registries, fetch",
+      "pack: not a key of the configuration; it takes $schema, packs, imports, deny, maxPackSize, libraries, registries, fetch, origins",
       'packs["acme-maps"]: a pack is a scoped name (`@scope/pack`) or a folder path (`./components`)',
       'packs["acme-maps"].trsut: not an option; a pack takes trust, network, host, ambient, version',
       'packs["acme-maps"].ambient: true or false',
@@ -167,6 +177,12 @@ describe("policyOf", () => {
     });
     expect(ambient).toEqual(["@acme/app"]);
     expect(policyOf(readConfig({}), (key) => key).policy).toEqual({ packs: {}, imports: "any", deny: [] });
+  });
+
+  it("gives the processor the origins remote data may come from", () => {
+    expect(policyOf(readConfig({}), (key) => key).allowedOrigins).toEqual([]);
+    expect(policyOf(readConfig({ origins: ["https://cdn.example.com"] }), (key) => key).allowedOrigins).toEqual(["https://cdn.example.com"]);
+    expect(policyOf(readConfig({ origins: "any" }), (key) => key).allowedOrigins).toBe("any");
   });
 });
 

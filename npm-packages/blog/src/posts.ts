@@ -6,6 +6,7 @@ import { join, relative, sep } from "node:path";
 import { frontmatterOf } from "@compmd/processor";
 import { BlogError, type BlogConfig } from "./config.ts";
 import { loadProcessor } from "./processor.ts";
+import { socialImageOf, type SocialImage } from "./social-image.ts";
 
 /** A blog's posts' folder. */
 export const POSTS = "posts";
@@ -27,6 +28,8 @@ export interface Post {
   author: string;
   tags: string[];
   draft: boolean;
+  /** The image a link to it shows, `socialImage`, in place of the blog's default, when it has one. */
+  socialImage?: SocialImage;
   /** Its files, by their `/`-separated paths in the posts' folder: its document, and those of its own folder (`<slug>/`). */
   files: Record<string, string>;
 }
@@ -63,6 +66,8 @@ export function postOf(path: string, files: Record<string, string>, config: Blog
   const tags = doc.tags ?? [];
   if (!Array.isArray(tags) || !tags.every((tag) => typeof tag === "string" && tag.trim() !== "")) problems.push("`tags` is a list of names");
   if (doc.draft !== undefined && typeof doc.draft !== "boolean") problems.push("`draft` is `true` or `false`");
+  const image = doc.socialImage === undefined ? undefined : socialImageOf(doc.socialImage, "socialImage", config.url);
+  if (image && "problem" in image) problems.push(image.problem);
   if (problems.length > 0) throw new BlogError(`${POSTS}/${path}: ${problems.join("; ")}`);
   const post: Post = {
     slug: path.slice(0, -EXTENSION.length),
@@ -76,6 +81,7 @@ export function postOf(path: string, files: Record<string, string>, config: Blog
     files,
   };
   if (updated !== undefined) post.updated = updated;
+  if (image && "image" in image) post.socialImage = image.image;
   return post;
 }
 

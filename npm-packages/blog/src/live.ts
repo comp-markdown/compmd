@@ -26,11 +26,11 @@ export interface Client {
 /** The script's source, beside this module: `client.ts` here, `client.js` once built. */
 const CLIENT = fileURLToPath(new URL(`./client${extname(fileURLToPath(import.meta.url))}`, import.meta.url));
 
-/** What the blog in `dir` gives its posts: its packs, when it has a `compmd.config.json`. */
+/** What the blog in `dir` gives its posts: its packs and the origins it names, when it has a `compmd.config.json`. */
 export async function packsOf(dir: string): Promise<Given> {
   if (!existsSync(join(dir, PACKS))) return {};
   const { request } = await loadApp(dir);
-  return { packs: request.packs, ambient: request.ambient, policy: request.policy };
+  return { packs: request.packs, ambient: request.ambient, policy: request.policy, allowedOrigins: request.allowedOrigins };
 }
 
 /** The files under `dir`, by their `/`-separated paths there, but Vite's own (`.vite/`). */

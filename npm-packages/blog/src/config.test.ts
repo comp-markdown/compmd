@@ -12,11 +12,20 @@ describe("configOf", () => {
     expect(configOf({ title: "N", url: "https://example.com/", author: "A", lang: "de", description: "D", comments })).toMatchObject({ lang: "de", description: "D", comments });
   });
 
+  it("takes a default social image, its address made absolute against the blog's", () => {
+    const config = (defaultSocialImage: unknown) => configOf({ title: "N", url: "https://example.com/blog/", author: "A", defaultSocialImage });
+    expect(config({ url: "card.png", alt: "The card" }).defaultSocialImage).toEqual({ url: "https://example.com/blog/card.png", alt: "The card" });
+    expect(config({ url: "https://cdn.example/c.png", alt: "C" }).defaultSocialImage?.url).toBe("https://cdn.example/c.png");
+  });
+
   it("names every field that is missing or wrong", () => {
     expect(() => configOf({ url: "https://example.com/blog" })).toThrow(new BlogError("blog.config.json: `title` is missing; `author` is missing; `url` is an http(s) address ending in `/`"));
     expect(() => configOf({ title: "N", url: "https://example.com/", author: "A", lang: 1, comments: { giscus: { repo: "a/b" } } })).toThrow(/`lang` is text; `comments.giscus` has `repo`, `repoId`/);
     expect(() => configOf({ title: "N", url: "https://example.com/", author: "A", comments: { disqus: {} } })).toThrow(/`comments` names its provider: `giscus` is the one there is/);
     expect(() => configOf(null)).toThrow(/`title` is missing/);
+    for (const defaultSocialImage of [{ url: "card.png" }, { url: "javascript:alert(1)", alt: "A" }, "card.png"]) {
+      expect(() => configOf({ title: "N", url: "https://example.com/", author: "A", defaultSocialImage })).toThrow(/`defaultSocialImage` has a `url` \(an http\(s\) address, or one in the blog\) and an `alt`/);
+    }
   });
 });
 

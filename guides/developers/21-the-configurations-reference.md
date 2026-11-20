@@ -144,6 +144,36 @@ Each URL is `https:` (`http:` only for `localhost`, `127.0.0.1` and `[::1]`), wi
 - **`host`**: the page reaches the registries only through the app's proxy, at `compmd/registry/`, so they learn nothing about readers. The dev server and `vite preview` serve it; a deployed app serves it from its server or a worker ([chapter 18](18-other-hosts.md)).
 - **`direct`**: the reader's browser fetches from the registries named, without credentials, which then learn the reader's address and the names and versions of the packs a document imports. For an app with no server; tell your readers.
 
+### `origins`
+
+The origins documents' remote data and images come from without asking the reader: a list, each `https://host[:port]` (`http:` only for `localhost`, `127.0.0.1` and `[::1]`), or `"any"`, every origin. Default: none, so the reader is asked about each origin the first time a document needs it.
+
+```json
+{ "origins": ["https://cdn.example.com", "https://status.example.org"] }
+```
+
+- **A list**: a document's data and images from those origins load, and show, without a question; any other origin is asked about, and is F028 until the reader allows it. An origin alone: no path, query or credentials, no wildcard.
+- **`"any"`**: no origin is asked about. For documents the app publishes itself, such as a static site's pages or a blog's posts, which a reader opens as any web page (spec §15).
+
+> [!WARNING]
+> **`"origins": "any"` is only for documents you publish yourself.** With it, every document your app shows reaches any server its author names, with no question to the reader: each remote image and data fetch tells that server the reader's address and the time, and a data `from` can carry the values of the reader's inputs to it. An app that shows documents others write (an editor, a viewer, a site that takes contributions) must not set it: the question is what keeps such a document from reaching an origin its reader hasn't agreed to. Name the origins you trust instead.
+
+It changes nothing else: URL schemes, a data `from`'s literal scheme and host, and what a pack's code may reach (`packs.*.network`) stay as they are. Becomes the request's `allowedOrigins` and the sandbox's `origins.configured`.
+
+**The question itself is your app's.** The configuration only says which origins need none. For the others, the sandbox asks in a plain dialog of your page by default; to ask in your own UI, give `createSandbox` an `origins` with an `ask`, `(origin, document, kinds) => Promise<"allow" | "deny">` (`kinds` says whether the document needs the origin's data, its images, or both, and `originQuestion(origin, kinds)` gives the words), and `answers`, where they are kept (`localStorage` by default). Give `loadData` the same, so one answer covers an origin's data and its images. [Chapter 6](06-data-and-inputs.md) shows both.
+
+```ts
+import { createSandbox, localAnswers, originQuestion, type AskOrigin } from "@compmd/sandbox";
+import { sandbox } from "virtual:compmd";
+import { showOriginDialog } from "./dialogs.ts"; // your own dialog: resolves to "allow" or "deny"
+
+const ask: AskOrigin = (origin, _document, kinds) => {
+  const { question, detail } = originQuestion(origin, kinds); // "This document wants to show images from …"
+  return showOriginDialog(question, detail);
+};
+const view = createSandbox({ ...sandbox, origins: { ...sandbox.origins, ask, answers: localAnswers() } }).open(container);
+```
+
 ## The plugin's options
 
 `compmd(options)`, in `vite.config.ts`. All are optional.

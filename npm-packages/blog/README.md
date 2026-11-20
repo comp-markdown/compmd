@@ -32,9 +32,19 @@ my-blog/
   "author": "Ada Lovelace",
   "lang": "en",
   "description": "Things written down.",
-  "comments": { "giscus": { "repo": "ada/notes", "repoId": "R_…", "category": "Blog", "categoryId": "DIC_…" } }
+  "comments": { "giscus": { "repo": "ada/notes", "repoId": "R_…", "category": "Blog", "categoryId": "DIC_…" } },
+  "defaultSocialImage": { "url": "card.png", "alt": "Notes, by Ada Lovelace" }
 }
 ```
+
+A post's images and remote data from the blog's own origin show without asking its readers; those of the origins its
+`compmd.config.json` names in `origins` too, and with `"origins": "any"` every one, as for a site's own pages (spec
+§15). An image from another origin shows its alt text, and the build says so.
+
+A post's social image is the image a link to it shows on social sites and in chats (its Open Graph image, as a large
+card): its own `socialImage`, in its frontmatter. `defaultSocialImage` is optional: the one every other page shows,
+and a post without its own. Each has a `url`, an http(s) address or one in the blog (`card.png` is `posts/card.png`,
+written at the blog's root), and an `alt`.
 
 `comments` is optional, and names its provider: with `giscus`, the one there is so far, each post's comments are a
 discussion of the repository's GitHub Discussions, through [giscus](https://giscus.app) (its page gives the ids), one
@@ -51,6 +61,7 @@ tags: [design, intro]        # optional
 author: Grace Hopper         # optional: the blog's author otherwise
 updated: 2026-12-01          # optional: when it changed after it was published
 draft: true                  # optional: shown by `cblo dev`, left out of `cblo build`
+socialImage: {url: why-compmd/cover.png, alt: A page and its source}   # optional: the blog's default otherwise
 ---
 ```
 

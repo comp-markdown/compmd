@@ -11,6 +11,7 @@ mod from;
 mod inputs;
 mod schema;
 
+use crate::AllowedOrigins;
 use crate::cel::{Key, Value};
 use crate::context::RenderContext;
 use crate::diagnostic::{Code, Diagnostic, Location, Stage};
@@ -52,12 +53,12 @@ impl Loaded {
 }
 
 /// The remote and `host:` sources a render with `context` needs, each once, in the order they are first written; the
-/// remote URLs of origins `allowed_origins` leaves out; and the packs resolving found no release for.
+/// remote URLs of origins `allowed_origins` doesn't allow; and the packs resolving found no release for.
 pub(crate) fn sources(
     resolved: &Resolved,
     validated: &Validated,
     context: &RenderContext,
-    allowed_origins: &[String],
+    allowed_origins: &AllowedOrigins,
 ) -> Needed {
     let (inputs, _) = inputs::of(resolved, context);
     let input = inputs.value();
@@ -70,9 +71,7 @@ pub(crate) fn sources(
         let (list, source) = match from::target(resolved, id, import, &input) {
             Ok(Target::Remote(url)) if !refused => (&mut needed.remote, url),
             Ok(Target::Remote(url))
-                if origin(&url).is_some_and(|origin| {
-                    !allowed_origins.iter().any(|allowed| allowed == origin)
-                }) =>
+                if origin(&url).is_some_and(|origin| !allowed_origins.allows(origin)) =>
             {
                 (&mut needed.disallowed, url)
             }

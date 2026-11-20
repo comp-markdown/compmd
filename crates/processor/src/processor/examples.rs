@@ -5,6 +5,7 @@
 //! block's text is written. Inside an example, a ` ```compmd ` block that would render shows its source (W123).
 
 use super::{EditContext, Expanded, HostFiles, Loaded, Processor, RenderInputs, Validated, back};
+use crate::AllowedOrigins;
 use crate::diagnostic::{Code, Diagnostic, Location, Range};
 use crate::expanded::{self, Root};
 use crate::host::{Needed, Pending};
@@ -179,7 +180,7 @@ impl Examples {
         resolved: &Resolved,
         store: &HostFiles,
         context: &EditContext,
-        allowed_origins: &[String],
+        allowed_origins: &AllowedOrigins,
         diagnostics: &mut Vec<Diagnostic>,
     ) -> Self {
         let document = resolved.document(resolved.main);

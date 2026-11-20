@@ -5,7 +5,7 @@
 
 import type { Diagnostic, ExpandedInput, PositionalHint, Request } from "@compmd/processor";
 import { codePointOffset, type Change } from "@compmd/render";
-import { loadData, type View } from "@compmd/sandbox";
+import { loadData, type ConfiguredOrigins, type View } from "@compmd/sandbox";
 import type { DevtoolsDocument } from "./document.ts";
 import { editOf, fixOf, type Selection } from "./edit.ts";
 import { Session, type Hinted, type Update, type WorkerPort } from "./session.ts";
@@ -63,8 +63,8 @@ export class Editor {
   /** Where the caret is: after an input, it moves there without the reader moving it. */
   #caret = 0;
   #request: Request | undefined;
-  /** The origins the document came with, which the reader is never asked about. */
-  #configured: readonly string[] = [];
+  /** The origins the document came with, which the reader is never asked about; `"any"` for every origin. */
+  #configured: ConfiguredOrigins = [];
   readonly #load: typeof loadData;
   #inputs: Record<string, unknown> = {};
   /** When each render sent to the frame started, for its paint. */
@@ -221,10 +221,12 @@ export class Editor {
     const { allowedOrigins, remote } = await this.#load(needed, { configured: this.#configured, document: request.path });
     const current = this.#request;
     if (current !== request) return;
-    const known = new Set(request.allowedOrigins ?? []);
-    const newOrigins = allowedOrigins.filter((origin) => !known.has(origin));
-    if (newOrigins.length === 0 && Object.keys(remote).length === 0) return;
-    this.#request = { ...request, allowedOrigins: [...known, ...newOrigins], remote: { ...request.remote, ...remote } };
+    const known = request.allowedOrigins ?? [];
+    // Every origin stays every origin; otherwise the reader's new ones join those the document came with.
+    const allowed = known === "any" || allowedOrigins === "any" ? "any" : [...new Set([...known, ...allowedOrigins])];
+    const widened = allowed === "any" ? known !== "any" : allowed.length > known.length;
+    if (!widened && Object.keys(remote).length === 0) return;
+    this.#request = { ...request, allowedOrigins: allowed, remote: { ...request.remote, ...remote } };
     this.#reopen();
   }
 

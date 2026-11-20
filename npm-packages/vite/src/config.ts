@@ -47,6 +47,12 @@ export interface Config {
   registries?: Record<string, string>;
   /** Who fetches from them: `host` (the default), through the app's own proxy; `direct`, the reader's browser. */
   fetch?: "host" | "direct";
+  /**
+   * The origins documents' remote data and images may come from without asking the reader, each `https://host[:port]`;
+   * or `"any"`, every origin, for documents the app publishes itself, such as a static site's or a blog's (spec §15).
+   * None by default: the reader is asked about each.
+   */
+  origins?: string[] | "any";
 }
 
 /** A pack's trust, as the processor takes it. */
@@ -71,6 +77,8 @@ export interface ReadConfig {
   /** Each registry's URL, ending in `/`, by scope or `*`; empty for none. */
   registries: Record<string, string>;
   fetch: "host" | "direct";
+  /** The origins documents' data and images need no question for, normalized; or `"any"`; empty for none. */
+  origins: string[] | "any";
 }
 
 /** What is wrong with a configuration: every problem found, each with where it is. */
@@ -92,13 +100,13 @@ const PACKAGE = /^(?:@[a-z0-9][a-z0-9._~-]*\/)?[a-z0-9][a-z0-9._~-]*$/;
 const SIZE = /^(\d+(?:\.\d+)?)\s*(B|KB|MB|GB)$/i;
 const UNITS: Record<string, number> = { B: 1, KB: 1e3, MB: 1e6, GB: 1e9 };
 const SCOPE = /^@[a-z0-9~-][a-z0-9._~-]*$/;
-const TOP_KEYS = new Set(["$schema", "packs", "imports", "deny", "maxPackSize", "libraries", "registries", "fetch"]);
+const TOP_KEYS = new Set(["$schema", "packs", "imports", "deny", "maxPackSize", "libraries", "registries", "fetch", "origins"]);
 const PACK_KEYS = new Set(["trust", "network", "host", "ambient", "version"]);
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
 const isStrings = (value: unknown): value is string[] => Array.isArray(value) && value.every((item) => typeof item === "string");
 
-/** `origin` as `https://host[:port]`, or why it isn't one a pack may be given. */
+/** `origin` as `https://host[:port]`, or why it isn't one a pack may be given or documents may reach. */
 function originOf(origin: string): { origin: string } | { problem: string } {
   let url: URL;
   try {
@@ -142,6 +150,23 @@ function readRegistries(registries: unknown, problems: string[]): Record<string,
     else read[scope] = checked.url;
   }
   return read;
+}
+
+/** The origins documents may reach without a question, read, adding what's wrong with them to `problems`. */
+function readOrigins(origins: unknown, problems: string[]): string[] | "any" {
+  if (origins === "any") return "any";
+  if (!isStrings(origins)) {
+    problems.push('origins: a list of origins, such as `["https://cdn.example.com"]`, or `"any"` for every origin');
+    return [];
+  }
+  return origins.flatMap((written) => {
+    const read = originOf(written);
+    if ("problem" in read) {
+      problems.push(`origins: ${read.problem}`);
+      return [];
+    }
+    return [read.origin];
+  });
 }
 
 /** `size` in bytes, or `undefined` when it isn't a size. */
@@ -236,6 +261,7 @@ export function readConfig(value: unknown, where = "compmd.config.json"): ReadCo
   const registries = value.registries === undefined ? {} : readRegistries(value.registries, problems);
   const fetch = value.fetch ?? "host";
   if (fetch !== "host" && fetch !== "direct") problems.push("fetch: `host` or `direct`");
+  const origins = value.origins === undefined ? [] : readOrigins(value.origins, problems);
   if (problems.length > 0) throw new ConfigError(where, problems);
   return {
     packs,
@@ -245,13 +271,18 @@ export function readConfig(value: unknown, where = "compmd.config.json"): ReadCo
     libraries,
     registries,
     fetch: fetch === "direct" ? "direct" : "host",
+    origins,
   };
 }
 
-/** What the processor takes from a configuration: the policy and the ambient packs (`Request.policy`, `Request.ambient`). */
+/**
+ * What the processor takes from a configuration: the policy, the ambient packs and the origins remote data may come
+ * from (`Request.policy`, `Request.ambient`, `Request.allowedOrigins`).
+ */
 export interface Translated {
   policy: Policy;
   ambient: string[];
+  allowedOrigins: string[] | "any";
 }
 
 /**
@@ -261,8 +292,8 @@ export interface Translated {
  * @param nameOf The pack name of a pack key: a folder pack's `package.json` name; a pack name is its own.
  * @param refused Packs the host left out, each with why, such as being larger than `maxPackSize`.
  * @example
- * const { policy, ambient } = policyOf(config, (key) => (isFolder(key) ? "@acme/app" : key));
- * process({ path, files, now, policy, ambient });
+ * const { policy, ambient, allowedOrigins } = policyOf(config, (key) => (isFolder(key) ? "@acme/app" : key));
+ * process({ path, files, now, policy, ambient, allowedOrigins });
  */
 export function policyOf(config: ReadConfig, nameOf: (key: string) => string, refused: Readonly<Record<string, string>> = {}): Translated {
   const packs: NonNullable<Policy["packs"]> = {};
@@ -274,5 +305,5 @@ export function policyOf(config: ReadConfig, nameOf: (key: string) => string, re
   }
   const policy: Policy = { packs, imports: config.imports, deny: config.deny };
   if (Object.keys(refused).length > 0) policy.refused = { ...refused };
-  return { policy, ambient };
+  return { policy, ambient, allowedOrigins: config.origins === "any" ? "any" : [...config.origins] };
 }

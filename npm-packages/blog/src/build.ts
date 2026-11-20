@@ -12,8 +12,10 @@ import { applyLayout, defaultLayout, LAYOUT } from "./layout.ts";
 import { addressOf, listPage, postPage, tagPage, tagsIn, tagsPage, type Page } from "./pages.ts";
 import { POST_DATA } from "./client-data.ts";
 import { buildClient, packsOf, type Client } from "./live.ts";
+import { blogOrigins } from "./origins.ts";
 import { EXTENSION, POSTS, readPosts, type Post } from "./posts.ts";
 import { renderPost } from "./render.ts";
+import { socialImageTags } from "./social-image.ts";
 
 /** A blog's own stylesheet's file, after the default's. */
 export const THEME = "theme.css";
@@ -47,7 +49,7 @@ export interface Site {
 /** The default stylesheet, shipped with the package. */
 const DEFAULT_THEME = new URL("../theme/default.css", import.meta.url);
 
-/** A page's head: its title, description, address, Open Graph tags, the feed, and its stylesheets. */
+/** A page's head: its title, description, address, Open Graph tags and social image, the feed, and its stylesheets. */
 function headOf(config: BlogConfig, page: Page): string {
   const address = addressOf(config, page.path);
   const lines = [
@@ -59,6 +61,7 @@ function headOf(config: BlogConfig, page: Page): string {
     `<meta property="og:url" content="${escape(address)}">`,
     `<meta property="og:type" content="${page.article ? "article" : "website"}">`,
     ...(page.article ? [`<meta property="article:published_time" content="${page.article.date}">`] : []),
+    ...socialImageTags(page.article?.socialImage ?? config.defaultSocialImage),
     `<link rel="alternate" type="application/atom+xml" title="${escape(config.title)}" href="${escape(new URL("feed.xml", config.url).pathname)}">`,
     `<link rel="stylesheet" href="${escape(new URL("style.css", config.url).pathname)}">`,
     ...(page.css ? [`<style>${page.css}</style>`] : []),
@@ -81,10 +84,13 @@ async function postFiles(dir: string): Promise<Map<string, Uint8Array>> {
 /** The page's script, built once for each blog while a `cblo dev` runs. */
 const clients = new Map<string, Promise<Client>>();
 
-/** What a live post's page adds: its document and files for the script, as JSON, and the script. */
-function liveOf(post: Post, script: string): string {
+/**
+ * What a live post's page adds: its document and files for the script, and the origins it reaches without asking a
+ * reader, as the build rendered it with, as JSON; and the script.
+ */
+function liveOf(post: Post, script: string, origins: string[] | "any"): string {
   // `<` written as `<`, so nothing in the post's text ends the element.
-  const data = JSON.stringify({ path: post.path, files: post.files }).replace(/</g, "\\u003c");
+  const data = JSON.stringify({ path: post.path, files: post.files, origins }).replace(/</g, "\\u003c");
   return `<script type="application/json" id="${POST_DATA}">${data}</script><script type="module" src="${escape(script)}"></script>`;
 }
 
@@ -96,6 +102,8 @@ export async function buildSite(dir: string, { drafts, now = new Date().toISOStr
   const theme = [await readFile(DEFAULT_THEME, "utf8"), existsSync(join(dir, THEME)) ? await readFile(join(dir, THEME), "utf8") : ""].join("\n");
   const highlight = await highlighter();
   const blogPacks = await packsOf(dir);
+  const origins = blogOrigins(config, blogPacks.allowedOrigins);
+  const given = { ...blogPacks, allowedOrigins: origins };
   const base = new URL(config.url).pathname;
   const warnings: string[] = [];
   const html = new Map<string, string>();
@@ -104,7 +112,7 @@ export async function buildSite(dir: string, { drafts, now = new Date().toISOStr
   let client: Client | undefined;
   for (const [i, post] of posts.entries()) {
     // A post's page is a folder below the posts', so its relative links take one `../` more.
-    const rendered = await renderPost(post, now, highlight, blogPacks, "../");
+    const rendered = await renderPost(post, now, highlight, given, "../");
     warnings.push(...rendered.warnings);
     html.set(post.slug, rendered.html);
     const page = postPage(config, post, rendered, posts[i - 1], posts[i + 1]);
@@ -115,7 +123,7 @@ export async function buildSite(dir: string, { drafts, now = new Date().toISOStr
         client = await building;
         for (const [path, content] of client.files) files.set(path, content);
       }
-      page.content += liveOf(post, `${base}${client.script}`);
+      page.content += liveOf(post, `${base}${client.script}`, origins);
     }
     pages.push(page);
   }

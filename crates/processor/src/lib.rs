@@ -20,6 +20,7 @@
 //! assert_eq!(json["children"][0]["type"], "componentLeaf");
 //! ```
 
+mod allowed_origins;
 mod breakpoint;
 mod cel;
 pub mod components;
@@ -48,6 +49,7 @@ mod validate;
 pub mod values;
 
 /// The names packs and their files are known by: `PackName`, `ReleaseId`, `FilePath`, `Place`, `Integrity`.
+pub use allowed_origins::AllowedOrigins;
 pub use compmd_pack as pack;
 pub use parse::{ParseOptions, TextEdit};
 pub use processor::Processor;

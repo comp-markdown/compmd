@@ -148,3 +148,27 @@ describe("no registries", () => {
     }
   }, 60_000);
 });
+
+// Not registries, but the same app and its `virtual:compmd`: the origins its documents reach without a question.
+describe("origins", () => {
+  it("gives the processor's request and the sandbox's image gate the configuration's origins, and neither any without", async () => {
+    const loaded = async (config: object) => {
+      await writeApp(config);
+      const dev = await createServer(viteConfig(PORT));
+      try {
+        return (await dev.ssrLoadModule("virtual:compmd")) as { request: { allowedOrigins: unknown }; sandbox: { origins?: { configured: unknown } } };
+      } finally {
+        await dev.close();
+      }
+    };
+    const every = await loaded({ origins: "any" });
+    expect(every.request.allowedOrigins).toBe("any");
+    expect(every.sandbox.origins).toEqual({ configured: "any" });
+    const named = await loaded({ origins: ["https://cdn.example.com"] });
+    expect(named.request.allowedOrigins).toEqual(["https://cdn.example.com"]);
+    expect(named.sandbox.origins).toEqual({ configured: ["https://cdn.example.com"] });
+    const none = await loaded({});
+    expect(none.request.allowedOrigins).toEqual([]);
+    expect(none.sandbox.origins).toBeUndefined();
+  }, 60_000);
+});

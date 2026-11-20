@@ -17,6 +17,7 @@ export {
   originQuestion,
   type AllowOriginsOptions,
   type AskOrigin,
+  type ConfiguredOrigins,
   type LoadDataOptions,
   type LoadedData,
   type OriginAnswer,

@@ -48,6 +48,12 @@ describe("allowOrigins", () => {
     expect(asked).toEqual([]);
   });
 
+  it("asks about nothing, and allows every origin, when the host does (spec §15)", async () => {
+    const { ask, asked } = reader("deny");
+    expect(await allowOrigins(["https://api.example.com/a.json"], { configured: "any", document: "a.comp.md", ask })).toBe("any");
+    expect(asked).toEqual([]);
+  });
+
   it("asks again once the answer is forgotten", async () => {
     const { ask, asked } = reader("deny");
     await allowOrigins(["https://api.example.com/a.json"], { configured: [], document: "a.comp.md", ask });
@@ -110,6 +116,18 @@ describe("loadData", () => {
     const refused = await render(`${denied}${tag}.json`);
     expect(refused.codes).toEqual(["F028"]);
     expect(refused.text).toContain("[cached]");
+  });
+
+  it("fetches from every origin, asking nothing, when the host allows every origin, and the processor refuses none", async () => {
+    const tag = tagged();
+    const asked: AskOrigin = () => Promise.reject(new Error("asked"));
+    const url = `${allowed}${tag}.json`;
+    const request = documentFrom(url);
+    const loaded = await loadData([url], { configured: "any", document: request.path, ask: asked });
+    expect(loaded.allowedOrigins).toBe("any");
+    expect(loaded.remote[url]?.text).toBe("probed");
+    expect(await hits(allowed, tag)).toHaveLength(1);
+    expect(process({ ...request, ...loaded }).diagnostics.map(({ code }) => code)).not.toContain("F028");
   });
 
   it("fetches nothing but from the configured origins when no reader can be asked", async () => {
