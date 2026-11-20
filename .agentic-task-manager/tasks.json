@@ -13176,7 +13176,7 @@
       "description": "[Sizing a component in its box](docs/sizing-components.md), *What changes*, the spec, with the processor that implements it. The spec's text needs the maintainer's go before it is pushed.\n\n## The spec\n- §9.2: `object-fit` (`contain`, `cover`, `fill`) and `object-position` (one or two of `start`, `center`, `end`, block then inline), written without a breakpoint (F009); \"padding and border\" (decisions 1 and 6).\n- §7.4: `fit` in `mount`'s context; a component fits its box; framing is invisible to layout; natural sizes (decisions 1 to 3). §7.6: the bindings pass `compmd.fit`.\n- §7, *The component's box*: a signature fence's param list as the box's defaults; F036's new meaning (decision 4).\n- §5.1 and F013: the common params' names, `lang` and `dir` in a signature (decision 5).\n- §12.1: the signature fence's `params`. The changelog entry under *Unreleased*.\n\n## Conformance\nThe design's table: `definitions/fence-params`, `definitions/signature-types` and `resolve/params-differ-in-dash-F013` changed; the six new cases; `compmd-tree.schema.json` and `conformance/README.md`.\n\n## The processor\nThe signature fence's params parsed and kept; F036 at resolving; F013 for the names; the two params validated; a signature fence's defaults under the caller's in the expanded tree, as a definition fence's are.\n\n## Done when\n`cargo make ci` is green, and the guides' chapters on the common params and on signatures say it.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68e5ebcaa0da"
       ],
@@ -13188,7 +13188,7 @@
         "guides/"
       ],
       "created_at": "2026-11-20T20:26:42Z",
-      "updated_at": "2026-11-20T21:16:34Z",
+      "updated_at": "2026-11-20T21:40:04Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -13200,7 +13200,24 @@
       "sprint": "Packs 1: the pack tool, no-code components",
       "number": 353,
       "started_at": "2026-11-20T21:16:34Z",
-      "started_by": "claude:79612601"
+      "started_by": "claude:79612601",
+      "commit": "c0f7c628c2bf0847fc3d97e8d0752d8458cf8e91",
+      "code_reviews": [
+        {
+          "id": "01a1fae6-fc79-728f-bd65-758beec244f7",
+          "ref": "CR-33"
+        }
+      ],
+      "review_requested_at": "2026-11-20T21:40:04Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-20T21:40:04Z",
+          "kind": "review",
+          "text": "CR-33: Sizing: the spec, its conformance cases and the processor",
+          "by": "claude:79612601"
+        }
+      ]
     },
     {
       "id": "01a1faa3-d27f-73b4-9632-1833aa21548d",

@@ -1,0 +1,1438 @@
+diff --git a/conformance/README.md b/conformance/README.md
+index 1f24329..3380f3d 100644
+--- a/conformance/README.md
++++ b/conformance/README.md
+@@ -13,10 +13,10 @@ Test cases for implementations of the [CompMD spec](../spec/compmd-spec-v1.md).
+ | `params/` | Every param kind, breakpoint prefixes, classes and ids, escapes, Unicode, and broken params (F011, F017) |
+ | `lines/` | Malformed component lines (F016) |
+ | `interpolation/` | `{{ }}` in text, blocks, links and definitions (W106) |
+-| `definitions/` | Component definitions and signature fences: types, `input<…>`, template slots, `headings`, `print`, `runtime`, and the fence's param list for the component's box (F011, F017, F036 on a signature fence) |
+-| `resolve/` | Names through local definitions, imports, a stubbed registry (`context.json` `registry`), ambient packs and `@compmd/core`: F002, F013, F019–F023, F026, F029, F035, F037 (in signatures, inputs and schemas), W102 (also for a runtime the host doesn't run, `context.json` `policy.runtimes`), W104 (component analysis), W105, W112, W113, W117, W122 (a signature's `print`), W121 (a pack's `peerDependencies` against `policy.runtimes` and `policy.libraries`, and library packs: a second version of a `single` one, one that can't be had) |
+-| `validate/` | Params, common params and layout values, slots, interpolation paths, inputs and data sources, and `display=contents`: F006, F008–F010, F013, F014, F018, F028, F030, F031, W103, W120 |
+-| `expand/` | Stages 4a and 4b: definitions with params and slots, relative headings, `if`, `each` and its join modes, `value`, how values are written, URLs (W109), template slots, layout boxes and breakpoints, the component's box (the fence's params with the caller's over them, `display=contents`, host-language components' fences), host-language components' defaults, input-bound params and the root's inputs, data files, remote and `host:` data (F026, F027), inputs, expression errors (F024), F025, F034, W114, W118 for a React component that throws, and origins (the `origins` feature) |
++| `definitions/` | Component definitions and signature fences: types, `input<…>`, template slots, `headings`, `print`, `runtime`, and the fence's param list for the component's box, a signature fence's too (F011, F017) |
++| `resolve/` | Names through local definitions, imports, a stubbed registry (`context.json` `registry`), ambient packs and `@compmd/core`: F002, F013 (a common param, `lang` or `dir` declared too), F019–F023, F026, F029, F035, F036 (a box styled by both fences), F037 (in signatures, inputs and schemas), W102 (also for a runtime the host doesn't run, `context.json` `policy.runtimes`), W104 (component analysis), W105, W112, W113, W117, W122 (a signature's `print`), W121 (a pack's `peerDependencies` against `policy.runtimes` and `policy.libraries`, and library packs: a second version of a `single` one, one that can't be had) |
++| `validate/` | Params, common params and layout values (`object-fit` and `object-position` among them, and a signature fence's), slots, interpolation paths, inputs and data sources, and `display=contents`: F006, F008–F010, F013, F014, F018, F028, F030, F031, W103, W120 |
++| `expand/` | Stages 4a and 4b: definitions with params and slots, relative headings, `if`, `each` and its join modes, `value`, how values are written, URLs (W109), template slots, layout boxes and breakpoints, the component's box (the fence's params with the caller's over them, `display=contents`, host-language components' fences, a signature fence's defaults, `object-fit` and `object-position`), host-language components' defaults, input-bound params and the root's inputs, data files, remote and `host:` data (F026, F027), inputs, expression errors (F024), F025, F034, W114, W118 for a React component that throws, and origins (the `origins` feature) |
+ | `examples/` | The spec's own examples, and the complete example in `../spec/examples/complete/` |
+ 
+ The set covers stages 1 to 4b (§11): parsing, resolving, validating, loading and expanding.
+diff --git a/conformance/compmd-tree.schema.json b/conformance/compmd-tree.schema.json
+index 5f9577b..de7d42f 100644
+--- a/conformance/compmd-tree.schema.json
++++ b/conformance/compmd-tree.schema.json
+@@ -166,12 +166,14 @@
+       "additionalProperties": false
+     },
+     "signatureFence": {
+-      "required": ["name", "signature"],
++      "description": "A signature fence (§7.1, §12.1): its param list styles the box of the component it attaches to (§7).",
++      "required": ["name", "signature", "params"],
+       "properties": {
+         "type": true,
+         "position": true,
+         "name": { "type": "string" },
+-        "signature": { "oneOf": [{ "$ref": "#/$defs/signature" }, { "type": "null" }] }
++        "signature": { "oneOf": [{ "$ref": "#/$defs/signature" }, { "type": "null" }] },
++        "params": { "type": "array", "items": { "$ref": "#/$defs/param" } }
+       },
+       "additionalProperties": false
+     },
+diff --git a/conformance/definitions/fence-params/diagnostics.json b/conformance/definitions/fence-params/diagnostics.json
+index 791cc5a..fcced8b 100644
+--- a/conformance/definitions/fence-params/diagnostics.json
++++ b/conformance/definitions/fence-params/diagnostics.json
+@@ -1,9 +1,4 @@
+ [
+-  {
+-    "code": "F036",
+-    "line": 11,
+-    "column": 38
+-  },
+   {
+     "code": "F017",
+     "line": 15,
+diff --git a/conformance/definitions/fence-params/parse.json b/conformance/definitions/fence-params/parse.json
+index 6f84f4a..9f977e9 100644
+--- a/conformance/definitions/fence-params/parse.json
++++ b/conformance/definitions/fence-params/parse.json
+@@ -148,6 +148,26 @@
+         "slots": null,
+         "headings": "relative"
+       },
++      "params": [
++        {
++          "key": "height",
++          "breakpoint": null,
++          "kind": "bare",
++          "value": "16rem",
++          "position": {
++            "start": {
++              "line": 11,
++              "column": 38,
++              "offset": 240
++            },
++            "end": {
++              "line": 11,
++              "column": 50,
++              "offset": 252
++            }
++          }
++        }
++      ],
+       "position": {
+         "start": {
+           "line": 11,
+diff --git a/conformance/definitions/long-form-declaration/parse.json b/conformance/definitions/long-form-declaration/parse.json
+index bd30bb8..de244dd 100644
+--- a/conformance/definitions/long-form-declaration/parse.json
++++ b/conformance/definitions/long-form-declaration/parse.json
+@@ -3,6 +3,7 @@
+   "children": [
+     {
+       "type": "componentSignature",
++      "params": [],
+       "name": "chart",
+       "signature": {
+         "params": [
+diff --git a/conformance/definitions/processor-component-signature/parse.json b/conformance/definitions/processor-component-signature/parse.json
+index c1551db..76f257d 100644
+--- a/conformance/definitions/processor-component-signature/parse.json
++++ b/conformance/definitions/processor-component-signature/parse.json
+@@ -3,6 +3,7 @@
+   "children": [
+     {
+       "type": "componentSignature",
++      "params": [],
+       "name": "box",
+       "signature": {
+         "params": [
+diff --git a/conformance/definitions/signature-fence/parse.json b/conformance/definitions/signature-fence/parse.json
+index 4acef89..2f71c75 100644
+--- a/conformance/definitions/signature-fence/parse.json
++++ b/conformance/definitions/signature-fence/parse.json
+@@ -3,6 +3,7 @@
+   "children": [
+     {
+       "type": "componentSignature",
++      "params": [],
+       "name": "chart",
+       "signature": {
+         "params": [
+diff --git a/conformance/definitions/signature-print/parse.json b/conformance/definitions/signature-print/parse.json
+index e3d0bf2..6b7bcc6 100644
+--- a/conformance/definitions/signature-print/parse.json
++++ b/conformance/definitions/signature-print/parse.json
+@@ -3,6 +3,7 @@
+   "children": [
+     {
+       "type": "componentSignature",
++      "params": [],
+       "name": "map",
+       "signature": {
+         "params": [
+diff --git a/conformance/definitions/signature-types/input.comp.md b/conformance/definitions/signature-types/input.comp.md
+index fe421c7..d877857 100644
+--- a/conformance/definitions/signature-types/input.comp.md
++++ b/conformance/definitions/signature-types/input.comp.md
+@@ -4,7 +4,7 @@ params:
+   as: name
+   since: date = (md.today())
+   gap: space = m
+-  width: length?
++  stroke: length?
+   selected: input<string>
+   tone: info | warn = info
+ ```
+diff --git a/conformance/definitions/signature-types/parse.json b/conformance/definitions/signature-types/parse.json
+index 7453c47..ad8b75c 100644
+--- a/conformance/definitions/signature-types/parse.json
++++ b/conformance/definitions/signature-types/parse.json
+@@ -3,6 +3,7 @@
+   "children": [
+     {
+       "type": "componentSignature",
++      "params": [],
+       "name": "chart",
+       "signature": {
+         "params": [
+@@ -41,7 +42,7 @@
+             "doc": null
+           },
+           {
+-            "name": "width",
++            "name": "stroke",
+             "type": "length",
+             "optional": true,
+             "default": null,
+diff --git a/conformance/definitions/template-slots/parse.json b/conformance/definitions/template-slots/parse.json
+index f136c1c..df7afd5 100644
+--- a/conformance/definitions/template-slots/parse.json
++++ b/conformance/definitions/template-slots/parse.json
+@@ -3,6 +3,7 @@
+   "children": [
+     {
+       "type": "componentSignature",
++      "params": [],
+       "name": "board",
+       "signature": {
+         "params": [
+diff --git a/conformance/examples/complete-example/parse.json b/conformance/examples/complete-example/parse.json
+index 46079ba..e1b4708 100644
+--- a/conformance/examples/complete-example/parse.json
++++ b/conformance/examples/complete-example/parse.json
+@@ -328,6 +328,7 @@
+     },
+     {
+       "type": "componentSignature",
++      "params": [],
+       "name": "board",
+       "signature": {
+         "params": [
+@@ -374,6 +375,7 @@
+     },
+     {
+       "type": "componentSignature",
++      "params": [],
+       "name": "sparkline",
+       "signature": {
+         "params": [
+diff --git a/conformance/expand/object-fit-and-position/case.json b/conformance/expand/object-fit-and-position/case.json
+new file mode 100644
+index 0000000..e3ed789
+--- /dev/null
++++ b/conformance/expand/object-fit-and-position/case.json
+@@ -0,0 +1 @@
++{"requires":["processor","js"]}
+diff --git a/conformance/expand/object-fit-and-position/expanded.json b/conformance/expand/object-fit-and-position/expanded.json
+new file mode 100644
+index 0000000..87544d6
+--- /dev/null
++++ b/conformance/expand/object-fit-and-position/expanded.json
+@@ -0,0 +1,71 @@
++{
++  "type": "root",
++  "children": [
++    {
++      "type": "componentLeaf",
++      "name": "photo",
++      "params": [
++        {
++          "key": "object-fit",
++          "breakpoint": null,
++          "value": "cover"
++        },
++        {
++          "key": "object-position",
++          "breakpoint": null,
++          "value": "center"
++        }
++      ],
++      "fallback": [
++        {
++          "type": "text",
++          "value": "The pack's defaults"
++        }
++      ]
++    },
++    {
++      "type": "componentLeaf",
++      "name": "photo",
++      "params": [
++        {
++          "key": "object-fit",
++          "breakpoint": null,
++          "value": "contain"
++        },
++        {
++          "key": "object-position",
++          "breakpoint": null,
++          "value": "start"
++        }
++      ],
++      "fallback": [
++        {
++          "type": "text",
++          "value": "Contained at the start"
++        }
++      ]
++    },
++    {
++      "type": "componentLeaf",
++      "name": "photo",
++      "params": [
++        {
++          "key": "object-fit",
++          "breakpoint": null,
++          "value": "cover"
++        },
++        {
++          "key": "object-position",
++          "breakpoint": null,
++          "value": "end start"
++        }
++      ],
++      "fallback": [
++        {
++          "type": "text",
++          "value": "Placed by the document"
++        }
++      ]
++    }
++  ]
++}
+diff --git a/conformance/expand/object-fit-and-position/input.comp.md b/conformance/expand/object-fit-and-position/input.comp.md
+new file mode 100644
+index 0000000..b758769
+--- /dev/null
++++ b/conformance/expand/object-fit-and-position/input.comp.md
+@@ -0,0 +1,17 @@
++---
++place: "end start"
++---
++
++```js component=photo
++export default function mount() {}
++```
++
++```compmd component=photo signature {object-fit=cover object-position=center}
++params: {}
++```
++
++:: photo[The pack's defaults]
++
++:: photo[Contained at the start] {object-fit=contain object-position=start}
++
++:: photo[Placed by the document] {object-position=(md.doc.place)}
+diff --git a/conformance/expand/signature-box-defaults/case.json b/conformance/expand/signature-box-defaults/case.json
+new file mode 100644
+index 0000000..e3ed789
+--- /dev/null
++++ b/conformance/expand/signature-box-defaults/case.json
+@@ -0,0 +1 @@
++{"requires":["processor","js"]}
+diff --git a/conformance/expand/signature-box-defaults/expanded.json b/conformance/expand/signature-box-defaults/expanded.json
+new file mode 100644
+index 0000000..046c0f0
+--- /dev/null
++++ b/conformance/expand/signature-box-defaults/expanded.json
+@@ -0,0 +1,91 @@
++{
++  "type": "root",
++  "children": [
++    {
++      "type": "componentLeaf",
++      "name": "qr",
++      "params": [
++        {
++          "key": "width",
++          "breakpoint": null,
++          "value": "12rem"
++        },
++        {
++          "key": "max-width",
++          "breakpoint": null,
++          "value": "100%"
++        },
++        {
++          "key": "value",
++          "breakpoint": null,
++          "value": "https://compmd.dev/"
++        }
++      ],
++      "fallback": [
++        {
++          "type": "text",
++          "value": "Our site"
++        }
++      ]
++    },
++    {
++      "type": "componentLeaf",
++      "name": "qr",
++      "params": [
++        {
++          "key": "max-width",
++          "breakpoint": null,
++          "value": "100%"
++        },
++        {
++          "key": "value",
++          "breakpoint": null,
++          "value": "https://compmd.dev/"
++        },
++        {
++          "key": "width",
++          "breakpoint": null,
++          "value": "6rem"
++        }
++      ],
++      "fallback": [
++        {
++          "type": "text",
++          "value": "Smaller"
++        }
++      ]
++    },
++    {
++      "type": "componentLeaf",
++      "name": "qr",
++      "params": [
++        {
++          "key": "width",
++          "breakpoint": null,
++          "value": "12rem"
++        },
++        {
++          "key": "max-width",
++          "breakpoint": null,
++          "value": "100%"
++        },
++        {
++          "key": "value",
++          "breakpoint": null,
++          "value": "https://compmd.dev/"
++        },
++        {
++          "key": "width",
++          "breakpoint": "md",
++          "value": "8rem"
++        }
++      ],
++      "fallback": [
++        {
++          "type": "text",
++          "value": "Wider from md"
++        }
++      ]
++    }
++  ]
++}
+diff --git a/conformance/expand/signature-box-defaults/input.comp.md b/conformance/expand/signature-box-defaults/input.comp.md
+new file mode 100644
+index 0000000..97f85b9
+--- /dev/null
++++ b/conformance/expand/signature-box-defaults/input.comp.md
+@@ -0,0 +1,14 @@
++```js component=qr
++export default function mount() {}
++```
++
++```compmd component=qr signature {width=12rem max-width=100%}
++params:
++  value: string
++```
++
++:: qr[Our site] {value="https://compmd.dev/"}
++
++:: qr[Smaller] {value="https://compmd.dev/" width=6rem}
++
++:: qr[Wider from md] {value="https://compmd.dev/" md:width=8rem}
+diff --git a/conformance/params.json b/conformance/params.json
+index aff046d..c6eb512 100644
+--- a/conformance/params.json
++++ b/conformance/params.json
+@@ -327,6 +327,34 @@
+       "quoted": true,
+       "breakpoints": true
+     },
++    {
++      "name": "object-fit",
++      "tokens": [
++        "contain",
++        "cover",
++        "fill"
++      ],
++      "forms": [],
++      "examples": [],
++      "upTo": 1,
++      "flag": false,
++      "quoted": true,
++      "breakpoints": false
++    },
++    {
++      "name": "object-position",
++      "tokens": [
++        "start",
++        "center",
++        "end"
++      ],
++      "forms": [],
++      "examples": [],
++      "upTo": 2,
++      "flag": false,
++      "quoted": true,
++      "breakpoints": false
++    },
+     {
+       "name": "inset-inline-start",
+       "tokens": [
+diff --git a/conformance/resolve/common-param-declared-F013/case.json b/conformance/resolve/common-param-declared-F013/case.json
+new file mode 100644
+index 0000000..e3ed789
+--- /dev/null
++++ b/conformance/resolve/common-param-declared-F013/case.json
+@@ -0,0 +1 @@
++{"requires":["processor","js"]}
+diff --git a/conformance/resolve/common-param-declared-F013/diagnostics.json b/conformance/resolve/common-param-declared-F013/diagnostics.json
+new file mode 100644
+index 0000000..3338966
+--- /dev/null
++++ b/conformance/resolve/common-param-declared-F013/diagnostics.json
+@@ -0,0 +1,37 @@
++[
++  {
++    "code": "F013",
++    "line": 7,
++    "column": 10
++  },
++  {
++    "code": "F013",
++    "line": 8,
++    "column": 11
++  },
++  {
++    "code": "F013",
++    "line": 9,
++    "column": 12
++  },
++  {
++    "code": "F013",
++    "line": 10,
++    "column": 15
++  },
++  {
++    "code": "F013",
++    "line": 11,
++    "column": 9
++  },
++  {
++    "code": "F013",
++    "line": 12,
++    "column": 8
++  },
++  {
++    "code": "F013",
++    "line": 18,
++    "column": 11
++  }
++]
+diff --git a/conformance/resolve/common-param-declared-F013/input.comp.md b/conformance/resolve/common-param-declared-F013/input.comp.md
+new file mode 100644
+index 0000000..4808bba
+--- /dev/null
++++ b/conformance/resolve/common-param-declared-F013/input.comp.md
+@@ -0,0 +1,21 @@
++```js component=gauge
++export default function mount() {}
++```
++
++```compmd component=gauge signature
++params:
++  width: length?
++  height: length?
++  padding: space?
++  object-fit: contain | cover = contain
++  lang: string?
++  dir: string?
++  needle: color?
++```
++
++```compmd component=panel
++params:
++  border: string?
++---
++Panel.
++```
+diff --git a/conformance/resolve/params-differ-in-dash-F013/input.comp.md b/conformance/resolve/params-differ-in-dash-F013/input.comp.md
+index 8ef8ad3..c47d44f 100644
+--- a/conformance/resolve/params-differ-in-dash-F013/input.comp.md
++++ b/conformance/resolve/params-differ-in-dash-F013/input.comp.md
+@@ -1,7 +1,7 @@
+ ```compmd component=chip
+ params:
+-  max-width: length?
+-  max_width: length?
++  line-width: length?
++  line_width: length?
+ ---
+ Chip.
+ ```
+diff --git a/conformance/resolve/signature-and-definition-box-F036/case.json b/conformance/resolve/signature-and-definition-box-F036/case.json
+new file mode 100644
+index 0000000..e3ed789
+--- /dev/null
++++ b/conformance/resolve/signature-and-definition-box-F036/case.json
+@@ -0,0 +1 @@
++{"requires":["processor","js"]}
+diff --git a/conformance/resolve/signature-and-definition-box-F036/diagnostics.json b/conformance/resolve/signature-and-definition-box-F036/diagnostics.json
+new file mode 100644
+index 0000000..dbc321b
+--- /dev/null
++++ b/conformance/resolve/signature-and-definition-box-F036/diagnostics.json
+@@ -0,0 +1,7 @@
++[
++  {
++    "code": "F036",
++    "line": 5,
++    "column": 38
++  }
++]
+diff --git a/conformance/resolve/signature-and-definition-box-F036/expanded.json b/conformance/resolve/signature-and-definition-box-F036/expanded.json
+new file mode 100644
+index 0000000..f816612
+--- /dev/null
++++ b/conformance/resolve/signature-and-definition-box-F036/expanded.json
+@@ -0,0 +1,22 @@
++{
++  "type": "root",
++  "children": [
++    {
++      "type": "componentLeaf",
++      "name": "chart",
++      "params": [
++        {
++          "key": "height",
++          "breakpoint": null,
++          "value": "16rem"
++        }
++      ],
++      "fallback": [
++        {
++          "type": "text",
++          "value": "Sales by month"
++        }
++      ]
++    }
++  ]
++}
+diff --git a/conformance/resolve/signature-and-definition-box-F036/input.comp.md b/conformance/resolve/signature-and-definition-box-F036/input.comp.md
+new file mode 100644
+index 0000000..a5f5778
+--- /dev/null
++++ b/conformance/resolve/signature-and-definition-box-F036/input.comp.md
+@@ -0,0 +1,9 @@
++```js component=chart {height=16rem}
++export default function mount() {}
++```
++
++```compmd component=chart signature {height=20rem}
++params: {}
++```
++
++:: chart[Sales by month]
+diff --git a/conformance/validate/object-fit-and-position/case.json b/conformance/validate/object-fit-and-position/case.json
+new file mode 100644
+index 0000000..e3ed789
+--- /dev/null
++++ b/conformance/validate/object-fit-and-position/case.json
+@@ -0,0 +1 @@
++{"requires":["processor","js"]}
+diff --git a/conformance/validate/object-fit-and-position/diagnostics.json b/conformance/validate/object-fit-and-position/diagnostics.json
+new file mode 100644
+index 0000000..b3bdc97
+--- /dev/null
++++ b/conformance/validate/object-fit-and-position/diagnostics.json
+@@ -0,0 +1,22 @@
++[
++  {
++    "code": "F009",
++    "line": 19,
++    "column": 34
++  },
++  {
++    "code": "F009",
++    "line": 21,
++    "column": 44
++  },
++  {
++    "code": "F009",
++    "line": 23,
++    "column": 44
++  },
++  {
++    "code": "F008",
++    "line": 25,
++    "column": 25
++  }
++]
+diff --git a/conformance/validate/object-fit-and-position/input.comp.md b/conformance/validate/object-fit-and-position/input.comp.md
+new file mode 100644
+index 0000000..dfe56f7
+--- /dev/null
++++ b/conformance/validate/object-fit-and-position/input.comp.md
+@@ -0,0 +1,25 @@
++```js component=photo
++export default function mount() {}
++```
++
++```compmd component=photo signature
++params: {}
++```
++
++:: photo[Contained, in the middle] {object-fit=contain object-position=center}
++
++:: photo[Covering, at the end of the block, the start of the line] {object-fit=cover object-position="end start"}
++
++:: photo[Stretched] {object-fit=fill object-position=start}
++
++::: box {object-fit=cover}
++A box takes it too, though it means nothing there.
++::: /box
++
++:: photo[CSS's none] {object-fit=none}
++
++:: photo[A physical side] {object-position=left}
++
++:: photo[Three positions] {object-position="start center end"}
++
++:: photo[A breakpoint] {md:object-fit=cover}
+diff --git a/conformance/validate/signature-box-unknown-F008/case.json b/conformance/validate/signature-box-unknown-F008/case.json
+new file mode 100644
+index 0000000..e3ed789
+--- /dev/null
++++ b/conformance/validate/signature-box-unknown-F008/case.json
+@@ -0,0 +1 @@
++{"requires":["processor","js"]}
+diff --git a/conformance/validate/signature-box-unknown-F008/diagnostics.json b/conformance/validate/signature-box-unknown-F008/diagnostics.json
+new file mode 100644
+index 0000000..624251f
+--- /dev/null
++++ b/conformance/validate/signature-box-unknown-F008/diagnostics.json
+@@ -0,0 +1,7 @@
++[
++  {
++    "code": "F008",
++    "line": 5,
++    "column": 35
++  }
++]
+diff --git a/conformance/validate/signature-box-unknown-F008/expanded.json b/conformance/validate/signature-box-unknown-F008/expanded.json
+new file mode 100644
+index 0000000..c502b49
+--- /dev/null
++++ b/conformance/validate/signature-box-unknown-F008/expanded.json
+@@ -0,0 +1,22 @@
++{
++  "type": "root",
++  "children": [
++    {
++      "type": "componentLeaf",
++      "name": "qr",
++      "params": [
++        {
++          "key": "width",
++          "breakpoint": null,
++          "value": "12rem"
++        }
++      ],
++      "fallback": [
++        {
++          "type": "text",
++          "value": "Our site"
++        }
++      ]
++    }
++  ]
++}
+diff --git a/conformance/validate/signature-box-unknown-F008/input.comp.md b/conformance/validate/signature-box-unknown-F008/input.comp.md
+new file mode 100644
+index 0000000..b9dc9bb
+--- /dev/null
++++ b/conformance/validate/signature-box-unknown-F008/input.comp.md
+@@ -0,0 +1,9 @@
++```js component=qr
++export default function mount() {}
++```
++
++```compmd component=qr signature {title=x width=12rem}
++params: {}
++```
++
++:: qr[Our site]
+diff --git a/crates/processor/src/parse/definitions.rs b/crates/processor/src/parse/definitions.rs
+index aadd2bd..5a131e4 100644
+--- a/crates/processor/src/parse/definitions.rs
++++ b/crates/processor/src/parse/definitions.rs
+@@ -4,7 +4,7 @@ use super::params::{self, is_name};
+ use super::source::right;
+ use super::yaml;
+ use super::{Converter, Labels};
+-use crate::diagnostic::{Code, Location};
++use crate::diagnostic::Location;
+ use crate::tree::{
+     Declaration, DeclaredType, DefaultValue, Definition, DefinitionBody, Headings, Node, Param,
+     Point, Position, Print, Signature, SignatureFence, SlotDeclaration, TypeName, Unquoted,
+@@ -47,16 +47,11 @@ impl Converter<'_, '_> {
+             }));
+         }
+         if attributes.contains(&"signature") {
+-            if let Some(first) = fence_params.first().and_then(|param| param.position) {
+-                self.diagnose(
+-                    Code::F036,
+-                    first.start,
+-                    "a signature fence takes no param list; ignored (style the component's box on its definition)",
+-                );
+-            }
++            // Whether the component's definition fence styles its box too (F036) is known once it is resolved.
+             return Some(Node::ComponentSignature(SignatureFence {
+                 name: name.to_string(),
+                 signature: self.signature(&code.value, start.line + 1),
++                params: fence_params,
+                 position,
+             }));
+         }
+diff --git a/crates/processor/src/resolve/load/definitions.rs b/crates/processor/src/resolve/load/definitions.rs
+index fe1be0f..7033885 100644
+--- a/crates/processor/src/resolve/load/definitions.rs
++++ b/crates/processor/src/resolve/load/definitions.rs
+@@ -1,5 +1,6 @@
+ //! A document's definitions and signature fences (spec §7): the components it defines, F002 for a signature fence with
+-//! nothing to attach to, F013 and F009 for their params, and F037 for a declaration whose type isn't a type name.
++//! nothing to attach to, F036 for a box styled by both fences, F013 and F009 for their params, and F037 for a
++//! declaration whose type isn't a type name.
+ 
+ use super::{Loader, location};
+ use crate::diagnostic::{Code, Fix, Location};
+@@ -7,11 +8,12 @@ use crate::nearest::nearest;
+ use crate::parse::CODE;
+ use crate::reserved;
+ use crate::resolve::names::{Binding, Builder, Level};
+-use crate::resolve::{Body, Component, DocumentId};
++use crate::resolve::{Body, Component, ComponentId, DocumentId};
+ use crate::tree::{
+-    Declaration, DeclaredType, Definition, DefinitionBody, Node, Print, Signature, SignatureFence,
+-    SlotDeclaration, TypeName,
++    Declaration, DeclaredType, Definition, DefinitionBody, Node, Param, Print, Signature,
++    SignatureFence, SlotDeclaration, TypeName,
+ };
++use crate::validate::universal::Universal;
+ use std::collections::{HashMap, HashSet};
+ 
+ impl Loader<'_, '_> {
+@@ -73,6 +75,26 @@ impl Loader<'_, '_> {
+         );
+     }
+ 
++    /// A signature fence's param list styles its component's box (spec §7), unless the component's definition fence
++    /// has one: then that one is kept, with F036 at the signature fence's first param.
++    fn style_box(&mut self, id: DocumentId, component: ComponentId, params: Vec<Param>) {
++        let Some(first) = params.first() else {
++            return;
++        };
++        let at = location(first.position);
++        let fence = &mut self.components[component.0].fence;
++        if fence.is_empty() {
++            *fence = params;
++        } else {
++            self.report(
++                id,
++                Code::F036,
++                at,
++                "the component's definition fence styles its box already, so this param list is ignored: style the box in one place",
++            );
++        }
++    }
++
+     /// A signature fence gives its signature to the document's host-language component of that name; in a pack the
+     /// processor provides, a fence alone is a component the processor implements (spec §9).
+     fn signature_fence(&mut self, id: DocumentId, fence: SignatureFence, names: &mut Builder) {
+@@ -91,6 +113,7 @@ impl Loader<'_, '_> {
+             self.components[component.0]
+                 .signature
+                 .get_or_insert(fence.signature.unwrap_or_default());
++            self.style_box(id, component, fence.params);
+         } else if self.document(id).provided {
+             if self.admit(id, names, &fence.name, at) {
+                 let component = self.add(Component {
+@@ -98,7 +121,7 @@ impl Loader<'_, '_> {
+                     document: id,
+                     signature: fence.signature,
+                     body: Body::Processor,
+-                    fence: Vec::new(),
++                    fence: fence.params,
+                     position: fence.position,
+                 });
+                 names.declare(&fence.name, Binding::Component(component, Level::Local));
+@@ -268,13 +291,24 @@ impl Loader<'_, '_> {
+     }
+ }
+ 
+-/// Why a signature can't declare `name`, when the processor keeps it (spec §5.1): `class` and `id` style any
+-/// component's box, and a code renderer's block takes `alt` and `render` for itself, so the component never gets them.
++/// Why a signature can't declare `name`, when the processor keeps it (spec §5.1): the common params, `class`, `id`,
++/// `lang` and `dir` are every component's, applied to its box or its block, and a code renderer's block takes `alt`
++/// and `render` for itself, so the component never gets them.
+ fn processors_name(name: &str, renders: bool) -> Option<String> {
++    if let Some(universal) = Universal::from_name(name) {
++        return Some(match universal {
++            Universal::ObjectFit | Universal::ObjectPosition => format!(
++                "`{name}` is a common param, which every component gets as `fit` (spec §7.4), so a signature can't declare it"
++            ),
++            _ if universal.is_common() => format!(
++                "`{name}` is a common param, which styles the component's box, so the component never gets it and a signature can't declare it"
++            ),
++            _ => format!(
++                "`{name}` is every component's own, for its box, so a signature can't declare it"
++            ),
++        });
++    }
+     match name {
+-        "class" | "id" => Some(format!(
+-            "`{name}` is every component's own, for its box, so a signature can't declare it"
+-        )),
+         "alt" | "render" if renders => Some(format!(
+             "`{name}` is a rendered block's own, read by the processor, so a code renderer can't declare it"
+         )),
+diff --git a/crates/processor/src/tree/definitions.rs b/crates/processor/src/tree/definitions.rs
+index 7696e08..594491f 100644
+--- a/crates/processor/src/tree/definitions.rs
++++ b/crates/processor/src/tree/definitions.rs
+@@ -53,6 +53,9 @@ pub struct SignatureFence {
+     pub name: String,
+     /// The signature; `None` when the fence isn't valid YAML.
+     pub signature: Option<Signature>,
++    /// The param list that ends the info string, which styles the box of the component it attaches to, as its
++    /// definition fence's would (spec §7); empty without one.
++    pub params: Vec<Param>,
+     /// Where the fence is.
+     #[serde(skip_serializing_if = "Option::is_none")]
+     pub position: Option<Position>,
+diff --git a/crates/processor/src/tree/shift.rs b/crates/processor/src/tree/shift.rs
+index da3ceab..81df865 100644
+--- a/crates/processor/src/tree/shift.rs
++++ b/crates/processor/src/tree/shift.rs
+@@ -241,6 +241,7 @@ impl Shift for Node {
+             Self::ComponentInline(leaf) | Self::ComponentLeaf(leaf) => leaf.shift(by),
+             Self::ComponentSignature(fence) => {
+                 fence.signature.shift(by);
++                fence.params.shift(by);
+                 fence.position.shift(by);
+             }
+             Self::ComponentSlot(slot) => {
+diff --git a/crates/processor/src/validate.rs b/crates/processor/src/validate.rs
+index 11c778d..291cc67 100644
+--- a/crates/processor/src/validate.rs
++++ b/crates/processor/src/validate.rs
+@@ -218,8 +218,10 @@ pub(crate) fn validate(resolved: &Resolved, allowed_origins: &AllowedOrigins) ->
+         }
+         let mut checker = Checker::new(resolved, id, &mut validated.programs);
+         for node in &document.root.children {
+-            if let Node::ComponentDefinition(definition) = node {
+-                checker.definition(definition);
++            match node {
++                Node::ComponentDefinition(definition) => checker.definition(definition),
++                Node::ComponentSignature(fence) => checker.signature_fence(fence),
++                _ => {}
+             }
+         }
+         checker.bound_by_hosts = checker.found.bound_by_hosts.iter().cloned().collect();
+diff --git a/crates/processor/src/validate/body.rs b/crates/processor/src/validate/body.rs
+index 8933102..2992a27 100644
+--- a/crates/processor/src/validate/body.rs
++++ b/crates/processor/src/validate/body.rs
+@@ -10,7 +10,7 @@ use crate::reserved::Keyword;
+ use crate::resolve::{Binding, Body, Renderer};
+ use crate::tree::{
+     Code as CodeBlock, Container, Definition, Info, Interpolation, Node, Param, ParamValue,
+-    Position, StringPart, start_of,
++    Position, SignatureFence, StringPart, start_of,
+ };
+ use crate::values::forms::area_names;
+ use std::rc::Rc;
+@@ -44,6 +44,9 @@ impl<'r> Checker<'r, '_> {
+             Node::ComponentDefinition(definition) => {
+                 self.within(None, |this| this.definition(definition));
+             }
++            Node::ComponentSignature(fence) => {
++                self.within(None, |this| this.signature_fence(fence));
++            }
+             Node::Code(code) => self.code_block(code, scope),
+             _ => self.within(None, |this| this.nodes(node.children(), scope)),
+         }
+@@ -246,4 +249,25 @@ impl<'r> Checker<'r, '_> {
+             self.nodes(body, &scope);
+         }
+     }
++
++    /// A signature fence of this document whose param list styles its component's box (spec §7), for a component
++    /// no definition fence of the document defines (a built module's, the processor's own): those params, as a
++    /// definition fence's are. A defined component's box params are checked with its definition.
++    pub(super) fn signature_fence(&mut self, fence: &SignatureFence) {
++        if fence.params.is_empty() {
++            return;
++        }
++        let resolved = self.resolved;
++        let document = resolved.document(self.id);
++        let Some(Binding::Component(id, _)) = document.names.get(&fence.name) else {
++            return;
++        };
++        let component = resolved.component(*id);
++        let undefined = matches!(component.body, Body::File { .. } | Body::Processor);
++        if component.document != self.id || !undefined || component.fence != fence.params {
++            return;
++        }
++        let scope = Scope::definition(&document.settings, component.signature.as_ref());
++        self.fence(component, &scope);
++    }
+ }
+diff --git a/crates/processor/src/validate/universal.rs b/crates/processor/src/validate/universal.rs
+index 89f6de6..0897865 100644
+--- a/crates/processor/src/validate/universal.rs
++++ b/crates/processor/src/validate/universal.rs
+@@ -26,6 +26,8 @@ named! {
+         AlignSelf = "align-self",
+         JustifySelf = "justify-self",
+         AspectRatio = "aspect-ratio",
++        ObjectFit = "object-fit",
++        ObjectPosition = "object-position",
+         InsetInlineStart = "inset-inline-start",
+         InsetInlineEnd = "inset-inline-end",
+         InsetBlockStart = "inset-block-start",
+@@ -68,6 +70,8 @@ impl Universal {
+             Self::AlignSelf => Kind::one_of(&["start", "center", "end", "stretch"][..]),
+             Self::JustifySelf => Kind::one_of(&["start", "center", "end"][..]),
+             Self::AspectRatio => Kind::RATIO,
++            Self::ObjectFit => Kind::one_of(&["contain", "cover", "fill"][..]),
++            Self::ObjectPosition => Kind::POSITIONS,
+             Self::Scroll | Self::Fill => Kind::BOOLEAN,
+             Self::Sticky => Kind::one_of(&["top", "bottom", "none"][..]),
+             Self::Show | Self::Hide => Kind::one_of(&["sm", "md", "lg"][..]),
+@@ -77,10 +81,13 @@ impl Universal {
+         }
+     }
+ 
+-    /// Whether it may carry a breakpoint (spec §9.3).
++    /// Whether it may carry a breakpoint (spec §9.3). `object-fit` and `object-position` reach the component as
++    /// values (spec §7.4), which a breakpoint, CSS's to resolve, isn't.
+     pub(crate) fn takes_breakpoint(self) -> bool {
+         match self {
+             Self::GridArea
++            | Self::ObjectFit
++            | Self::ObjectPosition
+             | Self::Scroll
+             | Self::Fill
+             | Self::Show
+@@ -138,6 +145,8 @@ impl Universal {
+             | Self::AlignSelf
+             | Self::JustifySelf
+             | Self::AspectRatio
++            | Self::ObjectFit
++            | Self::ObjectPosition
+             | Self::InsetInlineStart
+             | Self::InsetInlineEnd
+             | Self::InsetBlockStart
+@@ -175,6 +184,8 @@ impl Universal {
+             | Self::AlignSelf
+             | Self::JustifySelf
+             | Self::AspectRatio
++            | Self::ObjectFit
++            | Self::ObjectPosition
+             | Self::InsetInlineStart
+             | Self::InsetInlineEnd
+             | Self::InsetBlockStart
+diff --git a/crates/processor/src/values.rs b/crates/processor/src/values.rs
+index c372614..e2d4909 100644
+--- a/crates/processor/src/values.rs
++++ b/crates/processor/src/values.rs
+@@ -120,6 +120,15 @@ impl Kind<'static> {
+     pub const AREA_NAME: Self = kind(&[], &[Form::AreaName], &["side"]);
+     /// `aspect-ratio`: `none` or a width over a height.
+     pub const RATIO: Self = kind(&["none"], &[Form::Ratio], &["16/9"]);
++    /// `object-position`: one or two logical positions, the block one then the inline one.
++    pub const POSITIONS: Self = Kind {
++        tokens: Cow::Borrowed(&["start", "center", "end"]),
++        forms: &[],
++        examples: &[],
++        up_to: 2,
++        flag: false,
++        quoted: true,
++    };
+     /// `lang`: a language tag.
+     pub const LANGUAGE: Self = kind(&[], &[Form::Language], &["en", "de-CH"]);
+     /// A number, written bare.
+@@ -181,6 +190,7 @@ impl Kind<'static> {
+         Self::AREAS,
+         Self::AREA_NAME,
+         Self::RATIO,
++        Self::POSITIONS,
+         Self::LANGUAGE,
+         Self::NUMBER,
+         Self::BOOLEAN,
+diff --git a/crates/processor/tests/stages.rs b/crates/processor/tests/stages.rs
+index a9c84f9..c64addc 100644
+--- a/crates/processor/tests/stages.rs
++++ b/crates/processor/tests/stages.rs
+@@ -354,7 +354,7 @@ fn templates_bind_their_element_and_md_loop() {
+ fn definitions_see_their_params_and_slots_but_not_inputs() {
+     assert_eq!(
+         codes(
+-            "---\nmd:\n  inputs:\n    q: string = \"\"\n---\n\n```compmd component=c\nparams:\n  max-width: length?\n  as: name?\nslots: {default: {}, side: {}}\n---\n{{max_width}} {{as}} {{md.slot.side}} {{md.slot}} {{md.input}} {{md.input.q}}\n```\n\n{{md.input}} {{md.data}} {{md.doc}} {{md}}\n"
++            "---\nmd:\n  inputs:\n    q: string = \"\"\n---\n\n```compmd component=c\nparams:\n  bar-width: length?\n  as: name?\nslots: {default: {}, side: {}}\n---\n{{bar_width}} {{as}} {{md.slot.side}} {{md.slot}} {{md.input}} {{md.input.q}}\n```\n\n{{md.input}} {{md.data}} {{md.doc}} {{md}}\n"
+         ),
+         [at("F014", 13, 17), at("F014", 13, 53), at("F014", 13, 66)]
+     );
+diff --git a/docs/sizing-components.md b/docs/sizing-components.md
+index ae7c658..2e336c5 100644
+--- a/docs/sizing-components.md
++++ b/docs/sizing-components.md
+@@ -29,7 +29,7 @@ frame).
+      `center`, `end`, the block position then the inline one, as `padding` orders its two values; one value is
+      both. `center` by default. Logical, as every direction in the spec: `object-position="center start"` is the
+      left in a left-to-right document and the right in a right-to-left one.
+-   - **Both are written without a breakpoint** (F009 with one, as `display=contents`): a component gets them as
++   - **Both are written without a breakpoint** (F008 with one, "a breakpoint the param doesn't take"): a component gets them as
+      values, which a breakpoint, CSS's to resolve, isn't. They may be expressions.
+    - **The component gets them** in the host contract, as it gets `scheme`: `context.fit`, `{ mode: "contain" |
+      "cover" | "fill", x: 0 | 0.5 | 1, y: 0 | 0.5 | 1 }`, the position resolved by the processor to fractions of the
+@@ -166,7 +166,7 @@ which the set doesn't cover: their tests are browser tests. Decisions 1, 4 and 5
+ | `expand/host-component-box` | the definition fence's box params under the caller's | unchanged |
+ | `validate/code-renderer-render-F009-F013-W101` | `class` and `id` declared: F013 | unchanged |
+ | `validate/params-and-common-params`, `validate/layout-values`, `expand/component-box` | the common params on uses, and their values | unchanged; no case uses `object-fit` or `object-position` today, as params or as anything else |
+-| **new** `validate/object-fit-and-position` | — | every value of both on a leaf, a container and a rendered code block, one and two positions; `object-fit=none`, `object-position=left`, three positions and `md:object-fit=cover`: F009 at each |
++| **new** `validate/object-fit-and-position` | — | every value of both on a leaf and a container, one and two positions; `object-fit=none`, `object-position=left` and three positions: F009 at each; `md:object-fit=cover`: F008 |
+ | **new** `expand/object-fit-and-position` | — | both on a host-language leaf, from its signature fence's defaults and the caller's over them, and as an expression: the expanded `params` |
+ | **new** `resolve/signature-and-definition-box-F036` | — | a host-language definition fence and its signature fence both with box params: F036 at the signature's `{` |
+ | **new** `expand/signature-box-defaults` | — | a signature fence's `{width=12rem max-width=100%}` and no definition fence's list, used with no params, with `width=6rem`, and with `md:width=8rem`: the expanded `params` as `host-component-box`'s |
+diff --git a/guides/authors/03-containers-and-params.md b/guides/authors/03-containers-and-params.md
+index 24594c4..1087164 100644
+--- a/guides/authors/03-containers-and-params.md
++++ b/guides/authors/03-containers-and-params.md
+@@ -140,8 +140,12 @@ Every block, whatever its component, has a box around it, and every component ta
+ | `background` | `none`, `subtle`, `strong`, `accent`, or a color such as `#e9f3ff` |
+ | `width`, `max-width`, `min-width`, `height` | a length, a percentage, or `auto`: `max-width=32rem` |
+ | `aspect-ratio` | width over height, such as `16/9`, or `none` |
++| `object-fit` | how a drawing sits in its box: `contain` (as large as fits, the default), `cover` (filling the box, cropped), `fill` (stretched to it) |
++| `object-position` | where a drawing smaller or larger than its box sits: one or two of `start`, `center`, `end`, the top-to-bottom one first; `center` by default |
+ 
+-A length is a number with `px`, `rem`, `em` or `%`; `1rem` is the page's text size. A width or height counts the padding in it.
++A length is a number with `px`, `rem`, `em` or `%`; `1rem` is the page's text size. A width or height counts the padding and the border in it.
++
++A component that draws, a chart or a QR code, fills its box, so its box's params size it: `:: qr-code[Our site] {value="https://compmd.dev/" width=10rem}` is 10rem wide, and with `height=6rem` too it is as large as fits in that box, in its middle, or at its start with `object-position=start`. `object-fit` and `object-position` take no breakpoint.
+ 
+ The words (`s`, `subtle`, `accent`) follow the look of the app that shows the document, light or dark, so a document written with them fits wherever it is shown. Unless the app changes them, `s`, `m` and `l` are half the text's size, the text's size and twice it (0.5, 1 and 2 rem) for padding, and 4, 8 and 16 pixels for corners; `subtle` and `strong` are faint and stronger tints of the text's own color. A color or a length is the same everywhere: use them when that's what you mean.
+ 
+diff --git a/guides/authors/19-the-syntax-at-a-glance.md b/guides/authors/19-the-syntax-at-a-glance.md
+index 31b241c..62ebe2a 100644
+--- a/guides/authors/19-the-syntax-at-a-glance.md
++++ b/guides/authors/19-the-syntax-at-a-glance.md
+@@ -78,7 +78,7 @@ The number of colons tells the form (chapter 3):
+ - Params are separated by spaces. Each may be given once (`F017`), counting continuation lines.
+ - A bare value can't hold `(`, `)`, `[`, `]`, `{`, `}`, spaces or quotes: quote it, `"repeat(3, 1fr)"`, or make it an expression. `title=` with nothing after it is `F011`; `title=""` is empty text.
+ - `{{…}}` works in params only inside quotes: `title="{{md.doc.title}}"`, or `title=(md.doc.title)`.
+-- Every component takes `class`, `id`, `lang` and `dir`; every block takes the common params of its box (chapter 3): `width`, `height`, `min-width`, `max-width`, `padding` and its sides, `border`, `border-radius`, `background`, `grid-area`, `order`, `align-self`, `justify-self`, `aspect-ratio`, the `inset-*` positions, `scroll`, `fill`, `sticky`, `show` and `hide`.
++- Every component takes `class`, `id`, `lang` and `dir`; every block takes the common params of its box (chapter 3): `width`, `height`, `min-width`, `max-width`, `padding` and its sides, `border`, `border-radius`, `background`, `grid-area`, `order`, `align-self`, `justify-self`, `aspect-ratio`, `object-fit`, `object-position`, the `inset-*` positions, `scroll`, `fill`, `sticky`, `show` and `hide`.
+ 
+ ## Slots and template slots
+ 
+diff --git a/guides/authors/20-the-diagnostics-and-their-fixes.md b/guides/authors/20-the-diagnostics-and-their-fixes.md
+index c9b6ee1..9f237fb 100644
+--- a/guides/authors/20-the-diagnostics-and-their-fixes.md
++++ b/guides/authors/20-the-diagnostics-and-their-fixes.md
+@@ -58,7 +58,7 @@ When something in a document isn't right, CompMD says so with a *diagnostic*: a
+ | `W106` | `{{` followed by something that isn't a path, such as `{{ 1 + 2 }}`; it is shown as text | for a computed value, use `:value[…]{of=(…)}` (chapter 4); for the braces as text, `\{{` |
+ | `F024` | a mistake in an expression: a misspelt name, a value of the wrong type (`"Plot " + 4`), or one that fails when computed; the message points to the place in the expression. Also a list, or a record without a `name`, put in `{{…}}` | correct the expression: `"Plot " + string(4)`; write a list with `md.list(…)` or `each` (chapter 5) |
+ | `W109` | a link or image address made with `{{…}}` that is neither a relative address nor one starting with `https:`, `http:` or `mailto:`; the text is shown without the link | check the value: an address from the frontmatter or data should start with `https://` |
+-| `F013` | a name declared twice in the document; or `if`, `each`, `value`, `box` or `md` defined, imported or renamed to; or a word expressions keep for themselves (`in`, `as`, `list`, `string`, …) as an `as` name, an input or a definition's param; or two params whose names differ only in `-` and `_`. The first declaration wins | choose another name: `as=job`, not `as=in` |
++| `F013` | a name declared twice in the document; or `if`, `each`, `value`, `box` or `md` defined, imported or renamed to; or a word expressions keep for themselves (`in`, `as`, `list`, `string`, …) as an `as` name, an input or a definition's param; or two params whose names differ only in `-` and `_`; or a signature declaring a common param (`width`, `height`, `object-fit`, …), `class`, `id`, `lang` or `dir`, which every component's box takes already. The first declaration wins | choose another name: `as=job`, not `as=in`; for a size, leave it to the use: `width=10rem` |
+ | `F025` | an `each` whose body doesn't have the shape its `join` needs: list items for `join=list`, one paragraph for `join=inline`; the items are added one after another | make the body one list item, or one paragraph, or remove `join` |
+ | `W103` | an `each` whose body is one list item, without `join`; each item becomes a list of its own | add `join=list` |
+ | `F034` | the page would have more than the app allows, at least 100,000 parts, usually from `each` inside `each` inside `each`; the `each` that crossed the limit shows its body once | filter the lists first, or show fewer levels |
+@@ -80,7 +80,7 @@ When something in a document isn't right, CompMD says so with a *diagnostic*: a
+ | `F002` | a component name the document doesn't know, such as `:: bxo`; it shows its fallback. Also a signature fence with no component of its name to attach to | *Fix offered* for a misspelt name: `box`. Otherwise import the component, or define it |
+ | `W112` | a definition or import with the name of a built-in component, such as `row`, which this document's `row` now means | keep it, if that is what you want, or choose another name |
+ | `F019` | a definition that uses itself, directly or through others, such as a `card` whose body has a `card`; the use that closes the circle shows its fallback | remove the circle: a definition can't contain itself |
+-| `F036` | a signature fence with params in braces after it; they are ignored | put them on the component's own fence, which styles its box |
++| `F036` | a component whose definition fence and signature fence both have params in braces, which style its box; the definition fence's are kept | keep one of the two lists |
+ | `F037` | a type in a signature, an input or a schema that CompMD doesn't have, such as `numbr`; that param takes any value | *Fix offered*: `number` |
+ | `W105` | a component in code, in a fence, without a signature fence; its params go through unchecked | add a signature fence (chapter 18) |
+ | `W102` | a component in code that this app can't run: a `runtime` it doesn't have, such as `react@18`, any `runtime` on a `js` or `ts` fence, or an app that makes no web page; it shows its fallback | use a runtime the app has, or leave `runtime` out |
+diff --git a/guides/developers/14-signatures-and-params.md b/guides/developers/14-signatures-and-params.md
+index b2c581d..3d89504 100644
+--- a/guides/developers/14-signatures-and-params.md
++++ b/guides/developers/14-signatures-and-params.md
+@@ -44,7 +44,7 @@ slots:
+ ```
+ ````
+ 
+-A signature fence takes no param list (F036); a component's box is styled by the document that uses it. `renders`, for code renderers, is [chapter 16](16-code-renderers.md)'s.
++A component draws in its box, which the document sizes with the common params: `:: rating[3 of 5 stars] {value=stars width=8rem}`. It fits that box: it takes the box's width, and its height when the box has one, and a drawing with an aspect ratio of its own sits in it as `object-fit` and `object-position` say, which the component gets as `fit` (`contain`, `cover` or `fill`, and where it sits). So a component has no size params of its own, and a signature can't declare a common param, `class`, `id`, `lang` or `dir` (F013). A signature fence may end with a param list, which gives the box its defaults as a definition fence's does, the caller's params over them: ```` ```compmd component=rating signature {width=10rem max-width=100%} ````. A built module has no definition fence, so a pack's signature fence is where its box's defaults go. `renders`, for code renderers, is [chapter 16](16-code-renderers.md)'s.
+ 
+ The build makes one module for each `./dist/<name>.js` the document imports, `dist/rating.js` from `src/rating.ts` and `dist/lanes.js` from `src/lanes.ts`. The rest of the pack is the template's, with its own name:
+ 
+diff --git a/guides/developers/22-the-diagnostics.md b/guides/developers/22-the-diagnostics.md
+index 10b0fbd..e3e745c 100644
+--- a/guides/developers/22-the-diagnostics.md
++++ b/guides/developers/22-the-diagnostics.md
+@@ -41,7 +41,6 @@ The document's text alone: no imports, signatures or data.
+ | F017 | error | a param given twice, `id` with `#name`, or a code renderer's `code` on a code block's info string | writer | one of them |
+ | F032 | error | a closer names a container opened outside its list item or quote | writer | the closer at the container's own level |
+ | F033 | error | frontmatter that isn't YAML 1.2 core: tags, anchors, aliases or a repeated key; the file is read as plain CommonMark and GFM | writer | plain YAML |
+-| F036 | error | a param list on a signature fence, which is ignored | writer, pack author | moving the params to the definition fence |
+ | W101 | warning | a leaf without fallback text, or a rendered code block without `alt`, found in validation | writer | `[the sentence it stands for]`, or `alt="…"` |
+ | W106 | warning | `{{` followed by something that isn't a path; kept as text | writer | a path, `\{{` for literal braces, or `:value` for a computed value |
+ | W107 | warning | an inline component, a space, then a param list, which is text | writer | the param list right after `]` |
+@@ -57,7 +56,7 @@ The imports, packs and names. What a pack's files cause is reported in the pack'
+ | Code | Severity | What causes it | Who | What fixes it |
+ |---|---|---|---|---|
+ | F002 | error | an unknown component name, or a signature fence with nothing to attach to; the message suggests the nearest name | writer | the name, or the import that gives it |
+-| F013 | error | a name declared twice, a keyword (`if`, `each`, `value`, `box`) defined, imported or renamed to, `md` declared, a CEL reserved word or type name as a param, `as` name or input, or two params differing only in `-` and `_`; found in validation for names in a body | writer, pack author | another name |
++| F013 | error | a name declared twice, a keyword (`if`, `each`, `value`, `box`) defined, imported or renamed to, `md` declared, a CEL reserved word or type name as a param, `as` name or input, two params differing only in `-` and `_`, or a signature declaring a common param (`width`, `object-fit`, …), `class`, `id`, `lang` or `dir`, which the processor keeps; found in validation for names in a body | writer, pack author | another name, or the common param on the use |
+ | F019 | error | a component whose definition invokes itself, directly, through others, or through a code block it renders | writer, pack author | breaking the cycle |
+ | F020 | error | an import cycle | writer, pack author | removing the import that closes it |
+ | F021 | error | an import names something its source doesn't export | writer | the name the source exports, or `"*"` |
+@@ -66,6 +65,7 @@ The imports, packs and names. What a pack's files cause is reported in the pack'
+ | F026 | error | an import that can't be loaded: a missing file, no release matching the version, an unscoped name, `@compmd/*` other than core, a path leaving its root, or a pack the host's policy doesn't allow, denies, or left out (its size); for data, found when loading. Never for a pack or data source the request names as `pending`: it waits for the host to give up | writer, host | the path or version; for a pack the host refuses, the host's configuration, or another pack |
+ | F029 | error | an exported host-language component without a signature fence | pack author | its signature fence |
+ | F035 | error | a pack whose release doesn't match the import's `integrity`, or that the host found broken | writer, host | the integrity npm publishes for that version, or the host giving the release's real integrity |
++| F036 | error | a component's box styled by both its definition fence and its signature fence; the definition fence's param list is kept | writer, pack author | one param list, on either fence |
+ | F037 | error | a declaration's type isn't in the type grammar, in a signature, an input or a data `schema`; it takes any value | writer, pack author | the type the message suggests |
+ | W105 | warning | a local host-language component, or an imported component file (`./Chart.jsx`), without a signature fence, whose params can't be typed | writer | a signature fence |
+ | W112 | warning | a local definition or explicit import shadows a `@compmd/core` component | writer | another name, if it wasn't meant |
+diff --git a/guides/test/part-5.test.ts b/guides/test/part-5.test.ts
+index 901cc58..92f71bb 100644
+--- a/guides/test/part-5.test.ts
++++ b/guides/test/part-5.test.ts
+@@ -243,7 +243,7 @@ const TRIGGERS: Record<string, Trigger> = {
+   F033: { text: "---\na: &x 1\n---\n\nText.\n" },
+   F034: { text: "---\nmd:\n  data:\n    - from: ./rows.json\n      as: rows\n---\n\n::: each {in=(md.data.rows) as=r}\n::: each {in=(md.data.rows) as=c}\n{{r}}.{{c}}\n::: /each\n::: /each\n", files: { "rows.json": numbers } },
+   F035: { text: "---\nmd:\n  import:\n    - from: \"@acme/kit@1.0.0\"\n      integrity: sha512-BBBB\n      names: [card]\n---\n\n:: card[C]\n", packs: { "@acme/kit": [release("@acme/kit", "1.0.0", cardPack("@acme/kit", "1.0.0"), {}, "sha512-AAAA")] } },
+-  F036: { text: "```compmd component=note signature {padding=s}\nparams: {}\n```\n" },
++  F036: { text: "```js component=note {padding=s}\nexport default function mount() {}\n```\n\n```compmd component=note signature {padding=m}\nparams: {}\n```\n" },
+   F037: { text: "```compmd component=note\nparams:\n  n: numbr\n---\nN.\n```\n" },
+   W101: { text: fence("note") + ":: note\n" },
+   W102: { text: "```vue component=clock\n<template><time /></template>\n```\n\n```compmd component=clock signature\nparams: {}\n```\n\n:: clock[12:00]\n" },
+diff --git a/npm-packages/render/src/styles.ts b/npm-packages/render/src/styles.ts
+index eba06c6..2add45b 100644
+--- a/npm-packages/render/src/styles.ts
++++ b/npm-packages/render/src/styles.ts
+@@ -20,6 +20,7 @@ export const COMMON = [
+   "width", "height", "min-width", "max-width",
+   "padding", "padding-inline", "padding-block", "padding-inline-start", "padding-inline-end", "padding-block-start", "padding-block-end",
+   "border", "border-radius", "background", "grid-area", "order", "align-self", "justify-self", "aspect-ratio",
++  "object-fit", "object-position",
+   "inset-inline-start", "inset-inline-end", "inset-block-start", "inset-block-end",
+   "scroll", "fill", "sticky", "show", "hide",
+ ];
+@@ -101,6 +102,10 @@ function declarationsOf(key: string, value: unknown, parent: ParentLayout): Decl
+       return { order: ORDER[written] ?? written };
+     case "aspect-ratio":
+       return { "aspect-ratio": written === "none" ? "auto" : written };
++    // What a component draws in its box, which the component gets as `fit` (spec §7.4): nothing for the box itself.
++    case "object-fit":
++    case "object-position":
++      return {};
+     case "scroll":
+       return value === true ? { overflow: "auto" } : {};
+     case "fill":
+diff --git a/npm-packages/render/src/vocabulary.test.ts b/npm-packages/render/src/vocabulary.test.ts
+index bb74d05..150bee8 100644
+--- a/npm-packages/render/src/vocabulary.test.ts
++++ b/npm-packages/render/src/vocabulary.test.ts
+@@ -27,8 +27,8 @@ const PASSED_THROUGH: Record<string, string[]> = {
+   "flex-wrap": ["wrap", "nowrap"],
+ };
+ 
+-/** Tokens that mean no CSS at all. */
+-const NOTHING: Record<string, string[]> = { sticky: ["none"] };
++/** Tokens that mean no CSS at all; `object-fit` and `object-position` are the component's, as `fit` (spec §7.4). */
++const NOTHING: Record<string, string[]> = { sticky: ["none"], "object-fit": ["contain", "cover", "fill"], "object-position": ["start", "center", "end"] };
+ 
+ const names = (list: Known[]) => list.map((param) => param.name);
+ 
+diff --git a/npm-packages/wasm/src/parse-tree.ts b/npm-packages/wasm/src/parse-tree.ts
+index 13f6ee3..513a922 100644
+--- a/npm-packages/wasm/src/parse-tree.ts
++++ b/npm-packages/wasm/src/parse-tree.ts
+@@ -93,10 +93,12 @@ export interface Definition {
+   position?: Position;
+ }
+ 
++/** A signature fence: `params`, its param list, gives the box of the component it attaches to its defaults (spec §7). */
+ export interface SignatureFence {
+   type: "componentSignature";
+   name: string;
+   signature: Signature | null;
++  params: Param[];
+   position?: Position;
+ }
+ 
+diff --git a/spec/CHANGELOG.md b/spec/CHANGELOG.md
+index 280d7fb..d8b325b 100644
+--- a/spec/CHANGELOG.md
++++ b/spec/CHANGELOG.md
+@@ -4,6 +4,13 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
+ 
+ ## Version 1 (draft)
+ 
++### Unreleased
++
++- **A component fits its box (§7.4, §7.6, §9.2).** Two common params say how what a host-language component draws sits in its box: `object-fit` (`contain`, the default, `cover`, `fill`) and `object-position` (one or two of `start`, `center`, `end`, block then inline; `center` by default), with CSS's meanings, written without a breakpoint (F008 with one). The component gets them in the host contract as `fit` (`mode`, and `x` and `y` resolved with the box's direction), and the React and Svelte bindings pass it. §7.4 says a component takes its box's inside, its width and its height when the box has one, a drawing with an aspect ratio sitting in it as `fit` says (SHOULD, with no size params of its own); a component's natural size is CSS's (300 pixels wide for a drawing with only a ratio, 300 by 150 with none, a script-sized drawing containing its size); and a processor that runs a component elsewhere than the document that lays it out (a sandbox's frame) MUST lay its use out as if it ran there. Not breaking, but for a component that declares a param named `object-fit` or `object-position` (below).
++- **Sizes include padding and border (§9.2).** `width`, `max-width` and `aspect-ratio` measure a block with its padding and its border; the spec said padding only. Not breaking.
++- **A signature fence's param list (§7, §10.2, §11, §12.1, §12.3).** A signature fence may end with a param list, taking what a host-language definition fence takes: it gives the box of the component it attaches to its defaults, the caller's params over them, so a built module, which has no definition fence, still sizes its box (`{width=12rem max-width=100%}`). F036 now means a component whose definition fence and signature fence both style its box, reported at resolving, the definition fence's list kept; before, any param list on a signature fence was F036, at parsing, and ignored. The parse tree's `componentSignature` has `params`. Not breaking: only documents that had F036 change.
++- **The processor's names (§5.1, §10.2).** A signature that declares a common param, `lang` or `dir` is F013, as one that declares `class` or `id` already was: the processor applies them to the box and never passes them on, so such a param never reached the component. Breaking for a signature that declares one of them, which now has F013, the param dropped.
++
+ ### 1.0-draft.17, 2026-11-20
+ 
+ - **Every origin, for a host's own documents (§8.6, §15).** A host MAY allow every origin instead of naming them: then no origin of a document's data or images is disallowed (F028) or asked about. It fits documents the host publishes itself, such as a static site's or a blog's; a host that shows documents others write SHOULD NOT. URL schemes, a data `from`'s literal scheme and host, credentials and sandboxes' network are unchanged. Not breaking.
+diff --git a/spec/compmd-spec-v1.md b/spec/compmd-spec-v1.md
+index 3638ab6..c835852 100644
+--- a/spec/compmd-spec-v1.md
++++ b/spec/compmd-spec-v1.md
+@@ -299,7 +299,7 @@ Parameters are `key=value` pairs, checked against the component's signature. The
+ 
+ - A bare value is converted using the declared type: `number`, `boolean` (`true`/`false`), `string`, or an enum member. Conversion failure is F009.
+ - Each key MAY appear once per component invocation, counting continuation lines (F017 on a repeat).
+-- `class` and `id` are accepted by every component and need no declaration. `class` and `.name` add up: `{.person class=(p.team) .wide}` gives the classes `person`, the value of `p.team` and `wide`, in written order, without duplicates. `id` and `#name` set the same thing, so both together is F017. So are `lang` (a BCP 47 tag) and `dir` (`ltr`, `rtl`, `auto`), for a part in another language: `::: box {lang=fr}` around a French quote, or `dir=auto` around text from data whose direction isn't known. A code block a code renderer renders also accepts `alt`, its text alternative, and `render`, what it shows (section 7.7). These names are the processor's: a signature that declares `class` or `id`, or a code renderer's that declares `alt` or `render`, is F013.
++- `class` and `id` are accepted by every component and need no declaration. `class` and `.name` add up: `{.person class=(p.team) .wide}` gives the classes `person`, the value of `p.team` and `wide`, in written order, without duplicates. `id` and `#name` set the same thing, so both together is F017. So are `lang` (a BCP 47 tag) and `dir` (`ltr`, `rtl`, `auto`), for a part in another language: `::: box {lang=fr}` around a French quote, or `dir=auto` around text from data whose direction isn't known. A code block a code renderer renders also accepts `alt`, its text alternative, and `render`, what it shows (section 7.7). These names are the processor's: a signature that declares `class`, `id`, `lang`, `dir` or a common param (section 9.2, `width`, `object-fit`, …), or a code renderer's that declares `alt` or `render`, is F013. The processor applies them to the box or the block, and never passes them to the component (section 7.4), so such a param could never reach it.
+ - A param or slot name may contain `-`. In expressions and interpolation paths, which follow CEL's identifier rules, it is written with `_`: inside a definition, `align-items` is read as `align_items`, and the slot `:: #side-panel` is placed with `{{md.slot.side_panel}}`. Two params of one component, or two of its slots, whose names differ only in `-` and `_` are F013.
+ 
+ `name=(expr)` passes the result of an expression (section 8.2), typed by the expression. `{{path}}` is allowed in param values only inside quoted strings.
+@@ -442,7 +442,7 @@ A component is defined in a fenced code block whose info string is the source la
+ - `runtime=<framework>@<major>` names the framework a host-language component is written for: ```` ```svelte component=card runtime=svelte@5 ````. Without it, the binding's default applies. An **exported** host-language component without `runtime` is W117, since the default may move to a later major version. Plain JavaScript has no `runtime` and no W117; a `js` or `ts` component with a `runtime` names a runtime no processor has (W102).
+ - Host-language components run through the host contract (section 7.4); a **binding** maps it to one framework. Version 1 has bindings for plain JavaScript, React and Svelte 5; others (Vue) come in minor versions. A processor without the binding or runtime renders fallbacks (section 4.5) and reports W102.
+ 
+-- **The component's box.** A definition fence MAY end with a param list, which styles the component's box (section 9.2), as `:host` styles a custom element: ```` ```compmd component=card {.card padding=s md:padding=m} ````. It takes the common params, `class`, `id`, `lang` and `dir`, and on a `compmd` fence also `box`'s own params (`display`, `gap`, …). Its expressions are evaluated for each invocation, in the definition's scope: a `compmd` definition's params, `md.doc` of its own document and `md.data`. Breakpoints pass through as in the body (section 9.3). A signature fence takes no param list (F036).
++- **The component's box.** A definition fence MAY end with a param list, which styles the component's box (section 9.2), as `:host` styles a custom element: ```` ```compmd component=card {.card padding=s md:padding=m} ````. It takes the common params, `class`, `id`, `lang` and `dir`, and on a `compmd` fence also `box`'s own params (`display`, `gap`, …). Its expressions are evaluated for each invocation, in the definition's scope: a `compmd` definition's params, `md.doc` of its own document and `md.data`. Breakpoints pass through as in the body (section 9.3). A signature fence MAY end with a param list too, taking what a host-language definition fence takes: it styles the box of the component it attaches to, as that component's definition fence would (```` ```compmd component=qr-code signature {width=12rem max-width=100%} ````), so a component whose code comes built, with no definition fence, still gives its box defaults, and a processor that doesn't run it still knows its box. A component whose definition fence and signature fence both have a param list is F036, at the signature fence's `{`: the definition fence's list is kept.
+ - A definition fence MAY appear anywhere at document level; the name is visible to the whole document.
+ - An imported `.comp.md` file MAY hold several definitions; it offers those listed under `md.export`.
+ - A definition whose body contains a fenced code block uses a longer outer fence, or `~~~`, as CommonMark requires: a fence closes only at a fence of the same character that is at least as long.
+@@ -578,6 +578,7 @@ mount(target: Element, context: {
+   fallback: { text: string; element: Element }, // the invocation's fallback, as plain text and rendered
+   headingLevel: number,                   // the level the component's top heading should have (section 7.2)
+   scheme: "light" | "dark",               // the colour scheme the component is shown in (below)
++  fit: { mode: "contain" | "cover" | "fill", x: 0 | 0.5 | 1, y: 0 | 0.5 | 1 }, // how a drawing sits in the box (below)
+   fail(message: string): void,            // the component can't draw what it was given (below)
+   busy(work: Promise<unknown>): void,     // the component is still drawing, until `work` settles (below)
+   host?: unknown,                         // what the processor gives components of permissive and trusted packs (below); absent otherwise
+@@ -587,7 +588,10 @@ type SlotItem = { element: Element; component?: { name: string; params: Record<s
+ type SlotInstance = { value: unknown; items: SlotItem[] }   // a template slot: one per element (section 7.5)
+ ```
+ 
+-- **The outer box is the processor's.** It creates `target`, applies the common params and `class`, `id`, `lang` and `dir` to it (the definition fence's, overridden by the invocation's), and lays it out (section 9.2). The component owns what is inside `target` and doesn't receive those params.
++- **The outer box is the processor's.** It creates `target`, applies the common params and `class`, `id`, `lang` and `dir` to it (the definition fence's or the signature fence's, overridden by the invocation's), and lays it out (section 9.2). The component owns what is inside `target` and doesn't receive those params, but for `object-fit` and `object-position`, which it receives as `fit`.
++- **A component fits its box.** It takes the inside of its box (the box less its border and padding): its width, and its height when the box has one (from `height`, `aspect-ratio`, `fill`, or a layout that stretches it, as a grid row does); a box with no height is as tall as the component's natural height at that width. A drawing with an aspect ratio of its own (a QR code, an image, an SVG with a `viewBox`) sits in the box as `fit.mode` says: `contain`, as large as fits, its ratio kept; `cover`, the box filled, its ratio kept, the rest cropped; `fill`, stretched to the box. Where a drawing smaller or larger than the box sits is `fit.x` and `fit.y`, fractions of the space left over, from the left and from the top: the processor resolves `object-position`'s logical values with the box's direction, so `start` is `0` in a left-to-right box and `1` in a right-to-left one. A drawing with no aspect ratio (a chart, a map) fills its box whatever `fit` says, and content that flows (text, controls) ignores it. When `fit` changes, the processor sets it and calls `update`. A component SHOULD fit its box so, and SHOULD have no size or placement params of its own: an author sizes and places every component the same way, with the common params.
++- **A component's natural size** is its size when its box gives it none, as CSS sizes content: a drawing with an aspect ratio takes the width it is given and its height from the ratio, and is 300 pixels wide where nothing gives it a width either (in a row laid out by content, inline); a drawing with no aspect ratio is 300 by 150 pixels, as an HTML `iframe` or `canvas` is; content that flows is as tall as its lines. A drawing sized in script from its box SHOULD contain its size (CSS `contain: size`), so that what it drew last never counts as its natural size: otherwise a box stretched once never shrinks again.
++- **Where a component runs is invisible to layout.** A processor that runs a component somewhere other than the document that lays it out (a sandbox's frame, section 15) MUST lay its use out as if it ran there: the box the same size, `target` the box's inside, the box's params applied once, and what the component draws the same size in the same place. Content larger than a box with a height is clipped at the box's edge, unless the box has `scroll` (section 9.2).
+ - **Slots are rendered by the processor**, into elements the component places in its own DOM. Components inside a slot are mounted by the processor and stay live, whatever framework the parent uses.
+ - **A slot is a list of items**, one per top-level block (section 9.1): its element, and, when the block is a component, its name and params. A tabs component reads its tabs' labels from the items' params. A use of a component still on its way (section 4.5) is an item whose `component` has its name, no params, and `pending: true`. An item's element is a box the processor makes around the block, so a block placed by position (section 9.2) is placed in its item, whatever the component's own markup; the component sizes it.
+ - **An item's width is the component's to give.** An item is the nearest box of the block in it, so when that block uses breakpoints, the item is the box they follow and doesn't take its width from its content (section 9.3). A component that lays its items out by their content, such as a toolbar that puts them side by side, gives such an item a width. A processor can't check this, since only the component knows its layout.
+@@ -641,10 +645,10 @@ To repeat a component once per record in order, no template slot is needed: put
+ 
+ A binding maps the host contract to one framework.
+ 
+-| Binding | Language, `runtime` | Default slot | Named slots | Items, instances, `set`, `fallback`, `headingLevel`, `scheme`, `fail`, `busy`, `host` |
++| Binding | Language, `runtime` | Default slot | Named slots | Items, instances, `set`, `fallback`, `headingLevel`, `scheme`, `fit`, `fail`, `busy`, `host` |
+ | --- | --- | --- | --- | --- |
+-| React | `jsx`, `tsx`; `react@19`, `preact@10` | `children`, a node that places the slot's elements | a prop of the same name, the same kind of node | a `compmd` prop: `{slots, set, fallback, headingLevel, scheme, fail, busy, host}` |
+-| Svelte | `svelte`; `svelte@5` | the `children` snippet | a snippet prop of the same name | a `compmd` prop: `{slots, set, fallback, headingLevel, scheme, fail, busy, host}` |
++| React | `jsx`, `tsx`; `react@19`, `preact@10` | `children`, a node that places the slot's elements | a prop of the same name, the same kind of node | a `compmd` prop: `{slots, set, fallback, headingLevel, scheme, fit, fail, busy, host}` |
++| Svelte | `svelte`; `svelte@5` | the `children` snippet | a snippet prop of the same name | a `compmd` prop: `{slots, set, fallback, headingLevel, scheme, fit, fail, busy, host}` |
+ | Plain | `js`, `ts`; none | `slots.default` | `slots.<name>` | the context, as in section 7.4 |
+ 
+ In the React and Svelte bindings, params are props of the same name (a param with `-` in its name becomes camelCase: `align-items` is `alignItems`; so does a named slot's prop: the slot `side-panel` is `sidePanel`), and the binding implements `mount`, `update` and `destroy` with the framework's own mounting. In the plain binding the default export *is* `mount`, with the context of section 7.4, and params keep their names:
+@@ -1248,6 +1252,8 @@ Any container or leaf (built-in or not) accepts these params, applied to its out
+ | `align-self`                                  | `start`, `center`, `end`, `stretch`                     | `align-self=center`      |
+ | `justify-self`                                | `start`, `center`, `end`                                | `justify-self=end`       |
+ | `aspect-ratio`                                | width over height, or `none`                            | `aspect-ratio=16/9`      |
++| `object-fit`                                  | `contain`, `cover`, `fill`; no breakpoint               | `object-fit=cover`       |
++| `object-position`                             | one or two of `start`, `center`, `end`: block, then inline; no breakpoint | `object-position="center start"` |
+ | `inset-inline-start`, `inset-inline-end`, `inset-block-start`, `inset-block-end` | a length, a percentage or `auto` (the default) | `inset-inline-start=16px` |
+ | `scroll`                                      | a flag, or `true` or `false`                            | `scroll`                 |
+ | `fill`                                        | a flag, or `true` or `false`                            | `fill`                   |
+@@ -1258,7 +1264,8 @@ Any container or leaf (built-in or not) accepts these params, applied to its out
+   - **The definition styles its box** with its fence's params (section 7), and **the caller's params override them** as a later cascade layer does in CSS: per property, a shorthand counting as its longhands (`padding` covers `padding-block`, `padding-inline` and the four sides), and from the caller's breakpoint up (breakpoints decide where a value applies, not which wins). Classes add up. A `card` fenced `{padding=s md:padding=m}` called with `{padding=l}` has `l` at every width; called with `{md:padding=xl}` it has `s` below `md` and `xl` from `md` up. A `fill`, `grid-area` or `sticky` the box needs wherever it's used goes on the fence: a definition whose body is a filling list view is fenced `{fill}`, or its box is as tall as the list's content.
+   - **`display=contents`** on a `compmd` fence means the component has no box: its blocks are its parent's items (section 9.1), and blocks it places by position are placed in its parent's box. It is written as a bare value with no breakpoint, and only on a definition fence (F009 elsewhere). The fence then takes no other param, and an invocation gives such a component no common params, `class` or `id`, since there is no box for them (W120 for each).
+   - Insets follow CSS: a caller's `inset-inline-start` doesn't remove the fence's `inset-inline-end`, so the block stretches between them; `inset-inline-end=auto` moves it instead.
+-- **Sizes include padding.** `width`, `max-width` and `aspect-ratio` measure the block with its padding.
++- **Sizes include padding and border.** `width`, `max-width` and `aspect-ratio` measure the block with its padding and border.
++- **`object-fit` and `object-position`** say how what a host-language component draws sits in its box (section 7.4), with CSS's meanings: `contain` (the default) as large as fits, `cover` filling the box and cropped, `fill` stretched; and where it sits, `center` by default. `object-position`'s one value is both positions, two are the block position then the inline one, as `padding`'s two values are. They mean nothing to a block that isn't such a component, and are written without a breakpoint (F008 with one), since the component receives them as values, which a breakpoint isn't. `fill` here is CSS's `object-fit: fill`, stretching, and differs from the flag `fill`.
+ - **Output order is source order.** No layout param (`order`, `grid-area`, `grid-template-areas`, `inset-*`, breakpoints) changes the order of the output: screen readers, tab order, copy and paste, and plain renderers follow the source, so content is written in reading order. `order`, `grid-area` and `inset-*` move blocks on screen only. Authors SHOULD keep the visual order close to the source order where blocks hold links or inputs, so keyboard focus doesn't jump around the screen.
+ - **`justify-self`** is CSS's in a grid. In a parent that lays out with flexbox (`stack`, `row`), `end` pushes the block, and the blocks after it, to the end.
+ - **`scroll`** makes the block's content scroll inside it, so wide content (a table on a phone) doesn't scroll the page.
+@@ -1344,7 +1351,7 @@ Every diagnostic MUST name its code, the line and column where it was detected,
+ | F010 | Required param missing                                                                                                                | the opener or leaf                                                   |
+ | F011 | Malformed param list (unterminated string, unbalanced bracket, invalid JSON, a character a bare value can't hold, an empty value), or text after a declaration's short-form default (section 7.3) | the `"`, `(`, `[` or `{` that doesn't close, the character a bare value can't hold, the `=` with no value, or where the text after the default starts |
+ | F012 | Continuation line not following an opener, leaf, or continuation                                                                      | the line                                                             |
+-| F013 | Duplicate local name from definitions or explicit imports, or a keyword (`if`, `each`, `value`, `box`) defined, imported, exported or used as `as`; the name `md` declared; a CEL reserved word or type name as a `compmd` definition's param, an `as` name or an input (section 3.1); two params, or two slots, of one component differing only in `-` and `_`; a signature declaring `class` or `id`, or a code renderer's declaring `alt` or `render` (section 5.1) | the second declaration, or the declared param                                               |
++| F013 | Duplicate local name from definitions or explicit imports, or a keyword (`if`, `each`, `value`, `box`) defined, imported, exported or used as `as`; the name `md` declared; a CEL reserved word or type name as a `compmd` definition's param, an `as` name or an input (section 3.1); two params, or two slots, of one component differing only in `-` and `_`; a signature declaring `class`, `id`, `lang`, `dir` or a common param, or a code renderer's declaring `alt` or `render` (section 5.1) | the second declaration, or the declared param                                               |
+ | F014 | Unknown interpolation path                                                                                                            | the path                                                             |
+ | F015 | Slot line outside a container                                                                                                         | the line                                                             |
+ | F016 | Malformed component line (starts with `::` but matches no form)                                                                             | the line, with the expected form                                     |
+@@ -1367,7 +1374,7 @@ Every diagnostic MUST name its code, the line and column where it was detected,
+ | F033 | Frontmatter isn't YAML 1.2 core or TOML, uses tags, anchors or aliases, repeats a key, or exceeds the processor's size cap             | the frontmatter, at the offending position                           |
+ | F034 | Expansion larger than the processor allows (at least 100,000 nodes, section 8.5)                                                     | the `each`, template slot or invocation that crossed the limit       |
+ | F035 | Pack does not match its import's `integrity` hash                                                                                  | the `integrity` key                                                  |
+-| F036 | Param list on a signature fence; ignored                                                                                            | the `{`                                                              |
++| F036 | A component's box styled by both its definition fence and its signature fence (section 7); the definition fence's param list is kept | the signature fence's `{`                                            |
+ | F037 | A declaration's type isn't in the type grammar (section 7.3), in a signature, an input or a data `schema`; the declaration takes any value (diagnostic SHOULD suggest the nearest type name) | the type name                                                        |
+ | W101 | Leaf without fallback text (plain renderers show nothing, and a host component has no text alternative), or a code block a code renderer renders without `alt`, unless it is `render=source` (section 7.7) | the leaf, or the code block's opening fence                          |
+ | W102 | Definition language not supported by this processor; fallback rendered                                                                | the invocation                                                       |
+@@ -1469,8 +1476,8 @@ A processor works in stages. Each stage needs only what its row lists, and repor
+ 
+ | Stage           | Needs                                                  | Produces                                       | Diagnostics                                                    |
+ | --------------- | ------------------------------------------------------ | ---------------------------------------------- | -------------------------------------------------------------- |
+-| 1. Parse        | the document's text                                    | the document tree (section 12)                 | F001, F003–F005, F007, F011, F012, F015–F017, F032, F033, F036, W101, W106–W108, W110, W111, W115, W116 |
+-| 2. Resolve      | the tree, imported documents and packs                 | each name bound to a definition and signature  | F002, F009 (a code renderer's `code`), F013, F019–F023, F026 (imports), F029, F035, W104, W105, W112, W113, W117, W121 (`peerDependencies`) |
++| 1. Parse        | the document's text                                    | the document tree (section 12)                 | F001, F003–F005, F007, F011, F012, F015–F017, F032, F033, W101, W106–W108, W110, W111, W115, W116 |
++| 2. Resolve      | the tree, imported documents and packs                 | each name bound to a definition and signature  | F002, F009 (a code renderer's `code`), F013, F019–F023, F026 (imports), F029, F035, F036, W104, W105, W112, W113, W117, W121 (`peerDependencies`) |
+ | 3. Validate     | the resolved tree and signatures                       | a checked tree, params typed                   | F006, F008–F010, F011 and F017 (a rendered code block's info string), F014, F018, F023 (a code block's language), F024 (types), F028, F030, F031, W101 (a rendered code block), W102, W103, W120 |
+ | 4a. Load        | the checked tree and the input values                  | the loaded data                                | F026, F027, W113 (`host:`)                                     |
+ | 4b. Evaluate    | the checked tree, the loaded data, the render context  | the expanded tree (section 12.3)               | F024 (evaluation), F025, F034, W109, W114, W119                |
+@@ -1494,7 +1501,7 @@ The tree is the result of stage 1 and the subject of conformance tests (section
+ | `componentLeaf`          | `name`, `fallback` (inline children), `params`                                                                                 |
+ | `componentInline`        | `name`, `fallback` (inline children), `params`                                                                                 |
+ | `componentDefinition`    | `name`, `language`, `signature` (null when the fence has none), `params` (the fence's param list, section 7); for `compmd`, `children` (the parsed body); for host languages, `source` (the text) and `runtime` (null when the fence has none) |
+-| `componentSignature`     | `name`, `signature` (a signature fence, section 7.1)                                                                           |
++| `componentSignature`     | `name`, `signature` (a signature fence, section 7.1), `params` (its param list for the component's box, as written, section 7; empty without one) |
+ | `interpolation` | `path`, `block`                                                                                                                |
+ 
+ `params`, `fallback`, `children` and `slots` are always present, as empty lists when there is nothing. A leaf written without `[…]` has an empty `fallback`.
+@@ -1527,7 +1534,7 @@ Stage 4b replaces every `compmd` definition, `if`, `each`, `value` and `interpol
+ - **A param bound to an input** (type `input<…>`, section 7.3) has the input's current value as its `value`, and `input`, the input's name: `{"key": "selected", "breakpoint": null, "value": "eu", "input": "region"}`. A renderer gives the component the value, and `set` changes the named input (section 7.4).
+ - **The root lists the document's inputs** in `inputs`, when it has any: each one's type, an enum's `members`, and the value the render used: `{"region": {"type": "enum", "members": ["all", "eu", "us"], "value": "eu"}, "since": {"type": "date", "value": "2026-10-15"}}`. Input components read their choices from it, so a renderer needs nothing but the expanded tree.
+ - **Slots** are expanded. A template slot (section 7.5) has `children: []` and `instances`, one `{value, children}` per element, with the slot content expanded for that element.
+-- **A block `compmd` component** expands to a `box` holding its expanded body. The box's params are the fence's, evaluated, with the caller's common params, `class` and `id` applied over them: a fence param that a caller's param covers (the same property, or a part of it), at the caller's breakpoint or a wider one, is left out, and a fence shorthand the caller covers only in part is written as its longhands first. A `display=contents` component expands to its body alone. A host-language component's params hold its fence's params the same way.
++- **A block `compmd` component** expands to a `box` holding its expanded body. The box's params are the fence's, evaluated, with the caller's common params, `class` and `id` applied over them: a fence param that a caller's param covers (the same property, or a part of it), at the caller's breakpoint or a wider one, is left out, and a fence shorthand the caller covers only in part is written as its longhands first. A `display=contents` component expands to its body alone. A host-language component's params hold its fence's params the same way: its definition fence's, or its signature fence's when its definition fence has none.
+ - **Headings** from `compmd` definition bodies have their computed `depth` (section 7.2).
+ - **A use of a pending component** (section 4.5) is a `componentPending` node: `name`, the component's local name, `pack`, the pending pack as the import names it (`@kit/mermaid`), and `children`, the fallback the use renders (section 4.5), expanded. For a leaf or an inline component that is its fallback text, for a container its slots as Markdown, and for a code block a code renderer renders the code block, without its `component`. It is inline in inline content, and a block elsewhere. A renderer that doesn't know the node renders its children.
+ - **A code block a code renderer renders** (section 7.7) stays a `code` node, with its `lang` and `value`, and adds `component`, `{name, params}`, with params as a component node's, its `code` param holding the block's text, so a renderer passes them on as for any leaf; and `alt`, when given: `{"type": "code", "lang": "mermaid", "value": "graph LR; A --> B", "component": {"name": "mermaid", "params": [{"key": "code", "breakpoint": null, "value": "graph LR; A --> B"}]}, "alt": "A, then B"}`. A renderer runs the component, and shows the code block as its fallback. It also has `render`, `"output"`, `"source"` or `"both"` (`"output"` when the block doesn't give it). A `"source"` block has no `component`, so it is a code block to any renderer. For a `"both"` block a renderer shows the code block, then runs the component below it; a renderer that doesn't know `render` treats it as `"output"`.
+diff --git a/spec/llms.txt b/spec/llms.txt
+index 589ea2c..7717883 100644
+--- a/spec/llms.txt
++++ b/spec/llms.txt
+@@ -292,6 +292,7 @@ Common params, on any container or leaf (they style its outer box):
+ - look: `border` (`none subtle strong` or CSS), `border-radius` (`none s m l full` or a length), `background` (`none subtle strong accent` or a CSS color)
+ - placement: `grid-area`, `order` (`first last none`), `align-self` (`start center end stretch`), `justify-self` (`start center end`), `inset-inline-start`, `inset-inline-end`, `inset-block-start`, `inset-block-end` (`auto` or a length)
+ - behavior: `scroll`, `fill` (flags: alone, or `true` or `false`), `sticky=top|bottom|none`, `show=sm|md|lg`, `hide=sm|md|lg`
++- what a component draws in its box: `object-fit=contain|cover|fill` (as large as fits, the default; filling the box, cropped; stretched), `object-position` one or two of `start center end`, block then inline (`object-position="center start"`; `center` by default); no breakpoint. A component fits its box: size a QR code or a chart with `width`, `height` or `aspect-ratio`, never with a param of its own.
+ 
+ - Spaces (`gap`, padding): tokens `none`, `s`, `m`, `l`, or a length (`px rem em %`). Prefer tokens.
+ - Each top-level block in a layout container is one item. Wrap several blocks in `::: box` to make one item.
+@@ -380,7 +381,7 @@ export default function Chart({ rows, selected, compmd }) {
+ - React and Svelte 5: params are camelCase props, the default slot is `children`, named slots are props of their names, and `compmd` is `{slots, set, fallback, headingLevel, host}`. Plain `js`/`ts`: the default export is `mount(target, {params, slots, set, fallback, headingLevel, host})` returning `{update, destroy}`.
+ - A param typed `input<…>` is bound to an input by the caller (`selected=region`); the component calls `compmd.set("selected", "eu")` to change it. This is the only output a component has.
+ - The code has no network and sees only its params and slots. Use `fallback.text` as the accessible label of non-text content.
+-- A signature fence (`compmd component=<name> signature`) holds only the YAML signature, no `---`, no body, no param list.
++- A signature fence (`compmd component=<name> signature`) holds only the YAML signature, no `---`, no body. Its param list, when it has one, gives the component's box its defaults, as a definition fence's does (`compmd component=qr-code signature {width=12rem max-width=100%}`): the place for them when the component is a built module. A signature never declares a common param (`width`, `height`, `object-fit`, …), `class`, `id`, `lang` or `dir` (F013): the processor keeps them.
+ - A component file (`./chart.jsx`) imported by path exports its default export, named after the file stem.
+ - A code renderer draws the code blocks of one language: import it (`names: [mermaid]`), then write the block as anywhere, with its params and an `alt` after the language: ```` ```mermaid {alt="Draft, then review"} ````. For source computed from data, use the same component as a leaf, its source as `code`: `:: mermaid[Draft, then review] {code=(…)}`; a code block is never interpolated.
+ - A host application may provide components of its own, declared in its pack by a signature alone. Use them like any component, importing the host's pack by name to say so (`from: "@acme/app"`); they work only in that host (W113), so write fallbacks other processors can show.
+@@ -457,7 +458,7 @@ F codes are errors, W codes warnings. Each line: what it means → how to fix it
+ - F010 required param missing → give it.
+ - F011 broken param list → close quotes and brackets; quote values with spaces or parentheses; no `title=` without a value.
+ - F012 `::: +` not after an opener, leaf or continuation → move it directly under that line.
+-- F013 name clash or reserved name → rename: no `if`, `each`, `value`, `box`, `md`, no CEL reserved words or type names as definition params, `as` names or inputs, no two names differing only in `-` vs `_`.
++- F013 name clash or reserved name → rename: no `if`, `each`, `value`, `box`, `md`, no CEL reserved words or type names as definition params, `as` names or inputs, no two names differing only in `-` vs `_`, and in a signature no common param (`width`, `object-fit`, …), `class`, `id`, `lang` or `dir`, which the processor keeps.
+ - F014 unknown `{{path}}` → use `md.doc.`, `md.data.`, `md.input.` or a declared name; write `\{{` for literal braces.
+ - F015 slot line outside a container → move it inside, or remove it.
+ - F016 malformed component line → exactly `::: name`, `::: /name`, `::: + …`, `:: name[…]`, `:: #name`, with a space after the colons; no scoped names in the body.
+@@ -480,7 +481,7 @@ F codes are errors, W codes warnings. Each line: what it means → how to fix it
+ - F033 frontmatter not plain YAML 1.2 → remove anchors, aliases, tags and duplicate keys.
+ - F034 expansion too large → filter or slice the data (`md.slice`), or nest fewer `each` blocks.
+ - F035 pack doesn't match its `integrity` → update the hash or the version.
+-- F036 param list on a signature fence → remove it; box params go on the definition fence.
++- F036 a component's box styled by both its definition fence and its signature fence → keep one param list (the definition fence's is used).
+ - F037 a declaration's type isn't a type → use one: `string`, `number`, `boolean`, `date`, `array`, `object`, `length`, `space`, `color`, `tracks`, `areas`, `surface`, `border`, `radius`, `name`, an enum `a | b`, or `input<…>`.
+ - W101 leaf without fallback → add `[readable text]`.
+ - W102 language or runtime not supported → expect the fallback; write a good one.

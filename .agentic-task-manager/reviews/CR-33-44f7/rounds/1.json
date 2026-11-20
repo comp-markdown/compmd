@@ -1,0 +1,292 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "2ed1bbd2917b2cd36b5769ef6143c2d41ba9abf7",
+    "head": "c0f7c628c2bf0847fc3d97e8d0752d8458cf8e91"
+  },
+  "files": [
+    {
+      "path": "conformance/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "conformance/compmd-tree.schema.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "conformance/definitions/fence-params/diagnostics.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "conformance/definitions/fence-params/parse.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "conformance/definitions/long-form-declaration/parse.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "conformance/definitions/processor-component-signature/parse.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "conformance/definitions/signature-fence/parse.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "conformance/definitions/signature-print/parse.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "conformance/definitions/signature-types/input.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "conformance/definitions/signature-types/parse.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "conformance/definitions/template-slots/parse.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "conformance/examples/complete-example/parse.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/object-fit-and-position/case.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/object-fit-and-position/expanded.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/object-fit-and-position/input.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/signature-box-defaults/case.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/signature-box-defaults/expanded.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/expand/signature-box-defaults/input.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/params.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "conformance/resolve/common-param-declared-F013/case.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/resolve/common-param-declared-F013/diagnostics.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/resolve/common-param-declared-F013/input.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/resolve/params-differ-in-dash-F013/input.comp.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "conformance/resolve/signature-and-definition-box-F036/case.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/resolve/signature-and-definition-box-F036/diagnostics.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/resolve/signature-and-definition-box-F036/expanded.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/resolve/signature-and-definition-box-F036/input.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/validate/object-fit-and-position/case.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/validate/object-fit-and-position/diagnostics.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/validate/object-fit-and-position/input.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/validate/signature-box-unknown-F008/case.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/validate/signature-box-unknown-F008/diagnostics.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/validate/signature-box-unknown-F008/expanded.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "conformance/validate/signature-box-unknown-F008/input.comp.md",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/parse/definitions.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/resolve/load/definitions.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/tree/definitions.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/tree/shift.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/validate.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/validate/body.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/validate/universal.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/values.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/tests/stages.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/sizing-components.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/authors/03-containers-and-params.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/authors/19-the-syntax-at-a-glance.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/authors/20-the-diagnostics-and-their-fixes.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/developers/14-signatures-and-params.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/developers/22-the-diagnostics.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "guides/test/part-5.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/styles.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/render/src/vocabulary.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/wasm/src/parse-tree.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spec/CHANGELOG.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spec/compmd-spec-v1.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spec/llms.txt",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-20T21:40:04Z"
+}
