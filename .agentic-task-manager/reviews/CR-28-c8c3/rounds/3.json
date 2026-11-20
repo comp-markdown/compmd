@@ -1,0 +1,22 @@
+{
+  "number": 3,
+  "kind": {
+    "kind": "range",
+    "base": "f49564caaf2972359cdc6b189672811719291520",
+    "head": "a768a677727050ff853122516a6d7c01a7169832"
+  },
+  "files": [
+    {
+      "path": "docs/first-components.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/releases.md",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-20T19:14:32Z"
+}

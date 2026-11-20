@@ -721,7 +721,7 @@
         "compmd-packs/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-20T19:05:04Z",
+      "updated_at": "2026-11-20T19:14:32Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -744,7 +744,7 @@
       "sprint": "Packs 1: the pack tool, no-code components",
       "started_at": "2026-11-20T16:17:07Z",
       "started_by": "claude:79612601",
-      "commit": "162d65db6c653d8216c9035c74db255d017a36f0",
+      "commit": "a768a677727050ff853122516a6d7c01a7169832",
       "code_reviews": [
         {
           "id": "01a1f9c3-335d-70a7-804a-1577c4ebc8c3",

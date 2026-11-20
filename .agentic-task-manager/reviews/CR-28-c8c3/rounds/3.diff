@@ -1,0 +1,41 @@
+diff --git a/docs/first-components.md b/docs/first-components.md
+index b583250..39d7f8b 100644
+--- a/docs/first-components.md
++++ b/docs/first-components.md
+@@ -58,7 +58,9 @@ pages have, and what CompMD covers already, with the list, each component's pack
+     own level (an embed permissive, the rest strict). The embeds are one pack per provider (`embed-youtube`, …), sharing
+     the permissive frame's code of CMD-332 as a library. The basics stay one pack, `@compmd/basics`, built into the
+     sandbox (decision 6). With about 25 packs, each one's release is a tag `<pack>-v<version>`, which one workflow
+-    publishes for every pack, rather than a workflow each ([releases](releases.md), decision 8).
++    publishes for every pack, rather than a workflow each; three commands create new packs on npm with their trusted
++    publishers, release every pack whose version in `compmd-packs/versions.json` npm doesn't have, and approve what is
++    staged ([releases](releases.md), decision 8, CR-28's c5).
+ 11. **The frames compile WebAssembly again** (decided 2026-11-20): `graphviz` and `jq` are WebAssembly
+     (`@viz-js/viz`, `jq-wasm`), so both frame documents' policies get `'wasm-unsafe-eval'` back, in the sprint that
+     brings them (CMD-324). [WebAssembly in the frames](webassembly-in-the-frames.md) found it gives a component
+@@ -275,6 +277,7 @@ From CR-28's comments, in its round 2:
+ |---|---|
+ | c1: columns, two or three, with a slot each | `columns` (4b); decision 2 no longer counts columns as covered |
+ | c2: a word cloud | `word-cloud` (10b) |
++| c5, c11: releasing many packs: placeholders, one file of versions, approving what is staged | Decision 10; [releases](releases.md), decision 8; CMD-350 to CMD-352 |
+ 
+ ## The research
+ 
+diff --git a/docs/releases.md b/docs/releases.md
+index f7d8d84..fde0601 100644
+--- a/docs/releases.md
++++ b/docs/releases.md
+@@ -13,7 +13,12 @@ What this repository releases, how each is versioned, and what a release does. T
+ 5. **A release tag publishes from CI**, by a workflow of its own (`.github/workflows/release.yml`): it builds, runs `cargo make ci`, and stages every package with npm's trusted publishing. GitHub proves to npm which repository and workflow publishes, so no npm token is stored anywhere, and each version carries its provenance: where and from what it was built. **A staged version is installable once the author approves it**, with two-factor authentication: the trusted publishers allow staging alone, so CI builds and checks, and the author releases (decided 2026-11-02). **The crates are published by the same workflow** (decided 2026-11-03), once the npm packages are staged, with crates.io's trusted publishing: crates.io has no staging, so their job waits in a GitHub environment, `crates-io`, for the author's approval, and the crates' trusted publishers name that environment. `compmd` and `tauri-plugin-compmd` (from 0.6.0) take the release's version; `compmd-markdown`, the fork, its own, published only when it changed.
+ 6. **The first version, `0.1.0`, is published by hand**, by the author: trusted publishing is set up on packages that already exist on npm.
+ 7. **The website shows the latest release**: its install line and snippets are the latest published version's, and they run as tests against the code they come from, so a release can't leave them broken.
+-8. **Packs this repository publishes are released on their own**: each has a version of its own and a tag `<pack>-v<version>`, which a workflow of its own publishes the same way, by trusted publishing. The first is the Mermaid pack, `@comp-markdown/mermaid` ([its design](mermaid-pack.md), decision 9); the second, the wireframe pack, `@comp-markdown/wireframe` (`release-wireframe.yml`, 2026-11-19).
++8. **Packs this repository publishes are released on their own**: each has a version of its own and a tag `<pack>-v<version>`, published by trusted publishing. The first was the Mermaid pack, `@comp-markdown/mermaid` ([its design](mermaid-pack.md), decision 9); the second, the wireframe pack, `@comp-markdown/wireframe` (2026-11-19). **With about 25 packs, three commands and one workflow do it for all of them** (decided 2026-11-20, CR-28), each command with `--dry-run`, which says what it would do and does nothing:
++   - **`cargo make pack-placeholders <pack>...`** creates new packs on npm: for each one npm doesn't have, it publishes the `0.0.0` placeholder of *A placeholder first* (RELEASING.md), written outside the repository, then sets its trusted publisher with `npm trust github` (the repository, `release-packs.yml`, staging only, `--allow-stage-publish`). One one-time code covers the run while it is valid; npm allows about 80 packages in its 5-minute window.
++   - **`compmd-packs/versions.json` is the one place a pack's version is written** (`{ "card": "0.1.0", … }`); each pack's `package.json` follows it, and `cargo make ci` fails when one doesn't. **`cargo make release-packs`** asks npm which of those versions it doesn't have, shows them, and on the author's yes tags each `<pack>-v<version>`, pushes the tags and starts one run of **`release-packs.yml`**, which runs `cargo make ci` once and stages every version npm doesn't have: one run for a batch, not one per tag.
++   - **`cargo make approve-packs`** lists what is staged for every pack as checkboxes (`@inquirer/checkbox`), all chosen; Enter approves the chosen ones (`npm stage approve`) in the order they were staged.
++
++   The Mermaid and wireframe packs are released the same way: `release-mermaid.yml` and `release-wireframe.yml` go, and their trusted publishers are revoked (`npm trust revoke`) and set again for `release-packs.yml`, since a package has one and its workflow can't be changed. The commands run a pinned npm with staging and `npm trust` (11.15 or newer), as the release workflow does.
+ 
+ ## A release, step by step
+ 

@@ -132,3 +132,18 @@
     **4. The two packs released today move to it.** **(confirm)** `release-mermaid.yml` and `release-wireframe.yml` go; their trusted publishers are made again for `release-packs.yml`, since npm can't change a publisher's workflow (RELEASING.md).
 
     Staging needs npm 11.15 or newer (yours here is 11.11), so the commands run a pinned npm, as the release workflow does. Once you've settled the four points I'll write it in, with RELEASING.md's steps, and add the tasks: the placeholders and the versions file first, since the first component's release (CMD-313, `card`) needs them.
+    - **Hakan Serce** · 2026-11-20T19:12:34Z · c11
+      good, make sure we have --dry-run option for each. One run, not per tag. 
+
+      Also, we need the publish placeholder command to also set the trusted publisher properly, is that possible?
+
+      checkboxes package is fine.
+
+      yes  existing packs (Mermaid, Wireframe) are handled the same way, they are not special.
+
+      sure we can upgrade npm.
+      - **claude:79612601** · 2026-11-20T19:14:32Z · c13
+        Done in round 3: [releases](docs/releases.md), decision 8, and tasks CMD-350 to CMD-352 in Packs 1. Every command has `--dry-run`; one run for a batch; Mermaid and wireframe move to `release-packs.yml`. And yes, the placeholder command sets the trusted publisher too: `npm trust github <package> --file release-packs.yml --repository comp-markdown/compmd --allow-stage-publish --yes` (npm 11.10 and on), once the placeholder exists; npm fits about 80 packages in one 5-minute 2FA window. A package has one publisher, so Mermaid's and wireframe's are revoked (`npm trust list`, `npm trust revoke`) and set again.
+
+## (the review) · round 2 · t4
+- [poke] **Hakan Serce** · 2026-11-20T19:13:09Z · c12
