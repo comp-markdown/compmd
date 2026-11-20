@@ -2,12 +2,12 @@
 id = "01a1fab2-1ffd-7112-88c8-332e635238da"
 number = 30
 title = "Packs: placeholders and trusted publishers in one command"
-status = "open"
+status = "approved"
 tasks = ["CMD-350"]
 author = "claude:79612601"
 reviewers = []
 created = 2026-11-20T20:42:20Z
-updated = 2026-11-20T20:42:20Z
+updated = 2026-11-20T20:55:34Z
 +++
 
 `cargo make pack-placeholders <pack>...`, with `--dry-run` ([releases](docs/releases.md), decision 8).

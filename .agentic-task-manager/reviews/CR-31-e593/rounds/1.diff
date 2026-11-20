@@ -1,0 +1,945 @@
+diff --git a/.github/workflows/release-mermaid.yml b/.github/workflows/release-mermaid.yml
+deleted file mode 100644
+index 262eaa4..0000000
+--- a/.github/workflows/release-mermaid.yml
++++ /dev/null
+@@ -1,50 +0,0 @@
+-# A release of the Mermaid pack (docs/mermaid-pack.md, decision 9): a tag mermaid-v<version> builds and checks the
+-# repository, then stages @comp-markdown/mermaid on npm with trusted publishing, for the author to approve, as
+-# release.yml stages the @compmd packages. The pack has a version of its own, so it is released on its own.
+-name: Release the Mermaid pack
+-
+-on:
+-  push:
+-    tags: ["mermaid-v*"]
+-
+-permissions:
+-  contents: read
+-
+-# One release at a time, and none cut off halfway.
+-concurrency:
+-  group: release-mermaid
+-  cancel-in-progress: false
+-
+-jobs:
+-  release:
+-    runs-on: ubuntu-24.04
+-    permissions:
+-      contents: read
+-      # Trusted publishing and provenance.
+-      id-token: write
+-    steps:
+-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+-        with:
+-          submodules: recursive
+-      - uses: ./.github/actions/setup
+-      - run: pnpm install --frozen-lockfile
+-      # The browser tests run in the runner's Chrome and in Playwright's WebKit.
+-      - run: pnpm --dir npm-packages/sandbox exec playwright install --with-deps webkit
+-      - name: The tag is the pack's version
+-        run: |
+-          version="${GITHUB_REF_NAME#mermaid-v}"
+-          written="$(node -p "require('./compmd-packs/mermaid/package.json').version")"
+-          if [ "$written" != "$version" ]; then
+-            echo "::error::compmd-packs/mermaid/package.json is $written, the tag $GITHUB_REF_NAME"
+-            exit 1
+-          fi
+-      # Every check, the pack's tests and its build among them.
+-      - run: cargo make ci
+-      - name: Pack
+-        run: pnpm --dir compmd-packs/mermaid pack --pack-destination "$RUNNER_TEMP/packages"
+-      # Trusted publishing needs npm 11.5.1 or newer, staged publishing 11.15.0.
+-      - run: npm install --global npm@11.21.1
+-      # Outside the repository, whose devEngines name pnpm. Installable once the author approves it on npmjs.com.
+-      - name: Stage
+-        working-directory: ${{ runner.temp }}/packages
+-        run: npm stage publish ./comp-markdown-mermaid-*.tgz --access public
+diff --git a/.github/workflows/release-packs.yml b/.github/workflows/release-packs.yml
+new file mode 100644
+index 0000000..90c39a4
+--- /dev/null
++++ b/.github/workflows/release-packs.yml
+@@ -0,0 +1,51 @@
++# The packs' releases (docs/releases.md, decision 8). `cargo make release-packs` tags each pack whose version in
++# compmd-packs/versions.json npm doesn't have, `<pack>-v<version>`, at main's commit, then starts this workflow once
++# for them all: it checks the repository once, then stages every pack tagged at this commit whose version npm doesn't
++# have, with trusted publishing, for the author to approve (`cargo make approve-packs`). Started by hand, not by the
++# tags: GitHub starts nothing for a push of more than three tags at once.
++name: Release the packs
++
++on:
++  workflow_dispatch:
++
++permissions:
++  contents: read
++
++# One release at a time, and none cut off halfway.
++concurrency:
++  group: release-packs
++  cancel-in-progress: false
++
++jobs:
++  release:
++    runs-on: ubuntu-24.04
++    permissions:
++      contents: read
++      # Trusted publishing and provenance.
++      id-token: write
++    steps:
++      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
++        with:
++          submodules: recursive
++          # The packs' tags at this commit say which to stage.
++          fetch-tags: true
++      - uses: ./.github/actions/setup
++      - run: pnpm install --frozen-lockfile
++      # Before the checks, so a run with nothing to stage stops at once.
++      - name: The packs to stage
++        run: node tools/packs/stage-packs.ts plan
++      # The browser tests run in the runner's Chrome and in Playwright's WebKit.
++      - run: pnpm --dir npm-packages/sandbox exec playwright install --with-deps webkit
++      # Every check, the packs' tests and builds among them, once for every pack.
++      - run: cargo make ci
++      - name: Pack
++        run: node tools/packs/stage-packs.ts pack "$RUNNER_TEMP/packages"
++      # Trusted publishing needs npm 11.5.1 or newer, staged publishing 11.15.0.
++      - run: npm install --global npm@11.21.1
++      # Outside the repository, whose devEngines name pnpm. Each is installable once the author approves it.
++      - name: Stage
++        working-directory: ${{ runner.temp }}/packages
++        run: |
++          for package in ./*.tgz; do
++            npm stage publish "$package" --access public
++          done
+diff --git a/.github/workflows/release-wireframe.yml b/.github/workflows/release-wireframe.yml
+deleted file mode 100644
+index 8ac90e7..0000000
+--- a/.github/workflows/release-wireframe.yml
++++ /dev/null
+@@ -1,50 +0,0 @@
+-# A release of the wireframe pack (docs/releases.md, decision 8): a tag wireframe-v<version> builds and checks the
+-# repository, then stages @comp-markdown/wireframe on npm with trusted publishing, for the author to approve, as
+-# release-mermaid.yml stages the Mermaid pack. The pack has a version of its own, so it is released on its own.
+-name: Release the wireframe pack
+-
+-on:
+-  push:
+-    tags: ["wireframe-v*"]
+-
+-permissions:
+-  contents: read
+-
+-# One release at a time, and none cut off halfway.
+-concurrency:
+-  group: release-wireframe
+-  cancel-in-progress: false
+-
+-jobs:
+-  release:
+-    runs-on: ubuntu-24.04
+-    permissions:
+-      contents: read
+-      # Trusted publishing and provenance.
+-      id-token: write
+-    steps:
+-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+-        with:
+-          submodules: recursive
+-      - uses: ./.github/actions/setup
+-      - run: pnpm install --frozen-lockfile
+-      # The browser tests run in the runner's Chrome and in Playwright's WebKit.
+-      - run: pnpm --dir npm-packages/sandbox exec playwright install --with-deps webkit
+-      - name: The tag is the pack's version
+-        run: |
+-          version="${GITHUB_REF_NAME#wireframe-v}"
+-          written="$(node -p "require('./compmd-packs/wireframe/package.json').version")"
+-          if [ "$written" != "$version" ]; then
+-            echo "::error::compmd-packs/wireframe/package.json is $written, the tag $GITHUB_REF_NAME"
+-            exit 1
+-          fi
+-      # Every check, the pack's tests and its build among them.
+-      - run: cargo make ci
+-      - name: Pack
+-        run: pnpm --dir compmd-packs/wireframe pack --pack-destination "$RUNNER_TEMP/packages"
+-      # Trusted publishing needs npm 11.5.1 or newer, staged publishing 11.15.0.
+-      - run: npm install --global npm@11.21.1
+-      # Outside the repository, whose devEngines name pnpm. Installable once the author approves it on npmjs.com.
+-      - name: Stage
+-        working-directory: ${{ runner.temp }}/packages
+-        run: npm stage publish ./comp-markdown-wireframe-*.tgz --access public
+diff --git a/Makefile.toml b/Makefile.toml
+index a2f10fb..bbac456 100644
+--- a/Makefile.toml
++++ b/Makefile.toml
+@@ -125,7 +125,19 @@ script = [
+ description = "Test the repository's own tools in `tools/`, with Node's test runner"
+ clear = true
+ command = "node"
+-args = ["--test", "tools/spec-revision/spec-revision.test.ts", "tools/packs/placeholder.test.ts", "tools/packs/pack-placeholders.test.ts", "tools/packs/registry.test.ts"]
++args = ["--test", "tools/spec-revision/spec-revision.test.ts", "tools/packs/*.test.ts"]
++
++[tasks.pack-versions]
++description = "Fail when compmd-packs/versions.json and the packs disagree (docs/releases.md, decision 8): a pack it doesn't name, or a pack's package.json or export.version that isn't its version there"
++clear = true
++command = "node"
++args = ["tools/packs/versions.ts"]
++
++[tasks.release-packs]
++description = "Release every pack whose version in compmd-packs/versions.json npm doesn't have (docs/releases.md, decision 8): writes the versions into the packs' files when they differ, then, on a yes, tags each `<pack>-v<version>` at main's pushed commit, pushes the tags and runs release-packs.yml once. With `--dry-run`, says what it would do and does nothing"
++clear = true
++command = "node"
++args = ["tools/packs/release-packs.ts", "${@}"]
+ 
+ [tasks.pack-placeholders]
+ description = "Create new packs on npm (docs/releases.md, decision 8): for each named pack npm doesn't have, publish a 0.0.0 placeholder and set its trusted publisher to release-packs.yml, staging only. `cargo make pack-placeholders card chart`; with `--dry-run`, say what it would do and do nothing"
+@@ -148,4 +160,4 @@ args = ["tools/spec-revision/spec-revision.ts", "check"]
+ [tasks.ci]
+ description = "Every check CI runs; coverage runs the tests, the conformance set's among them, so `test` isn't run again"
+ clear = true
+-dependencies = ["fmt", "clippy", "coverage", "doctest", "docs", "wasm", "deny", "packages", "scripts"]
++dependencies = ["fmt", "clippy", "coverage", "doctest", "docs", "wasm", "deny", "packages", "scripts", "pack-versions"]
+diff --git a/RELEASING.md b/RELEASING.md
+index 243249a..50dd3f7 100644
+--- a/RELEASING.md
++++ b/RELEASING.md
+@@ -8,8 +8,7 @@ Four things are released, each on its own:
+ |---|---|---|
+ | The implementation: `@compmd/render`, `@compmd/processor`, `@compmd/sandbox`, `@compmd/registry`, `@compmd/devtools`, `@compmd/host`, `@compmd/vite`, `@compmd/pack`, `@compmd/create-pack`, `@compmd/blog`, `@compmd/create-blog` (first published by hand, below) | npm | a tag `v<version>`; `.github/workflows/release.yml` publishes |
+ | The implementation: the crates `compmd-markdown`, `compmd-pack`, `compmd`, `compmd-host`, `tauri-plugin-compmd` | crates.io | the same tag `v<version>`; the workflow publishes once the author approves its `crates` job |
+-| The Mermaid pack, `@comp-markdown/mermaid` | npm | a tag `mermaid-v<version>`; `.github/workflows/release-mermaid.yml` publishes |
+-| The wireframe pack, `@comp-markdown/wireframe` | npm | a tag `wireframe-v<version>`; `.github/workflows/release-wireframe.yml` publishes |
++| The packs, `@comp-markdown/<pack>` (Mermaid, wireframe, …) | npm | each its version in `compmd-packs/versions.json`; `cargo make release-packs` tags `<pack>-v<version>` and runs `.github/workflows/release-packs.yml`, which stages them |
+ | The spec | the website, `/spec/<version>/` | a tag `spec-v<version>`; the Pages workflow deploys |
+ 
+ The website follows `main` and needs no release: every push that touches what it is built from deploys it.
+@@ -112,30 +111,30 @@ For each pack npm doesn't have, it publishes a placeholder `0.0.0` (`@comp-markd
+ 
+ A new trusted publisher that hasn't published in 2 days expires, so the pack's first release follows soon after. Deprecate each placeholder once its first version is out: `(cd ~ && npm deprecate @comp-markdown/card@0.0.0 "A placeholder with no code: install 0.1.0 or later")`.
+ 
+-## The Mermaid pack
++## The packs
+ 
+-`@comp-markdown/mermaid` (`compmd-packs/mermaid/`) has a version of its own, for its component's params and forms ([its design](docs/mermaid-pack.md), decision 2).
++Each pack in `compmd-packs/` (`@comp-markdown/mermaid`, `@comp-markdown/wireframe`, and the first components) has a version of its own, written in one place, `compmd-packs/versions.json` ([releases](docs/releases.md), decision 8). Its `package.json` and its document's `export.version` follow it: `cargo make ci` fails when they don't (`cargo make pack-versions`).
+ 
+-1. **Once, before its first release** (done for `0.1.0`, 2026-11-02): the `@comp-markdown` organization exists on npm, and the publishing account may publish to it. The first version is published by hand, from outside the repository, as for any new package (below, [prerequisites](#prerequisites-once-per-package)): `pnpm --dir compmd-packs/mermaid build`, `pnpm --dir compmd-packs/mermaid pack --pack-destination ../packages`, the tarball checked (`dist/mermaid.js`, `dist/LICENSES.md`, `index.comp.md`, the README and its MIT `LICENSE`), then `npm publish` it. Then its trusted publisher is set up for the workflow `release-mermaid.yml`.
+-2. **Each release:** the version in `compmd-packs/mermaid/package.json` and in `index.comp.md`'s `export.version`, the same in both, in one commit, with what changed in its README; `cargo make ci` green.
+-3. Tag and push the tag:
++1. **Each release:** the new versions in `compmd-packs/versions.json`, with what changed in each pack's README. Then:
+ 
+    ```sh
+-   git tag mermaid-v0.2.0
+-   git push origin mermaid-v0.2.0
++   cargo make release-packs --dry-run   # what it would write and release: nothing done
++   cargo make release-packs
+    ```
+ 
+-   The workflow checks the tag is the pack's version, runs `cargo make ci`, packs the pack and stages it with npm's trusted publishing.
+-4. Approve it, as for the `@compmd` packages: `(cd ~ && npm stage list @comp-markdown/mermaid)`, then `npm stage approve <stage-id>`.
+-5. Check: `curl -s https://registry.npmjs.org/-/package/@comp-markdown%2fmermaid/dist-tags` gives the new version as `latest`.
++   When a pack's files don't have its version yet, it writes them and stops: commit them, push, and run it again. It then lists every pack whose version npm doesn't have, and on your yes tags each `<pack>-v<version>` at `main`'s commit, which must be pushed and match yours, pushes the tags, and runs `release-packs.yml` once (`gh workflow run`). The workflow runs `cargo make ci` once, then packs and stages every pack tagged at its commit whose version npm doesn't have, with trusted publishing. A run that stopped halfway can run again: a tag already at the commit is kept, and a version npm has is skipped.
++2. **Approve them**, with two-factor authentication: `(cd ~ && npm stage list @comp-markdown/<pack>)`, then `npm stage approve <stage-id>` for each.
++3. Check: `curl -s https://registry.npmjs.org/-/package/@comp-markdown%2f<pack>/dist-tags` gives the new version as `latest`.
+ 
+-## The wireframe pack
++**The Mermaid and wireframe packs' trusted publishers, once** (with this workflow, 2026-11-20): each was set for a workflow of its own, `release-mermaid.yml` and `release-wireframe.yml`, which are gone. A package has one trusted publisher, whose workflow can't be changed, so each is revoked and set again, from outside the repository:
+ 
+-`@comp-markdown/wireframe` (`compmd-packs/wireframe/`) is released as the Mermaid pack is, with a version of its own, by `.github/workflows/release-wireframe.yml` on a tag `wireframe-v<version>`.
++```sh
++(cd ~ && npx npm@11.21.1 trust list @comp-markdown/mermaid)                  # its id
++(cd ~ && npx npm@11.21.1 trust revoke @comp-markdown/mermaid --id=<id>)
++(cd ~ && npx npm@11.21.1 trust github @comp-markdown/mermaid --file release-packs.yml --repository comp-markdown/compmd --allow-stage-publish --yes)
++```
+ 
+-1. **Once, before its first release** (2026-11-19): a placeholder `0.0.0`, with no code, published by hand from outside the repository, as `@compmd/devtools`'s was ([a placeholder first](#prerequisites-once-per-package)); then its trusted publisher set up for the workflow `release-wireframe.yml`. A new trusted publisher must publish within 2 days, so the first tag follows soon after.
+-2. **Each release**, as the Mermaid pack's steps 2 to 5, with `wireframe-v<version>` and `@comp-markdown%2fwireframe`; the version in `package.json` and in `index.comp.md`'s `export.version`, the same in both. The tarball holds `dist/`, `index.comp.md`, the README, `LANGUAGE.md` and its MIT `LICENSE`.
+-3. Deprecate the placeholder once the first version is out: `(cd ~ && npm deprecate @comp-markdown/wireframe@0.0.0 "A placeholder with no code: install 0.1.0 or later")`.
++and the same for `@comp-markdown/wireframe`. A new trusted publisher that hasn't published in 2 days expires, so their next releases follow within 2 days, or the publisher is set again then.
+ 
+ ## The spec
+ 
+diff --git a/compmd-packs/versions.json b/compmd-packs/versions.json
+new file mode 100644
+index 0000000..6b0d0d7
+--- /dev/null
++++ b/compmd-packs/versions.json
+@@ -0,0 +1,4 @@
++{
++  "mermaid": "0.1.2",
++  "wireframe": "0.1.0"
++}
+diff --git a/docs/mermaid-pack.md b/docs/mermaid-pack.md
+index de31e2e..032e27a 100644
+--- a/docs/mermaid-pack.md
++++ b/docs/mermaid-pack.md
+@@ -22,7 +22,7 @@
+ 6. **When Mermaid can't read the source**, the component fails with the first line of what Mermaid found (`context.fail("Mermaid couldn't read this diagram: …")`): the host reports W118 with it, which an editor shows on the block, and shows the fallback (the code block, or the leaf's text) until the next update, so a reader sees the source and its author the mistake, and the diagram draws once the code is fixed (spec §7.4).
+ 7. **One module file, under the size cap.** `dist/mermaid.js` holds Mermaid and everything it loads, with code splitting off (as `create-pack` builds a pack), so a host can load it by URL or as text. Its size, minified and gzipped, is measured and written in the README. It must stay under `@compmd/registry`'s default cap, which is **10 MB**: measured on 2026-11-02, Mermaid 12.2.0 as one file is 7.0 MB minified (1.6 MB gzipped), 2.5 MB of it the ELK layout engine (`elkjs`), which Mermaid 12 bundles and 11 didn't; Mermaid 11.17.2 is 4.58 MB (1.03 MB gzipped). The cap was 5 MB, from Mermaid 11.12's 3.6 MB, and was raised so that Mermaid 12 can be taken whole. *Since the build minifies whitespace too (2026-11-02):* 5.2 MB, and 1.5 MB gzipped as the published package.
+ 8. **The licences of what it bundles are published with it.** Mermaid is MIT, and it bundles libraries under their own licences (DOMPurify, d3, dagre, cytoscape, KaTeX…). The build writes them into `dist/LICENSES.md` (Vite's `build.license`), which the pack publishes beside its own `LICENSE`.
+-9. **Released on its own tag.** The implementation's release workflow publishes the `@compmd` packages at one version on a tag `v<version>` ([releases](releases.md)), which a pack with its own version doesn't fit. A tag `mermaid-v<version>` runs a workflow of its own, `release-mermaid.yml`: it checks the tag is `compmd-packs/mermaid/package.json`'s version, builds and tests the pack, and stages it with trusted publishing, installable once the author approves it ([releases](releases.md), decision 5). Its first version is published by hand, as the `@compmd` packages' were (`RELEASING.md`, prerequisites), once the `@comp-markdown` organization exists on npm; every publish needs the author's go.
++9. **Released on its own tag.** The implementation's release workflow publishes the `@compmd` packages at one version on a tag `v<version>` ([releases](releases.md)), which a pack with its own version doesn't fit. A tag `mermaid-v<version>` runs a workflow of its own, `release-mermaid.yml`: it checks the tag is `compmd-packs/mermaid/package.json`'s version, builds and tests the pack, and stages it with trusted publishing, installable once the author approves it ([releases](releases.md), decision 5). Since 2026-11-20 every pack is released the same way, its version in `compmd-packs/versions.json` and its tag `mermaid-v<version>` made by `cargo make release-packs`, by one workflow, `release-packs.yml` ([releases](releases.md), decision 8). Its first version is published by hand, as the `@compmd` packages' were (`RELEASING.md`, prerequisites), once the `@comp-markdown` organization exists on npm; every publish needs the author's go.
+ 
+ ## What it runs into in the strict sandbox
+ 
+diff --git a/docs/releases.md b/docs/releases.md
+index fde0601..869d6be 100644
+--- a/docs/releases.md
++++ b/docs/releases.md
+@@ -15,7 +15,7 @@ What this repository releases, how each is versioned, and what a release does. T
+ 7. **The website shows the latest release**: its install line and snippets are the latest published version's, and they run as tests against the code they come from, so a release can't leave them broken.
+ 8. **Packs this repository publishes are released on their own**: each has a version of its own and a tag `<pack>-v<version>`, published by trusted publishing. The first was the Mermaid pack, `@comp-markdown/mermaid` ([its design](mermaid-pack.md), decision 9); the second, the wireframe pack, `@comp-markdown/wireframe` (2026-11-19). **With about 25 packs, three commands and one workflow do it for all of them** (decided 2026-11-20, CR-28), each command with `--dry-run`, which says what it would do and does nothing:
+    - **`cargo make pack-placeholders <pack>...`** creates new packs on npm: for each one npm doesn't have, it publishes the `0.0.0` placeholder of *A placeholder first* (RELEASING.md), written outside the repository, then sets its trusted publisher with `npm trust github` (the repository, `release-packs.yml`, staging only, `--allow-stage-publish`). One one-time code covers the run while it is valid; npm allows about 80 packages in its 5-minute window.
+-   - **`compmd-packs/versions.json` is the one place a pack's version is written** (`{ "card": "0.1.0", … }`); each pack's `package.json` follows it, and `cargo make ci` fails when one doesn't. **`cargo make release-packs`** asks npm which of those versions it doesn't have, shows them, and on the author's yes tags each `<pack>-v<version>`, pushes the tags and starts one run of **`release-packs.yml`**, which runs `cargo make ci` once and stages every version npm doesn't have: one run for a batch, not one per tag.
++   - **`compmd-packs/versions.json` is the one place a pack's version is written** (`{ "card": "0.1.0", … }`); each pack's `package.json` and its document's `export.version` follow it, and `cargo make ci` fails when one doesn't (`cargo make pack-versions`). **`cargo make release-packs`** writes the versions into the packs' files when they differ (then stops, for a commit), asks npm which of those versions it doesn't have, shows them, and on the author's yes tags each `<pack>-v<version>` at `main`'s pushed commit, pushes the tags and starts one run of **`release-packs.yml`** (`gh workflow run`), which runs `cargo make ci` once and stages every pack tagged at its commit whose version npm doesn't have: one run for a batch, not one per tag. It is started by hand, not by the tags: GitHub starts nothing for a push of more than three tags at once.
+    - **`cargo make approve-packs`** lists what is staged for every pack as checkboxes (`@inquirer/checkbox`), all chosen; Enter approves the chosen ones (`npm stage approve`) in the order they were staged.
+ 
+    The Mermaid and wireframe packs are released the same way: `release-mermaid.yml` and `release-wireframe.yml` go, and their trusted publishers are revoked (`npm trust revoke`) and set again for `release-packs.yml`, since a package has one and its workflow can't be changed. The commands run a pinned npm with staging and `npm trust` (11.15 or newer), as the release workflow does.
+diff --git a/tools/packs/release-packs.test.ts b/tools/packs/release-packs.test.ts
+new file mode 100644
+index 0000000..645d854
+--- /dev/null
++++ b/tools/packs/release-packs.test.ts
+@@ -0,0 +1,120 @@
++import assert from "node:assert/strict";
++import { describe, it } from "node:test";
++import { releasePacks, type Steps } from "./release-packs.ts";
++import { packAt } from "./testing.ts";
++import type { Pack, Versions } from "./versions.ts";
++
++/** Steps over `versions` and `packs`, npm having `published` (`name@version`), recording what they were asked. */
++function stubs(versions: Versions, packs: Pack[], published: readonly string[], options: { answer?: boolean; head?: string; main?: string; uncommitted?: boolean; tags?: Record<string, string> } = {}) {
++  const done: string[] = [];
++  const log: string[] = [];
++  const tags = { ...options.tags };
++  const steps: Steps = {
++    read: () => ({ versions, packs }),
++    write: (pack) => {
++      done.push(`write ${pack.name}`);
++    },
++    has: (name, version) => Promise.resolve(published.includes(`${name}@${version}`)),
++    git: {
++      commitOf: (revision) => (revision === "HEAD" ? (options.head ?? "abc") : (options.main ?? "abc")),
++      uncommitted: () => options.uncommitted ?? false,
++      tagged: (tag) => tags[tag],
++      tag: (name) => {
++        tags[name] = options.head ?? "abc";
++        done.push(`tag ${name}`);
++      },
++      push: (pushed) => {
++        done.push(`push ${pushed.join(" ")}`);
++      },
++    },
++    runWorkflow: () => {
++      done.push("run release-packs.yml");
++    },
++    confirm: () => {
++      done.push("asked");
++      return Promise.resolve(options.answer ?? true);
++    },
++    log: (line) => {
++      log.push(line);
++    },
++  };
++  return { steps, done, log };
++}
++
++const PACKS = [packAt("card", "0.2.0"), packAt("mermaid", "0.1.2"), packAt("wireframe", "0.1.0")];
++const VERSIONS = { card: "0.2.0", mermaid: "0.1.2", wireframe: "0.1.0" };
++const PUBLISHED = ["@comp-markdown/card@0.1.0", "@comp-markdown/mermaid@0.1.2", "@comp-markdown/wireframe@0.1.0"];
++
++describe("cargo make release-packs", () => {
++  it("tags each pack whose version npm doesn't have, pushes the tags, and runs the workflow once", async () => {
++    const { steps, done, log } = stubs(VERSIONS, PACKS, PUBLISHED);
++    assert.equal(await releasePacks({ dryRun: false }, steps), 0);
++    assert.deepEqual(done, ["asked", "tag card-v0.2.0", "push card-v0.2.0", "run release-packs.yml"]);
++    assert.deepEqual(log.slice(0, 2), ["to release, 1:", "  @comp-markdown/card 0.2.0 (card-v0.2.0)"]);
++  });
++
++  it("with --dry-run, shows what it would release and does nothing", async () => {
++    const { steps, done, log } = stubs({ ...VERSIONS, wireframe: "0.2.0" }, [packAt("card", "0.2.0"), packAt("mermaid", "0.1.2"), packAt("wireframe", "0.2.0")], PUBLISHED);
++    assert.equal(await releasePacks({ dryRun: true }, steps), 0);
++    assert.deepEqual(done, []);
++    assert.deepEqual(log, [
++      "to release, 2:",
++      "  @comp-markdown/card 0.2.0 (card-v0.2.0)",
++      "  @comp-markdown/wireframe 0.2.0 (wireframe-v0.2.0)",
++      "would tag each at main's commit, push the tags, and run release-packs.yml once, which stages them on npm for you to approve",
++    ]);
++  });
++
++  it("releases nothing when npm has every version", async () => {
++    const { steps, done, log } = stubs({ ...VERSIONS, card: "0.1.0" }, [packAt("card", "0.1.0"), ...PACKS.slice(1)], PUBLISHED);
++    assert.equal(await releasePacks({ dryRun: false }, steps), 0);
++    assert.deepEqual(done, []);
++    assert.match(log.join("\n"), /nothing to release/);
++  });
++
++  it("writes versions.json's versions into the packs' files, and stops for them to be committed", async () => {
++    const { steps, done, log } = stubs({ ...VERSIONS, card: "0.3.0" }, PACKS, PUBLISHED);
++    assert.equal(await releasePacks({ dryRun: false }, steps), 1);
++    assert.deepEqual(done, ["write card"]);
++    assert.match(log.at(-1) ?? "", /commit them, then run this again/);
++  });
++
++  it("with --dry-run, says it would write them, and goes on to what it would release", async () => {
++    const { steps, done, log } = stubs({ ...VERSIONS, card: "0.3.0" }, PACKS, PUBLISHED);
++    assert.equal(await releasePacks({ dryRun: true }, steps), 0);
++    assert.deepEqual(done, []);
++    assert.deepEqual(log.slice(0, 3), ["compmd-packs/card: 0.2.0 and 0.2.0 → 0.3.0", "would write these into the packs' package.json and index.comp.md, to be committed before the release", "to release, 1:"]);
++  });
++
++  it("does nothing while versions.json and the packs disagree on which packs there are", async () => {
++    const { steps, done, log } = stubs({ card: "0.2.0" }, PACKS, PUBLISHED);
++    assert.equal(await releasePacks({ dryRun: false }, steps), 1);
++    assert.deepEqual(done, []);
++    assert.equal(log.length, 2);
++  });
++
++  it("does nothing until main's commit is pushed and the packs committed", async () => {
++    for (const options of [{ head: "abc", main: "def" }, { uncommitted: true }]) {
++      const { steps, done, log } = stubs(VERSIONS, PACKS, PUBLISHED, options);
++      assert.equal(await releasePacks({ dryRun: false }, steps), 1);
++      assert.deepEqual(done, []);
++      assert.match(log.at(-1) ?? "", /commit and push everything first/);
++    }
++  });
++
++  it("refuses a tag at another commit, and keeps one already at this commit (a run that stopped halfway)", async () => {
++    const other = stubs(VERSIONS, PACKS, PUBLISHED, { tags: { "card-v0.2.0": "old" } });
++    assert.equal(await releasePacks({ dryRun: false }, other.steps), 1);
++    assert.deepEqual(other.done, []);
++    assert.match(other.log.at(-1) ?? "", /already tagged at another commit: card-v0.2.0/);
++    const again = stubs(VERSIONS, PACKS, PUBLISHED, { tags: { "card-v0.2.0": "abc" } });
++    assert.equal(await releasePacks({ dryRun: false }, again.steps), 0);
++    assert.deepEqual(again.done, ["asked", "push card-v0.2.0", "run release-packs.yml"]);
++  });
++
++  it("does nothing when the author says no", async () => {
++    const { steps, done } = stubs(VERSIONS, PACKS, PUBLISHED, { answer: false });
++    assert.equal(await releasePacks({ dryRun: false }, steps), 1);
++    assert.deepEqual(done, ["asked"]);
++  });
++});
+diff --git a/tools/packs/release-packs.ts b/tools/packs/release-packs.ts
+new file mode 100644
+index 0000000..ba10415
+--- /dev/null
++++ b/tools/packs/release-packs.ts
+@@ -0,0 +1,134 @@
++// `cargo make release-packs` (docs/releases.md, decision 8): releases every pack whose version in
++// `compmd-packs/versions.json` npm doesn't have. It writes the versions into the packs' files when they differ (then
++// stops, for a commit), shows the releases, and on the author's yes tags each `<pack>-v<version>`, pushes the tags and
++// starts one run of `release-packs.yml`, which stages them all. With `--dry-run` it says what it would do, and does
++// nothing.
++//
++//   node tools/packs/release-packs.ts [--dry-run]
++
++import { execFileSync } from "node:child_process";
++import { join } from "node:path";
++import { createInterface } from "node:readline/promises";
++import { versionsOf } from "./registry.ts";
++import { unreleased, type Release } from "./unreleased.ts";
++import { differing, errors, PACKS, readPacks, VERSIONS, withVersion, writePack, type Pack, type Versions } from "./versions.ts";
++
++/** The workflow that stages the releases. */
++export const WORKFLOW = "release-packs.yml";
++/** The branch it runs on, whose commit the tags must be. */
++export const BRANCH = "main";
++
++/** What `releasePacks` does through: each a stub in its tests. */
++export interface Steps {
++  read(): { versions: Versions; packs: Pack[] };
++  write(pack: Pack): void;
++  has(name: string, version: string): Promise<boolean>;
++  git: {
++    /** The commit of a revision, `HEAD` or `origin/main`. */
++    commitOf(revision: string): string;
++    /** Whether the packs' folder has changes not committed. */
++    uncommitted(): boolean;
++    /** The commit a tag names, or `undefined` without the tag. */
++    tagged(tag: string): string | undefined;
++    tag(name: string): void;
++    push(tags: readonly string[]): void;
++  };
++  runWorkflow(): void;
++  confirm(question: string): Promise<boolean>;
++  log(line: string): void;
++}
++
++const describe = (release: Release) => `${release.name} ${release.version} (${release.tag})`;
++
++/**
++ * Releases the packs whose version npm doesn't have.
++ *
++ * @returns The exit code: 0 when released, nothing to release, or a dry run; 1 when something must be done first
++ *   (said in the log), or the author said no.
++ */
++export async function releasePacks(options: { dryRun: boolean }, steps: Steps): Promise<number> {
++  const { versions, packs } = steps.read();
++  const wrong = errors(versions, packs);
++  if (wrong.length > 0) {
++    for (const problem of wrong) steps.log(problem);
++    return 1;
++  }
++  const behind = differing(versions, packs);
++  if (behind.length > 0) {
++    for (const { pack, version, written } of behind) steps.log(`${PACKS}/${pack.name}: ${written.join(" and ")} → ${version}`);
++    if (options.dryRun) steps.log(`would write these into the packs' package.json and index.comp.md, to be committed before the release`);
++    else {
++      for (const { pack, version } of behind) steps.write(withVersion(pack, version));
++      steps.log(`wrote ${VERSIONS}'s versions into the packs' package.json and index.comp.md: commit them, then run this again`);
++      return 1;
++    }
++  }
++  const releases = await unreleased(versions, steps.has);
++  if (releases.length === 0) {
++    steps.log("npm has every pack's version in versions.json: nothing to release");
++    return 0;
++  }
++  steps.log(`to release, ${String(releases.length)}:`);
++  for (const release of releases) steps.log(`  ${describe(release)}`);
++  if (options.dryRun) {
++    steps.log(`would tag each at ${BRANCH}'s commit, push the tags, and run ${WORKFLOW} once, which stages them on npm for you to approve`);
++    return 0;
++  }
++  const head = steps.git.commitOf("HEAD");
++  if (head !== steps.git.commitOf(`origin/${BRANCH}`) || steps.git.uncommitted()) {
++    steps.log(`the release is ${BRANCH}'s commit as GitHub has it: commit and push everything first, then run this again`);
++    return 1;
++  }
++  const elsewhere = releases.filter((release) => {
++    const at = steps.git.tagged(release.tag);
++    return at !== undefined && at !== head;
++  });
++  if (elsewhere.length > 0) {
++    steps.log(`already tagged at another commit: ${elsewhere.map((release) => release.tag).join(", ")}. Give the pack a new version in ${VERSIONS}`);
++    return 1;
++  }
++  if (!(await steps.confirm(`Release ${releases.length === 1 ? "it" : `these ${String(releases.length)}`}? [y/N] `))) return 1;
++  for (const release of releases) if (steps.git.tagged(release.tag) === undefined) steps.git.tag(release.tag);
++  steps.git.push(releases.map((release) => release.tag));
++  steps.runWorkflow();
++  steps.log(`tagged and pushed; ${WORKFLOW} runs \`cargo make ci\` once, then stages them: approve them with \`cargo make approve-packs\``);
++  return 0;
++}
++
++/** The steps as they run: the repository at `root`, git, gh, the registry over HTTP, and the terminal. */
++function realSteps(root: string): Steps {
++  const git = (...args: string[]) => execFileSync("git", args, { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
++  return {
++    read: () => readPacks(root),
++    write: (pack) => {
++      writePack(root, pack);
++    },
++    has: async (name, version) => (await versionsOf(name)).includes(version),
++    git: {
++      commitOf: (revision) => git("rev-parse", `${revision}^{commit}`),
++      uncommitted: () => git("status", "--porcelain", "--", PACKS) !== "",
++      tagged(tag) {
++        try {
++          return git("rev-parse", "--verify", "--quiet", `refs/tags/${tag}^{commit}`);
++        } catch {
++          return undefined;
++        }
++      },
++      // Annotated, as the spec's revisions are.
++      tag: (name) => void git("tag", "--annotate", name, "--message", name),
++      push: (tags) => void git("push", "origin", ...tags.map((tag) => `refs/tags/${tag}`)),
++    },
++    runWorkflow: () => void execFileSync("gh", ["workflow", "run", WORKFLOW, "--ref", BRANCH], { cwd: root, stdio: "inherit" }),
++    async confirm(question) {
++      const terminal = createInterface({ input: process.stdin, output: process.stdout });
++      const answer = await terminal.question(question);
++      terminal.close();
++      return /^y(es)?$/i.test(answer.trim());
++    },
++    log: (line) => {
++      console.log(line);
++    },
++  };
++}
++
++if (import.meta.main) process.exitCode = await releasePacks({ dryRun: process.argv.includes("--dry-run") }, realSteps(join(import.meta.dirname, "../..")));
+diff --git a/tools/packs/stage-packs.test.ts b/tools/packs/stage-packs.test.ts
+new file mode 100644
+index 0000000..d0e535c
+--- /dev/null
++++ b/tools/packs/stage-packs.test.ts
+@@ -0,0 +1,50 @@
++import assert from "node:assert/strict";
++import { describe, it } from "node:test";
++import { toStage, type Steps } from "./stage-packs.ts";
++import { packAt } from "./testing.ts";
++import type { Pack, Versions } from "./versions.ts";
++
++function stubs(versions: Versions, packs: Pack[], published: readonly string[], tags: readonly string[]) {
++  const log: string[] = [];
++  const steps: Steps = {
++    read: () => ({ versions, packs }),
++    has: (name, version) => Promise.resolve(published.includes(`${name}@${version}`)),
++    tagsHere: () => [...tags],
++    log: (line) => {
++      log.push(line);
++    },
++  };
++  return { steps, log };
++}
++
++const PACKS = [packAt("card", "0.2.0"), packAt("chart", "0.1.0"), packAt("mermaid", "0.1.2")];
++const VERSIONS = { card: "0.2.0", chart: "0.1.0", mermaid: "0.1.2" };
++
++describe("what release-packs.yml stages", () => {
++  it("is each pack tagged at this commit whose version npm doesn't have", async () => {
++    const { steps, log } = stubs(VERSIONS, PACKS, ["@comp-markdown/mermaid@0.1.2"], ["card-v0.2.0", "mermaid-v0.1.2", "v0.9.0"]);
++    assert.deepEqual(
++      (await toStage(steps)).map((release) => release.pack),
++      ["card"],
++    );
++    assert.deepEqual(log, ["@comp-markdown/card 0.2.0 (card-v0.2.0)"]);
++  });
++
++  it("leaves out a pack npm lacks but whose tag isn't at this commit", async () => {
++    const { steps } = stubs(VERSIONS, PACKS, [], ["chart-v0.1.0"]);
++    assert.deepEqual(
++      (await toStage(steps)).map((release) => release.pack),
++      ["chart"],
++    );
++  });
++
++  it("fails with nothing to stage", async () => {
++    const { steps } = stubs(VERSIONS, PACKS, ["@comp-markdown/card@0.2.0"], ["card-v0.2.0"]);
++    await assert.rejects(toStage(steps), /nothing to stage/);
++  });
++
++  it("fails while versions.json and the packs disagree", async () => {
++    const { steps } = stubs({ ...VERSIONS, card: "0.3.0" }, PACKS, [], ["card-v0.3.0"]);
++    await assert.rejects(toStage(steps), /compmd-packs\/card isn't at 0.3.0/);
++  });
++});
+diff --git a/tools/packs/stage-packs.ts b/tools/packs/stage-packs.ts
+new file mode 100644
+index 0000000..96500ad
+--- /dev/null
++++ b/tools/packs/stage-packs.ts
+@@ -0,0 +1,68 @@
++// What `release-packs.yml` stages (docs/releases.md, decision 8): every pack tagged `<pack>-v<version>` at the
++// commit it runs on whose version npm doesn't have, packed into a folder for `npm stage publish`. A pack without its
++// tag at this commit isn't staged, whatever versions.json says: the tags are what `cargo make release-packs` released.
++//
++//   node tools/packs/stage-packs.ts plan              # the packs it would stage; fails when there are none
++//   node tools/packs/stage-packs.ts pack <folder>     # packs them into the folder
++
++import { execFileSync } from "node:child_process";
++import { join } from "node:path";
++import { versionsOf } from "./registry.ts";
++import { unreleased, type Release } from "./unreleased.ts";
++import { differing, errors, PACKS, readPacks, type Pack, type Versions } from "./versions.ts";
++
++/** What `toStage` does through: each a stub in its tests. */
++export interface Steps {
++  read(): { versions: Versions; packs: Pack[] };
++  has(name: string, version: string): Promise<boolean>;
++  /** The tags at the commit the workflow runs on. */
++  tagsHere(): string[];
++  log(line: string): void;
++}
++
++/**
++ * The releases to stage at this commit.
++ *
++ * @throws Error when versions.json and the packs disagree, or there is nothing to stage.
++ */
++export async function toStage(steps: Steps): Promise<Release[]> {
++  const { versions, packs } = steps.read();
++  const wrong = [...errors(versions, packs), ...differing(versions, packs).map(({ pack, version }) => `${PACKS}/${pack.name} isn't at ${version}`)];
++  if (wrong.length > 0) throw new Error(`versions.json and the packs disagree: ${wrong.join("; ")}`);
++  const here = new Set(steps.tagsHere());
++  const releases = (await unreleased(versions, steps.has)).filter((release) => here.has(release.tag));
++  if (releases.length === 0) throw new Error("nothing to stage: no pack is tagged at this commit with a version npm doesn't have");
++  for (const release of releases) steps.log(`${release.name} ${release.version} (${release.tag})`);
++  return releases;
++}
++
++/** The steps as they run in the workflow, at `root`. */
++function realSteps(root: string): Steps {
++  return {
++    read: () => readPacks(root),
++    has: async (name, version) => (await versionsOf(name)).includes(version),
++    tagsHere: () =>
++      execFileSync("git", ["tag", "--points-at", "HEAD"], { cwd: root, encoding: "utf8" })
++        .split("\n")
++        .filter((tag) => tag !== ""),
++    log: (line) => {
++      console.log(line);
++    },
++  };
++}
++
++/** Runs `plan` or `pack <folder>`; the exit code. */
++export async function main(args: readonly string[], root: string): Promise<number> {
++  const [command, folder] = args;
++  if (command !== "plan" && !(command === "pack" && folder)) {
++    console.error("usage: node tools/packs/stage-packs.ts plan | pack <folder>");
++    return 2;
++  }
++  const releases = await toStage(realSteps(root));
++  if (command === "pack" && folder) {
++    for (const release of releases) execFileSync("pnpm", ["--dir", join(PACKS, release.pack), "pack", "--pack-destination", folder], { cwd: root, stdio: "inherit" });
++  }
++  return 0;
++}
++
++if (import.meta.main) process.exitCode = await main(process.argv.slice(2), join(import.meta.dirname, "../.."));
+diff --git a/tools/packs/testing.ts b/tools/packs/testing.ts
+new file mode 100644
+index 0000000..66aebc5
+--- /dev/null
++++ b/tools/packs/testing.ts
+@@ -0,0 +1,12 @@
++// The tests' packs, shared by the tools' test files.
++
++import type { Pack } from "./versions.ts";
++
++/** A pack's files at `version`, written as the packs write them (an inline array in package.json). */
++export function packAt(name: string, version: string, documentVersionOf = version): Pack {
++  return {
++    name,
++    manifest: `{\n  "name": "@comp-markdown/${name}",\n  "version": "${version}",\n  "keywords": ["compmd", "compmd-pack"],\n  "devDependencies": { "x": "1.0.0" }\n}\n`,
++    document: `---\nmd:\n  import:\n    - from: ./dist/${name}.js\n      names: [${name}]\n  export:\n    pack: "@comp-markdown/${name}"\n    version: "${documentVersionOf}"\n    names: [${name}]\n---\n\n# ${name}\n`,
++  };
++}
+diff --git a/tools/packs/unreleased.test.ts b/tools/packs/unreleased.test.ts
+new file mode 100644
+index 0000000..96bb797
+--- /dev/null
++++ b/tools/packs/unreleased.test.ts
+@@ -0,0 +1,22 @@
++import assert from "node:assert/strict";
++import { describe, it } from "node:test";
++import { tagOf, unreleased } from "./unreleased.ts";
++
++describe("the packs to release", () => {
++  it("are those whose version npm doesn't have, in the packs' order, each with its tag", async () => {
++    const asked: string[] = [];
++    const has = (name: string, version: string) => {
++      asked.push(`${name}@${version}`);
++      return Promise.resolve(name === "@comp-markdown/mermaid");
++    };
++    assert.deepEqual(await unreleased({ wireframe: "0.2.0", mermaid: "0.1.2", card: "0.1.0" }, has), [
++      { pack: "card", name: "@comp-markdown/card", version: "0.1.0", tag: "card-v0.1.0" },
++      { pack: "wireframe", name: "@comp-markdown/wireframe", version: "0.2.0", tag: "wireframe-v0.2.0" },
++    ]);
++    assert.deepEqual(asked, ["@comp-markdown/card@0.1.0", "@comp-markdown/mermaid@0.1.2", "@comp-markdown/wireframe@0.2.0"]);
++  });
++
++  it("are tagged as the packs' releases always were", () => {
++    assert.equal(tagOf("mermaid", "0.2.0"), "mermaid-v0.2.0");
++  });
++});
+diff --git a/tools/packs/unreleased.ts b/tools/packs/unreleased.ts
+new file mode 100644
+index 0000000..ddbbc28
+--- /dev/null
++++ b/tools/packs/unreleased.ts
+@@ -0,0 +1,33 @@
++// The packs to release: those whose version in versions.json npm doesn't have (docs/releases.md, decision 8), each
++// with its release's tag, `<pack>-v<version>`.
++
++import { packageOf } from "./placeholder.ts";
++import type { Versions } from "./versions.ts";
++
++/** A pack's release. */
++export interface Release {
++  pack: string;
++  /** Its npm package: `@comp-markdown/card`. */
++  name: string;
++  version: string;
++  /** Its tag: `card-v0.1.0`. */
++  tag: string;
++}
++
++/** A pack's release's tag: `card-v0.1.0`. */
++export const tagOf = (pack: string, version: string): string => `${pack}-v${version}`;
++
++/**
++ * The releases of `versions` npm doesn't have, in the packs' order, asking `has` for each.
++ *
++ * @example
++ * await unreleased({ card: "0.1.0" }, async () => false); // [{ pack: "card", name: "@comp-markdown/card", version: "0.1.0", tag: "card-v0.1.0" }]
++ */
++export async function unreleased(versions: Versions, has: (name: string, version: string) => Promise<boolean>): Promise<Release[]> {
++  const releases: Release[] = [];
++  for (const [pack, version] of Object.entries(versions).sort(([a], [b]) => a.localeCompare(b))) {
++    const name = packageOf(pack);
++    if (!(await has(name, version))) releases.push({ pack, name, version, tag: tagOf(pack, version) });
++  }
++  return releases;
++}
+diff --git a/tools/packs/versions.test.ts b/tools/packs/versions.test.ts
+new file mode 100644
+index 0000000..932fd21
+--- /dev/null
++++ b/tools/packs/versions.test.ts
+@@ -0,0 +1,53 @@
++import assert from "node:assert/strict";
++import { describe, it } from "node:test";
++import { packAt } from "./testing.ts";
++import { differing, documentVersion, errors, manifestVersion, withVersion } from "./versions.ts";
++
++describe("a pack's versions", () => {
++  it("are read from package.json and from the document's export.version", () => {
++    const pack = packAt("card", "0.1.0", "0.0.9");
++    assert.equal(manifestVersion(pack.manifest), "0.1.0");
++    assert.equal(documentVersion(pack.document), "0.0.9");
++  });
++
++  it("are written into both, the rest of each file as it was", () => {
++    const pack = packAt("card", "0.1.0");
++    const next = withVersion(pack, "0.2.0");
++    assert.equal(next.manifest, pack.manifest.replace('"version": "0.1.0"', '"version": "0.2.0"'));
++    assert.equal(next.document, pack.document.replace('version: "0.1.0"', 'version: "0.2.0"'));
++  });
++
++  it("aren't read from a version key outside export", () => {
++    const document = `---\nmd:\n  version: 1\n  export:\n    pack: "@comp-markdown/card"\n    version: "0.3.0"\n---\n`;
++    assert.equal(documentVersion(document), "0.3.0");
++  });
++});
++
++describe("versions.json against the packs", () => {
++  it("finds a pack it doesn't name, a name that isn't a pack, a bad version and a missing export.version", () => {
++    const noExport = { ...packAt("chart", "0.1.0"), document: "# chart\n" };
++    assert.deepEqual(errors({ card: "0.1.0", gone: "1.0.0", chart: "next" }, [packAt("card", "0.1.0"), noExport, packAt("music", "0.1.0")]), [
++      "compmd-packs/music has no version in compmd-packs/versions.json",
++      "compmd-packs/versions.json names gone, which isn't a pack in compmd-packs/",
++      'compmd-packs/versions.json gives chart "next", which isn\'t a version',
++      "compmd-packs/chart/index.comp.md has no export.version",
++    ]);
++  });
++
++  it("finds the packs whose files don't have their version, with what they have", () => {
++    const behind = differing({ card: "0.2.0", chart: "0.1.0", music: "0.1.0" }, [packAt("card", "0.1.0"), packAt("chart", "0.1.0"), packAt("music", "0.1.0", "0.0.1")]);
++    assert.deepEqual(
++      behind.map(({ pack, version, written }) => [pack.name, version, written]),
++      [
++        ["card", "0.2.0", ["0.1.0", "0.1.0"]],
++        ["music", "0.1.0", ["0.0.1"]],
++      ],
++    );
++  });
++
++  it("finds nothing when they agree", () => {
++    const packs = [packAt("card", "0.1.0"), packAt("chart", "1.0.0-beta.1")];
++    assert.deepEqual(errors({ card: "0.1.0", chart: "1.0.0-beta.1" }, packs), []);
++    assert.deepEqual(differing({ card: "0.1.0", chart: "1.0.0-beta.1" }, packs), []);
++  });
++});
+diff --git a/tools/packs/versions.ts b/tools/packs/versions.ts
+new file mode 100644
+index 0000000..9fb177a
+--- /dev/null
++++ b/tools/packs/versions.ts
+@@ -0,0 +1,103 @@
++// The packs' versions (docs/releases.md, decision 8): `compmd-packs/versions.json` is the one place a pack's version is
++// written; each pack's `package.json` and its document's `export.version` follow it.
++
++import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
++import { join } from "node:path";
++
++/** The packs' folder, and the file of their versions in it, relative to the repository. */
++export const PACKS = "compmd-packs";
++export const VERSIONS = `${PACKS}/versions.json`;
++
++/** Each pack's version, by its folder's name: `{ "mermaid": "0.1.2" }`. */
++export type Versions = Record<string, string>;
++
++/** A pack as its files have it. */
++export interface Pack {
++  /** Its folder's name in `compmd-packs/`, and its package's name in the scope. */
++  name: string;
++  /** Its `package.json`, and its document, `index.comp.md`, as text. */
++  manifest: string;
++  document: string;
++}
++
++/** A semantic version: `0.1.2`, `1.0.0-beta.1`. */
++const SEMVER = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/;
++/** `package.json`'s `"version": "…"`, its first, which is the package's own. */
++const MANIFEST_VERSION = /("version":\s*)"([^"]*)"/;
++/** The document's `export.version`, in its frontmatter: the first `version:` after `export:`, indented under it. */
++const EXPORT_VERSION = /^([ \t]*export:[ \t]*\n(?:[ \t]+.*\n)*?[ \t]+version:[ \t]*)"([^"\n]*)"/m;
++
++/** `package.json`'s version, or `undefined` when it has none. */
++export const manifestVersion = (manifest: string): string | undefined => MANIFEST_VERSION.exec(manifest)?.[2];
++
++/** The document's `export.version`, or `undefined` when it has none. */
++export const documentVersion = (document: string): string | undefined => EXPORT_VERSION.exec(document)?.[2];
++
++/** The pack's files with `version` written in both, and everything else as it was. */
++export function withVersion(pack: Pack, version: string): Pack {
++  return {
++    ...pack,
++    manifest: pack.manifest.replace(MANIFEST_VERSION, (_, key: string) => `${key}"${version}"`),
++    document: pack.document.replace(EXPORT_VERSION, (_, key: string) => `${key}"${version}"`),
++  };
++}
++
++/** What versions.json and the packs disagree on, which no write can fix: a pack missing on one side, a bad version. */
++export function errors(versions: Versions, packs: readonly Pack[]): string[] {
++  const found: string[] = [];
++  const names = new Set(packs.map((pack) => pack.name));
++  for (const pack of packs) if (!(pack.name in versions)) found.push(`${PACKS}/${pack.name} has no version in ${VERSIONS}`);
++  for (const [name, version] of Object.entries(versions)) {
++    if (!names.has(name)) found.push(`${VERSIONS} names ${name}, which isn't a pack in ${PACKS}/`);
++    else if (!SEMVER.test(version)) found.push(`${VERSIONS} gives ${name} "${version}", which isn't a version`);
++  }
++  for (const pack of packs) {
++    if (manifestVersion(pack.manifest) === undefined) found.push(`${PACKS}/${pack.name}/package.json has no version`);
++    if (documentVersion(pack.document) === undefined) found.push(`${PACKS}/${pack.name}/index.comp.md has no export.version`);
++  }
++  return found;
++}
++
++/** The packs whose files don't have their version in versions.json, with what they have. */
++export function differing(versions: Versions, packs: readonly Pack[]): { pack: Pack; version: string; written: string[] }[] {
++  return packs.flatMap((pack) => {
++    const version = versions[pack.name];
++    if (version === undefined) return [];
++    const written = [manifestVersion(pack.manifest), documentVersion(pack.document)].filter((found): found is string => found !== undefined && found !== version);
++    return written.length > 0 ? [{ pack, version, written }] : [];
++  });
++}
++
++/** The packs and their versions in the repository at `root`: each folder of `compmd-packs/` with a `package.json`. */
++export function readPacks(root: string): { versions: Versions; packs: Pack[] } {
++  const folder = join(root, PACKS);
++  const versions = JSON.parse(readFileSync(join(root, VERSIONS), "utf8")) as Versions;
++  const packs = readdirSync(folder, { withFileTypes: true })
++    .filter((entry) => entry.isDirectory() && existsSync(join(folder, entry.name, "package.json")))
++    .map((entry) => ({
++      name: entry.name,
++      manifest: readFileSync(join(folder, entry.name, "package.json"), "utf8"),
++      document: existsSync(join(folder, entry.name, "index.comp.md")) ? readFileSync(join(folder, entry.name, "index.comp.md"), "utf8") : "",
++    }))
++    .sort((a, b) => a.name.localeCompare(b.name));
++  return { versions, packs };
++}
++
++/** Writes `pack`'s files into the repository at `root`. */
++export function writePack(root: string, pack: Pack): void {
++  writeFileSync(join(root, PACKS, pack.name, "package.json"), pack.manifest);
++  writeFileSync(join(root, PACKS, pack.name, "index.comp.md"), pack.document);
++}
++
++/** `cargo make pack-versions`, which `ci` runs: fails when versions.json and the packs disagree. */
++export function check(root: string): number {
++  const { versions, packs } = readPacks(root);
++  const found = [
++    ...errors(versions, packs),
++    ...differing(versions, packs).map(({ pack, version, written }) => `${PACKS}/${pack.name} has ${written.join(" and ")}, ${VERSIONS} ${version}: \`cargo make release-packs\` writes it`),
++  ];
++  for (const problem of found) console.error(problem);
++  return found.length === 0 ? 0 : 1;
++}
++
++if (import.meta.main) process.exitCode = check(join(import.meta.dirname, "../.."));
