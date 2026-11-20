@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 269,
+    "next_number": 308,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -300,6 +300,11 @@
         "state": "active",
         "goal": "Wrapping an npm package as a pack takes one command; a first set of packs, shown on the website; a blog section with its first posts.",
         "start": "2026-11-19T16:35:06Z"
+      },
+      {
+        "id": "Audit - Nov19",
+        "state": "planned",
+        "goal": "Close the audit’s boundary and work-limit gaps; fix its bugs and drift (docs/codebase-audit.md)"
       }
     ],
     "archived": 102
@@ -530,9 +535,9 @@
         "docs/first-components.md"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-19T20:20:56Z",
+      "updated_at": "2026-11-19T21:22:19Z",
       "created_by": "Hakan Serce",
-      "updated_by": "claude:79612601",
+      "updated_by": "Hakan Serce",
       "with": "user",
       "number": 10,
       "sprint_history": [
@@ -544,7 +549,7 @@
       "sprint": "Packs & Blog",
       "started_at": "2026-11-19T19:03:49Z",
       "started_by": "claude:79612601",
-      "commit": "f58a1e293be51b62aec094d91366ccf15dd50d9d",
+      "commit": "ce4e215512a2b095a0448b5cabc15355563ae705",
       "code_reviews": [
         {
           "id": "01a1f4ea-defb-703c-adf7-610af8737886",
@@ -569,6 +574,12 @@
           "kind": "review",
           "text": "CR-19: round 2",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-19T21:22:19Z",
+          "kind": "note",
+          "text": "Approved: in CR-19 (round 3)",
+          "by": "Hakan Serce"
         }
       ],
       "reviews": [
@@ -579,7 +590,8 @@
         }
       ],
       "review_requested_at": "2026-11-19T20:20:56Z",
-      "review_state": "waiting"
+      "review_state": "approved",
+      "reviewed_at": "2026-11-19T21:22:19Z"
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68e81c39ce10",
@@ -9657,9 +9669,9 @@
         "spikes/highlight-perf/"
       ],
       "created_at": "2026-11-19T20:45:02Z",
-      "updated_at": "2026-11-19T20:55:30Z",
+      "updated_at": "2026-11-19T21:58:23Z",
       "created_by": "Hakan Serce",
-      "updated_by": "claude:79612601",
+      "updated_by": "Hakan Serce",
       "sprint_history": [
         {
           "sprint": "Packs & Blog",
@@ -9678,15 +9690,22 @@
         }
       ],
       "review_requested_at": "2026-11-19T20:55:30Z",
-      "review_state": "waiting",
+      "review_state": "approved",
       "notes": [
         {
           "at": "2026-11-19T20:55:30Z",
           "kind": "review",
           "text": "CR-21: The host’s code highlighter, and where the default Shiki runs",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-19T21:58:23Z",
+          "kind": "note",
+          "text": "Approved: in CR-21 (round 1)",
+          "by": "Hakan Serce"
         }
-      ]
+      ],
+      "reviewed_at": "2026-11-19T21:58:23Z"
     },
     {
       "id": "01a1f5ac-46f1-7265-8aef-db1a0db26768",
@@ -9719,6 +9738,1349 @@
       ],
       "sprint": "Packs & Blog",
       "number": 268
+    },
+    {
+      "id": "01a1f7b7-53d9-7730-bb1c-8cd7c96932d9",
+      "name": "Design: closing the sandbox's boundary gaps",
+      "type": "docs",
+      "priority": "P0",
+      "labels": [
+        "audit",
+        "security",
+        "sandbox"
+      ],
+      "description": "Settle, with the maintainer, how the sandbox closes the gaps of [the audit](docs/codebase-audit.md) S1, S2, S3, S16, S17, S18, B7 and B8, then write the decisions into [the sandbox's design](docs/running-components-in-the-sandbox.md) and [its protocol](docs/sandbox-protocol.md) before any code changes. The points are coupled: what a frame is sent depends on who it is for, and when a frame is believed depends on how it was made.\n\n## Points to settle\n- **S1, a frame that navigates itself:** the parent says hello only for a load it started; any other `load` fails the frame and shows the fallback. Whether the host page's `frame-src` becomes a stated requirement, and whether `runCheck` probes it.\n- **S2, code per pack:** `ComponentCode` carries its pack (or a trust key), and a permissive frame gets only its own pack's permissive code plus strict code; another pack's permissive component there is `not-here`.\n- **S3, B8, correlation:** compile, image and host requests matched by numeric id, with a timeout each; a superseded request is rejected; only a matched answer is cached.\n- **S16, frame mode's `set`:** own keys only, and whether a page frame may set any document input or only bound ones.\n- **S17, `link`:** checked with `safeUrl` in the parent, and the docs say its URL and timing are untrusted.\n- **S18:** whether a frame refuses to start unless `self.origin === \"null\"`, and whether the `sandbox` header becomes a MUST.\n- **B7:** trust and print keyed by a component's entry (example scope included), not its name.\n- **B8:** one reload rule for page, use and compile frames; a version mismatch answered so the parent reports `version`.\n\n## Done when\nThe design and the protocol doc lead with these decisions, the protocol doc's message tables match `src/protocol/messages.ts` (audit I1), and the follow-up tasks below match what was decided (update them with `atm task edit`).",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "docs/running-components-in-the-sandbox.md",
+        "docs/sandbox-protocol.md"
+      ],
+      "created_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-20T06:49:09Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Audit - Nov19",
+          "from": "2026-11-20T06:49:09Z"
+        }
+      ],
+      "sprint": "Audit - Nov19",
+      "with": "user",
+      "number": 269
+    },
+    {
+      "id": "01a1f7b7-53d9-7730-bb1c-8cd8e8485171",
+      "name": "Decide the audit's spec questions",
+      "type": "docs",
+      "priority": "P1",
+      "labels": [
+        "audit",
+        "spec"
+      ],
+      "description": "Five findings of [the audit](docs/codebase-audit.md) need the spec to say something it doesn't. Settle each with the maintainer, then change the spec (with its changelog entry under `### Unreleased` and conformance cases), or record why not.\n\n- **A release's own name (S4, processor side):** a processor refuses a pack release whose `package.json` `name` isn't the imported pack's name (§6.4), so a release can't arrive under another pack's name.\n- **A nesting limit (S9):** a maximum depth for the document tree and for expansion, with a diagnostic, so a deep document is refused instead of overflowing the stack (§8.5 says expansion always terminates).\n- **W109 (S28):** §8.1 says interpolation never produces a URL's scheme, but its second sentence checks only a URL that starts with one; `[x](java{{md.input.s}})` gets no warning.\n- **Work, not only nodes (S5):** whether F034's limit counts iterations and invocations as well as nodes made (§8.5).\n- **Authors' classes and ids (S31):** whether `class` and `id` params stay as written on the host's page, or are prefixed or filtered (§15).\n\n## Done when\nEach point is in the spec or recorded as declined, and the processor tasks that depend on it say what was decided.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "spec/compmd-spec-v1.md",
+        "spec/CHANGELOG.md",
+        "conformance/"
+      ],
+      "created_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-20T06:49:09Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Audit - Nov19",
+          "from": "2026-11-20T06:49:09Z"
+        }
+      ],
+      "sprint": "Audit - Nov19",
+      "with": "user",
+      "number": 270
+    },
+    {
+      "id": "01a1f7b7-53d9-7730-bb1c-8cd9f26371ae",
+      "name": "Sandbox: a frame that navigates itself is failed, not admitted again",
+      "type": "bugfix",
+      "priority": "P0",
+      "labels": [
+        "audit",
+        "security",
+        "sandbox"
+      ],
+      "description": "Audit S1 and B8 ([the audit](docs/codebase-audit.md)), as the design task decided.\n\nToday `frameUse` says hello on every `load` (`npm-packages/sandbox/src/use.ts`), so a strict frame that runs `location.replace(...)` sends its data away in the URL, and the page that loads is then given a port, the code, the part with the document's inputs, and `host` when the use has it. The page and compile frames say hello once (`pages.ts`, `host/runtime.ts`), so a moved container leaves them hung.\n\n## Change\n- One frame-making helper (audit A3) that owns the `sandbox` and `allow` attributes, the hello, and the reload rule, used by `frameUse`, `framePage` and the compile frame.\n- A `load` the parent didn't start fails the frame: removed, its fallback shown, the observer told.\n- Each reload no longer leaks a channel and a `serveHost` listener in `#frameEvents`.\n- `runCheck` probes the page's `frame-src`, if the design says so.\n\n## Tests\nBrowser tests in Chrome and WebKit: a strict frame that navigates itself (with `location`, and with a link clicked after `stopPropagation`) shows its fallback and gets no second hello; a page frame whose container moves recovers or fails as the design says.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1f7b7-53d9-7730-bb1c-8cd7c96932d9"
+      ],
+      "files": [
+        "npm-packages/sandbox/src/use.ts",
+        "npm-packages/sandbox/src/pages.ts",
+        "npm-packages/sandbox/src/host/runtime.ts",
+        "npm-packages/sandbox/test/strict.test.ts"
+      ],
+      "created_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-20T06:49:09Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Audit - Nov19",
+          "from": "2026-11-20T06:49:09Z"
+        }
+      ],
+      "sprint": "Audit - Nov19",
+      "number": 271
+    },
+    {
+      "id": "01a1f7b7-53d9-7730-bb1c-8cdabf3508ee",
+      "name": "Sandbox: a permissive frame gets only its own pack's code",
+      "type": "bugfix",
+      "priority": "P0",
+      "labels": [
+        "audit",
+        "security",
+        "sandbox"
+      ],
+      "description": "Audit S2 and B7 ([the audit](docs/codebase-audit.md)), as the design task decided.\n\n`HostRuntime.#frame` gives a frame `codeFor(this.#code, level)`, every component at or below its level, and the frame imports all of it (`npm-packages/sandbox/src/frame/runtime.ts`). So a document using permissive packs A and B runs B's code in A's frame, with A's network and `host`, against spec §15. Trust and print are also keyed by name only (`host/runtime.ts` `set`), so a document's `chart` and an example's `chart` overwrite each other.\n\n## Change\n- `ComponentCode` carries its pack (or the design's trust key).\n- A permissive frame is sent its own pack's permissive code and the strict code; another pack's permissive component there renders as `not-here`.\n- Trust and print are keyed by the component's entry (`entryOf`).\n\n## Tests\nTwo permissive packs with different `network`, used in one document: each frame loads only its own pack's module (a module's top level that records where it ran), and B's use in A's slot gets its own frame. A document `chart` and an example `chart` of different trust each keep theirs.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1f7b7-53d9-7730-bb1c-8cd7c96932d9"
+      ],
+      "files": [
+        "npm-packages/sandbox/src/host/runtime.ts",
+        "npm-packages/sandbox/src/frame/runtime.ts",
+        "npm-packages/sandbox/src/mounts.ts",
+        "npm-packages/sandbox/src/protocol/messages.ts"
+      ],
+      "created_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-20T06:49:09Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Audit - Nov19",
+          "from": "2026-11-20T06:49:09Z"
+        }
+      ],
+      "sprint": "Audit - Nov19",
+      "number": 272
+    },
+    {
+      "id": "01a1f7b7-53d9-7730-bb1c-8cdb963a2c49",
+      "name": "Sandbox: requests matched to their answers by id, with a timeout",
+      "type": "bugfix",
+      "priority": "P0",
+      "labels": [
+        "audit",
+        "security",
+        "sandbox",
+        "refactor"
+      ],
+      "description": "Audit S3, B8 and R7, through the helper A2 ([the audit](docs/codebase-audit.md)).\n\n`connectCompiler` keeps pending requests by component name (`npm-packages/sandbox/src/protocol/compiler.ts`): a second request with the same name replaces the first, the first answer resolves the second, the first never settles, and `compiledWith` caches the wrong code under the second source's key. Image requests are matched by URL (`frame-end.ts`), host calls by id (`host-api.ts`). The compile frame has no timeout after `ready`.\n\n## Change\nOne small `request`/`answer` helper with numeric ids, a `Map`, and a timeout per request; used for compile, image and host calls. A superseded request is rejected; only an answer matched to its own request is cached. Drop the doc comment that says an older request \"never settles\".\n\n## Tests\nTwo compiles of the same name with different sources each get their own code, and Cache Storage holds each under its own key; a document and an example defining the same name both render; a compile that never answers rejects after the timeout and its use shows its fallback.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1f7b7-53d9-7730-bb1c-8cd7c96932d9"
+      ],
+      "files": [
+        "npm-packages/sandbox/src/protocol/compiler.ts",
+        "npm-packages/sandbox/src/protocol/frame-end.ts",
+        "npm-packages/sandbox/src/host-api.ts",
+        "npm-packages/sandbox/src/compiled-cache.ts"
+      ],
+      "created_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-20T06:49:09Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Audit - Nov19",
+          "from": "2026-11-20T06:49:09Z"
+        }
+      ],
+      "sprint": "Audit - Nov19",
+      "number": 273
+    },
+    {
+      "id": "01a1f7b7-53d9-7730-bb1c-8cdcc53abb15",
+      "name": "Sandbox: every message from a frame checked by one table",
+      "type": "refactor",
+      "priority": "P1",
+      "labels": [
+        "audit",
+        "security",
+        "sandbox",
+        "refactor"
+      ],
+      "description": "Audit S16, S17, the shape checks of S28, and A1 ([the audit](docs/codebase-audit.md)), as the design task decided.\n\n## Change\n- One table per direction, `type → guard`, shared by both ends, from which `TO_FRAME`/`FROM_FRAME`, the TypeScript unions and `isMessage` derive; `isMessage` narrows only after the shape passes. Test `protocol.schema.json` against it.\n- `set` in frame mode: `typeof input === \"string\" && Object.hasOwn(inputs, input)` (today `input in inputs`, `npm-packages/sandbox/src/pages.ts`), and bound inputs only if the design says so.\n- `link`: a string, through `safeUrl(url, schemes)` in the parent (`protocol/parent-end.ts`); `ViewEvents.link`'s doc says the URL and its timing come from the frame.\n- `pong`: an integer with `answered < n <= sent`.\n- `error`, `rendered`, `size` and `serveHost`'s `data` checked before use; a reported frame height capped.\n\n## Tests\nFrom a fake frame's port: `set` of `__proto__` is refused; `link` with `javascript:` is dropped; `pong {n: Infinity}` doesn't stop a hung frame being reported; a malformed `error` reaches no host callback.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1f7b7-53d9-7730-bb1c-8cd7c96932d9"
+      ],
+      "files": [
+        "npm-packages/sandbox/src/protocol/messages.ts",
+        "npm-packages/sandbox/src/protocol/parent-end.ts",
+        "npm-packages/sandbox/src/pages.ts",
+        "npm-packages/sandbox/src/host-api.ts",
+        "npm-packages/sandbox/src/use.ts"
+      ],
+      "created_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-20T06:49:09Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Audit - Nov19",
+          "from": "2026-11-20T06:49:09Z"
+        }
+      ],
+      "sprint": "Audit - Nov19",
+      "number": 274
+    },
+    {
+      "id": "01a1f7b7-53d9-7730-bb1c-8cdd28516bbc",
+      "name": "Sandbox: the image gate decides on the image's resolved origin",
+      "type": "bugfix",
+      "priority": "P1",
+      "labels": [
+        "audit",
+        "security",
+        "sandbox"
+      ],
+      "description": "Audit S15 and the `allow-origin` point of S28 ([the audit](docs/codebase-audit.md)).\n\n`ImageGate.decide` takes `//tracker.example/p.png` as relative (`urlScheme` gives `undefined`, `npm-packages/sandbox/src/image-gate.ts`), so it shows without the reader being asked, and the frame fetches `new URL(src, base)`. `PageImages.allowOrigin` has the same gap. A frame's `allow-origin` also forgets the reader's stored answer before asking again.\n\n## Change\nOne function decides an image's origin from `new URL(src, base)` and compares it with the base's; `decide`, `allowOrigin` and the fetch all use it. A frame's `allow-origin` asks without forgetting a stored answer, or is rate-limited per origin (the reader's own button still forgets).\n\n## Tests\n`//host/x.png`, `\\\\host/x.png` and `/\\host/x.png` on another origin are asked about; a same-origin relative image isn't; a frame repeating `allow-origin` doesn't erase a stored deny.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "npm-packages/sandbox/src/image-gate.ts",
+        "npm-packages/sandbox/src/images.ts"
+      ],
+      "created_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-20T06:49:09Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Audit - Nov19",
+          "from": "2026-11-20T06:49:09Z"
+        }
+      ],
+      "sprint": "Audit - Nov19",
+      "number": 275
+    },
+    {
+      "id": "01a1f7b7-53d9-7730-bb1c-8cded576cded",
+      "name": "Sandbox: the frame runtime starts only in a sandboxed frame",
+      "type": "bugfix",
+      "priority": "P1",
+      "labels": [
+        "audit",
+        "security",
+        "sandbox"
+      ],
+      "description": "Audit S18 ([the audit](docs/codebase-audit.md)), as the design task decided.\n\nThe frame runtime believes its parent (`npm-packages/sandbox/src/frame/runtime.ts`, the hello listener). Served without `Content-Security-Policy: sandbox allow-scripts`, any site can embed `strict.html` without a `sandbox` attribute and run code in the origin that serves it. GitHub Pages ignores `_headers`, so the project's own site serves the frames that way.\n\n## Change\nThe runtime refuses to start unless `self.origin === \"null\"`, and says why in the console; the sandbox README makes the header a MUST if the design says so. Record what the website does about it (a second origin, or a host that honours `_headers`) as a follow-up task if it isn't settled here.\n\n## Tests\nA frame document loaded in an iframe without `sandbox` doesn't answer hello; the existing frames still start.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1f7b7-53d9-7730-bb1c-8cd7c96932d9"
+      ],
+      "files": [
+        "npm-packages/sandbox/src/frame/runtime.ts",
+        "npm-packages/sandbox/README.md"
+      ],
+      "created_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-20T06:49:09Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Audit - Nov19",
+          "from": "2026-11-20T06:49:09Z"
+        }
+      ],
+      "sprint": "Audit - Nov19",
+      "number": 276
+    },
+    {
+      "id": "01a1f7b7-53d9-7730-bb1c-8cdf8f727aa9",
+      "name": "Registry: a pinned import gets only its own pack's cached release",
+      "type": "bugfix",
+      "priority": "P0",
+      "labels": [
+        "audit",
+        "security",
+        "registry"
+      ],
+      "description": "Audit S4 and I6 ([the audit](docs/codebase-audit.md)).\n\nFor a pinned import the resolver takes cached files by integrity alone (`npm-packages/registry/src/resolve.ts`, `#resolveFrom`), and the cache is keyed by integrity only (`cache.ts`). So a document can pin `@trusted/charts@1.0.0` to the integrity of an `@evil/pack` release another document cached, and get its files as `@trusted/charts`, with that pack's trust and without the deny, size and registry checks. The processor's side (a release's own name) is a spec question in the spec decisions task.\n\n## Change\nCache entries are keyed, or tagged, by `pack@version` as well as integrity, and a hit is used only for the same pack and version; the cached path applies `denied` and `#refusal` as the fetched one does.\n\n## Tests\nTwo packs: one cached; a pinned import of the other with the first's integrity is not given its files; a pinned import of the same pack and version still uses the cache.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "npm-packages/registry/src/resolve.ts",
+        "npm-packages/registry/src/cache.ts"
+      ],
+      "created_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-20T06:49:09Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Audit - Nov19",
+          "from": "2026-11-20T06:49:09Z"
+        }
+      ],
+      "sprint": "Audit - Nov19",
+      "number": 277
+    },
+    {
+      "id": "01a1f7b7-53d9-7730-bb1c-8ce0971c3e15",
+      "name": "Registry: a tarball's intake bounded from fetch to files",
+      "type": "bugfix",
+      "priority": "P1",
+      "labels": [
+        "audit",
+        "security",
+        "registry"
+      ],
+      "description": "Audit S10, S11, S12 and A9 ([the audit](docs/codebase-audit.md)).\n\n- `untar` loops forever on a negative octal size (`npm-packages/registry/src/tar.ts`): an entry of size `-1024` moves the offset back.\n- Only the registry's declared `unpackedSize` is checked; the download (`registry.ts` `tarball`) and the gunzip are read whole.\n- A tarball URL from the metadata is fetched on any origin with the registry's headers (`registry.ts`, `proxy.ts`): a token can go to another host, and a server-side proxy fetches any address.\n\n## Change\nOne bounded pipeline: fetch with a byte cap, hash, gunzip with a cap, untar with sizes that are non-negative integers and an offset that always advances. Tarballs only from the registry's origin (or headers only there), and `https:`.\n\n## Tests\nA tar with a negative size, one whose gzip expands past `maxPackSize`, one larger than declared, and metadata naming a tarball on another origin are each refused with a message; a normal pack still resolves.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "npm-packages/registry/src/tar.ts",
+        "npm-packages/registry/src/registry.ts",
+        "npm-packages/registry/src/resolve.ts",
+        "npm-packages/registry/src/proxy.ts"
+      ],
+      "created_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-20T06:49:09Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Audit - Nov19",
+          "from": "2026-11-20T06:49:09Z"
+        }
+      ],
+      "sprint": "Audit - Nov19",
+      "number": 278
+    },
+    {
+      "id": "01a1f7b7-53d9-7730-bb1c-8ce116f0c508",
+      "name": "Processor: expansion counts work, not only nodes made",
+      "type": "bugfix",
+      "priority": "P0",
+      "labels": [
+        "audit",
+        "security",
+        "processor"
+      ],
+      "description": "Audit S5, S8, the slot point of B8's list, R2 and A7 ([the audit](docs/codebase-audit.md)), within what the spec decisions task settled for §8.5.\n\nOnly `Expander::made` counts against the limit (`crates/processor/src/expand.rs`), so `each` loops and `display=contents` invocations that make no node never stop: five nested `each` over 100 items run 10^10 times. Each example has its own limit (`processor/examples.rs`), so N examples give N times the limit. Slot placement loops a template without `expanding` (`expand/text.rs`).\n\n## Change\nOne `iterate` helper for `each`, `rendered_slot` and `slot` that charges each iteration, and a charge per invocation in `expanding`, reported as F034 where the spec says. Examples get what remains of the document's limit and count against it.\n\n## Tests\nNested empty `each` loops and a doubling chain of `display=contents` definitions end with F034 quickly; many examples together hit the limit; existing F034 cases still pass; a conformance case if the spec changed.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1f7b7-53d9-7730-bb1c-8cd8e8485171"
+      ],
+      "files": [
+        "crates/processor/src/expand.rs",
+        "crates/processor/src/expand/flow.rs",
+        "crates/processor/src/expand/components.rs",
+        "crates/processor/src/expand/text.rs",
+        "crates/processor/src/processor/examples.rs"
+      ],
+      "created_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-20T06:49:09Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Audit - Nov19",
+          "from": "2026-11-20T06:49:09Z"
+        }
+      ],
+      "sprint": "Audit - Nov19",
+      "number": 279
+    },
+    {
+      "id": "01a1f7b7-53d9-7730-bb1c-8ce2cd1e3b9e",
+      "name": "Processor: CEL charges a value's cost before building it",
+      "type": "bugfix",
+      "priority": "P0",
+      "labels": [
+        "audit",
+        "security",
+        "processor"
+      ],
+      "description": "Audit S6, the `in`/`==` point of S28, and A7 ([the audit](docs/codebase-audit.md)).\n\nThe evaluator spends for a built string or list only after the call returns (`crates/processor/src/cel/eval.rs`, `built`), so `'a…'.replace('a', 'a…')` with 40,000-character strings allocates 1.6 GB before the budget error. A string literal costs one step whatever its length; `in` and deep `==` cost one step whatever the size.\n\n## Change\nAn overload can say its result's size from its arguments (`replace`, `join`, `split`, `+`, `md.list`), and the evaluator spends that before calling; literals are charged by length; `contains` and `equals` by elements visited.\n\n## Tests\nThe large `replace`, `split('').join(x)` and a quadratic `filter(r, r in rows)` each end with the budget error without a large allocation; the differential tests still agree.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "crates/processor/src/cel/eval.rs",
+        "crates/processor/src/cel/strings.rs",
+        "crates/processor/src/cel/ops.rs",
+        "crates/processor/src/cel/overload.rs"
+      ],
+      "created_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-20T06:49:09Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Audit - Nov19",
+          "from": "2026-11-20T06:49:09Z"
+        }
+      ],
+      "sprint": "Audit - Nov19",
+      "number": 280
+    },
+    {
+      "id": "01a1f7b7-53d9-7730-bb1c-8ce3b5163a59",
+      "name": "Processor: the name suggestion bounded",
+      "type": "bugfix",
+      "priority": "P1",
+      "labels": [
+        "audit",
+        "security",
+        "processor"
+      ],
+      "description": "Audit S7 ([the audit](docs/codebase-audit.md)). `distance` builds a full `|a| × |b|` matrix (`crates/processor/src/nearest.rs`), and names have no length limit, so two 50,000-character names ask for about 20 GB; the \"close enough\" filter runs after the distance.\n\n## Change\nSkip a candidate whose length differs by more than a third before computing; compare at most a fixed length (64, say); keep two or three rows instead of the matrix.\n\n## Tests\nThe existing cases; a long unknown name against long known names returns quickly; a length-mismatched candidate is never measured.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "crates/processor/src/nearest.rs"
+      ],
+      "created_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-20T06:49:09Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Audit - Nov19",
+          "from": "2026-11-20T06:49:09Z"
+        }
+      ],
+      "sprint": "Audit - Nov19",
+      "number": 281
+    },
+    {
+      "id": "01a1f7b7-53d9-7730-bb1c-8ce46117dbf8",
+      "name": "Processor: what the spec decisions settled",
+      "type": "feature",
+      "priority": "P1",
+      "labels": [
+        "audit",
+        "security",
+        "processor",
+        "spec"
+      ],
+      "description": "Build what the spec decisions task put into the spec ([the audit](docs/codebase-audit.md) S4 processor side, S9, S28 W109, S31); leave out what it declined.\n\n- **A release's own name:** refuse a release whose `package.json` `name` isn't the imported name, where `crates/processor/src/resolve/load/packs.rs` checks `export.pack` today.\n- **A nesting limit:** refuse a tree deeper than the spec's limit in `Converter::blocks` (`parse/blocks.rs`), and carry a depth in `Expander::expanding`, with the spec's diagnostic.\n- **W109:** warn whenever an interpolated value lands before a URL's first `:` (`expand/text.rs` `checked_url`).\n- **Classes and ids:** as decided.\n\n## Tests\nConformance cases for each new rule; unit tests for 10,000 nested `> ` markers and for `[x](java{{md.input.s}})`.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1f7b7-53d9-7730-bb1c-8cd8e8485171"
+      ],
+      "files": [
+        "crates/processor/src/resolve/load/packs.rs",
+        "crates/processor/src/parse/blocks.rs",
+        "crates/processor/src/expand.rs",
+        "crates/processor/src/expand/text.rs",
+        "conformance/"
+      ],
+      "created_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-20T06:49:09Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Audit - Nov19",
+          "from": "2026-11-20T06:49:09Z"
+        }
+      ],
+      "sprint": "Audit - Nov19",
+      "number": 282
+    },
+    {
+      "id": "01a1f7b7-53d9-7730-bb1c-8ce5e36997db",
+      "name": "Processor: root-folder paths are checked as pack paths are",
+      "type": "bugfix",
+      "priority": "P1",
+      "labels": [
+        "audit",
+        "security",
+        "processor",
+        "refactor"
+      ],
+      "description": "Audit S21, R4 and A5 ([the audit](docs/codebase-audit.md)).\n\n`Origin::File` holds a string joined by `joined` (`crates/processor/src/resolve/origin.rs`), which accepts any segment; `FilePath` (`crates/pack-types/src/file_path.rs`) refuses `\\`, `:` and NUL. So `./..\\..\\secrets.csv` reaches `host::Files::file` as written, and a Windows host that joins it to a folder leaves the root.\n\n## Change\n`Origin::File` holds a `FilePath` (or a sibling newtype in `compmd-pack`); `Origin::join` is one call for both variants; `joined` is deleted. An import or data path that isn't a valid path gets the diagnostic an unreadable one gets today.\n\n## Tests\nImports and data `from`s with `\\`, `:` and NUL segments are refused before `Files` is asked; existing relative imports still resolve; coverage stays at 99%.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "crates/processor/src/resolve/origin.rs",
+        "crates/pack-types/src/file_path.rs",
+        "crates/processor/src/load/from.rs"
+      ],
+      "created_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-20T06:49:09Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Audit - Nov19",
+          "from": "2026-11-20T06:49:09Z"
+        }
+      ],
+      "sprint": "Audit - Nov19",
+      "number": 283
+    },
+    {
+      "id": "01a1f7b7-53d9-7730-bb1c-8ce6ba0caebf",
+      "name": "Processor: one line index per document",
+      "type": "refactor",
+      "priority": "P2",
+      "labels": [
+        "audit",
+        "processor",
+        "refactor"
+      ],
+      "description": "Audit B4, B6, R1 and A8 ([the audit](docs/codebase-audit.md)).\n\nLine starts are computed five ways: `parse/source.rs` (CR, CRLF and LF), `lines.rs` (LF only), `parse/frontmatter.rs`, `parse/edit.rs` and `load/format.rs`. In a document with CR-only line endings, `Lines` lookups by `Point.line` miss, so diagnostics for names, paths and values point at the wrong place. The CSV reader counts each record's line from the start of the file.\n\n## Change\nOne `LineIndex` (line starts in bytes and code points, CR-aware) owned by the document, used by all five; the CSV reader keeps a running cursor.\n\n## Tests\nA CR-only document's diagnostics point where an LF one's do; a 100,000-row CSV's line numbers are right and it loads in linear time.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "crates/processor/src/lines.rs",
+        "crates/processor/src/parse/source.rs",
+        "crates/processor/src/parse/frontmatter.rs",
+        "crates/processor/src/parse/edit.rs",
+        "crates/processor/src/load/format.rs"
+      ],
+      "created_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-20T06:49:09Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Audit - Nov19",
+          "from": "2026-11-20T06:49:09Z"
+        }
+      ],
+      "sprint": "Audit - Nov19",
+      "number": 284
+    },
+    {
+      "id": "01a1f7b7-53d9-7730-bb1c-8ce72ec4de54",
+      "name": "Processor: a data source parsed once, and a pack file read from the document's own import",
+      "type": "bugfix",
+      "priority": "P2",
+      "labels": [
+        "audit",
+        "processor",
+        "refactor"
+      ],
+      "description": "Audit B3, I6 and A6 ([the audit](docs/codebase-audit.md)).\n\n- A data `from: @scope/pack/file` resolves against the first loaded document of that pack anywhere in the resolve (`crates/processor/src/load/from.rs`), so a document that doesn't import the pack can read its files, and with two versions loaded the load order decides.\n- A data `from` is classified three times with different rules (`validate/data.rs` twice, `load/from.rs`).\n\n## Change\nA `DataSource` enum (file, pack, remote, host) made once from `DataImport.from`; validation checks it and loading only fills it in. A pack source records the importing document's own `ReleaseId` at resolve time.\n\n## Tests\nA document reading `@acme/kit/icons.json` without importing `@acme/kit` gets the diagnostic for an unknown pack; with two versions loaded, each document reads its own; existing data cases pass.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "crates/processor/src/load/from.rs",
+        "crates/processor/src/validate/data.rs",
+        "crates/processor/src/settings.rs"
+      ],
+      "created_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-20T06:49:09Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Audit - Nov19",
+          "from": "2026-11-20T06:49:09Z"
+        }
+      ],
+      "sprint": "Audit - Nov19",
+      "number": 285
+    },
+    {
+      "id": "01a1f7b7-53d9-7730-bb1c-8ce86d95904f",
+      "name": "Processor: examples share the document's parse cache",
+      "type": "bugfix",
+      "priority": "P2",
+      "labels": [
+        "audit",
+        "processor",
+        "performance"
+      ],
+      "description": "Audit B5 ([the audit](docs/codebase-audit.md)). Each rendering example runs with `resolve::Parses::default()` (`crates/processor/src/processor/examples.rs`), so it parses `@compmd/core`, the ambient packs and every import again, and `with_examples` (`processor/edit.rs`) rebuilds every example on every edit, also a block-only edit elsewhere.\n\n## Change\nThe example processors share the processed document's `Parses`; an edit rebuilds only the examples whose block it touched (or all, when it touched imports or frontmatter).\n\n## Tests\nA document with several examples parses core once (a counting `Files`); an edit to a paragraph rebuilds no example; an edit inside one rebuilds that one. A bench in `benches/` if one fits.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "crates/processor/src/processor/examples.rs",
+        "crates/processor/src/processor/edit.rs"
+      ],
+      "created_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-20T06:49:09Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Audit - Nov19",
+          "from": "2026-11-20T06:49:09Z"
+        }
+      ],
+      "sprint": "Audit - Nov19",
+      "number": 286
+    },
+    {
+      "id": "01a1f7b7-53d9-7730-bb1c-8ce95d5a5894",
+      "name": "Processor: small parser fixes from the audit",
+      "type": "bugfix",
+      "priority": "P3",
+      "labels": [
+        "audit",
+        "processor"
+      ],
+      "description": "The small processor findings of [the audit](docs/codebase-audit.md).\n\n- A bare `number` param accepts what `f64::from_str` does: `inf`, `nan`, `1e999` (`crates/processor/src/cel/value.rs`). Check first whether validation refuses them; if not, one number grammar shared with `parse/yaml.rs`, and F009 for the rest (spec §5).\n- CEL escapes accept a sign: `'\\x+1'` (`cel/lexer.rs`); require hex digits first.\n- The inline component's fallback slice can panic if the fork and `matching_bracket` disagree (`parse/inlines.rs`, `parse/line.rs`); use `get` and `checked_sub`.\n- Frontmatter YAML keeps one pointer string per value, quadratic in nesting (`parse/yaml.rs`); refuse nesting past a small depth if the spec decisions task settled a limit.\n- \"Push once\" on a `Vec` in seven places (audit R6); `IndexSet`.\n\n## Tests\nOne unit test per fix.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "crates/processor/src/cel/value.rs",
+        "crates/processor/src/cel/lexer.rs",
+        "crates/processor/src/parse/inlines.rs",
+        "crates/processor/src/parse/line.rs",
+        "crates/processor/src/parse/yaml.rs"
+      ],
+      "created_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-20T06:49:09Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Audit - Nov19",
+          "from": "2026-11-20T06:49:09Z"
+        }
+      ],
+      "sprint": "Audit - Nov19",
+      "number": 287
+    },
+    {
+      "id": "01a1f7b7-53d9-7730-bb1c-8cea83346d14",
+      "name": "Render: names from a document looked up as own keys only",
+      "type": "bugfix",
+      "priority": "P1",
+      "labels": [
+        "audit",
+        "security",
+        "render"
+      ],
+      "description": "Audit S13, S27 and the lookup part of A4 ([the audit](docs/codebase-audit.md)).\n\n`\"constructor\" in ALLOWED` is true (`npm-packages/render/src/html.ts`), so `<constructor x>` passes the raw-HTML allowlist and `allowed.includes` throws on every render. The same shape: `surface.code[node.lang]` (a fence with language `constructor` renders an empty box), `node.name in INPUTS`, `surface.components`, `surface.examples`, the frame protocol's `listeners[message.type]` (`frame.ts`), the wireframe pack's `PARTS`, `DRAW` and attributes, and the blog highlighter's `language in bundledLanguages`.\n\n## Change\n`Map`s, or one small own-key `lookup(table, name)` helper, for every table keyed by a document's or a frame's name; a `typeof data === \"object\"` guard in both port listeners.\n\n## Tests\n`<constructor x>` and `<toString>` render as text; fences in `constructor` and `__proto__` show their code; a frame message of type `constructor` is ignored; the wireframe part `constructor` is an error message.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "npm-packages/render/src/html.ts",
+        "npm-packages/render/src/render.ts",
+        "npm-packages/render/src/markdown-views.ts",
+        "npm-packages/render/src/component-views.ts",
+        "npm-packages/render/src/frame.ts",
+        "compmd-packs/wireframe/src/parse.ts",
+        "compmd-packs/wireframe/src/draw.ts",
+        "npm-packages/blog/src/highlight.ts"
+      ],
+      "created_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-20T06:49:09Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Audit - Nov19",
+          "from": "2026-11-20T06:49:09Z"
+        }
+      ],
+      "sprint": "Audit - Nov19",
+      "number": 288
+    },
+    {
+      "id": "01a1f7b7-53d9-7730-bb1c-8ceb325a4952",
+      "name": "Render: raw HTML tokenized in linear time",
+      "type": "bugfix",
+      "priority": "P1",
+      "labels": [
+        "audit",
+        "security",
+        "render",
+        "performance"
+      ],
+      "description": "Audit S14 ([the audit](docs/codebase-audit.md)). The `TAG` regex in `npm-packages/render/src/html.ts` lets an attribute name hold `<`, and an unclosed `<!--` scans to the end from every start, so a large `html` node (`<details <a <a …` with no `>`, or an unclosed comment) costs quadratic time; `tokensOf` runs several times per render.\n\n## Change\nA hand-written linear scanner for tags and comments, with the same allowlist and attribute rules; tokens cached per `html` node.\n\n## Tests\nThe existing raw-HTML tests; 100 KB of the two inputs above tokenize in linear time (a time bound generous enough for CI, or a step count).",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "npm-packages/render/src/html.ts",
+        "npm-packages/render/src/blocks.ts"
+      ],
+      "created_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-20T06:49:09Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Audit - Nov19",
+          "from": "2026-11-20T06:49:09Z"
+        }
+      ],
+      "sprint": "Audit - Nov19",
+      "number": 289
+    },
+    {
+      "id": "01a1f7b7-53d9-7730-bb1c-8cec27166a43",
+      "name": "Render: an element's tag follows its rendering",
+      "type": "bugfix",
+      "priority": "P1",
+      "labels": [
+        "audit",
+        "render"
+      ],
+      "description": "Audit B2 and A4 ([the audit](docs/codebase-audit.md)). `ElementView` makes its element once (`npm-packages/render/src/markdown-views.ts`), but `renderingOf` can give the same shape another tag later: `[docs][d]` renders as `<span>`, and after `[d]: https://…` is typed the update gives `<span href=\"…\">`, not a link. The same for image references and a `wikiLink` whose answer arrives later.\n\n## Change\nThe rendered tag is part of the node's shape (as `componentPending` does with `pendingTag`), so a changed tag makes a new view; or `update` replaces its element when the tag changes. Prefer whichever lets `shapeOf`, `createView` and `renderingOf` stop disagreeing.\n\n## Tests\nIn the page tests: a reference link becomes a link when its definition is added, and text again when it's removed; an image reference becomes an image; a wiki link whose answer changes.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "npm-packages/render/src/markdown-views.ts",
+        "npm-packages/render/src/render.ts"
+      ],
+      "created_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-20T06:49:09Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Audit - Nov19",
+          "from": "2026-11-20T06:49:09Z"
+        }
+      ],
+      "sprint": "Audit - Nov19",
+      "number": 290
+    },
+    {
+      "id": "01a1f7b7-53d9-7730-bb1c-8ced59da7f2f",
+      "name": "Render: smaller fixes from the audit",
+      "type": "bugfix",
+      "priority": "P2",
+      "labels": [
+        "audit",
+        "render"
+      ],
+      "description": "The smaller renderer findings of [the audit](docs/codebase-audit.md).\n\n- **B10:** a highlighter promise that never settles stops highlighting for the document (`npm-packages/render/src/highlight-queue.ts`); race each job with a timeout and move on.\n- **B11:** a component's later fallback renders with its first render's `pass` (`component-views.ts`); keep the latest. Footnote ids `compmd-fn-N` collide between a page and its examples (`blocks.ts`); scope them per `Blocks`.\n- **S5 hardening:** `safe` in `styles.ts` lets through `url(`, `/*`, quotes and unbalanced parentheses; reject them in the renderer too.\n- **R4:** the `render=both` box and the plain code node built in one place (`component-views.ts`, `example-view.ts`).\n\n## Tests\nOne test per fix.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "npm-packages/render/src/highlight-queue.ts",
+        "npm-packages/render/src/component-views.ts",
+        "npm-packages/render/src/blocks.ts",
+        "npm-packages/render/src/styles.ts",
+        "npm-packages/render/src/example-view.ts"
+      ],
+      "created_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-20T06:49:09Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Audit - Nov19",
+          "from": "2026-11-20T06:49:09Z"
+        }
+      ],
+      "sprint": "Audit - Nov19",
+      "number": 291
+    },
+    {
+      "id": "01a1f7b7-53d9-7730-bb1c-8ceee0da6367",
+      "name": "Processor package: an open document moves only its nodes' origins",
+      "type": "bugfix",
+      "priority": "P1",
+      "labels": [
+        "audit",
+        "processor"
+      ],
+      "description": "Audit B1 ([the audit](docs/codebase-audit.md)). After an edit, `move` in `npm-packages/wasm/src/open-document.ts` walks every object of the nodes after the splice, params' and instances' JSON values included. A value with a key named `origin` (flight records, `{\"origin\": \"SFO\"}`) throws, and the WebAssembly document has already taken the edit, so every later splice is applied to a stale tree. Data can be remote.\n\n## Change\nMove only the `origin` of nodes, walking `children`, `slots`, `instances[].children`, `fallback` and `document` as `@compmd/render`'s `contentOf` does; never `value`.\n\n## Tests\nAn open document whose data has records with an `origin` key, edited above the node that shows them, stays in step with a fresh `process` of the same text.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "npm-packages/wasm/src/open-document.ts"
+      ],
+      "created_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-20T06:49:09Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Audit - Nov19",
+          "from": "2026-11-20T06:49:09Z"
+        }
+      ],
+      "sprint": "Audit - Nov19",
+      "number": 292
+    },
+    {
+      "id": "01a1f7b7-53d9-7730-bb1c-8cef1b9fe239",
+      "name": "Developer Tools: workers ended, their errors heard",
+      "type": "bugfix",
+      "priority": "P2",
+      "labels": [
+        "audit",
+        "devtools"
+      ],
+      "description": "Audit B9, R8, A2's devtools part and the devtools points of S29 and the smaller list ([the audit](docs/codebase-audit.md)).\n\n- `mountDevtools().destroy()` leaves the editor worker and the views worker running (`npm-packages/devtools/src/Devtools.svelte`, `Panes.svelte`).\n- Neither worker client listens for `error`, so a dead worker leaves \"Processing…\" for good (`views.ts`, `session.ts`).\n- A pack whose fetch failed is never asked for again (`processing.ts`, `#asked`).\n- The console drawer's drag leaks listeners on `pointercancel` (`Panes.svelte`).\n- Any link with `:~:text=` is taken as a passage of the open document (`Devtools.svelte`).\n- The plain view loads remote images without asking; give its page a CSP (`views.ts` `plainPage`).\n\n## Change\nOne serial worker client for both, with termination and error handling; the fixes above.\n\n## Tests\nOne test per fix, in the existing devtools tests.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "npm-packages/devtools/src/Devtools.svelte",
+        "npm-packages/devtools/src/Panes.svelte",
+        "npm-packages/devtools/src/views.ts",
+        "npm-packages/devtools/src/session.ts",
+        "npm-packages/devtools/src/processing.ts"
+      ],
+      "created_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-20T06:49:09Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Audit - Nov19",
+          "from": "2026-11-20T06:49:09Z"
+        }
+      ],
+      "sprint": "Audit - Nov19",
+      "number": 293
+    },
+    {
+      "id": "01a1f7b7-53d9-7730-bb1c-8cf0fa68991e",
+      "name": "Host: processing in Rust uses the bundle's policy and ambient packs",
+      "type": "bugfix",
+      "priority": "P1",
+      "labels": [
+        "audit",
+        "security",
+        "host"
+      ],
+      "description": "Audit S19 and A3 ([the audit](docs/codebase-audit.md)). The bundle's manifest carries `policy` and `ambient` (`crates/host/src/manifest.rs`), but nothing gives them to the processor: the Tauri plugin's example, its README and `docs/tauri-plugin.md` call `resolve((), packs, &Ambient::default())`, the default policy. So `deny`, `imports: \"listed\"` and `refused` are not enforced when an app processes in Rust, while the page's path does apply them (`docs/hosting.md` decision 7).\n\n## Change\nUnder the `processor` feature, `HostPacks` (or `Bundle`) gives a typed `Policy` and `Ambient` from the manifest; the example, the README and the design use `resolve_with` with them.\n\n## Tests\nA bundle whose config denies a pack: processing in Rust gives the same F026 the page's path gives; an ambient pack's component resolves without an import.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "crates/host/src/packs.rs",
+        "crates/host/src/manifest.rs",
+        "crates/tauri/src/compmd.rs",
+        "crates/tauri/README.md",
+        "crates/tauri/examples/tauri-app/src-tauri/src/document.rs",
+        "docs/tauri-plugin.md"
+      ],
+      "created_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-20T06:49:09Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Audit - Nov19",
+          "from": "2026-11-20T06:49:09Z"
+        }
+      ],
+      "sprint": "Audit - Nov19",
+      "number": 294
+    },
+    {
+      "id": "01a1f7b7-53d9-7730-bb1c-8cf1503ca5c4",
+      "name": "Host: a stored release written whole, and kept only once verified",
+      "type": "bugfix",
+      "priority": "P2",
+      "labels": [
+        "audit",
+        "security",
+        "host"
+      ],
+      "description": "Audit S20 and A9's host part ([the audit](docs/codebase-audit.md)).\n\n- Nothing in Rust checks an integrity, and `HostPacks` reports stored releases as intact; `FolderStore::keep`'s contract (\"its files already checked\") is a comment (`crates/host/src/folder_store.rs`).\n- `keep` removes the folder, then writes file by file, then `release.json`; a failure halfway leaves files that `file()` still serves, with an immutable cache header.\n\n## Change\n`keep` takes a `VerifiedRelease` that only the tarball checker builds (the sha512 check where `docs/hosting.md` H1 plans it; a hashing crate is a new dependency, so check it against `deny.toml`). It writes into a sibling folder and renames it into place; `file()` serves only a release with `release.json`.\n\n## Tests\nA keep that fails halfway leaves the old release served, or none; a folder without `release.json` serves nothing; a release whose files don't match isn't kept.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "crates/host/src/folder_store.rs",
+        "crates/host/src/store.rs",
+        "crates/host/src/packs.rs"
+      ],
+      "created_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-20T06:49:09Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Audit - Nov19",
+          "from": "2026-11-20T06:49:09Z"
+        }
+      ],
+      "sprint": "Audit - Nov19",
+      "number": 295
+    },
+    {
+      "id": "01a1f7b7-53d9-7730-bb1c-8cf26813ad90",
+      "name": "Host: Rust and JavaScript serve a bundle the same way",
+      "type": "bugfix",
+      "priority": "P2",
+      "labels": [
+        "audit",
+        "host",
+        "refactor"
+      ],
+      "description": "The host findings B12, B13, I2, R1, R3 and S4-host of [the audit](docs/codebase-audit.md).\n\n- Request paths are never percent-decoded, so `dist/my chart.js` is a 404 in both `crates/host/src/respond.rs` and `npm-packages/host-js/src/respond.ts`; decode each segment in `route` before it becomes a `FilePath`, so decoded `..` is still refused.\n- `folderBundle` (`npm-packages/host-js/src/node.ts`) checks neither `format` nor the hash's shape; read the manifest through the WebAssembly binding's `Manifest::parse`.\n- `respond` (JS) caches a failed WebAssembly load for good; clear it on failure.\n- `embedded()` drops why a bundle is unusable (`crates/tauri/src/lib.rs`); panic with the error, as `init`'s other build mistakes do.\n- The plugin's no-bundle refusal lacks the contract's headers; one shared refusal in `compmd-host`.\n- \"Bundle first, then the store\" is written three times; one `pack_file`.\n- `Files` is public and reads an unchecked path; `pub(crate)`.\n- `Place` has two shapes in JS; one, the processor's.\n\n## Tests\nCases in `crates/host/fixtures/respond/cases.json` for encoded names and encoded `..`, which both implementations run.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "crates/host/src/route.rs",
+        "crates/host/src/respond.rs",
+        "crates/host/src/files.rs",
+        "npm-packages/host-js/src/respond.ts",
+        "npm-packages/host-js/src/node.ts",
+        "npm-packages/host-js/src/lib.rs",
+        "crates/tauri/src/lib.rs",
+        "crates/tauri/src/compmd.rs"
+      ],
+      "created_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-20T06:49:09Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Audit - Nov19",
+          "from": "2026-11-20T06:49:09Z"
+        }
+      ],
+      "sprint": "Audit - Nov19",
+      "number": 296
+    },
+    {
+      "id": "01a1f7b7-53d9-7730-bb1c-8cf35cff6609",
+      "name": "Vite: a pack's files confined to the pack, read by one module",
+      "type": "bugfix",
+      "priority": "P1",
+      "labels": [
+        "audit",
+        "security",
+        "packs",
+        "refactor"
+      ],
+      "description": "Audit S21 (Vite part), S22, I4, I5, R8, B19 and A10 ([the audit](docs/codebase-audit.md)).\n\n- A pack document's `from` with backslashes passes the `../` test and leaves the pack on Windows (`npm-packages/vite/src/packs.ts`).\n- A pack's `files` globs and `name` aren't confined when a bundle is written; a folder pack without `files` publishes its whole folder (`bundle.ts`); an installed package's own `name` isn't checked against its dependency name.\n- Three name patterns for a scoped pack (`registry.ts`, `vite/src/config.ts` twice); deny ranges read two ways.\n- Reading a pack folder is written twice with two models (`vite/src/packs.ts`, `pack/src/pack.ts`), and the publish check reads `files` entries as literal paths (`pack/src/check.ts`).\n\n## Change\nOne pack-folder module (in `@compmd/vite`, used by `@compmd/pack`): manifest and name pattern, document path, frontmatter, relative imports, confinement (no `\\`, no absolute or drive prefix, resolved path inside the pack), and the published files with globs. A folder pack without `files` publishes what its documents reach. Deny ranges read as the processor reads them.\n\n## Tests\nA `from` with backslashes is refused; a glob of `../**` publishes nothing outside; an installed package whose manifest names another pack is refused; the publish check accepts `dist/*.js`.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "npm-packages/vite/src/packs.ts",
+        "npm-packages/vite/src/bundle.ts",
+        "npm-packages/vite/src/config.ts",
+        "npm-packages/pack/src/pack.ts",
+        "npm-packages/pack/src/check.ts",
+        "npm-packages/registry/src/registry.ts"
+      ],
+      "created_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-20T06:49:09Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Audit - Nov19",
+          "from": "2026-11-20T06:49:09Z"
+        }
+      ],
+      "sprint": "Audit - Nov19",
+      "number": 297
+    },
+    {
+      "id": "01a1f7b7-53d9-7730-bb1c-8cf4db009ce6",
+      "name": "Pack and Vite: rebuilds queued, and their errors logged",
+      "type": "bugfix",
+      "priority": "P2",
+      "labels": [
+        "audit",
+        "packs"
+      ],
+      "description": "Audit B14 and B20 ([the audit](docs/codebase-audit.md)).\n\n- `compmd-pack dev` rebuilds every module at once on each save, with `void build(...)`: the first syntax error ends the process, and overlapping builds write the same `dist/` files and `package.json` (`npm-packages/pack/src/dev.ts`).\n- The Vite plugin's watcher calls `load()` with no serialization, and `writePacks` starts with `rm`, so two quick saves interleave (`npm-packages/vite/src/plugin.ts`); it handles `change` but not `add` or `unlink`.\n\n## Change\nOne serialized, debounced rebuild that logs failures; the plugin chains loads and runs only the latest; `add` and `unlink` handled.\n\n## Tests\nA save with a syntax error logs it and the next good save rebuilds; two quick saves give one consistent bundle.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "npm-packages/pack/src/dev.ts",
+        "npm-packages/vite/src/plugin.ts"
+      ],
+      "created_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-20T06:49:09Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Audit - Nov19",
+          "from": "2026-11-20T06:49:09Z"
+        }
+      ],
+      "sprint": "Audit - Nov19",
+      "number": 298
+    },
+    {
+      "id": "01a1f7b7-53d9-7730-bb1c-8cf5e23cbd2f",
+      "name": "Blog and registry proxy: servers that survive bad requests, and a build that deletes only its output",
+      "type": "bugfix",
+      "priority": "P1",
+      "labels": [
+        "audit",
+        "security",
+        "blog"
+      ],
+      "description": "Audit S23, S24, S29 (blog parts), R9, R10 and A11 ([the audit](docs/codebase-audit.md)).\n\n- `GET /blog/%zz` throws in `fileFor`'s `decodeURIComponent` inside a `.then` success callback, an unhandled rejection that ends `cblo dev`; `GET //` throws in the listener (`npm-packages/blog/src/serve.ts`). The registry's `toNodeListener` does the same on `Host: [` or `TRACE`, and on a stream error (`npm-packages/registry/src/node.ts`).\n- `cblo build --out .` deletes the blog after building it (`writeSite`); `out` resolves against the working directory.\n- `cblo build` publishes a draft's assets and dot files (`build.ts`); the dev server answers any `Host`, and sends no `nosniff`.\n- Giscus values and the page's CSS go into `<script>` and `<style>` without end-tag escaping (`pages.ts`, `build.ts`).\n\n## Change\nOne Node static responder for an in-memory or folder site (MIME table, `nosniff`, Host check, safe decoding, 400 on bad input), used by the blog and the website's `build/static.ts`; one folder walker that skips dot files. `out` resolved against the blog and refused when it is the blog, holds it, or is inside `posts/`. The same `<` escape as `liveOf` in both inline places.\n\n## Tests\nEach bad request gets a 400 and the server keeps serving; `--out .` and `--out posts` are refused; a draft's folder isn't written.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "npm-packages/blog/src/serve.ts",
+        "npm-packages/blog/src/build.ts",
+        "npm-packages/blog/src/pages.ts",
+        "npm-packages/registry/src/node.ts",
+        "website/build/static.ts"
+      ],
+      "created_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-20T06:49:09Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Audit - Nov19",
+          "from": "2026-11-20T06:49:09Z"
+        }
+      ],
+      "sprint": "Audit - Nov19",
+      "number": 299
+    },
+    {
+      "id": "01a1f7b7-53d9-7730-bb1c-8cf60c53c674",
+      "name": "Blog: a build that names what's wrong, and outputs that don't collide",
+      "type": "bugfix",
+      "priority": "P2",
+      "labels": [
+        "audit",
+        "blog"
+      ],
+      "description": "The blog's bugs in [the audit](docs/codebase-audit.md): B15, B16, B17, B18, I3 and the small ones.\n\n- The dev client cache keeps a failed build and never follows a changed config or pack (`npm-packages/blog/src/build.ts`).\n- Output paths collide silently: tags `C` and `C++`, a tag that slugs to `\"\"`, a post named `tags`, an asset named `feed.xml` (`pages.ts`, `build.ts`, `slug.ts`); post file names aren't validated.\n- `2026-13-45` or an invalid `lang` crash the build with a stack, not a `BlogError` naming the post (`posts.ts`).\n- Feed content has URLs rebased for the post's page, not the feed (`feeds.ts`); every file under `posts/` is read as UTF-8, and a live post inlines its folder.\n- The blog finds its configuration differently from the Vite plugin (`live.ts` against `vite/src/app.ts`).\n- Dates in UTC in `cblo new` and `create-blog`; `npm create @compmd/blog .` writes `\"name\": \".\"`; `--port abc`; `/blog` without the slash.\n\n## Change\nA collision-checked output map that throws a `BlogError` naming both owners; the rest as listed.\n\n## Tests\nOne test per fix in the blog's tests.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "npm-packages/blog/src/build.ts",
+        "npm-packages/blog/src/pages.ts",
+        "npm-packages/blog/src/posts.ts",
+        "npm-packages/blog/src/feeds.ts",
+        "npm-packages/blog/src/live.ts",
+        "npm-packages/blog/src/cli.ts",
+        "npm-packages/create-blog/src/create.ts",
+        "npm-packages/create-blog/src/cli.ts"
+      ],
+      "created_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-20T06:49:09Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Audit - Nov19",
+          "from": "2026-11-20T06:49:09Z"
+        }
+      ],
+      "sprint": "Audit - Nov19",
+      "number": 300
+    },
+    {
+      "id": "01a1f7b7-53d9-7730-bb1c-8cf7fbc6bc15",
+      "name": "Release: the crates script refuses what it doesn't understand",
+      "type": "infra",
+      "priority": "P1",
+      "labels": [
+        "audit",
+        "release"
+      ],
+      "description": "Audit S26 and the crates parts of B25 ([the audit](docs/codebase-audit.md)), in `.github/scripts/publish-crates.sh`, with the maintainer, since it publishes.\n\n- Any argument other than exactly `--dry-run` publishes for real; reject unknown arguments with a usage message.\n- Any crates.io API failure counts as \"not published\" (`curl -sf`); skip on 200, publish on 404, stop on anything else.\n- The dry run lists files and builds nothing; package the workspace crates without `--list`, and have the Tauri check package `tauri-plugin-compmd` where WebKitGTK is installed.\n\n## Tests\nRun the dry run in `cargo make linux` with a mistyped flag (refused) and the right one.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        ".github/scripts/publish-crates.sh",
+        ".github/workflows/tauri.yml",
+        "RELEASING.md"
+      ],
+      "created_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-20T06:49:09Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Audit - Nov19",
+          "from": "2026-11-20T06:49:09Z"
+        }
+      ],
+      "sprint": "Audit - Nov19",
+      "with": "user",
+      "number": 301
+    },
+    {
+      "id": "01a1f7b7-53d9-7730-bb1c-8cf8bc51ced8",
+      "name": "Release: npm is staged by a job that only stages",
+      "type": "infra",
+      "priority": "P1",
+      "labels": [
+        "audit",
+        "security",
+        "release"
+      ],
+      "description": "Audit S25, the npm part of B25, R12 and I7 ([the audit](docs/codebase-audit.md)). A change to the release workflows, made with the maintainer.\n\n- The release job holds `id-token: write` while it installs and runs every dependency's build scripts and tests (`.github/workflows/release.yml`); split it into a build-check-pack job without the token that uploads the tarballs, and a small job with it that only downloads them and stages; no caches on the staging path. The same for the two pack release workflows.\n- \"Already on npm\" is decided by `npm view`'s exit status; compare its output with the version.\n- The package list of a release is written six times; derive it once.\n- `release-mermaid.yml` and `release-wireframe.yml` are the same 50 lines; one reusable workflow with a pack input, using `./.github/actions/webkit`.\n\n## Done when\nA release's dry run on a test tag (or `workflow_dispatch`) stages nothing it shouldn't, and RELEASING.md says how the jobs are split.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        ".github/workflows/release.yml",
+        ".github/workflows/release-mermaid.yml",
+        ".github/workflows/release-wireframe.yml",
+        "RELEASING.md"
+      ],
+      "created_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-20T06:49:09Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Audit - Nov19",
+          "from": "2026-11-20T06:49:09Z"
+        }
+      ],
+      "sprint": "Audit - Nov19",
+      "with": "user",
+      "number": 302
+    },
+    {
+      "id": "01a1f7b7-53d9-7730-bb1c-8cf9b9e75a80",
+      "name": "CI: the site checked before merge, and deployed for what it ships",
+      "type": "infra",
+      "priority": "P2",
+      "labels": [
+        "audit",
+        "website",
+        "release"
+      ],
+      "description": "Audit B21, B22, B23 and I8 ([the audit](docs/codebase-audit.md)). Workflow changes, made with the maintainer.\n\n- The Pages path filter omits `npm-packages/sandbox`, `devtools`, `vite`, `registry`, `crates/pack-types`, `spec/compmd-registry-v1.md` and `conformance/`; the Tauri filter omits `wasm`, `host-js`, `pack`, the fork, `Cargo.lock` and the toolchain.\n- The site check never runs before a merge; add `pull_request` to `pages.yml` with deploy only off pull requests.\n- The first released spec tag will probably meet the `github-pages` environment's branch rule, and a tag run builds the whole site from the tag's commit; decide the rule and whether a tag run builds from `main`.\n- Three documents say the site deploys on a release tag; it deploys on `spec-v*` only, so the install line can name a version before it is installable. Decide which is meant and make the docs say it.\n\n## Done when\nA pull request touching the sandbox runs the site check; docs/releases.md, website/docs/design.md and the workflow agree.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        ".github/workflows/pages.yml",
+        ".github/workflows/tauri.yml",
+        "docs/releases.md",
+        "website/docs/design.md"
+      ],
+      "created_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-20T06:49:09Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Audit - Nov19",
+          "from": "2026-11-20T06:49:09Z"
+        }
+      ],
+      "sprint": "Audit - Nov19",
+      "with": "user",
+      "number": 303
+    },
+    {
+      "id": "01a1f7b7-53d9-7730-bb1c-8cfa3f572c0a",
+      "name": "Build checks: deny for the Tauri plugin, locked builds, licences in crates, tools type-checked",
+      "type": "infra",
+      "priority": "P2",
+      "labels": [
+        "audit",
+        "security",
+        "release"
+      ],
+      "description": "Audit S30, B24 and B27 ([the audit](docs/codebase-audit.md)).\n\n- `cargo deny` checks the root workspace only (`Makefile.toml`); add it for `crates/tauri` with its own allow-list.\n- No cargo command uses `--locked`; add it to clippy, coverage, docs and the WebAssembly builds (`Makefile.toml`, `npm-packages/wasm/package.json`, `npm-packages/host-js/package.json`).\n- The published crates carry no licence text; a `LICENSE` (MIT, from `LICENSE-CODE`) in each crate folder, and in the Tauri crate's `include`.\n- `tools/` is never type-checked; `tsc --noEmit` over it in the `scripts` task.\n\n## Done when\n`cargo make ci` and `cargo make tauri-check` pass with the new checks, and `cargo package --list` shows the licence for each crate.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "Makefile.toml",
+        "crates/processor/LICENSE",
+        "crates/host/LICENSE",
+        "crates/pack-types/LICENSE",
+        "crates/tauri/LICENSE",
+        "crates/tauri/Cargo.toml",
+        "npm-packages/wasm/package.json",
+        "npm-packages/host-js/package.json"
+      ],
+      "created_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-20T06:49:09Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Audit - Nov19",
+          "from": "2026-11-20T06:49:09Z"
+        }
+      ],
+      "sprint": "Audit - Nov19",
+      "number": 304
+    },
+    {
+      "id": "01a1f7b7-53d9-7730-bb1c-8cfb91f8be9f",
+      "name": "spec-revision: a cut that is whole or not at all",
+      "type": "bugfix",
+      "priority": "P3",
+      "labels": [
+        "audit",
+        "spec"
+      ],
+      "description": "Audit B26 ([the audit](docs/codebase-audit.md)). `cut` writes the spec, the companion and the changelog, then commits, then tags (`tools/spec-revision/spec-revision.ts`): a failed commit leaves the files rewritten (the next cut then finds nothing under Unreleased), and an existing tag leaves the commit untagged.\n\n## Change\nCheck the tag before writing; restore the files when the commit fails. Also: say when the current revision's tag is missing instead of treating the companion as unchanged; the date from the local day, not UTC; CRLF in `unreleasedOf`; and a way (or RELEASING.md's step) to write a release's header for `spec-v1.0`.\n\n## Tests\nIn `spec-revision.test.ts`: a commit that fails leaves the three files as they were; an existing tag stops the cut before anything is written.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "tools/spec-revision/spec-revision.ts",
+        "tools/spec-revision/spec-revision.test.ts",
+        "RELEASING.md"
+      ],
+      "created_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-20T06:49:09Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Audit - Nov19",
+          "from": "2026-11-20T06:49:09Z"
+        }
+      ],
+      "sprint": "Audit - Nov19",
+      "number": 305
+    },
+    {
+      "id": "01a1f7b7-53d9-7730-bb1c-8cfcc9e99971",
+      "name": "Docs and manifests brought in line with the code",
+      "type": "docs",
+      "priority": "P3",
+      "labels": [
+        "audit",
+        "refactor"
+      ],
+      "description": "The drift listed in [the audit](docs/codebase-audit.md) I2, I3 (docs part), I7 and the smaller list, except what other audit tasks change.\n\n- `docs/code/rust.md` against the crates: `[workspace.dependencies]` (one `wasm-bindgen`), one public type per file in `crates/host/src/manifest.rs`, `store.rs` and `crates/pack-types/src/integrity.rs`; for `tracing` and `proptest`, change the code or the rule, as the maintainer prefers.\n- `rust-version` in every crate; `include` lists so `compmd` doesn't ship `benches/` and `tests/`.\n- `docs/ci.md`, `website/README.md`, `docs/hosting.md` (the manifest's fields, what `compmd-host` builds), `docs/tauri-plugin.md` (what isn't built yet), `docs/code/svelte.md` (the devtools' stylesheet in a shadow root), the WebAssembly binding's docs of `sources`.\n- One error-to-text helper per package instead of about twenty `messageOf`s (R11).\n\n## Done when\nEach document says what the code does; `cargo make ci` passes.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "docs/code/rust.md",
+        "Cargo.toml",
+        "crates/host/src/manifest.rs",
+        "docs/ci.md",
+        "docs/hosting.md",
+        "docs/tauri-plugin.md",
+        "website/README.md",
+        "npm-packages/wasm/src/lib.rs"
+      ],
+      "created_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-20T06:49:09Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Audit - Nov19",
+          "from": "2026-11-20T06:49:09Z"
+        }
+      ],
+      "sprint": "Audit - Nov19",
+      "number": 306
+    },
+    {
+      "id": "01a1f7b7-53d9-7730-bb1c-8cfd01ad6d04",
+      "name": "Shared TypeScript and lint configs, and one source for tool versions",
+      "type": "refactor",
+      "priority": "P3",
+      "labels": [
+        "audit",
+        "refactor"
+      ],
+      "description": "Audit R12 (configs), I8's toolchain versions and A12's cheaper half ([the audit](docs/codebase-audit.md)).\n\n- `eslint.config.js` is the same in every package but its `ignores`; `tsconfig.json` and `tsconfig.build.json` repeat the same options. A root `tsconfig.base.json` and a shared eslint factory taking `ignores`, as `@compmd/pack`'s tsconfig already does for packs; `compmd-packs/*` lint with eslint too.\n- pnpm, Node and the cargo tools' versions are written in about five places each; one source the setup action and the Linux container read. Changing `.github/actions/setup` is a CI change: make that part with the maintainer.\n- A test that sends one full request fixture through the WebAssembly binding and checks it against `npm-packages/wasm/src/index.ts`'s types, so the hand-written types can't drift unnoticed. A generator such as `ts-rs` is a new dependency and needs the maintainer's go.\n\n## Done when\nEvery package lints and type-checks as before from the shared configs; `cargo make ci` passes.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "tsconfig.base.json",
+        "eslint.config.js",
+        "npm-packages/wasm/src/index.test.ts",
+        "tools/linux-ci/Dockerfile"
+      ],
+      "created_at": "2026-11-20T06:49:09Z",
+      "updated_at": "2026-11-20T06:49:09Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Audit - Nov19",
+          "from": "2026-11-20T06:49:09Z"
+        }
+      ],
+      "sprint": "Audit - Nov19",
+      "number": 307
     }
   ]
 }
