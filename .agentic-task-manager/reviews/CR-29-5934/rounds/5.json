@@ -1,0 +1,62 @@
+{
+  "number": 5,
+  "kind": {
+    "kind": "range",
+    "base": "f6db8f6025a7e1e631a36f4e93d134a0e2b71c2a",
+    "head": "5ac3289b2add59130b5eab5b06c9a2308e4786fe"
+  },
+  "files": [
+    {
+      "path": "docs/sizing-components.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/wrapping-an-npm-package.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/writing-a-pack.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/README.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/package.json",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/results-sizing.json",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/screenshots/sizing-chrome.png",
+      "status": "added",
+      "binary": true
+    },
+    {
+      "path": "spikes/wrap-npm-package/screenshots/sizing-webkit.png",
+      "status": "added",
+      "binary": true
+    },
+    {
+      "path": "spikes/wrap-npm-package/sizing.ts",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "spikes/wrap-npm-package/sizing/page.html",
+      "status": "added",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-20T20:20:33Z"
+}

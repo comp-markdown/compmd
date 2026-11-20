@@ -7,17 +7,18 @@ tasks = ["CMD-8"]
 author = "claude:79612601"
 reviewers = []
 created = 2026-11-20T17:20:26Z
-updated = 2026-11-20T19:56:57Z
+updated = 2026-11-20T20:20:33Z
 +++
 
-Round 4: a second design, [sizing a component in its box](docs/sizing-components.md), from challenging "fills the width" in conversation.
+Round 5: [sizing a component in its box](docs/sizing-components.md) reworked, as asked in conversation: no open gaps, positioning and cover and stretch in scope, and a prototype behind it.
 
-What to check in it:
+What to check:
 
-- **Decisions 1 and 2:** a component fits its box (its width, and its height when the box has one, aspect ratio kept and centred, or filled when it has none), and the box a component sees is exactly the use's box: the sandbox applies the box's params twice today, which is the scroll bars.
-- **Decision 3, a spec change:** a signature fence takes box defaults (`{width=12rem max-width=100%}`), as a host-language definition fence already does; F036 becomes "both fences style the box".
-- **Decision 4, a spec change:** the common params' names, `lang` and `dir` are F013 in a signature, as `class` and `id` are.
-- **Decision 5:** "sizes include padding and border". **Decision 6:** no cover, stretch or placement yet.
-- **Conformance cases:** every case read; three change (`definitions/fence-params`, `definitions/signature-types`, `resolve/params-differ-in-dash-F013`), four new ones, and the tree schema's signature fence gains `params`.
-- **The spike:** each demo has the sizing cases with magenta box borders; `try.ts` measures each drawing against its box and reports frames that scroll. Its README has findings 11 to 13.
-- Writing a pack's decision 8 now points to the new design; the wrapping design's mapping and G8 follow it.
+- **Decision 1:** `object-fit` (`contain`, `cover`, `fill`) and `object-position` (`start`, `center`, `end`, block then inline) as common params, written without a breakpoint, reaching the component as `context.fit`. CSS's names, by the spec's rule; `fill` here is CSS's stretch, beside the flag `fill`.
+- **Decision 2, the rule that closes the gaps:** a use is laid out the same framed as in the page. Grid rows, rows, inline uses and uses with no size need no rule of their own: CSS decides them in the page, and the frame must match.
+- **Decision 3:** a component's natural size is CSS's (300 wide with only a ratio, 300 by 150 with none); a drawing sized in script contains its size.
+- **Decisions 4 to 6** are round 4's 3 to 5: box defaults on the signature fence (now also where a pack sets `object-fit`), the common params' names as F013, padding and border.
+- **The mechanism,** and **the prototype** (`spikes/wrap-npm-package/sizing/`, `pnpm --dir spikes/wrap-npm-package sizing`): 28 uses drawn in the page and framed are the same in Chrome and WebKit, on screen and off it, and the grid rows again after they shrink. The spike's README says what it took (finding 14).
+- **What the prototype doesn't run** is listed, each a browser test of the sandbox's task: right-to-left, `scroll`, an `img` or `canvas` drawing, and a script-sized drawing that doesn't contain its size.
+- **Conformance:** two more new cases, for `object-fit` and `object-position`; the rest as round 4.
+- **What changes** now names `@compmd/render` (the box a grid, `context.fit`) and the sandbox protocol's version 3.

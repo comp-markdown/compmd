@@ -1,0 +1,4290 @@
+diff --git a/docs/sizing-components.md b/docs/sizing-components.md
+index 34d3360..ae7c658 100644
+--- a/docs/sizing-components.md
++++ b/docs/sizing-components.md
+@@ -1,47 +1,73 @@
+ # Sizing a component in its box
+ 
+-**Status: proposed (2026-11-20, CMD-8, CR-29).** How an author sizes a host-language component, whatever library draws
+-it, and what the spec, the sandbox and `@compmd/pack` change for it. It comes from [the spike of wrapping an npm
+-package](../spikes/wrap-npm-package/README.md), whose QR codes were the column's width with no way the author could
+-see to make them smaller, and whose frames scrolled once a use had a `width` and a border. It replaces decision 8 of
+-[writing a pack](writing-a-pack.md) as first written there ("fills its box's width"), which a box with a height broke.
+-
+-**Terms.** A use's **box** is its outer box, the component's `target` (spec §7.4, §9.2), which the common params size:
+-`width`, `height`, `min-width`, `max-width`, `aspect-ratio`, `fill`. Its **inside** is the box less its border and
+-padding. A drawing's **aspect ratio** is its own when it has one (a QR code is square, an SVG has its `viewBox`); a
+-chart or a map has none. **Fit** (CSS's `object-fit: contain`): as large as the inside allows with the aspect ratio
+-kept, centred. **Fill**: the whole inside, both ways.
++**Status: proposed (2026-11-20, CMD-8, CR-29).** How an author sizes and places what a host-language component draws,
++whatever library draws it, and what the spec, the renderer, the sandbox and `@compmd/pack` change for it. It comes
++from [the spike of wrapping an npm package](../spikes/wrap-npm-package/README.md), whose QR codes were the column's
++width with no way an author could see to make them smaller, and whose frames scrolled once a use had a `width` and a
++border. It replaces decision 8 of [writing a pack](writing-a-pack.md) as first written ("fills its box's width").
++
++**Terms.** A use's **box** is its outer box (spec §7.4, §9.2), which the common params size: `width`, `height`,
++`min-width`, `max-width`, `aspect-ratio`, `fill`, or the layout around it (a grid row that stretches it). Its
++**inside** is the box less its border and padding. A drawing's **aspect ratio** is its own when it has one (a QR code
++is square, an SVG has its `viewBox`); a chart or a map has none. A component's **natural size** is the size it has
++when its box gives it none, as CSS sizes content before it knows its container: a percentage of an unknown size
++counts as `auto`. A use is **framed** when the sandbox draws it in a frame of its own (host mode), **in the page** when
++its component runs in the document that lays it out (a trusted component, or every component of a page drawn in one
++frame).
+ 
+ ## Decisions
+ 
+-1. **A component fits its box** (spec §7.4, a new rule, SHOULD for components). It takes the inside's width. It takes
+-   the inside's height too when the box has one (from `height`, `aspect-ratio`, `fill`, or a grid row that stretches
+-   it); otherwise the box is as tall as what it draws. A drawing with an aspect ratio of its own fits the inside; one
+-   without fills it. So an author sizes every component the same way, with the common params, and a component has no
+-   size params of its own (`size`, `width` or `height` in pixels).
+-2. **The box a component sees is exactly the use's box** (spec §7.4, MUST for processors): its params applied once,
+-   `target`'s inside the box's inside. A processor that draws a use somewhere else (the sandbox's frame for each use)
+-   gives it a `target` the box's inside's size and none of the box's params again. Today the sandbox applies them twice
+-   (*The sandbox*, below), which is the frames' scroll bars.
+-3. **A signature fence may give the component's box its defaults,** as a host-language definition fence already may
+-   (spec §7, *The component's box*): ```` ```compmd component=qr-code signature {width=12rem max-width=100%} ````, the caller's params over
+-   them as for a definition's fence (§12.3). A pack's component is a built module with no definition fence, so its
+-   signature fence is the only place for them, and a QR code without a `width` is then 12rem, not the column. It takes
+-   what a host-language definition fence takes: the common params, `class`, `id`, `lang` and `dir`; any other key is
+-   F008. **F036 changes meaning:** today "a param list on a signature fence"; now "a component whose box both its
+-   definition fence and its signature fence style", reported at the signature fence's `{`, the definition fence's list
+-   kept.
+-4. **The common params' names are the processor's, as `class` and `id` are:** a signature that declares one, or `lang`
+-   or `dir`, is F013 (§5.1). The processor applies them to the box and never passes them on (§7.4), so such a param
+-   could never reach the component: the spike's layerchart `height` was dropped without a word. `lang` and `dir`,
+-   which §5.1 already calls the processor's, join `class` and `id` in F013.
+-5. **Sizes include padding and border** (§9.2): "`width`, `max-width` and `aspect-ratio` measure the block with its
++1. **A component fits its box, and `object-fit` and `object-position` say how** (spec §7.4 and §9.2; two new common
++   params). The component takes its box's inside: the width, and the height when the box has one; a box with no
++   height is as tall as the component's natural height at that width.
++   - **`object-fit`**, for a drawing with an aspect ratio of its own: `contain` (the default: as large as fits, the
++     ratio kept), `cover` (the box filled, the ratio kept, the rest cropped) or `fill` (stretched to the box). CSS's
++     values and meanings; its `none` and `scale-down` are left out, since a drawing here has no size in pixels to
++     keep. A drawing with no aspect ratio (a chart) fills its box whatever the value. `fill` is CSS's name for
++     stretching, beside the flag `fill` (the box takes the space left over, §9.2): the two are different params.
++   - **`object-position`**, where a drawing smaller or larger than the box sits in it: one or two of `start`,
++     `center`, `end`, the block position then the inline one, as `padding` orders its two values; one value is
++     both. `center` by default. Logical, as every direction in the spec: `object-position="center start"` is the
++     left in a left-to-right document and the right in a right-to-left one.
++   - **Both are written without a breakpoint** (F009 with one, as `display=contents`): a component gets them as
++     values, which a breakpoint, CSS's to resolve, isn't. They may be expressions.
++   - **The component gets them** in the host contract, as it gets `scheme`: `context.fit`, `{ mode: "contain" |
++     "cover" | "fill", x: 0 | 0.5 | 1, y: 0 | 0.5 | 1 }`, the position resolved by the processor to fractions of the
++     free space from the left and the top, the direction counted in. When they change, the processor sets `fit` and
++     calls `update`. A component whose content flows (text, controls) ignores it.
++   - **A component has no size or placement params of its own** (`size`, `width` or `height` in pixels, `align`).
++2. **Framing is invisible to layout** (spec §7.4, MUST for a processor). A use is laid out the same framed as in the
++   page: its box the same size, the component's `target` the box's inside, the box's params applied once, and what it
++   draws the same size in the same place. This is the one rule for every case that was open: a use in a grid row, in a
++   row, inline, with or without a size. None needs a rule of its own, since CSS decides it in the page and the frame
++   must match. A frame never scrolls unless its box has `scroll` (§9.2): content larger than a box with a height is
++   clipped, as the box's edge is the frame's. *The mechanism*, below, is how the sandbox does it; the prototype
++   compares 28 uses drawn both ways, and they are the same in Chrome and WebKit.
++3. **A component's natural size is CSS's** (spec §7.4):
++   - a drawing with an aspect ratio takes the width it is given and its height from the ratio; where nothing gives
++     it a width either (in a row, inline), it is CSS's 300 pixels wide;
++   - a drawing with no aspect ratio is CSS's 300 by 150 pixels, as an `iframe` or a `canvas` is;
++   - content that flows is as tall as its lines.
++
++   **A drawing sized in script from its box contains its size** (CSS `contain: size`, with `contain-intrinsic-size`):
++   what it drew last then never counts as its natural size. Without it, a box that was stretched would never shrink
++   again, since the drawing it holds is as tall as the box was.
++4. **A signature fence may give the component's box its defaults,** as a host-language definition fence already may
++   (spec §7, *The component's box*): ```` ```compmd component=qr-code signature {width=12rem max-width=100%} ````,
++   the caller's params over them as for a definition's fence (§12.3). A pack's component is a built module with no
++   definition fence, so its signature fence is the only place for them. It is where a pack says what 300 pixels
++   can't: a QR code is 12rem, a chart `{aspect-ratio=16/9}`, a photo `{object-fit=cover}`. It takes what a
++   host-language definition fence takes: the common params, `class`, `id`, `lang` and `dir`; any other key is F008.
++   A processor that doesn't run the component still knows its box, so a use holds its place while its pack loads.
++   **F036 changes meaning:** today "a param list on a signature fence"; now "a component whose box both its
++   definition fence and its signature fence style", reported at the signature fence's `{`, the definition fence's
++   list kept.
++5. **The common params' names are the processor's, as `class` and `id` are:** a signature that declares one
++   (`width`, `height`, `object-fit`, …), or `lang` or `dir`, is F013 (§5.1). The processor applies them to the box
++   and never passes them on (§7.4), so such a param could never reach the component: the spike's layerchart `height`
++   was dropped without a word.
++6. **Sizes include padding and border** (§9.2): "`width`, `max-width` and `aspect-ratio` measure the block with its
+    padding and border", as the renderer does already (`box-sizing: border-box`). The spec says padding only.
+-6. **Not now: covering, stretching and placing.** Filling the inside and cropping (`object-fit: cover`), stretching
+-   out of the aspect ratio (`fill`), and placing a smaller drawing at a start or end (`object-position`) aren't in the
+-   common params. Nothing in [the first components](first-components.md) needs them: a chart has no aspect ratio, and a
+-   QR code or a diagram must never be cropped or stretched. A component that needs one (a photo, a map) takes a param
+-   of its own, `fit`; a common param waits until several do.
+ 
+ ## What it looks like
+ 
+@@ -53,105 +79,154 @@ params:
+ ```
+ 
+ <!-- in a document -->
+-:: qr-code[Our site] {value="https://compmd.dev/"}                                12rem wide, square
+-:: qr-code[Our site] {value="https://compmd.dev/" width=6rem}                     6rem
+-:: qr-code[Our site] {value="https://compmd.dev/" height=6rem}                    6rem tall, centred in a 12rem box
+-:: chart[Sales] {rows=(md.data.sales) x=month y=total height=20rem}               the column's width, 20rem tall
+-:: chart[Sales] {rows=(md.data.sales) x=month y=total aspect-ratio=3/1}           the column's width, a third as tall
++:: qr-code[Our site] {value="https://compmd.dev/"}                                     12rem wide, square
++:: qr-code[Our site] {value="https://compmd.dev/" width=6rem}                          6rem
++:: qr-code[Our site] {value="https://compmd.dev/" width=100% height=6rem}              6rem tall, centred in the column
++:: qr-code[Our site] {value="https://compmd.dev/" width=100% height=6rem object-position="center start"}   at the start
++:: photo[The harbour at dusk] {src="harbour.jpg" aspect-ratio=16/9 object-fit=cover object-position="end center"}  cropped to 16:9, its bottom kept
++:: chart[Sales] {rows=(md.data.sales) x=month y=total height=20rem}                    the column's width, 20rem tall
+ ````
+ 
+-## Tried on the spike
+-
+-Each use with a magenta border (`border="2px solid #e5007d"`), in Chrome and WebKit, the drawing measured against the
+-box's inside (`spikes/wrap-npm-package/try.ts`); the QR codes are react-qr-code's and qrcode's, the chart layerchart's
+-`BarChart`:
+-
+-| The use | QR codes | Chart |
++## The mechanism
++
++What the renderer and the sandbox do for decision 2, tried in
++[the prototype](../spikes/wrap-npm-package/sizing/page.html) before any of it is in the packages:
++
++- **A host-language component's box is a grid of one column, in the page and framed.** A percentage height in it is
++  then of its cell, which CSS defines for every way a box gets a height (its own, its `aspect-ratio`, a row that
++  stretches it), and every browser sizes alike. As a block, WebKit grows a box with an `aspect-ratio` by its border
++  and padding when a child is `height: 100%` (the 4 pixels the spike saw).
++- **A framed box holds a sizer, and the frame in it.** The sizer fills the box's one cell and holds an invisible block
++  the component's natural size, so the box sizes as if it held the component: it is as tall as the component when it
++  has no height, and as wide where its width comes from its content. The frame is positioned over the sizer
++  (`position: absolute`, all of it), so it is always the box's inside and adds nothing to its size.
++- **In the frame, `target` is the frame's size,** a grid as the box is, so the component is laid out in the box's
++  inside, a definite size. The part gets none of the box's params: the page's box has them.
++- **The frame reports the component's natural size,** which it measures by laying `target` out with no size from the
++  frame, in one task, so nothing is painted or observed in between: first the height at the frame's width, then the
++  width, with `target` laid out anew as a block (WebKit otherwise gives the frame's own height or width as a
++  drawing's natural width, which never settles). The natural size doesn't depend on the frame's, so the two can't
++  feed each other: a row that stretched a box lets it shrink again (the prototype's grid rows, 20rem then 5rem).
++- **It reports when it has mounted, when its content changes size, and when the page says its box did.** Never from
++  an animation frame, and never from its own observers alone: a browser pauses both in a frame that is off screen
++  (Chrome), and its box would have no size until it is scrolled to. The page's observer of the sizer is never paused,
++  and a message is always delivered.
++- **The frame's document never scrolls** (`overflow: hidden`), unless the box has `scroll`.
++- **`fit`** goes to the frame with the part, resolved by the page.
++
++## Tried on the prototype
++
++`spikes/wrap-npm-package/sizing/`: one page draws each use in the page and framed (a sandboxed frame from another
++origin), with the same component code, the boxes bordered in magenta; `sizing.ts` compares the two in Chrome and
++WebKit, with every frame on screen and with most of them off it (`--height=900`). All 28 uses are the same both ways
++in both browsers, and the six in grid rows again after the row's tall box is made short; no frame reports more than
++five times. Sizes are the box's inside, in pixels, the page 16 pixels a `rem`:
++
++| The use | What is drawn | In |
+ |---|---|---|
+-| no size | the column (760 px) square: too big, which decision 3 fixes | the column, its default height |
+-| `width=10rem` | 156 × 156, fills the inside | — |
+-| `width=20rem` | — | fills 316 × 288 |
+-| `height=6rem` | 92 × 92, centred in 760 × 92 | fills 760 × 124 (`height=8rem`) |
+-| `width=16rem height=6rem` | 92 × 92, centred in 252 × 92 | fills 380 × 156 (`width=24rem height=10rem`) |
+-| `width=6rem height=12rem` | 92 × 92, centred in 92 × 188 | — |
+-| `width=12rem aspect-ratio=2/1` | 92 × 92, centred in 188 × 92 | fills 760 × 251 (`aspect-ratio=3/1`) |
+-
+-Chrome's numbers; WebKit's are the same but with `aspect-ratio`, where its box is 4 px taller (188 × 96, and the
+-chart's 760 × 255): it takes the ratio from the inside rather than from the box with its border, which decision 5
+-makes the measure. A browser test of decision 5 keeps the two apart.
+-
+-What it found besides:
+-
+-- **Fitting only the width fails** once a box has a height: the drawing overflows it (react-qr-code's `size`, an SVG at
+-  `width: 100%; height: auto`). Fitting both ways is SVG's own default, `meet`, at `width: 100%; height: 100%`; with no
+-  height, `100%` is the drawing's own and the box follows it.
+-- **`draw()` of `@compmd/pack` breaks it:** it puts the drawing in a `div` with no height, so a drawing can't take the
+-  box's height through it; qrcode's overflowed until its glue wrote into `target` itself.
+-- **Every framed use with a `width` scrolled by its border** (4 px, a 2 px border each side), in both browsers: the
+-  sandbox's double box (decision 2).
++| QR code, no size | 464 × 464 | the column, 464 wide |
++| QR code, `width=10rem` | 156 × 156 | 156 × 156 |
++| QR code, `height=6rem` | 92 × 92, centred | 464 × 92 |
++| QR code, `width=16rem height=6rem` | 92 × 92, centred | 252 × 92 |
++| QR code, `width=6rem height=12rem` | 92 × 92, centred | 92 × 188 |
++| QR code, `width=12rem aspect-ratio=2/1` | 92 × 92, centred | 188 × 92, in WebKit too |
++| QR code, `height=6rem object-position=start` | 92 × 92, at the start | 464 × 92 |
++| QR code, `width=6rem height=12rem object-position=end` | 92 × 92, at the end | 92 × 188 |
++| QR code, `width=16rem height=6rem object-fit=cover` | 252 × 252, cropped to the box | 252 × 92 |
++| QR code, `width=16rem height=6rem object-fit=fill` | 252 × 92, stretched | 252 × 92 |
++| Chart, no size | 464 × 150 | the column, its natural height |
++| Chart, `aspect-ratio=3/1` | 464 × 152 | 464 × 152 |
++| Chart, `height=8rem` | 464 × 124 | 464 × 124 |
++| Text, no size | its two lines | the column |
++| Text, `height=2rem` | its lines, clipped at the box | 464 × 28 |
++| A grid row: a chart of `height=20rem`, and a chart, text, or a QR code with no size | each fills, or fits, the row's 316 | 226 × 316 each |
++| The same once the first chart is `height=5rem` | the second chart 150 tall (natural), the text 76, the QR code 226 (its natural height at that width) | the row follows |
++| A row (flexbox): a QR code, a QR code of `width=5rem`, a chart, no sizes | 300 × 300, 76 × 76 in a box the row's height, 300 × 150 | natural widths |
++| Inline: a QR code of `width=3rem`, a chart of `width=6rem height=2rem`, a QR code with no size | 44 × 44, 92 × 28, 300 × 300 | in the line |
++
++What the prototype doesn't run, each a browser test of the sandbox's task (*What changes*): `object-position` in a
++right-to-left document; `scroll`; a drawing that is an `img` or a `canvas`, which takes CSS's own `object-fit`; and a
++script-sized drawing that doesn't contain its size, which decision 3 says holds its box open.
++
++Earlier, on the real packs (`spikes/wrap-npm-package/try.ts`): fitting only the width overflowed every box with a
++height; `draw()` of `@compmd/pack` puts the drawing in a `div` with no height, so a drawing can't take the box's
++height through it; and every framed use with a `width` scrolled by its border, the sandbox applying the box's params
++to the page's box and again inside the frame.
+ 
+ ## Conformance cases
+ 
+-All the cases were read for these decisions (`conformance/`, stages 1 to 4b). Decisions 1, 2, 5 and 6 are about layout,
+-which the set doesn't cover; their tests are browser tests (*The sandbox*, *`@compmd/pack`*). Decisions 3 and 4 change
+-these:
++All the cases were read for these decisions (`conformance/`, stages 1 to 4b). Decisions 2, 3 and 6 are about layout,
++which the set doesn't cover: their tests are browser tests. Decisions 1, 4 and 5 change these:
+ 
+ | Case | Today | With this design |
+ |---|---|---|
+ | `definitions/fence-params` | F036 at 11:38, a parser case: `chart`'s signature fence has `{height=16rem}` | `chart` has a definition fence with `{height=16rem}` too, so F036 still applies, but at resolving, since which fences a component has is known only then (a signature may attach to a definition imported from a component file, §7.1). The case loses its F036 (it stays a parser case, for F011 and F017), and its `parse.json` gains the signature fence's `params`. |
+-| `definitions/signature-types` | declares `width: length?` | F013 under decision 4; the case is about types, so the param becomes `stroke: length?` (its `parse.json` with it) |
++| `definitions/signature-types` | declares `width: length?` | F013 under decision 5; the case is about types, so the param becomes `stroke: length?` (its `parse.json` with it) |
+ | `resolve/params-differ-in-dash-F013` | `max-width` and `max_width`: one F013, at 1:1 | `max-width` would be a second F013; the case is about `-` and `_`, so they become `line-width` and `line_width`, the one diagnostic as it is |
+ | `expand/host-component-box` | the definition fence's box params under the caller's | unchanged |
+ | `validate/code-renderer-render-F009-F013-W101` | `class` and `id` declared: F013 | unchanged |
+-| `validate/params-and-common-params`, `expand/component-box` | the common params on uses | unchanged |
++| `validate/params-and-common-params`, `validate/layout-values`, `expand/component-box` | the common params on uses, and their values | unchanged; no case uses `object-fit` or `object-position` today, as params or as anything else |
++| **new** `validate/object-fit-and-position` | — | every value of both on a leaf, a container and a rendered code block, one and two positions; `object-fit=none`, `object-position=left`, three positions and `md:object-fit=cover`: F009 at each |
++| **new** `expand/object-fit-and-position` | — | both on a host-language leaf, from its signature fence's defaults and the caller's over them, and as an expression: the expanded `params` |
+ | **new** `resolve/signature-and-definition-box-F036` | — | a host-language definition fence and its signature fence both with box params: F036 at the signature's `{` |
+-| **new** `expand/signature-box-defaults` | — | a component with a signature fence's `{width=12rem max-width=100%}` and no definition fence's list, used with no params, with `width=6rem`, and with `md:width=8rem`: the expanded `params` as `host-component-box`'s |
++| **new** `expand/signature-box-defaults` | — | a signature fence's `{width=12rem max-width=100%}` and no definition fence's list, used with no params, with `width=6rem`, and with `md:width=8rem`: the expanded `params` as `host-component-box`'s |
+ | **new** `validate/signature-box-unknown-F008` | — | `{title=x}` on a signature fence: F008 |
+-| **new** `resolve/common-param-declared-F013` | — | a signature declaring `width`, `height`, `padding`, `lang` and `dir`, and a `compmd` definition declaring `border`: F013 at each |
++| **new** `resolve/common-param-declared-F013` | — | a signature declaring `width`, `height`, `padding`, `object-fit`, `lang` and `dir`, and a `compmd` definition declaring `border`: F013 at each |
+ 
+ **The tree schema:** a signature fence's node (`componentSignature`) gains `params`, as written, the same shape as a
+ definition fence's (§12.1), so a tool reads a pack's box defaults from its parse tree. `conformance/README.md`'s rows
+-for `definitions/`, `resolve/` and `validate/` say so.
++for `definitions/`, `resolve/`, `validate/` and `expand/` say so.
+ 
+ ## What changes
+ 
+ **The spec** (for the maintainer's go; a changelog entry under *Unreleased*):
+ 
+-- §7.4, the host contract: decisions 1 and 2, beside *The outer box is the processor's*.
+-- §7, *The component's box*: decision 3, the signature fence's param list; §10.2's F036 row.
+-- §5.1 and §10.2's F013 row: decision 4.
+-- §9.2: decision 5, "padding and border".
++- §9.2, the common params' table: `object-fit` and `object-position`, with decision 1's rules; "padding and border"
++  (decision 6).
++- §7.4, the host contract: `fit` in `mount`'s context; decisions 1 to 3 beside *The outer box is the processor's*,
++  which becomes "doesn't receive those params, but for `fit`".
++- §7.6: the React and Svelte bindings pass `compmd.fit`, as they pass `compmd.scheme`.
++- §7, *The component's box*: decision 4, the signature fence's param list; §10.2's F036 row.
++- §5.1 and §10.2's F013 row: decision 5.
+ - §12.1: the signature fence's `params`.
+ 
+-**The sandbox** (`@compmd/sandbox`, `@compmd/render`), the scroll bars:
++**`@compmd/render`:**
++
++- A host-language component's box is a grid of one column; `object-fit` and `object-position` validated, resolved
++  with the box's direction, and given as `context.fit`, with an `update` when they change.
++- The contract's type, and the React and Svelte bindings.
++
++**`@compmd/sandbox`** (the scroll bars, and *The mechanism*):
+ 
+-- In a use's frame, the part's box takes none of the use's box params: the page's box has them, and the part fills the
+-  frame (`createRegion`'s `part` gives the box no params).
+-- When the page's box has a height of its own, the frame takes it (`height: 100%`) instead of its content's; otherwise
+-  the frame is as tall as its content, as today ([running components in the sandbox](running-components-in-the-sandbox.md), Q5).
+-- Browser tests, in Chrome and WebKit: a framed use with a border, with each case of the table above; no frame scrolls,
+-  and the frame's inside is the box's.
++- The sizer and the frame over it, in place of a frame as tall as its content.
++- The frame's `target` the frame's size; the part with none of the box's params; no scrolling without `scroll`.
++- The protocol, version 3: `size` carries the natural width and height; a `box` message from the page when the frame
++  has loaded and when its box changes size; `fit` with the part
++  ([the sandbox's frame protocol](sandbox-protocol.md)).
++- Browser tests, in Chrome and WebKit: the prototype's cases, each use drawn by a trusted component in the page and
++  by the same component framed, compared; with the four the prototype doesn't run, and with most frames off screen.
+ 
+ **`@compmd/pack`:**
+ 
+-- `draw()`'s `div` fills the box (`display: block; width: 100%; height: 100%`).
+-- `fitBox(svg)` in `@compmd/pack/component`: an SVG element or markup given the style that fits it, for the packs that
+-  draw SVG.
++- `draw()` fits what it is given: an SVG by its `preserveAspectRatio` (`meet`, `slice` or `none`, and where it
++  sits), an `img` or a `canvas` by CSS's `object-fit`, from `context.fit`; its own `div` is the box's size.
++- `fitBox(element, fit)` and `fillBox(element)` in `@compmd/pack/component`, for a component written as plain
++  `mount`: the first does what `draw()` does, the second is the box's size and contains it (decision 3), for a
++  drawing sized in script.
++- `mountForTest` takes `fit`, and has `setFit`.
+ - The test page gets a **Show boxes** switch, which outlines every use's box, so an author sees the box against the
+   drawing without borders in the demo.
+-- `create-pack`'s templates fit their box, and their demos have a use with `width` and one with `height`.
+-- [Wrapping an npm package](wrapping-an-npm-package.md): the glue of each kind fits the box; decision 6 leaves out
+-  size props, and the common params' names, which decision 4 makes F013.
++- `create-pack`'s templates fit their box, and their demos have a use with `width`, one with `height` and one with
++  `object-fit=cover`.
++- [Wrapping an npm package](wrapping-an-npm-package.md): the glue of each kind fits the box; decision 6 there leaves
++  out size props, and the common params' names, which decision 5 here makes F013; `compmd.wrap.json`'s `box` is the
++  generated signature fence's param list.
+ 
+ **[Writing a pack](writing-a-pack.md), decision 8,** points here.
+ 
+-## Gaps
++## Not this design's
+ 
+-- **S1. A box's height in a grid row.** A use in a `grid` whose row stretches it has a height its params don't give;
+-  the frame reports its content's height, so the row's stretch doesn't reach the component. Decision 1 counts it as a
+-  height; the sandbox's fix sees only the box's own. To check with the `columns` component (CMD-348), whose columns
+-  are such boxes.
+-- **S2. Inline components** (`:qr-code[…]` in text) have a box too, laid out inline; decision 1 holds for them, and
+-  their frames report a width already. Not tried in the spike.
+-- **S3. Printing.** A box sized in `rem` prints at that size; a drawing that fits it prints sharp if it's SVG. A canvas
+-  drawing prints at screen resolution ([printing a document](printing.md)).
++- **A box's size on paper** is its size on screen (`rem`), and what fits it on screen fits it there. A `canvas`
++  drawing prints at the screen's resolution, which is [printing a document](printing.md)'s.
++- **The box's own place in its parent** is `align-self` and `justify-self` (§9.2), as today: `object-position` places
++  the drawing in its box, not the box.
+diff --git a/docs/wrapping-an-npm-package.md b/docs/wrapping-an-npm-package.md
+index 0d65043..0003e4b 100644
+--- a/docs/wrapping-an-npm-package.md
++++ b/docs/wrapping-an-npm-package.md
+@@ -54,7 +54,7 @@ packs it was tried on, built and run.
+    | an array, a plain object | `array`, `object` |
+    | a CSS colour type (`CSSProperties["color"]`) | `color` (spec §9.4) |
+    | a CSS length type | `string` |
+-   | named like a common param (`height`, `width`, `background`, `border`, `padding`, spec §9.2) | none: the use's box takes it, and the component fits its box; listed (declaring one is F013, [sizing a component](sizing-components.md), decision 4) |
++   | named like a common param (`height`, `width`, `background`, `border`, `padding`, spec §9.2) | none: the use's box takes it, and the component fits its box; listed (declaring one is F013, [sizing a component](sizing-components.md), decision 5) |
+    | a size in pixels (react-qr-code's `size`) | none: the component fits its box, which the use sizes ([sizing a component](sizing-components.md), decision 1); listed |
+    | a union with one usable branch (`string \| ((d) => any)`, `boolean \| Snippet`) | that branch, with a note in the build's report |
+    | callbacks, `ref`, `style`, `className`, components, snippets with arguments | none: left out, and listed |
+@@ -171,9 +171,10 @@ box](sizing-components.md).
+   confirm in the spec before the build writes it.
+ - **G7, settled. How the generated fence is marked:** a word after `signature` in the info string would need the spec
+   to say what other words there mean; comments before and after the fence need nothing (decision 4).
+-- **G8. A component's size when the use gives none** is its box's, the column's width: [sizing a component](sizing-components.md),
+-  decision 3, proposes box defaults on the signature fence, a spec change; the build would carry them from
+-  `compmd.wrap.json` into the generated fence.
++- **G8, settled by [sizing a component](sizing-components.md). A component's size when the use gives none** is its
++  natural size, which for a drawing is seldom what an author wants: its decision 4 puts box defaults on the signature
++  fence, a spec change. `compmd.wrap.json`'s `box` (`"box": "width=12rem max-width=100%"`) is the generated fence's
++  param list, which the command writes empty and the author fills.
+ 
+ ## What changes
+ 
+diff --git a/docs/writing-a-pack.md b/docs/writing-a-pack.md
+index 79f050b..f4e3a1e 100644
+--- a/docs/writing-a-pack.md
++++ b/docs/writing-a-pack.md
+@@ -14,7 +14,7 @@
+    - **A throw in `update`** is the same as `fail`: the component is still mounted, so it is updated again at the next change (S4). A throw in `mount` stays as it is.
+ 6. **Helpers for what remains** (`@compmd/pack/component`, B), bundled into the module (a few KB): `draw(render, options)` runs an asynchronous `render(params, { scheme, signal })` that returns an element or SVG/HTML text. It drops a draw that a newer one overtakes, optionally runs one draw at a time per frame (for libraries with a global configuration, as Mermaid has), sets the text alternative from `fallback.text`, empties `target` on `destroy`, and calls `context.fail` when `render` throws. A component that draws synchronously writes plain `mount`, as today.
+ 7. **A testing kit** (`@compmd/pack/testing`): `mountForTest(component, { params, fallback, scheme })` runs a component through the contract in happy-dom, and returns `update`, `setScheme`, `settled()` (waits for its draws), what it `set` and what it `fail`ed. Tests need no stubs for `matchMedia` or the frame's document.
+-8. **A component fits its box, which an author sizes with the common params** (proposed 2026-11-20, CR-29): [sizing a component in its box](sizing-components.md). It takes the box's width, and its height when the box has one, its aspect ratio kept; it has no size params of its own; a pack's signature fence gives its box defaults (`{width=12rem}`). `draw()` fits its box, `fitBox()` fits an SVG, and the test page's **Show boxes** outlines every box.
++8. **A component fits its box, which an author sizes with the common params** (proposed 2026-11-20, CR-29): [sizing a component in its box](sizing-components.md). It takes the box's width, and its height when the box has one; `object-fit` and `object-position` on the use say how a drawing with an aspect ratio sits in it (`context.fit`); it has no size params of its own; a pack's signature fence gives its box defaults (`{width=12rem}`). `draw()` fits its box, `fitBox()` and `fillBox()` do it for plain `mount`, and the test page's **Show boxes** outlines every box.
+ 
+ ## Scenarios
+ 
+diff --git a/spikes/wrap-npm-package/README.md b/spikes/wrap-npm-package/README.md
+index fd3bbc4..4de0d0c 100644
+--- a/spikes/wrap-npm-package/README.md
++++ b/spikes/wrap-npm-package/README.md
+@@ -17,6 +17,17 @@
+ 11. **A component fits its box, which the use sizes** ([sizing a component in its box](../../docs/sizing-components.md), which has the numbers): each demo has uses with `width`, `height`, both, and `aspect-ratio`, their boxes bordered in magenta, and `try.ts` measures each drawing against its box's inside. The QR codes fit (`width: 100%; height: 100%`, SVG's `meet`), the chart fills; fitting the width only overflowed every box with a height. react-qr-code's own `size` is left out. Without a size, a use is the column's width (760 px here), since a pack can't give its box a default yet: a spec change, proposed there.
+ 12. **`draw()`'s `div` has no height,** so a drawing can't take its box's height through it: qrcode's overflowed until its glue wrote into `target` itself.
+ 13. **A framed use with a `width` scrolls by its border** (4 px), in both browsers: the sandbox applies the box's params to the page's box and again inside the frame. `try.ts` reports how far each frame's document goes past the frame.
++14. **A framed use can be laid out exactly as the same use in the page** (`sizing/`, below): 28 uses drawn both ways are the same in Chrome and WebKit, with `object-fit` and `object-position`, in grid rows that grow and shrink, in a flexbox row and inline, on screen and off it.
++
++## The sizing prototype
++
++`sizing/page.html` tries the mechanism of [sizing a component in its box](../../docs/sizing-components.md) before any of it is in the packages: each use drawn in the page and in a sandboxed frame by the same component code (a QR code with an aspect ratio, a chart sized in script, text that flows), the boxes bordered in magenta. `sizing.ts` compares the two in Chrome and WebKit, and again after the tall boxes of the grid rows are made short; `results-sizing.json` and `screenshots/sizing-*.png` are its last run. What it took to make them the same:
++
++- the frame positioned over a sizer the component's natural size, in a box that is a grid of one column: a frame filling its cell by `min-height: 100%` came out with no area in a flexbox row and inline;
++- the box a grid in the page too: as a block, WebKit grows a box with an `aspect-ratio` by its border when a child is `height: 100%`;
++- the natural size measured height first, then width with the target laid out anew as a block: measured together, WebKit gives the frame's height as a drawing's natural width, and the two swap for ever (639 reports before the run gave up);
++- the chart's box containing its size (`contain: size`), so what it drew for a tall row isn't its natural height once the row is short;
++- the page telling a frame when it has loaded and when its box changes size: Chrome pauses a frame's animation frames and observers while it is off screen, and such a frame's box had no size.
+ 
+ ## The packs
+ 
+@@ -42,6 +53,8 @@ Each folder is what the command would write, with the glue as written once, and
+ pnpm install
+ pnpm --dir spikes/wrap-npm-package try                 # every pack
+ pnpm --dir spikes/wrap-npm-package try layerchart      # one
++pnpm --dir spikes/wrap-npm-package sizing              # the sizing prototype
++pnpm --dir spikes/wrap-npm-package sizing --height=900 # with most of its frames off screen
+ ```
+ 
+ `try.ts` builds each pack with `compmd-pack build`'s own configuration (with Svelte's Vite plugin for a Svelte package, which the build doesn't have yet), serves its `demo.comp.md` as `compmd-pack dev` does, and opens it in Playwright's Chrome and WebKit (1.64.1, headless). A use counts as drawn when its frame has a height and its `svg` or `canvas` a size. The packs have no `build` or `test` script, so the workspace's runs leave them out.
+diff --git a/spikes/wrap-npm-package/package.json b/spikes/wrap-npm-package/package.json
+index 838a6da..1ddddbf 100644
+--- a/spikes/wrap-npm-package/package.json
++++ b/spikes/wrap-npm-package/package.json
+@@ -4,7 +4,8 @@
+   "description": "CMD-8's spike: four npm packages wrapped as packs by hand, as `npm create @compmd/pack -- --from` would write them, built and opened in strict frames. Not part of the packages: no build, lint or test script, so the workspace's runs leave it out.",
+   "type": "module",
+   "scripts": {
+-    "try": "node try.ts"
++    "try": "node try.ts",
++    "sizing": "node sizing.ts"
+   },
+   "dependencies": {
+     "@compmd/pack": "workspace:*",
+diff --git a/spikes/wrap-npm-package/results-sizing.json b/spikes/wrap-npm-package/results-sizing.json
+new file mode 100644
+index 0000000..82525b7
+--- /dev/null
++++ b/spikes/wrap-npm-package/results-sizing.json
+@@ -0,0 +1,3482 @@
++{
++  "Chrome": {
++    "drawn": [
++      {
++        "id": "qr-none/0",
++        "title": "QR code, no size",
++        "kind": "qr",
++        "plain": {
++          "box": {
++            "w": 468,
++            "h": 468
++          },
++          "element": {
++            "w": 464,
++            "h": 464
++          },
++          "drawing": {
++            "w": 464,
++            "h": 464
++          },
++          "aspect": "xMidYMid meet"
++        },
++        "framed": {
++          "box": {
++            "w": 468,
++            "h": 468
++          },
++          "frame": {
++            "w": 464,
++            "h": 464
++          },
++          "inside": {
++            "w": 464,
++            "h": 464
++          },
++          "id": "qr-none/0/framed",
++          "natural": {
++            "w": 300,
++            "h": 464
++          },
++          "element": {
++            "w": 464,
++            "h": 464
++          },
++          "drawing": {
++            "w": 464,
++            "h": 464
++          },
++          "aspect": "xMidYMid meet",
++          "clipped": false,
++          "messages": 4
++        },
++        "differs": []
++      },
++      {
++        "id": "qr-width/0",
++        "title": "QR code, width=10rem",
++        "kind": "qr",
++        "plain": {
++          "box": {
++            "w": 160,
++            "h": 160
++          },
++          "element": {
++            "w": 156,
++            "h": 156
++          },
++          "drawing": {
++            "w": 156,
++            "h": 156
++          },
++          "aspect": "xMidYMid meet"
++        },
++        "framed": {
++          "box": {
++            "w": 160,
++            "h": 160
++          },
++          "frame": {
++            "w": 156,
++            "h": 156
++          },
++          "inside": {
++            "w": 156,
++            "h": 156
++          },
++          "id": "qr-width/0/framed",
++          "natural": {
++            "w": 300,
++            "h": 156
++          },
++          "element": {
++            "w": 156,
++            "h": 156
++          },
++          "drawing": {
++            "w": 156,
++            "h": 156
++          },
++          "aspect": "xMidYMid meet",
++          "clipped": false,
++          "messages": 4
++        },
++        "differs": []
++      },
++      {
++        "id": "qr-height/0",
++        "title": "QR code, height=6rem",
++        "kind": "qr",
++        "plain": {
++          "box": {
++            "w": 468,
++            "h": 96
++          },
++          "element": {
++            "w": 464,
++            "h": 92
++          },
++          "drawing": {
++            "w": 92,
++            "h": 92
++          },
++          "aspect": "xMidYMid meet"
++        },
++        "framed": {
++          "box": {
++            "w": 468,
++            "h": 96
++          },
++          "frame": {
++            "w": 464,
++            "h": 92
++          },
++          "inside": {
++            "w": 464,
++            "h": 92
++          },
++          "id": "qr-height/0/framed",
++          "natural": {
++            "w": 300,
++            "h": 464
++          },
++          "element": {
++            "w": 464,
++            "h": 92
++          },
++          "drawing": {
++            "w": 92,
++            "h": 92
++          },
++          "aspect": "xMidYMid meet",
++          "clipped": false,
++          "messages": 2
++        },
++        "differs": []
++      },
++      {
++        "id": "qr-wide/0",
++        "title": "QR code, width=16rem height=6rem",
++        "kind": "qr",
++        "plain": {
++          "box": {
++            "w": 256,
++            "h": 96
++          },
++          "element": {
++            "w": 252,
++            "h": 92
++          },
++          "drawing": {
++            "w": 92,
++            "h": 92
++          },
++          "aspect": "xMidYMid meet"
++        },
++        "framed": {
++          "box": {
++            "w": 256,
++            "h": 96
++          },
++          "frame": {
++            "w": 252,
++            "h": 92
++          },
++          "inside": {
++            "w": 252,
++            "h": 92
++          },
++          "id": "qr-wide/0/framed",
++          "natural": {
++            "w": 300,
++            "h": 252
++          },
++          "element": {
++            "w": 252,
++            "h": 92
++          },
++          "drawing": {
++            "w": 92,
++            "h": 92
++          },
++          "aspect": "xMidYMid meet",
++          "clipped": false,
++          "messages": 2
++        },
++        "differs": []
++      },
++      {
++        "id": "qr-tall/0",
++        "title": "QR code, width=6rem height=12rem",
++        "kind": "qr",
++        "plain": {
++          "box": {
++            "w": 96,
++            "h": 192
++          },
++          "element": {
++            "w": 92,
++            "h": 188
++          },
++          "drawing": {
++            "w": 92,
++            "h": 92
++          },
++          "aspect": "xMidYMid meet"
++        },
++        "framed": {
++          "box": {
++            "w": 96,
++            "h": 192
++          },
++          "frame": {
++            "w": 92,
++            "h": 188
++          },
++          "inside": {
++            "w": 92,
++            "h": 188
++          },
++          "id": "qr-tall/0/framed",
++          "natural": {
++            "w": 300,
++            "h": 92
++          },
++          "element": {
++            "w": 92,
++            "h": 188
++          },
++          "drawing": {
++            "w": 92,
++            "h": 92
++          },
++          "aspect": "xMidYMid meet",
++          "clipped": false,
++          "messages": 2
++        },
++        "differs": []
++      },
++      {
++        "id": "qr-ratio/0",
++        "title": "QR code, width=12rem aspect-ratio=2/1",
++        "kind": "qr",
++        "plain": {
++          "box": {
++            "w": 192,
++            "h": 96
++          },
++          "element": {
++            "w": 188,
++            "h": 92
++          },
++          "drawing": {
++            "w": 92,
++            "h": 92
++          },
++          "aspect": "xMidYMid meet"
++        },
++        "framed": {
++          "box": {
++            "w": 192,
++            "h": 96
++          },
++          "frame": {
++            "w": 188,
++            "h": 92
++          },
++          "inside": {
++            "w": 188,
++            "h": 92
++          },
++          "id": "qr-ratio/0/framed",
++          "natural": {
++            "w": 300,
++            "h": 188
++          },
++          "element": {
++            "w": 188,
++            "h": 92
++          },
++          "drawing": {
++            "w": 92,
++            "h": 92
++          },
++          "aspect": "xMidYMid meet",
++          "clipped": false,
++          "messages": 2
++        },
++        "differs": []
++      },
++      {
++        "id": "qr-start/0",
++        "title": "QR code, height=6rem object-position=start",
++        "kind": "qr",
++        "plain": {
++          "box": {
++            "w": 468,
++            "h": 96
++          },
++          "element": {
++            "w": 464,
++            "h": 92
++          },
++          "drawing": {
++            "w": 92,
++            "h": 92
++          },
++          "aspect": "xMinYMin meet"
++        },
++        "framed": {
++          "box": {
++            "w": 468,
++            "h": 96
++          },
++          "frame": {
++            "w": 464,
++            "h": 92
++          },
++          "inside": {
++            "w": 464,
++            "h": 92
++          },
++          "id": "qr-start/0/framed",
++          "natural": {
++            "w": 300,
++            "h": 464
++          },
++          "element": {
++            "w": 464,
++            "h": 92
++          },
++          "drawing": {
++            "w": 92,
++            "h": 92
++          },
++          "aspect": "xMinYMin meet",
++          "clipped": false,
++          "messages": 2
++        },
++        "differs": []
++      },
++      {
++        "id": "qr-end/0",
++        "title": "QR code, width=6rem height=12rem object-position=end",
++        "kind": "qr",
++        "plain": {
++          "box": {
++            "w": 96,
++            "h": 192
++          },
++          "element": {
++            "w": 92,
++            "h": 188
++          },
++          "drawing": {
++            "w": 92,
++            "h": 92
++          },
++          "aspect": "xMaxYMax meet"
++        },
++        "framed": {
++          "box": {
++            "w": 96,
++            "h": 192
++          },
++          "frame": {
++            "w": 92,
++            "h": 188
++          },
++          "inside": {
++            "w": 92,
++            "h": 188
++          },
++          "id": "qr-end/0/framed",
++          "natural": {
++            "w": 300,
++            "h": 92
++          },
++          "element": {
++            "w": 92,
++            "h": 188
++          },
++          "drawing": {
++            "w": 92,
++            "h": 92
++          },
++          "aspect": "xMaxYMax meet",
++          "clipped": false,
++          "messages": 2
++        },
++        "differs": []
++      },
++      {
++        "id": "qr-cover/0",
++        "title": "QR code, width=16rem height=6rem object-fit=cover",
++        "kind": "qr",
++        "plain": {
++          "box": {
++            "w": 256,
++            "h": 96
++          },
++          "element": {
++            "w": 252,
++            "h": 92
++          },
++          "drawing": {
++            "w": 252,
++            "h": 252
++          },
++          "aspect": "xMidYMid slice"
++        },
++        "framed": {
++          "box": {
++            "w": 256,
++            "h": 96
++          },
++          "frame": {
++            "w": 252,
++            "h": 92
++          },
++          "inside": {
++            "w": 252,
++            "h": 92
++          },
++          "id": "qr-cover/0/framed",
++          "natural": {
++            "w": 300,
++            "h": 252
++          },
++          "element": {
++            "w": 252,
++            "h": 92
++          },
++          "drawing": {
++            "w": 252,
++            "h": 252
++          },
++          "aspect": "xMidYMid slice",
++          "clipped": false,
++          "messages": 2
++        },
++        "differs": []
++      },
++      {
++        "id": "qr-fill/0",
++        "title": "QR code, width=16rem height=6rem object-fit=fill",
++        "kind": "qr",
++        "plain": {
++          "box": {
++            "w": 256,
++            "h": 96
++          },
++          "element": {
++            "w": 252,
++            "h": 92
++          },
++          "drawing": {
++            "w": 252,
++            "h": 92
++          },
++          "aspect": "none"
++        },
++        "framed": {
++          "box": {
++            "w": 256,
++            "h": 96
++          },
++          "frame": {
++            "w": 252,
++            "h": 92
++          },
++          "inside": {
++            "w": 252,
++            "h": 92
++          },
++          "id": "qr-fill/0/framed",
++          "natural": {
++            "w": 300,
++            "h": 252
++          },
++          "element": {
++            "w": 252,
++            "h": 92
++          },
++          "drawing": {
++            "w": 252,
++            "h": 92
++          },
++          "aspect": "none",
++          "clipped": false,
++          "messages": 2
++        },
++        "differs": []
++      },
++      {
++        "id": "chart-none/0",
++        "title": "Chart, no size",
++        "kind": "chart",
++        "plain": {
++          "box": {
++            "w": 468,
++            "h": 154
++          },
++          "element": {
++            "w": 464,
++            "h": 150
++          },
++          "drawing": {
++            "w": 464,
++            "h": 150
++          },
++          "aspect": null
++        },
++        "framed": {
++          "box": {
++            "w": 468,
++            "h": 154
++          },
++          "frame": {
++            "w": 464,
++            "h": 150
++          },
++          "inside": {
++            "w": 464,
++            "h": 150
++          },
++          "id": "chart-none/0/framed",
++          "natural": {
++            "w": 300,
++            "h": 150
++          },
++          "element": {
++            "w": 464,
++            "h": 150
++          },
++          "drawing": {
++            "w": 464,
++            "h": 150
++          },
++          "aspect": null,
++          "clipped": false,
++          "messages": 4
++        },
++        "differs": []
++      },
++      {
++        "id": "chart-ratio/0",
++        "title": "Chart, aspect-ratio=3/1",
++        "kind": "chart",
++        "plain": {
++          "box": {
++            "w": 468,
++            "h": 156
++          },
++          "element": {
++            "w": 464,
++            "h": 152
++          },
++          "drawing": {
++            "w": 464,
++            "h": 152
++          },
++          "aspect": null
++        },
++        "framed": {
++          "box": {
++            "w": 468,
++            "h": 156
++          },
++          "frame": {
++            "w": 464,
++            "h": 152
++          },
++          "inside": {
++            "w": 464,
++            "h": 152
++          },
++          "id": "chart-ratio/0/framed",
++          "natural": {
++            "w": 300,
++            "h": 150
++          },
++          "element": {
++            "w": 464,
++            "h": 152
++          },
++          "drawing": {
++            "w": 464,
++            "h": 152
++          },
++          "aspect": null,
++          "clipped": false,
++          "messages": 2
++        },
++        "differs": []
++      },
++      {
++        "id": "chart-height/0",
++        "title": "Chart, height=8rem",
++        "kind": "chart",
++        "plain": {
++          "box": {
++            "w": 468,
++            "h": 128
++          },
++          "element": {
++            "w": 464,
++            "h": 124
++          },
++          "drawing": {
++            "w": 464,
++            "h": 124
++          },
++          "aspect": null
++        },
++        "framed": {
++          "box": {
++            "w": 468,
++            "h": 128
++          },
++          "frame": {
++            "w": 464,
++            "h": 124
++          },
++          "inside": {
++            "w": 464,
++            "h": 124
++          },
++          "id": "chart-height/0/framed",
++          "natural": {
++            "w": 300,
++            "h": 150
++          },
++          "element": {
++            "w": 464,
++            "h": 124
++          },
++          "drawing": {
++            "w": 464,
++            "h": 124
++          },
++          "aspect": null,
++          "clipped": false,
++          "messages": 2
++        },
++        "differs": []
++      },
++      {
++        "id": "chart-box/0",
++        "title": "Chart, width=16rem height=6rem",
++        "kind": "chart",
++        "plain": {
++          "box": {
++            "w": 256,
++            "h": 96
++          },
++          "element": {
++            "w": 252,
++            "h": 92
++          },
++          "drawing": {
++            "w": 252,
++            "h": 92
++          },
++          "aspect": null
++        },
++        "framed": {
++          "box": {
++            "w": 256,
++            "h": 96
++          },
++          "frame": {
++            "w": 252,
++            "h": 92
++          },
++          "inside": {
++            "w": 252,
++            "h": 92
++          },
++          "id": "chart-box/0/framed",
++          "natural": {
++            "w": 300,
++            "h": 150
++          },
++          "element": {
++            "w": 252,
++            "h": 92
++          },
++          "drawing": {
++            "w": 252,
++            "h": 92
++          },
++          "aspect": null,
++          "clipped": false,
++          "messages": 2
++        },
++        "differs": []
++      },
++      {
++        "id": "flow-none/0",
++        "title": "Text, no size",
++        "kind": "flow",
++        "plain": {
++          "box": {
++            "w": 468,
++            "h": 52
++          },
++          "element": {
++            "w": 464,
++            "h": 48
++          },
++          "drawing": {
++            "w": 464,
++            "h": 48
++          },
++          "aspect": null
++        },
++        "framed": {
++          "box": {
++            "w": 468,
++            "h": 52
++          },
++          "frame": {
++            "w": 464,
++            "h": 48
++          },
++          "inside": {
++            "w": 464,
++            "h": 48
++          },
++          "id": "flow-none/0/framed",
++          "natural": {
++            "w": 624.9,
++            "h": 48
++          },
++          "element": {
++            "w": 464,
++            "h": 48
++          },
++          "drawing": {
++            "w": 464,
++            "h": 48
++          },
++          "aspect": null,
++          "clipped": false,
++          "messages": 3
++        },
++        "differs": []
++      },
++      {
++        "id": "flow-height/0",
++        "title": "Text, height=2rem (shorter than its text)",
++        "kind": "flow",
++        "plain": {
++          "box": {
++            "w": 468,
++            "h": 32
++          },
++          "element": {
++            "w": 464,
++            "h": 28
++          },
++          "drawing": {
++            "w": 464,
++            "h": 28
++          },
++          "aspect": null
++        },
++        "framed": {
++          "box": {
++            "w": 468,
++            "h": 32
++          },
++          "frame": {
++            "w": 464,
++            "h": 28
++          },
++          "inside": {
++            "w": 464,
++            "h": 28
++          },
++          "id": "flow-height/0/framed",
++          "natural": {
++            "w": 624.9,
++            "h": 48
++          },
++          "element": {
++            "w": 464,
++            "h": 28
++          },
++          "drawing": {
++            "w": 464,
++            "h": 28
++          },
++          "aspect": null,
++          "clipped": false,
++          "messages": 2
++        },
++        "differs": []
++      },
++      {
++        "id": "grid-charts/0",
++        "title": "A grid row: a chart with height=20rem (then 5rem), and a chart with no size",
++        "kind": "chart",
++        "plain": {
++          "box": {
++            "w": 230,
++            "h": 320
++          },
++          "element": {
++            "w": 226,
++            "h": 316
++          },
++          "drawing": {
++            "w": 226,
++            "h": 316
++          },
++          "aspect": null
++        },
++        "framed": {
++          "box": {
++            "w": 230,
++            "h": 320
++          },
++          "frame": {
++            "w": 226,
++            "h": 316
++          },
++          "inside": {
++            "w": 226,
++            "h": 316
++          },
++          "id": "grid-charts/0/framed",
++          "natural": {
++            "w": 300,
++            "h": 150
++          },
++          "element": {
++            "w": 226,
++            "h": 316
++          },
++          "drawing": {
++            "w": 226,
++            "h": 316
++          },
++          "aspect": null,
++          "clipped": false,
++          "messages": 2
++        },
++        "differs": []
++      },
++      {
++        "id": "grid-charts/1",
++        "title": "A grid row: a chart with height=20rem (then 5rem), and a chart with no size",
++        "kind": "chart",
++        "plain": {
++          "box": {
++            "w": 230,
++            "h": 320
++          },
++          "element": {
++            "w": 226,
++            "h": 316
++          },
++          "drawing": {
++            "w": 226,
++            "h": 316
++          },
++          "aspect": null
++        },
++        "framed": {
++          "box": {
++            "w": 230,
++            "h": 320
++          },
++          "frame": {
++            "w": 226,
++            "h": 316
++          },
++          "inside": {
++            "w": 226,
++            "h": 316
++          },
++          "id": "grid-charts/1/framed",
++          "natural": {
++            "w": 300,
++            "h": 150
++          },
++          "element": {
++            "w": 226,
++            "h": 316
++          },
++          "drawing": {
++            "w": 226,
++            "h": 316
++          },
++          "aspect": null,
++          "clipped": false,
++          "messages": 2
++        },
++        "differs": []
++      },
++      {
++        "id": "grid-text/0",
++        "title": "A grid row: a chart with height=20rem (then 5rem), and text",
++        "kind": "chart",
++        "plain": {
++          "box": {
++            "w": 230,
++            "h": 320
++          },
++          "element": {
++            "w": 226,
++            "h": 316
++          },
++          "drawing": {
++            "w": 226,
++            "h": 316
++          },
++          "aspect": null
++        },
++        "framed": {
++          "box": {
++            "w": 230,
++            "h": 320
++          },
++          "frame": {
++            "w": 226,
++            "h": 316
++          },
++          "inside": {
++            "w": 226,
++            "h": 316
++          },
++          "id": "grid-text/0/framed",
++          "natural": {
++            "w": 300,
++            "h": 150
++          },
++          "element": {
++            "w": 226,
++            "h": 316
++          },
++          "drawing": {
++            "w": 226,
++            "h": 316
++          },
++          "aspect": null,
++          "clipped": false,
++          "messages": 2
++        },
++        "differs": []
++      },
++      {
++        "id": "grid-text/1",
++        "title": "A grid row: a chart with height=20rem (then 5rem), and text",
++        "kind": "flow",
++        "plain": {
++          "box": {
++            "w": 230,
++            "h": 320
++          },
++          "element": {
++            "w": 226,
++            "h": 316
++          },
++          "drawing": {
++            "w": 226,
++            "h": 316
++          },
++          "aspect": null
++        },
++        "framed": {
++          "box": {
++            "w": 230,
++            "h": 320
++          },
++          "frame": {
++            "w": 226,
++            "h": 316
++          },
++          "inside": {
++            "w": 226,
++            "h": 316
++          },
++          "id": "grid-text/1/framed",
++          "natural": {
++            "w": 624.9,
++            "h": 72
++          },
++          "element": {
++            "w": 226,
++            "h": 316
++          },
++          "drawing": {
++            "w": 226,
++            "h": 316
++          },
++          "aspect": null,
++          "clipped": false,
++          "messages": 2
++        },
++        "differs": []
++      },
++      {
++        "id": "grid-qr/0",
++        "title": "A grid row: a chart with height=20rem (then 5rem), and a QR code",
++        "kind": "chart",
++        "plain": {
++          "box": {
++            "w": 230,
++            "h": 320
++          },
++          "element": {
++            "w": 226,
++            "h": 316
++          },
++          "drawing": {
++            "w": 226,
++            "h": 316
++          },
++          "aspect": null
++        },
++        "framed": {
++          "box": {
++            "w": 230,
++            "h": 320
++          },
++          "frame": {
++            "w": 226,
++            "h": 316
++          },
++          "inside": {
++            "w": 226,
++            "h": 316
++          },
++          "id": "grid-qr/0/framed",
++          "natural": {
++            "w": 300,
++            "h": 150
++          },
++          "element": {
++            "w": 226,
++            "h": 316
++          },
++          "drawing": {
++            "w": 226,
++            "h": 316
++          },
++          "aspect": null,
++          "clipped": false,
++          "messages": 2
++        },
++        "differs": []
++      },
++      {
++        "id": "grid-qr/1",
++        "title": "A grid row: a chart with height=20rem (then 5rem), and a QR code",
++        "kind": "qr",
++        "plain": {
++          "box": {
++            "w": 230,
++            "h": 320
++          },
++          "element": {
++            "w": 226,
++            "h": 316
++          },
++          "drawing": {
++            "w": 226,
++            "h": 226
++          },
++          "aspect": "xMidYMid meet"
++        },
++        "framed": {
++          "box": {
++            "w": 230,
++            "h": 320
++          },
++          "frame": {
++            "w": 226,
++            "h": 316
++          },
++          "inside": {
++            "w": 226,
++            "h": 316
++          },
++          "id": "grid-qr/1/framed",
++          "natural": {
++            "w": 300,
++            "h": 226
++          },
++          "element": {
++            "w": 226,
++            "h": 316
++          },
++          "drawing": {
++            "w": 226,
++            "h": 226
++          },
++          "aspect": "xMidYMid meet",
++          "clipped": false,
++          "messages": 2
++        },
++        "differs": []
++      },
++      {
++        "id": "row/0",
++        "title": "A row (flexbox): two QR codes and a chart, no sizes",
++        "kind": "qr",
++        "plain": {
++          "box": {
++            "w": 304,
++            "h": 304
++          },
++          "element": {
++            "w": 300,
++            "h": 300
++          },
++          "drawing": {
++            "w": 300,
++            "h": 300
++          },
++          "aspect": "xMidYMid meet"
++        },
++        "framed": {
++          "box": {
++            "w": 304,
++            "h": 304
++          },
++          "frame": {
++            "w": 300,
++            "h": 300
++          },
++          "inside": {
++            "w": 300,
++            "h": 300
++          },
++          "id": "row/0/framed",
++          "natural": {
++            "w": 300,
++            "h": 300
++          },
++          "element": {
++            "w": 300,
++            "h": 300
++          },
++          "drawing": {
++            "w": 300,
++            "h": 300
++          },
++          "aspect": "xMidYMid meet",
++          "clipped": false,
++          "messages": 5
++        },
++        "differs": []
++      },
++      {
++        "id": "row/1",
++        "title": "A row (flexbox): two QR codes and a chart, no sizes",
++        "kind": "qr",
++        "plain": {
++          "box": {
++            "w": 80,
++            "h": 304
++          },
++          "element": {
++            "w": 76,
++            "h": 300
++          },
++          "drawing": {
++            "w": 76,
++            "h": 76
++          },
++          "aspect": "xMidYMid meet"
++        },
++        "framed": {
++          "box": {
++            "w": 80,
++            "h": 304
++          },
++          "frame": {
++            "w": 76,
++            "h": 300
++          },
++          "inside": {
++            "w": 76,
++            "h": 300
++          },
++          "id": "row/1/framed",
++          "natural": {
++            "w": 300,
++            "h": 76
++          },
++          "element": {
++            "w": 76,
++            "h": 300
++          },
++          "drawing": {
++            "w": 76,
++            "h": 76
++          },
++          "aspect": "xMidYMid meet",
++          "clipped": false,
++          "messages": 5
++        },
++        "differs": []
++      },
++      {
++        "id": "row/2",
++        "title": "A row (flexbox): two QR codes and a chart, no sizes",
++        "kind": "chart",
++        "plain": {
++          "box": {
++            "w": 304,
++            "h": 154
++          },
++          "element": {
++            "w": 300,
++            "h": 150
++          },
++          "drawing": {
++            "w": 300,
++            "h": 150
++          },
++          "aspect": null
++        },
++        "framed": {
++          "box": {
++            "w": 304,
++            "h": 154
++          },
++          "frame": {
++            "w": 300,
++            "h": 150
++          },
++          "inside": {
++            "w": 300,
++            "h": 150
++          },
++          "id": "row/2/framed",
++          "natural": {
++            "w": 300,
++            "h": 150
++          },
++          "element": {
++            "w": 300,
++            "h": 150
++          },
++          "drawing": {
++            "w": 300,
++            "h": 150
++          },
++          "aspect": null,
++          "clipped": false,
++          "messages": 4
++        },
++        "differs": []
++      },
++      {
++        "id": "inline/0",
++        "title": "Inline, in a line of text: width=3rem, and no size",
++        "kind": "qr",
++        "plain": {
++          "box": {
++            "w": 48,
++            "h": 48
++          },
++          "element": {
++            "w": 44,
++            "h": 44
++          },
++          "drawing": {
++            "w": 44,
++            "h": 44
++          },
++          "aspect": "xMidYMid meet"
++        },
++        "framed": {
++          "box": {
++            "w": 48,
++            "h": 48
++          },
++          "frame": {
++            "w": 44,
++            "h": 44
++          },
++          "inside": {
++            "w": 44,
++            "h": 44
++          },
++          "id": "inline/0/framed",
++          "natural": {
++            "w": 300,
++            "h": 44
++          },
++          "element": {
++            "w": 44,
++            "h": 44
++          },
++          "drawing": {
++            "w": 44,
++            "h": 44
++          },
++          "aspect": "xMidYMid meet",
++          "clipped": false,
++          "messages": 4
++        },
++        "differs": []
++      },
++      {
++        "id": "inline/1",
++        "title": "Inline, in a line of text: width=3rem, and no size",
++        "kind": "chart",
++        "plain": {
++          "box": {
++            "w": 96,
++            "h": 32
++          },
++          "element": {
++            "w": 92,
++            "h": 28
++          },
++          "drawing": {
++            "w": 92,
++            "h": 28
++          },
++          "aspect": null
++        },
++        "framed": {
++          "box": {
++            "w": 96,
++            "h": 32
++          },
++          "frame": {
++            "w": 92,
++            "h": 28
++          },
++          "inside": {
++            "w": 92,
++            "h": 28
++          },
++          "id": "inline/1/framed",
++          "natural": {
++            "w": 300,
++            "h": 150
++          },
++          "element": {
++            "w": 92,
++            "h": 28
++          },
++          "drawing": {
++            "w": 92,
++            "h": 28
++          },
++          "aspect": null,
++          "clipped": false,
++          "messages": 2
++        },
++        "differs": []
++      },
++      {
++        "id": "inline/2",
++        "title": "Inline, in a line of text: width=3rem, and no size",
++        "kind": "qr",
++        "plain": {
++          "box": {
++            "w": 304,
++            "h": 304
++          },
++          "element": {
++            "w": 300,
++            "h": 300
++          },
++          "drawing": {
++            "w": 300,
++            "h": 300
++          },
++          "aspect": "xMidYMid meet"
++        },
++        "framed": {
++          "box": {
++            "w": 304,
++            "h": 304
++          },
++          "frame": {
++            "w": 300,
++            "h": 300
++          },
++          "inside": {
++            "w": 300,
++            "h": 300
++          },
++          "id": "inline/2/framed",
++          "natural": {
++            "w": 300,
++            "h": 300
++          },
++          "element": {
++            "w": 300,
++            "h": 300
++          },
++          "drawing": {
++            "w": 300,
++            "h": 300
++          },
++          "aspect": "xMidYMid meet",
++          "clipped": false,
++          "messages": 5
++        },
++        "differs": []
++      }
++    ],
++    "shrunk": [
++      {
++        "id": "grid-charts/0",
++        "title": "A grid row: a chart with height=20rem (then 5rem), and a chart with no size",
++        "kind": "chart",
++        "plain": {
++          "box": {
++            "w": 230,
++            "h": 80
++          },
++          "element": {
++            "w": 226,
++            "h": 76
++          },
++          "drawing": {
++            "w": 226,
++            "h": 76
++          },
++          "aspect": null
++        },
++        "framed": {
++          "box": {
++            "w": 230,
++            "h": 80
++          },
++          "frame": {
++            "w": 226,
++            "h": 76
++          },
++          "inside": {
++            "w": 226,
++            "h": 76
++          },
++          "id": "grid-charts/0/framed",
++          "natural": {
++            "w": 300,
++            "h": 150
++          },
++          "element": {
++            "w": 226,
++            "h": 76
++          },
++          "drawing": {
++            "w": 226,
++            "h": 76
++          },
++          "aspect": null,
++          "clipped": false,
++          "messages": 3
++        },
++        "differs": []
++      },
++      {
++        "id": "grid-charts/1",
++        "title": "A grid row: a chart with height=20rem (then 5rem), and a chart with no size",
++        "kind": "chart",
++        "plain": {
++          "box": {
++            "w": 230,
++            "h": 154
++          },
++          "element": {
++            "w": 226,
++            "h": 150
++          },
++          "drawing": {
++            "w": 226,
++            "h": 150
++          },
++          "aspect": null
++        },
++        "framed": {
++          "box": {
++            "w": 230,
++            "h": 154
++          },
++          "frame": {
++            "w": 226,
++            "h": 150
++          },
++          "inside": {
++            "w": 226,
++            "h": 150
++          },
++          "id": "grid-charts/1/framed",
++          "natural": {
++            "w": 300,
++            "h": 150
++          },
++          "element": {
++            "w": 226,
++            "h": 150
++          },
++          "drawing": {
++            "w": 226,
++            "h": 150
++          },
++          "aspect": null,
++          "clipped": false,
++          "messages": 3
++        },
++        "differs": []
++      },
++      {
++        "id": "grid-text/0",
++        "title": "A grid row: a chart with height=20rem (then 5rem), and text",
++        "kind": "chart",
++        "plain": {
++          "box": {
++            "w": 230,
++            "h": 80
++          },
++          "element": {
++            "w": 226,
++            "h": 76
++          },
++          "drawing": {
++            "w": 226,
++            "h": 76
++          },
++          "aspect": null
++        },
++        "framed": {
++          "box": {
++            "w": 230,
++            "h": 80
++          },
++          "frame": {
++            "w": 226,
++            "h": 76
++          },
++          "inside": {
++            "w": 226,
++            "h": 76
++          },
++          "id": "grid-text/0/framed",
++          "natural": {
++            "w": 300,
++            "h": 150
++          },
++          "element": {
++            "w": 226,
++            "h": 76
++          },
++          "drawing": {
++            "w": 226,
++            "h": 76
++          },
++          "aspect": null,
++          "clipped": false,
++          "messages": 3
++        },
++        "differs": []
++      },
++      {
++        "id": "grid-text/1",
++        "title": "A grid row: a chart with height=20rem (then 5rem), and text",
++        "kind": "flow",
++        "plain": {
++          "box": {
++            "w": 230,
++            "h": 80
++          },
++          "element": {
++            "w": 226,
++            "h": 76
++          },
++          "drawing": {
++            "w": 226,
++            "h": 76
++          },
++          "aspect": null
++        },
++        "framed": {
++          "box": {
++            "w": 230,
++            "h": 80
++          },
++          "frame": {
++            "w": 226,
++            "h": 76
++          },
++          "inside": {
++            "w": 226,
++            "h": 76
++          },
++          "id": "grid-text/1/framed",
++          "natural": {
++            "w": 624.9,
++            "h": 72
++          },
++          "element": {
++            "w": 226,
++            "h": 76
++          },
++          "drawing": {
++            "w": 226,
++            "h": 76
++          },
++          "aspect": null,
++          "clipped": false,
++          "messages": 3
++        },
++        "differs": []
++      },
++      {
++        "id": "grid-qr/0",
++        "title": "A grid row: a chart with height=20rem (then 5rem), and a QR code",
++        "kind": "chart",
++        "plain": {
++          "box": {
++            "w": 230,
++            "h": 80
++          },
++          "element": {
++            "w": 226,
++            "h": 76
++          },
++          "drawing": {
++            "w": 226,
++            "h": 76
++          },
++          "aspect": null
++        },
++        "framed": {
++          "box": {
++            "w": 230,
++            "h": 80
++          },
++          "frame": {
++            "w": 226,
++            "h": 76
++          },
++          "inside": {
++            "w": 226,
++            "h": 76
++          },
++          "id": "grid-qr/0/framed",
++          "natural": {
++            "w": 300,
++            "h": 150
++          },
++          "element": {
++            "w": 226,
++            "h": 76
++          },
++          "drawing": {
++            "w": 226,
++            "h": 76
++          },
++          "aspect": null,
++          "clipped": false,
++          "messages": 3
++        },
++        "differs": []
++      },
++      {
++        "id": "grid-qr/1",
++        "title": "A grid row: a chart with height=20rem (then 5rem), and a QR code",
++        "kind": "qr",
++        "plain": {
++          "box": {
++            "w": 230,
++            "h": 230
++          },
++          "element": {
++            "w": 226,
++            "h": 226
++          },
++          "drawing": {
++            "w": 226,
++            "h": 226
++          },
++          "aspect": "xMidYMid meet"
++        },
++        "framed": {
++          "box": {
++            "w": 230,
++            "h": 230
++          },
++          "frame": {
++            "w": 226,
++            "h": 226
++          },
++          "inside": {
++            "w": 226,
++            "h": 226
++          },
++          "id": "grid-qr/1/framed",
++          "natural": {
++            "w": 300,
++            "h": 226
++          },
++          "element": {
++            "w": 226,
++            "h": 226
++          },
++          "drawing": {
++            "w": 226,
++            "h": 226
++          },
++          "aspect": "xMidYMid meet",
++          "clipped": false,
++          "messages": 3
++        },
++        "differs": []
++      }
++    ]
++  },
++  "WebKit": {
++    "drawn": [
++      {
++        "id": "qr-none/0",
++        "title": "QR code, no size",
++        "kind": "qr",
++        "plain": {
++          "box": {
++            "w": 468,
++            "h": 468
++          },
++          "element": {
++            "w": 464,
++            "h": 464
++          },
++          "drawing": {
++            "w": 464,
++            "h": 464
++          },
++          "aspect": "xMidYMid meet"
++        },
++        "framed": {
++          "box": {
++            "w": 468,
++            "h": 468
++          },
++          "frame": {
++            "w": 464,
++            "h": 464
++          },
++          "inside": {
++            "w": 464,
++            "h": 464
++          },
++          "id": "qr-none/0/framed",
++          "natural": {
++            "w": 300,
++            "h": 464
++          },
++          "element": {
++            "w": 464,
++            "h": 464
++          },
++          "drawing": {
++            "w": 464,
++            "h": 464
++          },
++          "aspect": "xMidYMid meet",
++          "clipped": false,
++          "messages": 2
++        },
++        "differs": []
++      },
++      {
++        "id": "qr-width/0",
++        "title": "QR code, width=10rem",
++        "kind": "qr",
++        "plain": {
++          "box": {
++            "w": 160,
++            "h": 160
++          },
++          "element": {
++            "w": 156,
++            "h": 156
++          },
++          "drawing": {
++            "w": 156,
++            "h": 156
++          },
++          "aspect": "xMidYMid meet"
++        },
++        "framed": {
++          "box": {
++            "w": 160,
++            "h": 160
++          },
++          "frame": {
++            "w": 156,
++            "h": 156
++          },
++          "inside": {
++            "w": 156,
++            "h": 156
++          },
++          "id": "qr-width/0/framed",
++          "natural": {
++            "w": 300,
++            "h": 156
++          },
++          "element": {
++            "w": 156,
++            "h": 156
++          },
++          "drawing": {
++            "w": 156,
++            "h": 156
++          },
++          "aspect": "xMidYMid meet",
++          "clipped": false,
++          "messages": 2
++        },
++        "differs": []
++      },
++      {
++        "id": "qr-height/0",
++        "title": "QR code, height=6rem",
++        "kind": "qr",
++        "plain": {
++          "box": {
++            "w": 468,
++            "h": 96
++          },
++          "element": {
++            "w": 464,
++            "h": 92
++          },
++          "drawing": {
++            "w": 92,
++            "h": 92
++          },
++          "aspect": "xMidYMid meet"
++        },
++        "framed": {
++          "box": {
++            "w": 468,
++            "h": 96
++          },
++          "frame": {
++            "w": 464,
++            "h": 92
++          },
++          "inside": {
++            "w": 464,
++            "h": 92
++          },
++          "id": "qr-height/0/framed",
++          "natural": {
++            "w": 300,
++            "h": 464
++          },
++          "element": {
++            "w": 464,
++            "h": 92
++          },
++          "drawing": {
++            "w": 92,
++            "h": 92
++          },
++          "aspect": "xMidYMid meet",
++          "clipped": false,
++          "messages": 1
++        },
++        "differs": []
++      },
++      {
++        "id": "qr-wide/0",
++        "title": "QR code, width=16rem height=6rem",
++        "kind": "qr",
++        "plain": {
++          "box": {
++            "w": 256,
++            "h": 96
++          },
++          "element": {
++            "w": 252,
++            "h": 92
++          },
++          "drawing": {
++            "w": 92,
++            "h": 92
++          },
++          "aspect": "xMidYMid meet"
++        },
++        "framed": {
++          "box": {
++            "w": 256,
++            "h": 96
++          },
++          "frame": {
++            "w": 252,
++            "h": 92
++          },
++          "inside": {
++            "w": 252,
++            "h": 92
++          },
++          "id": "qr-wide/0/framed",
++          "natural": {
++            "w": 300,
++            "h": 252
++          },
++          "element": {
++            "w": 252,
++            "h": 92
++          },
++          "drawing": {
++            "w": 92,
++            "h": 92
++          },
++          "aspect": "xMidYMid meet",
++          "clipped": false,
++          "messages": 1
++        },
++        "differs": []
++      },
++      {
++        "id": "qr-tall/0",
++        "title": "QR code, width=6rem height=12rem",
++        "kind": "qr",
++        "plain": {
++          "box": {
++            "w": 96,
++            "h": 192
++          },
++          "element": {
++            "w": 92,
++            "h": 188
++          },
++          "drawing": {
++            "w": 92,
++            "h": 92
++          },
++          "aspect": "xMidYMid meet"
++        },
++        "framed": {
++          "box": {
++            "w": 96,
++            "h": 192
++          },
++          "frame": {
++            "w": 92,
++            "h": 188
++          },
++          "inside": {
++            "w": 92,
++            "h": 188
++          },
++          "id": "qr-tall/0/framed",
++          "natural": {
++            "w": 300,
++            "h": 92
++          },
++          "element": {
++            "w": 92,
++            "h": 188
++          },
++          "drawing": {
++            "w": 92,
++            "h": 92
++          },
++          "aspect": "xMidYMid meet",
++          "clipped": false,
++          "messages": 1
++        },
++        "differs": []
++      },
++      {
++        "id": "qr-ratio/0",
++        "title": "QR code, width=12rem aspect-ratio=2/1",
++        "kind": "qr",
++        "plain": {
++          "box": {
++            "w": 192,
++            "h": 96
++          },
++          "element": {
++            "w": 188,
++            "h": 92
++          },
++          "drawing": {
++            "w": 92,
++            "h": 92
++          },
++          "aspect": "xMidYMid meet"
++        },
++        "framed": {
++          "box": {
++            "w": 192,
++            "h": 96
++          },
++          "frame": {
++            "w": 188,
++            "h": 92
++          },
++          "inside": {
++            "w": 188,
++            "h": 92
++          },
++          "id": "qr-ratio/0/framed",
++          "natural": {
++            "w": 300,
++            "h": 188
++          },
++          "element": {
++            "w": 188,
++            "h": 92
++          },
++          "drawing": {
++            "w": 92,
++            "h": 92
++          },
++          "aspect": "xMidYMid meet",
++          "clipped": false,
++          "messages": 1
++        },
++        "differs": []
++      },
++      {
++        "id": "qr-start/0",
++        "title": "QR code, height=6rem object-position=start",
++        "kind": "qr",
++        "plain": {
++          "box": {
++            "w": 468,
++            "h": 96
++          },
++          "element": {
++            "w": 464,
++            "h": 92
++          },
++          "drawing": {
++            "w": 92,
++            "h": 92
++          },
++          "aspect": "xMinYMin meet"
++        },
++        "framed": {
++          "box": {
++            "w": 468,
++            "h": 96
++          },
++          "frame": {
++            "w": 464,
++            "h": 92
++          },
++          "inside": {
++            "w": 464,
++            "h": 92
++          },
++          "id": "qr-start/0/framed",
++          "natural": {
++            "w": 300,
++            "h": 464
++          },
++          "element": {
++            "w": 464,
++            "h": 92
++          },
++          "drawing": {
++            "w": 92,
++            "h": 92
++          },
++          "aspect": "xMinYMin meet",
++          "clipped": false,
++          "messages": 1
++        },
++        "differs": []
++      },
++      {
++        "id": "qr-end/0",
++        "title": "QR code, width=6rem height=12rem object-position=end",
++        "kind": "qr",
++        "plain": {
++          "box": {
++            "w": 96,
++            "h": 192
++          },
++          "element": {
++            "w": 92,
++            "h": 188
++          },
++          "drawing": {
++            "w": 92,
++            "h": 92
++          },
++          "aspect": "xMaxYMax meet"
++        },
++        "framed": {
++          "box": {
++            "w": 96,
++            "h": 192
++          },
++          "frame": {
++            "w": 92,
++            "h": 188
++          },
++          "inside": {
++            "w": 92,
++            "h": 188
++          },
++          "id": "qr-end/0/framed",
++          "natural": {
++            "w": 300,
++            "h": 92
++          },
++          "element": {
++            "w": 92,
++            "h": 188
++          },
++          "drawing": {
++            "w": 92,
++            "h": 92
++          },
++          "aspect": "xMaxYMax meet",
++          "clipped": false,
++          "messages": 1
++        },
++        "differs": []
++      },
++      {
++        "id": "qr-cover/0",
++        "title": "QR code, width=16rem height=6rem object-fit=cover",
++        "kind": "qr",
++        "plain": {
++          "box": {
++            "w": 256,
++            "h": 96
++          },
++          "element": {
++            "w": 252,
++            "h": 92
++          },
++          "drawing": {
++            "w": 252,
++            "h": 252
++          },
++          "aspect": "xMidYMid slice"
++        },
++        "framed": {
++          "box": {
++            "w": 256,
++            "h": 96
++          },
++          "frame": {
++            "w": 252,
++            "h": 92
++          },
++          "inside": {
++            "w": 252,
++            "h": 92
++          },
++          "id": "qr-cover/0/framed",
++          "natural": {
++            "w": 300,
++            "h": 252
++          },
++          "element": {
++            "w": 252,
++            "h": 92
++          },
++          "drawing": {
++            "w": 252,
++            "h": 252
++          },
++          "aspect": "xMidYMid slice",
++          "clipped": false,
++          "messages": 1
++        },
++        "differs": []
++      },
++      {
++        "id": "qr-fill/0",
++        "title": "QR code, width=16rem height=6rem object-fit=fill",
++        "kind": "qr",
++        "plain": {
++          "box": {
++            "w": 256,
++            "h": 96
++          },
++          "element": {
++            "w": 252,
++            "h": 92
++          },
++          "drawing": {
++            "w": 252,
++            "h": 92
++          },
++          "aspect": "none"
++        },
++        "framed": {
++          "box": {
++            "w": 256,
++            "h": 96
++          },
++          "frame": {
++            "w": 252,
++            "h": 92
++          },
++          "inside": {
++            "w": 252,
++            "h": 92
++          },
++          "id": "qr-fill/0/framed",
++          "natural": {
++            "w": 300,
++            "h": 252
++          },
++          "element": {
++            "w": 252,
++            "h": 92
++          },
++          "drawing": {
++            "w": 252,
++            "h": 92
++          },
++          "aspect": "none",
++          "clipped": false,
++          "messages": 1
++        },
++        "differs": []
++      },
++      {
++        "id": "chart-none/0",
++        "title": "Chart, no size",
++        "kind": "chart",
++        "plain": {
++          "box": {
++            "w": 468,
++            "h": 154
++          },
++          "element": {
++            "w": 464,
++            "h": 150
++          },
++          "drawing": {
++            "w": 464,
++            "h": 150
++          },
++          "aspect": null
++        },
++        "framed": {
++          "box": {
++            "w": 468,
++            "h": 154
++          },
++          "frame": {
++            "w": 464,
++            "h": 150
++          },
++          "inside": {
++            "w": 464,
++            "h": 150
++          },
++          "id": "chart-none/0/framed",
++          "natural": {
++            "w": 300,
++            "h": 150
++          },
++          "element": {
++            "w": 464,
++            "h": 150
++          },
++          "drawing": {
++            "w": 464,
++            "h": 150
++          },
++          "aspect": null,
++          "clipped": false,
++          "messages": 2
++        },
++        "differs": []
++      },
++      {
++        "id": "chart-ratio/0",
++        "title": "Chart, aspect-ratio=3/1",
++        "kind": "chart",
++        "plain": {
++          "box": {
++            "w": 468,
++            "h": 156
++          },
++          "element": {
++            "w": 464,
++            "h": 152
++          },
++          "drawing": {
++            "w": 464,
++            "h": 152
++          },
++          "aspect": null
++        },
++        "framed": {
++          "box": {
++            "w": 468,
++            "h": 156
++          },
++          "frame": {
++            "w": 464,
++            "h": 152
++          },
++          "inside": {
++            "w": 464,
++            "h": 152
++          },
++          "id": "chart-ratio/0/framed",
++          "natural": {
++            "w": 300,
++            "h": 150
++          },
++          "element": {
++            "w": 464,
++            "h": 152
++          },
++          "drawing": {
++            "w": 464,
++            "h": 152
++          },
++          "aspect": null,
++          "clipped": false,
++          "messages": 1
++        },
++        "differs": []
++      },
++      {
++        "id": "chart-height/0",
++        "title": "Chart, height=8rem",
++        "kind": "chart",
++        "plain": {
++          "box": {
++            "w": 468,
++            "h": 128
++          },
++          "element": {
++            "w": 464,
++            "h": 124
++          },
++          "drawing": {
++            "w": 464,
++            "h": 124
++          },
++          "aspect": null
++        },
++        "framed": {
++          "box": {
++            "w": 468,
++            "h": 128
++          },
++          "frame": {
++            "w": 464,
++            "h": 124
++          },
++          "inside": {
++            "w": 464,
++            "h": 124
++          },
++          "id": "chart-height/0/framed",
++          "natural": {
++            "w": 300,
++            "h": 150
++          },
++          "element": {
++            "w": 464,
++            "h": 124
++          },
++          "drawing": {
++            "w": 464,
++            "h": 124
++          },
++          "aspect": null,
++          "clipped": false,
++          "messages": 1
++        },
++        "differs": []
++      },
++      {
++        "id": "chart-box/0",
++        "title": "Chart, width=16rem height=6rem",
++        "kind": "chart",
++        "plain": {
++          "box": {
++            "w": 256,
++            "h": 96
++          },
++          "element": {
++            "w": 252,
++            "h": 92
++          },
++          "drawing": {
++            "w": 252,
++            "h": 92
++          },
++          "aspect": null
++        },
++        "framed": {
++          "box": {
++            "w": 256,
++            "h": 96
++          },
++          "frame": {
++            "w": 252,
++            "h": 92
++          },
++          "inside": {
++            "w": 252,
++            "h": 92
++          },
++          "id": "chart-box/0/framed",
++          "natural": {
++            "w": 300,
++            "h": 150
++          },
++          "element": {
++            "w": 252,
++            "h": 92
++          },
++          "drawing": {
++            "w": 252,
++            "h": 92
++          },
++          "aspect": null,
++          "clipped": false,
++          "messages": 1
++        },
++        "differs": []
++      },
++      {
++        "id": "flow-none/0",
++        "title": "Text, no size",
++        "kind": "flow",
++        "plain": {
++          "box": {
++            "w": 468,
++            "h": 52
++          },
++          "element": {
++            "w": 464,
++            "h": 48
++          },
++          "drawing": {
++            "w": 464,
++            "h": 48
++          },
++          "aspect": null
++        },
++        "framed": {
++          "box": {
++            "w": 468,
++            "h": 52
++          },
++          "frame": {
++            "w": 464,
++            "h": 48
++          },
++          "inside": {
++            "w": 464,
++            "h": 48
++          },
++          "id": "flow-none/0/framed",
++          "natural": {
++            "w": 624.9,
++            "h": 48
++          },
++          "element": {
++            "w": 464,
++            "h": 48
++          },
++          "drawing": {
++            "w": 464,
++            "h": 48
++          },
++          "aspect": null,
++          "clipped": false,
++          "messages": 2
++        },
++        "differs": []
++      },
++      {
++        "id": "flow-height/0",
++        "title": "Text, height=2rem (shorter than its text)",
++        "kind": "flow",
++        "plain": {
++          "box": {
++            "w": 468,
++            "h": 32
++          },
++          "element": {
++            "w": 464,
++            "h": 28
++          },
++          "drawing": {
++            "w": 464,
++            "h": 28
++          },
++          "aspect": null
++        },
++        "framed": {
++          "box": {
++            "w": 468,
++            "h": 32
++          },
++          "frame": {
++            "w": 464,
++            "h": 28
++          },
++          "inside": {
++            "w": 464,
++            "h": 28
++          },
++          "id": "flow-height/0/framed",
++          "natural": {
++            "w": 624.9,
++            "h": 48
++          },
++          "element": {
++            "w": 464,
++            "h": 28
++          },
++          "drawing": {
++            "w": 464,
++            "h": 28
++          },
++          "aspect": null,
++          "clipped": false,
++          "messages": 1
++        },
++        "differs": []
++      },
++      {
++        "id": "grid-charts/0",
++        "title": "A grid row: a chart with height=20rem (then 5rem), and a chart with no size",
++        "kind": "chart",
++        "plain": {
++          "box": {
++            "w": 230,
++            "h": 320
++          },
++          "element": {
++            "w": 226,
++            "h": 316
++          },
++          "drawing": {
++            "w": 226,
++            "h": 316
++          },
++          "aspect": null
++        },
++        "framed": {
++          "box": {
++            "w": 230,
++            "h": 320
++          },
++          "frame": {
++            "w": 226,
++            "h": 316
++          },
++          "inside": {
++            "w": 226,
++            "h": 316
++          },
++          "id": "grid-charts/0/framed",
++          "natural": {
++            "w": 300,
++            "h": 150
++          },
++          "element": {
++            "w": 226,
++            "h": 316
++          },
++          "drawing": {
++            "w": 226,
++            "h": 316
++          },
++          "aspect": null,
++          "clipped": false,
++          "messages": 1
++        },
++        "differs": []
++      },
++      {
++        "id": "grid-charts/1",
++        "title": "A grid row: a chart with height=20rem (then 5rem), and a chart with no size",
++        "kind": "chart",
++        "plain": {
++          "box": {
++            "w": 230,
++            "h": 320
++          },
++          "element": {
++            "w": 226,
++            "h": 316
++          },
++          "drawing": {
++            "w": 226,
++            "h": 316
++          },
++          "aspect": null
++        },
++        "framed": {
++          "box": {
++            "w": 230,
++            "h": 320
++          },
++          "frame": {
++            "w": 226,
++            "h": 316
++          },
++          "inside": {
++            "w": 226,
++            "h": 316
++          },
++          "id": "grid-charts/1/framed",
++          "natural": {
++            "w": 300,
++            "h": 150
++          },
++          "element": {
++            "w": 226,
++            "h": 316
++          },
++          "drawing": {
++            "w": 226,
++            "h": 316
++          },
++          "aspect": null,
++          "clipped": false,
++          "messages": 1
++        },
++        "differs": []
++      },
++      {
++        "id": "grid-text/0",
++        "title": "A grid row: a chart with height=20rem (then 5rem), and text",
++        "kind": "chart",
++        "plain": {
++          "box": {
++            "w": 230,
++            "h": 320
++          },
++          "element": {
++            "w": 226,
++            "h": 316
++          },
++          "drawing": {
++            "w": 226,
++            "h": 316
++          },
++          "aspect": null
++        },
++        "framed": {
++          "box": {
++            "w": 230,
++            "h": 320
++          },
++          "frame": {
++            "w": 226,
++            "h": 316
++          },
++          "inside": {
++            "w": 226,
++            "h": 316
++          },
++          "id": "grid-text/0/framed",
++          "natural": {
++            "w": 300,
++            "h": 150
++          },
++          "element": {
++            "w": 226,
++            "h": 316
++          },
++          "drawing": {
++            "w": 226,
++            "h": 316
++          },
++          "aspect": null,
++          "clipped": false,
++          "messages": 1
++        },
++        "differs": []
++      },
++      {
++        "id": "grid-text/1",
++        "title": "A grid row: a chart with height=20rem (then 5rem), and text",
++        "kind": "flow",
++        "plain": {
++          "box": {
++            "w": 230,
++            "h": 320
++          },
++          "element": {
++            "w": 226,
++            "h": 316
++          },
++          "drawing": {
++            "w": 226,
++            "h": 316
++          },
++          "aspect": null
++        },
++        "framed": {
++          "box": {
++            "w": 230,
++            "h": 320
++          },
++          "frame": {
++            "w": 226,
++            "h": 316
++          },
++          "inside": {
++            "w": 226,
++            "h": 316
++          },
++          "id": "grid-text/1/framed",
++          "natural": {
++            "w": 624.9,
++            "h": 72
++          },
++          "element": {
++            "w": 226,
++            "h": 316
++          },
++          "drawing": {
++            "w": 226,
++            "h": 316
++          },
++          "aspect": null,
++          "clipped": false,
++          "messages": 1
++        },
++        "differs": []
++      },
++      {
++        "id": "grid-qr/0",
++        "title": "A grid row: a chart with height=20rem (then 5rem), and a QR code",
++        "kind": "chart",
++        "plain": {
++          "box": {
++            "w": 230,
++            "h": 320
++          },
++          "element": {
++            "w": 226,
++            "h": 316
++          },
++          "drawing": {
++            "w": 226,
++            "h": 316
++          },
++          "aspect": null
++        },
++        "framed": {
++          "box": {
++            "w": 230,
++            "h": 320
++          },
++          "frame": {
++            "w": 226,
++            "h": 316
++          },
++          "inside": {
++            "w": 226,
++            "h": 316
++          },
++          "id": "grid-qr/0/framed",
++          "natural": {
++            "w": 300,
++            "h": 150
++          },
++          "element": {
++            "w": 226,
++            "h": 316
++          },
++          "drawing": {
++            "w": 226,
++            "h": 316
++          },
++          "aspect": null,
++          "clipped": false,
++          "messages": 1
++        },
++        "differs": []
++      },
++      {
++        "id": "grid-qr/1",
++        "title": "A grid row: a chart with height=20rem (then 5rem), and a QR code",
++        "kind": "qr",
++        "plain": {
++          "box": {
++            "w": 230,
++            "h": 320
++          },
++          "element": {
++            "w": 226,
++            "h": 316
++          },
++          "drawing": {
++            "w": 226,
++            "h": 226
++          },
++          "aspect": "xMidYMid meet"
++        },
++        "framed": {
++          "box": {
++            "w": 230,
++            "h": 320
++          },
++          "frame": {
++            "w": 226,
++            "h": 316
++          },
++          "inside": {
++            "w": 226,
++            "h": 316
++          },
++          "id": "grid-qr/1/framed",
++          "natural": {
++            "w": 300,
++            "h": 226
++          },
++          "element": {
++            "w": 226,
++            "h": 316
++          },
++          "drawing": {
++            "w": 226,
++            "h": 226
++          },
++          "aspect": "xMidYMid meet",
++          "clipped": false,
++          "messages": 1
++        },
++        "differs": []
++      },
++      {
++        "id": "row/0",
++        "title": "A row (flexbox): two QR codes and a chart, no sizes",
++        "kind": "qr",
++        "plain": {
++          "box": {
++            "w": 304,
++            "h": 304
++          },
++          "element": {
++            "w": 300,
++            "h": 300
++          },
++          "drawing": {
++            "w": 300,
++            "h": 300
++          },
++          "aspect": "xMidYMid meet"
++        },
++        "framed": {
++          "box": {
++            "w": 304,
++            "h": 304
++          },
++          "frame": {
++            "w": 300,
++            "h": 300
++          },
++          "inside": {
++            "w": 300,
++            "h": 300
++          },
++          "id": "row/0/framed",
++          "natural": {
++            "w": 300,
++            "h": 300
++          },
++          "element": {
++            "w": 300,
++            "h": 300
++          },
++          "drawing": {
++            "w": 300,
++            "h": 300
++          },
++          "aspect": "xMidYMid meet",
++          "clipped": false,
++          "messages": 3
++        },
++        "differs": []
++      },
++      {
++        "id": "row/1",
++        "title": "A row (flexbox): two QR codes and a chart, no sizes",
++        "kind": "qr",
++        "plain": {
++          "box": {
++            "w": 80,
++            "h": 304
++          },
++          "element": {
++            "w": 76,
++            "h": 300
++          },
++          "drawing": {
++            "w": 76,
++            "h": 76
++          },
++          "aspect": "xMidYMid meet"
++        },
++        "framed": {
++          "box": {
++            "w": 80,
++            "h": 304
++          },
++          "frame": {
++            "w": 76,
++            "h": 300
++          },
++          "inside": {
++            "w": 76,
++            "h": 300
++          },
++          "id": "row/1/framed",
++          "natural": {
++            "w": 300,
++            "h": 76
++          },
++          "element": {
++            "w": 76,
++            "h": 300
++          },
++          "drawing": {
++            "w": 76,
++            "h": 76
++          },
++          "aspect": "xMidYMid meet",
++          "clipped": false,
++          "messages": 3
++        },
++        "differs": []
++      },
++      {
++        "id": "row/2",
++        "title": "A row (flexbox): two QR codes and a chart, no sizes",
++        "kind": "chart",
++        "plain": {
++          "box": {
++            "w": 304,
++            "h": 154
++          },
++          "element": {
++            "w": 300,
++            "h": 150
++          },
++          "drawing": {
++            "w": 300,
++            "h": 150
++          },
++          "aspect": null
++        },
++        "framed": {
++          "box": {
++            "w": 304,
++            "h": 154
++          },
++          "frame": {
++            "w": 300,
++            "h": 150
++          },
++          "inside": {
++            "w": 300,
++            "h": 150
++          },
++          "id": "row/2/framed",
++          "natural": {
++            "w": 300,
++            "h": 150
++          },
++          "element": {
++            "w": 300,
++            "h": 150
++          },
++          "drawing": {
++            "w": 300,
++            "h": 150
++          },
++          "aspect": null,
++          "clipped": false,
++          "messages": 2
++        },
++        "differs": []
++      },
++      {
++        "id": "inline/0",
++        "title": "Inline, in a line of text: width=3rem, and no size",
++        "kind": "qr",
++        "plain": {
++          "box": {
++            "w": 48,
++            "h": 48
++          },
++          "element": {
++            "w": 44,
++            "h": 44
++          },
++          "drawing": {
++            "w": 44,
++            "h": 44
++          },
++          "aspect": "xMidYMid meet"
++        },
++        "framed": {
++          "box": {
++            "w": 48,
++            "h": 48
++          },
++          "frame": {
++            "w": 44,
++            "h": 44
++          },
++          "inside": {
++            "w": 44,
++            "h": 44
++          },
++          "id": "inline/0/framed",
++          "natural": {
++            "w": 300,
++            "h": 44
++          },
++          "element": {
++            "w": 44,
++            "h": 44
++          },
++          "drawing": {
++            "w": 44,
++            "h": 44
++          },
++          "aspect": "xMidYMid meet",
++          "clipped": false,
++          "messages": 2
++        },
++        "differs": []
++      },
++      {
++        "id": "inline/1",
++        "title": "Inline, in a line of text: width=3rem, and no size",
++        "kind": "chart",
++        "plain": {
++          "box": {
++            "w": 96,
++            "h": 32
++          },
++          "element": {
++            "w": 92,
++            "h": 28
++          },
++          "drawing": {
++            "w": 92,
++            "h": 28
++          },
++          "aspect": null
++        },
++        "framed": {
++          "box": {
++            "w": 96,
++            "h": 32
++          },
++          "frame": {
++            "w": 92,
++            "h": 28
++          },
++          "inside": {
++            "w": 92,
++            "h": 28
++          },
++          "id": "inline/1/framed",
++          "natural": {
++            "w": 300,
++            "h": 150
++          },
++          "element": {
++            "w": 92,
++            "h": 28
++          },
++          "drawing": {
++            "w": 92,
++            "h": 28
++          },
++          "aspect": null,
++          "clipped": false,
++          "messages": 1
++        },
++        "differs": []
++      },
++      {
++        "id": "inline/2",
++        "title": "Inline, in a line of text: width=3rem, and no size",
++        "kind": "qr",
++        "plain": {
++          "box": {
++            "w": 304,
++            "h": 304
++          },
++          "element": {
++            "w": 300,
++            "h": 300
++          },
++          "drawing": {
++            "w": 300,
++            "h": 300
++          },
++          "aspect": "xMidYMid meet"
++        },
++        "framed": {
++          "box": {
++            "w": 304,
++            "h": 304
++          },
++          "frame": {
++            "w": 300,
++            "h": 300
++          },
++          "inside": {
++            "w": 300,
++            "h": 300
++          },
++          "id": "inline/2/framed",
++          "natural": {
++            "w": 300,
++            "h": 300
++          },
++          "element": {
++            "w": 300,
++            "h": 300
++          },
++          "drawing": {
++            "w": 300,
++            "h": 300
++          },
++          "aspect": "xMidYMid meet",
++          "clipped": false,
++          "messages": 3
++        },
++        "differs": []
++      }
++    ],
++    "shrunk": [
++      {
++        "id": "grid-charts/0",
++        "title": "A grid row: a chart with height=20rem (then 5rem), and a chart with no size",
++        "kind": "chart",
++        "plain": {
++          "box": {
++            "w": 230,
++            "h": 80
++          },
++          "element": {
++            "w": 226,
++            "h": 76
++          },
++          "drawing": {
++            "w": 226,
++            "h": 76
++          },
++          "aspect": null
++        },
++        "framed": {
++          "box": {
++            "w": 230,
++            "h": 80
++          },
++          "frame": {
++            "w": 226,
++            "h": 76
++          },
++          "inside": {
++            "w": 226,
++            "h": 76
++          },
++          "id": "grid-charts/0/framed",
++          "natural": {
++            "w": 300,
++            "h": 150
++          },
++          "element": {
++            "w": 226,
++            "h": 76
++          },
++          "drawing": {
++            "w": 226,
++            "h": 76
++          },
++          "aspect": null,
++          "clipped": false,
++          "messages": 2
++        },
++        "differs": []
++      },
++      {
++        "id": "grid-charts/1",
++        "title": "A grid row: a chart with height=20rem (then 5rem), and a chart with no size",
++        "kind": "chart",
++        "plain": {
++          "box": {
++            "w": 230,
++            "h": 154
++          },
++          "element": {
++            "w": 226,
++            "h": 150
++          },
++          "drawing": {
++            "w": 226,
++            "h": 150
++          },
++          "aspect": null
++        },
++        "framed": {
++          "box": {
++            "w": 230,
++            "h": 154
++          },
++          "frame": {
++            "w": 226,
++            "h": 150
++          },
++          "inside": {
++            "w": 226,
++            "h": 150
++          },
++          "id": "grid-charts/1/framed",
++          "natural": {
++            "w": 300,
++            "h": 150
++          },
++          "element": {
++            "w": 226,
++            "h": 150
++          },
++          "drawing": {
++            "w": 226,
++            "h": 150
++          },
++          "aspect": null,
++          "clipped": false,
++          "messages": 2
++        },
++        "differs": []
++      },
++      {
++        "id": "grid-text/0",
++        "title": "A grid row: a chart with height=20rem (then 5rem), and text",
++        "kind": "chart",
++        "plain": {
++          "box": {
++            "w": 230,
++            "h": 80
++          },
++          "element": {
++            "w": 226,
++            "h": 76
++          },
++          "drawing": {
++            "w": 226,
++            "h": 76
++          },
++          "aspect": null
++        },
++        "framed": {
++          "box": {
++            "w": 230,
++            "h": 80
++          },
++          "frame": {
++            "w": 226,
++            "h": 76
++          },
++          "inside": {
++            "w": 226,
++            "h": 76
++          },
++          "id": "grid-text/0/framed",
++          "natural": {
++            "w": 300,
++            "h": 150
++          },
++          "element": {
++            "w": 226,
++            "h": 76
++          },
++          "drawing": {
++            "w": 226,
++            "h": 76
++          },
++          "aspect": null,
++          "clipped": false,
++          "messages": 2
++        },
++        "differs": []
++      },
++      {
++        "id": "grid-text/1",
++        "title": "A grid row: a chart with height=20rem (then 5rem), and text",
++        "kind": "flow",
++        "plain": {
++          "box": {
++            "w": 230,
++            "h": 80
++          },
++          "element": {
++            "w": 226,
++            "h": 76
++          },
++          "drawing": {
++            "w": 226,
++            "h": 76
++          },
++          "aspect": null
++        },
++        "framed": {
++          "box": {
++            "w": 230,
++            "h": 80
++          },
++          "frame": {
++            "w": 226,
++            "h": 76
++          },
++          "inside": {
++            "w": 226,
++            "h": 76
++          },
++          "id": "grid-text/1/framed",
++          "natural": {
++            "w": 624.9,
++            "h": 72
++          },
++          "element": {
++            "w": 226,
++            "h": 76
++          },
++          "drawing": {
++            "w": 226,
++            "h": 76
++          },
++          "aspect": null,
++          "clipped": false,
++          "messages": 2
++        },
++        "differs": []
++      },
++      {
++        "id": "grid-qr/0",
++        "title": "A grid row: a chart with height=20rem (then 5rem), and a QR code",
++        "kind": "chart",
++        "plain": {
++          "box": {
++            "w": 230,
++            "h": 80
++          },
++          "element": {
++            "w": 226,
++            "h": 76
++          },
++          "drawing": {
++            "w": 226,
++            "h": 76
++          },
++          "aspect": null
++        },
++        "framed": {
++          "box": {
++            "w": 230,
++            "h": 80
++          },
++          "frame": {
++            "w": 226,
++            "h": 76
++          },
++          "inside": {
++            "w": 226,
++            "h": 76
++          },
++          "id": "grid-qr/0/framed",
++          "natural": {
++            "w": 300,
++            "h": 150
++          },
++          "element": {
++            "w": 226,
++            "h": 76
++          },
++          "drawing": {
++            "w": 226,
++            "h": 76
++          },
++          "aspect": null,
++          "clipped": false,
++          "messages": 2
++        },
++        "differs": []
++      },
++      {
++        "id": "grid-qr/1",
++        "title": "A grid row: a chart with height=20rem (then 5rem), and a QR code",
++        "kind": "qr",
++        "plain": {
++          "box": {
++            "w": 230,
++            "h": 230
++          },
++          "element": {
++            "w": 226,
++            "h": 226
++          },
++          "drawing": {
++            "w": 226,
++            "h": 226
++          },
++          "aspect": "xMidYMid meet"
++        },
++        "framed": {
++          "box": {
++            "w": 230,
++            "h": 230
++          },
++          "frame": {
++            "w": 226,
++            "h": 226
++          },
++          "inside": {
++            "w": 226,
++            "h": 226
++          },
++          "id": "grid-qr/1/framed",
++          "natural": {
++            "w": 300,
++            "h": 226
++          },
++          "element": {
++            "w": 226,
++            "h": 226
++          },
++          "drawing": {
++            "w": 226,
++            "h": 226
++          },
++          "aspect": "xMidYMid meet",
++          "clipped": false,
++          "messages": 2
++        },
++        "differs": []
++      }
++    ]
++  }
++}
+diff --git a/spikes/wrap-npm-package/screenshots/sizing-chrome.png b/spikes/wrap-npm-package/screenshots/sizing-chrome.png
+new file mode 100644
+index 0000000..6eab038
+Binary files /dev/null and b/spikes/wrap-npm-package/screenshots/sizing-chrome.png differ
+diff --git a/spikes/wrap-npm-package/screenshots/sizing-webkit.png b/spikes/wrap-npm-package/screenshots/sizing-webkit.png
+new file mode 100644
+index 0000000..7c5730e
+Binary files /dev/null and b/spikes/wrap-npm-package/screenshots/sizing-webkit.png differ
+diff --git a/spikes/wrap-npm-package/sizing.ts b/spikes/wrap-npm-package/sizing.ts
+new file mode 100644
+index 0000000..5655fed
+--- /dev/null
++++ b/spikes/wrap-npm-package/sizing.ts
+@@ -0,0 +1,96 @@
++// The prototype of docs/sizing-components.md, decision 2: `sizing/page.html` draws each sizing case twice, in the page
++// and in a sandboxed frame, and this compares them in Chrome and WebKit: the use's box, what is drawn in it, that the
++// frame is the box's inside, and how many times each frame reported; then again after the tall boxes of the grid rows
++// are made short. It writes `results-sizing.json` and a screenshot per browser.
++//
++//   pnpm --dir spikes/wrap-npm-package sizing
++
++import { writeFileSync } from "node:fs";
++import { join } from "node:path";
++import { pathToFileURL } from "node:url";
++import { chromium, webkit, type BrowserType, type LaunchOptions, type Page } from "playwright";
++
++const HERE = import.meta.dirname;
++const HEIGHT = Number(process.argv.find((argument) => argument.startsWith("--height="))?.slice("--height=".length) ?? 7000);
++/** The default run's files; a run at another height prints only. */
++const KEEP = HEIGHT === 7000;
++const BROWSERS: [string, BrowserType, LaunchOptions][] = [
++  ["Chrome", chromium, { channel: "chrome" }],
++  ["WebKit", webkit, {}],
++];
++
++interface Size {
++  w: number;
++  h: number;
++}
++
++interface Use {
++  id: string;
++  title: string;
++  kind: string;
++  plain: { box: Size; element?: Size; drawing?: Size; aspect?: string | null };
++  framed: { box: Size; frame: Size; inside: Size; natural?: Size; element?: Size; drawing?: Size; aspect?: string | null; clipped?: boolean; messages?: number };
++}
++
++interface Checked extends Use {
++  /** What differs between the page and the frame; empty when the frame is invisible to layout. */
++  differs: string[];
++}
++
++const same = (a: Size | undefined, b: Size | undefined) => a !== undefined && b !== undefined && Math.abs(a.w - b.w) <= 1 && Math.abs(a.h - b.h) <= 1;
++const text = (size: Size | undefined) => (size ? `${String(size.w)}×${String(size.h)}` : "none");
++
++function check(use: Use): Checked {
++  const differs: string[] = [];
++  if (!same(use.plain.box, use.framed.box)) differs.push(`box ${text(use.plain.box)} in the page, ${text(use.framed.box)} framed`);
++  if (!same(use.plain.drawing, use.framed.drawing)) differs.push(`drawing ${text(use.plain.drawing)} in the page, ${text(use.framed.drawing)} framed`);
++  if (!same(use.framed.frame, use.framed.inside)) differs.push(`the frame is ${text(use.framed.frame)}, its box's inside ${text(use.framed.inside)}`);
++  return { ...use, differs };
++}
++
++/** The page's uses once two snapshots a moment apart are the same. */
++async function settled(page: Page): Promise<Use[]> {
++  let last = "";
++  let before: Use[] = [];
++  for (let tries = 0; tries < 40; tries += 1) {
++    await page.waitForTimeout(250);
++    const uses = (await page.evaluate(() => (window as unknown as { snapshot(): unknown }).snapshot())) as Use[];
++    const now = JSON.stringify(uses);
++    if (now === last) return uses;
++    last = now;
++    before = uses;
++  }
++  await page.waitForTimeout(250);
++  const after = (await page.evaluate(() => (window as unknown as { snapshot(): unknown }).snapshot())) as Use[];
++  const moving = after.filter((use, index) => JSON.stringify(use) !== JSON.stringify(before[index])).map((use) => `${use.id} (${String(use.framed.messages)} reports, natural ${text(use.framed.natural)}, frame ${text(use.framed.frame)})`);
++  throw new Error(`the page never settled: still reporting: ${moving.join("; ")}`);
++}
++
++function print(step: string, uses: Checked[]) {
++  console.log(`  ${step}: ${String(uses.filter((use) => use.differs.length === 0).length)} of ${String(uses.length)} uses the same in the page and framed`);
++  for (const use of uses) {
++    const reports = use.framed.messages === undefined ? "" : `, ${String(use.framed.messages)} reports`;
++    console.log(`    ${use.id} (${use.kind}): box ${text(use.framed.box)}, drawing ${text(use.framed.drawing)}, natural ${text(use.framed.natural)}${reports}${use.framed.clipped ? ", clipped" : ""}${use.differs.length > 0 ? `; DIFFERS: ${use.differs.join("; ")}` : ""}`);
++  }
++}
++
++const results: Record<string, { drawn: Checked[]; shrunk: Checked[] }> = {};
++for (const [name, type, options] of BROWSERS) {
++  const browser = await type.launch({ headless: true, ...options });
++  // By default tall enough for every case to be on screen; `--height=900` leaves most frames off screen, which a
++  // browser renders less eagerly.
++  const page = await browser.newPage({ viewport: { width: 1100, height: HEIGHT } });
++  await page.goto(pathToFileURL(join(HERE, "sizing", "page.html")).href);
++  const drawn = (await settled(page)).map(check);
++  if (KEEP) await page.screenshot({ path: join(HERE, "screenshots", `sizing-${name.toLowerCase()}.png`), fullPage: true });
++  await page.evaluate(() => {
++    (window as unknown as { shrink(): void }).shrink();
++  });
++  const shrunk = (await settled(page)).filter((use) => use.id.startsWith("grid-")).map(check);
++  results[name] = { drawn, shrunk };
++  console.log(name);
++  print("as drawn", drawn);
++  print("the grid rows, once their tall box is short", shrunk);
++  await browser.close();
++}
++if (KEEP) writeFileSync(join(HERE, "results-sizing.json"), `${JSON.stringify(results, null, 2)}\n`);
+diff --git a/spikes/wrap-npm-package/sizing/page.html b/spikes/wrap-npm-package/sizing/page.html
+new file mode 100644
+index 0000000..a026d4b
+--- /dev/null
++++ b/spikes/wrap-npm-package/sizing/page.html
+@@ -0,0 +1,263 @@
++<!doctype html>
++<html lang="en">
++  <head>
++    <meta charset="utf-8" />
++    <title>Sizing a framed use: the prototype</title>
++    <!--
++      docs/sizing-components.md, decision 2: a use drawn in a frame is laid out as the same use drawn in the page.
++      Each case is drawn twice, in the page (left) and in a sandboxed frame (right), by the same component code, and
++      `snapshot()` gives both for `sizing.ts` to compare. Nothing here is the sandbox's code: it tries the mechanism.
++    -->
++    <style>
++      body { font: 16px/1.5 system-ui, sans-serif; margin: 2rem auto; max-width: 60rem; padding: 0 1rem; }
++      h2 { font-size: 1rem; margin: 1.5rem 0 0.25rem; }
++      .pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.5rem; align-items: start; }
++      /*
++        A host-language component's box, in the page or framed: a grid of one column. A percentage height in it is
++        of its cell, which every browser sizes alike (as a block, WebKit grows a box with an `aspect-ratio` by its
++        border when a child is `height: 100%`).
++      */
++      .box { box-sizing: border-box; position: relative; min-inline-size: 0; border: 2px solid #e5007d; display: grid; grid-template-columns: minmax(0, 1fr); grid-auto-rows: minmax(0, auto); }
++      .box.inline { display: inline-grid; vertical-align: middle; }
++      /* A framed use's box has one cell, as large as the box's inside. */
++      .box.framed { grid-template-rows: minmax(0, 1fr); }
++      /* The sizer fills the cell, and gives it the component's natural size, which the frame reports. */
++      .sizer { display: block; position: relative; min-width: 0; min-height: 0; overflow: hidden; }
++      .natural { display: block; visibility: hidden; }
++      /* The frame is the sizer's size, so the box's inside, and adds nothing to it. */
++      .sizer > iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
++    </style>
++  </head>
++  <body>
++    <h1>Sizing a framed use</h1>
++    <p>Each case in the page (left) and in a frame (right). The boxes' borders are magenta.</p>
++    <main id="cases"></main>
++    <script>
++      // The components, and how a drawing is measured: the same source runs in the page and in each frame.
++      function lib() {
++        const NS = "http://www.w3.org/2000/svg";
++        const ALIGN = ["Min", "Mid", "Max"];
++        // `object-fit` and `object-position` as SVG's own attribute: contain is `meet`, cover `slice`, fill `none`.
++        const aspect = (fit) => (fit.mode === "fill" ? "none" : `x${ALIGN[fit.x * 2]}Y${ALIGN[fit.y * 2]} ${fit.mode === "cover" ? "slice" : "meet"}`);
++        const components = {
++          // A drawing with an aspect ratio of its own, as a QR code: an SVG with a `viewBox`, the box's size.
++          qr(target, fit) {
++            const svg = document.createElementNS(NS, "svg");
++            svg.setAttribute("viewBox", "0 0 8 8");
++            svg.setAttribute("preserveAspectRatio", aspect(fit));
++            svg.style.cssText = "display: block; width: 100%; height: 100%";
++            for (let i = 0; i < 64; i += 1) {
++              if ((i + (i >> 3)) % 2 !== 0 && i % 7 !== 0) continue;
++              const cell = document.createElementNS(NS, "rect");
++              for (const [name, value] of [["x", i % 8], ["y", i >> 3], ["width", 1], ["height", 1]]) cell.setAttribute(name, String(value));
++              svg.append(cell);
++            }
++            target.append(svg);
++          },
++          // A drawing with no aspect ratio, sized in script from its box, as a chart: its box contains its size, so
++          // what it drew last never counts as its natural size, which is CSS's 300 by 150 for such content.
++          chart(target) {
++            const box = document.createElement("div");
++            box.style.cssText = "width: 100%; height: 100%; contain: size; contain-intrinsic-size: 300px 150px";
++            const svg = document.createElementNS(NS, "svg");
++            svg.style.display = "block";
++            box.append(svg);
++            target.append(box);
++            new ResizeObserver(() => {
++              const [width, height] = [box.clientWidth, box.clientHeight];
++              svg.setAttribute("width", String(width));
++              svg.setAttribute("height", String(height));
++              svg.innerHTML = [0.5, 0.8, 0.35, 1].map((value, bar) => `<rect x="${(bar + 0.15) * (width / 4)}" y="${height * (1 - value)}" width="${0.7 * (width / 4)}" height="${height * value}" fill="#0969da"/>`).join("");
++            }).observe(box);
++          },
++          // Content that flows, as a card's text: its height is its text's.
++          flow(target) {
++            target.insertAdjacentHTML("beforeend", "<p style='margin: 0'>Text that flows: its height is its lines', at the width it is given, whatever the box's height.</p>");
++          },
++        };
++        const round = (n) => Math.round(n * 10) / 10;
++        /** What `target` holds: its first element's size, and for a scaled SVG what is drawn of it. */
++        const drawn = (target) => {
++          const element = target.firstElementChild;
++          if (!element) return null;
++          const shown = element.getBoundingClientRect();
++          let [width, height] = [shown.width, shown.height];
++          const ratio = element.getAttribute("preserveAspectRatio");
++          if (element instanceof SVGSVGElement && ratio !== null && ratio !== "none") {
++            const view = element.viewBox.baseVal;
++            const scale = (ratio.endsWith("slice") ? Math.max : Math.min)(shown.width / view.width, shown.height / view.height);
++            [width, height] = [view.width * scale, view.height * scale];
++          }
++          return { element: { w: round(shown.width), h: round(shown.height) }, drawing: { w: round(width), h: round(height) }, aspect: ratio };
++        };
++        return { components, drawn, round };
++      }
++
++      // The frame's document: the component in a `target` the frame's size, and its natural size reported.
++      function frameMain(config) {
++        const { components, drawn, round } = lib();
++        const root = document.documentElement;
++        const target = document.getElementById("target");
++        components[config.kind](target, config.fit);
++        let sent = "";
++        let messages = 0;
++        // The natural size: the target's, laid out with no size from the frame, as CSS sizes content before it
++        // knows its box (a percentage of an unknown size counts as `auto`). Both in one task, so nothing is painted
++        // or observed in between.
++        // The height first, at the frame's width, then the width, with the target laid out anew as a block: WebKit
++        // otherwise keeps what it laid out for the frame, and gives the frame's height or width as the drawing's
++        // natural width, which never settles.
++        const natural = () => {
++          root.classList.add("natural-height");
++          const h = target.getBoundingClientRect().height;
++          root.classList.add("natural-width");
++          const w = target.getBoundingClientRect().width;
++          root.classList.remove("natural-width", "natural-height");
++          return { w: round(w), h: round(h) };
++        };
++        const report = () => {
++          const message = { id: config.id, natural: natural(), frame: { w: innerWidth, h: innerHeight }, ...drawn(target), clipped: root.scrollHeight > root.clientHeight || root.scrollWidth > root.clientWidth };
++          const text = JSON.stringify(message);
++          if (text === sent) return;
++          sent = text;
++          messages += 1;
++          parent.postMessage({ ...message, messages }, "*");
++        };
++        // Reported as soon as it is mounted, then from the observers themselves, never from an animation frame: a
++        // browser gives a frame that is off screen none, and its box would keep no size until it is scrolled to.
++        const sizes = new ResizeObserver(report);
++        sizes.observe(root);
++        const watch = () => {
++          for (const child of target.children) sizes.observe(child);
++          report();
++        };
++        new MutationObserver(watch).observe(target, { childList: true });
++        // The page says when the box changed: a browser pauses the observers of a frame that is off screen, but
++        // never its messages, so a box below the fold has its size before it is scrolled to.
++        addEventListener("message", ({ data }) => {
++          if (data?.type === "box") report();
++        });
++        watch();
++      }
++
++      const FRAME_STYLE = `
++        html, body { margin: 0; height: 100%; overflow: hidden; }
++        #part { display: grid; grid-template: minmax(0, 1fr) / minmax(0, 1fr); height: 100%; }
++        #target { min-width: 0; min-height: 0; font: 16px/1.5 system-ui, sans-serif; display: grid; grid-template-columns: minmax(0, 1fr); grid-auto-rows: minmax(0, auto); }
++        html.natural-height, html.natural-height body, html.natural-height #part { height: auto; }
++        html.natural-width #part { width: max-content; }
++        html.natural-width #target { display: block; }`;
++      const frameDocument = (config) =>
++        `<!doctype html><meta charset="utf-8"><style>${FRAME_STYLE}</style><div id="part"><div id="target"></div></div><script>${lib.toString()}\n(${frameMain.toString()})(${JSON.stringify(config)})<\/script>`;
++
++      const CONTAIN = { mode: "contain", x: 0.5, y: 0.5 };
++      const GRID = "display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.5rem";
++      const CASES = [
++        { id: "qr-none", title: "QR code, no size", uses: [{ kind: "qr" }] },
++        { id: "qr-width", title: "QR code, width=10rem", uses: [{ kind: "qr", style: "width: 10rem" }] },
++        { id: "qr-height", title: "QR code, height=6rem", uses: [{ kind: "qr", style: "height: 6rem" }] },
++        { id: "qr-wide", title: "QR code, width=16rem height=6rem", uses: [{ kind: "qr", style: "width: 16rem; height: 6rem" }] },
++        { id: "qr-tall", title: "QR code, width=6rem height=12rem", uses: [{ kind: "qr", style: "width: 6rem; height: 12rem" }] },
++        { id: "qr-ratio", title: "QR code, width=12rem aspect-ratio=2/1", uses: [{ kind: "qr", style: "width: 12rem; aspect-ratio: 2 / 1" }] },
++        { id: "qr-start", title: "QR code, height=6rem object-position=start", uses: [{ kind: "qr", style: "height: 6rem", fit: { mode: "contain", x: 0, y: 0 } }] },
++        { id: "qr-end", title: "QR code, width=6rem height=12rem object-position=end", uses: [{ kind: "qr", style: "width: 6rem; height: 12rem", fit: { mode: "contain", x: 1, y: 1 } }] },
++        { id: "qr-cover", title: "QR code, width=16rem height=6rem object-fit=cover", uses: [{ kind: "qr", style: "width: 16rem; height: 6rem", fit: { mode: "cover", x: 0.5, y: 0.5 } }] },
++        { id: "qr-fill", title: "QR code, width=16rem height=6rem object-fit=fill", uses: [{ kind: "qr", style: "width: 16rem; height: 6rem", fit: { mode: "fill", x: 0.5, y: 0.5 } }] },
++        { id: "chart-none", title: "Chart, no size", uses: [{ kind: "chart" }] },
++        { id: "chart-ratio", title: "Chart, aspect-ratio=3/1", uses: [{ kind: "chart", style: "aspect-ratio: 3 / 1" }] },
++        { id: "chart-height", title: "Chart, height=8rem", uses: [{ kind: "chart", style: "height: 8rem" }] },
++        { id: "chart-box", title: "Chart, width=16rem height=6rem", uses: [{ kind: "chart", style: "width: 16rem; height: 6rem" }] },
++        { id: "flow-none", title: "Text, no size", uses: [{ kind: "flow" }] },
++        { id: "flow-height", title: "Text, height=2rem (shorter than its text)", uses: [{ kind: "flow", style: "height: 2rem" }] },
++        { id: "grid-charts", title: "A grid row: a chart with height=20rem (then 5rem), and a chart with no size", wrap: GRID, uses: [{ kind: "chart", style: "height: 20rem", shrinks: true }, { kind: "chart" }] },
++        { id: "grid-text", title: "A grid row: a chart with height=20rem (then 5rem), and text", wrap: GRID, uses: [{ kind: "chart", style: "height: 20rem", shrinks: true }, { kind: "flow" }] },
++        { id: "grid-qr", title: "A grid row: a chart with height=20rem (then 5rem), and a QR code", wrap: GRID, uses: [{ kind: "chart", style: "height: 20rem", shrinks: true }, { kind: "qr" }] },
++        { id: "row", title: "A row (flexbox): two QR codes and a chart, no sizes", wrap: "display: flex; flex-wrap: wrap; gap: 0.5rem", uses: [{ kind: "qr" }, { kind: "qr", style: "width: 5rem" }, { kind: "chart" }] },
++        { id: "inline", title: "Inline, in a line of text: width=3rem, and no size", inline: true, uses: [{ kind: "qr", style: "width: 3rem" }, { kind: "chart", style: "width: 6rem; height: 2rem" }, { kind: "qr" }] },
++      ];
++
++      const { components, drawn, round } = lib();
++      /** What each frame last reported, by its use's id. */
++      const reports = new Map();
++      const sizers = new Map();
++      addEventListener("message", ({ data }) => {
++        const sizer = sizers.get(data?.id);
++        if (!sizer) return;
++        reports.set(data.id, data);
++        sizer.style.width = `${data.natural.w}px`;
++        sizer.style.height = `${data.natural.h}px`;
++      });
++
++      function useBox(use, id, framed, inline) {
++        const box = document.createElement(inline ? "span" : "div");
++        box.className = `box ${framed ? "framed" : "plain"}${inline ? " inline" : ""}`;
++        box.style.cssText = use.style ?? "";
++        box.dataset.use = id;
++        if (use.shrinks) box.dataset.shrinks = "";
++        const fit = use.fit ?? CONTAIN;
++        if (!framed) {
++          components[use.kind](box, fit);
++          return box;
++        }
++        const sizer = box.appendChild(document.createElement(inline ? "span" : "div"));
++        sizer.className = "sizer";
++        const natural = sizer.appendChild(document.createElement(inline ? "span" : "div"));
++        natural.className = "natural";
++        // Never without area: WebKit may stop rendering such a frame, and its observers with it.
++        natural.style.cssText = "width: 1px; height: 1px";
++        sizers.set(id, natural);
++        const frame = sizer.appendChild(document.createElement("iframe"));
++        frame.setAttribute("sandbox", "allow-scripts");
++        frame.srcdoc = frameDocument({ id, kind: use.kind, fit });
++        // The frame is the sizer's size: once it has loaded, and when that size changes, the frame is told, whether
++        // or not it is on screen.
++        const tell = () => frame.contentWindow?.postMessage({ type: "box" }, "*");
++        frame.addEventListener("load", tell);
++        new ResizeObserver(tell).observe(sizer);
++        return box;
++      }
++
++      for (const example of CASES) {
++        const section = document.getElementById("cases").appendChild(document.createElement("section"));
++        section.appendChild(document.createElement("h2")).textContent = example.title;
++        const pair = section.appendChild(document.createElement("div"));
++        pair.className = "pair";
++        for (const framed of [false, true]) {
++          const holder = pair.appendChild(document.createElement(example.inline ? "p" : "div"));
++          holder.style.cssText = example.wrap ?? (example.inline ? "margin: 0" : "");
++          example.uses.forEach((use, index) => {
++            if (example.inline) holder.append(index === 0 ? "A line of text with " : " and ");
++            holder.append(useBox(use, `${example.id}/${String(index)}/${framed ? "framed" : "plain"}`, framed, example.inline === true));
++          });
++          if (example.inline) holder.append(" in it.");
++        }
++      }
++
++      const size = (element) => {
++        const box = element.getBoundingClientRect();
++        return { w: round(box.width), h: round(box.height) };
++      };
++      /** Every use, in the page and in its frame: its box, what it holds, and what the frame said. */
++      window.snapshot = () =>
++        CASES.flatMap((example) =>
++          example.uses.map((use, index) => {
++            const id = `${example.id}/${String(index)}`;
++            const plain = document.querySelector(`[data-use="${id}/plain"]`);
++            const framed = document.querySelector(`[data-use="${id}/framed"]`);
++            const report = reports.get(`${id}/framed`) ?? null;
++            return {
++              id,
++              title: example.title,
++              kind: use.kind,
++              plain: { box: size(plain), ...drawn(plain) },
++              framed: { box: size(framed), frame: size(framed.querySelector("iframe")), inside: { w: framed.clientWidth, h: framed.clientHeight }, ...(report ?? {}) },
++            };
++          }),
++        );
++      /** The tall boxes of the grid rows made short, in the page and in the frames: a row must follow. */
++      window.shrink = () => {
++        for (const box of document.querySelectorAll("[data-shrinks]")) box.style.height = "5rem";
++      };
++    </script>
++  </body>
++</html>
