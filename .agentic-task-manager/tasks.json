@@ -12863,7 +12863,7 @@
         "packs",
         "component"
       ],
-      "description": "Item 4b of [the first list](docs/first-components.md#:~:text=Two%20or%20three%20columns): a `compmd` definition on `grid` (no code), in its own pack. The first column is the default slot, `:: #middle` and `:: #end` the others, so a column holds any blocks with no `box`; `split=even | wide-start | wide-end` sets the widths, and below `md` the columns stack. Slot names are logical (spec §9.2).\n\n## Do\nThe definition with its signature; a demo with two and three columns and each `split`, in a right-to-left document too; plain-renderer reading checked (the columns in order); a conformance-style test of its expanded tree.",
+      "description": "Item 4b of [the first list](docs/first-components.md#:~:text=Two%20or%20three%20columns): a `compmd` definition on `grid` (no code), in its own pack. The first column is the default slot, `:: #middle` and `:: #end` the others, so a column holds any blocks with no `box`; `split=even | wide-start | wide-middle | wide-end` sets the widths (`wide-middle` for three only), and below `md` the columns stack. Slot names are logical (spec §9.2).\n\n## Do\nThe definition with its signature; a demo with two and three columns and each `split`, in a right-to-left document too; plain-renderer reading checked (the columns in order); a conformance-style test of its expanded tree.\n",
       "requirements": [],
       "use_cases": [],
       "status": "todo",
@@ -12874,9 +12874,9 @@
         "compmd-packs/columns/"
       ],
       "created_at": "2026-11-20T19:03:19Z",
-      "updated_at": "2026-11-20T19:03:19Z",
+      "updated_at": "2026-11-20T19:04:35Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "sprint_history": [
         {
           "sprint": "Packs 1: the pack tool, no-code components",
