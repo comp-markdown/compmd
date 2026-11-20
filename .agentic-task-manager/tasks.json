@@ -12819,7 +12819,7 @@
       "description": "Two browser tests failed once each while 0.9.0 was released, and passed when run again on the same code. Find each one's cause and fix it, in the code if a frame is wrongly stopped, in the test if it only waits too little.\n\n## The failures\n- **The Mermaid pack's test page in WebKit on Linux** (`compmd-packs/mermaid/test/page.test.ts`, CI run 44729454247): no frame had the first diagram after 30 s, and the page had four of its six diagrams' frames, so the host's page had removed two (stopped as hung, or never loaded). It took 5 s on the run before. The test's error now prints the page's diagnostics, which say why a frame was removed.\n- **The observer's forged report, O6, in Chromium** (`npm-packages/sandbox/test/observe.test.ts`), once in a local `cargo make ci`: an 8 s wait ran out; it passes alone.\n\n## Look at\n- Whether a parent stops a frame as hung, or as never loaded, when the page's thread was only busy: in WebKit a page's frames share its thread, so a long task delays the pongs and the `ready` as much as the pings (`protocol/parent-end.ts`, `startPings` and the `unloaded` timer).\n- Whether 0.9.0's highlighting in the host's page (CMD-262) adds a long task where six frames load at once.\n- CMD-265, the earlier Shiki load flakiness, for what was found there.\n\n## Tests\nEach failure reproduced first (`cargo make linux` for the Linux one, or the test under load), then gone over repeated runs.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [],
       "files": [
         "compmd-packs/mermaid/test/page.test.ts",
@@ -12827,9 +12827,9 @@
         "npm-packages/sandbox/src/protocol/parent-end.ts"
       ],
       "created_at": "2026-11-20T12:03:07Z",
-      "updated_at": "2026-11-20T20:41:26Z",
+      "updated_at": "2026-11-20T21:16:16Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "sprint_history": [
         {
           "sprint": "Packs & Blog",
@@ -12861,6 +12861,12 @@
           "kind": "note",
           "text": "Approved: in CR-27 (round 1)",
           "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-20T21:16:16Z",
+          "kind": "outcome",
+          "text": "Approved in CR-27: a frame counts its time only while the page thread is awake (afterAwake); the busy-thread tests reproduce the flake",
+          "by": "claude:79612601"
         }
       ],
       "started_at": "2026-11-20T12:12:42Z",
@@ -12873,8 +12879,15 @@
         }
       ],
       "review_requested_at": "2026-11-20T12:16:16Z",
-      "review_state": "approved",
-      "reviewed_at": "2026-11-20T20:41:26Z"
+      "reviews": [
+        {
+          "from": "2026-11-20T12:16:16Z",
+          "to": "2026-11-20T20:41:26Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-20T21:16:16Z",
+      "completed_by": "claude:79612601"
     },
     {
       "id": "01a1f9ca-ad61-762d-a15d-84f121843da1",
@@ -12980,7 +12993,7 @@
       "description": "[Releases](docs/releases.md), decision 8: `cargo make pack-placeholders <pack>...`, with `--dry-run`.\n\n## Do\n- For each named pack npm doesn't have, write the `0.0.0` placeholder of RELEASING.md's *A placeholder first* (a `package.json` that says so, a README pointing to the real versions, the MIT `LICENSE`) outside the repository, and `npm publish` it.\n- Then set its trusted publisher: `npm trust github <package> --file release-packs.yml --repository comp-markdown/compmd --allow-stage-publish --yes`.\n- A pinned npm with `npm trust` and staging (11.15 or newer); one one-time code for the run while it is valid; a pause between packages as npm advises.\n- `--dry-run` lists what it would publish and set, and does nothing.\n- RELEASING.md's steps for a new pack say to run it.\n\n## Tests\nThe placeholder's files and the commands it would run, from `--dry-run`, for a pack npm has and one it doesn't.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68e81c39ce10"
       ],
@@ -12990,9 +13003,9 @@
         "RELEASING.md"
       ],
       "created_at": "2026-11-20T19:14:20Z",
-      "updated_at": "2026-11-20T20:55:34Z",
+      "updated_at": "2026-11-20T21:16:16Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "sprint_history": [
         {
           "sprint": "Packs 1: the pack tool, no-code components",
@@ -13011,7 +13024,6 @@
         }
       ],
       "review_requested_at": "2026-11-20T20:42:20Z",
-      "review_state": "approved",
       "notes": [
         {
           "at": "2026-11-20T20:42:20Z",
@@ -13024,9 +13036,23 @@
           "kind": "note",
           "text": "Approved: in CR-30 (round 1)",
           "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-20T21:16:16Z",
+          "kind": "outcome",
+          "text": "Approved in CR-30: cargo make pack-placeholders",
+          "by": "claude:79612601"
         }
       ],
-      "reviewed_at": "2026-11-20T20:55:34Z"
+      "reviews": [
+        {
+          "from": "2026-11-20T20:42:20Z",
+          "to": "2026-11-20T20:55:34Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-20T21:16:16Z",
+      "completed_by": "claude:79612601"
     },
     {
       "id": "01a1fa61-91aa-7105-88cd-9b180d18ff67",
