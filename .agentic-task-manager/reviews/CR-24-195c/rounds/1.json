@@ -1,0 +1,82 @@
+{
+  "number": 1,
+  "kind": {
+    "kind": "range",
+    "base": "e4cbcbd9ce9ea8c39df873142508cc60f574ad71",
+    "head": "c2aa9c9a4c6e19d1c203bd8325df0b83198c9039"
+  },
+  "files": [
+    {
+      "path": "crates/processor/src/processor/outputs.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/resolve.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/resolve/libraries/tests.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/src/resolve/reached.rs",
+      "status": "added",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/tests/expand/host_components.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/tests/host/packs.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "crates/processor/tests/host/policy.rs",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "docs/first-components.md",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/blog/src/live.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/devtools/src/processing.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/registry/src/resolve.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/wasm/src/index.test.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/wasm/src/index.ts",
+      "status": "modified",
+      "binary": false
+    },
+    {
+      "path": "npm-packages/wasm/src/open-document.ts",
+      "status": "modified",
+      "binary": false
+    }
+  ],
+  "by": "claude:79612601",
+  "at": "2026-11-20T10:08:27Z"
+}
