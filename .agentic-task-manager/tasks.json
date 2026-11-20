@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 346,
+    "next_number": 347,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -12567,7 +12567,7 @@
       "description": "Release CompMD 0.9.0 as [releases](docs/releases.md) and `RELEASING.md` say: every npm package and the crates at one version. A minor version, since it breaks (below).\n\n## Before the tag\n- **The spec's revision:** the spec is dirty (§8.6 and §15, every origin for a host's own documents, CMD-308), so `cargo make spec-revision` cuts `1.0-draft.17`, and `SPEC_VERSION` (crate and `@compmd/processor`) and the packages' READMEs name it.\n- **Release notes**, in each package's README version list:\n  - Breaking: the sandbox's frame protocol is version 2 (`highlight`, `highlighted`), so a host's page and the frame documents it serves are upgraded together; the frames' policies no longer allow `'wasm-unsafe-eval'`, since the host's page highlights for them (CMD-262).\n  - New: the host's own code highlighter, `highlight`, in both page modes; Shiki made once for a page and all its frames (CMD-262). A host may allow every origin for its own documents (`allowedOrigins: \"any\"`, `origins: \"any\"` in `compmd.config.json`), and the blog's share image (`defaultSocialImage`, `socialImage`) (CMD-308). A document's host components are only those it uses (CMD-268).\n- `cargo make ci` green on `main`, the Tauri check on Linux CI and `cargo make tauri-check` by hand on macOS.\n\n## The release\nThe version in every `package.json` and the crates' `Cargo.toml` in one commit, the Tauri lockfiles after it; the tag `v0.9.0`; the release workflow stages the npm packages and waits for the crates' approval.\n\nEvery push and every publish needs the user's go; the push order is the markdown-rs fork (if it changed), then `compmd`, with `--follow-tags` for the spec's tag.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [
         "01a1f328-b4f9-7563-a426-a1b0b5a0ead4",
         "01a1f5ac-46f1-7265-8aef-db1a0db26768",
@@ -12578,9 +12578,9 @@
         "spec/CHANGELOG.md"
       ],
       "created_at": "2026-11-20T11:18:00Z",
-      "updated_at": "2026-11-20T11:38:58Z",
+      "updated_at": "2026-11-20T12:03:12Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "number": 345,
       "sprint_history": [
         {
@@ -12599,7 +12599,6 @@
         }
       ],
       "review_requested_at": "2026-11-20T11:32:30Z",
-      "review_state": "approved",
       "notes": [
         {
           "at": "2026-11-20T11:32:30Z",
@@ -12612,9 +12611,56 @@
           "kind": "note",
           "text": "Approved: in CR-26 (round 1)",
           "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-20T12:03:12Z",
+          "kind": "outcome",
+          "text": "0.9.0 tagged and pushed (CR-26); the release workflow staged the npm packages, CI, Tauri and Pages green. Left to the maintainer: approving the staged npm packages and the crates’ job in `crates-io`.",
+          "by": "claude:79612601"
         }
       ],
-      "reviewed_at": "2026-11-20T11:38:58Z"
+      "reviews": [
+        {
+          "from": "2026-11-20T11:32:30Z",
+          "to": "2026-11-20T11:38:58Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-20T12:03:12Z",
+      "completed_by": "claude:79612601"
+    },
+    {
+      "id": "01a1f8d6-c526-7079-a27d-af2319559b09",
+      "name": "Browser tests that fail now and then under load: the Mermaid page in WebKit, the observer's forged report",
+      "type": "bugfix",
+      "priority": "P1",
+      "labels": [
+        "ci"
+      ],
+      "description": "Two browser tests failed once each while 0.9.0 was released, and passed when run again on the same code. Find each one's cause and fix it, in the code if a frame is wrongly stopped, in the test if it only waits too little.\n\n## The failures\n- **The Mermaid pack's test page in WebKit on Linux** (`compmd-packs/mermaid/test/page.test.ts`, CI run 44729454247): no frame had the first diagram after 30 s, and the page had four of its six diagrams' frames, so the host's page had removed two (stopped as hung, or never loaded). It took 5 s on the run before. The test's error now prints the page's diagnostics, which say why a frame was removed.\n- **The observer's forged report, O6, in Chromium** (`npm-packages/sandbox/test/observe.test.ts`), once in a local `cargo make ci`: an 8 s wait ran out; it passes alone.\n\n## Look at\n- Whether a parent stops a frame as hung, or as never loaded, when the page's thread was only busy: in WebKit a page's frames share its thread, so a long task delays the pongs and the `ready` as much as the pings (`protocol/parent-end.ts`, `startPings` and the `unloaded` timer).\n- Whether 0.9.0's highlighting in the host's page (CMD-262) adds a long task where six frames load at once.\n- CMD-265, the earlier Shiki load flakiness, for what was found there.\n\n## Tests\nEach failure reproduced first (`cargo make linux` for the Linux one, or the test under load), then gone over repeated runs.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "in_progress",
+      "dependencies": [],
+      "files": [
+        "compmd-packs/mermaid/test/page.test.ts",
+        "npm-packages/sandbox/test/observe.test.ts",
+        "npm-packages/sandbox/src/protocol/parent-end.ts"
+      ],
+      "created_at": "2026-11-20T12:03:07Z",
+      "updated_at": "2026-11-20T12:03:12Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
+      "sprint_history": [
+        {
+          "sprint": "Packs & Blog",
+          "from": "2026-11-20T12:03:07Z"
+        }
+      ],
+      "sprint": "Packs & Blog",
+      "number": 346,
+      "started_at": "2026-11-20T12:03:12Z",
+      "started_by": "claude:79612601"
     }
   ]
 }
