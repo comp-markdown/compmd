@@ -292,15 +292,41 @@
       },
       {
         "id": "Packs & Blog",
-        "state": "active",
+        "state": "closed",
         "goal": "Wrapping an npm package as a pack takes one command; a first set of packs, shown on the website; a blog section with its first posts.",
-        "start": "2026-11-19T16:35:06Z"
+        "start": "2026-11-19T16:35:06Z",
+        "end": "2026-11-20T12:12:37Z",
+        "report": {
+          "done": [
+            "01a1ebb5-4120-7007-85a3-68e7d6fc0e9a",
+            "01a1ebb5-4120-7007-85a3-68ea9d5906c3",
+            "01a1f328-b4f9-7563-a426-a1b0b5a0ead4",
+            "01a1f58e-3f17-745f-a6cf-bb3826b73142",
+            "01a1f5ac-46f1-7265-8aef-db1a0db26768",
+            "01a1f80b-29e3-7345-a9d8-61b5b8759df9",
+            "01a1f8ad-79ea-7581-88b6-fb6f6e4fd726"
+          ],
+          "carried": [
+            "01a1f8d6-c526-7079-a27d-af2319559b09"
+          ],
+          "added": [
+            "01a1ebb5-4120-7007-85a3-68e7d6fc0e9a",
+            "01a1f328-b4f9-7563-a426-a1b0b5a0ead4",
+            "01a1f58e-3f17-745f-a6cf-bb3826b73142",
+            "01a1f5ac-46f1-7265-8aef-db1a0db26768",
+            "01a1f80b-29e3-7345-a9d8-61b5b8759df9",
+            "01a1f8ad-79ea-7581-88b6-fb6f6e4fd726",
+            "01a1f8d6-c526-7079-a27d-af2319559b09"
+          ],
+          "to": "Packs 1: the pack tool, no-code components"
+        }
       },
       {
         "id": "Packs 1: the pack tool, no-code components",
-        "state": "planned",
+        "state": "active",
         "goal": "From 2026-11-23. Wrapping an npm package as a pack takes one command; the first packs named; card, link-card, gallery, figure, badge, sticky-note, timeline and rating; the post Why CompMD.",
-        "due": "2026-11-25"
+        "due": "2026-11-25",
+        "start": "2026-11-20T12:12:39Z"
       },
       {
         "id": "Editors 1: Neovim, Helix and Emacs",
@@ -12578,7 +12604,7 @@
         "spec/CHANGELOG.md"
       ],
       "created_at": "2026-11-20T11:18:00Z",
-      "updated_at": "2026-11-20T12:03:12Z",
+      "updated_at": "2026-11-20T12:11:50Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 345,
@@ -12617,6 +12643,12 @@
           "kind": "outcome",
           "text": "0.9.0 tagged and pushed (CR-26); the release workflow staged the npm packages, CI, Tauri and Pages green. Left to the maintainer: approving the staged npm packages and the crates’ job in `crates-io`.",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-20T12:11:50Z",
+          "kind": "note",
+          "text": "The maintainer approved the staged npm packages and the crates’ job: 0.9.0 is published.",
+          "by": "claude:79612601"
         }
       ],
       "reviews": [
@@ -12648,18 +12680,31 @@
         "npm-packages/sandbox/src/protocol/parent-end.ts"
       ],
       "created_at": "2026-11-20T12:03:07Z",
-      "updated_at": "2026-11-20T12:03:12Z",
+      "updated_at": "2026-11-20T12:12:42Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
         {
           "sprint": "Packs & Blog",
-          "from": "2026-11-20T12:03:07Z"
+          "from": "2026-11-20T12:03:07Z",
+          "to": "2026-11-20T12:12:37Z"
+        },
+        {
+          "sprint": "Packs 1: the pack tool, no-code components",
+          "from": "2026-11-20T12:12:37Z"
         }
       ],
-      "sprint": "Packs & Blog",
+      "sprint": "Packs 1: the pack tool, no-code components",
       "number": 346,
-      "started_at": "2026-11-20T12:03:12Z",
+      "notes": [
+        {
+          "at": "2026-11-20T12:12:33Z",
+          "kind": "handoff",
+          "text": "Handed over for the sprint’s close: the awake-time fix and its tests are written, uncommitted in the working tree; `cargo make ci` is running on them.",
+          "by": "claude:79612601"
+        }
+      ],
+      "started_at": "2026-11-20T12:12:42Z",
       "started_by": "claude:79612601"
     }
   ]
