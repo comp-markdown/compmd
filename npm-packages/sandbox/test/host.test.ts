@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import type { Compiled, CompiledCache } from "../src/compiled-cache.ts";
 import type { HostClient } from "../src/host-api.ts";
 import { HostRuntime, type HostEvents } from "../src/host/runtime.ts";
+import { LOAD_MS } from "../src/protocol/parent-end.ts";
 import { allowed, frames, leaf, missing, probeCode, refused } from "./harness.ts";
 
 const runtimes: HostRuntime[] = [];
@@ -176,6 +177,21 @@ export default function Chart({ compmd }) {
     expect(await result).toEqual({ text: "let a = 1;", token: "let", color: "rgb(255, 0, 0)" });
     expect(asked).toEqual(["ts:let a = 1;"]);
   });
+
+  it("keeps a frame that couldn't load while the page's thread was busy: the time counts against no frame", async () => {
+    const { runtime, area, errors, next } = setup();
+    await runtime.set([plain("chart", { level: "strict" }, "async () => 'drawn'")]);
+    const result = next("chart");
+    runtime.mountUse(area, use("chart"), { chart: { type: "string", value: "" } });
+    // Once the frame's document has loaded, when its parent starts waiting for its runtime: busy for longer than a
+    // frame may take to load it, as another frame's large module keeps a shared thread.
+    await new Promise((loaded) => area.querySelector("iframe")?.addEventListener("load", loaded, { once: true }));
+    const until = Date.now() + LOAD_MS + 1000;
+    while (Date.now() < until);
+    expect(await result).toBe("drawn");
+    expect(errors).toEqual([]);
+    expect(area.querySelectorAll("iframe")).toHaveLength(1);
+  }, 30_000);
 
   it("gives a handle for each use: `update` sends it new params, `destroy` removes its frame", async () => {
     const { runtime, area, next } = setup();

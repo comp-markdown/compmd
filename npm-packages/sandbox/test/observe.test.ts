@@ -62,7 +62,7 @@ function open(page: "frame" | "host", components: HostComponent[], tree: Expande
  * `vi.waitFor`'s default second.
  */
 async function waitFor(check: () => void): Promise<void> {
-  await vi.waitFor(check, { timeout: 8000, interval: 50 });
+  await vi.waitFor(check, { timeout: 12_000, interval: 50 });
 }
 
 /** Waits until `done` holds of what `observation` keeps. */

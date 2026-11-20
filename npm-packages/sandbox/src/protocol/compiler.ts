@@ -1,6 +1,7 @@
 // The parent's end for the compile frame, a strict frame that runs no components: sources go in, compiled text comes
 // out, which the parent gives the frames that run it.
 
+import { afterAwake } from "./awake.ts";
 import { FROM_FRAME, isMessage, SANDBOX_VERSION, type CompileRequest, type FromFrame, type Port, type ToFrame } from "./messages.ts";
 import { failureText, LOAD_MS } from "./parent-end.ts";
 
@@ -46,19 +47,20 @@ export function connectCompiler(port: Port, options: CompilerOptions = {}): Comp
     port.postMessage({ type: "compile", ...request } satisfies ToFrame);
   };
   const { ready } = options;
-  const timer = ready
-    ? setTimeout(() => {
+  // This thread's awake time: a busy thread the frame shares keeps it from loading (`awake.ts`).
+  const cancelUnloaded = ready
+    ? afterAwake(Math.max(ready.timeout, LOAD_MS), () => {
         if (!waiting) return;
         unloaded = new Error(`the compile frame ${failureText({ reason: "unloaded" }, ready.url)}`);
         waiting = undefined;
         for (const answer of pending.values()) answer.reject(unloaded);
         pending.clear();
-      }, Math.max(ready.timeout, LOAD_MS))
-    : undefined;
+      })
+    : () => undefined;
   const listener = ({ data }: { data: unknown }) => {
     if (!isMessage<FromFrame>(data, FROM_FRAME)) return;
     if (data.type === "ready" && waiting && data.sandbox === SANDBOX_VERSION) {
-      clearTimeout(timer);
+      cancelUnloaded();
       port.postMessage({ type: "level", level: "strict" } satisfies ToFrame);
       for (const request of waiting) send(request);
       waiting = undefined;
@@ -83,7 +85,7 @@ export function connectCompiler(port: Port, options: CompilerOptions = {}): Comp
         else send(request);
       }),
     close: () => {
-      clearTimeout(timer);
+      cancelUnloaded();
       port.removeEventListener("message", listener);
     },
   };

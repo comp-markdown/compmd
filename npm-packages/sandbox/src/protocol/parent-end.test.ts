@@ -195,6 +195,37 @@ describe("the parent's end (connectChild)", () => {
     expect(failed).toEqual([{ reason: "hung" }]);
   });
 
+  it("doesn't count the time its own thread was busy against a frame: the frame may share the thread, and couldn't answer either", async () => {
+    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval", "Date"] });
+    const { port1: parent, port2: frame } = new MessageChannel();
+    let answering = true;
+    frame.addEventListener("message", ({ data }) => {
+      const message = data as { type: string; n: number };
+      if (message.type === "ping" && answering) frame.postMessage({ type: "pong", n: message.n });
+    });
+    frame.start();
+    const child = connectChild(parent, { level: "strict", binds: () => false, ping: { every: 1000, timeout: 3000 } });
+    const failed: unknown[] = [];
+    child.on("failed", (failure) => failed.push(failure));
+    frame.postMessage({ type: "ready", sandbox: SANDBOX_VERSION });
+    await settle();
+    const tick = async () => {
+      vi.advanceTimersByTime(1000);
+      await settle();
+    };
+    await tick();
+    // A ping goes unanswered while the thread is busy for ten seconds, by the clock: no ping is sent meanwhile.
+    answering = false;
+    await tick();
+    vi.setSystemTime(Date.now() + 10_000);
+    await tick();
+    expect(failed, "one more ping unanswered, not ten seconds").toEqual([]);
+    answering = true;
+    await tick();
+    await tick();
+    expect(failed).toEqual([]);
+  });
+
   it("stops a frame that never says it is ready, since its runtime didn't load, and keeps one that does", async () => {
     vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval", "Date"] });
     const silent = parentChannel();

@@ -2,6 +2,7 @@
 // checks what the frame sends against the part it gave it, and stops a frame that stops answering.
 
 import { BUSY_MS, type CodeLines } from "@compmd/render";
+import { afterAwake } from "./awake.ts";
 import { FROM_FRAME, isChange, isMessage, SANDBOX_VERSION, type ComponentCode, type ErrorReason, type FromFrame, type Level, type Part, type Port, type Scheme, type ToFrame } from "./messages.ts";
 
 export interface ChildOptions {
@@ -164,23 +165,30 @@ export function connectChild(port: Port, options: ChildOptions): ChildEnd {
   let pings: ReturnType<typeof setInterval> | undefined;
   let sent = 0;
   let answered = 0;
-  let lastAnswer = 0;
+  /**
+   * How long the frame has left a ping unanswered, in ms, counted a ping at a time: this window's thread may be the
+   * frame's too, and a stretch it was busy for, when the frame couldn't answer either, counts as one ping (`awake.ts`).
+   */
+  let silentFor = 0;
   const stop = (failure: ChildFailure) => {
     close();
     emit("failed", failure);
   };
-  // A frame whose runtime never loads says nothing at all: without this, its use would wait for it forever.
-  const unloaded = options.ping
-    ? setTimeout(() => {
+  // A frame whose runtime never loads says nothing at all: without this, its use would wait for it forever. Its time
+  // is this thread's awake time, since a busy thread it shares keeps it from loading.
+  const cancelUnloaded = options.ping
+    ? afterAwake(Math.max(options.ping.timeout, LOAD_MS), () => {
         if (waiting) stop({ reason: "unloaded" });
-      }, Math.max(options.ping.timeout, LOAD_MS))
-    : undefined;
+      })
+    : () => undefined;
   const startPings = ({ every, timeout }: { every: number; timeout: number }) => {
-    lastAnswer = Date.now();
     pings = setInterval(() => {
-      if (answered < sent && Date.now() - lastAnswer > timeout) {
-        stop({ reason: "hung" });
-        return;
+      if (answered < sent) {
+        silentFor += every;
+        if (silentFor >= timeout) {
+          stop({ reason: "hung" });
+          return;
+        }
       }
       sent += 1;
       port.postMessage({ type: "ping", n: sent } satisfies ToFrame);
@@ -206,7 +214,7 @@ export function connectChild(port: Port, options: ChildOptions): ChildEnd {
       if (options.host) port.postMessage({ type: "host" } satisfies ToFrame, [options.host]);
       const queued = waiting;
       waiting = undefined;
-      clearTimeout(unloaded);
+      cancelUnloaded();
       for (const send of queued) send();
       if (options.ping) startPings(options.ping);
       return;
@@ -215,7 +223,7 @@ export function connectChild(port: Port, options: ChildOptions): ChildEnd {
     switch (data.type) {
       case "pong":
         answered = Math.max(answered, data.n);
-        lastAnswer = Date.now();
+        silentFor = 0;
         break;
       case "set":
         // A frame may set only what one of its uses is bound to; strict code may have written this message.
@@ -301,7 +309,7 @@ export function connectChild(port: Port, options: ChildOptions): ChildEnd {
 
   function close() {
     closed = true;
-    clearTimeout(unloaded);
+    cancelUnloaded();
     if (pings !== undefined) clearInterval(pings);
     port.removeEventListener("message", listener);
     // A frame that went, or was stopped, holds nothing up.

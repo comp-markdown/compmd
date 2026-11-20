@@ -99,7 +99,7 @@ For a host that waits until its page stops moving ([sandbox README, *When the pa
 
 **An edit.** H sends P `splices` (frame mode) or renders them (host mode), and sends `part` to every frame whose use changed; a frame does the same for its children. Uses keep their frames through edits, as the renderer's keys keep its views, so an edit updates a frame instead of making it again. A use that is gone loses its frame; a new one gets one. When the document's components change, H compiles them in C and sends `code` to the frames that have them, which pass on their children's.
 
-**A frame that hangs.** Each parent pings its frames every second; a frame that hasn't answered within `timeout` is removed, and its use shows its fallback (W118).
+**A frame that hangs.** Each parent pings its frames every second; a frame that hasn't answered within `timeout` is removed, and its use shows its fallback (W118). So is one that hasn't said `ready` within `timeout` (5 s at least) of its document loading: its runtime never loaded. Both times are the parent's awake time, counted a tick at a time: a page and its frames may share a thread (WebKit; Chromium's frames in the page's process), and while it is busy, with another frame's large module say, a frame can neither load nor answer, so a busy stretch of any length counts as one tick against it.
 
 **Strict code tries to break out.**
 
