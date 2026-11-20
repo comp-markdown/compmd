@@ -7,7 +7,7 @@ tasks = ["CMD-11"]
 author = "claude:79612601"
 reviewers = []
 created = 2026-11-20T16:21:21Z
-updated = 2026-11-20T19:03:28Z
+updated = 2026-11-20T19:05:03Z
 +++
 
 Round 2: your two comments, agreed in conversation.
