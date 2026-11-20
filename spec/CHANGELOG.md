@@ -4,7 +4,7 @@ Changes to the [CompMD specification](compmd-spec-v1.md) and its companion, [*Co
 
 ## Version 1 (draft)
 
-### Unreleased
+### 1.0-draft.17, 2026-11-20
 
 - **Every origin, for a host's own documents (§8.6, §15).** A host MAY allow every origin instead of naming them: then no origin of a document's data or images is disallowed (F028) or asked about. It fits documents the host publishes itself, such as a static site's or a blog's; a host that shows documents others write SHOULD NOT. URL schemes, a data `from`'s literal scheme and host, credentials and sandboxes' network are unchanged. Not breaking.
 

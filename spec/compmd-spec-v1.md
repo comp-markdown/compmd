@@ -7,7 +7,7 @@
 
 CompMD (Component Markdown) is a Markdown flavor that adds components, containers, slots and CSS-like layout to CommonMark + GFM, while staying readable in any plain Markdown renderer.
 
-**Version 1.0-draft.16. Last changed 2026-11-19.** Every change is listed in the [changelog](CHANGELOG.md).
+**Version 1.0-draft.17. Last changed 2026-11-20.** Every change is listed in the [changelog](CHANGELOG.md).
 
 **Author:** Hakan Serce.
 
