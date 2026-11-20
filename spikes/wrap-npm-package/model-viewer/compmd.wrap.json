@@ -1,0 +1,11 @@
+{
+  "from": "@google/model-viewer",
+  "export": "model-viewer",
+  "kind": "web-component",
+  "params": ["src", "alt", "poster", "cameraControls", "autoRotate"],
+  "overrides": {
+    "cameraControls": { "default": false },
+    "autoRotate": { "default": false }
+  },
+  "label": "alt"
+}

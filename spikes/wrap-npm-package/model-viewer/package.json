@@ -1,0 +1,19 @@
+{
+  "name": "@spike/model-viewer",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A CompMD pack of @google/model-viewer 4.4.0, as `npm create @compmd/pack model-viewer -- --from @google/model-viewer` would write it (docs/wrapping-an-npm-package.md), to see what a strict frame refuses. Written by hand: the command doesn't exist yet.",
+  "keywords": ["compmd", "compmd-pack"],
+  "license": "Apache-2.0",
+  "type": "module",
+  "compmd": "./index.comp.md",
+  "files": ["dist", "index.comp.md", "README.md"],
+  "dependencies": {
+    "@google/model-viewer": "4.4.0",
+    "three": "0.183.2"
+  },
+  "devDependencies": {
+    "@compmd/pack": "workspace:*",
+    "typescript": "6.0.3"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "name": "@spike/wrap-npm-package",
+  "private": true,
+  "description": "CMD-8's spike: four npm packages wrapped as packs by hand, as `npm create @compmd/pack -- --from` would write them, built and opened in strict frames. Not part of the packages: no build, lint or test script, so the workspace's runs leave it out.",
+  "type": "module",
+  "scripts": {
+    "try": "node try.ts"
+  },
+  "dependencies": {
+    "@compmd/pack": "workspace:*",
+    "@compmd/processor": "workspace:*",
+    "@compmd/sandbox": "workspace:*",
+    "@compmd/vite": "workspace:*",
+    "@sveltejs/vite-plugin-svelte": "7.3.1",
+    "svelte": "5.57.2"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.5",
+    "playwright": "1.64.1",
+    "vite": "8.3.4"
+  }
+}

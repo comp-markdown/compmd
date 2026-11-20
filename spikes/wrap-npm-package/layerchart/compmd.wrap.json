@@ -1,0 +1,10 @@
+{
+  "from": "layerchart",
+  "export": "BarChart",
+  "kind": "svelte",
+  "params": ["data", "x", "y", "orientation", "bandPadding"],
+  "overrides": {
+    "x": { "type": "string", "doc": "The field of each row the bars are placed by" },
+    "y": { "type": "string", "doc": "The field of each row the bars' length is" }
+  }
+}

@@ -21,6 +21,7 @@ packages:
   - website/blog
   # Spikes: measurements, not packages; they have no build, lint or test script, so the workspace's runs skip them.
   - spikes/*
+  - spikes/wrap-npm-package/*
 
 # Install scripts that never run: Paged.js's old dependencies print banners from them, and need nothing built.
 allowBuilds:

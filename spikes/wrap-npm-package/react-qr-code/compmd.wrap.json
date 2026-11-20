@@ -1,0 +1,10 @@
+{
+  "from": "react-qr-code",
+  "export": "default",
+  "kind": "react",
+  "params": ["value", "size", "bgColor", "fgColor", "level", "title"],
+  "overrides": {
+    "size": { "default": 256 }
+  },
+  "label": "title"
+}

@@ -2,7 +2,8 @@
 
 **Status: proposed (2026-11-20, CMD-8).** Making a pack of an existing npm package should take one command, and moving
 to the package's next version a version bump. This builds on [the pack template](create-pack.md) and
-[writing a pack](writing-a-pack.md); CMD-9 builds it.
+[writing a pack](writing-a-pack.md); CMD-9 builds it. [The spike](../spikes/wrap-npm-package/README.md) has the four
+packs it was tried on, built and run.
 
 ## Decisions
 
@@ -21,7 +22,9 @@ to the package's next version a version bump. This builds on [the pack template]
    condition, is Svelte; a custom element in its types (`HTMLElementTagNameMap`) or a `custom-elements.json` is a web
    component; anything else is a library. `--kind` overrides it.
 3. **The glue is the pack's own code, in the plain binding** (spec §7.6), as every built module is: `src/<component>.ts`
-   mounts the package's component in `target` with the params as its props, updates it, and unmounts it on `destroy`.
+   mounts the package's component in a box of its own in `target` (the renderer owns `target`'s classes and style)
+   with the params as its props, updates it, and unmounts it on `destroy`. A web component's glue passes its `error`
+   event to `fail`, since such an element reports a failure without throwing.
    React, React DOM and Svelte stay external, from the frames' import map, so they are one copy whatever loads them
    (create-pack, decision 3). The command writes it once; it is plain code the author may change, and the build
    doesn't touch it again.
@@ -30,10 +33,12 @@ to the package's next version a version bump. This builds on [the pack template]
    `generated` in its info string, leaving the document's prose as it is. Updating the package to its next version is a
    version bump: the build writes the params its types now give, and says what changed (a param added to the package,
    one gone, one whose type changed), and a param that went fails the build where a demo or the overrides still name it.
-5. **The params are an allowlist** in `package.json`, `compmd.wrap.params`, which the command writes with every prop
-   it could map, and the build keeps to: a package's new prop is reported, never added on its own. Only a prop's own
-   declaration counts, never what its props type inherits (`SVGProps`, `HTMLAttributes`): react-qr-code would
-   otherwise give several hundred.
+5. **The params are an allowlist,** `params` in `compmd.wrap.json` beside `package.json`, which the command writes
+   with every prop it could map, and the build keeps to: a package's new prop is reported, never added on its own.
+   The wrap's settings are a file of their own, which the pack doesn't publish, because `package.json`'s `compmd`
+   field is the pack's document already (companion `compmd-registry-v1.md`, sections 2 and 5). Only a prop declared
+   in the package's own files counts (layerchart's `x`, from its `ChartProps`), never one from React's, Svelte's or
+   the DOM's types (`SVGProps`, `HTMLAttributes`): react-qr-code would otherwise give several hundred.
 6. **What maps, and how** (spec §7.3):
 
    | The prop's type | The param |
@@ -42,13 +47,15 @@ to the package's next version a version bump. This builds on [the pack template]
    | a union of string literals | an enum (`L \| M \| H \| Q`) |
    | optional (`?`) | the type with `?` |
    | an array, a plain object | `array`, `object` |
-   | a CSS colour or length type (`CSSProperties["color"]`) | `string` |
+   | a CSS colour type (`CSSProperties["color"]`) | `color` (spec §9.4) |
+   | a CSS length type | `string` |
+   | named like a common param (`height`, `width`, `background`, `border`, `padding`, spec §9.2) | none: the use's box takes it, and the component fills its box; listed |
    | a union with one usable branch (`string \| ((d) => any)`, `boolean \| Snippet`) | that branch, with a note in the build's report |
    | callbacks, `ref`, `style`, `className`, components, snippets with arguments | none: left out, and listed |
 
    A default comes from JSDoc `@default` only; a default written in a comment is never trusted (react-qr-code's says
    128, its code uses 256). Anything else is the overrides'.
-7. **Overrides, in `compmd.wrap`:** a param's name (`fgColor` as `color`), its type, its default, its `doc`; which
+7. **Overrides, in `compmd.wrap.json`:** a param's name (`fgColor` as `color`), its type, its default, its `doc`; which
    prop is an input, with the callback that reports it (`"input": { "value": "onChange" }` makes `value` an
    `input<…>`); which prop takes the fallback's text when the package has one (a `title`, an `alt`); and which plain
    children are a slot (`"slots": { "default": "children" }`), since snippets and children that take arguments
@@ -64,7 +71,8 @@ to the package's next version a version bump. This builds on [the pack template]
    decision 5), a permissive level with the origins it reaches, or another package.
 10. **The build makes one module of any package:** CommonJS is converted, dynamic imports are inlined (code splitting
     is off already, create-pack decision 3), a package that ships `.svelte` sources is compiled with the Svelte the
-    frames provide, and its CSS is bundled into the module. A peer dependency beyond the runtimes (model-viewer's
+    frames provide, and its CSS is bundled into the module (Svelte's `css: "injected"`; as a file of its own, the frame
+    never loads it). A peer dependency beyond the runtimes (model-viewer's
     `three`) is bundled, or named as a library pack ([sharing library packs](sharing-library-packs.md)).
 
 ## In use
@@ -73,17 +81,18 @@ to the package's next version a version bump. This builds on [the pack template]
 npm create @compmd/pack qr-code -- --from react-qr-code --name @comp-markdown/qr-code
 ```
 
-writes the template's files ([the pack template](create-pack.md), *What it writes*), with:
+writes the template's files ([the pack template](create-pack.md), *What it writes*), with `"react-qr-code": "2.2.0"`
+in `dependencies` and ([the spike's pack](../spikes/wrap-npm-package/react-qr-code/), built and run):
 
-```json
-"dependencies": { "react-qr-code": "2.2.0" },
-"compmd": {
-  "wrap": {
-    "from": "react-qr-code",
-    "export": "default",
-    "params": ["value", "size", "bgColor", "fgColor", "level", "title"],
-    "label": "title"
-  }
+```jsonc
+// compmd.wrap.json; the author added the default of `size`
+{
+  "from": "react-qr-code",
+  "export": "default",
+  "kind": "react",
+  "params": ["value", "size", "bgColor", "fgColor", "level", "title"],
+  "overrides": { "size": { "default": 256 } },
+  "label": "title"
 }
 ```
 
@@ -94,9 +103,11 @@ import { createRoot } from "react-dom/client";
 import QRCode from "react-qr-code";
 import { component } from "@compmd/pack/component";
 
-export default component((target, { params, fallback }) => {
+export default component<Params>((target, { params, fallback }) => {
   const root = createRoot(target);
-  const draw = (next: typeof params) => root.render(createElement(QRCode, { ...next, title: next.title ?? fallback.text }));
+  const draw = (next: Params) => {
+    root.render(createElement(QRCode, { ...next, title: next.title ?? fallback.text }));
+  };
   draw(params);
   return { update: draw, destroy: () => root.unmount() };
 });
@@ -107,9 +118,9 @@ export default component((target, { params, fallback }) => {
 ```compmd component=qr-code signature generated
 params:
   value: string
-  size: number?
-  bgColor: string?
-  fgColor: string?
+  size: number = 256
+  bgColor: color?
+  fgColor: color?
   level: L | M | H | Q?
   title: string?
 ```
@@ -120,14 +131,16 @@ types, and the build lists what changed.
 
 ## Trying it on four packages
 
-A spike unpacked four packages (`npm pack`, nothing run) and read their files and types (2026-11-20):
+[The spike](../spikes/wrap-npm-package/README.md) read four packages' files and types, wrote by hand the packs the
+command would write, built them as `compmd-pack build` does and opened each demo in strict frames, in Chrome and
+WebKit (2026-11-20). Its findings are in decisions 3, 5, 6 and 10 and in gaps G6 and G7.
 
 | Package | Kind | What derives | What the author writes | In a strict frame |
 |---|---|---|---|---|
-| `react-qr-code` 2.2.0 (MIT) | React | 6 own props, cleanly, once `SVGProps`' are left out | the fallback; the default `size` (its comment is wrong) | runs: SVG, no network |
-| `layerchart` 2.11.0 (MIT), `BarChart` | Svelte 5, ships `.svelte` sources | the scalar and enum props of about 90, with JSDoc defaults | which of the 90 to keep; `x`, `y` as field names (their `string` branch); the theme's colours from `context.scheme` | runs, once compiled and its dynamic imports inlined; d3 and friends bundled |
-| `@google/model-viewer` 4.4.0 (Apache-2.0) | web component, no `custom-elements.json` | about 50 properties, from the types | attribute names and defaults (they are in its sources, not its types); the slots | doesn't: its model is a URL, its decoders load from CDNs, it needs WebGL and `blob:` workers |
-| `qrcode` 1.5.4 (MIT) | library, CommonJS | nothing | the glue: `toString(code, options)` into the target, and its params | runs |
+| `react-qr-code` 2.2.0 (MIT) | React | 6 own props, cleanly, once `SVGProps`' are left out | the fallback; the default `size` (its comment is wrong) | draws; 8.9 KB gzipped, React from the import map |
+| `layerchart` 2.11.0 (MIT), `BarChart` | Svelte 5, ships `.svelte` sources | the scalar and enum props of about 90, with JSDoc defaults; not `height`, the box's | which of the 90 to keep; `x`, `y` as field names (their `string` branch); the theme's colours from `context.scheme` | draws, once compiled with its CSS injected; d3 and friends bundled, 164.5 KB gzipped |
+| `@google/model-viewer` 4.4.0 (Apache-2.0) | web component, no `custom-elements.json` | about 50 properties, from the types | attribute names and defaults (they are in its sources, not its types); the slots | doesn't: the frame refuses the model's fetch and its WebAssembly; the glue shows the fallback, with W118 |
+| `qrcode` 1.5.4 (MIT) | library, CommonJS | nothing | the glue: `toString(value, { type: "svg" })` into the target, and its params | draws; 9.3 KB gzipped |
 
 ## Gaps
 
@@ -143,12 +156,16 @@ A spike unpacked four packages (`npm pack`, nothing run) and read their files an
 - **G5. The checker costs each build** a TypeScript program over the package's types, not measured yet; only the
   build pays it, never a reader.
 - **G6. An optional enum** (`level: L | M | H | Q?`): the spec's grammar puts `?` after a type, and an enum is one,
-  but neither the spec nor a conformance case shows one. To confirm in the spec before the build writes it.
+  and the processor accepts it (the spike's `qr-code`), but neither the spec nor a conformance case shows one. To
+  confirm in the spec before the build writes it.
+- **G7. The `generated` flag** after `signature` in the fence's info string: the processor ignores it, but the spec
+  doesn't say what other words there mean. Either the spec says a signature fence's other flags are for tools and
+  ignored, or the build marks its fence another way (a comment line before it, which needs no spec change).
 
 ## What changes
 
-- `@compmd/create-pack`: `--from`, the kind, the glue per kind, `compmd.wrap` with the allowlist, the warnings of
-  decision 9.
+- `@compmd/create-pack`: `--from`, the kind, the glue per kind, `compmd.wrap.json` with the allowlist, the warnings
+  of decision 9.
 - `@compmd/pack`: the build writes the generated signature (the TypeScript checker, the mapping, the overrides, the
   report of what changed), and the checks of decisions 9 and 10.
 - [The pack template](create-pack.md), whose question C3 (a React or Svelte component) this answers, and

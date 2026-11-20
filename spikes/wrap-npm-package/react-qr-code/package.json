@@ -1,0 +1,33 @@
+{
+  "name": "@spike/qr-code",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A CompMD pack of react-qr-code 2.2.0, as `npm create @compmd/pack qr-code -- --from react-qr-code` would write it (docs/wrapping-an-npm-package.md). Written by hand: the command doesn't exist yet.",
+  "keywords": [
+    "compmd",
+    "compmd-pack"
+  ],
+  "license": "MIT",
+  "type": "module",
+  "compmd": "./index.comp.md",
+  "files": [
+    "dist",
+    "index.comp.md",
+    "README.md"
+  ],
+  "dependencies": {
+    "react-qr-code": "2.2.0"
+  },
+  "devDependencies": {
+    "@compmd/pack": "workspace:*",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "typescript": "6.0.3"
+  },
+  "peerDependencies": {
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  }
+}
