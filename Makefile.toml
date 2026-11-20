@@ -125,7 +125,19 @@ script = [
 description = "Test the repository's own tools in `tools/`, with Node's test runner"
 clear = true
 command = "node"
-args = ["--test", "tools/spec-revision/spec-revision.test.ts", "tools/packs/placeholder.test.ts", "tools/packs/pack-placeholders.test.ts", "tools/packs/registry.test.ts"]
+args = ["--test", "tools/spec-revision/spec-revision.test.ts", "tools/packs/*.test.ts"]
+
+[tasks.pack-versions]
+description = "Fail when compmd-packs/versions.json and the packs disagree (docs/releases.md, decision 8): a pack it doesn't name, or a pack's package.json or export.version that isn't its version there"
+clear = true
+command = "node"
+args = ["tools/packs/versions.ts"]
+
+[tasks.release-packs]
+description = "Release every pack whose version in compmd-packs/versions.json npm doesn't have (docs/releases.md, decision 8): writes the versions into the packs' files when they differ, then, on a yes, tags each `<pack>-v<version>` at main's pushed commit, pushes the tags and runs release-packs.yml once. With `--dry-run`, says what it would do and does nothing"
+clear = true
+command = "node"
+args = ["tools/packs/release-packs.ts", "${@}"]
 
 [tasks.pack-placeholders]
 description = "Create new packs on npm (docs/releases.md, decision 8): for each named pack npm doesn't have, publish a 0.0.0 placeholder and set its trusted publisher to release-packs.yml, staging only. `cargo make pack-placeholders card chart`; with `--dry-run`, say what it would do and do nothing"
@@ -148,4 +160,4 @@ args = ["tools/spec-revision/spec-revision.ts", "check"]
 [tasks.ci]
 description = "Every check CI runs; coverage runs the tests, the conformance set's among them, so `test` isn't run again"
 clear = true
-dependencies = ["fmt", "clippy", "coverage", "doctest", "docs", "wasm", "deny", "packages", "scripts"]
+dependencies = ["fmt", "clippy", "coverage", "doctest", "docs", "wasm", "deny", "packages", "scripts", "pack-versions"]

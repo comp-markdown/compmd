@@ -1,0 +1,51 @@
+# The packs' releases (docs/releases.md, decision 8). `cargo make release-packs` tags each pack whose version in
+# compmd-packs/versions.json npm doesn't have, `<pack>-v<version>`, at main's commit, then starts this workflow once
+# for them all: it checks the repository once, then stages every pack tagged at this commit whose version npm doesn't
+# have, with trusted publishing, for the author to approve (`cargo make approve-packs`). Started by hand, not by the
+# tags: GitHub starts nothing for a push of more than three tags at once.
+name: Release the packs
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One release at a time, and none cut off halfway.
+concurrency:
+  group: release-packs
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      # Trusted publishing and provenance.
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+          # The packs' tags at this commit say which to stage.
+          fetch-tags: true
+      - uses: ./.github/actions/setup
+      - run: pnpm install --frozen-lockfile
+      # Before the checks, so a run with nothing to stage stops at once.
+      - name: The packs to stage
+        run: node tools/packs/stage-packs.ts plan
+      # The browser tests run in the runner's Chrome and in Playwright's WebKit.
+      - run: pnpm --dir npm-packages/sandbox exec playwright install --with-deps webkit
+      # Every check, the packs' tests and builds among them, once for every pack.
+      - run: cargo make ci
+      - name: Pack
+        run: node tools/packs/stage-packs.ts pack "$RUNNER_TEMP/packages"
+      # Trusted publishing needs npm 11.5.1 or newer, staged publishing 11.15.0.
+      - run: npm install --global npm@11.21.1
+      # Outside the repository, whose devEngines name pnpm. Each is installable once the author approves it.
+      - name: Stage
+        working-directory: ${{ runner.temp }}/packages
+        run: |
+          for package in ./*.tgz; do
+            npm stage publish "$package" --access public
+          done

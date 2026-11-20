@@ -8,8 +8,7 @@ Four things are released, each on its own:
 |---|---|---|
 | The implementation: `@compmd/render`, `@compmd/processor`, `@compmd/sandbox`, `@compmd/registry`, `@compmd/devtools`, `@compmd/host`, `@compmd/vite`, `@compmd/pack`, `@compmd/create-pack`, `@compmd/blog`, `@compmd/create-blog` (first published by hand, below) | npm | a tag `v<version>`; `.github/workflows/release.yml` publishes |
 | The implementation: the crates `compmd-markdown`, `compmd-pack`, `compmd`, `compmd-host`, `tauri-plugin-compmd` | crates.io | the same tag `v<version>`; the workflow publishes once the author approves its `crates` job |
-| The Mermaid pack, `@comp-markdown/mermaid` | npm | a tag `mermaid-v<version>`; `.github/workflows/release-mermaid.yml` publishes |
-| The wireframe pack, `@comp-markdown/wireframe` | npm | a tag `wireframe-v<version>`; `.github/workflows/release-wireframe.yml` publishes |
+| The packs, `@comp-markdown/<pack>` (Mermaid, wireframe, …) | npm | each its version in `compmd-packs/versions.json`; `cargo make release-packs` tags `<pack>-v<version>` and runs `.github/workflows/release-packs.yml`, which stages them |
 | The spec | the website, `/spec/<version>/` | a tag `spec-v<version>`; the Pages workflow deploys |
 
 The website follows `main` and needs no release: every push that touches what it is built from deploys it.
@@ -112,30 +111,30 @@ For each pack npm doesn't have, it publishes a placeholder `0.0.0` (`@comp-markd
 
 A new trusted publisher that hasn't published in 2 days expires, so the pack's first release follows soon after. Deprecate each placeholder once its first version is out: `(cd ~ && npm deprecate @comp-markdown/card@0.0.0 "A placeholder with no code: install 0.1.0 or later")`.
 
-## The Mermaid pack
+## The packs
 
-`@comp-markdown/mermaid` (`compmd-packs/mermaid/`) has a version of its own, for its component's params and forms ([its design](docs/mermaid-pack.md), decision 2).
+Each pack in `compmd-packs/` (`@comp-markdown/mermaid`, `@comp-markdown/wireframe`, and the first components) has a version of its own, written in one place, `compmd-packs/versions.json` ([releases](docs/releases.md), decision 8). Its `package.json` and its document's `export.version` follow it: `cargo make ci` fails when they don't (`cargo make pack-versions`).
 
-1. **Once, before its first release** (done for `0.1.0`, 2026-11-02): the `@comp-markdown` organization exists on npm, and the publishing account may publish to it. The first version is published by hand, from outside the repository, as for any new package (below, [prerequisites](#prerequisites-once-per-package)): `pnpm --dir compmd-packs/mermaid build`, `pnpm --dir compmd-packs/mermaid pack --pack-destination ../packages`, the tarball checked (`dist/mermaid.js`, `dist/LICENSES.md`, `index.comp.md`, the README and its MIT `LICENSE`), then `npm publish` it. Then its trusted publisher is set up for the workflow `release-mermaid.yml`.
-2. **Each release:** the version in `compmd-packs/mermaid/package.json` and in `index.comp.md`'s `export.version`, the same in both, in one commit, with what changed in its README; `cargo make ci` green.
-3. Tag and push the tag:
+1. **Each release:** the new versions in `compmd-packs/versions.json`, with what changed in each pack's README. Then:
 
    ```sh
-   git tag mermaid-v0.2.0
-   git push origin mermaid-v0.2.0
+   cargo make release-packs --dry-run   # what it would write and release: nothing done
+   cargo make release-packs
    ```
 
-   The workflow checks the tag is the pack's version, runs `cargo make ci`, packs the pack and stages it with npm's trusted publishing.
-4. Approve it, as for the `@compmd` packages: `(cd ~ && npm stage list @comp-markdown/mermaid)`, then `npm stage approve <stage-id>`.
-5. Check: `curl -s https://registry.npmjs.org/-/package/@comp-markdown%2fmermaid/dist-tags` gives the new version as `latest`.
+   When a pack's files don't have its version yet, it writes them and stops: commit them, push, and run it again. It then lists every pack whose version npm doesn't have, and on your yes tags each `<pack>-v<version>` at `main`'s commit, which must be pushed and match yours, pushes the tags, and runs `release-packs.yml` once (`gh workflow run`). The workflow runs `cargo make ci` once, then packs and stages every pack tagged at its commit whose version npm doesn't have, with trusted publishing. A run that stopped halfway can run again: a tag already at the commit is kept, and a version npm has is skipped.
+2. **Approve them**, with two-factor authentication: `(cd ~ && npm stage list @comp-markdown/<pack>)`, then `npm stage approve <stage-id>` for each.
+3. Check: `curl -s https://registry.npmjs.org/-/package/@comp-markdown%2f<pack>/dist-tags` gives the new version as `latest`.
 
-## The wireframe pack
+**The Mermaid and wireframe packs' trusted publishers, once** (with this workflow, 2026-11-20): each was set for a workflow of its own, `release-mermaid.yml` and `release-wireframe.yml`, which are gone. A package has one trusted publisher, whose workflow can't be changed, so each is revoked and set again, from outside the repository:
 
-`@comp-markdown/wireframe` (`compmd-packs/wireframe/`) is released as the Mermaid pack is, with a version of its own, by `.github/workflows/release-wireframe.yml` on a tag `wireframe-v<version>`.
+```sh
+(cd ~ && npx npm@11.21.1 trust list @comp-markdown/mermaid)                  # its id
+(cd ~ && npx npm@11.21.1 trust revoke @comp-markdown/mermaid --id=<id>)
+(cd ~ && npx npm@11.21.1 trust github @comp-markdown/mermaid --file release-packs.yml --repository comp-markdown/compmd --allow-stage-publish --yes)
+```
 
-1. **Once, before its first release** (2026-11-19): a placeholder `0.0.0`, with no code, published by hand from outside the repository, as `@compmd/devtools`'s was ([a placeholder first](#prerequisites-once-per-package)); then its trusted publisher set up for the workflow `release-wireframe.yml`. A new trusted publisher must publish within 2 days, so the first tag follows soon after.
-2. **Each release**, as the Mermaid pack's steps 2 to 5, with `wireframe-v<version>` and `@comp-markdown%2fwireframe`; the version in `package.json` and in `index.comp.md`'s `export.version`, the same in both. The tarball holds `dist/`, `index.comp.md`, the README, `LANGUAGE.md` and its MIT `LICENSE`.
-3. Deprecate the placeholder once the first version is out: `(cd ~ && npm deprecate @comp-markdown/wireframe@0.0.0 "A placeholder with no code: install 0.1.0 or later")`.
+and the same for `@comp-markdown/wireframe`. A new trusted publisher that hasn't published in 2 days expires, so their next releases follow within 2 days, or the publisher is set again then.
 
 ## The spec
 
