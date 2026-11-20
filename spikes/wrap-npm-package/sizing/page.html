@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Sizing a framed use: the prototype</title>
+    <!--
+      docs/sizing-components.md, decision 2: a use drawn in a frame is laid out as the same use drawn in the page.
+      Each case is drawn twice, in the page (left) and in a sandboxed frame (right), by the same component code, and
+      `snapshot()` gives both for `sizing.ts` to compare. Nothing here is the sandbox's code: it tries the mechanism.
+    -->
+    <style>
+      body { font: 16px/1.5 system-ui, sans-serif; margin: 2rem auto; max-width: 60rem; padding: 0 1rem; }
+      h2 { font-size: 1rem; margin: 1.5rem 0 0.25rem; }
+      .pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+      /*
+        A host-language component's box, in the page or framed: a grid of one column. A percentage height in it is
+        of its cell, which every browser sizes alike (as a block, WebKit grows a box with an `aspect-ratio` by its
+        border when a child is `height: 100%`).
+      */
+      .box { box-sizing: border-box; position: relative; min-inline-size: 0; border: 2px solid #e5007d; display: grid; grid-template-columns: minmax(0, 1fr); grid-auto-rows: minmax(0, auto); }
+      .box.inline { display: inline-grid; vertical-align: middle; }
+      /* A framed use's box has one cell, as large as the box's inside. */
+      .box.framed { grid-template-rows: minmax(0, 1fr); }
+      /* The sizer fills the cell, and gives it the component's natural size, which the frame reports. */
+      .sizer { display: block; position: relative; min-width: 0; min-height: 0; overflow: hidden; }
+      .natural { display: block; visibility: hidden; }
+      /* The frame is the sizer's size, so the box's inside, and adds nothing to it. */
+      .sizer > iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+    </style>
+  </head>
+  <body>
+    <h1>Sizing a framed use</h1>
+    <p>Each case in the page (left) and in a frame (right). The boxes' borders are magenta.</p>
+    <main id="cases"></main>
+    <script>
+      // The components, and how a drawing is measured: the same source runs in the page and in each frame.
+      function lib() {
+        const NS = "http://www.w3.org/2000/svg";
+        const ALIGN = ["Min", "Mid", "Max"];
+        // `object-fit` and `object-position` as SVG's own attribute: contain is `meet`, cover `slice`, fill `none`.
+        const aspect = (fit) => (fit.mode === "fill" ? "none" : `x${ALIGN[fit.x * 2]}Y${ALIGN[fit.y * 2]} ${fit.mode === "cover" ? "slice" : "meet"}`);
+        const components = {
+          // A drawing with an aspect ratio of its own, as a QR code: an SVG with a `viewBox`, the box's size.
+          qr(target, fit) {
+            const svg = document.createElementNS(NS, "svg");
+            svg.setAttribute("viewBox", "0 0 8 8");
+            svg.setAttribute("preserveAspectRatio", aspect(fit));
+            svg.style.cssText = "display: block; width: 100%; height: 100%";
+            for (let i = 0; i < 64; i += 1) {
+              if ((i + (i >> 3)) % 2 !== 0 && i % 7 !== 0) continue;
+              const cell = document.createElementNS(NS, "rect");
+              for (const [name, value] of [["x", i % 8], ["y", i >> 3], ["width", 1], ["height", 1]]) cell.setAttribute(name, String(value));
+              svg.append(cell);
+            }
+            target.append(svg);
+          },
+          // A drawing with no aspect ratio, sized in script from its box, as a chart: its box contains its size, so
+          // what it drew last never counts as its natural size, which is CSS's 300 by 150 for such content.
+          chart(target) {
+            const box = document.createElement("div");
+            box.style.cssText = "width: 100%; height: 100%; contain: size; contain-intrinsic-size: 300px 150px";
+            const svg = document.createElementNS(NS, "svg");
+            svg.style.display = "block";
+            box.append(svg);
+            target.append(box);
+            new ResizeObserver(() => {
+              const [width, height] = [box.clientWidth, box.clientHeight];
+              svg.setAttribute("width", String(width));
+              svg.setAttribute("height", String(height));
+              svg.innerHTML = [0.5, 0.8, 0.35, 1].map((value, bar) => `<rect x="${(bar + 0.15) * (width / 4)}" y="${height * (1 - value)}" width="${0.7 * (width / 4)}" height="${height * value}" fill="#0969da"/>`).join("");
+            }).observe(box);
+          },
+          // Content that flows, as a card's text: its height is its text's.
+          flow(target) {
+            target.insertAdjacentHTML("beforeend", "<p style='margin: 0'>Text that flows: its height is its lines', at the width it is given, whatever the box's height.</p>");
+          },
+        };
+        const round = (n) => Math.round(n * 10) / 10;
+        /** What `target` holds: its first element's size, and for a scaled SVG what is drawn of it. */
+        const drawn = (target) => {
+          const element = target.firstElementChild;
+          if (!element) return null;
+          const shown = element.getBoundingClientRect();
+          let [width, height] = [shown.width, shown.height];
+          const ratio = element.getAttribute("preserveAspectRatio");
+          if (element instanceof SVGSVGElement && ratio !== null && ratio !== "none") {
+            const view = element.viewBox.baseVal;
+            const scale = (ratio.endsWith("slice") ? Math.max : Math.min)(shown.width / view.width, shown.height / view.height);
+            [width, height] = [view.width * scale, view.height * scale];
+          }
+          return { element: { w: round(shown.width), h: round(shown.height) }, drawing: { w: round(width), h: round(height) }, aspect: ratio };
+        };
+        return { components, drawn, round };
+      }
+
+      // The frame's document: the component in a `target` the frame's size, and its natural size reported.
+      function frameMain(config) {
+        const { components, drawn, round } = lib();
+        const root = document.documentElement;
+        const target = document.getElementById("target");
+        components[config.kind](target, config.fit);
+        let sent = "";
+        let messages = 0;
+        // The natural size: the target's, laid out with no size from the frame, as CSS sizes content before it
+        // knows its box (a percentage of an unknown size counts as `auto`). Both in one task, so nothing is painted
+        // or observed in between.
+        // The height first, at the frame's width, then the width, with the target laid out anew as a block: WebKit
+        // otherwise keeps what it laid out for the frame, and gives the frame's height or width as the drawing's
+        // natural width, which never settles.
+        const natural = () => {
+          root.classList.add("natural-height");
+          const h = target.getBoundingClientRect().height;
+          root.classList.add("natural-width");
+          const w = target.getBoundingClientRect().width;
+          root.classList.remove("natural-width", "natural-height");
+          return { w: round(w), h: round(h) };
+        };
+        const report = () => {
+          const message = { id: config.id, natural: natural(), frame: { w: innerWidth, h: innerHeight }, ...drawn(target), clipped: root.scrollHeight > root.clientHeight || root.scrollWidth > root.clientWidth };
+          const text = JSON.stringify(message);
+          if (text === sent) return;
+          sent = text;
+          messages += 1;
+          parent.postMessage({ ...message, messages }, "*");
+        };
+        // Reported as soon as it is mounted, then from the observers themselves, never from an animation frame: a
+        // browser gives a frame that is off screen none, and its box would keep no size until it is scrolled to.
+        const sizes = new ResizeObserver(report);
+        sizes.observe(root);
+        const watch = () => {
+          for (const child of target.children) sizes.observe(child);
+          report();
+        };
+        new MutationObserver(watch).observe(target, { childList: true });
+        // The page says when the box changed: a browser pauses the observers of a frame that is off screen, but
+        // never its messages, so a box below the fold has its size before it is scrolled to.
+        addEventListener("message", ({ data }) => {
+          if (data?.type === "box") report();
+        });
+        watch();
+      }
+
+      const FRAME_STYLE = `
+        html, body { margin: 0; height: 100%; overflow: hidden; }
+        #part { display: grid; grid-template: minmax(0, 1fr) / minmax(0, 1fr); height: 100%; }
+        #target { min-width: 0; min-height: 0; font: 16px/1.5 system-ui, sans-serif; display: grid; grid-template-columns: minmax(0, 1fr); grid-auto-rows: minmax(0, auto); }
+        html.natural-height, html.natural-height body, html.natural-height #part { height: auto; }
+        html.natural-width #part { width: max-content; }
+        html.natural-width #target { display: block; }`;
+      const frameDocument = (config) =>
+        `<!doctype html><meta charset="utf-8"><style>${FRAME_STYLE}</style><div id="part"><div id="target"></div></div><script>${lib.toString()}\n(${frameMain.toString()})(${JSON.stringify(config)})<\/script>`;
+
+      const CONTAIN = { mode: "contain", x: 0.5, y: 0.5 };
+      const GRID = "display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.5rem";
+      const CASES = [
+        { id: "qr-none", title: "QR code, no size", uses: [{ kind: "qr" }] },
+        { id: "qr-width", title: "QR code, width=10rem", uses: [{ kind: "qr", style: "width: 10rem" }] },
+        { id: "qr-height", title: "QR code, height=6rem", uses: [{ kind: "qr", style: "height: 6rem" }] },
+        { id: "qr-wide", title: "QR code, width=16rem height=6rem", uses: [{ kind: "qr", style: "width: 16rem; height: 6rem" }] },
+        { id: "qr-tall", title: "QR code, width=6rem height=12rem", uses: [{ kind: "qr", style: "width: 6rem; height: 12rem" }] },
+        { id: "qr-ratio", title: "QR code, width=12rem aspect-ratio=2/1", uses: [{ kind: "qr", style: "width: 12rem; aspect-ratio: 2 / 1" }] },
+        { id: "qr-start", title: "QR code, height=6rem object-position=start", uses: [{ kind: "qr", style: "height: 6rem", fit: { mode: "contain", x: 0, y: 0 } }] },
+        { id: "qr-end", title: "QR code, width=6rem height=12rem object-position=end", uses: [{ kind: "qr", style: "width: 6rem; height: 12rem", fit: { mode: "contain", x: 1, y: 1 } }] },
+        { id: "qr-cover", title: "QR code, width=16rem height=6rem object-fit=cover", uses: [{ kind: "qr", style: "width: 16rem; height: 6rem", fit: { mode: "cover", x: 0.5, y: 0.5 } }] },
+        { id: "qr-fill", title: "QR code, width=16rem height=6rem object-fit=fill", uses: [{ kind: "qr", style: "width: 16rem; height: 6rem", fit: { mode: "fill", x: 0.5, y: 0.5 } }] },
+        { id: "chart-none", title: "Chart, no size", uses: [{ kind: "chart" }] },
+        { id: "chart-ratio", title: "Chart, aspect-ratio=3/1", uses: [{ kind: "chart", style: "aspect-ratio: 3 / 1" }] },
+        { id: "chart-height", title: "Chart, height=8rem", uses: [{ kind: "chart", style: "height: 8rem" }] },
+        { id: "chart-box", title: "Chart, width=16rem height=6rem", uses: [{ kind: "chart", style: "width: 16rem; height: 6rem" }] },
+        { id: "flow-none", title: "Text, no size", uses: [{ kind: "flow" }] },
+        { id: "flow-height", title: "Text, height=2rem (shorter than its text)", uses: [{ kind: "flow", style: "height: 2rem" }] },
+        { id: "grid-charts", title: "A grid row: a chart with height=20rem (then 5rem), and a chart with no size", wrap: GRID, uses: [{ kind: "chart", style: "height: 20rem", shrinks: true }, { kind: "chart" }] },
+        { id: "grid-text", title: "A grid row: a chart with height=20rem (then 5rem), and text", wrap: GRID, uses: [{ kind: "chart", style: "height: 20rem", shrinks: true }, { kind: "flow" }] },
+        { id: "grid-qr", title: "A grid row: a chart with height=20rem (then 5rem), and a QR code", wrap: GRID, uses: [{ kind: "chart", style: "height: 20rem", shrinks: true }, { kind: "qr" }] },
+        { id: "row", title: "A row (flexbox): two QR codes and a chart, no sizes", wrap: "display: flex; flex-wrap: wrap; gap: 0.5rem", uses: [{ kind: "qr" }, { kind: "qr", style: "width: 5rem" }, { kind: "chart" }] },
+        { id: "inline", title: "Inline, in a line of text: width=3rem, and no size", inline: true, uses: [{ kind: "qr", style: "width: 3rem" }, { kind: "chart", style: "width: 6rem; height: 2rem" }, { kind: "qr" }] },
+      ];
+
+      const { components, drawn, round } = lib();
+      /** What each frame last reported, by its use's id. */
+      const reports = new Map();
+      const sizers = new Map();
+      addEventListener("message", ({ data }) => {
+        const sizer = sizers.get(data?.id);
+        if (!sizer) return;
+        reports.set(data.id, data);
+        sizer.style.width = `${data.natural.w}px`;
+        sizer.style.height = `${data.natural.h}px`;
+      });
+
+      function useBox(use, id, framed, inline) {
+        const box = document.createElement(inline ? "span" : "div");
+        box.className = `box ${framed ? "framed" : "plain"}${inline ? " inline" : ""}`;
+        box.style.cssText = use.style ?? "";
+        box.dataset.use = id;
+        if (use.shrinks) box.dataset.shrinks = "";
+        const fit = use.fit ?? CONTAIN;
+        if (!framed) {
+          components[use.kind](box, fit);
+          return box;
+        }
+        const sizer = box.appendChild(document.createElement(inline ? "span" : "div"));
+        sizer.className = "sizer";
+        const natural = sizer.appendChild(document.createElement(inline ? "span" : "div"));
+        natural.className = "natural";
+        // Never without area: WebKit may stop rendering such a frame, and its observers with it.
+        natural.style.cssText = "width: 1px; height: 1px";
+        sizers.set(id, natural);
+        const frame = sizer.appendChild(document.createElement("iframe"));
+        frame.setAttribute("sandbox", "allow-scripts");
+        frame.srcdoc = frameDocument({ id, kind: use.kind, fit });
+        // The frame is the sizer's size: once it has loaded, and when that size changes, the frame is told, whether
+        // or not it is on screen.
+        const tell = () => frame.contentWindow?.postMessage({ type: "box" }, "*");
+        frame.addEventListener("load", tell);
+        new ResizeObserver(tell).observe(sizer);
+        return box;
+      }
+
+      for (const example of CASES) {
+        const section = document.getElementById("cases").appendChild(document.createElement("section"));
+        section.appendChild(document.createElement("h2")).textContent = example.title;
+        const pair = section.appendChild(document.createElement("div"));
+        pair.className = "pair";
+        for (const framed of [false, true]) {
+          const holder = pair.appendChild(document.createElement(example.inline ? "p" : "div"));
+          holder.style.cssText = example.wrap ?? (example.inline ? "margin: 0" : "");
+          example.uses.forEach((use, index) => {
+            if (example.inline) holder.append(index === 0 ? "A line of text with " : " and ");
+            holder.append(useBox(use, `${example.id}/${String(index)}/${framed ? "framed" : "plain"}`, framed, example.inline === true));
+          });
+          if (example.inline) holder.append(" in it.");
+        }
+      }
+
+      const size = (element) => {
+        const box = element.getBoundingClientRect();
+        return { w: round(box.width), h: round(box.height) };
+      };
+      /** Every use, in the page and in its frame: its box, what it holds, and what the frame said. */
+      window.snapshot = () =>
+        CASES.flatMap((example) =>
+          example.uses.map((use, index) => {
+            const id = `${example.id}/${String(index)}`;
+            const plain = document.querySelector(`[data-use="${id}/plain"]`);
+            const framed = document.querySelector(`[data-use="${id}/framed"]`);
+            const report = reports.get(`${id}/framed`) ?? null;
+            return {
+              id,
+              title: example.title,
+              kind: use.kind,
+              plain: { box: size(plain), ...drawn(plain) },
+              framed: { box: size(framed), frame: size(framed.querySelector("iframe")), inside: { w: framed.clientWidth, h: framed.clientHeight }, ...(report ?? {}) },
+            };
+          }),
+        );
+      /** The tall boxes of the grid rows made short, in the page and in the frames: a row must follow. */
+      window.shrink = () => {
+        for (const box of document.querySelectorAll("[data-shrinks]")) box.style.height = "5rem";
+      };
+    </script>
+  </body>
+</html>

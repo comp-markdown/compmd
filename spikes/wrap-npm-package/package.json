@@ -4,7 +4,8 @@
   "description": "CMD-8's spike: four npm packages wrapped as packs by hand, as `npm create @compmd/pack -- --from` would write them, built and opened in strict frames. Not part of the packages: no build, lint or test script, so the workspace's runs leave it out.",
   "type": "module",
   "scripts": {
-    "try": "node try.ts"
+    "try": "node try.ts",
+    "sizing": "node sizing.ts"
   },
   "dependencies": {
     "@compmd/pack": "workspace:*",

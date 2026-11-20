@@ -54,7 +54,7 @@ packs it was tried on, built and run.
    | an array, a plain object | `array`, `object` |
    | a CSS colour type (`CSSProperties["color"]`) | `color` (spec §9.4) |
    | a CSS length type | `string` |
-   | named like a common param (`height`, `width`, `background`, `border`, `padding`, spec §9.2) | none: the use's box takes it, and the component fits its box; listed (declaring one is F013, [sizing a component](sizing-components.md), decision 4) |
+   | named like a common param (`height`, `width`, `background`, `border`, `padding`, spec §9.2) | none: the use's box takes it, and the component fits its box; listed (declaring one is F013, [sizing a component](sizing-components.md), decision 5) |
    | a size in pixels (react-qr-code's `size`) | none: the component fits its box, which the use sizes ([sizing a component](sizing-components.md), decision 1); listed |
    | a union with one usable branch (`string \| ((d) => any)`, `boolean \| Snippet`) | that branch, with a note in the build's report |
    | callbacks, `ref`, `style`, `className`, components, snippets with arguments | none: left out, and listed |
@@ -171,9 +171,10 @@ box](sizing-components.md).
   confirm in the spec before the build writes it.
 - **G7, settled. How the generated fence is marked:** a word after `signature` in the info string would need the spec
   to say what other words there mean; comments before and after the fence need nothing (decision 4).
-- **G8. A component's size when the use gives none** is its box's, the column's width: [sizing a component](sizing-components.md),
-  decision 3, proposes box defaults on the signature fence, a spec change; the build would carry them from
-  `compmd.wrap.json` into the generated fence.
+- **G8, settled by [sizing a component](sizing-components.md). A component's size when the use gives none** is its
+  natural size, which for a drawing is seldom what an author wants: its decision 4 puts box defaults on the signature
+  fence, a spec change. `compmd.wrap.json`'s `box` (`"box": "width=12rem max-width=100%"`) is the generated fence's
+  param list, which the command writes empty and the author fills.
 
 ## What changes
 

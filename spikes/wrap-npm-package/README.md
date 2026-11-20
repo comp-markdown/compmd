@@ -17,6 +17,17 @@
 11. **A component fits its box, which the use sizes** ([sizing a component in its box](../../docs/sizing-components.md), which has the numbers): each demo has uses with `width`, `height`, both, and `aspect-ratio`, their boxes bordered in magenta, and `try.ts` measures each drawing against its box's inside. The QR codes fit (`width: 100%; height: 100%`, SVG's `meet`), the chart fills; fitting the width only overflowed every box with a height. react-qr-code's own `size` is left out. Without a size, a use is the column's width (760 px here), since a pack can't give its box a default yet: a spec change, proposed there.
 12. **`draw()`'s `div` has no height,** so a drawing can't take its box's height through it: qrcode's overflowed until its glue wrote into `target` itself.
 13. **A framed use with a `width` scrolls by its border** (4 px), in both browsers: the sandbox applies the box's params to the page's box and again inside the frame. `try.ts` reports how far each frame's document goes past the frame.
+14. **A framed use can be laid out exactly as the same use in the page** (`sizing/`, below): 28 uses drawn both ways are the same in Chrome and WebKit, with `object-fit` and `object-position`, in grid rows that grow and shrink, in a flexbox row and inline, on screen and off it.
+
+## The sizing prototype
+
+`sizing/page.html` tries the mechanism of [sizing a component in its box](../../docs/sizing-components.md) before any of it is in the packages: each use drawn in the page and in a sandboxed frame by the same component code (a QR code with an aspect ratio, a chart sized in script, text that flows), the boxes bordered in magenta. `sizing.ts` compares the two in Chrome and WebKit, and again after the tall boxes of the grid rows are made short; `results-sizing.json` and `screenshots/sizing-*.png` are its last run. What it took to make them the same:
+
+- the frame positioned over a sizer the component's natural size, in a box that is a grid of one column: a frame filling its cell by `min-height: 100%` came out with no area in a flexbox row and inline;
+- the box a grid in the page too: as a block, WebKit grows a box with an `aspect-ratio` by its border when a child is `height: 100%`;
+- the natural size measured height first, then width with the target laid out anew as a block: measured together, WebKit gives the frame's height as a drawing's natural width, and the two swap for ever (639 reports before the run gave up);
+- the chart's box containing its size (`contain: size`), so what it drew for a tall row isn't its natural height once the row is short;
+- the page telling a frame when it has loaded and when its box changes size: Chrome pauses a frame's animation frames and observers while it is off screen, and such a frame's box had no size.
 
 ## The packs
 
@@ -42,6 +53,8 @@ Each folder is what the command would write, with the glue as written once, and 
 pnpm install
 pnpm --dir spikes/wrap-npm-package try                 # every pack
 pnpm --dir spikes/wrap-npm-package try layerchart      # one
+pnpm --dir spikes/wrap-npm-package sizing              # the sizing prototype
+pnpm --dir spikes/wrap-npm-package sizing --height=900 # with most of its frames off screen
 ```
 
 `try.ts` builds each pack with `compmd-pack build`'s own configuration (with Svelte's Vite plugin for a Svelte package, which the build doesn't have yet), serves its `demo.comp.md` as `compmd-pack dev` does, and opens it in Playwright's Chrome and WebKit (1.64.1, headless). A use counts as drawn when its frame has a height and its `svg` or `canvas` a size. The packs have no `build` or `test` script, so the workspace's runs leave them out.

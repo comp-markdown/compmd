@@ -1,0 +1,3482 @@
+{
+  "Chrome": {
+    "drawn": [
+      {
+        "id": "qr-none/0",
+        "title": "QR code, no size",
+        "kind": "qr",
+        "plain": {
+          "box": {
+            "w": 468,
+            "h": 468
+          },
+          "element": {
+            "w": 464,
+            "h": 464
+          },
+          "drawing": {
+            "w": 464,
+            "h": 464
+          },
+          "aspect": "xMidYMid meet"
+        },
+        "framed": {
+          "box": {
+            "w": 468,
+            "h": 468
+          },
+          "frame": {
+            "w": 464,
+            "h": 464
+          },
+          "inside": {
+            "w": 464,
+            "h": 464
+          },
+          "id": "qr-none/0/framed",
+          "natural": {
+            "w": 300,
+            "h": 464
+          },
+          "element": {
+            "w": 464,
+            "h": 464
+          },
+          "drawing": {
+            "w": 464,
+            "h": 464
+          },
+          "aspect": "xMidYMid meet",
+          "clipped": false,
+          "messages": 4
+        },
+        "differs": []
+      },
+      {
+        "id": "qr-width/0",
+        "title": "QR code, width=10rem",
+        "kind": "qr",
+        "plain": {
+          "box": {
+            "w": 160,
+            "h": 160
+          },
+          "element": {
+            "w": 156,
+            "h": 156
+          },
+          "drawing": {
+            "w": 156,
+            "h": 156
+          },
+          "aspect": "xMidYMid meet"
+        },
+        "framed": {
+          "box": {
+            "w": 160,
+            "h": 160
+          },
+          "frame": {
+            "w": 156,
+            "h": 156
+          },
+          "inside": {
+            "w": 156,
+            "h": 156
+          },
+          "id": "qr-width/0/framed",
+          "natural": {
+            "w": 300,
+            "h": 156
+          },
+          "element": {
+            "w": 156,
+            "h": 156
+          },
+          "drawing": {
+            "w": 156,
+            "h": 156
+          },
+          "aspect": "xMidYMid meet",
+          "clipped": false,
+          "messages": 4
+        },
+        "differs": []
+      },
+      {
+        "id": "qr-height/0",
+        "title": "QR code, height=6rem",
+        "kind": "qr",
+        "plain": {
+          "box": {
+            "w": 468,
+            "h": 96
+          },
+          "element": {
+            "w": 464,
+            "h": 92
+          },
+          "drawing": {
+            "w": 92,
+            "h": 92
+          },
+          "aspect": "xMidYMid meet"
+        },
+        "framed": {
+          "box": {
+            "w": 468,
+            "h": 96
+          },
+          "frame": {
+            "w": 464,
+            "h": 92
+          },
+          "inside": {
+            "w": 464,
+            "h": 92
+          },
+          "id": "qr-height/0/framed",
+          "natural": {
+            "w": 300,
+            "h": 464
+          },
+          "element": {
+            "w": 464,
+            "h": 92
+          },
+          "drawing": {
+            "w": 92,
+            "h": 92
+          },
+          "aspect": "xMidYMid meet",
+          "clipped": false,
+          "messages": 2
+        },
+        "differs": []
+      },
+      {
+        "id": "qr-wide/0",
+        "title": "QR code, width=16rem height=6rem",
+        "kind": "qr",
+        "plain": {
+          "box": {
+            "w": 256,
+            "h": 96
+          },
+          "element": {
+            "w": 252,
+            "h": 92
+          },
+          "drawing": {
+            "w": 92,
+            "h": 92
+          },
+          "aspect": "xMidYMid meet"
+        },
+        "framed": {
+          "box": {
+            "w": 256,
+            "h": 96
+          },
+          "frame": {
+            "w": 252,
+            "h": 92
+          },
+          "inside": {
+            "w": 252,
+            "h": 92
+          },
+          "id": "qr-wide/0/framed",
+          "natural": {
+            "w": 300,
+            "h": 252
+          },
+          "element": {
+            "w": 252,
+            "h": 92
+          },
+          "drawing": {
+            "w": 92,
+            "h": 92
+          },
+          "aspect": "xMidYMid meet",
+          "clipped": false,
+          "messages": 2
+        },
+        "differs": []
+      },
+      {
+        "id": "qr-tall/0",
+        "title": "QR code, width=6rem height=12rem",
+        "kind": "qr",
+        "plain": {
+          "box": {
+            "w": 96,
+            "h": 192
+          },
+          "element": {
+            "w": 92,
+            "h": 188
+          },
+          "drawing": {
+            "w": 92,
+            "h": 92
+          },
+          "aspect": "xMidYMid meet"
+        },
+        "framed": {
+          "box": {
+            "w": 96,
+            "h": 192
+          },
+          "frame": {
+            "w": 92,
+            "h": 188
+          },
+          "inside": {
+            "w": 92,
+            "h": 188
+          },
+          "id": "qr-tall/0/framed",
+          "natural": {
+            "w": 300,
+            "h": 92
+          },
+          "element": {
+            "w": 92,
+            "h": 188
+          },
+          "drawing": {
+            "w": 92,
+            "h": 92
+          },
+          "aspect": "xMidYMid meet",
+          "clipped": false,
+          "messages": 2
+        },
+        "differs": []
+      },
+      {
+        "id": "qr-ratio/0",
+        "title": "QR code, width=12rem aspect-ratio=2/1",
+        "kind": "qr",
+        "plain": {
+          "box": {
+            "w": 192,
+            "h": 96
+          },
+          "element": {
+            "w": 188,
+            "h": 92
+          },
+          "drawing": {
+            "w": 92,
+            "h": 92
+          },
+          "aspect": "xMidYMid meet"
+        },
+        "framed": {
+          "box": {
+            "w": 192,
+            "h": 96
+          },
+          "frame": {
+            "w": 188,
+            "h": 92
+          },
+          "inside": {
+            "w": 188,
+            "h": 92
+          },
+          "id": "qr-ratio/0/framed",
+          "natural": {
+            "w": 300,
+            "h": 188
+          },
+          "element": {
+            "w": 188,
+            "h": 92
+          },
+          "drawing": {
+            "w": 92,
+            "h": 92
+          },
+          "aspect": "xMidYMid meet",
+          "clipped": false,
+          "messages": 2
+        },
+        "differs": []
+      },
+      {
+        "id": "qr-start/0",
+        "title": "QR code, height=6rem object-position=start",
+        "kind": "qr",
+        "plain": {
+          "box": {
+            "w": 468,
+            "h": 96
+          },
+          "element": {
+            "w": 464,
+            "h": 92
+          },
+          "drawing": {
+            "w": 92,
+            "h": 92
+          },
+          "aspect": "xMinYMin meet"
+        },
+        "framed": {
+          "box": {
+            "w": 468,
+            "h": 96
+          },
+          "frame": {
+            "w": 464,
+            "h": 92
+          },
+          "inside": {
+            "w": 464,
+            "h": 92
+          },
+          "id": "qr-start/0/framed",
+          "natural": {
+            "w": 300,
+            "h": 464
+          },
+          "element": {
+            "w": 464,
+            "h": 92
+          },
+          "drawing": {
+            "w": 92,
+            "h": 92
+          },
+          "aspect": "xMinYMin meet",
+          "clipped": false,
+          "messages": 2
+        },
+        "differs": []
+      },
+      {
+        "id": "qr-end/0",
+        "title": "QR code, width=6rem height=12rem object-position=end",
+        "kind": "qr",
+        "plain": {
+          "box": {
+            "w": 96,
+            "h": 192
+          },
+          "element": {
+            "w": 92,
+            "h": 188
+          },
+          "drawing": {
+            "w": 92,
+            "h": 92
+          },
+          "aspect": "xMaxYMax meet"
+        },
+        "framed": {
+          "box": {
+            "w": 96,
+            "h": 192
+          },
+          "frame": {
+            "w": 92,
+            "h": 188
+          },
+          "inside": {
+            "w": 92,
+            "h": 188
+          },
+          "id": "qr-end/0/framed",
+          "natural": {
+            "w": 300,
+            "h": 92
+          },
+          "element": {
+            "w": 92,
+            "h": 188
+          },
+          "drawing": {
+            "w": 92,
+            "h": 92
+          },
+          "aspect": "xMaxYMax meet",
+          "clipped": false,
+          "messages": 2
+        },
+        "differs": []
+      },
+      {
+        "id": "qr-cover/0",
+        "title": "QR code, width=16rem height=6rem object-fit=cover",
+        "kind": "qr",
+        "plain": {
+          "box": {
+            "w": 256,
+            "h": 96
+          },
+          "element": {
+            "w": 252,
+            "h": 92
+          },
+          "drawing": {
+            "w": 252,
+            "h": 252
+          },
+          "aspect": "xMidYMid slice"
+        },
+        "framed": {
+          "box": {
+            "w": 256,
+            "h": 96
+          },
+          "frame": {
+            "w": 252,
+            "h": 92
+          },
+          "inside": {
+            "w": 252,
+            "h": 92
+          },
+          "id": "qr-cover/0/framed",
+          "natural": {
+            "w": 300,
+            "h": 252
+          },
+          "element": {
+            "w": 252,
+            "h": 92
+          },
+          "drawing": {
+            "w": 252,
+            "h": 252
+          },
+          "aspect": "xMidYMid slice",
+          "clipped": false,
+          "messages": 2
+        },
+        "differs": []
+      },
+      {
+        "id": "qr-fill/0",
+        "title": "QR code, width=16rem height=6rem object-fit=fill",
+        "kind": "qr",
+        "plain": {
+          "box": {
+            "w": 256,
+            "h": 96
+          },
+          "element": {
+            "w": 252,
+            "h": 92
+          },
+          "drawing": {
+            "w": 252,
+            "h": 92
+          },
+          "aspect": "none"
+        },
+        "framed": {
+          "box": {
+            "w": 256,
+            "h": 96
+          },
+          "frame": {
+            "w": 252,
+            "h": 92
+          },
+          "inside": {
+            "w": 252,
+            "h": 92
+          },
+          "id": "qr-fill/0/framed",
+          "natural": {
+            "w": 300,
+            "h": 252
+          },
+          "element": {
+            "w": 252,
+            "h": 92
+          },
+          "drawing": {
+            "w": 252,
+            "h": 92
+          },
+          "aspect": "none",
+          "clipped": false,
+          "messages": 2
+        },
+        "differs": []
+      },
+      {
+        "id": "chart-none/0",
+        "title": "Chart, no size",
+        "kind": "chart",
+        "plain": {
+          "box": {
+            "w": 468,
+            "h": 154
+          },
+          "element": {
+            "w": 464,
+            "h": 150
+          },
+          "drawing": {
+            "w": 464,
+            "h": 150
+          },
+          "aspect": null
+        },
+        "framed": {
+          "box": {
+            "w": 468,
+            "h": 154
+          },
+          "frame": {
+            "w": 464,
+            "h": 150
+          },
+          "inside": {
+            "w": 464,
+            "h": 150
+          },
+          "id": "chart-none/0/framed",
+          "natural": {
+            "w": 300,
+            "h": 150
+          },
+          "element": {
+            "w": 464,
+            "h": 150
+          },
+          "drawing": {
+            "w": 464,
+            "h": 150
+          },
+          "aspect": null,
+          "clipped": false,
+          "messages": 4
+        },
+        "differs": []
+      },
+      {
+        "id": "chart-ratio/0",
+        "title": "Chart, aspect-ratio=3/1",
+        "kind": "chart",
+        "plain": {
+          "box": {
+            "w": 468,
+            "h": 156
+          },
+          "element": {
+            "w": 464,
+            "h": 152
+          },
+          "drawing": {
+            "w": 464,
+            "h": 152
+          },
+          "aspect": null
+        },
+        "framed": {
+          "box": {
+            "w": 468,
+            "h": 156
+          },
+          "frame": {
+            "w": 464,
+            "h": 152
+          },
+          "inside": {
+            "w": 464,
+            "h": 152
+          },
+          "id": "chart-ratio/0/framed",
+          "natural": {
+            "w": 300,
+            "h": 150
+          },
+          "element": {
+            "w": 464,
+            "h": 152
+          },
+          "drawing": {
+            "w": 464,
+            "h": 152
+          },
+          "aspect": null,
+          "clipped": false,
+          "messages": 2
+        },
+        "differs": []
+      },
+      {
+        "id": "chart-height/0",
+        "title": "Chart, height=8rem",
+        "kind": "chart",
+        "plain": {
+          "box": {
+            "w": 468,
+            "h": 128
+          },
+          "element": {
+            "w": 464,
+            "h": 124
+          },
+          "drawing": {
+            "w": 464,
+            "h": 124
+          },
+          "aspect": null
+        },
+        "framed": {
+          "box": {
+            "w": 468,
+            "h": 128
+          },
+          "frame": {
+            "w": 464,
+            "h": 124
+          },
+          "inside": {
+            "w": 464,
+            "h": 124
+          },
+          "id": "chart-height/0/framed",
+          "natural": {
+            "w": 300,
+            "h": 150
+          },
+          "element": {
+            "w": 464,
+            "h": 124
+          },
+          "drawing": {
+            "w": 464,
+            "h": 124
+          },
+          "aspect": null,
+          "clipped": false,
+          "messages": 2
+        },
+        "differs": []
+      },
+      {
+        "id": "chart-box/0",
+        "title": "Chart, width=16rem height=6rem",
+        "kind": "chart",
+        "plain": {
+          "box": {
+            "w": 256,
+            "h": 96
+          },
+          "element": {
+            "w": 252,
+            "h": 92
+          },
+          "drawing": {
+            "w": 252,
+            "h": 92
+          },
+          "aspect": null
+        },
+        "framed": {
+          "box": {
+            "w": 256,
+            "h": 96
+          },
+          "frame": {
+            "w": 252,
+            "h": 92
+          },
+          "inside": {
+            "w": 252,
+            "h": 92
+          },
+          "id": "chart-box/0/framed",
+          "natural": {
+            "w": 300,
+            "h": 150
+          },
+          "element": {
+            "w": 252,
+            "h": 92
+          },
+          "drawing": {
+            "w": 252,
+            "h": 92
+          },
+          "aspect": null,
+          "clipped": false,
+          "messages": 2
+        },
+        "differs": []
+      },
+      {
+        "id": "flow-none/0",
+        "title": "Text, no size",
+        "kind": "flow",
+        "plain": {
+          "box": {
+            "w": 468,
+            "h": 52
+          },
+          "element": {
+            "w": 464,
+            "h": 48
+          },
+          "drawing": {
+            "w": 464,
+            "h": 48
+          },
+          "aspect": null
+        },
+        "framed": {
+          "box": {
+            "w": 468,
+            "h": 52
+          },
+          "frame": {
+            "w": 464,
+            "h": 48
+          },
+          "inside": {
+            "w": 464,
+            "h": 48
+          },
+          "id": "flow-none/0/framed",
+          "natural": {
+            "w": 624.9,
+            "h": 48
+          },
+          "element": {
+            "w": 464,
+            "h": 48
+          },
+          "drawing": {
+            "w": 464,
+            "h": 48
+          },
+          "aspect": null,
+          "clipped": false,
+          "messages": 3
+        },
+        "differs": []
+      },
+      {
+        "id": "flow-height/0",
+        "title": "Text, height=2rem (shorter than its text)",
+        "kind": "flow",
+        "plain": {
+          "box": {
+            "w": 468,
+            "h": 32
+          },
+          "element": {
+            "w": 464,
+            "h": 28
+          },
+          "drawing": {
+            "w": 464,
+            "h": 28
+          },
+          "aspect": null
+        },
+        "framed": {
+          "box": {
+            "w": 468,
+            "h": 32
+          },
+          "frame": {
+            "w": 464,
+            "h": 28
+          },
+          "inside": {
+            "w": 464,
+            "h": 28
+          },
+          "id": "flow-height/0/framed",
+          "natural": {
+            "w": 624.9,
+            "h": 48
+          },
+          "element": {
+            "w": 464,
+            "h": 28
+          },
+          "drawing": {
+            "w": 464,
+            "h": 28
+          },
+          "aspect": null,
+          "clipped": false,
+          "messages": 2
+        },
+        "differs": []
+      },
+      {
+        "id": "grid-charts/0",
+        "title": "A grid row: a chart with height=20rem (then 5rem), and a chart with no size",
+        "kind": "chart",
+        "plain": {
+          "box": {
+            "w": 230,
+            "h": 320
+          },
+          "element": {
+            "w": 226,
+            "h": 316
+          },
+          "drawing": {
+            "w": 226,
+            "h": 316
+          },
+          "aspect": null
+        },
+        "framed": {
+          "box": {
+            "w": 230,
+            "h": 320
+          },
+          "frame": {
+            "w": 226,
+            "h": 316
+          },
+          "inside": {
+            "w": 226,
+            "h": 316
+          },
+          "id": "grid-charts/0/framed",
+          "natural": {
+            "w": 300,
+            "h": 150
+          },
+          "element": {
+            "w": 226,
+            "h": 316
+          },
+          "drawing": {
+            "w": 226,
+            "h": 316
+          },
+          "aspect": null,
+          "clipped": false,
+          "messages": 2
+        },
+        "differs": []
+      },
+      {
+        "id": "grid-charts/1",
+        "title": "A grid row: a chart with height=20rem (then 5rem), and a chart with no size",
+        "kind": "chart",
+        "plain": {
+          "box": {
+            "w": 230,
+            "h": 320
+          },
+          "element": {
+            "w": 226,
+            "h": 316
+          },
+          "drawing": {
+            "w": 226,
+            "h": 316
+          },
+          "aspect": null
+        },
+        "framed": {
+          "box": {
+            "w": 230,
+            "h": 320
+          },
+          "frame": {
+            "w": 226,
+            "h": 316
+          },
+          "inside": {
+            "w": 226,
+            "h": 316
+          },
+          "id": "grid-charts/1/framed",
+          "natural": {
+            "w": 300,
+            "h": 150
+          },
+          "element": {
+            "w": 226,
+            "h": 316
+          },
+          "drawing": {
+            "w": 226,
+            "h": 316
+          },
+          "aspect": null,
+          "clipped": false,
+          "messages": 2
+        },
+        "differs": []
+      },
+      {
+        "id": "grid-text/0",
+        "title": "A grid row: a chart with height=20rem (then 5rem), and text",
+        "kind": "chart",
+        "plain": {
+          "box": {
+            "w": 230,
+            "h": 320
+          },
+          "element": {
+            "w": 226,
+            "h": 316
+          },
+          "drawing": {
+            "w": 226,
+            "h": 316
+          },
+          "aspect": null
+        },
+        "framed": {
+          "box": {
+            "w": 230,
+            "h": 320
+          },
+          "frame": {
+            "w": 226,
+            "h": 316
+          },
+          "inside": {
+            "w": 226,
+            "h": 316
+          },
+          "id": "grid-text/0/framed",
+          "natural": {
+            "w": 300,
+            "h": 150
+          },
+          "element": {
+            "w": 226,
+            "h": 316
+          },
+          "drawing": {
+            "w": 226,
+            "h": 316
+          },
+          "aspect": null,
+          "clipped": false,
+          "messages": 2
+        },
+        "differs": []
+      },
+      {
+        "id": "grid-text/1",
+        "title": "A grid row: a chart with height=20rem (then 5rem), and text",
+        "kind": "flow",
+        "plain": {
+          "box": {
+            "w": 230,
+            "h": 320
+          },
+          "element": {
+            "w": 226,
+            "h": 316
+          },
+          "drawing": {
+            "w": 226,
+            "h": 316
+          },
+          "aspect": null
+        },
+        "framed": {
+          "box": {
+            "w": 230,
+            "h": 320
+          },
+          "frame": {
+            "w": 226,
+            "h": 316
+          },
+          "inside": {
+            "w": 226,
+            "h": 316
+          },
+          "id": "grid-text/1/framed",
+          "natural": {
+            "w": 624.9,
+            "h": 72
+          },
+          "element": {
+            "w": 226,
+            "h": 316
+          },
+          "drawing": {
+            "w": 226,
+            "h": 316
+          },
+          "aspect": null,
+          "clipped": false,
+          "messages": 2
+        },
+        "differs": []
+      },
+      {
+        "id": "grid-qr/0",
+        "title": "A grid row: a chart with height=20rem (then 5rem), and a QR code",
+        "kind": "chart",
+        "plain": {
+          "box": {
+            "w": 230,
+            "h": 320
+          },
+          "element": {
+            "w": 226,
+            "h": 316
+          },
+          "drawing": {
+            "w": 226,
+            "h": 316
+          },
+          "aspect": null
+        },
+        "framed": {
+          "box": {
+            "w": 230,
+            "h": 320
+          },
+          "frame": {
+            "w": 226,
+            "h": 316
+          },
+          "inside": {
+            "w": 226,
+            "h": 316
+          },
+          "id": "grid-qr/0/framed",
+          "natural": {
+            "w": 300,
+            "h": 150
+          },
+          "element": {
+            "w": 226,
+            "h": 316
+          },
+          "drawing": {
+            "w": 226,
+            "h": 316
+          },
+          "aspect": null,
+          "clipped": false,
+          "messages": 2
+        },
+        "differs": []
+      },
+      {
+        "id": "grid-qr/1",
+        "title": "A grid row: a chart with height=20rem (then 5rem), and a QR code",
+        "kind": "qr",
+        "plain": {
+          "box": {
+            "w": 230,
+            "h": 320
+          },
+          "element": {
+            "w": 226,
+            "h": 316
+          },
+          "drawing": {
+            "w": 226,
+            "h": 226
+          },
+          "aspect": "xMidYMid meet"
+        },
+        "framed": {
+          "box": {
+            "w": 230,
+            "h": 320
+          },
+          "frame": {
+            "w": 226,
+            "h": 316
+          },
+          "inside": {
+            "w": 226,
+            "h": 316
+          },
+          "id": "grid-qr/1/framed",
+          "natural": {
+            "w": 300,
+            "h": 226
+          },
+          "element": {
+            "w": 226,
+            "h": 316
+          },
+          "drawing": {
+            "w": 226,
+            "h": 226
+          },
+          "aspect": "xMidYMid meet",
+          "clipped": false,
+          "messages": 2
+        },
+        "differs": []
+      },
+      {
+        "id": "row/0",
+        "title": "A row (flexbox): two QR codes and a chart, no sizes",
+        "kind": "qr",
+        "plain": {
+          "box": {
+            "w": 304,
+            "h": 304
+          },
+          "element": {
+            "w": 300,
+            "h": 300
+          },
+          "drawing": {
+            "w": 300,
+            "h": 300
+          },
+          "aspect": "xMidYMid meet"
+        },
+        "framed": {
+          "box": {
+            "w": 304,
+            "h": 304
+          },
+          "frame": {
+            "w": 300,
+            "h": 300
+          },
+          "inside": {
+            "w": 300,
+            "h": 300
+          },
+          "id": "row/0/framed",
+          "natural": {
+            "w": 300,
+            "h": 300
+          },
+          "element": {
+            "w": 300,
+            "h": 300
+          },
+          "drawing": {
+            "w": 300,
+            "h": 300
+          },
+          "aspect": "xMidYMid meet",
+          "clipped": false,
+          "messages": 5
+        },
+        "differs": []
+      },
+      {
+        "id": "row/1",
+        "title": "A row (flexbox): two QR codes and a chart, no sizes",
+        "kind": "qr",
+        "plain": {
+          "box": {
+            "w": 80,
+            "h": 304
+          },
+          "element": {
+            "w": 76,
+            "h": 300
+          },
+          "drawing": {
+            "w": 76,
+            "h": 76
+          },
+          "aspect": "xMidYMid meet"
+        },
+        "framed": {
+          "box": {
+            "w": 80,
+            "h": 304
+          },
+          "frame": {
+            "w": 76,
+            "h": 300
+          },
+          "inside": {
+            "w": 76,
+            "h": 300
+          },
+          "id": "row/1/framed",
+          "natural": {
+            "w": 300,
+            "h": 76
+          },
+          "element": {
+            "w": 76,
+            "h": 300
+          },
+          "drawing": {
+            "w": 76,
+            "h": 76
+          },
+          "aspect": "xMidYMid meet",
+          "clipped": false,
+          "messages": 5
+        },
+        "differs": []
+      },
+      {
+        "id": "row/2",
+        "title": "A row (flexbox): two QR codes and a chart, no sizes",
+        "kind": "chart",
+        "plain": {
+          "box": {
+            "w": 304,
+            "h": 154
+          },
+          "element": {
+            "w": 300,
+            "h": 150
+          },
+          "drawing": {
+            "w": 300,
+            "h": 150
+          },
+          "aspect": null
+        },
+        "framed": {
+          "box": {
+            "w": 304,
+            "h": 154
+          },
+          "frame": {
+            "w": 300,
+            "h": 150
+          },
+          "inside": {
+            "w": 300,
+            "h": 150
+          },
+          "id": "row/2/framed",
+          "natural": {
+            "w": 300,
+            "h": 150
+          },
+          "element": {
+            "w": 300,
+            "h": 150
+          },
+          "drawing": {
+            "w": 300,
+            "h": 150
+          },
+          "aspect": null,
+          "clipped": false,
+          "messages": 4
+        },
+        "differs": []
+      },
+      {
+        "id": "inline/0",
+        "title": "Inline, in a line of text: width=3rem, and no size",
+        "kind": "qr",
+        "plain": {
+          "box": {
+            "w": 48,
+            "h": 48
+          },
+          "element": {
+            "w": 44,
+            "h": 44
+          },
+          "drawing": {
+            "w": 44,
+            "h": 44
+          },
+          "aspect": "xMidYMid meet"
+        },
+        "framed": {
+          "box": {
+            "w": 48,
+            "h": 48
+          },
+          "frame": {
+            "w": 44,
+            "h": 44
+          },
+          "inside": {
+            "w": 44,
+            "h": 44
+          },
+          "id": "inline/0/framed",
+          "natural": {
+            "w": 300,
+            "h": 44
+          },
+          "element": {
+            "w": 44,
+            "h": 44
+          },
+          "drawing": {
+            "w": 44,
+            "h": 44
+          },
+          "aspect": "xMidYMid meet",
+          "clipped": false,
+          "messages": 4
+        },
+        "differs": []
+      },
+      {
+        "id": "inline/1",
+        "title": "Inline, in a line of text: width=3rem, and no size",
+        "kind": "chart",
+        "plain": {
+          "box": {
+            "w": 96,
+            "h": 32
+          },
+          "element": {
+            "w": 92,
+            "h": 28
+          },
+          "drawing": {
+            "w": 92,
+            "h": 28
+          },
+          "aspect": null
+        },
+        "framed": {
+          "box": {
+            "w": 96,
+            "h": 32
+          },
+          "frame": {
+            "w": 92,
+            "h": 28
+          },
+          "inside": {
+            "w": 92,
+            "h": 28
+          },
+          "id": "inline/1/framed",
+          "natural": {
+            "w": 300,
+            "h": 150
+          },
+          "element": {
+            "w": 92,
+            "h": 28
+          },
+          "drawing": {
+            "w": 92,
+            "h": 28
+          },
+          "aspect": null,
+          "clipped": false,
+          "messages": 2
+        },
+        "differs": []
+      },
+      {
+        "id": "inline/2",
+        "title": "Inline, in a line of text: width=3rem, and no size",
+        "kind": "qr",
+        "plain": {
+          "box": {
+            "w": 304,
+            "h": 304
+          },
+          "element": {
+            "w": 300,
+            "h": 300
+          },
+          "drawing": {
+            "w": 300,
+            "h": 300
+          },
+          "aspect": "xMidYMid meet"
+        },
+        "framed": {
+          "box": {
+            "w": 304,
+            "h": 304
+          },
+          "frame": {
+            "w": 300,
+            "h": 300
+          },
+          "inside": {
+            "w": 300,
+            "h": 300
+          },
+          "id": "inline/2/framed",
+          "natural": {
+            "w": 300,
+            "h": 300
+          },
+          "element": {
+            "w": 300,
+            "h": 300
+          },
+          "drawing": {
+            "w": 300,
+            "h": 300
+          },
+          "aspect": "xMidYMid meet",
+          "clipped": false,
+          "messages": 5
+        },
+        "differs": []
+      }
+    ],
+    "shrunk": [
+      {
+        "id": "grid-charts/0",
+        "title": "A grid row: a chart with height=20rem (then 5rem), and a chart with no size",
+        "kind": "chart",
+        "plain": {
+          "box": {
+            "w": 230,
+            "h": 80
+          },
+          "element": {
+            "w": 226,
+            "h": 76
+          },
+          "drawing": {
+            "w": 226,
+            "h": 76
+          },
+          "aspect": null
+        },
+        "framed": {
+          "box": {
+            "w": 230,
+            "h": 80
+          },
+          "frame": {
+            "w": 226,
+            "h": 76
+          },
+          "inside": {
+            "w": 226,
+            "h": 76
+          },
+          "id": "grid-charts/0/framed",
+          "natural": {
+            "w": 300,
+            "h": 150
+          },
+          "element": {
+            "w": 226,
+            "h": 76
+          },
+          "drawing": {
+            "w": 226,
+            "h": 76
+          },
+          "aspect": null,
+          "clipped": false,
+          "messages": 3
+        },
+        "differs": []
+      },
+      {
+        "id": "grid-charts/1",
+        "title": "A grid row: a chart with height=20rem (then 5rem), and a chart with no size",
+        "kind": "chart",
+        "plain": {
+          "box": {
+            "w": 230,
+            "h": 154
+          },
+          "element": {
+            "w": 226,
+            "h": 150
+          },
+          "drawing": {
+            "w": 226,
+            "h": 150
+          },
+          "aspect": null
+        },
+        "framed": {
+          "box": {
+            "w": 230,
+            "h": 154
+          },
+          "frame": {
+            "w": 226,
+            "h": 150
+          },
+          "inside": {
+            "w": 226,
+            "h": 150
+          },
+          "id": "grid-charts/1/framed",
+          "natural": {
+            "w": 300,
+            "h": 150
+          },
+          "element": {
+            "w": 226,
+            "h": 150
+          },
+          "drawing": {
+            "w": 226,
+            "h": 150
+          },
+          "aspect": null,
+          "clipped": false,
+          "messages": 3
+        },
+        "differs": []
+      },
+      {
+        "id": "grid-text/0",
+        "title": "A grid row: a chart with height=20rem (then 5rem), and text",
+        "kind": "chart",
+        "plain": {
+          "box": {
+            "w": 230,
+            "h": 80
+          },
+          "element": {
+            "w": 226,
+            "h": 76
+          },
+          "drawing": {
+            "w": 226,
+            "h": 76
+          },
+          "aspect": null
+        },
+        "framed": {
+          "box": {
+            "w": 230,
+            "h": 80
+          },
+          "frame": {
+            "w": 226,
+            "h": 76
+          },
+          "inside": {
+            "w": 226,
+            "h": 76
+          },
+          "id": "grid-text/0/framed",
+          "natural": {
+            "w": 300,
+            "h": 150
+          },
+          "element": {
+            "w": 226,
+            "h": 76
+          },
+          "drawing": {
+            "w": 226,
+            "h": 76
+          },
+          "aspect": null,
+          "clipped": false,
+          "messages": 3
+        },
+        "differs": []
+      },
+      {
+        "id": "grid-text/1",
+        "title": "A grid row: a chart with height=20rem (then 5rem), and text",
+        "kind": "flow",
+        "plain": {
+          "box": {
+            "w": 230,
+            "h": 80
+          },
+          "element": {
+            "w": 226,
+            "h": 76
+          },
+          "drawing": {
+            "w": 226,
+            "h": 76
+          },
+          "aspect": null
+        },
+        "framed": {
+          "box": {
+            "w": 230,
+            "h": 80
+          },
+          "frame": {
+            "w": 226,
+            "h": 76
+          },
+          "inside": {
+            "w": 226,
+            "h": 76
+          },
+          "id": "grid-text/1/framed",
+          "natural": {
+            "w": 624.9,
+            "h": 72
+          },
+          "element": {
+            "w": 226,
+            "h": 76
+          },
+          "drawing": {
+            "w": 226,
+            "h": 76
+          },
+          "aspect": null,
+          "clipped": false,
+          "messages": 3
+        },
+        "differs": []
+      },
+      {
+        "id": "grid-qr/0",
+        "title": "A grid row: a chart with height=20rem (then 5rem), and a QR code",
+        "kind": "chart",
+        "plain": {
+          "box": {
+            "w": 230,
+            "h": 80
+          },
+          "element": {
+            "w": 226,
+            "h": 76
+          },
+          "drawing": {
+            "w": 226,
+            "h": 76
+          },
+          "aspect": null
+        },
+        "framed": {
+          "box": {
+            "w": 230,
+            "h": 80
+          },
+          "frame": {
+            "w": 226,
+            "h": 76
+          },
+          "inside": {
+            "w": 226,
+            "h": 76
+          },
+          "id": "grid-qr/0/framed",
+          "natural": {
+            "w": 300,
+            "h": 150
+          },
+          "element": {
+            "w": 226,
+            "h": 76
+          },
+          "drawing": {
+            "w": 226,
+            "h": 76
+          },
+          "aspect": null,
+          "clipped": false,
+          "messages": 3
+        },
+        "differs": []
+      },
+      {
+        "id": "grid-qr/1",
+        "title": "A grid row: a chart with height=20rem (then 5rem), and a QR code",
+        "kind": "qr",
+        "plain": {
+          "box": {
+            "w": 230,
+            "h": 230
+          },
+          "element": {
+            "w": 226,
+            "h": 226
+          },
+          "drawing": {
+            "w": 226,
+            "h": 226
+          },
+          "aspect": "xMidYMid meet"
+        },
+        "framed": {
+          "box": {
+            "w": 230,
+            "h": 230
+          },
+          "frame": {
+            "w": 226,
+            "h": 226
+          },
+          "inside": {
+            "w": 226,
+            "h": 226
+          },
+          "id": "grid-qr/1/framed",
+          "natural": {
+            "w": 300,
+            "h": 226
+          },
+          "element": {
+            "w": 226,
+            "h": 226
+          },
+          "drawing": {
+            "w": 226,
+            "h": 226
+          },
+          "aspect": "xMidYMid meet",
+          "clipped": false,
+          "messages": 3
+        },
+        "differs": []
+      }
+    ]
+  },
+  "WebKit": {
+    "drawn": [
+      {
+        "id": "qr-none/0",
+        "title": "QR code, no size",
+        "kind": "qr",
+        "plain": {
+          "box": {
+            "w": 468,
+            "h": 468
+          },
+          "element": {
+            "w": 464,
+            "h": 464
+          },
+          "drawing": {
+            "w": 464,
+            "h": 464
+          },
+          "aspect": "xMidYMid meet"
+        },
+        "framed": {
+          "box": {
+            "w": 468,
+            "h": 468
+          },
+          "frame": {
+            "w": 464,
+            "h": 464
+          },
+          "inside": {
+            "w": 464,
+            "h": 464
+          },
+          "id": "qr-none/0/framed",
+          "natural": {
+            "w": 300,
+            "h": 464
+          },
+          "element": {
+            "w": 464,
+            "h": 464
+          },
+          "drawing": {
+            "w": 464,
+            "h": 464
+          },
+          "aspect": "xMidYMid meet",
+          "clipped": false,
+          "messages": 2
+        },
+        "differs": []
+      },
+      {
+        "id": "qr-width/0",
+        "title": "QR code, width=10rem",
+        "kind": "qr",
+        "plain": {
+          "box": {
+            "w": 160,
+            "h": 160
+          },
+          "element": {
+            "w": 156,
+            "h": 156
+          },
+          "drawing": {
+            "w": 156,
+            "h": 156
+          },
+          "aspect": "xMidYMid meet"
+        },
+        "framed": {
+          "box": {
+            "w": 160,
+            "h": 160
+          },
+          "frame": {
+            "w": 156,
+            "h": 156
+          },
+          "inside": {
+            "w": 156,
+            "h": 156
+          },
+          "id": "qr-width/0/framed",
+          "natural": {
+            "w": 300,
+            "h": 156
+          },
+          "element": {
+            "w": 156,
+            "h": 156
+          },
+          "drawing": {
+            "w": 156,
+            "h": 156
+          },
+          "aspect": "xMidYMid meet",
+          "clipped": false,
+          "messages": 2
+        },
+        "differs": []
+      },
+      {
+        "id": "qr-height/0",
+        "title": "QR code, height=6rem",
+        "kind": "qr",
+        "plain": {
+          "box": {
+            "w": 468,
+            "h": 96
+          },
+          "element": {
+            "w": 464,
+            "h": 92
+          },
+          "drawing": {
+            "w": 92,
+            "h": 92
+          },
+          "aspect": "xMidYMid meet"
+        },
+        "framed": {
+          "box": {
+            "w": 468,
+            "h": 96
+          },
+          "frame": {
+            "w": 464,
+            "h": 92
+          },
+          "inside": {
+            "w": 464,
+            "h": 92
+          },
+          "id": "qr-height/0/framed",
+          "natural": {
+            "w": 300,
+            "h": 464
+          },
+          "element": {
+            "w": 464,
+            "h": 92
+          },
+          "drawing": {
+            "w": 92,
+            "h": 92
+          },
+          "aspect": "xMidYMid meet",
+          "clipped": false,
+          "messages": 1
+        },
+        "differs": []
+      },
+      {
+        "id": "qr-wide/0",
+        "title": "QR code, width=16rem height=6rem",
+        "kind": "qr",
+        "plain": {
+          "box": {
+            "w": 256,
+            "h": 96
+          },
+          "element": {
+            "w": 252,
+            "h": 92
+          },
+          "drawing": {
+            "w": 92,
+            "h": 92
+          },
+          "aspect": "xMidYMid meet"
+        },
+        "framed": {
+          "box": {
+            "w": 256,
+            "h": 96
+          },
+          "frame": {
+            "w": 252,
+            "h": 92
+          },
+          "inside": {
+            "w": 252,
+            "h": 92
+          },
+          "id": "qr-wide/0/framed",
+          "natural": {
+            "w": 300,
+            "h": 252
+          },
+          "element": {
+            "w": 252,
+            "h": 92
+          },
+          "drawing": {
+            "w": 92,
+            "h": 92
+          },
+          "aspect": "xMidYMid meet",
+          "clipped": false,
+          "messages": 1
+        },
+        "differs": []
+      },
+      {
+        "id": "qr-tall/0",
+        "title": "QR code, width=6rem height=12rem",
+        "kind": "qr",
+        "plain": {
+          "box": {
+            "w": 96,
+            "h": 192
+          },
+          "element": {
+            "w": 92,
+            "h": 188
+          },
+          "drawing": {
+            "w": 92,
+            "h": 92
+          },
+          "aspect": "xMidYMid meet"
+        },
+        "framed": {
+          "box": {
+            "w": 96,
+            "h": 192
+          },
+          "frame": {
+            "w": 92,
+            "h": 188
+          },
+          "inside": {
+            "w": 92,
+            "h": 188
+          },
+          "id": "qr-tall/0/framed",
+          "natural": {
+            "w": 300,
+            "h": 92
+          },
+          "element": {
+            "w": 92,
+            "h": 188
+          },
+          "drawing": {
+            "w": 92,
+            "h": 92
+          },
+          "aspect": "xMidYMid meet",
+          "clipped": false,
+          "messages": 1
+        },
+        "differs": []
+      },
+      {
+        "id": "qr-ratio/0",
+        "title": "QR code, width=12rem aspect-ratio=2/1",
+        "kind": "qr",
+        "plain": {
+          "box": {
+            "w": 192,
+            "h": 96
+          },
+          "element": {
+            "w": 188,
+            "h": 92
+          },
+          "drawing": {
+            "w": 92,
+            "h": 92
+          },
+          "aspect": "xMidYMid meet"
+        },
+        "framed": {
+          "box": {
+            "w": 192,
+            "h": 96
+          },
+          "frame": {
+            "w": 188,
+            "h": 92
+          },
+          "inside": {
+            "w": 188,
+            "h": 92
+          },
+          "id": "qr-ratio/0/framed",
+          "natural": {
+            "w": 300,
+            "h": 188
+          },
+          "element": {
+            "w": 188,
+            "h": 92
+          },
+          "drawing": {
+            "w": 92,
+            "h": 92
+          },
+          "aspect": "xMidYMid meet",
+          "clipped": false,
+          "messages": 1
+        },
+        "differs": []
+      },
+      {
+        "id": "qr-start/0",
+        "title": "QR code, height=6rem object-position=start",
+        "kind": "qr",
+        "plain": {
+          "box": {
+            "w": 468,
+            "h": 96
+          },
+          "element": {
+            "w": 464,
+            "h": 92
+          },
+          "drawing": {
+            "w": 92,
+            "h": 92
+          },
+          "aspect": "xMinYMin meet"
+        },
+        "framed": {
+          "box": {
+            "w": 468,
+            "h": 96
+          },
+          "frame": {
+            "w": 464,
+            "h": 92
+          },
+          "inside": {
+            "w": 464,
+            "h": 92
+          },
+          "id": "qr-start/0/framed",
+          "natural": {
+            "w": 300,
+            "h": 464
+          },
+          "element": {
+            "w": 464,
+            "h": 92
+          },
+          "drawing": {
+            "w": 92,
+            "h": 92
+          },
+          "aspect": "xMinYMin meet",
+          "clipped": false,
+          "messages": 1
+        },
+        "differs": []
+      },
+      {
+        "id": "qr-end/0",
+        "title": "QR code, width=6rem height=12rem object-position=end",
+        "kind": "qr",
+        "plain": {
+          "box": {
+            "w": 96,
+            "h": 192
+          },
+          "element": {
+            "w": 92,
+            "h": 188
+          },
+          "drawing": {
+            "w": 92,
+            "h": 92
+          },
+          "aspect": "xMaxYMax meet"
+        },
+        "framed": {
+          "box": {
+            "w": 96,
+            "h": 192
+          },
+          "frame": {
+            "w": 92,
+            "h": 188
+          },
+          "inside": {
+            "w": 92,
+            "h": 188
+          },
+          "id": "qr-end/0/framed",
+          "natural": {
+            "w": 300,
+            "h": 92
+          },
+          "element": {
+            "w": 92,
+            "h": 188
+          },
+          "drawing": {
+            "w": 92,
+            "h": 92
+          },
+          "aspect": "xMaxYMax meet",
+          "clipped": false,
+          "messages": 1
+        },
+        "differs": []
+      },
+      {
+        "id": "qr-cover/0",
+        "title": "QR code, width=16rem height=6rem object-fit=cover",
+        "kind": "qr",
+        "plain": {
+          "box": {
+            "w": 256,
+            "h": 96
+          },
+          "element": {
+            "w": 252,
+            "h": 92
+          },
+          "drawing": {
+            "w": 252,
+            "h": 252
+          },
+          "aspect": "xMidYMid slice"
+        },
+        "framed": {
+          "box": {
+            "w": 256,
+            "h": 96
+          },
+          "frame": {
+            "w": 252,
+            "h": 92
+          },
+          "inside": {
+            "w": 252,
+            "h": 92
+          },
+          "id": "qr-cover/0/framed",
+          "natural": {
+            "w": 300,
+            "h": 252
+          },
+          "element": {
+            "w": 252,
+            "h": 92
+          },
+          "drawing": {
+            "w": 252,
+            "h": 252
+          },
+          "aspect": "xMidYMid slice",
+          "clipped": false,
+          "messages": 1
+        },
+        "differs": []
+      },
+      {
+        "id": "qr-fill/0",
+        "title": "QR code, width=16rem height=6rem object-fit=fill",
+        "kind": "qr",
+        "plain": {
+          "box": {
+            "w": 256,
+            "h": 96
+          },
+          "element": {
+            "w": 252,
+            "h": 92
+          },
+          "drawing": {
+            "w": 252,
+            "h": 92
+          },
+          "aspect": "none"
+        },
+        "framed": {
+          "box": {
+            "w": 256,
+            "h": 96
+          },
+          "frame": {
+            "w": 252,
+            "h": 92
+          },
+          "inside": {
+            "w": 252,
+            "h": 92
+          },
+          "id": "qr-fill/0/framed",
+          "natural": {
+            "w": 300,
+            "h": 252
+          },
+          "element": {
+            "w": 252,
+            "h": 92
+          },
+          "drawing": {
+            "w": 252,
+            "h": 92
+          },
+          "aspect": "none",
+          "clipped": false,
+          "messages": 1
+        },
+        "differs": []
+      },
+      {
+        "id": "chart-none/0",
+        "title": "Chart, no size",
+        "kind": "chart",
+        "plain": {
+          "box": {
+            "w": 468,
+            "h": 154
+          },
+          "element": {
+            "w": 464,
+            "h": 150
+          },
+          "drawing": {
+            "w": 464,
+            "h": 150
+          },
+          "aspect": null
+        },
+        "framed": {
+          "box": {
+            "w": 468,
+            "h": 154
+          },
+          "frame": {
+            "w": 464,
+            "h": 150
+          },
+          "inside": {
+            "w": 464,
+            "h": 150
+          },
+          "id": "chart-none/0/framed",
+          "natural": {
+            "w": 300,
+            "h": 150
+          },
+          "element": {
+            "w": 464,
+            "h": 150
+          },
+          "drawing": {
+            "w": 464,
+            "h": 150
+          },
+          "aspect": null,
+          "clipped": false,
+          "messages": 2
+        },
+        "differs": []
+      },
+      {
+        "id": "chart-ratio/0",
+        "title": "Chart, aspect-ratio=3/1",
+        "kind": "chart",
+        "plain": {
+          "box": {
+            "w": 468,
+            "h": 156
+          },
+          "element": {
+            "w": 464,
+            "h": 152
+          },
+          "drawing": {
+            "w": 464,
+            "h": 152
+          },
+          "aspect": null
+        },
+        "framed": {
+          "box": {
+            "w": 468,
+            "h": 156
+          },
+          "frame": {
+            "w": 464,
+            "h": 152
+          },
+          "inside": {
+            "w": 464,
+            "h": 152
+          },
+          "id": "chart-ratio/0/framed",
+          "natural": {
+            "w": 300,
+            "h": 150
+          },
+          "element": {
+            "w": 464,
+            "h": 152
+          },
+          "drawing": {
+            "w": 464,
+            "h": 152
+          },
+          "aspect": null,
+          "clipped": false,
+          "messages": 1
+        },
+        "differs": []
+      },
+      {
+        "id": "chart-height/0",
+        "title": "Chart, height=8rem",
+        "kind": "chart",
+        "plain": {
+          "box": {
+            "w": 468,
+            "h": 128
+          },
+          "element": {
+            "w": 464,
+            "h": 124
+          },
+          "drawing": {
+            "w": 464,
+            "h": 124
+          },
+          "aspect": null
+        },
+        "framed": {
+          "box": {
+            "w": 468,
+            "h": 128
+          },
+          "frame": {
+            "w": 464,
+            "h": 124
+          },
+          "inside": {
+            "w": 464,
+            "h": 124
+          },
+          "id": "chart-height/0/framed",
+          "natural": {
+            "w": 300,
+            "h": 150
+          },
+          "element": {
+            "w": 464,
+            "h": 124
+          },
+          "drawing": {
+            "w": 464,
+            "h": 124
+          },
+          "aspect": null,
+          "clipped": false,
+          "messages": 1
+        },
+        "differs": []
+      },
+      {
+        "id": "chart-box/0",
+        "title": "Chart, width=16rem height=6rem",
+        "kind": "chart",
+        "plain": {
+          "box": {
+            "w": 256,
+            "h": 96
+          },
+          "element": {
+            "w": 252,
+            "h": 92
+          },
+          "drawing": {
+            "w": 252,
+            "h": 92
+          },
+          "aspect": null
+        },
+        "framed": {
+          "box": {
+            "w": 256,
+            "h": 96
+          },
+          "frame": {
+            "w": 252,
+            "h": 92
+          },
+          "inside": {
+            "w": 252,
+            "h": 92
+          },
+          "id": "chart-box/0/framed",
+          "natural": {
+            "w": 300,
+            "h": 150
+          },
+          "element": {
+            "w": 252,
+            "h": 92
+          },
+          "drawing": {
+            "w": 252,
+            "h": 92
+          },
+          "aspect": null,
+          "clipped": false,
+          "messages": 1
+        },
+        "differs": []
+      },
+      {
+        "id": "flow-none/0",
+        "title": "Text, no size",
+        "kind": "flow",
+        "plain": {
+          "box": {
+            "w": 468,
+            "h": 52
+          },
+          "element": {
+            "w": 464,
+            "h": 48
+          },
+          "drawing": {
+            "w": 464,
+            "h": 48
+          },
+          "aspect": null
+        },
+        "framed": {
+          "box": {
+            "w": 468,
+            "h": 52
+          },
+          "frame": {
+            "w": 464,
+            "h": 48
+          },
+          "inside": {
+            "w": 464,
+            "h": 48
+          },
+          "id": "flow-none/0/framed",
+          "natural": {
+            "w": 624.9,
+            "h": 48
+          },
+          "element": {
+            "w": 464,
+            "h": 48
+          },
+          "drawing": {
+            "w": 464,
+            "h": 48
+          },
+          "aspect": null,
+          "clipped": false,
+          "messages": 2
+        },
+        "differs": []
+      },
+      {
+        "id": "flow-height/0",
+        "title": "Text, height=2rem (shorter than its text)",
+        "kind": "flow",
+        "plain": {
+          "box": {
+            "w": 468,
+            "h": 32
+          },
+          "element": {
+            "w": 464,
+            "h": 28
+          },
+          "drawing": {
+            "w": 464,
+            "h": 28
+          },
+          "aspect": null
+        },
+        "framed": {
+          "box": {
+            "w": 468,
+            "h": 32
+          },
+          "frame": {
+            "w": 464,
+            "h": 28
+          },
+          "inside": {
+            "w": 464,
+            "h": 28
+          },
+          "id": "flow-height/0/framed",
+          "natural": {
+            "w": 624.9,
+            "h": 48
+          },
+          "element": {
+            "w": 464,
+            "h": 28
+          },
+          "drawing": {
+            "w": 464,
+            "h": 28
+          },
+          "aspect": null,
+          "clipped": false,
+          "messages": 1
+        },
+        "differs": []
+      },
+      {
+        "id": "grid-charts/0",
+        "title": "A grid row: a chart with height=20rem (then 5rem), and a chart with no size",
+        "kind": "chart",
+        "plain": {
+          "box": {
+            "w": 230,
+            "h": 320
+          },
+          "element": {
+            "w": 226,
+            "h": 316
+          },
+          "drawing": {
+            "w": 226,
+            "h": 316
+          },
+          "aspect": null
+        },
+        "framed": {
+          "box": {
+            "w": 230,
+            "h": 320
+          },
+          "frame": {
+            "w": 226,
+            "h": 316
+          },
+          "inside": {
+            "w": 226,
+            "h": 316
+          },
+          "id": "grid-charts/0/framed",
+          "natural": {
+            "w": 300,
+            "h": 150
+          },
+          "element": {
+            "w": 226,
+            "h": 316
+          },
+          "drawing": {
+            "w": 226,
+            "h": 316
+          },
+          "aspect": null,
+          "clipped": false,
+          "messages": 1
+        },
+        "differs": []
+      },
+      {
+        "id": "grid-charts/1",
+        "title": "A grid row: a chart with height=20rem (then 5rem), and a chart with no size",
+        "kind": "chart",
+        "plain": {
+          "box": {
+            "w": 230,
+            "h": 320
+          },
+          "element": {
+            "w": 226,
+            "h": 316
+          },
+          "drawing": {
+            "w": 226,
+            "h": 316
+          },
+          "aspect": null
+        },
+        "framed": {
+          "box": {
+            "w": 230,
+            "h": 320
+          },
+          "frame": {
+            "w": 226,
+            "h": 316
+          },
+          "inside": {
+            "w": 226,
+            "h": 316
+          },
+          "id": "grid-charts/1/framed",
+          "natural": {
+            "w": 300,
+            "h": 150
+          },
+          "element": {
+            "w": 226,
+            "h": 316
+          },
+          "drawing": {
+            "w": 226,
+            "h": 316
+          },
+          "aspect": null,
+          "clipped": false,
+          "messages": 1
+        },
+        "differs": []
+      },
+      {
+        "id": "grid-text/0",
+        "title": "A grid row: a chart with height=20rem (then 5rem), and text",
+        "kind": "chart",
+        "plain": {
+          "box": {
+            "w": 230,
+            "h": 320
+          },
+          "element": {
+            "w": 226,
+            "h": 316
+          },
+          "drawing": {
+            "w": 226,
+            "h": 316
+          },
+          "aspect": null
+        },
+        "framed": {
+          "box": {
+            "w": 230,
+            "h": 320
+          },
+          "frame": {
+            "w": 226,
+            "h": 316
+          },
+          "inside": {
+            "w": 226,
+            "h": 316
+          },
+          "id": "grid-text/0/framed",
+          "natural": {
+            "w": 300,
+            "h": 150
+          },
+          "element": {
+            "w": 226,
+            "h": 316
+          },
+          "drawing": {
+            "w": 226,
+            "h": 316
+          },
+          "aspect": null,
+          "clipped": false,
+          "messages": 1
+        },
+        "differs": []
+      },
+      {
+        "id": "grid-text/1",
+        "title": "A grid row: a chart with height=20rem (then 5rem), and text",
+        "kind": "flow",
+        "plain": {
+          "box": {
+            "w": 230,
+            "h": 320
+          },
+          "element": {
+            "w": 226,
+            "h": 316
+          },
+          "drawing": {
+            "w": 226,
+            "h": 316
+          },
+          "aspect": null
+        },
+        "framed": {
+          "box": {
+            "w": 230,
+            "h": 320
+          },
+          "frame": {
+            "w": 226,
+            "h": 316
+          },
+          "inside": {
+            "w": 226,
+            "h": 316
+          },
+          "id": "grid-text/1/framed",
+          "natural": {
+            "w": 624.9,
+            "h": 72
+          },
+          "element": {
+            "w": 226,
+            "h": 316
+          },
+          "drawing": {
+            "w": 226,
+            "h": 316
+          },
+          "aspect": null,
+          "clipped": false,
+          "messages": 1
+        },
+        "differs": []
+      },
+      {
+        "id": "grid-qr/0",
+        "title": "A grid row: a chart with height=20rem (then 5rem), and a QR code",
+        "kind": "chart",
+        "plain": {
+          "box": {
+            "w": 230,
+            "h": 320
+          },
+          "element": {
+            "w": 226,
+            "h": 316
+          },
+          "drawing": {
+            "w": 226,
+            "h": 316
+          },
+          "aspect": null
+        },
+        "framed": {
+          "box": {
+            "w": 230,
+            "h": 320
+          },
+          "frame": {
+            "w": 226,
+            "h": 316
+          },
+          "inside": {
+            "w": 226,
+            "h": 316
+          },
+          "id": "grid-qr/0/framed",
+          "natural": {
+            "w": 300,
+            "h": 150
+          },
+          "element": {
+            "w": 226,
+            "h": 316
+          },
+          "drawing": {
+            "w": 226,
+            "h": 316
+          },
+          "aspect": null,
+          "clipped": false,
+          "messages": 1
+        },
+        "differs": []
+      },
+      {
+        "id": "grid-qr/1",
+        "title": "A grid row: a chart with height=20rem (then 5rem), and a QR code",
+        "kind": "qr",
+        "plain": {
+          "box": {
+            "w": 230,
+            "h": 320
+          },
+          "element": {
+            "w": 226,
+            "h": 316
+          },
+          "drawing": {
+            "w": 226,
+            "h": 226
+          },
+          "aspect": "xMidYMid meet"
+        },
+        "framed": {
+          "box": {
+            "w": 230,
+            "h": 320
+          },
+          "frame": {
+            "w": 226,
+            "h": 316
+          },
+          "inside": {
+            "w": 226,
+            "h": 316
+          },
+          "id": "grid-qr/1/framed",
+          "natural": {
+            "w": 300,
+            "h": 226
+          },
+          "element": {
+            "w": 226,
+            "h": 316
+          },
+          "drawing": {
+            "w": 226,
+            "h": 226
+          },
+          "aspect": "xMidYMid meet",
+          "clipped": false,
+          "messages": 1
+        },
+        "differs": []
+      },
+      {
+        "id": "row/0",
+        "title": "A row (flexbox): two QR codes and a chart, no sizes",
+        "kind": "qr",
+        "plain": {
+          "box": {
+            "w": 304,
+            "h": 304
+          },
+          "element": {
+            "w": 300,
+            "h": 300
+          },
+          "drawing": {
+            "w": 300,
+            "h": 300
+          },
+          "aspect": "xMidYMid meet"
+        },
+        "framed": {
+          "box": {
+            "w": 304,
+            "h": 304
+          },
+          "frame": {
+            "w": 300,
+            "h": 300
+          },
+          "inside": {
+            "w": 300,
+            "h": 300
+          },
+          "id": "row/0/framed",
+          "natural": {
+            "w": 300,
+            "h": 300
+          },
+          "element": {
+            "w": 300,
+            "h": 300
+          },
+          "drawing": {
+            "w": 300,
+            "h": 300
+          },
+          "aspect": "xMidYMid meet",
+          "clipped": false,
+          "messages": 3
+        },
+        "differs": []
+      },
+      {
+        "id": "row/1",
+        "title": "A row (flexbox): two QR codes and a chart, no sizes",
+        "kind": "qr",
+        "plain": {
+          "box": {
+            "w": 80,
+            "h": 304
+          },
+          "element": {
+            "w": 76,
+            "h": 300
+          },
+          "drawing": {
+            "w": 76,
+            "h": 76
+          },
+          "aspect": "xMidYMid meet"
+        },
+        "framed": {
+          "box": {
+            "w": 80,
+            "h": 304
+          },
+          "frame": {
+            "w": 76,
+            "h": 300
+          },
+          "inside": {
+            "w": 76,
+            "h": 300
+          },
+          "id": "row/1/framed",
+          "natural": {
+            "w": 300,
+            "h": 76
+          },
+          "element": {
+            "w": 76,
+            "h": 300
+          },
+          "drawing": {
+            "w": 76,
+            "h": 76
+          },
+          "aspect": "xMidYMid meet",
+          "clipped": false,
+          "messages": 3
+        },
+        "differs": []
+      },
+      {
+        "id": "row/2",
+        "title": "A row (flexbox): two QR codes and a chart, no sizes",
+        "kind": "chart",
+        "plain": {
+          "box": {
+            "w": 304,
+            "h": 154
+          },
+          "element": {
+            "w": 300,
+            "h": 150
+          },
+          "drawing": {
+            "w": 300,
+            "h": 150
+          },
+          "aspect": null
+        },
+        "framed": {
+          "box": {
+            "w": 304,
+            "h": 154
+          },
+          "frame": {
+            "w": 300,
+            "h": 150
+          },
+          "inside": {
+            "w": 300,
+            "h": 150
+          },
+          "id": "row/2/framed",
+          "natural": {
+            "w": 300,
+            "h": 150
+          },
+          "element": {
+            "w": 300,
+            "h": 150
+          },
+          "drawing": {
+            "w": 300,
+            "h": 150
+          },
+          "aspect": null,
+          "clipped": false,
+          "messages": 2
+        },
+        "differs": []
+      },
+      {
+        "id": "inline/0",
+        "title": "Inline, in a line of text: width=3rem, and no size",
+        "kind": "qr",
+        "plain": {
+          "box": {
+            "w": 48,
+            "h": 48
+          },
+          "element": {
+            "w": 44,
+            "h": 44
+          },
+          "drawing": {
+            "w": 44,
+            "h": 44
+          },
+          "aspect": "xMidYMid meet"
+        },
+        "framed": {
+          "box": {
+            "w": 48,
+            "h": 48
+          },
+          "frame": {
+            "w": 44,
+            "h": 44
+          },
+          "inside": {
+            "w": 44,
+            "h": 44
+          },
+          "id": "inline/0/framed",
+          "natural": {
+            "w": 300,
+            "h": 44
+          },
+          "element": {
+            "w": 44,
+            "h": 44
+          },
+          "drawing": {
+            "w": 44,
+            "h": 44
+          },
+          "aspect": "xMidYMid meet",
+          "clipped": false,
+          "messages": 2
+        },
+        "differs": []
+      },
+      {
+        "id": "inline/1",
+        "title": "Inline, in a line of text: width=3rem, and no size",
+        "kind": "chart",
+        "plain": {
+          "box": {
+            "w": 96,
+            "h": 32
+          },
+          "element": {
+            "w": 92,
+            "h": 28
+          },
+          "drawing": {
+            "w": 92,
+            "h": 28
+          },
+          "aspect": null
+        },
+        "framed": {
+          "box": {
+            "w": 96,
+            "h": 32
+          },
+          "frame": {
+            "w": 92,
+            "h": 28
+          },
+          "inside": {
+            "w": 92,
+            "h": 28
+          },
+          "id": "inline/1/framed",
+          "natural": {
+            "w": 300,
+            "h": 150
+          },
+          "element": {
+            "w": 92,
+            "h": 28
+          },
+          "drawing": {
+            "w": 92,
+            "h": 28
+          },
+          "aspect": null,
+          "clipped": false,
+          "messages": 1
+        },
+        "differs": []
+      },
+      {
+        "id": "inline/2",
+        "title": "Inline, in a line of text: width=3rem, and no size",
+        "kind": "qr",
+        "plain": {
+          "box": {
+            "w": 304,
+            "h": 304
+          },
+          "element": {
+            "w": 300,
+            "h": 300
+          },
+          "drawing": {
+            "w": 300,
+            "h": 300
+          },
+          "aspect": "xMidYMid meet"
+        },
+        "framed": {
+          "box": {
+            "w": 304,
+            "h": 304
+          },
+          "frame": {
+            "w": 300,
+            "h": 300
+          },
+          "inside": {
+            "w": 300,
+            "h": 300
+          },
+          "id": "inline/2/framed",
+          "natural": {
+            "w": 300,
+            "h": 300
+          },
+          "element": {
+            "w": 300,
+            "h": 300
+          },
+          "drawing": {
+            "w": 300,
+            "h": 300
+          },
+          "aspect": "xMidYMid meet",
+          "clipped": false,
+          "messages": 3
+        },
+        "differs": []
+      }
+    ],
+    "shrunk": [
+      {
+        "id": "grid-charts/0",
+        "title": "A grid row: a chart with height=20rem (then 5rem), and a chart with no size",
+        "kind": "chart",
+        "plain": {
+          "box": {
+            "w": 230,
+            "h": 80
+          },
+          "element": {
+            "w": 226,
+            "h": 76
+          },
+          "drawing": {
+            "w": 226,
+            "h": 76
+          },
+          "aspect": null
+        },
+        "framed": {
+          "box": {
+            "w": 230,
+            "h": 80
+          },
+          "frame": {
+            "w": 226,
+            "h": 76
+          },
+          "inside": {
+            "w": 226,
+            "h": 76
+          },
+          "id": "grid-charts/0/framed",
+          "natural": {
+            "w": 300,
+            "h": 150
+          },
+          "element": {
+            "w": 226,
+            "h": 76
+          },
+          "drawing": {
+            "w": 226,
+            "h": 76
+          },
+          "aspect": null,
+          "clipped": false,
+          "messages": 2
+        },
+        "differs": []
+      },
+      {
+        "id": "grid-charts/1",
+        "title": "A grid row: a chart with height=20rem (then 5rem), and a chart with no size",
+        "kind": "chart",
+        "plain": {
+          "box": {
+            "w": 230,
+            "h": 154
+          },
+          "element": {
+            "w": 226,
+            "h": 150
+          },
+          "drawing": {
+            "w": 226,
+            "h": 150
+          },
+          "aspect": null
+        },
+        "framed": {
+          "box": {
+            "w": 230,
+            "h": 154
+          },
+          "frame": {
+            "w": 226,
+            "h": 150
+          },
+          "inside": {
+            "w": 226,
+            "h": 150
+          },
+          "id": "grid-charts/1/framed",
+          "natural": {
+            "w": 300,
+            "h": 150
+          },
+          "element": {
+            "w": 226,
+            "h": 150
+          },
+          "drawing": {
+            "w": 226,
+            "h": 150
+          },
+          "aspect": null,
+          "clipped": false,
+          "messages": 2
+        },
+        "differs": []
+      },
+      {
+        "id": "grid-text/0",
+        "title": "A grid row: a chart with height=20rem (then 5rem), and text",
+        "kind": "chart",
+        "plain": {
+          "box": {
+            "w": 230,
+            "h": 80
+          },
+          "element": {
+            "w": 226,
+            "h": 76
+          },
+          "drawing": {
+            "w": 226,
+            "h": 76
+          },
+          "aspect": null
+        },
+        "framed": {
+          "box": {
+            "w": 230,
+            "h": 80
+          },
+          "frame": {
+            "w": 226,
+            "h": 76
+          },
+          "inside": {
+            "w": 226,
+            "h": 76
+          },
+          "id": "grid-text/0/framed",
+          "natural": {
+            "w": 300,
+            "h": 150
+          },
+          "element": {
+            "w": 226,
+            "h": 76
+          },
+          "drawing": {
+            "w": 226,
+            "h": 76
+          },
+          "aspect": null,
+          "clipped": false,
+          "messages": 2
+        },
+        "differs": []
+      },
+      {
+        "id": "grid-text/1",
+        "title": "A grid row: a chart with height=20rem (then 5rem), and text",
+        "kind": "flow",
+        "plain": {
+          "box": {
+            "w": 230,
+            "h": 80
+          },
+          "element": {
+            "w": 226,
+            "h": 76
+          },
+          "drawing": {
+            "w": 226,
+            "h": 76
+          },
+          "aspect": null
+        },
+        "framed": {
+          "box": {
+            "w": 230,
+            "h": 80
+          },
+          "frame": {
+            "w": 226,
+            "h": 76
+          },
+          "inside": {
+            "w": 226,
+            "h": 76
+          },
+          "id": "grid-text/1/framed",
+          "natural": {
+            "w": 624.9,
+            "h": 72
+          },
+          "element": {
+            "w": 226,
+            "h": 76
+          },
+          "drawing": {
+            "w": 226,
+            "h": 76
+          },
+          "aspect": null,
+          "clipped": false,
+          "messages": 2
+        },
+        "differs": []
+      },
+      {
+        "id": "grid-qr/0",
+        "title": "A grid row: a chart with height=20rem (then 5rem), and a QR code",
+        "kind": "chart",
+        "plain": {
+          "box": {
+            "w": 230,
+            "h": 80
+          },
+          "element": {
+            "w": 226,
+            "h": 76
+          },
+          "drawing": {
+            "w": 226,
+            "h": 76
+          },
+          "aspect": null
+        },
+        "framed": {
+          "box": {
+            "w": 230,
+            "h": 80
+          },
+          "frame": {
+            "w": 226,
+            "h": 76
+          },
+          "inside": {
+            "w": 226,
+            "h": 76
+          },
+          "id": "grid-qr/0/framed",
+          "natural": {
+            "w": 300,
+            "h": 150
+          },
+          "element": {
+            "w": 226,
+            "h": 76
+          },
+          "drawing": {
+            "w": 226,
+            "h": 76
+          },
+          "aspect": null,
+          "clipped": false,
+          "messages": 2
+        },
+        "differs": []
+      },
+      {
+        "id": "grid-qr/1",
+        "title": "A grid row: a chart with height=20rem (then 5rem), and a QR code",
+        "kind": "qr",
+        "plain": {
+          "box": {
+            "w": 230,
+            "h": 230
+          },
+          "element": {
+            "w": 226,
+            "h": 226
+          },
+          "drawing": {
+            "w": 226,
+            "h": 226
+          },
+          "aspect": "xMidYMid meet"
+        },
+        "framed": {
+          "box": {
+            "w": 230,
+            "h": 230
+          },
+          "frame": {
+            "w": 226,
+            "h": 226
+          },
+          "inside": {
+            "w": 226,
+            "h": 226
+          },
+          "id": "grid-qr/1/framed",
+          "natural": {
+            "w": 300,
+            "h": 226
+          },
+          "element": {
+            "w": 226,
+            "h": 226
+          },
+          "drawing": {
+            "w": 226,
+            "h": 226
+          },
+          "aspect": "xMidYMid meet",
+          "clipped": false,
+          "messages": 2
+        },
+        "differs": []
+      }
+    ]
+  }
+}
