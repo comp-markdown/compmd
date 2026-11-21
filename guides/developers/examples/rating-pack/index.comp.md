@@ -20,7 +20,7 @@ params:
   value: input<number>
   max: number = 5
   size: small | large = small
-  color: color?
+  tint: color?
 ```
 
 `lanes`, a container whose default slot is a template, once per record, in the lane of its `by` field.

@@ -101,6 +101,6 @@ describe("a badge", () => {
     const badges = (paragraph?.children ?? []).filter((node) => node.type === "componentInline");
     expect(badges.map((badge) => textOf(badge.fallback))).toEqual(["bug", "new", "bug"]);
     expect(badges.map((badge) => badge.params?.find((param) => param.key === "border")?.value)).toEqual(["1px solid #cf222e", "1px solid #1a7f37", "1px solid #cf222e"]);
-    expect(badges[0]?.fallback?.[0]?.type).toBe("strong");
+    expect(badges[0]?.params).toContainEqual({ key: "font-weight", breakpoint: null, value: "bold" });
   });
 });

@@ -21,7 +21,10 @@ export const COMMON = [
   "width", "height", "min-width", "max-width",
   "padding", "padding-inline", "padding-block", "padding-inline-start", "padding-inline-end", "padding-block-start", "padding-block-end",
   "border", "border-inline-start", "border-inline-end", "border-block-start", "border-block-end", "border-radius",
-  "shadow", "rotate", "background", "grid-area", "order", "align-self", "justify-self", "aspect-ratio",
+  "shadow", "rotate", "background",
+  "font-size", "font-weight", "font-style", "font-family", "color", "text-align",
+  "line-height", "letter-spacing", "text-transform", "text-decoration",
+  "grid-area", "order", "align-self", "justify-self", "aspect-ratio",
   "object-fit", "object-position",
   "inset-inline-start", "inset-inline-end", "inset-block-start", "inset-block-end",
   "scroll", "fill", "sticky", "stretch-link", "show", "hide",
@@ -61,6 +64,31 @@ const SHADOW: Record<string, string> = {
   s: "var(--compmd-shadow-s, 0 1px 2px color-mix(in srgb, currentColor 20%, transparent))",
   m: "var(--compmd-shadow-m, 0 2px 6px color-mix(in srgb, currentColor 25%, transparent))",
   l: "var(--compmd-shadow-l, 0 6px 16px color-mix(in srgb, currentColor 30%, transparent))",
+};
+const FONT_SIZE: Record<string, string> = {
+  s: "var(--compmd-text-s, 0.875em)",
+  m: "var(--compmd-text-m, 1em)",
+  l: "var(--compmd-text-l, 1.25em)",
+  xl: "var(--compmd-text-xl, 1.5em)",
+};
+const FONT_FAMILY: Record<string, string> = {
+  body: "var(--compmd-font-body, inherit)",
+  heading: "var(--compmd-font-heading, inherit)",
+  mono: "var(--compmd-font-mono, ui-monospace, monospace)",
+};
+const TEXT_COLOR: Record<string, string> = {
+  muted: "var(--compmd-text-muted, color-mix(in srgb, currentColor 65%, transparent))",
+  accent: "var(--compmd-text-accent, var(--compmd-accent, #0969da))",
+};
+const LINE_HEIGHT: Record<string, string> = {
+  tight: "var(--compmd-leading-tight, 1.2)",
+  normal: "normal",
+  loose: "var(--compmd-leading-loose, 1.8)",
+};
+const LETTER_SPACING: Record<string, string> = {
+  tight: "var(--compmd-tracking-tight, -0.01em)",
+  normal: "normal",
+  wide: "var(--compmd-tracking-wide, 0.05em)",
 };
 const CONTENT_ALIGNMENT: Record<string, string> = { between: "space-between", around: "space-around" };
 const ORDER: Record<string, string> = { first: "-1", last: "1", none: "0" };
@@ -108,6 +136,16 @@ function declarationsOf(key: string, value: unknown, parent: ParentLayout): Decl
       return { [key]: BORDER[written] ?? written };
     case "shadow":
       return { "box-shadow": SHADOW[written] ?? "none" };
+    case "font-size":
+      return { "font-size": FONT_SIZE[written] ?? written };
+    case "font-family":
+      return FONT_FAMILY[written] === undefined ? {} : { "font-family": FONT_FAMILY[written] };
+    case "color":
+      return { color: TEXT_COLOR[written] ?? written };
+    case "line-height":
+      return { "line-height": LINE_HEIGHT[written] ?? written };
+    case "letter-spacing":
+      return { "letter-spacing": LETTER_SPACING[written] ?? written };
     case "rotate":
       return { rotate: written };
     // Not CSS of the box's own: the box and its first link are marked (stretch-link.ts), and the base rules draw it.

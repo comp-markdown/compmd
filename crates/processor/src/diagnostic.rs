@@ -133,6 +133,8 @@ named! {
         W124 = "W124",
         /// `object-fit` or `object-position` on a box that is neither a host-language component's nor an image box.
         W125 = "W125",
+        /// A box's `color` and `background`, both colors the processor can tell, contrast below 4.5:1.
+        W126 = "W126",
     }
 }
 

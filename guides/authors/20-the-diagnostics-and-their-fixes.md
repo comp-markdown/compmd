@@ -103,5 +103,6 @@ When something in a document isn't right, CompMD says so with a *diagnostic*: a 
 | `W123` | a ` ```compmd ` block that would render is inside an example (chapter 17); it shows its code | leave it as code (drop `render`), or show it in a document of its own |
 | `W124` | `stretch-link` on a box with no link in it (chapter 3) | put the link in the box, its title most often, or drop `stretch-link` |
 | `W125` | `object-fit` or `object-position` on a box with more than one image in it, or anything beside its image (chapter 3) | put the image in a box of its own, and the params on that box |
+| `W126` | a box's text colour (`color`) and its `background`, both written as colours, are too close to read: their contrast is below 4.5 to 1 (chapter 3) | darken one or lighten the other, or use the words `muted` and `subtle`, which suit light and dark pages |
 
 [Back to the contents](README.md)

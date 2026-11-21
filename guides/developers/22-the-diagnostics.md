@@ -118,6 +118,7 @@ Expanding the tree, for one render context.
 | W119 | warning | a box that places all its blocks by position, with no `height`, `aspect-ratio` or `fill` at some width | writer, pack author | one of them on the box |
 | W124 | warning | `stretch-link` on a box that holds no link, so there is nothing to cover the box with | writer, pack author | the link in the box, or `stretch-link` dropped |
 | W125 | warning | `object-fit` or `object-position` on a box that is neither a host-language component's nor an image box (one image and nothing else), so there is nothing to fit | writer, pack author | the image in a box of its own, with the params on that box |
+| W126 | warning | a box's `color` and `background`, both opaque colors in hex, `rgb()` or `hsl()`, contrasting below 4.5:1 | writer, pack author | colors further apart, or the tokens |
 
 ## When rendering
 

@@ -1,11 +1,12 @@
 //! The layout checks of the expanded tree (spec §9.2, §9.3), at each breakpoint: a box that places all its blocks by
 //! position needs a height (W119), and a box whose blocks use breakpoints needs a width where its width would come
 //! from its content (W114). A box with `stretch-link` needs a link (W124), and one with `object-fit` or
-//! `object-position` an image of its own (W125).
+//! `object-position` an image of its own (W125); its text must contrast with its background (W126).
 //!
 //! A block's nearest box is the nearest `box` or host-language component around it in the expanded tree; `each`,
 //! `if` and `display=contents` components are gone by then, and list items, quotes and table cells don't count.
 
+use super::contrast;
 use super::image_box::is_image_box;
 use crate::breakpoint::{BREAKPOINTS, rank};
 use crate::diagnostic::{Code, Diagnostic, Location, Stage};
@@ -78,6 +79,17 @@ fn collect<'a>(nodes: &'a [Node], blocks: &mut Vec<Block<'a>>) {
 
 /// Checks a block in what it is laid out in, then what it holds.
 fn visit(block: &Block, around: Around, found: &mut Vec<Diagnostic>) {
+    if let Some(ratio) = low_contrast(block.params) {
+        report(
+            found,
+            Code::W126,
+            block.node,
+            &format!(
+                "its `color` on its `background` contrasts {ratio:.1}:1, less than the {}:1 text needs",
+                contrast::ENOUGH
+            ),
+        );
+    }
     let Content::ComponentContainer(container) = &block.node.content else {
         return;
     };
@@ -143,6 +155,19 @@ fn visit(block: &Block, around: Around, found: &mut Vec<Diagnostic>) {
     for inner in &inside {
         visit(inner, held, found);
     }
+}
+
+/// The lowest contrast of a block's `color` on its `background` at any breakpoint, when it is too low and both are
+/// colors the processor can tell (spec §9.2, W126).
+fn low_contrast(params: &[Param]) -> Option<f64> {
+    (0..=BREAKPOINTS.len())
+        .filter_map(|at| {
+            let color = value(params, "color", at)?.as_str()?;
+            let background = value(params, "background", at)?.as_str()?;
+            contrast::ratio(color, background)
+        })
+        .filter(|ratio| *ratio < contrast::ENOUGH)
+        .reduce(f64::min)
 }
 
 /// Whether `nodes`, or anything in them, holds a link (spec §9.2, `stretch-link`).

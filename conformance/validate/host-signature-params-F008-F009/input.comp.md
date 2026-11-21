@@ -1,1 +1,1 @@
-:: stars[Too many] {value="x" color=red}
+:: stars[Too many] {value="x" tint=red}

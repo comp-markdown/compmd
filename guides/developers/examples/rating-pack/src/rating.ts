@@ -1,11 +1,11 @@
 import { component } from "@compmd/pack/component";
 
-/** The params, as the signature in `index.comp.md` declares them: `color` is optional, so it may be missing. */
+/** The params, as the signature in `index.comp.md` declares them: `tint` is optional, so it may be missing. */
 export interface Params {
   value: number;
   max: number;
   size: "small" | "large";
-  color?: string;
+  tint?: string;
 }
 
 export default component<Params>((target, { params, fallback, set }) => {
@@ -13,9 +13,9 @@ export default component<Params>((target, { params, fallback, set }) => {
   stars.setAttribute("role", "group");
   stars.setAttribute("aria-label", fallback.text);
   target.append(stars);
-  const draw = ({ value, max, size, color }: Params) => {
+  const draw = ({ value, max, size, tint }: Params) => {
     stars.style.fontSize = size === "large" ? "1.6em" : "1em";
-    stars.style.color = color ?? "inherit";
+    stars.style.color = tint ?? "inherit";
     stars.replaceChildren(
       ...Array.from({ length: max }, (_, i) => {
         const star = document.createElement("button");

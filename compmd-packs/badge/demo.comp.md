@@ -89,19 +89,19 @@ md:
 
 # Your own badges, defined once
 
-`labels.comp.md`, next to this demo, defines `bug`, `feature` and `chore`, each a `badge` with its colours, border and bold or italic text fixed. A document imports the file and uses them with nothing to configure.
+`labels.comp.md`, next to this demo, defines `bug`, `feature`, `chore` and `beta`, each a `badge` with its colours, border and type fixed: small, bold or italic, `beta` in spaced capitals. A document imports the file and uses them with nothing to configure.
 
 ````compmd {render=both}
 ---
 md:
   import:
     - from: ./labels.comp.md
-      names: [bug, feature, chore]
+      names: [bug, feature, chore, beta]
 ---
 
 ## Changes in 2.1
 
-- :feature[new] Saved searches, from the search page.
+- :feature[new] Saved searches, from the search page. :beta[beta]
 - :feature[new] A map of the walks, each stop a pin.
 - :bug[bug] The tide table showed yesterday's tides after midnight.
 - :bug[bug] A walk's distance was in miles on a page set to kilometres.

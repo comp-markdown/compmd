@@ -18,6 +18,13 @@ const vocabulary = JSON.parse(readFileSync(join(import.meta.dirname, "../../../c
 const PASSED_THROUGH: Record<string, string[]> = {
   ...Object.fromEntries(["width", "height", "min-width", "max-width", "inset-inline-start", "inset-inline-end", "inset-block-start", "inset-block-end"].map((key) => [key, ["auto"]])),
   ...Object.fromEntries(["border", "border-inline-start", "border-inline-end", "border-block-start", "border-block-end", "shadow"].map((key) => [key, ["none"]])),
+  "font-weight": ["normal", "bold"],
+  "font-style": ["normal", "italic"],
+  "text-align": ["start", "center", "end"],
+  "line-height": ["normal"],
+  "letter-spacing": ["normal"],
+  "text-transform": ["none", "uppercase", "lowercase", "capitalize"],
+  "text-decoration": ["none", "underline", "line-through"],
   "align-self": ["start", "center", "end", "stretch"],
   "justify-self": ["start", "center", "end"],
   display: ["block", "flex", "grid", "contents"],

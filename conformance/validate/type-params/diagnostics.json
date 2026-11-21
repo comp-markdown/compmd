@@ -1,0 +1,27 @@
+[
+  {
+    "code": "F009",
+    "line": 11,
+    "column": 22
+  },
+  {
+    "code": "F009",
+    "line": 15,
+    "column": 22
+  },
+  {
+    "code": "F009",
+    "line": 19,
+    "column": 21
+  },
+  {
+    "code": "W126",
+    "line": 23,
+    "column": 1
+  },
+  {
+    "code": "W126",
+    "line": 35,
+    "column": 1
+  }
+]

@@ -141,6 +141,13 @@ Every block, whatever its component, has a box around it, and every component ta
 | `background` | `none`, `subtle`, `strong`, `accent`, or a color such as `#e9f3ff` |
 | `shadow` | `none`, `s`, `m`, `l`: a shadow, so the box stands out of the page |
 | `rotate` | a tilt, from `-15deg` to `15deg`: a note pinned on the page, `rotate=-2deg`; it moves nothing around it |
+| `font-size` | `s`, `m`, `l`, `xl` (smaller or larger than the text around it), or a length |
+| `font-weight`, `font-style` | `normal` or `bold`; `normal` or `italic` |
+| `font-family` | `body`, `heading` or `mono`: the app's fonts for text, headings and code |
+| `color` | the text's colour: `muted`, `accent`, or a color such as `#a40e26` |
+| `text-align` | `start`, `center` or `end` |
+| `line-height`, `letter-spacing` | `tight`, `normal` or `loose` (or a number); `tight`, `normal` or `wide` (or a length) |
+| `text-transform`, `text-decoration` | `none`, `uppercase`, `lowercase`, `capitalize`; `none`, `underline`, `line-through` |
 | `stretch-link` | a setting: the box's first link takes a click anywhere on the box, as a card that is a link; its other links stay links, and a box with no link gets a warning (`W124`) |
 | `width`, `max-width`, `min-width`, `height` | a length, a percentage, or `auto`: `max-width=32rem` |
 | `aspect-ratio` | width over height, such as `16/9`, or `none` |
@@ -150,6 +157,8 @@ Every block, whatever its component, has a box around it, and every component ta
 A length is a number with `px`, `rem`, `em` or `%`; `1rem` is the page's text size. A width or height counts the padding and the border in it.
 
 A component that draws, a chart or a QR code, fills its box, so its box's params size it: `:: qr-code[Our site] {value="https://compmd.dev/" width=10rem}` is 10rem wide, and with `height=6rem` too it is as large as fits in that box, in its middle, or at its start with `object-position=start`. `object-fit` and `object-position` take no breakpoint.
+
+The type params reach everything in the box, nested boxes too, until one sets its own: `::: box {font-family=heading font-size=l text-align=center}` around a quote sets it larger, centred, in the heading font. `text-transform=uppercase` shows the text in capitals while it stays as you wrote it, so a screen reader reads `:badge[new]{text-transform=uppercase}` as "new". A text colour and a background, both written as colours, that are too close to read get a warning (`W126`); the words `muted` and `subtle` suit light and dark pages.
 
 An image fits its box the same way when the box holds that image and nothing else, so a box crops a photo to a shape: `::: box {aspect-ratio=4/3 object-fit=cover}` around `![Boats at the quay](harbour.jpg)` makes it 4:3 whatever its own shape, cut at its edges, and `object-position="start center"` keeps its top. Without a height, from `height`, `aspect-ratio` or a grid row, the box is as tall as the image and nothing is cut. A box with an image and a caption is no such box: put the image in a box of its own. On any other box, the two params get a warning (`W125`).
 

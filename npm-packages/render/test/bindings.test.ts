@@ -13,12 +13,12 @@ import Card from "./Card.svelte";
 import Plots from "./Plots.svelte";
 import { seen, type Seen } from "./seen.ts";
 
-function ReactCard({ title, fontSize, children, sideNote, compmd }: { title: string; fontSize: string; children: ReactNode; sideNote: ReactNode; compmd: { headingLevel: number } }) {
+function ReactCard({ title, headingSize, children, sideNote, compmd }: { title: string; headingSize: string; children: ReactNode; sideNote: ReactNode; compmd: { headingLevel: number } }) {
   const [clicks, setClicks] = useState(0);
   return createElement(
     "section",
     null,
-    createElement("h3", { "data-level": compmd.headingLevel, "data-size": fontSize }, title),
+    createElement("h3", { "data-level": compmd.headingLevel, "data-size": headingSize }, title),
     createElement("button", {
       onClick: () => {
         setClicks((n) => n + 1);
@@ -38,7 +38,7 @@ const card = (title: string): ExpandedRoot => ({
       name: "card",
       params: [
         { key: "title", breakpoint: null, value: title },
-        { key: "font-size", breakpoint: null, value: "small" },
+        { key: "heading-size", breakpoint: null, value: "small" },
       ],
       children: [{ type: "componentLeaf", name: "notes", params: [], fallback: [] }],
       slots: [{ type: "componentSlot", name: "side-note", children: [{ type: "paragraph", children: [{ type: "text", value: "A side note" }] }] }],

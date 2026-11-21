@@ -262,7 +262,8 @@ const TRIGGERS: Record<string, Trigger> = {
   W117: { text: "---\nmd:\n  export:\n    names: [clock]\n---\n\n```jsx component=clock\nexport default function Clock() { return <time />; }\n```\n" },
   W119: { text: "::: box\n::: box {inset-block-start=1rem}\nB\n::: /box\n::: /box\n" },
   W124: { text: "::: box {stretch-link}\nA card with no link.\n::: /box\n" },
-  W125: { text: "::: box {aspect-ratio=1 object-fit=cover}\n![Boats](harbour.jpg)\n\nBoats at the quay.\n::: /box\n" },
+  W126: { text: "::: box {color=\"#999\" background=\"#fff\"}\nA grey too light to read.\n::: /box\n" },
+  W125: { text:"::: box {aspect-ratio=1 object-fit=cover}\n![Boats](harbour.jpg)\n\nBoats at the quay.\n::: /box\n" },
   W120: { text: "```compmd component=tiles {display=contents padding=s}\nslots: [default]\n---\n{{md.slot}}\n```\n\n::: tiles\nText.\n::: /tiles\n" },
   W121: {
     text: importing('"@acme/charts@2"', "[legend]") + ":: legend[L]\n",

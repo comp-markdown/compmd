@@ -7,6 +7,7 @@
 
 mod blocks;
 mod components;
+mod contrast;
 mod destinations;
 mod env;
 mod flow;

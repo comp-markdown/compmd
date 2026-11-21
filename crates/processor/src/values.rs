@@ -108,6 +108,15 @@ impl Kind<'static> {
     );
     /// A CSS color.
     pub const COLOR: Self = kind(&[], &[Form::Color], &["#0b7285", "teal"]);
+    /// `font-size`: a type size token, in `em`, or a length (spec §9.4).
+    pub const FONT_SIZE: Self = kind(&["s", "m", "l", "xl"], &[Form::Length], &["1.125rem"]);
+    /// `color`: a text color token or a CSS color.
+    pub const TEXT_COLOR: Self = kind(&["muted", "accent"], &[Form::Color], &["#a40e26"]);
+    /// `line-height`: a leading token or a plain number, times the font's size.
+    pub const LINE_HEIGHT: Self = kind(&["tight", "normal", "loose"], &[Form::Number], &["1.4"]);
+    /// `letter-spacing`: a tracking token or a length.
+    pub const LETTER_SPACING: Self =
+        kind(&["tight", "normal", "wide"], &[Form::Length], &["0.08em"]);
     /// A length.
     pub const LENGTH: Self = kind(&[], &[Form::Length], &["1.5rem"]);
     /// Sizes and insets: `auto` or a length.
@@ -190,6 +199,10 @@ impl Kind<'static> {
         Self::SURFACE,
         Self::BORDER,
         Self::COLOR,
+        Self::FONT_SIZE,
+        Self::TEXT_COLOR,
+        Self::LINE_HEIGHT,
+        Self::LETTER_SPACING,
         Self::LENGTH,
         Self::SIZE,
         Self::TRACKS,

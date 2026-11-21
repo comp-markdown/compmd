@@ -23,7 +23,7 @@ The new :badge[beta]{tone=accent} search, from version :badge[2.1].
 
 ## Your own badges, defined once
 
-A project that uses a few badges everywhere (`bug`, `feature`, `chore`) defines them once, each a `badge` with its look fixed, in a file its documents import. `labels.comp.md`:
+A project that uses a few badges everywhere (`bug`, `feature`, `chore`, `beta`) defines them once, each a `badge` with its look fixed (colours, border and type), in a file its documents import. `labels.comp.md`:
 
 ````md
 ---
@@ -32,22 +32,27 @@ md:
     - from: "@comp-markdown/badge@0"
       names: [badge]
   export:
-    names: [bug, feature, chore]
+    names: [bug, feature, chore, beta]
 ---
 
 ```compmd component=bug
 ---
-:badge[**{{md.fallback}}**]{background="#ffebe9" border="1px solid #cf222e"}
+:badge[{{md.fallback}}]{background="#ffebe9" border="1px solid #cf222e" color="#a40e26" font-size=s font-weight=bold}
 ```
 
 ```compmd component=feature
 ---
-:badge[**{{md.fallback}}**]{background="#dafbe1" border="1px solid #1a7f37"}
+:badge[{{md.fallback}}]{background="#dafbe1" border="1px solid #1a7f37" color="#116329" font-size=s font-weight=bold}
 ```
 
 ```compmd component=chore
 ---
-:badge[*{{md.fallback}}*]{background=subtle border=strong border-radius=s}
+:badge[{{md.fallback}}]{background=subtle border=strong border-radius=s color=muted font-size=s font-style=italic}
+```
+
+```compmd component=beta
+---
+:badge[{{md.fallback}}]{tone=accent font-size=s font-weight=bold text-transform=uppercase letter-spacing=wide}
 ```
 ````
 
@@ -58,10 +63,10 @@ A document imports them and writes each with nothing to configure:
 md:
   import:
     - from: ./labels.comp.md
-      names: [bug, feature, chore]
+      names: [bug, feature, chore, beta]
 ---
 
-- :feature[new] Saved searches, from the search page.
+- :feature[new] Saved searches, from the search page. :beta[beta]
 - :bug[bug] The tide table showed yesterday's tides after midnight.
 - :chore[chore] The photos are smaller, so the pages load faster.
 ```

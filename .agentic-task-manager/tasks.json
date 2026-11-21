@@ -13345,7 +13345,7 @@
       "description": "Item 4b of [the first list](docs/first-components.md#:~:text=Two%20or%20three%20columns): a `compmd` definition on `grid` (no code), in its own pack. The first column is the default slot, `:: #middle` and `:: #end` the others, so a column holds any blocks with no `box`; `split=even | wide-start | wide-middle | wide-end` sets the widths (`wide-middle` for three only), and below `md` the columns stack. Slot names are logical (spec §9.2).\n\n## Do\nThe definition with its signature; a demo with two and three columns and each `split`, in a right-to-left document too; plain-renderer reading checked (the columns in order); a conformance-style test of its expanded tree.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68e81c39ce10",
         "01a1fb1a-5845-722a-88c3-17bf2a8c3273",
@@ -13355,7 +13355,7 @@
         "compmd-packs/columns/"
       ],
       "created_at": "2026-11-20T19:03:19Z",
-      "updated_at": "2026-11-21T17:04:16Z",
+      "updated_at": "2026-11-21T17:10:36Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -13385,11 +13385,23 @@
           "kind": "review",
           "text": "CR-56: The columns pack: two or three columns side by side",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-21T17:10:06Z",
+          "kind": "note",
+          "text": "Approved: in CR-56 (round 2)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-21T17:10:36Z",
+          "kind": "outcome",
+          "text": "The columns pack: two or three, split, side by side from sm up and stacked below, right to left by dir, a gap param; its demo with paragraphs; approved in CR-56. A document’s dir: CMD-371.",
+          "by": "claude:79612601"
         }
       ],
       "started_at": "2026-11-21T16:55:15Z",
       "started_by": "claude:79612601",
-      "commit": "7d39a9df64407dc1dd6e070a6e3fead17ecac8fa",
+      "commit": "7c6c2407e39e5240c4603f6d08c4770166651628",
       "code_reviews": [
         {
           "id": "01a1ff10-d914-74ed-9166-bf9e0af14ad1",
@@ -13397,7 +13409,15 @@
         }
       ],
       "review_requested_at": "2026-11-21T17:04:16Z",
-      "review_state": "waiting"
+      "reviews": [
+        {
+          "from": "2026-11-21T17:04:16Z",
+          "to": "2026-11-21T17:10:06Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-21T17:10:36Z",
+      "completed_by": "claude:79612601"
     },
     {
       "id": "01a1fa57-79f1-7065-863a-4b38065cfa68",

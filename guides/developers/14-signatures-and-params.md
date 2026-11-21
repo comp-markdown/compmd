@@ -29,7 +29,7 @@ params:
   value: input<number>
   max: number = 5
   size: small | large = small
-  color: color?
+  tint: color?
 ```
 
 `lanes`, a container whose default slot is a template, once per record, in the lane of its `by` field.
@@ -85,7 +85,7 @@ A declaration's short form is a YAML string, its type, then `?` when it is optio
 ```text
 max: number = 5
 size: small | large = small
-color: color?
+tint: color?
 ```
 
 The long form is a mapping, for a default the short form can't write (one with `: ` in it, such as a JSON object, isn't a valid YAML string) or a description for editors:
@@ -130,7 +130,7 @@ A type that isn't one of those below, such as a misspelt `numbr`, is F037 at the
 ## Defaults and required params
 
 - A param with a default is optional: the component gets the default when the document doesn't give one. `max` is `5` in every use that doesn't say.
-- A param whose type ends in `?` is optional with no value: when the document doesn't give it, it isn't in `params` at all, so its TypeScript type is optional (`color?: string`).
+- A param whose type ends in `?` is optional with no value: when the document doesn't give it, it isn't in `params` at all, so its TypeScript type is optional (`tint?: string`).
 - Any other param is required: a use without it is F010, and renders its fallback, so the component never sees a use that lacks it.
 
 The component that reads them:
@@ -138,12 +138,12 @@ The component that reads them:
 ```ts snippet=rating-pack/src/rating.ts
 import { component } from "@compmd/pack/component";
 
-/** The params, as the signature in `index.comp.md` declares them: `color` is optional, so it may be missing. */
+/** The params, as the signature in `index.comp.md` declares them: `tint` is optional, so it may be missing. */
 export interface Params {
   value: number;
   max: number;
   size: "small" | "large";
-  color?: string;
+  tint?: string;
 }
 
 export default component<Params>((target, { params, fallback, set }) => {
@@ -151,9 +151,9 @@ export default component<Params>((target, { params, fallback, set }) => {
   stars.setAttribute("role", "group");
   stars.setAttribute("aria-label", fallback.text);
   target.append(stars);
-  const draw = ({ value, max, size, color }: Params) => {
+  const draw = ({ value, max, size, tint }: Params) => {
     stars.style.fontSize = size === "large" ? "1.6em" : "1em";
-    stars.style.color = color ?? "inherit";
+    stars.style.color = tint ?? "inherit";
     stars.replaceChildren(
       ...Array.from({ length: max }, (_, i) => {
         const star = document.createElement("button");
@@ -315,7 +315,7 @@ describe("rating", () => {
     expect(stars().map((star) => star.textContent).join("")).toBe("★★★☆☆");
     stars()[4]?.click();
     expect(shown.sets).toEqual([{ param: "value", value: 5 }]);
-    shown.update({ value: 5, max: 5, size: "large", color: "#b8860b" });
+    shown.update({ value: 5, max: 5, size: "large", tint: "#b8860b" });
     expect(stars().map((star) => star.textContent).join("")).toBe("★★★★★");
     shown.destroy();
   });

@@ -27,6 +27,16 @@ named! {
         Shadow = "shadow",
         Rotate = "rotate",
         Background = "background",
+        FontSize = "font-size",
+        FontWeight = "font-weight",
+        FontStyle = "font-style",
+        FontFamily = "font-family",
+        Color = "color",
+        TextAlign = "text-align",
+        LineHeight = "line-height",
+        LetterSpacing = "letter-spacing",
+        TextTransform = "text-transform",
+        TextDecoration = "text-decoration",
         GridArea = "grid-area",
         Order = "order",
         AlignSelf = "align-self",
@@ -78,10 +88,21 @@ impl Universal {
             Self::Shadow => Kind::SHADOW,
             Self::Rotate => Kind::ANGLE,
             Self::Background => Kind::SURFACE,
+            Self::FontSize => Kind::FONT_SIZE,
+            Self::FontWeight => Kind::one_of(&["normal", "bold"][..]),
+            Self::FontStyle => Kind::one_of(&["normal", "italic"][..]),
+            Self::FontFamily => Kind::one_of(&["body", "heading", "mono"][..]),
+            Self::Color => Kind::TEXT_COLOR,
+            Self::TextAlign | Self::JustifySelf => Kind::one_of(&["start", "center", "end"][..]),
+            Self::LineHeight => Kind::LINE_HEIGHT,
+            Self::LetterSpacing => Kind::LETTER_SPACING,
+            Self::TextTransform => {
+                Kind::one_of(&["none", "uppercase", "lowercase", "capitalize"][..])
+            }
+            Self::TextDecoration => Kind::one_of(&["none", "underline", "line-through"][..]),
             Self::GridArea => Kind::AREA_NAME,
             Self::Order => Kind::one_of(&["first", "last", "none"][..]),
             Self::AlignSelf => Kind::one_of(&["start", "center", "end", "stretch"][..]),
-            Self::JustifySelf => Kind::one_of(&["start", "center", "end"][..]),
             Self::AspectRatio => Kind::RATIO,
             Self::ObjectFit => Kind::one_of(&["contain", "cover", "fill"][..]),
             Self::ObjectPosition => Kind::POSITIONS,
@@ -130,6 +151,16 @@ impl Universal {
             | Self::Shadow
             | Self::Rotate
             | Self::Background
+            | Self::FontSize
+            | Self::FontWeight
+            | Self::FontStyle
+            | Self::FontFamily
+            | Self::Color
+            | Self::TextAlign
+            | Self::LineHeight
+            | Self::LetterSpacing
+            | Self::TextTransform
+            | Self::TextDecoration
             | Self::Order
             | Self::AlignSelf
             | Self::JustifySelf
@@ -166,6 +197,16 @@ impl Universal {
             | Self::Shadow
             | Self::Rotate
             | Self::Background
+            | Self::FontSize
+            | Self::FontWeight
+            | Self::FontStyle
+            | Self::FontFamily
+            | Self::Color
+            | Self::TextAlign
+            | Self::LineHeight
+            | Self::LetterSpacing
+            | Self::TextTransform
+            | Self::TextDecoration
             | Self::GridArea
             | Self::Order
             | Self::AlignSelf
@@ -212,6 +253,16 @@ impl Universal {
             | Self::Shadow
             | Self::Rotate
             | Self::Background
+            | Self::FontSize
+            | Self::FontWeight
+            | Self::FontStyle
+            | Self::FontFamily
+            | Self::Color
+            | Self::TextAlign
+            | Self::LineHeight
+            | Self::LetterSpacing
+            | Self::TextTransform
+            | Self::TextDecoration
             | Self::GridArea
             | Self::Order
             | Self::AlignSelf

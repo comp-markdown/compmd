@@ -9,7 +9,7 @@ describe("rating", () => {
     expect(stars().map((star) => star.textContent).join("")).toBe("★★★☆☆");
     stars()[4]?.click();
     expect(shown.sets).toEqual([{ param: "value", value: 5 }]);
-    shown.update({ value: 5, max: 5, size: "large", color: "#b8860b" });
+    shown.update({ value: 5, max: 5, size: "large", tint: "#b8860b" });
     expect(stars().map((star) => star.textContent).join("")).toBe("★★★★★");
     shown.destroy();
   });

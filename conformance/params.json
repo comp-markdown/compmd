@@ -356,6 +356,161 @@
       "breakpoints": true
     },
     {
+      "name": "font-size",
+      "tokens": [
+        "s",
+        "m",
+        "l",
+        "xl"
+      ],
+      "forms": [
+        "length"
+      ],
+      "examples": [
+        "1.125rem"
+      ],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
+      "name": "font-weight",
+      "tokens": [
+        "normal",
+        "bold"
+      ],
+      "forms": [],
+      "examples": [],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
+      "name": "font-style",
+      "tokens": [
+        "normal",
+        "italic"
+      ],
+      "forms": [],
+      "examples": [],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
+      "name": "font-family",
+      "tokens": [
+        "body",
+        "heading",
+        "mono"
+      ],
+      "forms": [],
+      "examples": [],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
+      "name": "color",
+      "tokens": [
+        "muted",
+        "accent"
+      ],
+      "forms": [
+        "color"
+      ],
+      "examples": [
+        "#a40e26"
+      ],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
+      "name": "text-align",
+      "tokens": [
+        "start",
+        "center",
+        "end"
+      ],
+      "forms": [],
+      "examples": [],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
+      "name": "line-height",
+      "tokens": [
+        "tight",
+        "normal",
+        "loose"
+      ],
+      "forms": [
+        "number"
+      ],
+      "examples": [
+        "1.4"
+      ],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
+      "name": "letter-spacing",
+      "tokens": [
+        "tight",
+        "normal",
+        "wide"
+      ],
+      "forms": [
+        "length"
+      ],
+      "examples": [
+        "0.08em"
+      ],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
+      "name": "text-transform",
+      "tokens": [
+        "none",
+        "uppercase",
+        "lowercase",
+        "capitalize"
+      ],
+      "forms": [],
+      "examples": [],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
+      "name": "text-decoration",
+      "tokens": [
+        "none",
+        "underline",
+        "line-through"
+      ],
+      "forms": [],
+      "examples": [],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
       "name": "grid-area",
       "tokens": [],
       "forms": [

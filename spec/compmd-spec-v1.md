@@ -1260,6 +1260,16 @@ Any container or leaf (built-in or not) accepts these params, applied to its out
 | `shadow`                                      | a token (`none`, `s`, `m`, `l`)                          | `shadow=m`               |
 | `rotate`                                      | an angle in `deg`, from `-15deg` to `15deg`              | `rotate=-2deg`           |
 | `background`                                  | a token (`none`, `subtle`, `strong`, `accent`) or a CSS color | `background=subtle`  |
+| `font-size`                                   | a token (`s`, `m`, `l`, `xl`) or a length                | `font-size=s`            |
+| `font-weight`                                 | `normal` or `bold`                                       | `font-weight=bold`       |
+| `font-style`                                  | `normal` or `italic`                                     | `font-style=italic`      |
+| `font-family`                                 | a token (`body`, `heading`, `mono`)                      | `font-family=heading`    |
+| `color`                                       | a token (`muted`, `accent`) or a CSS color               | `color=muted`            |
+| `text-align`                                  | `start`, `center` or `end`                               | `text-align=center`      |
+| `line-height`                                 | a token (`tight`, `normal`, `loose`) or a number         | `line-height=tight`      |
+| `letter-spacing`                              | a token (`tight`, `normal`, `wide`) or a length          | `letter-spacing=wide`    |
+| `text-transform`                              | `none`, `uppercase`, `lowercase` or `capitalize`         | `text-transform=uppercase` |
+| `text-decoration`                             | `none`, `underline` or `line-through`                    | `text-decoration=underline` |
 | `grid-area`                                   | an area name of the parent's `grid-template-areas`      | `grid-area=side`         |
 | `order`                                       | `first`, `last`, `none`                                 | `order=first`            |
 | `align-self`                                  | `start`, `center`, `end`, `stretch`                     | `align-self=center`      |
@@ -1288,6 +1298,8 @@ Any container or leaf (built-in or not) accepts these params, applied to its out
 - **`fill`** makes a block take the height its parent leaves; at the top level, the height of the area the processor renders into. Nested `fill` and `scroll` blocks scroll instead of growing past their parent. In a document that flows, with no fixed height, `fill` does nothing.
 - **`sticky`** keeps the block at that edge of the nearest area that scrolls it.
 - **`shadow`** gives the box a shadow, from the visual tokens (section 9.4), so it stands out of the page: a note pinned on it. **`rotate`** turns the box by its angle, about its centre, as CSS's `rotate` does: the blocks around it are laid out as if it weren't turned, and it is drawn turned over them. Both print.
+- **Type** (`font-size`, `font-weight`, `font-style`, `font-family`, `color`, `text-align`, `line-height`, `letter-spacing`, `text-transform`, `text-decoration`) sets the type of the box's text, as CSS's properties of those names do, and is inherited as theirs are: it reaches everything the box holds, nested boxes included, until one sets its own. The size tokens are in `em`, so `font-size=s` on a badge in a heading is small for the heading, and a box's headings keep their sizes relative to its text. `font-family` takes the type tokens only (section 9.4), the host's fonts for body text, headings and code, never a font's name, which a reader's device has or hasn't. `text-transform` changes how the text shows, not the text: `:badge[new]{text-transform=uppercase}` shows NEW and is read "new". A link keeps its own decoration. A host-language component's box has them too, so what it draws in the page inherits them. They print as shown; a plain renderer shows the text in its own type.
+- **Contrast.** A box whose `color` and `background` are both CSS colors written in hex, `rgb()` or `hsl()`, opaque, with a contrast ratio below 4.5:1 (WCAG 2's, for text), is W126. Tokens, other colors and colors from a theme are not checked, since the processor doesn't know the page's colors.
 - **`stretch-link`** makes the box's first link cover the whole box: a click anywhere on the box follows it, as a card that is a link is used, while the box's other links stay above it and work as links. Markdown's links are inline, so no link can hold a box's heading and text; the link keeps its own text, which is its accessible name, and a plain renderer shows the link as it is. The box needs a link: without one, the flag is W124. It is written without a breakpoint.
 - **A block with a position** (an `inset-*` param that isn't `auto`) is taken out of the flow and placed in its **nearest box** in the expanded tree (section 12.3): a `box` (a `compmd` component's box among them), a host-language component's outer box, or one item of a host-language component's slot. `each`, `if`, slots of `compmd` components and `display=contents` components don't count, and neither do list items, quotes and table cells. At the top level, it is placed in the area the processor renders into.
   - It is placed against that box's padding edge: `inset-inline-start` from the start edge (the left in left-to-right languages, the right in right-to-left ones), `inset-inline-end` from the end edge, `inset-block-start` from the top and `inset-block-end` from the bottom. Percentages are of the box's width or height.
@@ -1326,6 +1338,17 @@ A layout or common param MAY carry a breakpoint prefix: `md:gap=l` overrides `ga
   | `shadow=s`, `m`, `l` | `--compmd-shadow-s`, `-m`, `-l` | `0 1px 2px color-mix(in srgb, currentColor 20%, transparent)`; `0 2px 6px`, 25%; `0 6px 16px`, 30% |
 
   `none` means no background, border, rounding or shadow. No token is a CSS keyword of the same param, so a value is never ambiguous.
+- **Type tokens** (`font-size`, `font-family`, `color`, `line-height`, `letter-spacing`) work the same way: a token or, but for `font-family`, a CSS value of the param's form (a length, a color, a number). They are CSS custom properties with defaults, so a theme may change them, the host's fonts first:
+
+  | Token | Custom property | Default |
+  | --- | --- | --- |
+  | `font-size=s`, `m`, `l`, `xl` | `--compmd-text-s`, `-m`, `-l`, `-xl` | `0.875em`, `1em`, `1.25em`, `1.5em` |
+  | `font-family=body`, `heading`, `mono` | `--compmd-font-body`, `-heading`, `-mono` | `inherit`, `inherit`, `ui-monospace, monospace` |
+  | `color=muted`, `accent` | `--compmd-text-muted`, `--compmd-text-accent` | `color-mix(in srgb, currentColor 65%, transparent)`, `var(--compmd-accent, #0969da)` |
+  | `line-height=tight`, `loose` | `--compmd-leading-tight`, `-loose` | `1.2`, `1.8` |
+  | `letter-spacing=tight`, `wide` | `--compmd-tracking-tight`, `-wide` | `-0.01em`, `0.05em` |
+
+  `normal` (`line-height`, `letter-spacing`, `font-weight`, `font-style`) and the other params' words (`bold`, `italic`, `start`, `uppercase`, `underline`, …) are CSS's keywords of the same name and mean what they mean there.
 - **Spaces** (`gap` and the padding params, type `space`) are a token, `none`, `s`, `m` or `l`, or a length. The tokens are the CSS custom properties `--compmd-space-s`, `--compmd-space-m` and `--compmd-space-l`, by default `0.5rem`, `1rem` and `2rem`, which a processor or stylesheet may change. Documents SHOULD use tokens; lengths are for layouts that need exact sizes.
 - **Angles** (`rotate`, type `angle`) are a number of degrees, `deg`, from `-15deg` to `15deg`: enough to tilt a box, and no more, so a box never turns away from the text.
 - **Lengths** are `px`, `rem`, `em` and `%`. **Tracks** (`grid-template-columns`, `grid-template-rows`, type `tracks`) also take `fr`, `auto`, `min-content`, `max-content`, `minmax()` and `repeat()`. **Areas** (`grid-template-areas`, type `areas`) are quoted rows of area names or `.`, all the same length (`"'head head' 'side main'"`). **Colors** and **borders** take CSS syntax.
@@ -1421,6 +1444,7 @@ Every diagnostic MUST name its code, the line and column where it was detected, 
 | W123 | A ` ```compmd ` block with `render=output` or `both` inside an example (section 7.8); it shows its source | the block's opening fence                                            |
 | W124 | `stretch-link` on a box that holds no link (section 9.2): nothing to cover the box with | the block                                                            |
 | W125 | `object-fit` or `object-position` on a box that is neither a host-language component's nor an image box (section 9.2): nothing it fits | the block                                                            |
+| W126 | A box's `color` and `background`, both written as opaque CSS colors in hex, `rgb()` or `hsl()`, contrast below 4.5:1 (section 9.2) | the block                                                            |
 
 ### 10.3 Recovery rules (lenient mode)
 

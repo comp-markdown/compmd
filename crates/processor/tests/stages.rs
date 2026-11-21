@@ -228,13 +228,13 @@ fn definitions_that_share_a_component_are_no_cycle() {
 
 #[test]
 fn values_are_read_by_their_declared_type() {
-    let card = "```compmd component=card\nparams:\n  n: number?\n  on: boolean?\n  day: date?\n  rows: array?\n  meta: object?\n  t: name?\n  tone: info | warn = info\n  color: color?\n  title: string?\n---\nCard.\n```\n\n";
+    let card = "```compmd component=card\nparams:\n  n: number?\n  on: boolean?\n  day: date?\n  rows: array?\n  meta: object?\n  t: name?\n  tone: info | warn = info\n  tint: color?\n  title: string?\n---\nCard.\n```\n\n";
     let good = format!(
-        "{card}:: card[C] {{n=2.5 on day=2026-10-21 rows=[1] meta={{\"a\":1}} t=row tone=\"warn\" color=\"#fff\" title=x}}\n\n:: card[C] {{on=false day=\"2026-01-31\" title=\"{{{{md.doc.x}}}}\" n=(1 + 2) tone=(\"i\" + \"nfo\")}}\n"
+        "{card}:: card[C] {{n=2.5 on day=2026-10-21 rows=[1] meta={{\"a\":1}} t=row tone=\"warn\" tint=\"#fff\"  title=x}}\n\n:: card[C] {{on=false day=\"2026-01-31\" title=\"{{{{md.doc.x}}}}\" n=(1 + 2) tone=(\"i\" + \"nfo\")}}\n"
     );
     assert_eq!(codes(&good), [at("F014", 18, 48)]);
     let bad = format!(
-        "{card}:: card[C] {{n=\"2\" on=yes day=2026-02-30 rows={{\"a\":1}} meta=[1] t=a-b tone=[1] color=red-ish title}}\n\n:: card[C] {{t=(x) n=(\"a\")}}\n"
+        "{card}:: card[C] {{n=\"2\" on=yes day=2026-02-30 rows={{\"a\":1}} meta=[1] t=a-b tone=[1] tint=red-ish  title}}\n\n:: card[C] {{t=(x) n=(\"a\")}}\n"
     );
     assert_eq!(
         codes(&bad),
@@ -246,7 +246,7 @@ fn values_are_read_by_their_declared_type() {
             at("F009", 16, 59),
             at("F009", 16, 65),
             at("F009", 16, 74),
-            at("F009", 16, 84),
+            at("F009", 16, 83),
             at("F009", 16, 92),
             at("F009", 18, 15),
             at("F024", 18, 22),
