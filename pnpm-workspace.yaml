@@ -17,6 +17,7 @@ packages:
   - compmd-packs/figure
   - compmd-packs/gallery
   - compmd-packs/mermaid
+  - compmd-packs/rating
   - compmd-packs/wireframe
   - crates/tauri/examples/tauri-app
   - guides

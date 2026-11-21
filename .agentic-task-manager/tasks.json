@@ -11870,7 +11870,7 @@
       "description": "Item 4 of [the first list](docs/first-components.md#:~:text=A%20gallery%20is%20a%20grid%20of%20cards): a grid of cards, each an image, a title and a description, a `compmd` definition, so it needs no code and its images are the document's. A zoom or a lightbox waits for CMD-266.\n\n## Do\nThe definition (over a slot's items or a list in data), a demo, tests of its expanded tree.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [
         "01a1f870-9ad9-761a-afe5-57c89c4468ad",
         "01a1fb1a-5845-722a-88c3-17bf2a8c3273",
@@ -11880,9 +11880,9 @@
         "compmd-packs/gallery/"
       ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-21T15:05:14Z",
+      "updated_at": "2026-11-21T15:17:22Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "number": 315,
       "sprint_history": [
         {
@@ -11916,11 +11916,17 @@
           "kind": "note",
           "text": "Approved: in CR-45 (round 3)",
           "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-21T15:17:22Z",
+          "kind": "outcome",
+          "text": "The gallery with min, columns and gap, its demo as render=both examples, and the breakpoint fix for a compmd component’s expression params (8e035a1, after CR-45’s approval). Cropping is CMD-366 and CMD-367.",
+          "by": "claude:79612601"
         }
       ],
       "started_at": "2026-11-21T14:12:45Z",
       "started_by": "claude:79612601",
-      "commit": "3809cb895f71d12027a1d6aad20c52c1168dd044",
+      "commit": "8e035a11f85c6c8b4288230e0d76c7e77f11e9ca",
       "code_reviews": [
         {
           "id": "01a1fe7c-a607-714d-a899-b2e4baa1f33a",
@@ -11928,8 +11934,15 @@
         }
       ],
       "review_requested_at": "2026-11-21T14:22:24Z",
-      "review_state": "approved",
-      "reviewed_at": "2026-11-21T15:05:14Z"
+      "reviews": [
+        {
+          "from": "2026-11-21T14:22:24Z",
+          "to": "2026-11-21T15:05:14Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-21T15:17:22Z",
+      "completed_by": "claude:79612601"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57cb4e452c2e",
@@ -12157,7 +12170,7 @@
       "description": "Item 9 of [the first list](docs/first-components.md#:~:text=Stars%20from%20a%20value): stars from a value, half stars included, read-only, its own code in the plain binding, strict: a few dozen lines. The website's own pack has one (`website/content/app/`); this is the published one.\n\n## Do\nSignature (`value`, `of`), its label as the text alternative (\"Rated 4 of 5\"), fallback, print, a demo, tests in Chrome and WebKit.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68e81c39ce10",
         "01a1faa3-d27f-73b4-9632-1835b3071707"
@@ -12166,7 +12179,7 @@
         "compmd-packs/rating/"
       ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-21T14:55:11Z",
+      "updated_at": "2026-11-21T15:17:34Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 320,
@@ -12184,7 +12197,9 @@
           "text": "Parked for CR-45’s changes and CMD-366. Written, uncommitted in the tree: `compmd-packs/rating/` (src, unit tests passing, demo of `render=both` examples, page test), the workspace and versions.json entries. Left: `test/page.test.ts` finds no frame drawing the stars in either browser; check how examples’ uses frame in host mode first.",
           "by": "claude:79612601"
         }
-      ]
+      ],
+      "started_at": "2026-11-21T15:17:34Z",
+      "started_by": "claude:79612601"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57d0fdf51265",
