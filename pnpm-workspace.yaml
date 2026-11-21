@@ -16,6 +16,7 @@ packages:
   - compmd-packs/card
   - compmd-packs/figure
   - compmd-packs/gallery
+  - compmd-packs/link-card
   - compmd-packs/mermaid
   - compmd-packs/rating
   - compmd-packs/wireframe

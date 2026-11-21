@@ -228,6 +228,28 @@ importers:
         specifier: 5.0.5
         version: 5.0.5(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
 
+  compmd-packs/link-card:
+    dependencies:
+      '@comp-markdown/card':
+        specifier: workspace:^
+        version: link:../card
+    devDependencies:
+      '@compmd/pack':
+        specifier: workspace:*
+        version: link:../../npm-packages/pack
+      '@compmd/processor':
+        specifier: workspace:*
+        version: link:../../npm-packages/wasm
+      '@types/node':
+        specifier: 26.6.5
+        version: 26.6.5
+      typescript:
+        specifier: 6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: 5.0.5
+        version: 5.0.5(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@26.6.5)(yaml@2.9.1))
+
   compmd-packs/mermaid:
     devDependencies:
       '@compmd/pack':

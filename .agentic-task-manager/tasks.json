@@ -11820,7 +11820,7 @@
       "description": "Item 4 of [the first list](docs/first-components.md#:~:text=8%20of%2011%20frameworks%20ship%20cards): a card that is a link, a `compmd` definition on `card`: a title, a description and where it goes, the whole card the link. Its fallback is the link.\n\n## Do\nThe definition, a demo, tests of its expanded tree.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a1f870-9ad9-761a-afe5-57c89c4468ad",
         "01a1fb1a-5845-722a-88c3-17bf2a8c3273",
@@ -11831,7 +11831,7 @@
         "compmd-packs/link-card/"
       ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T22:48:40Z",
+      "updated_at": "2026-11-21T15:18:09Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 314,
@@ -11856,7 +11856,9 @@
           "text": "The whole card as the link: Markdown links are inline, so a link can’t hold the card’s heading and text. Should (a) the title alone be the link, (b) the title be the link with CSS stretching its click area over the card, which a no-code pack can’t ship today (a spec change: a pack’s styles, or a box param for it), or (c) something else? → The title is the link, and the box has `stretch-link`, which makes it cover the card (docs/no-code-components.md, decision 3, approved in CR-37).; Where the link goes: a relative destination in a definition’s body resolves against the pack’s file (spec, Relative paths), so `href=harbour.comp.md` would point into the pack. The processor keeps it as written; the host resolves it. Should the caller write the link themselves (the title as a Markdown link in the card, so its path is theirs, as slot content’s is), or should the spec say a destination made from a param resolves where the param was written? → A destination that starts with a param resolves against the caller, so `href` is the caller’s (decision 1).",
           "by": "claude:79612601"
         }
-      ]
+      ],
+      "started_at": "2026-11-21T15:18:09Z",
+      "started_by": "claude:79612601"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57ca797541ca",
@@ -12042,7 +12044,7 @@
       "description": "Item 6 of [the first list](docs/first-components.md#:~:text=6%20of%2011%20frameworks): an inline `compmd` definition, \"new\", \"beta\", a version, its tone from the visual tokens.\n\n## Do\nThe definition (inline), a demo, tests of its expanded tree.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68e81c39ce10",
         "01a1fb1a-5845-722a-88c3-17bf2a8c3273",
@@ -12053,7 +12055,7 @@
         "compmd-packs/badge/"
       ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T22:48:45Z",
+      "updated_at": "2026-11-21T15:21:02Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 317,
@@ -12078,7 +12080,9 @@
           "text": "An inline invocation of a compmd definition has no box, so its fence’s params don’t apply (spec §7.2), and the spec has no inline `box`: a no-code badge can’t take a tone (background, border, radius) from the visual tokens. Should the spec add an inline box (`:box[beta]{background=accent border-radius=full}`, or an inline invocation’s box styled by its fence), or should badge be a strict component with its own code? → An inline invocation is one inline box styled by its fence (decision 4), and the badge’s text is `md.fallback` (decision 2); no code (docs/no-code-components.md, approved in CR-37).",
           "by": "claude:79612601"
         }
-      ]
+      ],
+      "started_at": "2026-11-21T15:21:02Z",
+      "started_by": "claude:79612601"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57cd298ee930",
@@ -14436,7 +14440,7 @@
       "description": "A gallery's, a card's or a figure's images come in different shapes, so their cards are uneven. Galleries elsewhere crop each image to one shape: MUI's `ImageList` (`rowHeight`, `object-fit: cover`), react-photo-album's rows, card grids with a fixed image ratio. CompMD can't: `object-fit` and `object-position` style a component's box (spec §7.4, §9.2), and a `compmd` definition can't style the Markdown image in its body. Found in CR-45.\n\n## Decide first\nHow a definition crops an image to a shape: for example, a box whose only content is an image fits that image in it, by the box's `aspect-ratio` (or `height`), `object-fit` and `object-position`, as a component fits its drawing. Write the design with the maintainer, test it on the gallery, the card and the figure, then the spec text (§9.2, §12.3), its conformance cases, the processor and the renderer.\n\n## Tests\nConformance cases; the renderer's CSS; browser tests in Chrome and WebKit of an image cropped to a ratio, covering and contained, and printed.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [],
       "files": [
         "spec/compmd-spec-v1.md",
@@ -14446,7 +14450,7 @@
         "docs/"
       ],
       "created_at": "2026-11-21T14:55:01Z",
-      "updated_at": "2026-11-21T15:01:52Z",
+      "updated_at": "2026-11-21T15:18:05Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -14458,7 +14462,24 @@
       "sprint": "Packs 1: the pack tool, no-code components",
       "number": 366,
       "started_at": "2026-11-21T15:01:52Z",
-      "started_by": "claude:79612601"
+      "started_by": "claude:79612601",
+      "commit": "cd6d02ee766a70aa883cbb31eb801b79abccb31b",
+      "code_reviews": [
+        {
+          "id": "01a1feaf-a323-755c-8b13-29050643f0b5",
+          "ref": "CR-49"
+        }
+      ],
+      "review_requested_at": "2026-11-21T15:18:05Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-21T15:18:05Z",
+          "kind": "review",
+          "text": "CR-49: The design: an image cropped to its box",
+          "by": "claude:79612601"
+        }
+      ]
     },
     {
       "id": "01a1fe9a-821c-7292-b5a0-3d4a22b87e04",
