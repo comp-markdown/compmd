@@ -12079,7 +12079,7 @@
       "description": "Item 6 of [the first list](docs/first-components.md#:~:text=6%20of%2011%20frameworks): an inline `compmd` definition, \"new\", \"beta\", a version, its tone from the visual tokens.\n\n## Do\nThe definition (inline), a demo, tests of its expanded tree.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68e81c39ce10",
         "01a1fb1a-5845-722a-88c3-17bf2a8c3273",
@@ -12090,7 +12090,7 @@
         "compmd-packs/badge/"
       ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-21T16:33:43Z",
+      "updated_at": "2026-11-21T16:47:24Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 317,
@@ -12120,11 +12120,23 @@
           "kind": "review",
           "text": "CR-51: The badge pack: a word or two in a tinted box",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-21T16:47:13Z",
+          "kind": "note",
+          "text": "Approved: in CR-51 (round 3)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-21T16:47:24Z",
+          "kind": "outcome",
+          "text": "The badge pack, its demo as # sections, and a project’s own badges defined once in labels.comp.md, in the demo and the README; approved in CR-51. Type params: CMD-370.",
+          "by": "claude:79612601"
         }
       ],
       "started_at": "2026-11-21T15:21:02Z",
       "started_by": "claude:79612601",
-      "commit": "24efb31cf6c09140ea28d7ee2ab37a95e015df05",
+      "commit": "b056ad05ca46d2be315109da3ba0ec15d06a72b4",
       "code_reviews": [
         {
           "id": "01a1fecc-6859-72aa-a393-585a33967eaf",
@@ -12132,7 +12144,15 @@
         }
       ],
       "review_requested_at": "2026-11-21T15:49:31Z",
-      "review_state": "waiting"
+      "reviews": [
+        {
+          "from": "2026-11-21T15:49:31Z",
+          "to": "2026-11-21T16:47:13Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-21T16:47:24Z",
+      "completed_by": "claude:79612601"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57cd298ee930",
@@ -12146,7 +12166,7 @@
       "description": "Item 7 of [the first list](docs/first-components.md#:~:text=A%20note%20pinned%20on%20the%20page): a note pinned on the page, a tinted box, tilted, with a shadow, placed with `inset-*` (spec §9.2) where it should sit; a `compmd` definition.\n\n## Do\nThe definition, a demo, print and the phone width checked, tests of its expanded tree.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68e81c39ce10",
         "01a1fb1a-5845-722a-88c3-17bf2a8c3273",
@@ -12157,7 +12177,7 @@
         "compmd-packs/sticky-note/"
       ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-21T16:09:46Z",
+      "updated_at": "2026-11-21T16:48:05Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 318,
@@ -12178,15 +12198,35 @@
         }
       ],
       "review_requested_at": "2026-11-21T16:09:46Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-21T16:09:46Z",
           "kind": "review",
           "text": "CR-52: The sticky-note pack, and W119 for a box with nothing in its flow",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-21T16:47:54Z",
+          "kind": "note",
+          "text": "Approved: in CR-52 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-21T16:48:05Z",
+          "kind": "outcome",
+          "text": "The sticky-note pack, tilted with a shadow, pinned from sm up and in the flow on a phone, printed; and W119 only for a box whose blocks are all placed (spec §9.2); approved in CR-52.",
+          "by": "claude:79612601"
         }
-      ]
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-21T16:09:46Z",
+          "to": "2026-11-21T16:47:54Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-21T16:48:05Z",
+      "completed_by": "claude:79612601"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57ce340e98a8",
@@ -14531,7 +14571,7 @@
       "description": "A gallery's, a card's or a figure's images come in different shapes, so their cards are uneven. Galleries elsewhere crop each image to one shape: MUI's `ImageList` (`rowHeight`, `object-fit: cover`), react-photo-album's rows, card grids with a fixed image ratio. CompMD can't: `object-fit` and `object-position` style a component's box (spec §7.4, §9.2), and a `compmd` definition can't style the Markdown image in its body. Found in CR-45.\n\n## Decide first\nHow a definition crops an image to a shape: for example, a box whose only content is an image fits that image in it, by the box's `aspect-ratio` (or `height`), `object-fit` and `object-position`, as a component fits its drawing. Write the design with the maintainer, test it on the gallery, the card and the figure, then the spec text (§9.2, §12.3), its conformance cases, the processor and the renderer.\n\n## Tests\nConformance cases; the renderer's CSS; browser tests in Chrome and WebKit of an image cropped to a ratio, covering and contained, and printed.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [],
       "files": [
         "spec/compmd-spec-v1.md",
@@ -14541,7 +14581,7 @@
         "docs/"
       ],
       "created_at": "2026-11-21T14:55:01Z",
-      "updated_at": "2026-11-21T16:33:19Z",
+      "updated_at": "2026-11-21T16:49:03Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -14583,6 +14623,18 @@
           "kind": "review",
           "text": "CR-53: An image cropped to its box: the spec, W125, the renderer",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-21T16:48:47Z",
+          "kind": "note",
+          "text": "Approved: in CR-53 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-21T16:49:03Z",
+          "kind": "outcome",
+          "text": "An image box fits its image by object-fit and object-position (spec §9.2), W125 elsewhere, the renderer’s compmd-image-box, tested in Chrome and WebKit; print checked in CMD-367. Approved in CR-49 (design) and CR-53.",
+          "by": "claude:79612601"
         }
       ],
       "reviews": [
@@ -14590,10 +14642,16 @@
           "from": "2026-11-21T15:18:05Z",
           "to": "2026-11-21T15:39:01Z",
           "outcome": "approved"
+        },
+        {
+          "from": "2026-11-21T16:33:19Z",
+          "to": "2026-11-21T16:48:47Z",
+          "outcome": "approved"
         }
       ],
       "review_requested_at": "2026-11-21T16:33:19Z",
-      "review_state": "waiting"
+      "completed_at": "2026-11-21T16:49:03Z",
+      "completed_by": "claude:79612601"
     },
     {
       "id": "01a1fe9a-821c-7292-b5a0-3d4a22b87e04",

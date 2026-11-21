@@ -21,6 +21,7 @@ packages:
   - compmd-packs/mermaid
   - compmd-packs/rating
   - compmd-packs/sticky-note
+  - compmd-packs/timeline
   - compmd-packs/wireframe
   - crates/tauri/examples/tauri-app
   - guides
