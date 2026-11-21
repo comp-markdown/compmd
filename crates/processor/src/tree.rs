@@ -385,6 +385,10 @@ pub struct Link<N = Node> {
     /// The destination's text and interpolation parts, when it holds an interpolation (spec §12.2).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub url_parts: Option<Vec<StringPart>>,
+    /// In the expanded tree, whether `url` is the place of a pack's file, which the host maps to where it serves it
+    /// (spec §12.3).
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub pack: bool,
     /// Where the link is.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub position: Option<Position>,
@@ -406,6 +410,10 @@ pub struct Image {
     /// The source's text and interpolation parts, when it holds an interpolation (spec §12.2).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub url_parts: Option<Vec<StringPart>>,
+    /// In the expanded tree, whether `url` is the place of a pack's file, which the host maps to where it serves it
+    /// (spec §12.3).
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub pack: bool,
     /// Where the image is.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub position: Option<Position>,

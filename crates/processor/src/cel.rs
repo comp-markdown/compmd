@@ -20,6 +20,7 @@ mod tests;
 pub(crate) mod time;
 mod types;
 mod value;
+mod variables;
 
 pub use eval::BUDGET;
 pub use types::Type;
@@ -272,5 +273,11 @@ impl Program {
     /// budget spent.
     pub fn evaluate(&self, values: &Values, functions: &dyn Functions) -> Result<Value, Error> {
         eval::evaluate(&self.expr, values, functions, BUDGET)
+    }
+
+    /// The variables the program reads, each once, in the order it reads them; a comprehension's own variable is
+    /// left out.
+    pub(crate) fn variables(&self) -> Vec<String> {
+        variables::variables(&self.expr)
     }
 }

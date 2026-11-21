@@ -105,7 +105,7 @@ An **inline** use, `:gardener[Maya Okafor (plot 1)]{…}`, puts the body's text 
 
 **The fallback in the body.** A component used as a leaf or inline has its fallback in its body as `{{md.fallback}}`. The pill's body can be that and nothing more, so `:new-label[new]` and `:new-label[beta]` say what their brackets say, and a plain viewer shows the same word. An image's alt text takes it too: a figure whose body is `![{{md.fallback}}]({{src}})` above `{{md.fallback}}` has one sentence as its caption and as what a screen reader says of the picture. A component with slots has no fallback of its own (its slots are), so it can't use it (`F014`).
 
-**Links from a use.** A link or an image in the body whose address starts with a param, `[{{title}}]({{href}})`, goes where the use says, from the document that uses it: `href=harvest.comp.md` is the page next to that document. One whose address starts with text, `![](./icons/{{icon}}.svg)`, is the component's own file, next to the definition.
+**Links from a use.** A link or an image in the body whose address starts with a param, `[{{title}}]({{href}})`, goes where the use says, from the document that uses it: `href=harvest.comp.md` is the page next to that document. One whose address starts with text, `![](./icons/{{icon}}.svg)`, is the component's own file, next to the definition: in a file your document imports, the page finds it there, and in a pack, in the pack, wherever the document is.
 
 The processor checks every use against the signature, and says what's wrong:
 

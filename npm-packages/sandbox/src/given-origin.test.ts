@@ -56,6 +56,13 @@ describe("where the frames and modules are", () => {
     expect(found({ base: "/sandbox/" }).modules, "no modules given").toBeUndefined();
   });
 
+  it("serves a pack's files under the origin, from the root of the page's own, and has none without an origin", () => {
+    const star = "@acme/kit@1.4.2/icons/star.svg";
+    expect(found({ origin: "app://localhost", frames: FRAMES }).packFile?.(star)).toBe(`app://localhost/packs/${star}`);
+    expect(found({ origin: "/compmd", frames: FRAMES }).packFile?.(star), "on the page's origin").toBe(`/compmd/packs/${star}`);
+    expect(found({ base: "/sandbox/" }).packFile).toBeUndefined();
+  });
+
   it("has no URL for a module's path without an origin", () => {
     const { modules } = found({ base: "/sandbox/", modules: () => ({ path: "packs/x", integrity: "sha384-a" }) });
     expect(modules?.(place)).toBeUndefined();

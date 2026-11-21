@@ -2,12 +2,13 @@
 //! definition's slots and breakpoint values, how its headings are leveled, and the origin of what it makes.
 
 use super::Expander;
-use crate::cel::{Type, Value, Values};
+use crate::cel::{Program, Type, Value, Values};
 use crate::context::key;
 use crate::expanded::Origin;
 use crate::resolve::DocumentId;
-use crate::tree::{Node, Slot};
+use crate::tree::{Node, ParamValue, Slot, StringPart};
 use crate::validate::scope::Scope;
+use std::collections::HashMap;
 use std::rc::Rc;
 
 /// What a piece of a document sees.
@@ -27,6 +28,9 @@ pub(super) struct Env<'r> {
     pub(super) shift: Option<u8>,
     /// In a body: the range of the invocation in the processed document that led to it, every node's origin.
     pub(super) origin: Option<Origin>,
+    /// The names whose values came from a caller, each with the document whose relative paths its value follows
+    /// (spec §8.6): a body's params its caller gave, and `each` names over one of them.
+    pub(super) bases: Rc<HashMap<String, DocumentId>>,
 }
 
 /// The slots of a `compmd` component's invocation, expanded where its body places them.
@@ -61,7 +65,41 @@ impl<'r> Env<'r> {
             breakpoints: None,
             shift: None,
             origin: None,
+            bases: Rc::default(),
         }
+    }
+
+    /// The document a value read from `name` (a variable, or a path's first name) resolves its relative paths
+    /// against: the caller's that gave it, or this one's.
+    pub(super) fn base_of_name(&self, name: &str) -> DocumentId {
+        let root = name.split(['.', '[']).next().unwrap_or(name);
+        self.bases.get(root).copied().unwrap_or(self.document)
+    }
+
+    /// The document a param's value resolves its relative paths against (spec §8.6): the base of the first name it
+    /// reads that came from a caller, when it starts with an interpolation or is an expression; this one's otherwise.
+    pub(super) fn base_of(&self, value: &ParamValue) -> DocumentId {
+        match value {
+            ParamValue::String(parts) => match parts.first() {
+                Some(StringPart::Interpolation(interpolation)) => {
+                    self.base_of_name(&interpolation.path)
+                }
+                _ => self.document,
+            },
+            ParamValue::Expr(source) => Program::parse(source)
+                .map(|program| program.variables())
+                .unwrap_or_default()
+                .iter()
+                .find(|name| self.bases.contains_key(*name))
+                .map_or(self.document, |name| self.base_of_name(name)),
+            _ => self.document,
+        }
+    }
+
+    /// This environment with `name`'s value resolving its relative paths against the document `base`.
+    pub(super) fn based(mut self, name: &str, base: DocumentId) -> Self {
+        Rc::make_mut(&mut self.bases).insert(name.to_string(), base);
+        self
     }
 
     /// The current value of the input `name`: `null` where inputs aren't seen.

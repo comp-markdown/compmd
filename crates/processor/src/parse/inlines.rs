@@ -58,6 +58,7 @@ impl Converter<'_, '_> {
                 url_parts: self.url_parts(&link.url),
                 url: link.url,
                 title: link.title,
+                pack: false,
                 position: self.source.position(link.position.as_ref()),
             }),
             mdast::Node::Image(image) => Node::Image(Image {
@@ -66,6 +67,7 @@ impl Converter<'_, '_> {
                 url_parts: self.url_parts(&image.url),
                 url: image.url,
                 title: image.title,
+                pack: false,
                 position: self.source.position(image.position.as_ref()),
             }),
             mdast::Node::LinkReference(link) => Node::LinkReference(LinkReference {

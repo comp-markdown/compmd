@@ -1,0 +1,156 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [],
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "image",
+              "alt": "A star",
+              "url": "@acme/kit@1.4.2/icons/star.svg",
+              "title": null,
+              "pack": true
+            },
+            {
+              "type": "text",
+              "value": " "
+            },
+            {
+              "type": "link",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "The guide"
+                }
+              ],
+              "url": "@acme/kit@1.4.2/guide.comp.md#start",
+              "title": null,
+              "pack": true
+            }
+          ]
+        }
+      ],
+      "slots": []
+    },
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [],
+      "children": [
+        {
+          "type": "componentContainer",
+          "name": "box",
+          "params": [],
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "link",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Read on"
+                    }
+                  ],
+                  "url": "harbour.comp.md",
+                  "title": null
+                }
+              ]
+            }
+          ],
+          "slots": []
+        }
+      ],
+      "slots": []
+    },
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [],
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "image",
+              "alt": "The quay",
+              "url": "images/quay.jpg",
+              "title": null
+            }
+          ]
+        }
+      ],
+      "slots": []
+    },
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [],
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "image",
+              "alt": "A note",
+              "url": "./parts/note.svg",
+              "title": null
+            },
+            {
+              "type": "text",
+              "value": " "
+            },
+            {
+              "type": "link",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Home"
+                }
+              ],
+              "url": "./index.comp.md",
+              "title": null
+            }
+          ]
+        }
+      ],
+      "slots": []
+    },
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [],
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "image",
+              "alt": "Outside",
+              "url": "../outside.svg",
+              "title": null
+            }
+          ]
+        }
+      ],
+      "slots": []
+    },
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "image",
+          "alt": "Our own",
+          "url": "./own.svg",
+          "title": null
+        }
+      ]
+    }
+  ]
+}

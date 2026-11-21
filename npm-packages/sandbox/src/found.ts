@@ -30,20 +30,36 @@ export interface Where {
 export const NO_FRAMES = "createSandbox needs where its frames are: the bundle's `frames` (`virtual:compmd`'s `sandbox`) with its origin (an adapter's `__COMPMD__`), or a `base`";
 
 /**
- * `given` with the frames' `base`, and `modules` with each path under the origin made a URL.
+ * `href` as the page links to it: from the root of the page's own origin when it is on it, so the image gate takes a
+ * pack's image for the host's own, as a relative one (spec §15), and never asks the reader about it.
+ */
+function fromThisPage(href: string | undefined): string | undefined {
+  if (href === undefined) return undefined;
+  const url = new URL(href);
+  return url.origin === location.origin ? `${url.pathname}${url.search}${url.hash}` : href;
+}
+
+/** The URL of a pack's file by its place (`@acme/kit@1.4.2/icons/star.svg`), as the renderer's `packFile` asks it. */
+export type PackFile = (place: string) => string | undefined;
+
+/**
+ * `given` with the frames' `base`, `modules` with each path under the origin made a URL, and, with an origin,
+ * `packFile`: a pack's file under it, at `packs/<place>`, where the bundle and the host's store serve them.
  *
  * @throws Error when neither the bundle's frames with an origin nor a `base` say where the frames are.
  */
-export function found<T extends Where>(given: T): Omit<T, "modules"> & { base: string; modules?: ModuleSource } {
+export function found<T extends Where>(given: T): Omit<T, "modules"> & { base: string; modules?: ModuleSource; packFile?: PackFile } {
   const { modules, ...rest } = given;
   const origin = given.origin ?? givenOrigin();
   const at = (path: string): string | undefined => (origin === undefined ? undefined : new URL(path, new URL(origin.replace(/\/*$/, "/"), location.href)).href);
   const base = given.base ?? (given.frames === undefined ? undefined : at(given.frames));
   if (base === undefined) throw new Error(NO_FRAMES);
-  if (!modules) return { ...rest, base };
+  const packs = origin === undefined ? {} : { packFile: (place: string) => fromThisPage(at(`packs/${place}`)) };
+  if (!modules) return { ...rest, base, ...packs };
   return {
     ...rest,
     base,
+    ...packs,
     modules: (module) => {
       const source = modules(module);
       if (!source || !("path" in source)) return source;

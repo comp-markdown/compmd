@@ -51,6 +51,11 @@ export interface SurfaceOptions {
   /** Where a wiki link points; without an answer it shows its label. */
   wikiLink?(target: string): string | undefined;
   /**
+   * The URL the host serves a pack's file at, from its place (`@acme/kit@1.4.2/icons/star.svg`): a link or an image
+   * from a pack's definition names one (spec §12.3). Without an answer the link shows its text, the image its alt.
+   */
+  packFile?(place: string): string | undefined;
+  /**
    * The host's own URL schemes, such as `app` for its own pages and files (spec §15): links, wiki links and images, in
    * Markdown and raw HTML, may use them as well as `https:`, `http:` and `mailto:`. A click on such a link is the host's
    * to handle, as a click on any link is; such an image loads as `images` gives it, or from its `src` without it.
@@ -143,6 +148,7 @@ export function surfaceOf(document: Document, stylesheet: Stylesheet, schemes: S
     math: options.math,
     highlight: options.highlight,
     wikiLink: options.wikiLink?.bind(options),
+    packFile: options.packFile?.bind(options),
     ownSchemes: ownSchemes(options.ownSchemes ?? []),
     printsFallback: options.printsFallback?.bind(options) ?? (() => false),
     images: options.images,

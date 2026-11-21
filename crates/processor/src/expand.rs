@@ -7,6 +7,7 @@
 
 mod blocks;
 mod components;
+mod destinations;
 mod env;
 mod flow;
 mod layout;

@@ -2,6 +2,7 @@
 //! percent-encoded; an interpolation that never gives a URL its scheme (W109). Adjacent text is joined.
 
 use super::Expander;
+use super::destinations::{self, Destination};
 use super::env::Env;
 use super::origins;
 use crate::cel::Value;
@@ -165,13 +166,16 @@ impl<'r> Expander<'r> {
         out: &mut Vec<expanded::Node>,
     ) {
         let children = self.list(&link.children, env);
-        match self.checked_url(&link.url, link.url_parts.as_deref(), node, env) {
+        let parts = link.url_parts.as_deref();
+        match self.checked_url(&link.url, parts, node, env) {
             Some(url) => {
+                let Destination { url, pack } = self.destination(url, parts, node, env);
                 let content = Content::Link(Link {
                     children,
                     url,
                     title: link.title.clone(),
                     url_parts: None,
+                    pack,
                     position: None,
                 });
                 let made = self.made(content, origins::of(node, env));
@@ -190,15 +194,20 @@ impl<'r> Expander<'r> {
         out: &mut Vec<expanded::Node>,
     ) {
         let alt = self.image_alt(image, env);
-        let content = match self.checked_url(&image.url, image.url_parts.as_deref(), node, env) {
-            Some(url) => Content::Image(Image {
-                alt,
-                url,
-                url_parts: None,
-                alt_parts: None,
-                position: None,
-                ..image.clone()
-            }),
+        let parts = image.url_parts.as_deref();
+        let content = match self.checked_url(&image.url, parts, node, env) {
+            Some(url) => {
+                let Destination { url, pack } = self.destination(url, parts, node, env);
+                Content::Image(Image {
+                    alt,
+                    url,
+                    url_parts: None,
+                    alt_parts: None,
+                    pack,
+                    position: None,
+                    ..image.clone()
+                })
+            }
             None => Content::Text(super::literal(&alt)),
         };
         let made = self.made(content, origins::of(node, env));
@@ -228,6 +237,36 @@ impl<'r> Expander<'r> {
             return None;
         }
         Some(url)
+    }
+
+    /// A link's or an image's URL as the expanded tree writes it (spec §8.6, §12.3), resolved against the document it
+    /// is written in, or the caller's that gave the param it starts with; kept as written, with F026, when its path
+    /// leaves its root.
+    fn destination(
+        &mut self,
+        url: String,
+        parts: Option<&[StringPart]>,
+        node: &Node,
+        env: &Env<'r>,
+    ) -> Destination {
+        let base = match parts {
+            Some([StringPart::Interpolation(interpolation), ..]) => {
+                env.base_of_name(&interpolation.path)
+            }
+            _ => env.document,
+        };
+        let main = &self.resolved.document(self.resolved.main).origin;
+        let origin = &self.resolved.document(base).origin;
+        if let Some(destination) = destinations::resolved(&url, origin, main) {
+            return destination;
+        }
+        self.report(
+            Code::F026,
+            env,
+            start_of(node.position()),
+            format!("`{url}` leaves the root of `{origin}`, so it is kept as written"),
+        );
+        Destination { url, pack: false }
     }
 
     /// An image's alt text with its interpolations filled in, as text; `md.fallback` as the fallback's plain text

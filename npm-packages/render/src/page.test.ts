@@ -155,6 +155,19 @@ describe("Markdown", () => {
     expect(root.querySelector("p")?.innerHTML).toBe('<a href="app:item/7">Books</a><a href="app:item/8">Trip</a><a href="app:page/Home">home</a><span>Other</span>');
   });
 
+  it("links to and shows a pack's files where the host serves them, and without an answer their text and alt", () => {
+    const place = "@acme/kit@1.4.2/icons/star.svg";
+    const nodes = tree(paragraph({ type: "link", url: "@acme/kit@1.4.2/guide.comp.md", title: null, pack: true, children: [text("Guide")] }, { type: "image", url: place, alt: "Star", title: null, pack: true }));
+    page().render(nodes);
+    expect(root.querySelector("p")?.innerHTML).toBe('<span>Guide</span><img alt="Star">');
+    root.remove();
+    page({ packFile: (at) => (at === place ? undefined : `/compmd/packs/${at}`) }).render(nodes);
+    expect(root.querySelector("p")?.innerHTML).toBe('<a href="/compmd/packs/@acme/kit@1.4.2/guide.comp.md">Guide</a><img alt="Star">');
+    root.remove();
+    page({ packFile: (at) => `/compmd/packs/${at}` }).render(nodes);
+    expect(root.querySelector("img")?.getAttribute("src")).toBe(`/compmd/packs/${place}`);
+  });
+
   it("shows images of the host's own schemes, in Markdown and raw HTML, and other schemes' images as their alt text", () => {
     const nodes = tree(
       paragraph(

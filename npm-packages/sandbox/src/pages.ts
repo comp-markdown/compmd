@@ -60,6 +60,8 @@ export function hostPage(container: HTMLElement, runtime: HostRuntime, options: 
     math: framesMath(options.base),
     highlight: runtime.highlight,
     ownSchemes: runtime.schemes,
+    // A pack's own files, which its definitions link to and show (spec §12.3), where the bundle serves the pack.
+    ...(options.packFile ? { packFile: options.packFile } : {}),
     printsFallback: (name) => runtime.printsFallback(name),
     // Images of the host's own schemes from the host's files; remote ones once the reader allows their origin (spec §15).
     images: hostImages(runtime.schemes, options.ownImages, runtime.gate),

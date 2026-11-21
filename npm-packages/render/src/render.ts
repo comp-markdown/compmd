@@ -75,6 +75,8 @@ export interface Surface {
   highlight?: CodeHighlighter | undefined;
   /** Where a wiki link points (spec §2.3); without an answer it renders its label as text. */
   wikiLink?: ((target: string) => string | undefined) | undefined;
+  /** The URL the host serves a pack's file at, from its place (spec §12.3); without an answer it has none. */
+  packFile?: ((place: string) => string | undefined) | undefined;
   /** The host's own URL schemes, checked: links, wiki links and images may use them (spec §15). */
   ownSchemes: readonly string[];
   /** Whether a component's uses print their fallback (spec §7.3, §14). */

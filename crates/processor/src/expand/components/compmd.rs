@@ -13,6 +13,7 @@ use crate::resolve::Component;
 use crate::tree::{DeclaredType, Headings, Node, Param, ParamValue, Signature, SlotDeclaration};
 use crate::validate::scope::Scope;
 use crate::validate::universal::Universal;
+use std::collections::HashMap;
 use std::rc::Rc;
 
 impl<'r> Expander<'r> {
@@ -161,6 +162,7 @@ impl<'r> Expander<'r> {
         let mut at_breakpoints: [Values; 3] = [values.clone(), values.clone(), values.clone()];
         let mut responsive = false;
         let mut templates = Vec::new();
+        let mut bases = HashMap::new();
         for declaration in signature
             .map(|signature| signature.params.as_slice())
             .unwrap_or_default()
@@ -190,6 +192,9 @@ impl<'r> Expander<'r> {
                 (None, None) => return None,
             };
             let variable = declaration.name.replace('-', "_");
+            if let Some(param) = written {
+                bases.insert(variable.clone(), env.base_of(&param.value));
+            }
             let mut current = value.clone();
             for (values, breakpoint) in at_breakpoints.iter_mut().zip(BREAKPOINTS) {
                 let at = mine
@@ -234,6 +239,7 @@ impl<'r> Expander<'r> {
             breakpoints: responsive.then(|| Rc::new(at_breakpoints)),
             shift,
             origin: origins::of(invocation.node, env),
+            bases: Rc::new(bases),
         })
     }
 }

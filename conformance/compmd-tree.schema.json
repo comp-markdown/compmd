@@ -61,6 +61,7 @@
         { "if": { "properties": { "type": { "enum": ["yaml", "toml"] } } }, "then": { "$ref": "#/$defs/yaml" } },
         { "if": { "required": ["urlParts"] }, "then": { "properties": { "urlParts": { "$ref": "#/$defs/stringParts" } } } },
         { "if": { "required": ["altParts"] }, "then": { "properties": { "type": { "const": "image" }, "altParts": { "$ref": "#/$defs/stringParts" } } } },
+        { "if": { "properties": { "type": { "enum": ["link", "image"] } } }, "then": { "properties": { "pack": false } } },
         {
           "if": { "properties": { "type": { "not": { "enum": ["componentContainer", "componentSlot", "componentLeaf", "componentInline", "componentDefinition", "componentSignature", "interpolation", "yaml", "toml"] } } } },
           "then": { "$ref": "#/$defs/mdastParseNode" }
@@ -309,6 +310,11 @@
         },
         { "if": { "properties": { "type": { "const": "code" } }, "required": ["document"] }, "then": { "$ref": "#/$defs/example" } },
         { "if": { "properties": { "type": { "const": "componentPending" } } }, "then": { "$ref": "#/$defs/pendingUse" } },
+        {
+          "description": "A pack's file, by its place (§12.3).",
+          "if": { "properties": { "type": { "enum": ["link", "image"] } } },
+          "then": { "properties": { "pack": { "const": true } } }
+        },
         {
           "if": { "properties": { "type": { "not": { "enum": ["componentContainer", "componentLeaf", "componentInline", "componentSlot"] } } } },
           "then": {

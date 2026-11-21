@@ -135,13 +135,18 @@ impl<'r> Expander<'r> {
             return out.extend(self.list(invocation.slot("empty"), env));
         }
         let template = invocation.default_slot();
+        let base = given
+            .iter()
+            .find(|param| key_of(param) == "in")
+            .map_or(env.document, |param| env.base_of(&param.value));
         let iterations = self.expanding(env, invocation.at(), |this| {
             let mut iterations = Vec::new();
             for index in 0..items.len() {
                 if this.over_limit() {
                     break;
                 }
-                iterations.push(this.list(template, &env.iteration(&name, &items, index)));
+                let inner = env.iteration(&name, &items, index).based(&name, base);
+                iterations.push(this.list(template, &inner));
             }
             iterations
         });

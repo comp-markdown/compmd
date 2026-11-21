@@ -6,7 +6,7 @@
 import type { HostComponent } from "@compmd/processor";
 import { schemeOf, type Change, type ExpandedInput, type ExpandedRoot, type Line, type Source, type Splice } from "@compmd/render";
 import type { SpliceOptions } from "@compmd/render/frame";
-import { found, type Where } from "./found.ts";
+import { found, type PackFile, type Where } from "./found.ts";
 import { HostRuntime, type HostRuntimeOptions, type ModuleSource } from "./host/runtime.ts";
 import { Log, reportedBy, type Observation, type ObservedEvent } from "./observation.ts";
 import { Observer } from "./observer.ts";
@@ -26,7 +26,7 @@ export interface SandboxOptions extends Omit<HostRuntimeOptions, "base" | "modul
 }
 
 /** `SandboxOptions` with the frames' `base` found, and each module's URL. */
-export type FoundOptions = Omit<SandboxOptions, "modules"> & { base: string; modules?: ModuleSource };
+export type FoundOptions = Omit<SandboxOptions, "modules"> & { base: string; modules?: ModuleSource; packFile?: PackFile };
 
 export interface ViewEvents {
   set: { input: string; value: unknown };

@@ -41,14 +41,20 @@ interface Rendering {
 
 const ALERT_TITLES: Record<string, string> = { note: "Note", tip: "Tip", important: "Important", warning: "Warning", caution: "Caution" };
 
-function linkOrText(url: string, title: unknown, children: readonly ExpandedNode[], schemes: readonly string[]): Rendering {
-  const href = safeUrl(url, schemes);
+/** A link's or an image's URL: a pack's file (`pack`) where the host serves it, spec §12.3; `undefined` for none. */
+function urlOf(surface: Surface, node: MarkdownNode): string | undefined {
+  const url = textOf(node.url);
+  return node.pack === true ? surface.packFile?.(url) : url;
+}
+
+function linkOrText(url: string | undefined, title: unknown, children: readonly ExpandedNode[], schemes: readonly string[]): Rendering {
+  const href = url === undefined ? undefined : safeUrl(url, schemes);
   if (href === undefined) return { tag: "span", attributes: {}, children };
   return { tag: "a", attributes: { href, ...(typeof title === "string" && title ? { title } : {}) }, children };
 }
 
-function image(url: string, alt: unknown, title: unknown, schemes: readonly string[]): Rendering {
-  const src = safeUrl(url, schemes);
+function image(url: string | undefined, alt: unknown, title: unknown, schemes: readonly string[]): Rendering {
+  const src = url === undefined ? undefined : safeUrl(url, schemes);
   return { tag: "img", attributes: { ...(src === undefined ? {} : { src }), alt: textOf(alt), ...(typeof title === "string" && title ? { title } : {}) } };
 }
 
@@ -102,9 +108,9 @@ function renderingOf(surface: Surface, node: MarkdownNode, pass: Pass): Renderin
       return { tag: "li", attributes: { class: "compmd-task" }, children: [box, ...children] };
     }
     case "link":
-      return linkOrText(textOf(node.url), node.title, children, surface.ownSchemes);
+      return linkOrText(urlOf(surface, node), node.title, children, surface.ownSchemes);
     case "image":
-      return image(textOf(node.url), node.alt, node.title, surface.ownSchemes);
+      return image(urlOf(surface, node), node.alt, node.title, surface.ownSchemes);
     case "linkReference": {
       const definition = pass.definitions.get(textOf(node.identifier));
       return definition ? linkOrText(definition.url, definition.title, children, surface.ownSchemes) : plain("span");
