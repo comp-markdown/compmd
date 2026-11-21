@@ -113,6 +113,7 @@ impl<'r> Scope<'r> {
             }
             ["md", "slot"] => self.has_slot("default"),
             ["md", "slot", slot] => self.has_slot(slot),
+            ["md", "fallback"] => self.has_fallback(),
             ["md", ..] | [] => false,
             [name, ..] => {
                 self.bindings.iter().any(|(bound, _)| bound == name)
@@ -173,6 +174,28 @@ impl<'r> Scope<'r> {
             })
     }
 
+    /// Whether a body here has its invocation's fallback, `md.fallback` (spec §7.2): a definition's that declares no
+    /// slots, a leaf's or an inline component's; a container's fallback is its slots.
+    fn has_fallback(&self) -> bool {
+        self.definition
+            .is_some_and(|signature| signature.slots.as_ref().is_none_or(Vec::is_empty))
+    }
+
+    /// The slots `md.slots` names in a definition (spec §7.2): the default slot, and those it declares, `-` written `_`.
+    fn slot_names(&self) -> Vec<String> {
+        let declared = self
+            .definition
+            .and_then(|signature| signature.slots.as_ref())
+            .into_iter()
+            .flatten()
+            .map(|slot| slot.name().replace('-', "_"));
+        let mut names: Vec<String> = std::iter::once("default".to_string())
+            .chain(declared)
+            .collect();
+        names.dedup();
+        names
+    }
+
     /// The types of the variables expressions see here.
     pub(crate) fn cel(&self) -> cel::Scope {
         let mut md = BTreeMap::from([
@@ -203,6 +226,14 @@ impl<'r> Scope<'r> {
                 .map(|(name, ty)| ((*name).to_string(), ty.clone()))
                 .collect();
             md.insert("loop".into(), Type::record(fields));
+        }
+        if self.definition.is_some() {
+            let fields = self
+                .slot_names()
+                .into_iter()
+                .map(|name| (name, Type::Bool))
+                .collect();
+            md.insert("slots".into(), Type::record(fields));
         }
         let mut scope = cel::Scope::default().with("md", Type::record(md));
         for (name, declared) in self.params() {

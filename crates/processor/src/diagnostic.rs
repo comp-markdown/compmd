@@ -129,6 +129,8 @@ named! {
         W122 = "W122",
         /// A ```` ```compmd ```` block that would render inside an example, which shows its source.
         W123 = "W123",
+        /// `stretch-link` on a box that holds no link.
+        W124 = "W124",
     }
 }
 

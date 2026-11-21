@@ -91,6 +91,14 @@ impl<'r> Invocation<'r> {
         }
     }
 
+    /// Its fallback, a leaf's or an inline component's (spec §4.5); a container has none of its own.
+    pub(super) fn fallback_text(&self) -> &'r [Node] {
+        match self.kind {
+            Kind::Leaf(leaf) | Kind::Inline(leaf) => &leaf.fallback,
+            Kind::Container(_) | Kind::Code(_) => &[],
+        }
+    }
+
     /// Its named slots.
     pub(super) fn named_slots(&self) -> &'r [tree::Slot] {
         match self.kind {

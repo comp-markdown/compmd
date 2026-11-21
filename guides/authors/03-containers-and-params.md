@@ -136,8 +136,12 @@ Every block, whatever its component, has a box around it, and every component ta
 | `padding-block`, `padding-inline` | the same, for top and bottom only, or for the sides only; two of them for one end, then the other |
 | `padding-block-start`, `padding-block-end`, `padding-inline-start`, `padding-inline-end` | one of them, for one side: the top, the bottom, the side the text starts from, the side it ends at |
 | `border` | `none`, `subtle`, `strong`, or a CSS border such as `"1px dashed"` |
+| `border-block-start`, `border-block-end`, `border-inline-start`, `border-inline-end` | the same, for one side: a line down the side the text starts from is `border-inline-start=strong` |
 | `border-radius` | `none`, `s`, `m`, `l`, `full` for a pill, or a length |
 | `background` | `none`, `subtle`, `strong`, `accent`, or a color such as `#e9f3ff` |
+| `shadow` | `none`, `s`, `m`, `l`: a shadow, so the box stands out of the page |
+| `rotate` | a tilt, from `-15deg` to `15deg`: a note pinned on the page, `rotate=-2deg`; it moves nothing around it |
+| `stretch-link` | a setting: the box's first link takes a click anywhere on the box, as a card that is a link; its other links stay links, and a box with no link gets a warning (`W124`) |
 | `width`, `max-width`, `min-width`, `height` | a length, a percentage, or `auto`: `max-width=32rem` |
 | `aspect-ratio` | width over height, such as `16/9`, or `none` |
 | `object-fit` | how a drawing sits in its box: `contain` (as large as fits, the default), `cover` (filling the box, cropped), `fill` (stretched to it) |

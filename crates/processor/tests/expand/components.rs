@@ -17,10 +17,32 @@ fn slots_are_placed_inline_and_a_body_follows_a_component_without_slots() {
 
 #[test]
 fn inline_components_give_their_paragraph_or_their_fallback() {
-    let input = "```compmd component=badge {padding=s}\nparams:\n  tone: info | warn = info\n---\n**{{tone}}**\n```\n\n```compmd component=two\n---\nOne.\n\nTwo.\n```\n\nA :badge[beta]{tone=warn} and :two[both] and :nope[gone].\n";
+    let input = "```compmd component=badge\nparams:\n  tone: info | warn = info\n---\n**{{tone}}**\n```\n\n```compmd component=two\n---\nOne.\n\nTwo.\n```\n\nA :badge[beta]{tone=warn} and :two[both] and :nope[gone].\n";
     let rendered = render(input, Setup::default());
     assert_eq!(rendered.found, [at("F002", 15, 47)]);
     assert_eq!(text(&rendered.tree), "A warn and both and gone.");
+}
+
+#[test]
+fn an_inline_component_fenced_with_params_is_an_inline_box_of_its_paragraph() {
+    let input = "```compmd component=badge {padding=s display=flex}\nparams:\n  tone: info | warn = info\n---\n**{{tone}}**\n```\n\nA :badge[beta]{tone=warn border=subtle} badge.\n";
+    let rendered = render(input, Setup::default());
+    assert_eq!(rendered.found, []);
+    let badge = &rendered.tree["children"][0]["children"][1];
+    assert_eq!(badge["type"], "componentInline");
+    assert_eq!(badge["name"], "box");
+    let keys: Vec<&str> = badge["params"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|param| param["key"].as_str())
+        .collect();
+    assert_eq!(
+        keys,
+        ["padding", "border"],
+        "the fence's and the caller's, but no layout param"
+    );
+    assert_eq!(badge["fallback"][0]["type"], "strong");
 }
 
 #[test]

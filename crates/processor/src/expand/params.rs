@@ -230,25 +230,45 @@ fn under(fence: Out, caller: &[Out], kept: &mut Vec<Out>) {
     }
 }
 
-/// The parts a shorthand sets: `padding` its block and inline padding, those their two sides.
+/// The parts a shorthand sets: `padding` its block and inline padding, those their two sides; `border` its four
+/// sides.
 fn parts(key: &str) -> &'static [&'static str] {
     match key {
         "padding" => &["padding-block", "padding-inline"],
         "padding-block" => &["padding-block-start", "padding-block-end"],
         "padding-inline" => &["padding-inline-start", "padding-inline-end"],
+        "border" => &BORDER_SIDES,
         _ => &[],
     }
 }
+
+/// `border`'s sides, each of which takes `border`'s whole value.
+const BORDER_SIDES: [&str; 4] = [
+    "border-block-start",
+    "border-block-end",
+    "border-inline-start",
+    "border-inline-end",
+];
 
 /// Whether a param of `key` sets the property `other`: it is the same, or one of its parts.
 fn covers(key: &str, other: &str) -> bool {
     key == other || parts(key).iter().any(|part| covers(part, other))
 }
 
-/// A shorthand's longhands, its one or two values split between them; `None` for a param that isn't one.
+/// A shorthand's longhands, its one or two values split between them (`border`'s value whole on each side); `None`
+/// for a param that isn't one.
 fn longhands(out: &Out) -> Option<Vec<Out>> {
     let names = parts(&out.key);
     let text = out.value.written().ok().flatten()?;
+    let side = |name: &&str| Out {
+        key: (*name).to_string(),
+        breakpoint: out.breakpoint.clone(),
+        value: Value::string(text.trim()),
+        input: None,
+    };
+    if out.key == "border" {
+        return Some(names.iter().map(side).collect());
+    }
     let values: Vec<&str> = text.split_whitespace().collect();
     let (first, second) = match values.as_slice() {
         [one] => (*one, *one),
@@ -349,7 +369,29 @@ mod tests {
             vec![out("padding-block", None, "m")],
         );
         assert_eq!(written(&odd), ["padding=\"s m l\"", "padding-block=\"m\""]);
-        assert!(longhands(&out("border", None, "s")).is_none());
+        assert!(longhands(&out("border-radius", None, "s")).is_none());
+    }
+
+    #[test]
+    fn a_callers_border_side_splits_the_fences_border_into_its_sides_each_whole() {
+        let sides = boxed(
+            vec![out("border", None, "1px solid teal")],
+            vec![out("border-inline-start", None, "strong")],
+        );
+        assert_eq!(
+            written(&sides),
+            [
+                "border-block-start=\"1px solid teal\"",
+                "border-block-end=\"1px solid teal\"",
+                "border-inline-end=\"1px solid teal\"",
+                "border-inline-start=\"strong\""
+            ]
+        );
+        let covered = boxed(
+            vec![out("border-inline-start", None, "strong")],
+            vec![out("border", None, "none")],
+        );
+        assert_eq!(written(&covered), ["border=\"none\""]);
     }
 
     #[test]

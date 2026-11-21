@@ -60,6 +60,7 @@
         { "if": { "properties": { "type": { "const": "interpolation" } } }, "then": { "$ref": "#/$defs/interpolation" } },
         { "if": { "properties": { "type": { "enum": ["yaml", "toml"] } } }, "then": { "$ref": "#/$defs/yaml" } },
         { "if": { "required": ["urlParts"] }, "then": { "properties": { "urlParts": { "$ref": "#/$defs/stringParts" } } } },
+        { "if": { "required": ["altParts"] }, "then": { "properties": { "type": { "const": "image" }, "altParts": { "$ref": "#/$defs/stringParts" } } } },
         {
           "if": { "properties": { "type": { "not": { "enum": ["componentContainer", "componentSlot", "componentLeaf", "componentInline", "componentDefinition", "componentSignature", "interpolation", "yaml", "toml"] } } } },
           "then": { "$ref": "#/$defs/mdastParseNode" }
@@ -311,7 +312,7 @@
         {
           "if": { "properties": { "type": { "not": { "enum": ["componentContainer", "componentLeaf", "componentInline", "componentSlot"] } } } },
           "then": {
-            "properties": { "children": { "type": "array", "items": { "$ref": "#/$defs/expandedNode" } }, "urlParts": false }
+            "properties": { "children": { "type": "array", "items": { "$ref": "#/$defs/expandedNode" } }, "urlParts": false, "altParts": false }
           }
         }
       ]

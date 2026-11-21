@@ -13574,7 +13574,7 @@
       "description": "[Sizing a component in its box](docs/sizing-components.md), *What changes*, `@compmd/pack`.\n\n## Do\n- `draw()` fits what it is given from `context.fit`: an SVG by its `preserveAspectRatio`, an `img` or a `canvas` by CSS's `object-fit`; its own `div` is the box's size.\n- `fitBox(element, fit)` and `fillBox(element)` in `@compmd/pack/component`: the second contains its size (`contain: size`, CSS's 300 by 150 as its natural size).\n- `mountForTest` takes `fit`, and has `setFit`.\n- The test page's **Show boxes** switch, which outlines every use's box.\n- `create-pack`'s templates fit their box; their demos have a use with `width`, one with `height` and one with `object-fit=cover`.\n- The Mermaid and wireframe packs checked in a sized box, and their demos given such a use.\n- [Writing a pack](docs/writing-a-pack.md) and the Developer's Guide say it.\n\n## Tests\nUnit tests of each helper and each mode; the test page's switch in its browser test.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "todo",
       "dependencies": [
         "01a1faa3-d27f-73b4-9632-1833aa21548d"
       ],
@@ -13587,7 +13587,7 @@
         "guides/"
       ],
       "created_at": "2026-11-20T20:26:42Z",
-      "updated_at": "2026-11-21T03:08:20Z",
+      "updated_at": "2026-11-21T12:46:55Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -13603,10 +13603,14 @@
           "at": "2026-11-21T03:08:00Z",
           "kind": "failure",
           "text": "lease expired (claude:79612601)"
+        },
+        {
+          "at": "2026-11-21T12:46:55Z",
+          "kind": "failure",
+          "text": "lease expired (claude:79612601)"
         }
       ],
-      "started_at": "2026-11-21T03:08:20Z",
-      "started_by": "claude:79612601"
+      "commit": "5efc41a223ff4548f249940ff0b1dd81666e918e"
     },
     {
       "id": "01a1faf1-2a8d-7287-a198-24ee970289c1",
@@ -13841,7 +13845,7 @@
         "guides/"
       ],
       "created_at": "2026-11-20T22:47:59Z",
-      "updated_at": "2026-11-21T03:08:22Z",
+      "updated_at": "2026-11-21T12:46:55Z",
       "created_by": "claude:79612601",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -13857,9 +13861,14 @@
           "at": "2026-11-21T03:08:00Z",
           "kind": "failure",
           "text": "lease expired (claude:79612601)"
+        },
+        {
+          "at": "2026-11-21T12:46:55Z",
+          "kind": "failure",
+          "text": "lease expired (claude:79612601)"
         }
       ],
-      "started_at": "2026-11-21T03:08:22Z",
+      "started_at": "2026-11-21T12:46:55Z",
       "started_by": "claude:79612601"
     },
     {

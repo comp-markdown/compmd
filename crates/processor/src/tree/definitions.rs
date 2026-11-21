@@ -197,6 +197,10 @@ named! {
         Border = "border",
         /// A corner radius: a token or a length (spec §9.4).
         Radius = "radius",
+        /// A shadow: `none`, `s`, `m` or `l` (spec §9.4).
+        Shadow = "shadow",
+        /// An angle: degrees from `-15deg` to `15deg` (spec §9.4).
+        Angle = "angle",
         /// A name the author binds, written as is: never read as an expression.
         Name = "name",
         /// Any enum, in `input<enum>`.

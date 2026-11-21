@@ -1,0 +1,115 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [
+        {
+          "key": "border-inline-start",
+          "breakpoint": null,
+          "value": "strong"
+        },
+        {
+          "key": "padding-inline-start",
+          "breakpoint": null,
+          "value": "m"
+        }
+      ],
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "The fence's start border."
+            }
+          ]
+        }
+      ],
+      "slots": []
+    },
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [
+        {
+          "key": "padding-inline-start",
+          "breakpoint": null,
+          "value": "m"
+        },
+        {
+          "key": "border",
+          "breakpoint": null,
+          "value": "none"
+        }
+      ],
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "The caller's "
+            },
+            {
+              "type": "inlineCode",
+              "value": "border"
+            },
+            {
+              "type": "text",
+              "value": " covers the fence's side."
+            }
+          ]
+        }
+      ],
+      "slots": []
+    },
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [
+        {
+          "key": "border-block-start",
+          "breakpoint": null,
+          "value": "subtle"
+        },
+        {
+          "key": "border-block-end",
+          "breakpoint": null,
+          "value": "subtle"
+        },
+        {
+          "key": "border-inline-end",
+          "breakpoint": null,
+          "value": "subtle"
+        },
+        {
+          "key": "border-inline-start",
+          "breakpoint": null,
+          "value": "strong"
+        }
+      ],
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "The fence's "
+            },
+            {
+              "type": "inlineCode",
+              "value": "border"
+            },
+            {
+              "type": "text",
+              "value": ", and the caller's start side over it."
+            }
+          ]
+        }
+      ],
+      "slots": []
+    }
+  ]
+}

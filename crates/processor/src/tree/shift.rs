@@ -275,6 +275,7 @@ impl Shift for Node {
             | Self::InlineMath(literal)
             | Self::Text(literal) => literal.position.shift(by),
             Self::Image(image) => {
+                image.alt_parts.shift(by);
                 image.url_parts.shift(by);
                 image.position.shift(by);
             }

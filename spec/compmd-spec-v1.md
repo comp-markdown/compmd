@@ -514,7 +514,12 @@ slots: [default, footer]
 
 **A block invocation** of a `compmd` component is one box, styled by the fence's params, holding the body (section 9.2).
 
-**An inline invocation** of a `compmd` component (`:badge[beta]{tone=info}`) puts the children of its body's paragraph in the text; a body that isn't a single paragraph renders the fallback. It has no box, so the fence's params don't apply.
+**An inline invocation** of a `compmd` component (`:badge[beta]{tone=info}`) is one inline box, styled by the fence's params under the caller's as a block invocation's is, holding the children of its body's paragraph; a body that isn't a single paragraph renders the fallback. The box is laid out as an inline block, so its padding, border, radius and background apply as they do to a block's. `box`'s own params (`display`, `gap`, …) on the fence don't apply to it, since what it holds is text. In the expanded tree it is a `componentInline` named `box` (section 12.3); an invocation with no params for its box, from its fence or its caller, is its paragraph's content alone, as a box with nothing to style would change nothing.
+
+**What a body knows of its invocation.** Besides its params and slots (section 8.1):
+
+- **`md.fallback`** is a leaf's or an inline invocation's fallback: its rendered content where it is interpolated in text, and its plain text in an image's alt text. A badge's body is `{{md.fallback}}`, and a figure's `![{{md.fallback}}]({{src}})` above `{{md.fallback}}` makes one sentence the caption and the image's alt. A container has no fallback of its own (its slots are), so `md.fallback` in the body of a definition that declares slots is F014.
+- **`md.slots.<name>`** is `true` when the caller gave that slot content, `false` otherwise, `md.slots.default` for the default slot, in the definition's expressions: its fence's params and the expressions in its body. `::: if {when=(md.slots.middle)}` leaves out the box of a slot not given, and a fence's `grid-template-columns=(md.slots.middle ? "1fr 1fr 1fr" : "1fr 1fr")` counts the columns. It isn't a path for interpolation.
 
 **Headings in a body are relative** by default: `#` is one level below the heading the invocation is under, `##` two levels below, and so on, up to level 6; with no heading above the invocation, `#` is level 1. So `card`'s title is an h3 under `## What changed` and an h2 under the document's `#` title, and the outline stays correct wherever `card` is used. Slot content isn't shifted: the caller wrote its levels. A definition whose headings must keep their written level (a title page) declares `headings: absolute` in its signature (section 7.3). The parse tree keeps the written levels; the expanded tree has the computed ones (section 12.3).
 
@@ -527,7 +532,7 @@ A declaration has a short form, a YAML string in this grammar:
 ```abnf
 type-decl = type [ "?" ] [ 1*WSP "=" 1*WSP default ]
 type      = "string" / "number" / "boolean" / "date" / "array" / "object"
-          / "length" / "space" / "color" / "tracks" / "areas" / "surface" / "border" / "radius"
+          / "length" / "space" / "color" / "tracks" / "areas" / "surface" / "border" / "radius" / "shadow" / "angle"
           / "name" / enum / input
 enum      = name 1*( *WSP "|" *WSP name )
 input     = "input<" ( type / "enum" ) ">"          ; a bound input (section 7.4)
@@ -763,6 +768,9 @@ Rated :value[4 of 5]{of=(string(md.doc.rating) + " of 5")}.
 | `md.loop.<field>` | inside `each`           | iteration info (section 8.3)                 |
 | `md.slot`         | `compmd` definition bodies | the default slot's rendered content          |
 | `md.slot.<name>`  | `compmd` definition bodies | that named slot's rendered content, or empty |
+| `md.fallback`     | `compmd` definition bodies of leaves and inline components | the invocation's fallback, rendered; its plain text in an image's alt (section 7.2) |
+
+In a definition's expressions, `md.slots.<name>` is whether the caller gave that slot content (section 7.2).
 
 Everything CompMD provides, variables and functions, is under the `md.` namespace; other names are chosen by authors (params, `as` names and inputs). Authors cannot declare the name `md` (F013).
 
@@ -770,7 +778,7 @@ Everything CompMD provides, variables and functions, is under the `md.` namespac
 
 **Where.**
 
-- In text, in fallback text, in link and image destinations and link reference definitions, in quoted param strings (`title="Step {{n}}"`), and in data `from` values (section 8.6). Unquoted param values take expressions instead (section 8.2).
+- In text, in fallback text, in an image's alt text, in link and image destinations and link reference definitions, in quoted param strings (`title="Step {{n}}"`), and in data `from` values (section 8.6). Unquoted param values take expressions instead (section 8.2).
 - Interpolation is recognized like a code span: before emphasis and links, so `*{{a*}}` is not an interpolation.
 - Never in code spans or code blocks, except in `compmd` definition bodies.
 - Never in raw HTML: `<img src="{{md.doc.logo}}">` stays literal. Use Markdown instead, `![logo]({{md.doc.logo}})`, which gets `urlParts` and the URL scheme rule below.
@@ -832,7 +840,7 @@ A param value written in parentheses, `name=(expr)`, is an expression in the **C
 | `date`                      | `string`                                           | an ISO 8601 calendar date, `"2026-10-21"`            |
 | `array`                     | `list`                                             |                                                      |
 | `object`                    | `map(string, dyn)`                                 |                                                      |
-| `length`, `space`, `color`, `tracks`, `areas`, `surface`, `border`, `radius` | `string` | only `==`, `!=` and string concatenation are allowed; grammars in section 9.4 |
+| `length`, `space`, `color`, `tracks`, `areas`, `surface`, `border`, `radius`, `shadow`, `angle` | `string` | only `==`, `!=` and string concatenation are allowed; grammars in section 9.4 |
 
 **Numbers.** Every number from frontmatter, data, params and inputs is a CEL `double`. Integer literals, `size()`, `md.loop` fields, `md.daysBetween` and list indexes are `int`, as in CEL. The profile adds arithmetic and comparison between `int` and `double`, which gives a `double`: `p.price * 12` and `md.input.rate * 100 > 5` need no conversion. Everything else follows CEL: dividing two `int`s truncates (`size(rows) / 2` with 3 rows is `1`; write `double(size(rows)) / 2`), and a list index must be an `int` (`rows[int(md.input.page)]`). `string()` writes a `double` as interpolation does (section 8.1): `string(1e21)` is `"1e+21"`. Map keys of different number types match by value, as in CEL: `{1: "a"}[1u]` and `{1: "a"}[1.0]` are `"a"`, so `md.groupBy` on a field of whole numbers from data gives `int` keys.
 
@@ -1060,7 +1068,7 @@ md:
 
 **Scope** is lexical: data imported by a pack is visible to that pack's definitions only, never to documents importing the pack.
 
-**Relative paths** resolve against the file they are written in, as `url()` does in CSS. This applies to data `from` and `fallback` values, imports (section 6.1), and link and image destinations in `compmd` definition bodies: `![](./icons/star.svg)` in a pack's `card` is the pack's file wherever `card` is used. Slot content is written by the caller, so its paths resolve against the caller's document. A relative path cannot leave its root, the pack's folder or the document's project folder (which the processor decides): `../` beyond it is F026. Making a pack's files reachable in the output is the processor's job.
+**Relative paths** resolve against the file they are written in, as `url()` does in CSS. This applies to data `from` and `fallback` values, imports (section 6.1), and link and image destinations in `compmd` definition bodies: `![](./icons/star.svg)` in a pack's `card` is the pack's file wherever `card` is used. Slot content is written by the caller, so its paths resolve against the caller's document. So do a body's destinations that start with an interpolation of a param, of a field of one, or of an `each` or template slot name over one: the value came from the caller, so `[{{title}}]({{href}})` in a pack's `link-card` called with `href=harbour.comp.md` links the caller's `harbour.comp.md`. A destination that starts with literal text keeps the definition's base, so `![](./icons/{{icon}}.svg)` is the pack's icon. A relative path cannot leave its root, the pack's folder or the document's project folder (which the processor decides): `../` beyond it is F026. Making a pack's files reachable in the output is the processor's job.
 
 Values in data are never paths: a frontmatter value `logo: ./logo.png`, imported from another folder and used as `![]({{md.data.site.logo}})`, resolves where it is used. Data meant to be used elsewhere SHOULD hold absolute or root-relative URLs.
 
@@ -1245,7 +1253,10 @@ Any container or leaf (built-in or not) accepts these params, applied to its out
 | `padding-inline`, `padding-block`             | one or two spaces (`none`, `s`, `m`, `l` or a length): start, then end | `padding-inline=l`       |
 | `padding-inline-start`, `padding-inline-end`, `padding-block-start`, `padding-block-end` | a space (`none`, `s`, `m`, `l` or a length) | `padding-block-start=s`  |
 | `border`                                      | a token (`none`, `subtle`, `strong`) or a CSS border     | `border=subtle`, `border="1px solid"` |
+| `border-inline-start`, `border-inline-end`, `border-block-start`, `border-block-end` | as `border`, for that side: a token (`none`, `subtle`, `strong`) or a CSS border | `border-inline-start=strong` |
 | `border-radius`                               | a token (`none`, `s`, `m`, `l`, `full`) or a length      | `border-radius=m`        |
+| `shadow`                                      | a token (`none`, `s`, `m`, `l`)                          | `shadow=m`               |
+| `rotate`                                      | an angle in `deg`, from `-15deg` to `15deg`              | `rotate=-2deg`           |
 | `background`                                  | a token (`none`, `subtle`, `strong`, `accent`) or a CSS color | `background=subtle`  |
 | `grid-area`                                   | an area name of the parent's `grid-template-areas`      | `grid-area=side`         |
 | `order`                                       | `first`, `last`, `none`                                 | `order=first`            |
@@ -1258,10 +1269,11 @@ Any container or leaf (built-in or not) accepts these params, applied to its out
 | `scroll`                                      | a flag, or `true` or `false`                            | `scroll`                 |
 | `fill`                                        | a flag, or `true` or `false`                            | `fill`                   |
 | `sticky`                                      | `top`, `bottom`, `none`                                 | `sticky=top`             |
+| `stretch-link`                                | a flag, or `true` or `false`; no breakpoint             | `stretch-link`           |
 | `show`, `hide`                                | `sm`, `md`, `lg`                                        | `show=md`                |
 
 - **The outer box.** Every component invocation that is a block has one box, as a custom element does. A host-language component's box is its `target` (section 7.4). A `compmd` component's box holds its body, whatever its params, body or data: `::: row {height=8rem .toolbar}` is one box with the row's layout, the height and the class, so a block placed by position in it uses that height and `.toolbar > *` selects the row's items.
-  - **The definition styles its box** with its fence's params (section 7), and **the caller's params override them** as a later cascade layer does in CSS: per property, a shorthand counting as its longhands (`padding` covers `padding-block`, `padding-inline` and the four sides), and from the caller's breakpoint up (breakpoints decide where a value applies, not which wins). Classes add up. A `card` fenced `{padding=s md:padding=m}` called with `{padding=l}` has `l` at every width; called with `{md:padding=xl}` it has `s` below `md` and `xl` from `md` up. A `fill`, `grid-area` or `sticky` the box needs wherever it's used goes on the fence: a definition whose body is a filling list view is fenced `{fill}`, or its box is as tall as the list's content.
+  - **The definition styles its box** with its fence's params (section 7), and **the caller's params override them** as a later cascade layer does in CSS: per property, a shorthand counting as its longhands (`padding` covers `padding-block`, `padding-inline` and the four sides; `border` covers its four sides), and from the caller's breakpoint up (breakpoints decide where a value applies, not which wins). Classes add up. A `card` fenced `{padding=s md:padding=m}` called with `{padding=l}` has `l` at every width; called with `{md:padding=xl}` it has `s` below `md` and `xl` from `md` up. A `fill`, `grid-area` or `sticky` the box needs wherever it's used goes on the fence: a definition whose body is a filling list view is fenced `{fill}`, or its box is as tall as the list's content.
   - **`display=contents`** on a `compmd` fence means the component has no box: its blocks are its parent's items (section 9.1), and blocks it places by position are placed in its parent's box. It is written as a bare value with no breakpoint, and only on a definition fence (F009 elsewhere). The fence then takes no other param, and an invocation gives such a component no common params, `class` or `id`, since there is no box for them (W120 for each).
   - Insets follow CSS: a caller's `inset-inline-start` doesn't remove the fence's `inset-inline-end`, so the block stretches between them; `inset-inline-end=auto` moves it instead.
 - **Sizes include padding and border.** `width`, `max-width` and `aspect-ratio` measure the block with its padding and border.
@@ -1271,6 +1283,8 @@ Any container or leaf (built-in or not) accepts these params, applied to its out
 - **`scroll`** makes the block's content scroll inside it, so wide content (a table on a phone) doesn't scroll the page.
 - **`fill`** makes a block take the height its parent leaves; at the top level, the height of the area the processor renders into. Nested `fill` and `scroll` blocks scroll instead of growing past their parent. In a document that flows, with no fixed height, `fill` does nothing.
 - **`sticky`** keeps the block at that edge of the nearest area that scrolls it.
+- **`shadow`** gives the box a shadow, from the visual tokens (section 9.4), so it stands out of the page: a note pinned on it. **`rotate`** turns the box by its angle, about its centre, as CSS's `rotate` does: the blocks around it are laid out as if it weren't turned, and it is drawn turned over them. Both print.
+- **`stretch-link`** makes the box's first link cover the whole box: a click anywhere on the box follows it, as a card that is a link is used, while the box's other links stay above it and work as links. Markdown's links are inline, so no link can hold a box's heading and text; the link keeps its own text, which is its accessible name, and a plain renderer shows the link as it is. The box needs a link: without one, the flag is W124. It is written without a breakpoint.
 - **A block with a position** (an `inset-*` param that isn't `auto`) is taken out of the flow and placed in its **nearest box** in the expanded tree (section 12.3): a `box` (a `compmd` component's box among them), a host-language component's outer box, or one item of a host-language component's slot. `each`, `if`, slots of `compmd` components and `display=contents` components don't count, and neither do list items, quotes and table cells. At the top level, it is placed in the area the processor renders into.
   - It is placed against that box's padding edge: `inset-inline-start` from the start edge (the left in left-to-right languages, the right in right-to-left ones), `inset-inline-end` from the end edge, `inset-block-start` from the top and `inset-block-end` from the bottom. Percentages are of the box's width or height.
   - `width` and `height` size it. Without a `width` it fits its content; with both inline insets it stretches between them.
@@ -1285,7 +1299,7 @@ A layout or common param MAY carry a breakpoint prefix: `md:gap=l` overrides `ga
 
 - **Breakpoints follow a block's nearest box, not the window.** Every param of a block follows the width of its nearest box (section 9.2): its layout (`md:gap`, `md:grid-template-columns`) as well as its size, padding, `show`, `hide`, `order`, `sticky` and self-alignment. At the top level, that is the area the processor renders into. A document shown in a narrow column lays out as on a phone. A processor whose output has no width that changes (a PDF page) uses the width it has. In HTML this is a CSS container query on the nearest box, since CSS lets an element's styles follow an ancestor's width, not its own.
 - **A component follows the box it is in, not its own width.** A `card` fenced `{padding=s md:padding=m}`, in `::: grid {min=14rem}` on a page 1000 px wide, has `m` in every card: the grid is 1000 px wide, though each card is about 320 px.
-- `grid-area`, `scroll`, `fill`, `show` and `hide` take no breakpoint. Positions do: `md:inset-inline-start=60%` places a block from `md` up and leaves it in the flow below, and `md:inset-inline-start=auto` does the reverse. W119 is checked at each breakpoint. A breakpoint on a param that takes none (`md:show=md`, or a param of a host-language component), or a breakpoint other than `sm`, `md` and `lg`, is F008, and the param is ignored.
+- `grid-area`, `scroll`, `fill`, `stretch-link`, `show` and `hide` take no breakpoint. Positions do: `md:inset-inline-start=60%` places a block from `md` up and leaves it in the flow below, and `md:inset-inline-start=auto` does the reverse. W119 is checked at each breakpoint. A breakpoint on a param that takes none (`md:show=md`, or a param of a host-language component), or a breakpoint other than `sm`, `md` and `lg`, is F008, and the param is ignored.
 - **A box that blocks follow has no width from its content.** A box whose blocks use breakpoints (a breakpoint prefix on any of their params, or `show` or `hide`) is the box they follow, so where its width would come from its content, it shrinks to nothing. Such a box needs a `width` when it is:
   - in a `row` (any box with `display=flex` and `flex-direction=row`);
   - in a `stack` (any box with `display=flex` and `flex-direction=column`) and not stretched across it: its `align-self`, or else the stack's `align-items`, isn't `stretch`, or its `justify-self` is `center` or `end`;
@@ -1297,7 +1311,7 @@ A layout or common param MAY carry a breakpoint prefix: `md:gap=l` overrides `ga
 
 ### 9.4 Values and spacing
 
-- **Visual tokens** (`background`, `border` and `border-radius`, types `surface`, `border` and `radius`) work like spaces: a token or a CSS value. The tokens are CSS custom properties with defaults built from the text color, so they suit light and dark text with no stylesheet, and a theme may change them:
+- **Visual tokens** (`background`, `border` and its sides, `border-radius` and `shadow`, types `surface`, `border`, `radius` and `shadow`) work like spaces: a token or a CSS value, but `shadow`, which takes only its tokens. The tokens are CSS custom properties with defaults built from the text color, so they suit light and dark text with no stylesheet, and a theme may change them:
 
   | Token | Custom property | Default |
   | --- | --- | --- |
@@ -1305,9 +1319,11 @@ A layout or common param MAY carry a breakpoint prefix: `md:gap=l` overrides `ga
   | `background=accent` | `--compmd-surface-accent` | `color-mix(in srgb, var(--compmd-accent, #0969da) 12%, transparent)` |
   | `border=subtle`, `strong` | `--compmd-border-subtle`, `--compmd-border-strong` | `1px solid color-mix(in srgb, currentColor 20%, transparent)`, 45% |
   | `border-radius=s`, `m`, `l`, `full` | `--compmd-radius-s`, `-m`, `-l`, `-full` | `4px`, `8px`, `16px`, `9999px` |
+  | `shadow=s`, `m`, `l` | `--compmd-shadow-s`, `-m`, `-l` | `0 1px 2px color-mix(in srgb, currentColor 20%, transparent)`; `0 2px 6px`, 25%; `0 6px 16px`, 30% |
 
-  `none` means no background, border or rounding. No token is a CSS keyword of the same param, so a value is never ambiguous.
+  `none` means no background, border, rounding or shadow. No token is a CSS keyword of the same param, so a value is never ambiguous.
 - **Spaces** (`gap` and the padding params, type `space`) are a token, `none`, `s`, `m` or `l`, or a length. The tokens are the CSS custom properties `--compmd-space-s`, `--compmd-space-m` and `--compmd-space-l`, by default `0.5rem`, `1rem` and `2rem`, which a processor or stylesheet may change. Documents SHOULD use tokens; lengths are for layouts that need exact sizes.
+- **Angles** (`rotate`, type `angle`) are a number of degrees, `deg`, from `-15deg` to `15deg`: enough to tilt a box, and no more, so a box never turns away from the text.
 - **Lengths** are `px`, `rem`, `em` and `%`. **Tracks** (`grid-template-columns`, `grid-template-rows`, type `tracks`) also take `fr`, `auto`, `min-content`, `max-content`, `minmax()` and `repeat()`. **Areas** (`grid-template-areas`, type `areas`) are quoted rows of area names or `.`, all the same length (`"'head head' 'side main'"`). **Colors** and **borders** take CSS syntax.
 - **The vocabulary is closed.** The params in this section are all the layout and styling a document can write. An unknown param is F008 and a value outside its grammar is F009, so no param can pass raw CSS through.
 - **Directions are logical.** Every param says `start` and `end`, `inline` and `block`, never left, right, top or bottom, so a document laid out for a left-to-right language reads correctly right to left.
@@ -1399,6 +1415,7 @@ Every diagnostic MUST name its code, the line and column where it was detected, 
 | W121 | Host-language component's code can't load: an import of something it may not import (section 7.6), a compile error, a built module that doesn't match its file, or a runtime or library its pack's `peerDependencies` name that the processor doesn't have in that range (section 6.4); fallback rendered | the invocation, or the import's `from` for `peerDependencies` |
 | W122 | A signature's `print` is neither `drawn` nor `fallback`, or is in a `compmd` definition (section 7.3); the component prints as drawn  | the value                                                            |
 | W123 | A ` ```compmd ` block with `render=output` or `both` inside an example (section 7.8); it shows its source | the block's opening fence                                            |
+| W124 | `stretch-link` on a box that holds no link (section 9.2): nothing to cover the box with | the block                                                            |
 
 ### 10.3 Recovery rules (lenient mode)
 
@@ -1522,13 +1539,13 @@ A signature is `{params, slots, headings}`, plus `renders`, the list of its lang
 ### 12.2 Rules
 
 - **A block interpolation.** A `interpolation` alone in its paragraph replaces the paragraph and has `block: true`; it can hold block content such as a slot. Elsewhere it is inline (`block: false`).
-- **Interpolation in URLs.** Links, images and link reference definitions keep mdast's `url` as written; when the URL holds an interpolation they add `urlParts`, the same list of text and interpolation parts as a string param.
+- **Interpolation in URLs.** Links, images and link reference definitions keep mdast's `url` as written; when the URL holds an interpolation they add `urlParts`, the same list of text and interpolation parts as a string param. An image's `alt` is kept as written too, with `altParts` when it holds an interpolation.
 - **Frontmatter.** The `yaml` node, or the `toml` node for a TOML frontmatter, adds `parsed`, the frontmatter as parsed, in which each data import's `from` is such a list of parts. (Not `data`: unist reserves that field for tools.) When CompMD processing doesn't apply (F001, F033), `parsed` is absent and the rest of the document is plain CommonMark and GFM.
 - **Recovery.** A node made by a recovery rule (section 10.3) has `recovered: true`. A container closed by recovery has `autoClosed: true` and no `closePosition`. Both fields are absent otherwise.
 
 ### 12.3 The expanded tree
 
-Stage 4b replaces every `compmd` definition, `if`, `each`, `value` and `interpolation` with what it produces. The expanded tree is content only: definition fences, signature fences and the `yaml` node are left out (the parse tree keeps them). It holds mdast nodes, plus `componentContainer`, `componentLeaf` and `componentInline` nodes only for components the processor renders itself: `box`, the input components, and host-language components; and `componentPending` nodes for uses of components still on their way.
+Stage 4b replaces every `compmd` definition, `if`, `each`, `value` and `interpolation` with what it produces. The expanded tree is content only: definition fences, signature fences and the `yaml` node are left out (the parse tree keeps them). It holds mdast nodes, plus `componentContainer`, `componentLeaf` and `componentInline` nodes only for components the processor renders itself: `box` (for an inline invocation of a `compmd` component with params for its box, section 7.2, a `componentInline` `box` whose `fallback` is the body's paragraph, which a renderer that doesn't draw the box shows as it is), the input components, and host-language components; and `componentPending` nodes for uses of components still on their way.
 
 - **Params** of those nodes are `{key, breakpoint, value, position}`, with `value` evaluated (JSON): `{"key": "gap", "breakpoint": "md", "value": "l"}`. All classes, from `.name` and `class`, merge into one `class` param, in written order without duplicates; `#name` is the `id` param. A param whose value is null is left out. `position` is where the param is written in the document, and absent when a definition computed it.
 - **A param bound to an input** (type `input<…>`, section 7.3) has the input's current value as its `value`, and `input`, the input's name: `{"key": "selected", "breakpoint": null, "value": "eu", "input": "region"}`. A renderer gives the component the value, and `set` changes the named input (section 7.4).

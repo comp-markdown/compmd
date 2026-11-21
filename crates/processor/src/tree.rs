@@ -396,6 +396,9 @@ pub struct Link<N = Node> {
 pub struct Image {
     /// The alternative text.
     pub alt: String,
+    /// The alternative text's text and interpolation parts, when it holds an interpolation (spec §8.1, §12.2).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub alt_parts: Option<Vec<StringPart>>,
     /// The source as written.
     pub url: String,
     /// The title.

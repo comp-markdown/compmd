@@ -34,6 +34,12 @@ impl<'r> Checker<'r, '_> {
         if let Some((parts, position)) = url {
             self.url(parts, position, scope);
         }
+        // An image's alt text holds paths as a URL does (spec §8.1): the first of the image's, as its URL's are the last.
+        if let Node::Image(image) = node
+            && let Some((parts, position)) = image.alt_parts.as_deref().zip(image.position)
+        {
+            self.paths(parts, position, scope, true);
+        }
         match node {
             Node::Interpolation(interpolation) => self.interpolation(interpolation, scope),
             Node::ComponentContainer(container) => self.container(container, scope),
@@ -197,6 +203,12 @@ impl<'r> Checker<'r, '_> {
     /// The interpolations of a link's, an image's or a link definition's URL: the last ones in its text, since the
     /// URL follows the link text.
     fn url(&mut self, parts: &[StringPart], position: Position, scope: &Scope) {
+        self.paths(parts, position, scope, false);
+    }
+
+    /// The paths of `parts` checked, each where it is written in the span at `position`: its interpolations are the
+    /// span's last ones (a URL's), or its first ones when `first` (an image's alt).
+    fn paths(&mut self, parts: &[StringPart], position: Position, scope: &Scope, first: bool) {
         let paths: Vec<&str> = parts
             .iter()
             .filter_map(|part| match part {
@@ -207,7 +219,11 @@ impl<'r> Checker<'r, '_> {
         let span = self.lines.span(position);
         let chars: Vec<char> = span.iter().map(|(c, _)| *c).collect();
         let found = interpolations(&chars);
-        let found = &found[found.len().saturating_sub(paths.len())..];
+        let found = if first {
+            &found[..paths.len().min(found.len())]
+        } else {
+            &found[found.len().saturating_sub(paths.len())..]
+        };
         for (path, (index, _)) in paths.into_iter().zip(found) {
             self.path(path, span[*index].1, scope);
         }

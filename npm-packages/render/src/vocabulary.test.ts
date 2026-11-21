@@ -17,7 +17,7 @@ const vocabulary = JSON.parse(readFileSync(join(import.meta.dirname, "../../../c
 /** Tokens CSS takes as they are. */
 const PASSED_THROUGH: Record<string, string[]> = {
   ...Object.fromEntries(["width", "height", "min-width", "max-width", "inset-inline-start", "inset-inline-end", "inset-block-start", "inset-block-end"].map((key) => [key, ["auto"]])),
-  border: ["none"],
+  ...Object.fromEntries(["border", "border-inline-start", "border-inline-end", "border-block-start", "border-block-end", "shadow"].map((key) => [key, ["none"]])),
   "align-self": ["start", "center", "end", "stretch"],
   "justify-self": ["start", "center", "end"],
   display: ["block", "flex", "grid", "contents"],
@@ -27,8 +27,11 @@ const PASSED_THROUGH: Record<string, string[]> = {
   "flex-wrap": ["wrap", "nowrap"],
 };
 
-/** Tokens that mean no CSS at all; `object-fit` and `object-position` are the component's, as `fit` (spec §7.4). */
-const NOTHING: Record<string, string[]> = { sticky: ["none"], "object-fit": ["contain", "cover", "fill"], "object-position": ["start", "center", "end"] };
+/**
+ * Tokens that mean no CSS of the box's own: `object-fit` and `object-position` are the component's, as `fit` (spec
+ * §7.4); `stretch-link` marks the box and its first link instead (stretch-link.ts).
+ */
+const NOTHING: Record<string, string[]> = { sticky: ["none"], "object-fit": ["contain", "cover", "fill"], "object-position": ["start", "center", "end"], "stretch-link": ["true"] };
 
 const names = (list: Known[]) => list.map((param) => param.name);
 

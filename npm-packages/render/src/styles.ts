@@ -19,10 +19,11 @@ export const LAYOUT = ["display", "flex-direction", "gap", "align-items", "justi
 export const COMMON = [
   "width", "height", "min-width", "max-width",
   "padding", "padding-inline", "padding-block", "padding-inline-start", "padding-inline-end", "padding-block-start", "padding-block-end",
-  "border", "border-radius", "background", "grid-area", "order", "align-self", "justify-self", "aspect-ratio",
+  "border", "border-inline-start", "border-inline-end", "border-block-start", "border-block-end", "border-radius",
+  "shadow", "rotate", "background", "grid-area", "order", "align-self", "justify-self", "aspect-ratio",
   "object-fit", "object-position",
   "inset-inline-start", "inset-inline-end", "inset-block-start", "inset-block-end",
-  "scroll", "fill", "sticky", "show", "hide",
+  "scroll", "fill", "sticky", "stretch-link", "show", "hide",
 ];
 export const ATTRIBUTES = ["class", "id", "lang", "dir"];
 const INSETS = ["inset-inline-start", "inset-inline-end", "inset-block-start", "inset-block-end"];
@@ -53,6 +54,12 @@ const RADIUS: Record<string, string> = {
   m: "var(--compmd-radius-m, 8px)",
   l: "var(--compmd-radius-l, 16px)",
   full: "var(--compmd-radius-full, 9999px)",
+};
+const SHADOW: Record<string, string> = {
+  none: "none",
+  s: "var(--compmd-shadow-s, 0 1px 2px color-mix(in srgb, currentColor 20%, transparent))",
+  m: "var(--compmd-shadow-m, 0 2px 6px color-mix(in srgb, currentColor 25%, transparent))",
+  l: "var(--compmd-shadow-l, 0 6px 16px color-mix(in srgb, currentColor 30%, transparent))",
 };
 const CONTENT_ALIGNMENT: Record<string, string> = { between: "space-between", around: "space-around" };
 const ORDER: Record<string, string> = { first: "-1", last: "1", none: "0" };
@@ -93,7 +100,18 @@ function declarationsOf(key: string, value: unknown, parent: ParentLayout): Decl
     case "background":
       return { background: SURFACE[written] ?? written };
     case "border":
-      return { border: BORDER[written] ?? written };
+    case "border-inline-start":
+    case "border-inline-end":
+    case "border-block-start":
+    case "border-block-end":
+      return { [key]: BORDER[written] ?? written };
+    case "shadow":
+      return { "box-shadow": SHADOW[written] ?? "none" };
+    case "rotate":
+      return { rotate: written };
+    // Not CSS of the box's own: the box and its first link are marked (stretch-link.ts), and the base rules draw it.
+    case "stretch-link":
+      return {};
     case "border-radius":
       return { "border-radius": RADIUS[written] ?? written };
     case "justify-content":
@@ -203,6 +221,9 @@ const BASE_RULES = `
 .compmd-box, .compmd-item, .compmd-component { position: relative; box-sizing: border-box; min-inline-size: 0; }
 .compmd-component { display: grid; grid-template-columns: minmax(0, 1fr); grid-auto-rows: minmax(0, auto); }
 :where(span).compmd-component { display: inline-grid; }
+:where(span).compmd-box { display: inline-block; }
+.compmd-stretched::after { content: ""; position: absolute; inset: 0; }
+:where(.compmd-stretch-link) a:not(.compmd-stretched) { position: relative; z-index: 1; }
 .compmd-container { container-type: inline-size; }
 .compmd-fills { display: flex; flex-direction: column; }
 :where(.compmd-both) { display: flex; flex-direction: column; gap: var(--compmd-space-s, 0.5rem); }

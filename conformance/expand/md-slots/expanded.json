@@ -1,0 +1,138 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [
+        {
+          "key": "display",
+          "breakpoint": null,
+          "value": "grid"
+        },
+        {
+          "key": "gap",
+          "breakpoint": null,
+          "value": "m"
+        },
+        {
+          "key": "grid-template-columns",
+          "breakpoint": null,
+          "value": "1fr 1fr"
+        }
+      ],
+      "children": [
+        {
+          "type": "componentContainer",
+          "name": "box",
+          "params": [],
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "The first column."
+                }
+              ]
+            }
+          ],
+          "slots": []
+        },
+        {
+          "type": "componentContainer",
+          "name": "box",
+          "params": [],
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "The last."
+                }
+              ]
+            }
+          ],
+          "slots": []
+        }
+      ],
+      "slots": []
+    },
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [
+        {
+          "key": "display",
+          "breakpoint": null,
+          "value": "grid"
+        },
+        {
+          "key": "gap",
+          "breakpoint": null,
+          "value": "m"
+        },
+        {
+          "key": "grid-template-columns",
+          "breakpoint": null,
+          "value": "1fr 1fr 1fr"
+        }
+      ],
+      "children": [
+        {
+          "type": "componentContainer",
+          "name": "box",
+          "params": [],
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "The first."
+                }
+              ]
+            }
+          ],
+          "slots": []
+        },
+        {
+          "type": "componentContainer",
+          "name": "box",
+          "params": [],
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "The middle."
+                }
+              ]
+            }
+          ],
+          "slots": []
+        },
+        {
+          "type": "componentContainer",
+          "name": "box",
+          "params": [],
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "The last."
+                }
+              ]
+            }
+          ],
+          "slots": []
+        }
+      ],
+      "slots": []
+    }
+  ]
+}

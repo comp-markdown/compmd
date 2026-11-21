@@ -35,6 +35,8 @@ pub(super) struct Slots<'r> {
     pub(super) default: Vec<&'r [Node]>,
     /// The named slots.
     pub(super) named: &'r [Slot],
+    /// A leaf's or an inline invocation's fallback, which `md.fallback` places (spec §7.2); empty for a container.
+    pub(super) fallback: &'r [Node],
     /// The caller's environment, which slot content is expanded in.
     pub(super) env: Env<'r>,
     /// The template slots: each one's elements and the name each is bound to (spec §7.5).
@@ -105,10 +107,15 @@ impl<'r> Env<'r> {
 
 /// `values` with `md.loop` set to `looped`.
 fn with_loop(values: &Values, looped: &Value) -> Values {
+    with_md(values, "loop", looped.clone())
+}
+
+/// `values` with the field `field` of `md` set to `value`.
+pub(super) fn with_md(values: &Values, field: &str, value: Value) -> Values {
     let md = match values.get("md") {
         Some(Value::Map(fields)) => {
             let mut fields = fields.as_ref().clone();
-            fields.insert(key("loop"), looped.clone());
+            fields.insert(key(field), value);
             Value::Map(Rc::new(fields))
         }
         _ => Value::Null,

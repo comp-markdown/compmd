@@ -216,6 +216,78 @@
       "breakpoints": true
     },
     {
+      "name": "border-inline-start",
+      "tokens": [
+        "none",
+        "subtle",
+        "strong"
+      ],
+      "forms": [
+        "border"
+      ],
+      "examples": [
+        "1px solid #d0d7de"
+      ],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
+      "name": "border-inline-end",
+      "tokens": [
+        "none",
+        "subtle",
+        "strong"
+      ],
+      "forms": [
+        "border"
+      ],
+      "examples": [
+        "1px solid #d0d7de"
+      ],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
+      "name": "border-block-start",
+      "tokens": [
+        "none",
+        "subtle",
+        "strong"
+      ],
+      "forms": [
+        "border"
+      ],
+      "examples": [
+        "1px solid #d0d7de"
+      ],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
+      "name": "border-block-end",
+      "tokens": [
+        "none",
+        "subtle",
+        "strong"
+      ],
+      "forms": [
+        "border"
+      ],
+      "examples": [
+        "1px solid #d0d7de"
+      ],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
       "name": "border-radius",
       "tokens": [
         "none",
@@ -229,6 +301,35 @@
       ],
       "examples": [
         "6px"
+      ],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
+      "name": "shadow",
+      "tokens": [
+        "none",
+        "s",
+        "m",
+        "l"
+      ],
+      "forms": [],
+      "examples": [],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
+      "name": "rotate",
+      "tokens": [],
+      "forms": [
+        "angle"
+      ],
+      "examples": [
+        "-2deg"
       ],
       "upTo": 1,
       "flag": false,
@@ -458,6 +559,19 @@
       "flag": false,
       "quoted": true,
       "breakpoints": true
+    },
+    {
+      "name": "stretch-link",
+      "tokens": [
+        "true",
+        "false"
+      ],
+      "forms": [],
+      "examples": [],
+      "upTo": 1,
+      "flag": true,
+      "quoted": false,
+      "breakpoints": false
     },
     {
       "name": "show",

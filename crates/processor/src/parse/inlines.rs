@@ -61,6 +61,7 @@ impl Converter<'_, '_> {
                 position: self.source.position(link.position.as_ref()),
             }),
             mdast::Node::Image(image) => Node::Image(Image {
+                alt_parts: self.url_parts(&image.alt),
                 alt: image.alt,
                 url_parts: self.url_parts(&image.url),
                 url: image.url,
@@ -230,6 +231,7 @@ impl Converter<'_, '_> {
     }
 
     /// A URL's parts, when it holds an interpolation (spec §12.2).
+    /// A URL's or an image's alt text's parts, when it holds an interpolation (spec §8.1, §12.2).
     pub(super) fn url_parts(&self, url: &str) -> Option<Vec<StringPart>> {
         let parts = string_parts(url);
         let interpolated = parts

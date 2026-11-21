@@ -98,7 +98,9 @@ impl Type {
                 | TypeName::Areas
                 | TypeName::Surface
                 | TypeName::Border
-                | TypeName::Radius => Self::Grammar(name.name()),
+                | TypeName::Radius
+                | TypeName::Shadow
+                | TypeName::Angle => Self::Grammar(name.name()),
             },
             DeclaredType::Other(_) => Self::Dyn,
         }

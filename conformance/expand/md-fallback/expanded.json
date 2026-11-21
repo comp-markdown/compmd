@@ -1,0 +1,103 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [],
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "image",
+              "alt": "Boats at the quay, the lamps just lit.",
+              "url": "harbour.jpg",
+              "title": null
+            }
+          ]
+        },
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "Boats at the quay, the lamps "
+            },
+            {
+              "type": "emphasis",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "just"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "value": " lit."
+            }
+          ]
+        }
+      ],
+      "slots": []
+    },
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "The new "
+        },
+        {
+          "type": "componentInline",
+          "name": "box",
+          "params": [
+            {
+              "key": "padding-inline",
+              "breakpoint": null,
+              "value": "s"
+            },
+            {
+              "key": "border-radius",
+              "breakpoint": null,
+              "value": "full"
+            },
+            {
+              "key": "background",
+              "breakpoint": null,
+              "value": "accent"
+            }
+          ],
+          "fallback": [
+            {
+              "type": "text",
+              "value": "beta"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "value": " search."
+        }
+      ]
+    },
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [],
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "{{md.fallback}} A container has no fallback of its own."
+            }
+          ]
+        }
+      ],
+      "slots": []
+    }
+  ]
+}

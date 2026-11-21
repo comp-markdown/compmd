@@ -9,6 +9,7 @@ import { CodeBlockView } from "./markdown-views.ts";
 import { nodesMountOf, runnable } from "./nodes.ts";
 import { PaperFallback } from "./paper.ts";
 import { createView, destroyAll, Matcher, patch, shapeOf, type Pass, type Surface, type View } from "./render.ts";
+import { stretches, stretchFirstLink } from "./stretch-link.ts";
 import { BOX_PARAMS, fills, layoutOf, ownParams, usesBreakpoints, type ParentLayout } from "./styles.ts";
 import { contentOf, isComponent, rendererOf, textOf, type ExpandedCode, type ExpandedComponent, type ExpandedInstance, type ExpandedNode, type MarkdownNode } from "./tree.ts";
 
@@ -166,9 +167,11 @@ export class BoxView implements View {
     const box = node as ExpandedComponent;
     const layout = layoutOf(box.params);
     applyBox(this.dom, box.params, pass.parent, this.#surface.stylesheet, true);
-    const children = box.children ?? [];
+    // An inline box (an inline invocation's, spec §7.2) holds its text as its fallback.
+    const children = (box.type === "componentInline" ? box.fallback : box.children) ?? [];
     markBox(this.dom, children, layout);
     this.#children = patch(this.#surface, this.dom, this.#children, children, { ...pass, parent: layout });
+    stretchFirstLink(this.dom, stretches(box.params));
   }
 
   destroy(): void {

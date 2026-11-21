@@ -19,7 +19,13 @@ named! {
         PaddingBlockStart = "padding-block-start",
         PaddingBlockEnd = "padding-block-end",
         Border = "border",
+        BorderInlineStart = "border-inline-start",
+        BorderInlineEnd = "border-inline-end",
+        BorderBlockStart = "border-block-start",
+        BorderBlockEnd = "border-block-end",
         BorderRadius = "border-radius",
+        Shadow = "shadow",
+        Rotate = "rotate",
         Background = "background",
         GridArea = "grid-area",
         Order = "order",
@@ -35,6 +41,7 @@ named! {
         Scroll = "scroll",
         Fill = "fill",
         Sticky = "sticky",
+        StretchLink = "stretch-link",
         Show = "show",
         Hide = "hide",
         Class = "class",
@@ -62,8 +69,14 @@ impl Universal {
             | Self::PaddingInlineEnd
             | Self::PaddingBlockStart
             | Self::PaddingBlockEnd => Kind::SPACE,
-            Self::Border => Kind::BORDER,
+            Self::Border
+            | Self::BorderInlineStart
+            | Self::BorderInlineEnd
+            | Self::BorderBlockStart
+            | Self::BorderBlockEnd => Kind::BORDER,
             Self::BorderRadius => Kind::RADIUS,
+            Self::Shadow => Kind::SHADOW,
+            Self::Rotate => Kind::ANGLE,
             Self::Background => Kind::SURFACE,
             Self::GridArea => Kind::AREA_NAME,
             Self::Order => Kind::one_of(&["first", "last", "none"][..]),
@@ -72,7 +85,7 @@ impl Universal {
             Self::AspectRatio => Kind::RATIO,
             Self::ObjectFit => Kind::one_of(&["contain", "cover", "fill"][..]),
             Self::ObjectPosition => Kind::POSITIONS,
-            Self::Scroll | Self::Fill => Kind::BOOLEAN,
+            Self::Scroll | Self::Fill | Self::StretchLink => Kind::BOOLEAN,
             Self::Sticky => Kind::one_of(&["top", "bottom", "none"][..]),
             Self::Show | Self::Hide => Kind::one_of(&["sm", "md", "lg"][..]),
             Self::Class | Self::Id => Kind::TEXT,
@@ -90,6 +103,7 @@ impl Universal {
             | Self::ObjectPosition
             | Self::Scroll
             | Self::Fill
+            | Self::StretchLink
             | Self::Show
             | Self::Hide
             | Self::Class
@@ -108,7 +122,13 @@ impl Universal {
             | Self::PaddingBlockStart
             | Self::PaddingBlockEnd
             | Self::Border
+            | Self::BorderInlineStart
+            | Self::BorderInlineEnd
+            | Self::BorderBlockStart
+            | Self::BorderBlockEnd
             | Self::BorderRadius
+            | Self::Shadow
+            | Self::Rotate
             | Self::Background
             | Self::Order
             | Self::AlignSelf
@@ -138,7 +158,13 @@ impl Universal {
             | Self::PaddingBlockStart
             | Self::PaddingBlockEnd
             | Self::Border
+            | Self::BorderInlineStart
+            | Self::BorderInlineEnd
+            | Self::BorderBlockStart
+            | Self::BorderBlockEnd
             | Self::BorderRadius
+            | Self::Shadow
+            | Self::Rotate
             | Self::Background
             | Self::GridArea
             | Self::Order
@@ -154,6 +180,7 @@ impl Universal {
             | Self::Scroll
             | Self::Fill
             | Self::Sticky
+            | Self::StretchLink
             | Self::Show
             | Self::Hide
             | Self::Class
@@ -177,7 +204,13 @@ impl Universal {
             | Self::PaddingBlockStart
             | Self::PaddingBlockEnd
             | Self::Border
+            | Self::BorderInlineStart
+            | Self::BorderInlineEnd
+            | Self::BorderBlockStart
+            | Self::BorderBlockEnd
             | Self::BorderRadius
+            | Self::Shadow
+            | Self::Rotate
             | Self::Background
             | Self::GridArea
             | Self::Order
@@ -193,6 +226,7 @@ impl Universal {
             | Self::Scroll
             | Self::Fill
             | Self::Sticky
+            | Self::StretchLink
             | Self::Show
             | Self::Hide => true,
         }

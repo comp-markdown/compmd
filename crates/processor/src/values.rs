@@ -90,6 +90,10 @@ impl Kind<'static> {
     };
     /// `border-radius`: a radius token or a length.
     pub const RADIUS: Self = kind(&["none", "s", "m", "l", "full"], &[Form::Length], &["6px"]);
+    /// `shadow`: a shadow token, and nothing else (spec §9.4).
+    pub const SHADOW: Self = kind(&["none", "s", "m", "l"], &[], &[]);
+    /// `rotate`: a tilt in degrees.
+    pub const ANGLE: Self = kind(&[], &[Form::Angle], &["-2deg"]);
     /// `background`: a surface token or a CSS color.
     pub const SURFACE: Self = kind(
         &["none", "subtle", "strong", "accent"],
@@ -181,6 +185,8 @@ impl Kind<'static> {
         Self::SPACE,
         Self::SPACES,
         Self::RADIUS,
+        Self::SHADOW,
+        Self::ANGLE,
         Self::SURFACE,
         Self::BORDER,
         Self::COLOR,
@@ -334,6 +340,8 @@ impl TypeName {
             Self::Surface => Kind::SURFACE,
             Self::Border => Kind::BORDER,
             Self::Radius => Kind::RADIUS,
+            Self::Shadow => Kind::SHADOW,
+            Self::Angle => Kind::ANGLE,
             Self::Name => Kind::NAME,
             Self::Enum => Kind::ANY,
         }

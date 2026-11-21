@@ -116,6 +116,8 @@ export interface MdastParseNode {
   children?: ParseNode[];
   /** A link's or an image's URL with interpolations. */
   urlParts?: StringPart[];
+  /** An image's alt text with interpolations (spec §8.1). */
+  altParts?: StringPart[];
   recovered?: true;
   position?: Position;
   [field: string]: unknown;

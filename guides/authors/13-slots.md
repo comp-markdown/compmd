@@ -94,7 +94,7 @@ In the body, `{{md.slot}}` places the default slot's content, and `{{md.slot.job
 
 The body decides where each slot goes. The work day places `jobs` under a heading of its own, and `bring` in a shaded box at the end. A slot can be placed anywhere a block can: in a `box`, in an `if`, even twice.
 
-A slot the use doesn't give is empty, and nothing shows where it is placed. What the body puts around it still does: a work day without `:: #jobs` would still show the heading *On the list*.
+A slot the use doesn't give is empty, and nothing shows where it is placed. What the body puts around it still does: a work day without `:: #jobs` would still show the heading *On the list*. To leave that out too, ask whether the use gave the slot: `md.slots.jobs` is `true` when it did, so `::: if {when=(md.slots.jobs)}` around the heading and the slot shows both or neither. The fence's params can ask too: `grid-template-columns=(md.slots.middle ? "1fr 1fr 1fr" : "1fr 1fr")` gives a middle column only to a use with `:: #middle`.
 
 ## Filling slots
 

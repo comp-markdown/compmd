@@ -4,13 +4,15 @@
 use super::{Invocation, Kind};
 use crate::breakpoint::BREAKPOINTS;
 use crate::cel::{Value, Values};
-use crate::expand::env::{Env, Slots};
+use crate::context::key;
+use crate::expand::env::{Env, Slots, with_md};
 use crate::expand::params::{boxed, key_of};
 use crate::expand::{Expander, origins};
-use crate::expanded::{self, Container, Content};
+use crate::expanded::{self, Container, Content, Leaf};
 use crate::resolve::Component;
-use crate::tree::{DeclaredType, Headings, Node, Param, ParamValue, SlotDeclaration};
+use crate::tree::{DeclaredType, Headings, Node, Param, ParamValue, Signature, SlotDeclaration};
 use crate::validate::scope::Scope;
+use crate::validate::universal::Universal;
 use std::rc::Rc;
 
 impl<'r> Expander<'r> {
@@ -64,16 +66,66 @@ impl<'r> Expander<'r> {
     ) -> Option<Vec<expanded::Node>> {
         let expanded = self.list(body, body_env);
         if let Kind::Inline(_) = invocation.kind {
-            return match <[expanded::Node; 1]>::try_from(expanded) {
-                Ok([paragraph]) if matches!(paragraph.content, Content::Paragraph(_)) => {
-                    Some(paragraph.content.children().to_vec())
-                }
-                _ => None,
+            let Ok([paragraph]) = <[expanded::Node; 1]>::try_from(expanded) else {
+                return None;
             };
+            if !matches!(paragraph.content, Content::Paragraph(_)) {
+                return None;
+            }
+            let children = paragraph.content.children().to_vec();
+            return Some(self.inline_box(invocation, component, given, env, body_env, children));
         }
         if component.is_contents() {
             return Some(expanded);
         }
+        let params = self.box_params(component, given, env, body_env);
+        let content = Content::ComponentContainer(Container {
+            name: "box".into(),
+            params,
+            children: expanded,
+            instances: None,
+            slots: Vec::new(),
+        });
+        Some(vec![self.made(content, origins::of(invocation.node, env))])
+    }
+
+    /// An inline invocation's box (spec §7.2): its fence's params under the caller's, but `box`'s layout params, as a
+    /// `componentInline` `box` whose `fallback` is the body's paragraph, what a renderer without it shows. Without
+    /// any params it is the paragraph's content alone, as before.
+    fn inline_box(
+        &mut self,
+        invocation: &Invocation<'r>,
+        component: &'r Component,
+        given: &[&'r Param],
+        env: &Env<'r>,
+        body_env: &Env<'r>,
+        children: Vec<expanded::Node>,
+    ) -> Vec<expanded::Node> {
+        let params: Vec<expanded::Param> = self
+            .box_params(component, given, env, body_env)
+            .into_iter()
+            // The common params and the attributes; `box`'s own (`display`, `gap`, …) lay out blocks it doesn't hold.
+            .filter(|param| Universal::from_name(&param.key).is_some())
+            .collect();
+        if params.is_empty() {
+            return children;
+        }
+        let content = Content::ComponentInline(Leaf {
+            name: "box".into(),
+            params,
+            fallback: children,
+        });
+        vec![self.made(content, origins::of(invocation.node, env))]
+    }
+
+    /// A `compmd` component's box params: its fence's under the caller's common params.
+    fn box_params(
+        &mut self,
+        component: &'r Component,
+        given: &[&'r Param],
+        env: &Env<'r>,
+        body_env: &Env<'r>,
+    ) -> Vec<expanded::Param> {
         let signature = component.signature.as_ref();
         let fence = self.fence(component, body_env);
         let common: Vec<&'r Param> = given
@@ -89,14 +141,7 @@ impl<'r> Expander<'r> {
             })
             .collect();
         let caller = self.evaluated(&common, None, env);
-        let content = Content::ComponentContainer(Container {
-            name: "box".into(),
-            params: boxed(fence, caller),
-            children: expanded,
-            instances: None,
-            slots: Vec::new(),
-        });
-        Some(vec![self.made(content, origins::of(invocation.node, env))])
+        boxed(fence, caller)
     }
 
     /// What a `compmd` component's body sees: its document's `md`, the invocation's params or their defaults, by
@@ -168,6 +213,11 @@ impl<'r> Expander<'r> {
                 }
             }
         }
+        let given_slots = given_slots(invocation, signature);
+        values = with_md(&values, "slots", given_slots.clone());
+        for at in &mut at_breakpoints {
+            *at = with_md(at, "slots", given_slots.clone());
+        }
         let relative = signature.is_none_or(|signature| signature.headings == Headings::Relative);
         let shift = relative.then(|| self.heading_depth());
         Some(Env {
@@ -177,6 +227,7 @@ impl<'r> Expander<'r> {
             slots: Some(Rc::new(Slots {
                 default: invocation.default_content(signature),
                 named: invocation.named_slots(),
+                fallback: invocation.fallback_text(),
                 env: env.clone(),
                 templates,
             })),
@@ -185,4 +236,30 @@ impl<'r> Expander<'r> {
             origin: origins::of(invocation.node, env),
         })
     }
+}
+
+/// `md.slots` (spec §7.2): for the default slot and each slot `signature` declares, by its name with `-` written
+/// `_`, whether the caller gave it content.
+fn given_slots(invocation: &Invocation<'_>, signature: Option<&Signature>) -> Value {
+    let default = invocation
+        .default_content(signature)
+        .iter()
+        .any(|nodes| !nodes.is_empty());
+    let declared = signature
+        .and_then(|signature| signature.slots.as_ref())
+        .into_iter()
+        .flatten()
+        .filter(|slot| slot.name() != "default")
+        .map(|slot| {
+            let name = slot.name();
+            (
+                key(&name.replace('-', "_")),
+                Value::Bool(!invocation.slot(name).is_empty()),
+            )
+        });
+    Value::Map(Rc::new(
+        std::iter::once((key("default"), Value::Bool(default)))
+            .chain(declared)
+            .collect(),
+    ))
 }

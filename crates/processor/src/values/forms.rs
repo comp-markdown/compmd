@@ -21,6 +21,8 @@ named! {
         AreaName = "area-name",
         /// Width over height, `16/9`.
         Ratio = "ratio",
+        /// An angle in degrees, from `-15deg` to `15deg`: enough to tilt a box (spec §9.4).
+        Angle = "angle",
         /// A BCP 47 language tag.
         Language = "language",
         /// A finite number.
@@ -57,6 +59,7 @@ impl Form {
             Self::Areas => is_areas(text),
             Self::AreaName => is_css_ident(text),
             Self::Ratio => is_ratio(text),
+            Self::Angle => is_angle(text),
             Self::Language => is_language(text),
             Self::Number => text.parse::<f64>().is_ok_and(f64::is_finite),
             Self::Date => parse_date(text).is_some(),
@@ -87,6 +90,7 @@ impl Form {
             Self::Areas => "quoted rows of area names, all as long",
             Self::AreaName => "an area name",
             Self::Ratio => "a width over a height",
+            Self::Angle => "an angle from `-15deg` to `15deg`",
             Self::Language => "a language tag",
             Self::Number => "a number",
             Self::Date => "a date (`YYYY-MM-DD`)",
@@ -133,6 +137,16 @@ fn with_unit(text: &str, units: &[&str]) -> bool {
 
 pub(crate) fn is_length(text: &str) -> bool {
     text == "0" || with_unit(text, &["px", "rem", "em", "%"])
+}
+
+/// The largest tilt `rotate` takes either way, in degrees.
+const MAX_TILT: f64 = 15.0;
+
+/// `-2deg`, `0deg`, `12.5deg`: degrees, at most `MAX_TILT` either way.
+fn is_angle(text: &str) -> bool {
+    text.strip_suffix("deg")
+        .and_then(number)
+        .is_some_and(|degrees| degrees.abs() <= MAX_TILT)
 }
 
 fn is_ratio(text: &str) -> bool {

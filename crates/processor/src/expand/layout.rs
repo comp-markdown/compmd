@@ -99,6 +99,16 @@ fn visit(block: &Block, around: Around, found: &mut Vec<Diagnostic>) {
             "its blocks use breakpoints, so it follows no width of its content; give it a `width`",
         );
     }
+    if value(block.params, "stretch-link", 0) == Some(&Value::Bool(true))
+        && !holds_link(block.node.content.lists().into_iter().flatten())
+    {
+        report(
+            found,
+            Code::W124,
+            block.node,
+            "`stretch-link` makes the box's first link cover it, and it holds no link",
+        );
+    }
     if let Around::Box(params) = held
         && levels
             .into_iter()
@@ -114,6 +124,14 @@ fn visit(block: &Block, around: Around, found: &mut Vec<Diagnostic>) {
     for inner in &inside {
         visit(inner, held, found);
     }
+}
+
+/// Whether `nodes`, or anything in them, holds a link (spec §9.2, `stretch-link`).
+fn holds_link<'a>(nodes: impl IntoIterator<Item = &'a Node>) -> bool {
+    nodes.into_iter().any(|node| {
+        matches!(node.content, Content::Link(_))
+            || holds_link(node.content.lists().into_iter().flatten())
+    })
 }
 
 fn report(found: &mut Vec<Diagnostic>, code: Code, node: &Node, message: &str) {

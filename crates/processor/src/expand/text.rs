@@ -13,6 +13,9 @@ use std::fmt::Write as _;
 /// The schemes an interpolated URL may have (spec §8.1).
 const SCHEMES: [&str; 3] = ["https", "http", "mailto"];
 
+/// The path that places an invocation's fallback in its body (spec §7.2).
+const FALLBACK: &str = "md.fallback";
+
 impl<'r> Expander<'r> {
     /// An interpolation in a body: `md.slot` places slot content in a definition that declares the slot; any other
     /// path, its value as text, in a paragraph of its own when it stands alone.
@@ -27,6 +30,9 @@ impl<'r> Expander<'r> {
             && env.scope.knows(path)
         {
             return self.slot(slot, interpolation.block, env, out);
+        }
+        if path == FALLBACK && env.scope.knows(path) {
+            return self.placed_fallback(interpolation.block, env, out);
         }
         let start = interpolation
             .position
@@ -81,6 +87,25 @@ impl<'r> Expander<'r> {
                 );
                 Some(written)
             }
+        }
+    }
+
+    /// The invocation's fallback, placed by `{{md.fallback}}` (spec §7.2): its inline content, expanded in the
+    /// caller's environment, in a paragraph of its own when it stands alone.
+    fn placed_fallback(&mut self, block: bool, env: &Env<'r>, out: &mut Vec<expanded::Node>) {
+        let Some(slots) = env.slots.clone() else {
+            return;
+        };
+        let children = self.inline(slots.fallback, &slots.env);
+        if block {
+            let paragraph = Content::Paragraph(tree::Parent {
+                children,
+                position: None,
+            });
+            let made = self.made(paragraph, env.origin);
+            out.push(made);
+        } else {
+            out.extend(children);
         }
     }
 
@@ -164,14 +189,17 @@ impl<'r> Expander<'r> {
         env: &Env<'r>,
         out: &mut Vec<expanded::Node>,
     ) {
+        let alt = self.image_alt(image, env);
         let content = match self.checked_url(&image.url, image.url_parts.as_deref(), node, env) {
             Some(url) => Content::Image(Image {
+                alt,
                 url,
                 url_parts: None,
+                alt_parts: None,
                 position: None,
                 ..image.clone()
             }),
-            None => Content::Text(super::literal(&image.alt)),
+            None => Content::Text(super::literal(&alt)),
         };
         let made = self.made(content, origins::of(node, env));
         out.push(made);
@@ -202,6 +230,41 @@ impl<'r> Expander<'r> {
         Some(url)
     }
 
+    /// An image's alt text with its interpolations filled in, as text; `md.fallback` as the fallback's plain text
+    /// (spec §7.2). An unknown path stays as written (F014, from validating).
+    fn image_alt(&mut self, image: &'r Image, env: &Env<'r>) -> String {
+        let Some(parts) = image.alt_parts.as_deref() else {
+            return image.alt.clone();
+        };
+        let start = image
+            .position
+            .map(|position| position.start)
+            .unwrap_or_default();
+        let at = self.lines[&env.document].path_at(start);
+        let mut alt = String::new();
+        for part in parts {
+            match part {
+                StringPart::Text(text) => alt.push_str(&text.value),
+                StringPart::Interpolation(interpolation)
+                    if interpolation.path == FALLBACK && env.scope.knows(FALLBACK) =>
+                {
+                    if let Some(slots) = env.slots.clone() {
+                        let children = self.inline(slots.fallback, &slots.env);
+                        alt.push_str(&plain_text(&children));
+                    }
+                }
+                StringPart::Interpolation(interpolation) => {
+                    alt.push_str(
+                        &self
+                            .path_text(&interpolation.path, at, env)
+                            .unwrap_or_default(),
+                    );
+                }
+            }
+        }
+        alt
+    }
+
     /// A URL with its interpolations filled in, each value percent-encoded where a URL can't hold it.
     fn url(&mut self, written: &str, parts: Option<&[StringPart]>, env: &Env<'r>) -> String {
         let Some(parts) = parts else {
@@ -229,6 +292,17 @@ impl<'r> Expander<'r> {
         }
         url
     }
+}
+
+/// Inline content as the text a reader reads: its text and code, without its marks.
+fn plain_text(nodes: &[expanded::Node]) -> String {
+    nodes
+        .iter()
+        .map(|node| match &node.content {
+            Content::Text(text) | Content::InlineCode(text) => text.value.clone(),
+            other => plain_text(other.children()),
+        })
+        .collect()
 }
 
 /// The slot `{{md.slot}}` or `{{md.slot.<name>}}` names.

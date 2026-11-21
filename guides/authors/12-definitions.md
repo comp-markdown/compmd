@@ -101,7 +101,11 @@ A bare value is read by its type: `number=1` is the number 1, because the signat
 
 The brackets hold the fallback, as for any leaf: the text a plain viewer shows, and the page shows if the component can't be drawn (chapter 15). Write what the card says: *Plot 3*, or *Plot 1: Maya Okafor, garlic*.
 
-An **inline** use, `:gardener[Maya Okafor (plot 1)]{…}`, puts the body's text in the sentence. That works when the body is one paragraph, as `gardener`'s is; a body of several blocks can't go in a sentence, and an inline use of it shows its fallback.
+An **inline** use, `:gardener[Maya Okafor (plot 1)]{…}`, puts the body's text in the sentence. That works when the body is one paragraph, as `gardener`'s is; a body of several blocks can't go in a sentence, and an inline use of it shows its fallback. When the fence has params, the text goes in a box of its own, in the line, styled by them, so a label can be tinted: a fence `{padding-inline=s border-radius=full background=subtle}` makes `:new-label[new]` a pill in the sentence.
+
+**The fallback in the body.** A component used as a leaf or inline has its fallback in its body as `{{md.fallback}}`. The pill's body can be that and nothing more, so `:new-label[new]` and `:new-label[beta]` say what their brackets say, and a plain viewer shows the same word. An image's alt text takes it too: a figure whose body is `![{{md.fallback}}]({{src}})` above `{{md.fallback}}` has one sentence as its caption and as what a screen reader says of the picture. A component with slots has no fallback of its own (its slots are), so it can't use it (`F014`).
+
+**Links from a use.** A link or an image in the body whose address starts with a param, `[{{title}}]({{href}})`, goes where the use says, from the document that uses it: `href=harvest.comp.md` is the page next to that document. One whose address starts with text, `![](./icons/{{icon}}.svg)`, is the component's own file, next to the definition.
 
 The processor checks every use against the signature, and says what's wrong:
 

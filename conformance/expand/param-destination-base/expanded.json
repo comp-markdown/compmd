@@ -1,0 +1,50 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [],
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "link",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "The harbour at dusk"
+                }
+              ],
+              "url": "harbour.comp.md",
+              "title": null
+            },
+            {
+              "type": "text",
+              "value": " "
+            },
+            {
+              "type": "image",
+              "alt": "",
+              "url": "./icons/star.svg",
+              "title": null
+            }
+          ]
+        },
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "image",
+              "alt": "The quay",
+              "url": "images/quay.jpg",
+              "title": null
+            }
+          ]
+        }
+      ],
+      "slots": []
+    }
+  ]
+}
