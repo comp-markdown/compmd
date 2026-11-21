@@ -1,0 +1,6 @@
+- name: The harbour
+  status: open
+- name: The old orchard
+  status: closed
+- name: The canal
+  status: open

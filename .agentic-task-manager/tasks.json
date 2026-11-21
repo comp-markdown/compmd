@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 369,
+    "next_number": 370,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -11820,7 +11820,7 @@
       "description": "Item 4 of [the first list](docs/first-components.md#:~:text=8%20of%2011%20frameworks%20ship%20cards): a card that is a link, a `compmd` definition on `card`: a title, a description and where it goes, the whole card the link. Its fallback is the link.\n\n## Do\nThe definition, a demo, tests of its expanded tree.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [
         "01a1f870-9ad9-761a-afe5-57c89c4468ad",
         "01a1fb1a-5845-722a-88c3-17bf2a8c3273",
@@ -11831,9 +11831,9 @@
         "compmd-packs/link-card/"
       ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-21T15:18:09Z",
+      "updated_at": "2026-11-21T15:37:56Z",
       "created_by": "Hakan Serce",
-      "updated_by": "claude:79612601",
+      "updated_by": "Hakan Serce",
       "number": 314,
       "sprint_history": [
         {
@@ -11855,10 +11855,32 @@
           "kind": "answer",
           "text": "The whole card as the link: Markdown links are inline, so a link can’t hold the card’s heading and text. Should (a) the title alone be the link, (b) the title be the link with CSS stretching its click area over the card, which a no-code pack can’t ship today (a spec change: a pack’s styles, or a box param for it), or (c) something else? → The title is the link, and the box has `stretch-link`, which makes it cover the card (docs/no-code-components.md, decision 3, approved in CR-37).; Where the link goes: a relative destination in a definition’s body resolves against the pack’s file (spec, Relative paths), so `href=harbour.comp.md` would point into the pack. The processor keeps it as written; the host resolves it. Should the caller write the link themselves (the title as a Markdown link in the card, so its path is theirs, as slot content’s is), or should the spec say a destination made from a param resolves where the param was written? → A destination that starts with a param resolves against the caller, so `href` is the caller’s (decision 1).",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-21T15:28:08Z",
+          "kind": "review",
+          "text": "CR-50: The link-card pack: a card that is a link",
+          "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-21T15:37:56Z",
+          "kind": "note",
+          "text": "Approved: in CR-50 (round 1)",
+          "by": "Hakan Serce"
         }
       ],
       "started_at": "2026-11-21T15:18:09Z",
-      "started_by": "claude:79612601"
+      "started_by": "claude:79612601",
+      "commit": "10a4f02619294604d9e20fe7836cb7fa26d0dad3",
+      "code_reviews": [
+        {
+          "id": "01a1feb8-d4b9-772b-85a6-9850d4116c0b",
+          "ref": "CR-50"
+        }
+      ],
+      "review_requested_at": "2026-11-21T15:28:08Z",
+      "review_state": "approved",
+      "reviewed_at": "2026-11-21T15:37:56Z"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57ca797541ca",
@@ -12096,7 +12118,7 @@
       "description": "Item 7 of [the first list](docs/first-components.md#:~:text=A%20note%20pinned%20on%20the%20page): a note pinned on the page, a tinted box, tilted, with a shadow, placed with `inset-*` (spec §9.2) where it should sit; a `compmd` definition.\n\n## Do\nThe definition, a demo, print and the phone width checked, tests of its expanded tree.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68e81c39ce10",
         "01a1fb1a-5845-722a-88c3-17bf2a8c3273",
@@ -12107,7 +12129,7 @@
         "compmd-packs/sticky-note/"
       ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T22:48:20Z",
+      "updated_at": "2026-11-21T15:29:06Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 318,
@@ -12117,7 +12139,9 @@
           "from": "2026-11-20T10:26:02Z"
         }
       ],
-      "sprint": "Packs 1: the pack tool, no-code components"
+      "sprint": "Packs 1: the pack tool, no-code components",
+      "started_at": "2026-11-21T15:29:06Z",
+      "started_by": "claude:79612601"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57ce340e98a8",
@@ -12174,7 +12198,7 @@
       "description": "Item 9 of [the first list](docs/first-components.md#:~:text=Stars%20from%20a%20value): stars from a value, half stars included, read-only, its own code in the plain binding, strict: a few dozen lines. The website's own pack has one (`website/content/app/`); this is the published one.\n\n## Do\nSignature (`value`, `of`), its label as the text alternative (\"Rated 4 of 5\"), fallback, print, a demo, tests in Chrome and WebKit.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68e81c39ce10",
         "01a1faa3-d27f-73b4-9632-1835b3071707"
@@ -12183,7 +12207,7 @@
         "compmd-packs/rating/"
       ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-21T15:18:00Z",
+      "updated_at": "2026-11-21T15:29:47Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 320,
@@ -12206,6 +12230,18 @@
           "kind": "review",
           "text": "CR-48: The rating pack: a value as stars",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-21T15:29:25Z",
+          "kind": "note",
+          "text": "Approved: in CR-48 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-21T15:29:47Z",
+          "kind": "outcome",
+          "text": "The rating pack: stars from a value, half stars included, labelled, printed, in Chrome and WebKit; approved in CR-48.",
+          "by": "claude:79612601"
         }
       ],
       "started_at": "2026-11-21T15:17:34Z",
@@ -12218,7 +12254,15 @@
         }
       ],
       "review_requested_at": "2026-11-21T15:18:00Z",
-      "review_state": "waiting"
+      "reviews": [
+        {
+          "from": "2026-11-21T15:18:00Z",
+          "to": "2026-11-21T15:29:25Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-21T15:29:47Z",
+      "completed_by": "claude:79612601"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57d0fdf51265",
@@ -14440,7 +14484,7 @@
       "description": "A gallery's, a card's or a figure's images come in different shapes, so their cards are uneven. Galleries elsewhere crop each image to one shape: MUI's `ImageList` (`rowHeight`, `object-fit: cover`), react-photo-album's rows, card grids with a fixed image ratio. CompMD can't: `object-fit` and `object-position` style a component's box (spec §7.4, §9.2), and a `compmd` definition can't style the Markdown image in its body. Found in CR-45.\n\n## Decide first\nHow a definition crops an image to a shape: for example, a box whose only content is an image fits that image in it, by the box's `aspect-ratio` (or `height`), `object-fit` and `object-position`, as a component fits its drawing. Write the design with the maintainer, test it on the gallery, the card and the figure, then the spec text (§9.2, §12.3), its conformance cases, the processor and the renderer.\n\n## Tests\nConformance cases; the renderer's CSS; browser tests in Chrome and WebKit of an image cropped to a ratio, covering and contained, and printed.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "spec/compmd-spec-v1.md",
@@ -14450,7 +14494,7 @@
         "docs/"
       ],
       "created_at": "2026-11-21T14:55:01Z",
-      "updated_at": "2026-11-21T15:18:05Z",
+      "updated_at": "2026-11-21T15:41:02Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -14461,7 +14505,7 @@
       ],
       "sprint": "Packs 1: the pack tool, no-code components",
       "number": 366,
-      "started_at": "2026-11-21T15:01:52Z",
+      "started_at": "2026-11-21T15:41:02Z",
       "started_by": "claude:79612601",
       "commit": "cd6d02ee766a70aa883cbb31eb801b79abccb31b",
       "code_reviews": [
@@ -14470,14 +14514,25 @@
           "ref": "CR-49"
         }
       ],
-      "review_requested_at": "2026-11-21T15:18:05Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-21T15:18:05Z",
           "kind": "review",
           "text": "CR-49: The design: an image cropped to its box",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-21T15:39:01Z",
+          "kind": "note",
+          "text": "Approved: in CR-49 (round 1)",
+          "by": "Hakan Serce"
+        }
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-21T15:18:05Z",
+          "to": "2026-11-21T15:39:01Z",
+          "outcome": "approved"
         }
       ]
     },
@@ -14495,16 +14550,17 @@
       "use_cases": [],
       "status": "todo",
       "dependencies": [
-        "01a1fe9a-821c-7292-b5a0-3d4962820c1a"
+        "01a1fe9a-821c-7292-b5a0-3d4962820c1a",
+        "01a1febf-eadb-72cb-bee4-a8a3a2547009"
       ],
       "files": [
         "compmd-packs/gallery/",
         "compmd-packs/card/"
       ],
       "created_at": "2026-11-21T14:55:01Z",
-      "updated_at": "2026-11-21T14:55:01Z",
+      "updated_at": "2026-11-21T15:36:01Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "sprint_history": [
         {
           "sprint": "Packs 1: the pack tool, no-code components",
@@ -14544,6 +14600,39 @@
       ],
       "sprint": "Packs 1: the pack tool, no-code components",
       "number": 368
+    },
+    {
+      "id": "01a1febf-eadb-72cb-bee4-a8a3a2547009",
+      "name": "grid-auto-rows: every row of a grid as tall as the tallest",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "packs"
+      ],
+      "description": "From CR-50: cards in a `grid` are as tall as the tallest in their row, but rows differ, and CompMD's vocabulary can't make them one height. CSS's `grid-auto-rows: 1fr` does; `grid-template-rows=\"repeat(2, 1fr)\"` does only when the author knows how many rows `min` makes at each width.\n\n## Do\n- **The spec:** `grid-auto-rows` on `box` and `grid` (§9.1), type `tracks`, with breakpoints, meaning CSS's; `::: grid {min=14rem grid-auto-rows=1fr}` in §9.1's examples. The changelog, and conformance cases (a value, a breakpoint, a value `tracks` doesn't take: F009).\n- **The processor:** the param on `box` and `grid`, `params.json` and `llms.txt` (the vocabulary tests).\n- **The renderer:** the CSS, and a browser test in Chrome and WebKit: link cards over two rows, every card one height.\n- **The guides:** the Author's Guide's grid section.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "spec/compmd-spec-v1.md",
+        "spec/CHANGELOG.md",
+        "crates/processor/",
+        "npm-packages/render/src/styles.ts",
+        "conformance/"
+      ],
+      "created_at": "2026-11-21T15:35:52Z",
+      "updated_at": "2026-11-21T15:35:52Z",
+      "created_by": "claude:79612601",
+      "updated_by": "claude:79612601",
+      "sprint_history": [
+        {
+          "sprint": "Packs 1: the pack tool, no-code components",
+          "from": "2026-11-21T15:35:52Z"
+        }
+      ],
+      "sprint": "Packs 1: the pack tool, no-code components",
+      "number": 369
     }
   ]
 }
