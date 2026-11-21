@@ -1,0 +1,113 @@
+# Type in a box: its font, size, weight and text colour
+
+**Status: proposed (2026-11-21, CMD-370).** How a document, or a `compmd` definition, sets the type of a box's text:
+a badge in bold small type, a pull quote larger and in the heading font, a muted caption, a code-like label in the
+monospace font. Found in CR-51: a project's own badges, defined once, can fix their colours, borders and radius, but
+not their type. CompMD's common params (spec §9.2, §9.4) have surfaces, borders, radius, shadow and spacing, and
+nothing for text, so a definition has only Markdown's `**bold**` and `*italic*`, and a box's text is always the
+page's.
+
+**Terms.** A box's **text** is everything it holds that is text: its paragraphs, headings, list items and inline
+content, and the boxes inside it, which inherit it as CSS's inherited properties do. A **type token** is a word a
+type param takes (`l`, `bold`, `heading`, `muted`), a CSS custom property with a default, as the visual tokens are
+(§9.4).
+
+## Decisions
+
+1. **Six common params, named after their CSS properties** (§9.2's naming rule), on every block and on an inline
+   box, each taking breakpoints:
+
+   | Param | Takes | Tokens |
+   | --- | --- | --- |
+   | `font-size` | a token or a length (`em`, `rem`, `%`, `px`) | `s` (0.875em), `m` (1em), `l` (1.25em), `xl` (1.5em) |
+   | `font-weight` | a token | `normal`, `bold` |
+   | `font-style` | a token | `normal`, `italic` |
+   | `font-family` | a token only | `body`, `heading`, `mono` |
+   | `color` | a token or a CSS colour | `muted`, `accent` |
+   | `text-align` | a token | `start`, `center`, `end` |
+
+   The size tokens are in `em`, so a badge in a heading is small for the heading, not for the page.
+   - **Rejected: `line-height`, `letter-spacing`, `text-transform`, `text-decoration`.** No example below needs them,
+     and each is a way to make text harder to read. Kept for later, as gaps.
+   - **Rejected: font names**, `font-family="Georgia, serif"`. A document is read wherever it is shown, and a named
+     font is on the reader's device or isn't, so the document looks different everywhere. The three tokens are the
+     host's fonts: its body text, its headings, its code.
+   - **Rejected: numeric weights**, `font-weight=600`. A host's font may have two weights; `bold` always shows.
+2. **The tokens are custom properties with defaults, as §9.4's,** so a host's theme changes them:
+   `--compmd-font-body` (`inherit`), `--compmd-font-heading` (`inherit`), `--compmd-font-mono`
+   (`ui-monospace, monospace`), `--compmd-text-s` to `--compmd-text-xl` (the sizes above),
+   `--compmd-text-muted` (`color-mix(in srgb, currentColor 65%, transparent)`) and `--compmd-text-accent`
+   (`var(--compmd-accent, #0969da)`). `body` and `heading` are the page's own fonts unless the host says otherwise.
+3. **They are inherited, as CSS's are:** a box's text params reach everything inside it, nested boxes included,
+   until one of them sets its own. Headings keep their sizes relative to the box's (`em`), so a pull quote in `l` has
+   its heading larger too.
+4. **Contrast: W126 only where the processor can tell.** A `color` and a `background` both written as CSS colours on
+   one box, whose contrast is below 4.5:1 (WCAG's AA for text), is W126 at the box. Tokens are built from the text
+   colour and suit light and dark; the processor can't know the page's colours, so it says nothing about them.
+5. **A host-language component's box** applies them to its outer box, so what the component draws in the page
+   inherits them; the component also gets them in its context, as `fit` (§7.4)? **Open, G1.**
+6. **Print and plain readers:** printed as shown. A plain Markdown reader shows the text in its own type.
+
+## In use
+
+````md
+<!-- a project's badges, labels.comp.md -->
+```compmd component=bug
+---
+:badge[{{md.fallback}}]{background="#ffebe9" border="1px solid #cf222e" color="#a40e26" font-size=s font-weight=bold}
+```
+
+```compmd component=api
+---
+:badge[{{md.fallback}}]{font-family=mono font-size=s border=subtle}
+```
+
+<!-- a pull quote -->
+::: box {font-family=heading font-size=l font-style=italic text-align=center padding-block=m}
+The quay floods at high water, and has for three hundred years.
+::: /box
+
+<!-- a callout's muted footnote -->
+::: box {color=muted font-size=s}
+Tide times are for the harbour mouth; add ten minutes for the inner basin.
+::: /box
+
+<!-- a newsletter's masthead, centred, larger on a wide screen -->
+::: box {text-align=center font-family=heading font-size=l md:font-size=xl}
+**The Harbour Letter**, November
+::: /box
+
+<!-- a card whose title is in the heading font: a definition's heading box -->
+```compmd component=story-card {padding=m border=subtle border-radius=m}
+slots: [default]
+---
+::: box {font-family=heading}
+{{md.slot}}
+::: /box
+```
+````
+
+Each reads well in a plain reader, which shows the text without the type, as it shows a box without its border.
+
+## What changes
+
+- **The spec:** §9.2 (the six params), §9.4 (type tokens, their custom properties and defaults; `font-family` taking
+  tokens only), §10 (W126), the changelog; conformance for each param's grammar (F009 for a font name, a numeric
+  weight), a breakpoint, an inline box, and W126.
+- **The processor:** the params in `Universal`, their kinds, W126 on the expanded tree, `params.json` and
+  `llms.txt`.
+- **The renderer:** the CSS, and browser tests in Chrome and WebKit (a badge's size in a heading, inheritance into a
+  nested box, a theme changing a token, print).
+- **The guides:** the Author's Guide's chapter on params; the badge demo's `labels.comp.md` using them.
+
+## Gaps
+
+- **G1. Host-language components:** what draws in the page inherits the type; a sandboxed component, in its own
+  frame, doesn't. Should the context carry the box's type (`type: { family, size, weight, style, color }`), as it
+  carries `fit` and `scheme`, so a chart's labels follow it? Or leave a component's type its own?
+- **G2. Fonts the host doesn't have:** `heading` is the page's font unless the host maps it; a document can't ask
+  for a font of its own. Intended (decision 1), but worth saying in the guide.
+- **G3. Line height, letter spacing, transform, decoration:** left out (decision 1); a later change can add any of
+  them as it adds the others, with tokens.
+- **G4. Contrast against tokens and the page:** W126 sees only two CSS colours on one box; a renderer could check
+  the drawn colours, which no processor can.
