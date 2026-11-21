@@ -5,6 +5,7 @@ export { mountComponent, type ComponentHandle, type ComponentOptions, type Compo
 export { rendersSlots, type NodesContext, type NodesMount, type NodesMounted } from "./nodes.ts";
 export { BOX_PARAMS, Stylesheet } from "./styles.ts";
 export { isRtl } from "./fit.ts";
+export { sameType, typeStyleOf } from "./type-style.ts";
 export { schemeOf } from "./scheme.ts";
 export { Keys, codePointOffset, utf16Offset, type EditRange, type KeyOf, type Keyed } from "./keys.ts";
 export { reveal, REVEALED_MS, type Source } from "./source.ts";

@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 374,
+    "next_number": 376,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -14932,7 +14932,7 @@
       "description": "Found in CMD-348 (columns): `md.lang` and `md.dir` (spec §2.1) set a document's language and direction, but the expanded tree's root (§12.3) carries neither, so no renderer can apply them: an Arabic document renders left to right unless its host sets `dir` itself, and an example (§7.8) whose own frontmatter says `lang: ar` renders in the page's direction. A component's `lang` and `dir` params work, since they are on its box.\n\n## Decide first\nWith the maintainer: the root gets `lang` and `dir` (the document's, `dir` resolved from `lang` when not written), and a renderer sets them on the element it renders into, and on an example's output box. Then a host that renders a document into a page of its own (a blog) sets the page's `<html lang dir>` from them.\n\n## Do\nThe spec (§2.1, §7.8, §12.3, the changelog), the tree schema and conformance; the processor; the renderer (the page's element, an example's box); the hosts that write a page (blog, Vite plugin); browser tests in Chrome and WebKit: an Arabic document and an Arabic example in an English page, laid out right to left. Then the columns demo's right-to-left example can use the frontmatter instead of `dir` on the columns.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [],
       "files": [
         "spec/compmd-spec-v1.md",
@@ -14943,7 +14943,7 @@
         "npm-packages/vite/"
       ],
       "created_at": "2026-11-21T16:58:20Z",
-      "updated_at": "2026-11-21T19:50:02Z",
+      "updated_at": "2026-11-21T20:33:54Z",
       "created_by": "claude:79612601",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -14955,7 +14955,44 @@
       "sprint": "Packs 1: the pack tool, no-code components",
       "number": 371,
       "started_at": "2026-11-21T19:50:02Z",
-      "started_by": "claude:79612601"
+      "started_by": "claude:79612601",
+      "commit": "fbad55a14b1f31a2dd2629eb706529b774d84e30",
+      "code_reviews": [
+        {
+          "id": "01a1ffbf-1da6-7296-9884-075bdce0085f",
+          "ref": "CR-58"
+        }
+      ],
+      "review_requested_at": "2026-11-21T20:14:37Z",
+      "notes": [
+        {
+          "at": "2026-11-21T20:14:37Z",
+          "kind": "review",
+          "text": "CR-58: A document’s lang and dir reach its page and its examples",
+          "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-21T20:26:15Z",
+          "kind": "note",
+          "text": "Approved: in CR-58 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-21T20:33:54Z",
+          "kind": "outcome",
+          "text": "A document’s lang and dir on the expanded root when it writes them, set by the renderer on its page and an example’s box, kept by the blog; approved in CR-58.",
+          "by": "claude:79612601"
+        }
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-21T20:14:37Z",
+          "to": "2026-11-21T20:26:15Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-21T20:33:54Z",
+      "completed_by": "claude:79612601"
     },
     {
       "id": "01a1ff0c-ad59-7684-8887-3abb938bc918",
@@ -14969,7 +15006,7 @@
       "description": "[Type in a box](docs/type-params.md), decision 5 (CR-54): a host-language component gets its box's type two ways, both defaults it may ignore. A sandbox gives the box's type, resolved (tokens as the host's fonts and sizes), to the root of the component's frame, so what it draws there inherits it as in the page; and the context carries it as values, `type: { family, size, weight, style, color, lineHeight, letterSpacing }`, the size in pixels and the colour resolved, `update` called when they change, for a component that draws on a canvas.\n\n## Do\nThe spec (§7.4, §7.6, the changelog); the renderer (the values from the box's computed style), the sandbox (the frame's root, the protocol), the React and Svelte bindings; the Mermaid pack's theme inheriting its labels' font; tests in Chrome and WebKit: a framed component's text following its box, a canvas component given its `type`, an update when the box's type changes.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a1feeb-aada-7653-96de-3c47766d3f06"
       ],
@@ -14980,7 +15017,7 @@
         "compmd-packs/mermaid/"
       ],
       "created_at": "2026-11-21T16:59:43Z",
-      "updated_at": "2026-11-21T16:59:43Z",
+      "updated_at": "2026-11-21T20:14:45Z",
       "created_by": "claude:79612601",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -14990,7 +15027,9 @@
         }
       ],
       "sprint": "Packs 1: the pack tool, no-code components",
-      "number": 372
+      "number": 372,
+      "started_at": "2026-11-21T20:14:45Z",
+      "started_by": "claude:79612601"
     },
     {
       "id": "01a1ff0c-ad59-7684-8887-3abcc6f4d034",
@@ -15028,6 +15067,66 @@
       ],
       "sprint": "Packs 1: the pack tool, no-code components",
       "number": 373
+    },
+    {
+      "id": "01a1ffc7-890a-70b7-a3f6-71516a458a4d",
+      "name": "A drawing given as markup, under a strict style-src: the pack tool's draw, and Mermaid's sizes",
+      "type": "bugfix",
+      "priority": "P1",
+      "labels": [
+        "packs"
+      ],
+      "description": "Reported by an app that runs CompMD's components in its own page: a component that returns its drawing as markup (`@compmd/pack/component`'s `draw`, `drawing.innerHTML = drawn`, `npm-packages/pack/src/component.ts`) brings its CSS as a `<style>` element and `style` attributes, which a page whose `style-src` doesn't allow `'unsafe-inline'` refuses. The Mermaid pack is one (its SVG has both); CompMD's own sandbox frames allow inline styles, so it shows there, but not in such a page. Mermaid also measures its labels while it renders, so with its styles refused its nodes come out the wrong size.\n\n## Decide first\nWith the maintainer: the host contract has no stylesheet for a component (`MountContext`); should it give one (`adopt(css)`, a spec change, §7.4), or does `draw` do it alone through the CSSOM?\n\n## Do\n- **`draw`:** parses a string drawing inert (`DOMParser`), moves each `<style>` into a constructed stylesheet adopted on the target's document (or shadow root), and each `style` attribute through `element.style`, so nothing is refused under a strict `style-src`.\n- **Mermaid:** renders with its styles in place when it measures (or `htmlLabels: false`), so its labels and nodes have their right sizes.\n- **Tests:** a page with `style-src 'self'` (no `'unsafe-inline'`), in Chrome and WebKit: a Mermaid diagram styled and sized as in a frame, no refusal reported; `draw`'s unit tests.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "npm-packages/pack/src/component.ts",
+        "compmd-packs/mermaid/src/mermaid.ts"
+      ],
+      "created_at": "2026-11-21T20:23:49Z",
+      "updated_at": "2026-11-21T20:23:49Z",
+      "created_by": "claude:79612601",
+      "updated_by": "claude:79612601",
+      "sprint_history": [
+        {
+          "sprint": "Packs 1: the pack tool, no-code components",
+          "from": "2026-11-21T20:23:49Z"
+        }
+      ],
+      "sprint": "Packs 1: the pack tool, no-code components",
+      "number": 374
+    },
+    {
+      "id": "01a1ffc7-890a-70b7-a3f6-715280c886ae",
+      "name": "What CompMD puts in a page, under a strict style-src",
+      "type": "test",
+      "priority": "P2",
+      "labels": [
+        "packs"
+      ],
+      "description": "From the same report: CompMD's sandbox frames allow inline styles (`style-src 'self' 'unsafe-inline'`, `npm-packages/sandbox/src/build/policy.ts`), but what the renderer draws in the host's own page may not be allowed there: the renderer's math (MathML), highlighted code (`highlight.ts` sets `style` properties), boxes (constructed sheets, allowed), images and examples, in the sandbox's host page mode and with `@compmd/render` alone.\n\n## Do\nA browser test in Chrome and WebKit of a page with `style-src 'self'` (no `'unsafe-inline'`), rendering math, highlighted code, boxes with params, an example and a component: what the browser refuses (its CSP violation reports) is nothing, or each refusal filed as a task of its own with its fix. Note what a host needs in its policy in the Developer's Guide.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "npm-packages/render/test/browser/",
+        "npm-packages/sandbox/test/"
+      ],
+      "created_at": "2026-11-21T20:23:49Z",
+      "updated_at": "2026-11-21T20:23:49Z",
+      "created_by": "claude:79612601",
+      "updated_by": "claude:79612601",
+      "sprint_history": [
+        {
+          "sprint": "Packs 1: the pack tool, no-code components",
+          "from": "2026-11-21T20:23:49Z"
+        }
+      ],
+      "sprint": "Packs 1: the pack tool, no-code components",
+      "number": 375
     }
   ]
 }

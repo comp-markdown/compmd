@@ -28,9 +28,11 @@ let drawn = 0;
 // Mermaid's configuration is global, so draws go one at a time; a draw that can't read its code fails with Mermaid's
 // message, which the host reports, and the reader sees the code.
 export default draw<Params>(
-  async ({ code, theme }, { scheme }) => {
+  async ({ code, theme }, { scheme, type }) => {
     drawn += 1;
-    mermaid.initialize({ startOnLoad: false, securityLevel: "strict", suppressErrorRendering: true, theme: themeOf(theme, scheme) });
+    // The labels in the box's type (spec §7.4): its font and size, which Mermaid measures them in.
+    const themeVariables = type ? { fontFamily: type.family, fontSize: `${String(type.size)}px` } : {};
+    mermaid.initialize({ startOnLoad: false, securityLevel: "strict", suppressErrorRendering: true, theme: themeOf(theme, scheme), themeVariables });
     try {
       // Mermaid's own markup, sanitized by it (`securityLevel: "strict"`).
       return (await mermaid.render(`compmd-mermaid-${String(drawn)}`, code)).svg;

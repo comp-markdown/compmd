@@ -368,6 +368,21 @@ function start(port: MessagePort): void {
       page?.scheme();
       mounts.scheme(scheme);
     },
+    typeStyle: (style) => {
+      // The use's box's type in the page (spec §7.4), so what the component draws here inherits it as it would there,
+      // and its `context.type` is the box's.
+      Object.assign(document.documentElement.style, {
+        fontFamily: style.family,
+        fontSize: `${String(style.size)}px`,
+        fontWeight: style.weight,
+        fontStyle: style.style,
+        color: style.color,
+        lineHeight: style.lineHeight,
+        letterSpacing: style.letterSpacing,
+      });
+      region?.restyle();
+      page?.restyle();
+    },
     host: (hostPort) => {
       host = hostClient(hostPort);
     },

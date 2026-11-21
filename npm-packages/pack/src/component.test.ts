@@ -135,7 +135,7 @@ describe("draw", () => {
     const mount = draw(() => slow.promise);
     const target = document.createElement("div");
     const fallback = { text: "", element: document.createElement("span") };
-    const mounted = mount(target, { params: {}, slots: {}, set: () => undefined, fallback, headingLevel: 2, scheme: "light", fit: { mode: "contain", x: 0.5, y: 0.5 }, fail: () => undefined, busy: (work) => busy.push(work) });
+    const mounted = mount(target, { params: {}, slots: {}, set: () => undefined, fallback, headingLevel: 2, scheme: "light", fit: { mode: "contain", x: 0.5, y: 0.5 }, type: { family: "serif", size: 16, weight: "400", style: "normal", color: "rgb(0, 0, 0)", lineHeight: "normal", letterSpacing: "normal" }, fail: () => undefined, busy: (work) => busy.push(work) });
     const ended: number[] = [];
     void busy[0]?.then(() => ended.push(1));
     mounted?.update?.({ n: 2 }, {});

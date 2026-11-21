@@ -35,7 +35,7 @@ function setup(observer?: Observer, log: string[] = []) {
 function context(n: number): MountContext {
   const fallback = document.createElement("span");
   fallback.textContent = "fallback";
-  return { params: { n }, slots: {}, set: () => undefined, fallback: { text: "fallback", element: fallback }, headingLevel: 1, scheme: "light", fit: { mode: "contain", x: 0.5, y: 0.5 }, fail: () => undefined, busy: () => undefined };
+  return { params: { n }, slots: {}, set: () => undefined, fallback: { text: "fallback", element: fallback }, headingLevel: 1, scheme: "light", fit: { mode: "contain", x: 0.5, y: 0.5 }, type: { family: "serif", size: 16, weight: "400", style: "normal", color: "rgb(0, 0, 0)", lineHeight: "normal", letterSpacing: "normal" }, fail: () => undefined, busy: () => undefined };
 }
 
 describe("Components", () => {

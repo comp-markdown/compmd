@@ -207,7 +207,9 @@ The second argument is the host contract's context (spec [§7.4](https://compmd.
 
 `mount` runs once per use. It returns an object with two optional functions, or nothing at all when it needs neither:
 
-- **`update(params, slots)`** is called when a param or a slot changes (a reader changed an input, the data changed), and when the scheme or the fit changes, with the same params. The component is the same instance, and keeps its state: update what you drew, don't draw it again from nothing. Read the new values from the arguments; `context.params` and `context.slots` are those of the mount, while `context.scheme` and `context.fit` are always the current ones.
+- **`update(params, slots)`** is called when a param or a slot changes (a reader changed an input, the data changed), and when the scheme, the fit or the box's type changes, with the same params. The component is the same instance, and keeps its state: update what you drew, don't draw it again from nothing. Read the new values from the arguments; `context.params` and `context.slots` are those of the mount, while `context.scheme`, `context.fit` and `context.type` are always the current ones.
+
+Text you draw with HTML or SVG inherits the box's type (`font-size`, `color` and the other type params a document sets), in the page and in a sandbox's frame alike, so leave its font unset and it follows the document. A drawing on a `<canvas>`, which no CSS reaches, takes it from `context.type`: `` ctx.font = `${type.weight} ${type.size}px ${type.family}` ``, and `type.color` for its fill.
 - **`destroy()`** is called before the box is removed: stop timers, remove listeners, unmount a framework.
 
 A throw in `mount` shows the fallback for good, with W118: the component never mounted, so there is nothing to update. A throw in `update` is the same as `fail`: the fallback shows until the next update.

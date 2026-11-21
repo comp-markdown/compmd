@@ -43,6 +43,21 @@ export interface Fit {
   y: 0 | 0.5 | 1;
 }
 
+/**
+ * The type of a component's box (spec §7.4, §9.2), resolved as the box shows it: its font's family, size in pixels,
+ * weight and style, its text colour, line height and letter spacing, as CSS's computed values write them. A
+ * component that draws with CSS inherits them anyway; one that draws on a canvas, which no CSS reaches, uses these.
+ */
+export interface TypeStyle {
+  family: string;
+  size: number;
+  weight: string;
+  style: string;
+  color: string;
+  lineHeight: string;
+  letterSpacing: string;
+}
+
 export interface MountContext {
   params: Params;
   slots: Slots;
@@ -55,6 +70,8 @@ export interface MountContext {
   scheme: Scheme;
   /** How it fits what it draws in its box (`object-fit`, `object-position`); when it changes, the renderer sets it and calls `update`. */
   fit: Fit;
+  /** Its box's type (`font-size`, `color`, …, inherited or its own); when it changes, the renderer sets it and calls `update`. */
+  type: TypeStyle;
   /**
    * The component can't draw what it was given, found after `mount` or `update` returned: W118 with `message`, and the
    * fallback in `target` until the next `update`. Not for a resource that may come back.

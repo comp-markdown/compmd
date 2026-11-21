@@ -40,6 +40,8 @@ export interface Page {
    * each render too, when the reader's preference changes, and when printing starts and ends.
    */
   scheme(): void;
+  /** Reads each component's box's type again, after something around them changed it: those it changed update. */
+  restyle(): void;
   destroy(): void;
   /** The document's stylesheet, for regions and components an editor renders inside the page. */
   readonly stylesheet: Stylesheet;
@@ -185,6 +187,9 @@ export function createPage(root: HTMLElement, options: PageOptions = {}): Page {
     theme,
     scheme() {
       schemes.read();
+    },
+    restyle() {
+      schemes.restyle();
     },
     sourceOf: (node) => sourceIn(blocks.placed(), node, root),
     elementsAt: (offset) => elementsIn(blocks.placed(), offset),

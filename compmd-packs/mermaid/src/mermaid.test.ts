@@ -37,7 +37,9 @@ describe("mermaid", () => {
     const image = shown.target.querySelector("[role=img]");
     expect(image?.getAttribute("aria-label")).toBe("Draft, then review");
     expect(image?.querySelector("svg")?.dataset.code).toBe("graph LR; A --> B");
-    expect(initialize).toHaveBeenCalledWith({ startOnLoad: false, securityLevel: "strict", suppressErrorRendering: true, theme: "default" });
+    // Its labels in the box's type, its font and size as the box shows them.
+    const style = getComputedStyle(shown.target);
+    expect(initialize).toHaveBeenCalledWith({ startOnLoad: false, securityLevel: "strict", suppressErrorRendering: true, theme: "default", themeVariables: { fontFamily: style.fontFamily, fontSize: style.fontSize } });
     shown.destroy();
   });
 

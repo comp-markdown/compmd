@@ -2,7 +2,7 @@
 // gives it, and the frame over a sizer of its component's natural size, which it reports. The host's page frames strict and permissive uses this way,
 // and a permissive frame its strict ones (docs/running-components-in-the-sandbox.md, decision 1).
 
-import { BUSY_MS, type ExpandedInput, type ExpandedUse } from "@compmd/render";
+import { BUSY_MS, sameType, typeStyleOf, type ExpandedInput, type ExpandedUse, type TypeStyle } from "@compmd/render";
 import { framedNode } from "./framed-node.ts";
 import { networkPolicy } from "./frame/narrow.ts";
 import { forSent, sentBlocks, type FrameHighlight } from "./frames-highlight.ts";
@@ -48,6 +48,8 @@ export interface UseFrame {
   styles(urls: readonly string[]): void;
   /** The page's colour scheme, which the frame's document takes. */
   scheme(scheme: Scheme): void;
+  /** Sends the box's type to the frame's root again when it changed: after the host switched its theme. */
+  restyle(): void;
   /** Resolves once the frame has settled after everything sent it, its size applied; or it is gone. */
   settled(): Promise<void>;
   destroy(): void;
@@ -95,6 +97,15 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
     connected = resolve;
   });
   const key = `f${String(nextFrame++)}`;
+  /** The box's type as last sent, which the frame's root has. */
+  let sentType: TypeStyle | undefined;
+  /** Sends the box's type when it changed since it was last sent: its params, a theme, the page's styles. */
+  const restyle = () => {
+    const now = typeStyleOf(target);
+    if (sentType && sameType(now, sentType)) return;
+    sentType = now;
+    child?.typeStyle(now);
+  };
   const { observer } = options;
   const id = observer?.frame(options.level, { kind: "use", component: iframe.title }, options.network);
   const connect = () => {
@@ -142,6 +153,8 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
     for (const [type, listener] of Object.entries(rest)) end.on(type as keyof ChildEvents, listener as (event: unknown) => void);
     if (styles.length > 0) end.styles([...styles]);
     if (scheme) end.scheme(scheme);
+    sentType = typeStyleOf(target);
+    end.typeStyle(sentType);
     end.code([...code]);
     if (tokens) end.send({ type: "theme", tokens: { ...tokens } });
     end.part({ node: framedNode(node, target), inputs: { ...inputs }, ...inExample });
@@ -166,6 +179,8 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
       inputs = nextInputs;
       bound = boundInputs([next]);
       blocks.rendered([next]);
+      // After the render that updates this, once the page has flushed the box's new params.
+      queueMicrotask(restyle);
       child?.part({ node: framedNode(node, target), inputs: { ...inputs }, ...inExample });
     },
     code: (next) => {
@@ -183,7 +198,9 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
     scheme: (next) => {
       scheme = next;
       child?.scheme(next);
+      restyle();
     },
+    restyle,
     settled: async () => {
       // A frame that never loads holds nothing up for longer than a drawing could.
       let timer: ReturnType<typeof setTimeout> | undefined;

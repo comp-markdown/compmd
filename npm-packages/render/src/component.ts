@@ -3,6 +3,7 @@
 import type { ComponentError, ComponentRecovered, Fallback, Mount, Mounted, MountContext, Scheme, Slots } from "./contract.ts";
 import { applyBox } from "./box.ts";
 import { fitOf, isRtl, sameFit } from "./fit.ts";
+import { sameType, typeStyleOf } from "./type-style.ts";
 import { ownParams, type ParentLayout, type Stylesheet } from "./styles.ts";
 import type { ExpandedComponent } from "./tree.ts";
 
@@ -59,13 +60,15 @@ export interface ComponentHandle {
   update(node: ExpandedComponent, next: ComponentUpdate): void;
   /** The colour scheme changed: the component gets it, and an update with the same params and slots. */
   scheme(scheme: Scheme): void;
+  /** Something around the box changed its type (a theme, the frame's root): an update if the type it shows changed. */
+  restyle(): void;
   destroy(): void;
 }
 
 /**
  * Mounts `node`'s component into a new outer box at the end of `target`. The box gets the common params (§9.2); the
- * component gets its own params, its slots, `set`, `fail`, its fallback, its heading level, its colour scheme and its
- * `fit`, and owns what is inside the box. A component that fails, or throws while updating, shows its fallback until its next
+ * component gets its own params, its slots, `set`, `fail`, its fallback, its heading level, its colour scheme, its
+ * `fit` and its box's `type`, and owns what is inside the box. A component that fails, or throws while updating, shows its fallback until its next
  * update; one that throws while mounting shows it for good.
  *
  * @example
@@ -94,6 +97,13 @@ export function mountComponent(target: ParentNode & Node, node: ExpandedComponen
   const shows = (): boolean => showing;
   /** The fit the box's params give, with its direction as it is placed now. */
   const fitNow = () => fitOf(current.params, isRtl(element));
+  /** Takes the box's type as it shows now; whether it changed. */
+  const restyled = (): boolean => {
+    const type = typeStyleOf(element);
+    if (sameType(type, context.type)) return false;
+    context.type = type;
+    return true;
+  };
 
   const showFallback = (lasts: boolean) => {
     element.replaceChildren();
@@ -127,6 +137,7 @@ export function mountComponent(target: ParentNode & Node, node: ExpandedComponen
     headingLevel: options.headingLevel,
     scheme: options.scheme ?? "light",
     fit: fitNow(),
+    type: typeStyleOf(element),
     fail: (message) => {
       fallBack(new Error(message));
     },
@@ -164,8 +175,9 @@ export function mountComponent(target: ParentNode & Node, node: ExpandedComponen
       // An update before a later mount: the component mounts with what it gives.
       context.params = ownParams(current.params);
       context.slots = slots;
-      // Placed now: its direction is its place's.
+      // Placed now: its direction and its type are its place's.
       context.fit = fitNow();
+      context.type = typeStyleOf(element);
       try {
         mounted = mount(element, context) ?? undefined;
       } catch (error) {
@@ -190,11 +202,20 @@ export function mountComponent(target: ParentNode & Node, node: ExpandedComponen
       const fit = fitNow();
       if (!sameFit(fit, context.fit)) context.fit = fit;
       runUpdate();
+      // The box's new params are flushed after the render that updates it: its type is read then, and an update
+      // follows when it changed.
+      queueMicrotask(() => {
+        if (!destroyed && restyled()) runUpdate();
+      });
     },
     scheme(next) {
       if (next === context.scheme) return;
       context.scheme = next;
+      restyled();
       runUpdate();
+    },
+    restyle() {
+      if (restyled()) runUpdate();
     },
     destroy() {
       destroyed = true;

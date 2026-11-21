@@ -1,7 +1,7 @@
 // The sandbox's frame protocol (docs/sandbox-protocol.md): the messages between a frame and its parent, the window
 // that made it. They travel on the port `@compmd/render`'s frame protocol uses too, beside its own.
 
-import type { CodeLines, ExpandedInput, ExpandedUse } from "@compmd/render";
+import type { CodeLines, ExpandedInput, ExpandedUse, TypeStyle } from "@compmd/render";
 
 /**
  * The protocol's version, in `hello` and `ready`: a frame of another version gets nothing. 2 added `highlight` and
@@ -108,6 +108,8 @@ export type ToFrame =
   | { type: "part"; part: Part }
   | { type: "styles"; urls: string[] }
   | { type: "scheme"; scheme: Scheme }
+  /** The use's box's type in the page (spec §7.4), which the frame's root takes, so what the component draws inherits it. */
+  | { type: "type-style"; style: TypeStyle }
   | { type: "host" }
   | { type: "ping"; n: number }
   | ({ type: "compile" } & CompileRequest)
@@ -188,7 +190,7 @@ export type FromFrame =
   | { type: "settled"; seen: number };
 
 /** Every message type, each way: what the schema (`protocol.schema.json`) has too. */
-export const TO_FRAME: readonly ToFrame["type"][] = ["level", "code", "part", "styles", "scheme", "host", "ping", "compile", "observe", "fetched", "images-allowed", "highlighted", "box"];
+export const TO_FRAME: readonly ToFrame["type"][] = ["level", "code", "part", "styles", "scheme", "type-style", "host", "ping", "compile", "observe", "fetched", "images-allowed", "highlighted", "box"];
 export const FROM_FRAME: readonly FromFrame["type"][] = ["ready", "loaded", "set", "error", "recovered", "link", "rendered", "size", "pong", "compiled", "failed", "observed", "image", "allow-origin", "highlight", "settled"];
 
 /** How long a frame waits for its `highlight` to be answered, in ms, when its level doesn't say: the block keeps its text. */
@@ -198,7 +200,7 @@ export const HIGHLIGHT_MS = 5000;
  * The messages that change what a frame shows, the sandbox's and `@compmd/render`'s: a parent counts those it sends, and
  * a frame those it takes, in the order the port keeps, so `settled` says for which it settled.
  */
-export const CHANGES: readonly string[] = ["code", "part", "styles", "scheme", "render", "splices", "theme"];
+export const CHANGES: readonly string[] = ["code", "part", "styles", "scheme", "type-style", "render", "splices", "theme"];
 
 /** Whether `data` is a message that changes what a frame shows. */
 export const isChange = (data: unknown): boolean => typeof data === "object" && data !== null && CHANGES.includes(String((data as { type?: unknown }).type));

@@ -115,6 +115,8 @@ export interface Region {
    * read at each render too, when the reader's preference changes, and when printing starts and ends.
    */
   scheme(): void;
+  /** Reads each component's box's type again, after something around them changed it: those it changed update. */
+  restyle(): void;
   /**
    * The range of the source that made `node`, a node of the region's DOM: as a page's `sourceOf`, from the origins of
    * the nodes last rendered, as given. A region has no splices, so they are the caller's to keep current.
@@ -220,6 +222,9 @@ export function createRegion(target: HTMLElement, options: RegionOptions = {}): 
     },
     scheme() {
       schemes.read();
+    },
+    restyle() {
+      schemes.restyle();
     },
     sourceOf: (node) => sourceIn(placed(), node, target),
     elementsAt: (offset) => elementsIn(placed(), offset),

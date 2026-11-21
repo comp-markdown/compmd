@@ -13,6 +13,7 @@
         { "$ref": "#/$defs/part" },
         { "$ref": "#/$defs/styles" },
         { "$ref": "#/$defs/scheme" },
+        { "$ref": "#/$defs/typeStyle" },
         { "$ref": "#/$defs/host" },
         { "$ref": "#/$defs/ping" },
         { "$ref": "#/$defs/compile" },
@@ -176,6 +177,29 @@
       "required": ["type", "scheme"],
       "additionalProperties": false
     },
+    "typeStyle": {
+      "description": "The use's box's type in the page (spec §7.4), as CSS computes it, which the frame's root takes, so what the component draws inherits it.",
+      "type": "object",
+      "properties": {
+        "type": { "const": "type-style" },
+        "style": {
+          "type": "object",
+          "properties": {
+            "family": { "type": "string" },
+            "size": { "type": "number", "exclusiveMinimum": 0 },
+            "weight": { "type": "string" },
+            "style": { "type": "string" },
+            "color": { "type": "string" },
+            "lineHeight": { "type": "string" },
+            "letterSpacing": { "type": "string" }
+          },
+          "required": ["family", "size", "weight", "style", "color", "lineHeight", "letterSpacing"],
+          "additionalProperties": false
+        }
+      },
+      "required": ["type", "style"],
+      "additionalProperties": false
+    },
     "host": {
       "description": "A port for `host`, in the message's ports; only to a permissive frame of a pack given `host`.",
       "type": "object",
@@ -308,7 +332,7 @@
       "additionalProperties": false
     },
     "settled": {
-      "description": "The frame has settled after the first `seen` messages that change what it shows (code, part, styles, scheme, and render's render, splices and theme): its uses drawn, their busy drawings settled, its own frames settled and sized, its images and fonts loaded, then an animation frame with nothing moving. Its parent takes it only when `seen` is what it sent.",
+      "description": "The frame has settled after the first `seen` messages that change what it shows (code, part, styles, scheme, type-style, and render's render, splices and theme): its uses drawn, their busy drawings settled, its own frames settled and sized, its images and fonts loaded, then an animation frame with nothing moving. Its parent takes it only when `seen` is what it sent.",
       "type": "object",
       "properties": { "type": { "const": "settled" }, "seen": { "type": "integer", "minimum": 0 } },
       "required": ["type", "seen"],

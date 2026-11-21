@@ -34,13 +34,19 @@ interface Instance {
   mounted?: Mounted | undefined;
 }
 
-/** The context a remount gets: the last params and slots, and the renderer's scheme as it is now and later. */
+/** The context a remount gets: the last params and slots, and the renderer's scheme, fit and type as they are now and later. */
 function remountContext({ context, latest }: Instance): MountContext {
   return {
     ...context,
     ...latest,
     get scheme() {
       return context.scheme;
+    },
+    get fit() {
+      return context.fit;
+    },
+    get type() {
+      return context.type;
     },
   };
 }

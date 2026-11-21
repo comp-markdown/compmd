@@ -1,7 +1,7 @@
 // The parent's end of the protocol, one per frame it made: it waits for the frame's `ready`, gives it its level first,
 // checks what the frame sends against the part it gave it, and stops a frame that stops answering.
 
-import { BUSY_MS, type CodeLines } from "@compmd/render";
+import { BUSY_MS, type CodeLines, type TypeStyle } from "@compmd/render";
 import { afterAwake } from "./awake.ts";
 import { FROM_FRAME, isChange, isMessage, SANDBOX_VERSION, type ComponentCode, type ErrorReason, type FromFrame, type Level, type Part, type Port, type Scheme, type ToFrame } from "./messages.ts";
 
@@ -101,6 +101,8 @@ export interface ChildEnd {
   part(part: Part): void;
   styles(urls: string[]): void;
   scheme(scheme: Scheme): void;
+  /** The use's box's type in the page, which the frame's root takes. */
+  typeStyle(style: TypeStyle): void;
   /** Sends a message of `@compmd/render`'s protocol, for a page frame, once the frame has its level. */
   send(message: unknown): void;
   /**
@@ -336,6 +338,9 @@ export function connectChild(port: Port, options: ChildOptions): ChildEnd {
     },
     scheme: (scheme) => {
       post({ type: "scheme", scheme } satisfies ToFrame);
+    },
+    typeStyle: (style) => {
+      post({ type: "type-style", style: { ...style } } satisfies ToFrame);
     },
     send: (message) => {
       post(message);

@@ -184,6 +184,49 @@ describe("views in one document (host mode)", () => {
   });
 });
 
+describe("a component's box's type", () => {
+  /** `label`, but setting its `context.type` and the type its frame's text inherits, on each update. */
+  const typed: HostComponent = {
+    name: "label",
+    language: "js",
+    code: `export default function mount(target, context) {
+  const show = () => queueMicrotask(() => {
+    const style = getComputedStyle(target);
+    const { type } = context;
+    context.set("result", JSON.stringify([type.size, type.weight, type.color, parseFloat(style.fontSize), style.fontWeight, style.color]));
+  });
+  show();
+  return { update: show };
+}`,
+    trust: { level: "strict" },
+  };
+
+  /** A use of `label` with its box's `params`. */
+  const styled = (text: string, ...params: [string, string][]): ExpandedRoot => {
+    const node = use(text);
+    return { type: "root", children: [{ ...node, params: [...node.params, ...params.map(([key, value]) => ({ key, breakpoint: null, value }))] }], inputs: RESULT };
+  };
+
+  for (const mode of MODES) {
+    it(`gives a framed component its box's type, in its context and to what it draws, and the new one when it changes (${mode} mode)`, async () => {
+      const { view, until, values, events } = open(mode, [typed]);
+      const shown = async (expected: unknown[]) => {
+        await Promise.race([until(() => values().some((value) => JSON.stringify(value) === JSON.stringify(expected))), new Promise((resolve) => setTimeout(resolve, 4000))]);
+        expect(values()).toContainEqual(expected);
+      };
+      view.render(styled("one", ["font-size", "s"], ["font-weight", "bold"], ["color", "#a40e26"]));
+      // 16px text at `s`, 0.875em; in frame mode the page's own frame is 16px too.
+      const small = [14, "700", "rgb(164, 14, 38)", 14, "700", "rgb(164, 14, 38)"];
+      await shown(small);
+      view.render(styled("two", ["font-size", "xl"]));
+      const large = [24, "400", "rgb(0, 0, 0)", 24, "400", "rgb(0, 0, 0)"];
+      await shown(large);
+      expect(values().at(-1)).toEqual(large);
+      expect(events.error).toEqual([]);
+    });
+  }
+});
+
 describe("the page's colour scheme", () => {
   /** `label`, but setting the scheme it is shown in and the one its frame's document has, on each update. */
   const scheme: HostComponent = {

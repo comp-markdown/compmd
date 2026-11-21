@@ -1,9 +1,10 @@
 // The frame's end of the protocol: it believes its port, which its parent gave it, and keeps the order the protocol
 // asks for. The level comes first and once: before it, the frame acts on nothing, since its policy isn't narrowed yet.
 
-import type { CodeLines } from "@compmd/render";
+import type { CodeLines, TypeStyle } from "@compmd/render";
 import { HIGHLIGHT_MS, isChange, isMessage, SANDBOX_VERSION, TO_FRAME, type CompileRequest, type ComponentCode, type ErrorReason, type FromFrame, type Level, type Part, type Port, type Scheme, type ToFrame } from "./messages.ts";
 import type { Observed } from "./observed.ts";
+import { typeStyleIn } from "./type-style.ts";
 
 /** What the frame does with each message; the frame runtime implements it. */
 export interface FrameHandlers {
@@ -19,6 +20,8 @@ export interface FrameHandlers {
   styles?(urls: string[]): void;
   /** The page's colour scheme, which the frame's document takes. */
   scheme?(scheme: Scheme): void;
+  /** The use's box's type in the page, which the frame's root takes. */
+  typeStyle?(style: TypeStyle): void;
   /** The port for `host`, which only a permissive frame takes. */
   host?(port: MessagePort): void;
   /** Compiles a source: what only the compile frame does. */
@@ -129,6 +132,11 @@ export function serveParent(port: Port, handlers: FrameHandlers): FrameEnd {
       case "scheme":
         handlers.scheme?.(data.scheme === "dark" ? "dark" : "light");
         break;
+      case "type-style": {
+        const style = typeStyleIn(data.style);
+        if (style) handlers.typeStyle?.(style);
+        break;
+      }
       case "host": {
         const [hostPort] = ports ?? [];
         if (level === "permissive" && hostPort) handlers.host?.(hostPort);

@@ -17,9 +17,10 @@ export function schemeOf(element: Element): Scheme {
   return view?.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
-/** What follows the scheme: a component's handle, or anything else that takes it. */
+/** What follows the scheme: a component's handle, or anything else that takes it; a handle also its box's type. */
 export interface SchemeFollower {
   scheme(scheme: Scheme): void;
+  restyle?(): void;
 }
 
 /**
@@ -56,6 +57,11 @@ export class Schemes {
     if (next === this.#current) return;
     this.#current = next;
     for (const follower of this.#followers) follower.scheme(next);
+  }
+
+  /** Something around them changed their type (a frame's root, a theme): every follower reads its box's again. */
+  restyle(): void {
+    for (const follower of this.#followers) follower.restyle?.();
   }
 
   follow(follower: SchemeFollower): void {
