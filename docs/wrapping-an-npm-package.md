@@ -1,6 +1,6 @@
 # Wrapping an npm package as a pack
 
-**Status: proposed (2026-11-20, CMD-8).** Making a pack of an existing npm package should take one command, and moving
+**Status: approved (2026-11-20, CMD-8); built in CMD-9** (`@compmd/pack/wrap`, `create-pack --from`). Making a pack of an existing npm package should take one command, and moving
 to the package's next version a version bump. This builds on [the pack template](create-pack.md) and
 [writing a pack](writing-a-pack.md); CMD-9 builds it. [The spike](../spikes/wrap-npm-package/README.md) has the four
 packs it was tried on, built and run.
@@ -166,9 +166,8 @@ box](sizing-components.md).
   frames' fails the build, with which it needs.
 - **G5. The checker costs each build** a TypeScript program over the package's types, not measured yet; only the
   build pays it, never a reader.
-- **G6. An optional enum** (`level: L | M | H | Q?`): the spec's grammar puts `?` after a type, and an enum is one,
-  and the processor accepts it (the spike's `qr-code`), but neither the spec nor a conformance case shows one. To
-  confirm in the spec before the build writes it.
+- **G6, settled. An optional enum** (`level: L | M | H | Q?`): the spec's grammar puts `?` after a type, and an enum
+  is one. CMD-9 adds it to the spec's example of declarations and a conformance case (`validate/optional-enum`).
 - **G7, settled. How the generated fence is marked:** a word after `signature` in the info string would need the spec
   to say what other words there mean; comments before and after the fence need nothing (decision 4).
 - **G8, settled by [sizing a component](sizing-components.md). A component's size when the use gives none** is its

@@ -84,6 +84,24 @@ describe("buildModules", () => {
     expect(sum).not.toContain("sum.ts");
   });
 
+  it("compiles a wrapped Svelte package's sources into the module, its CSS injected, Svelte left to the frames", async () => {
+    await write(dir, {
+      "package.json": { name: "@kit/chart", version: "0.1.0", compmd: "./index.comp.md", files: ["dist", "index.comp.md"] },
+      "index.comp.md": documentOf(["dist/chart.js"]),
+      "compmd.wrap.json": { from: "charts", export: "Chart", kind: "svelte", params: [] },
+      "node_modules/charts/package.json": { name: "charts", version: "1.0.0", type: "module", svelte: "./index.js", exports: { ".": { svelte: "./index.js", default: "./index.js" } } },
+      "node_modules/charts/index.js": 'export { default as Chart } from "./Chart.svelte";\n',
+      "node_modules/svelte/package.json": { name: "svelte", version: "5.57.2" },
+      "node_modules/charts/Chart.svelte": '<script>let { label = "bars" } = $props();</script>\n<p class="bars">{label}</p>\n<style>.bars { color: rebeccapurple; }</style>\n',
+      "src/chart.ts": 'import { mount } from "svelte";\nimport { Chart } from "charts";\nexport default (target: Element) => { mount(Chart, { target, props: {} }); };\n',
+    });
+    const notes = await buildModules(await readPack(dir), { logLevel: "silent" });
+    const chart = readFileSync(join(dir, "dist/chart.js"), "utf8");
+    expect(chart).toContain("rebeccapurple");
+    expect(importsOf(chart).every((specifier) => specifier === "svelte" || specifier.startsWith("svelte/"))).toBe(true);
+    expect(notes).toEqual(["index.comp.md has no compmd-pack:generated comments, so its signature is yours: the build leaves it"]);
+  });
+
   it("builds a library pack as one module, and takes its library's version", async () => {
     await write(dir, {
       "package.json": { name: "@kit/tiny", version: "0.0.0", compmd: { library: "dist/index.js" }, files: ["dist"] },

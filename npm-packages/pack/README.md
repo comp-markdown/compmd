@@ -44,6 +44,8 @@ A pack's scripts run it in the pack's folder:
 
 **What it checks.** That the document's `export.version` is `package.json`'s (F022 otherwise); that every file the document imports is there, and in `files`; that each module is one file, with no chunk beside it; that the pack is under the 10 MB a host takes by default; and that a library pack's version is its library's. Each problem says what to fix, and the build fails.
 
+**A pack of an npm package.** A pack `npm create @compmd/pack -- --from <package>` wrote has a `compmd.wrap.json` ([wrapping an npm package](https://github.com/comp-markdown/compmd/blob/main/docs/wrapping-an-npm-package.md)). Its build writes the signature fence between the document's `compmd-pack:generated` comments first, from the package's TypeScript types (its own props only, never React's or the DOM's), kept to the props `params` lists, with `overrides` over them, and says what changed: a param added, one gone, one whose type changed, and a prop the package has that isn't a param. A param that went fails the build while the demo or the overrides still name it. Without the comments the fence is the author's: the build leaves it, and says where the types differ. A Svelte package's sources are compiled with the Svelte the frames provide, their CSS injected by the module. Then each module is checked for what a strict frame refuses: a URL of another origin, a worker, code made from text, WebGL. `@compmd/pack/wrap` has the parts, for tools.
+
 **A library pack in the test page.** A pack that shares a library pack lists it in a `compmd.config.json` beside `demo.comp.md` (`{ "libraries": ["@kit/three"] }`): the test page reads it, with the pack added as a folder pack.
 
 ## Writing a component

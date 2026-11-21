@@ -24,7 +24,7 @@ try {
     process.exitCode = values.help ? 0 : 1;
   } else if (command === "build") {
     const pack = await readPack(process.cwd());
-    await buildModules(pack);
+    for (const note of await buildModules(pack)) process.stdout.write(`${note}\n`);
     const problems = await checkPack(await readPack(process.cwd()));
     for (const problem of problems) process.stderr.write(`${problem}\n`);
     process.exitCode = problems.length > 0 ? 1 : 0;

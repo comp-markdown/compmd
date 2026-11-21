@@ -545,6 +545,7 @@ and a long form, a YAML mapping for what the short form can't say well:
 params:
   tone: info | warn = info              # short form
   icon: string?
+  level: L | M | H | Q?                 # an optional enum
   meta:                                 # long form
     type: object
     default: {a: 1}

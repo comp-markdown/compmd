@@ -2,8 +2,9 @@ import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  // A library pack's entry re-exports the library it is made for, which only a written pack has.
-  { ignores: ["node_modules", "dist", "test/.out", "template/library/src/index.ts"] },
+  // A library pack's entry re-exports the library it is made for, and a wrapped pack's glue imports the package it
+  // wraps, which only a written pack has: the test that wraps a package checks the glue there.
+  { ignores: ["node_modules", "dist", "test/.out", "template/library/src/index.ts", "template/wrap"] },
   js.configs.recommended,
   ...tseslint.configs.strictTypeChecked,
   {

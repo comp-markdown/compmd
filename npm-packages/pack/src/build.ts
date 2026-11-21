@@ -5,8 +5,13 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { RUNTIMES } from "@compmd/sandbox/build";
+import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { build, type InlineConfig, type Plugin } from "vite";
-import type { Manifest, Pack } from "./pack.ts";
+import { PackError, type Manifest, type Pack } from "./pack.ts";
+import { readWrap } from "./wrap/config.ts";
+import { generateSignature } from "./wrap/generate.ts";
+import { installedPackage } from "./wrap/installed.ts";
+import { risksOf } from "./wrap/risks.ts";
 
 /** The runtimes' import names: the frames' import map gives these, one copy for every component. */
 const RUNTIME_IMPORTS = new Set(RUNTIMES.flatMap((runtime) => runtime.imports));
@@ -31,8 +36,10 @@ function manifest(pack: Pack): Plugin {
       const written = manifestOf(pack.dir);
       const peerDependencies = { ...written.peerDependencies };
       const added = RUNTIMES.filter((runtime) => imported.some((name) => runtime.imports.includes(name)) && !peerDependencies[runtime.name]);
-      for (const runtime of added) peerDependencies[runtime.name] = `^${manifestOf(join(pack.dir, "node_modules", runtime.name)).version}`;
-      const version = pack.kind === "library" ? manifestOf(join(pack.dir, "node_modules", pack.library)).version : written.version;
+      // Found as Node finds them: in the pack's `node_modules`, or a workspace's above it.
+      const versionOf = (name: string) => installedPackage(pack.dir, name)?.version ?? manifestOf(join(pack.dir, "node_modules", name)).version;
+      for (const runtime of added) peerDependencies[runtime.name] = `^${versionOf(runtime.name)}`;
+      const version = pack.kind === "library" ? versionOf(pack.library) : written.version;
       const changes = [...(written.version === version ? [] : [`version ${version}, ${pack.kind === "library" ? pack.library : ""}'s`]), ...added.map((runtime) => `${runtime.name} in peerDependencies`)];
       if (changes.length === 0) return;
       writeFileSync(join(pack.dir, "package.json"), `${JSON.stringify({ ...written, version, ...(added.length > 0 ? { peerDependencies } : {}) }, null, 2)}\n`);
@@ -41,13 +48,24 @@ function manifest(pack: Pack): Plugin {
   };
 }
 
+/** How a module is built: Vite's log level, and whether it compiles a Svelte package's sources. */
+export interface ModuleOptions {
+  logLevel?: InlineConfig["logLevel"];
+  /**
+   * A wrapped Svelte package's `.svelte` sources, compiled with the Svelte the frames provide, their CSS injected by the
+   * module, since a frame loads nothing else (docs/wrapping-an-npm-package.md, decision 10).
+   */
+  svelte?: boolean;
+}
+
 /** Vite's configuration for one of the pack's modules. */
-export function moduleConfig(pack: Pack, module: Pack["modules"][number], options: { logLevel?: InlineConfig["logLevel"] } = {}): InlineConfig {
+export function moduleConfig(pack: Pack, module: Pack["modules"][number], options: ModuleOptions = {}): InlineConfig {
   const shared = Object.keys(pack.manifest.peerDependencies ?? {});
   const out = module.out.split("/");
   return {
     configFile: false,
     root: pack.dir,
+    plugins: options.svelte ? [svelte({ configFile: false, emitCss: false, compilerOptions: { css: "injected" } })] : [],
     logLevel: options.logLevel ?? "warn",
     // What is published, whatever NODE_ENV the build runs under (a test runner sets `test`): the production JSX, and
     // the production branches of the libraries it bundles, with no `process` left, which a frame doesn't have.
@@ -76,11 +94,23 @@ export function moduleConfig(pack: Pack, module: Pack["modules"][number], option
 }
 
 /**
- * Builds every module `pack` publishes.
+ * Builds every module `pack` publishes. A pack that wraps a package (`compmd.wrap.json`) has its signature written
+ * first, from the package's types, and its modules checked for what a strict frame refuses after.
  *
+ * @returns What the author should read: what the wrap wrote and changed, and the warnings.
+ * @throws PackError when the wrap can't write its signature, or a param that went is still named.
  * @example
  * await buildModules(await readPack("compmd-packs/mermaid"));
  */
-export async function buildModules(pack: Pack, options: { logLevel?: InlineConfig["logLevel"] } = {}): Promise<void> {
-  for (const module of pack.modules) await build(moduleConfig(pack, module, options));
+export async function buildModules(pack: Pack, options: Omit<ModuleOptions, "svelte"> = {}): Promise<string[]> {
+  const wrap = pack.kind === "components" ? readWrap(pack.dir) : undefined;
+  const notes: string[] = [];
+  if (wrap && wrap.kind !== "library" && pack.kind === "components") {
+    const report = generateSignature(pack.dir, pack.document, wrap);
+    if (report.errors.length > 0) throw new PackError(report.errors.join("\n"));
+    notes.push(...report.notes);
+  }
+  for (const module of pack.modules) await build(moduleConfig(pack, module, { ...options, svelte: wrap?.kind === "svelte" }));
+  if (wrap) for (const module of pack.modules) notes.push(...risksOf(module.out, readFileSync(join(pack.dir, ...module.out.split("/")), "utf8")));
+  return notes;
 }

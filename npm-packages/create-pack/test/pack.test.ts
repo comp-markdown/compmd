@@ -13,6 +13,7 @@ import { chromium, webkit, type Browser, type BrowserType, type LaunchOptions, t
 import type { ViteDevServer } from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createPack } from "../src/create.ts";
+import { createWrappedPack } from "../src/wrap.ts";
 
 const OUT = join(import.meta.dirname, ".out");
 
@@ -158,6 +159,69 @@ describe.each(PACKS)("a pack of $variant", ({ folder: name, port, shows, ...opti
       await page.selectOption("#scheme", "light");
       await expect.poll(scheme).toBe("light");
     });
+  });
+});
+
+describe("a pack of an npm package's component", () => {
+  const folder = join(OUT, "qr-code");
+  const port = 4197;
+  let server: ViteDevServer;
+  let notes: string[];
+
+  beforeAll(async () => {
+    await rm(folder, { recursive: true, force: true });
+    // The packages it installs are this package's own, which the pack, in its folder, finds as installed.
+    ({ notes } = await createWrappedPack({ folder, name: "@kit/qr-code", component: "qr-code", from: "react-qr-code", install: () => undefined }));
+    execFileSync(join(import.meta.dirname, "../node_modules/.bin/tsc"), ["--noEmit"], { cwd: folder, stdio: "pipe" });
+    compmdPack(folder, "test");
+    compmdPack(folder, "build");
+    server = await servePack(await readPack(folder), { port });
+  });
+
+  afterAll(async () => {
+    await server.close();
+  });
+
+  it("pins the package, lists its own props that map as params, and says why the rest aren't", () => {
+    const manifest = JSON.parse(readFileSync(join(folder, "package.json"), "utf8")) as { dependencies: Record<string, string> };
+    expect(manifest.dependencies).toEqual({ "react-qr-code": "2.2.0" });
+    const wrap = JSON.parse(readFileSync(join(folder, "compmd.wrap.json"), "utf8")) as { kind: string; params: string[]; label?: string };
+    expect(wrap).toMatchObject({ kind: "react", label: "title" });
+    expect(wrap.params).toEqual(expect.arrayContaining(["value", "bgColor", "fgColor", "level", "title"]));
+    expect(wrap.params).not.toContain("size");
+    expect(notes).toContain("`size` isn't a param: a size in pixels: the component fits its box, which the use sizes");
+  });
+
+  it("writes its signature between the generated comments, from the package's types", () => {
+    const document = readFileSync(join(folder, "index.comp.md"), "utf8");
+    expect(document).toContain("<!-- compmd-pack:generated from react-qr-code 2.2.0's types and compmd.wrap.json;");
+    expect(document).toMatch(/```compmd component=qr-code signature\nparams:\n {2}value: string\n/);
+    expect(document).toMatch(/\n {2}level: L \| M \| Q \| H\?\n|\n {2}level: L \| M \| H \| Q\?\n/);
+    expect(document).toContain("<!-- /compmd-pack:generated -->");
+  });
+
+  it("builds into one module, React left to the frames' import map", () => {
+    const module = readFileSync(join(folder, "dist/qr-code.js"), "utf8");
+    const runtimes = new Set(RUNTIMES.flatMap((runtime) => runtime.imports));
+    expect(importsOf(module).filter((specifier) => !runtimes.has(specifier))).toEqual([]);
+    expect(importsOf(module)).toContain("react");
+  });
+
+  it.each(BROWSERS)("draws its demo in the strict sandbox in %s, the fallback as its title", async (_browser, type, launch) => {
+    const browser = await type.launch({ headless: true, ...launch });
+    try {
+      const page = await browser.newPage();
+      const errors: string[] = [];
+      page.on("pageerror", (error) => errors.push(error.message));
+      await page.goto(`http://localhost:${String(port)}/`);
+      const title = page.locator("iframe").first().contentFrame().locator("svg title");
+      await expect.poll(() => title.count(), { timeout: 20_000 }).toBe(1);
+      expect(await title.textContent()).toBe("qr-code, as text");
+      expect(await page.locator("#diagnostics li").allInnerTexts()).toEqual([]);
+      expect(errors).toEqual([]);
+    } finally {
+      await browser.close();
+    }
   });
 });
 

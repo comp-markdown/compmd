@@ -13871,7 +13871,7 @@
       "description": "[What `compmd` definitions need for the no-code components](docs/no-code-components.md), decisions 1 to 6, *What changes*. The spec's text needs the maintainer's go before it is pushed.\n\n## The spec\n- §8.6, *Relative paths*: a destination that starts with a param, a field of one, or an `each` or template slot name over one resolves against the caller (decision 1).\n- §7.2 and §8.1: `md.fallback` in a leaf's or inline invocation's body, F014 in a container's; interpolation in image alt text (decision 2).\n- §7.2 and §12.3: an inline invocation is one inline box, styled by its fence under the caller's, a `componentInline` named `box`; layout params left out (decision 4).\n- §7.2 and §8.1: `md.slots.<name>` in a definition's expressions (decision 5).\n- §9.2, §9.4 and §10: `stretch-link` with W124 (decision 3); `shadow`, `rotate`, and `border`'s four logical sides in the cascade as `padding`'s (decision 6).\n- The changelog under *Unreleased*.\n\n## Conformance\nThe design's table: the eight new cases, and the existing ones it lists unchanged. Before the spec text, check *Gaps left*'s second point: where the processor or the host resolves a pack's relative destinations.\n\n## Done when\n`cargo make ci` is green, and the guides' chapters on definitions and the common params say it.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [
         "01a1fb1a-5845-722a-88c3-17bf2a8c3273"
       ],
@@ -13883,7 +13883,7 @@
         "guides/"
       ],
       "created_at": "2026-11-20T22:47:59Z",
-      "updated_at": "2026-11-21T12:47:16Z",
+      "updated_at": "2026-11-21T13:40:24Z",
       "created_by": "claude:79612601",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -13910,6 +13910,18 @@
           "kind": "review",
           "text": "CR-40: No-code components: the spec, conformance, processor and renderer",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-21T13:39:58Z",
+          "kind": "note",
+          "text": "Approved: in CR-40 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-21T13:40:24Z",
+          "kind": "outcome",
+          "text": "Approved in CR-40: the spec (§7.2, §8.1, §8.6, §9.2, §9.4, §10, §12), seven conformance cases, the processor, the renderer’s part (CMD-361’s scope) and the guides.",
+          "by": "claude:79612601"
         }
       ],
       "started_at": "2026-11-21T12:46:55Z",
@@ -13922,7 +13934,15 @@
         }
       ],
       "review_requested_at": "2026-11-21T12:47:16Z",
-      "review_state": "waiting"
+      "reviews": [
+        {
+          "from": "2026-11-21T12:47:16Z",
+          "to": "2026-11-21T13:39:58Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-21T13:40:24Z",
+      "completed_by": "claude:79612601"
     },
     {
       "id": "01a1fb25-2be2-70ce-b996-5795d8c8fb48",
@@ -13967,7 +13987,7 @@
       "description": "The spec (§8.6, *Relative paths*) says a destination written in a `compmd` definition's body resolves against the definition's file, and that \"making a pack's files reachable in the output is the processor's job\". Nothing does it yet: the processor writes `![](./icons/star.svg)` from a pack's body into the expanded tree as written, and the host resolves it against the processed document, so it points at a file next to the document that isn't there. Found while checking [the no-code components design](docs/no-code-components.md), *Gaps left*.\n\n## Decide first\nHow the expanded tree says where a pack's file is: the pack's place (`@scope/pack@1.0.0/icons/star.svg`), which a host maps to where it serves the pack's files (the Vite plugin and the bundle serve them at `packs/<place>`), or a URL the request gives the processor. Settle it with the maintainer, then the spec text, a conformance case, the processor and the hosts.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [],
       "files": [
         "spec/compmd-spec-v1.md",
@@ -13976,7 +13996,7 @@
         "npm-packages/host-js/src/"
       ],
       "created_at": "2026-11-20T23:56:06Z",
-      "updated_at": "2026-11-21T12:55:08Z",
+      "updated_at": "2026-11-21T13:43:27Z",
       "created_by": "claude:79612601",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -14000,10 +14020,45 @@
           "kind": "answer",
           "text": "How does the expanded tree say where a pack’s own file is? (a) the pack’s place, `@scope/pack@1.0.0/icons/star.svg`, which each host maps to where it serves pack files (the Vite plugin and the bundle use `packs/<place>`); or (b) a base URL for packs given in the processor’s request. I’d take (a): the tree stays host-independent, and the hosts already serve packs by place. → (a) The pack’s place, `@scope/pack@1.0.0/icons/star.svg`, which each host maps to where it serves pack files.",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-21T13:32:36Z",
+          "kind": "review",
+          "text": "CR-42: A pack’s own links and images reach the pack’s files",
+          "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-21T13:43:08Z",
+          "kind": "note",
+          "text": "Approved: in CR-42 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-21T13:43:27Z",
+          "kind": "outcome",
+          "text": "Approved in CR-42: the tree writes a pack’s file by its place with `pack: true`, an imported file relative to the document; the renderer’s `packFile`, the sandbox’s host mode. Frame mode is CMD-364, registry packs CMD-365.",
+          "by": "claude:79612601"
         }
       ],
       "started_at": "2026-11-21T12:55:08Z",
-      "started_by": "claude:79612601"
+      "started_by": "claude:79612601",
+      "commit": "a0a5d6da1778584705550669890cc22e2f8f99a4",
+      "code_reviews": [
+        {
+          "id": "01a1fe4f-0d1e-72fd-8650-d5e9a46ec24b",
+          "ref": "CR-42"
+        }
+      ],
+      "review_requested_at": "2026-11-21T13:32:36Z",
+      "reviews": [
+        {
+          "from": "2026-11-21T13:32:36Z",
+          "to": "2026-11-21T13:43:08Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-21T13:43:27Z",
+      "completed_by": "claude:79612601"
     },
     {
       "id": "01a1fe2c-acaf-74d2-941d-8667a07cc056",

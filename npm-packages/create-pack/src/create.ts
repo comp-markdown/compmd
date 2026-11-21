@@ -35,7 +35,7 @@ const MANIFEST = join(HERE, "../package.json");
 const SCOPED = /^@[a-z0-9][a-z0-9._~-]*\/[a-z0-9][a-z0-9._~-]*$/;
 const COMPONENT = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 const LANGUAGE = /^[a-z][a-z0-9+-]*$/;
-const PACKAGE = /^(?:@[a-z0-9][a-z0-9._~-]*\/)?[a-z0-9][a-z0-9._~-]*$/;
+export const PACKAGE = /^(?:@[a-z0-9][a-z0-9._~-]*\/)?[a-z0-9][a-z0-9._~-]*$/;
 
 /** A component name from a folder's name: `My Chart` is `my-chart`. */
 export function componentOf(folder: string): string {
@@ -62,10 +62,10 @@ export function problemOf(options: PackOptions): string | undefined {
  * The version each package the pack builds with is pinned to: this package's own, as its release wrote them; in the
  * repository, where they are `workspace:`, the version installed.
  */
-async function versions(): Promise<Record<string, string>> {
-  const manifest = JSON.parse(await readFile(MANIFEST, "utf8")) as { devDependencies?: Record<string, string> };
+export async function versions(): Promise<Record<string, string>> {
+  const manifest = JSON.parse(await readFile(MANIFEST, "utf8")) as { dependencies?: Record<string, string>; devDependencies?: Record<string, string> };
   const found: Record<string, string> = {};
-  for (const [name, written] of Object.entries(manifest.devDependencies ?? {})) {
+  for (const [name, written] of Object.entries({ ...manifest.dependencies, ...manifest.devDependencies })) {
     found[name] = written.startsWith("workspace:")
       ? (JSON.parse(await readFile(join(HERE, "../node_modules", ...name.split("/"), "package.json"), "utf8")) as { version: string }).version
       : written;
@@ -91,7 +91,7 @@ async function filesUnder(dir: string): Promise<string[]> {
 export async function createPack(options: PackOptions): Promise<string[]> {
   const problem = problemOf(options);
   if (problem) throw new CreateError(problem);
-  if (existsSync(options.folder) && (await readdir(options.folder)).length > 0) throw new CreateError(`${options.folder} has files in it: choose a new folder, or an empty one`);
+  await mustBeEmpty(options.folder);
   const pinned = await versions();
   const fill = (text: string) =>
     text
@@ -102,15 +102,29 @@ export async function createPack(options: PackOptions): Promise<string[]> {
       .replaceAll("__library__", options.library ?? "");
   const parts = options.library !== undefined ? ["library"] : ["common", options.renders === undefined ? "leaf" : "renderer"];
   const written: string[] = [];
-  for (const part of parts) {
-    for (const path of await filesUnder(join(TEMPLATE, part))) {
-      // npm leaves `.gitignore` out of published packages, so the template's has no dot.
-      const to = fill(path.split(sep).join("/")).replace(/(^|\/)gitignore$/, "$1.gitignore");
-      const file = join(options.folder, ...to.split("/"));
-      await mkdir(dirname(file), { recursive: true });
-      await writeFile(file, fill(await readFile(join(TEMPLATE, part, path), "utf8")));
-      written.push(to);
-    }
-  }
+  for (const part of parts) written.push(...(await writePart(options.folder, part, fill)));
   return written.sort();
+}
+
+/** @throws CreateError when `folder` has files in it. */
+export async function mustBeEmpty(folder: string): Promise<void> {
+  if (existsSync(folder) && (await readdir(folder)).length > 0) throw new CreateError(`${folder} has files in it: choose a new folder, or an empty one`);
+}
+
+/**
+ * Writes the template's part `part` (its folder in `template/`) into `folder`, each name and text through `fill`.
+ *
+ * @returns The files written, by their paths in the folder, `/`-separated.
+ */
+export async function writePart(folder: string, part: string, fill: (text: string) => string): Promise<string[]> {
+  const written: string[] = [];
+  for (const path of await filesUnder(join(TEMPLATE, part))) {
+    // npm leaves `.gitignore` out of published packages, so the template's has no dot.
+    const to = fill(path.split(sep).join("/")).replace(/(^|\/)gitignore$/, "$1.gitignore");
+    const file = join(folder, ...to.split("/"));
+    await mkdir(dirname(file), { recursive: true });
+    await writeFile(file, fill(await readFile(join(TEMPLATE, part, path), "utf8")));
+    written.push(to);
+  }
+  return written;
 }

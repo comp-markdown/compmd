@@ -10,6 +10,7 @@ import { fileURLToPath } from "node:url";
 import { compmd } from "@compmd/vite";
 import { build, createServer, type Plugin, type ViteDevServer } from "vite";
 import { buildModules, moduleConfig } from "./build.ts";
+import { readWrap } from "./wrap/config.ts";
 import type { Pack } from "./pack.ts";
 
 /** The document the test page renders, in the pack's folder. */
@@ -128,7 +129,7 @@ function rebuild(pack: Pack): Plugin {
       server.watcher.add(sources);
       server.watcher.on("change", (file) => {
         if (!file.startsWith(sources + sep) || /\.test\.[jt]sx?$/.test(file)) return;
-        for (const module of pack.modules) void build(moduleConfig(pack, module));
+        for (const module of pack.modules) void build(moduleConfig(pack, module, { svelte: readWrap(pack.dir)?.kind === "svelte" }));
       });
     },
   };
@@ -144,7 +145,7 @@ function rebuild(pack: Pack): Plugin {
  */
 export async function servePack(pack: Pack, options: { port?: number } = {}): Promise<ViteDevServer> {
   if (!existsSync(join(pack.dir, DEMO))) throw new Error(`${DEMO} isn't in ${pack.dir}: the test page renders it, a document that imports the pack and uses it`);
-  await buildModules(pack);
+  for (const note of await buildModules(pack)) console.log(note);
   const server = await createServer({
     configFile: false,
     root: pack.dir,
