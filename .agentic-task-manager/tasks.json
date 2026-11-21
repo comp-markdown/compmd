@@ -604,7 +604,7 @@
       "description": "Implement the design approved in CMD-8 (`docs/wrapping-an-npm-package.md`) in `create-pack`.\n\n- The command and what it generates, with unit tests and a test that wraps a real package and renders its demo.\n- Update `docs/create-pack.md`, `docs/writing-a-pack.md` and `npm-packages/create-pack/README.md`.\n- Same checks as the rest of the repository (`pnpm lint`, `pnpm test`).\n\nEach push needs the user's go.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68e5ebcaa0da",
         "01a1faa3-d27f-73b4-9632-1835b3071707"
@@ -615,7 +615,7 @@
         "npm-packages/create-pack/src/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-21T14:06:55Z",
+      "updated_at": "2026-11-21T14:25:04Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -646,7 +646,6 @@
         }
       ],
       "review_requested_at": "2026-11-21T13:59:16Z",
-      "review_state": "changes_requested",
       "notes": [
         {
           "at": "2026-11-21T13:59:16Z",
@@ -659,9 +658,29 @@
           "kind": "rejection",
           "text": "CR-43 round 1: 1 open comment",
           "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-21T14:24:50Z",
+          "kind": "note",
+          "text": "Approved: in CR-43 (round 2)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-21T14:25:04Z",
+          "kind": "outcome",
+          "text": "Approved in CR-43: `create-pack --from` writes a pack of an npm package (glue per kind, `compmd.wrap.json`, generated signature), and `compmd-pack build` writes the signature from the package’s types at each build; react-qr-code wrapped and drawn in the strict sandbox in its test.",
+          "by": "claude:79612601"
         }
       ],
-      "reviewed_at": "2026-11-21T14:06:46Z"
+      "reviews": [
+        {
+          "from": "2026-11-21T13:59:16Z",
+          "to": "2026-11-21T14:24:50Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-21T14:25:04Z",
+      "completed_by": "claude:79612601"
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68e7d6fc0e9a",
@@ -11851,7 +11870,7 @@
       "description": "Item 4 of [the first list](docs/first-components.md#:~:text=A%20gallery%20is%20a%20grid%20of%20cards): a grid of cards, each an image, a title and a description, a `compmd` definition, so it needs no code and its images are the document's. A zoom or a lightbox waits for CMD-266.\n\n## Do\nThe definition (over a slot's items or a list in data), a demo, tests of its expanded tree.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [
         "01a1f870-9ad9-761a-afe5-57c89c4468ad",
         "01a1fb1a-5845-722a-88c3-17bf2a8c3273",
@@ -11861,7 +11880,7 @@
         "compmd-packs/gallery/"
       ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-21T14:12:45Z",
+      "updated_at": "2026-11-21T14:22:24Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 315,
@@ -11885,10 +11904,25 @@
           "kind": "answer",
           "text": "What should gallery add over `::: grid {min=14rem gap=m}` of cards? A definition places a slot’s items all at once, so it can’t make each item a card. (a) a grid with a template slot over data rows, the caller’s template per item; (b) a spec change so a definition wraps each item in a box, and gallery makes the cards; (c) no gallery: the grid of cards in the Author’s Guide. → A leaf over data rows, each a `card` made in the definition with `each`; its images’ paths are the caller’s by decision 1 (docs/no-code-components.md, decision 7, approved in CR-37).",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-21T14:22:24Z",
+          "kind": "review",
+          "text": "CR-45: Component: gallery",
+          "by": "claude:79612601"
         }
       ],
       "started_at": "2026-11-21T14:12:45Z",
-      "started_by": "claude:79612601"
+      "started_by": "claude:79612601",
+      "commit": "afc20b39f2d7deb3fcdfd409790f6f5f3c8e4dd5",
+      "code_reviews": [
+        {
+          "id": "01a1fe7c-a607-714d-a899-b2e4baa1f33a",
+          "ref": "CR-45"
+        }
+      ],
+      "review_requested_at": "2026-11-21T14:22:24Z",
+      "review_state": "waiting"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57cb4e452c2e",
@@ -11902,7 +11936,7 @@
       "description": "Item 5 of [the first list](docs/first-components.md#:~:text=Posts%20and%20newsletters%20caption%20their%20images): an image and its caption, the caption its text alternative too, a `compmd` definition. Posts and newsletters caption their images.\n\n## Do\nThe definition, a demo, print, tests of its expanded tree.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68e81c39ce10",
         "01a1fb1a-5845-722a-88c3-17bf2a8c3273",
@@ -11912,7 +11946,7 @@
         "compmd-packs/figure/"
       ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T22:48:43Z",
+      "updated_at": "2026-11-21T14:22:24Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 316,
@@ -11937,7 +11971,9 @@
           "text": "One text as both caption and alt needs the image’s path as a param (`:: figure[Boats at dusk] {src=\"harbour.jpg\"}`), and a caller’s relative path in a param resolves against the pack, as in CMD-314’s second question. Should figure wait for that answer, or take the image as a slot (the caller’s own Markdown image) with the caption written separately? → Wait for it: `src` is the caller’s by decision 1, and the caption is `md.fallback`, its text the image’s alt too (docs/no-code-components.md, decisions 1 and 2, approved in CR-37).",
           "by": "claude:79612601"
         }
-      ]
+      ],
+      "started_at": "2026-11-21T14:22:24Z",
+      "started_by": "claude:79612601"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57cc97043c32",
@@ -14131,7 +14167,7 @@
       "description": "CMD-362 gives a link or image from a pack's definition its file's place with `pack: true` (spec §12.3), and the sandbox's host mode gives the renderer `packFile`, from where the bundle serves packs (`<base>packs/<place>`). A page frame (frame mode) renders the page with no network: its images come from the host's page (`PageImages`), only those of the trees it was sent.\n\n## Do\n- The frame gets the mapping, as it gets the host's own schemes with `level`: a protocol change, with its schema and docs.\n- `imageSources` takes the same mapping, so `PageImages` lists a pack image by the URL the frame asks for, and fetches it.\n- A link to a pack's file in the frame has the same `href` as in host mode.\n\n## Tests\nThe sandbox's browser tests in Chrome and WebKit: a pack's image shows in a page frame, and one not in the trees it was sent is refused.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [
         "01a1fb63-8662-766e-a404-898f1f749430"
       ],
@@ -14140,7 +14176,7 @@
         "npm-packages/render/src/images.ts"
       ],
       "created_at": "2026-11-21T13:23:15Z",
-      "updated_at": "2026-11-21T14:12:16Z",
+      "updated_at": "2026-11-21T14:26:24Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -14161,15 +14197,35 @@
         }
       ],
       "review_requested_at": "2026-11-21T14:12:16Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-21T14:12:16Z",
           "kind": "review",
           "text": "CR-44: A pack’s own files in a page frame (frame mode)",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-21T14:26:09Z",
+          "kind": "note",
+          "text": "Approved: in CR-44 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-21T14:26:24Z",
+          "kind": "outcome",
+          "text": "Approved in CR-44: frames get where the packs’ files are with their level (`packs`), so a pack’s image shows and its links match in frame mode and in every use frame; `PageImages` and `imageSources` map pack images.",
+          "by": "claude:79612601"
         }
-      ]
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-21T14:12:16Z",
+          "to": "2026-11-21T14:26:09Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-21T14:26:24Z",
+      "completed_by": "claude:79612601"
     },
     {
       "id": "01a1fe46-7ec4-7664-a5d9-7a48f23b5fcd",
@@ -14183,7 +14239,7 @@
       "description": "A pack the host fetches from a registry while a reader views a document (spec §6.4) gives its component modules as blobs; nothing serves its other files, so after CMD-362 a link or image from its definitions has no URL and shows its text or its alt. The spec (§12.3) says a host serves every file of the packs it gives the processor.\n\n## Decide first\nHow such a file reaches the page: a `blob:` URL from the host's store, checked against the pack's integrity, or a route of the host's that serves its store. Settle it with the maintainer.\n\n## Tests\nAn image of a registry pack shows, in host mode and frame mode.",
       "requirements": [],
       "use_cases": [],
-      "status": "blocked",
+      "status": "todo",
       "dependencies": [
         "01a1fb63-8662-766e-a404-898f1f749430"
       ],
@@ -14192,7 +14248,7 @@
         "npm-packages/registry/src/"
       ],
       "created_at": "2026-11-21T13:23:15Z",
-      "updated_at": "2026-11-21T14:07:46Z",
+      "updated_at": "2026-11-21T14:27:18Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -14203,13 +14259,21 @@
       ],
       "sprint": "Packs 1: the pack tool, no-code components",
       "number": 365,
-      "started_at": "2026-11-21T14:07:46Z",
-      "started_by": "claude:79612601",
-      "waiting_on": "user",
-      "questions": [
-        "How does a registry pack’s own file reach the page? (a) as its modules do: `resolvePacks` also gives `files(place)`, each file checked against the pack’s integrity, and the sandbox shows it from a `blob:` URL, the bundle’s `packs/<place>` for any other pack; or (b) a route of the host’s that serves its store. I’d take (a): it is how the modules come already, and needs no route on any host."
+      "blocks": [
+        {
+          "from": "2026-11-21T14:07:46Z",
+          "to": "2026-11-21T14:27:18Z",
+          "on": "user"
+        }
       ],
-      "blocked_at": "2026-11-21T14:07:46Z"
+      "notes": [
+        {
+          "at": "2026-11-21T14:27:18Z",
+          "kind": "answer",
+          "text": "How does a registry pack’s own file reach the page? (a) as its modules do: `resolvePacks` also gives `files(place)`, each file checked against the pack’s integrity, and the sandbox shows it from a `blob:` URL, the bundle’s `packs/<place>` for any other pack; or (b) a route of the host’s that serves its store. I’d take (a): it is how the modules come already, and needs no route on any host. → (a) `resolvePacks` also gives `files(place)`, each checked against the pack’s integrity, and the sandbox shows such a file from a `blob:` URL; the bundle’s `packs/<place>` for any other pack.",
+          "by": "claude:79612601"
+        }
+      ]
     }
   ]
 }
