@@ -1,6 +1,6 @@
 # Type in a box: its font, size, weight and text colour, and fonts of its own
 
-**Status: proposed (2026-11-21, CMD-370).** How a document, or a `compmd` definition, sets the type of a box's text:
+**Status: approved (2026-11-21, CR-54), CMD-370.** How a document, or a `compmd` definition, sets the type of a box's text:
 a badge in bold small type, a pull quote larger and in the heading font, a muted caption, a code-like label in the
 monospace font. Found in CR-51: a project's own badges, defined once, can fix their colours, borders and radius, but
 not their type. CompMD's common params (spec §9.2, §9.4) have surfaces, borders, radius, shadow and spacing, and
@@ -52,8 +52,8 @@ type param takes (`l`, `bold`, `heading`, `muted`), a CSS custom property with a
 4. **Contrast: W126 only where the processor can tell.** A `color` and a `background` both written as CSS colours on
    one box, whose contrast is below 4.5:1 (WCAG's AA for text), is W126 at the box. Tokens are built from the text
    colour and suit light and dark; the processor can't know the page's colours, so it says nothing about them.
-5. **A host-language component gets its box's type two ways** (proposed in CR-54, c9), both defaults it may ignore,
-   as `fit` is:
+5. **A host-language component gets its box's type two ways** (CR-54, c9), both defaults it may ignore, as `fit`
+   is:
    - **As CSS:** its outer box has them, so what it draws in the page inherits them, and a sandbox gives them to the
      root of the component's frame, resolved (the tokens as the host's fonts and sizes, a declared font loaded in
      the frame), so what it draws there inherits them too. A Mermaid diagram in `{font-family=heading font-size=s}`

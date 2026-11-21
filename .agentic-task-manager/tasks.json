@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 371,
+    "next_number": 372,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -13344,7 +13344,7 @@
       "description": "Item 4b of [the first list](docs/first-components.md#:~:text=Two%20or%20three%20columns): a `compmd` definition on `grid` (no code), in its own pack. The first column is the default slot, `:: #middle` and `:: #end` the others, so a column holds any blocks with no `box`; `split=even | wide-start | wide-middle | wide-end` sets the widths (`wide-middle` for three only), and below `md` the columns stack. Slot names are logical (spec §9.2).\n\n## Do\nThe definition with its signature; a demo with two and three columns and each `split`, in a right-to-left document too; plain-renderer reading checked (the columns in order); a conformance-style test of its expanded tree.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68e81c39ce10",
         "01a1fb1a-5845-722a-88c3-17bf2a8c3273",
@@ -13354,7 +13354,7 @@
         "compmd-packs/columns/"
       ],
       "created_at": "2026-11-20T19:03:19Z",
-      "updated_at": "2026-11-20T22:48:46Z",
+      "updated_at": "2026-11-21T16:55:15Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -13379,7 +13379,9 @@
           "text": "A compmd definition can’t tell whether `:: #middle` was given (no expression or `if` sees a slot), so columns can’t choose two tracks or three, and an empty middle box would still take a track. Should columns take the count as a param (`::: columns {count=3 split=wide-middle}`), or should the spec let a definition test a slot (`md.slots.middle`, true when given)? → The spec gets `md.slots.<name>`, true when the caller gave that slot; no `count` param (docs/no-code-components.md, decision 5, approved in CR-37).",
           "by": "claude:79612601"
         }
-      ]
+      ],
+      "started_at": "2026-11-21T16:55:15Z",
+      "started_by": "claude:79612601"
     },
     {
       "id": "01a1fa57-79f1-7065-863a-4b38065cfa68",
@@ -14791,9 +14793,9 @@
         "npm-packages/render/src/styles.ts"
       ],
       "created_at": "2026-11-21T16:23:39Z",
-      "updated_at": "2026-11-21T16:34:59Z",
+      "updated_at": "2026-11-21T16:58:50Z",
       "created_by": "claude:79612601",
-      "updated_by": "claude:79612601",
+      "updated_by": "Hakan Serce",
       "sprint_history": [
         {
           "sprint": "Packs 1: the pack tool, no-code components",
@@ -14804,7 +14806,7 @@
       "number": 370,
       "started_at": "2026-11-21T16:33:54Z",
       "started_by": "claude:79612601",
-      "commit": "0e39a1ffbefccc899906a408c219bb77ab2b541f",
+      "commit": "de316114111d104002d93f87013a732c3f298b21",
       "code_reviews": [
         {
           "id": "01a1fef6-07ec-70f6-b314-5a4d04c302ad",
@@ -14812,15 +14814,56 @@
         }
       ],
       "review_requested_at": "2026-11-21T16:34:59Z",
-      "review_state": "waiting",
+      "review_state": "approved",
       "notes": [
         {
           "at": "2026-11-21T16:34:59Z",
           "kind": "review",
           "text": "CR-54: The design: type in a box",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-21T16:58:50Z",
+          "kind": "note",
+          "text": "Approved: in CR-54 (round 2)",
+          "by": "Hakan Serce"
         }
-      ]
+      ],
+      "reviewed_at": "2026-11-21T16:58:50Z"
+    },
+    {
+      "id": "01a1ff0b-68af-74c9-888b-91ca206022ec",
+      "name": "A document's lang and dir reach its rendered page, and an example's its output",
+      "type": "bugfix",
+      "priority": "P1",
+      "labels": [
+        "spec"
+      ],
+      "description": "Found in CMD-348 (columns): `md.lang` and `md.dir` (spec §2.1) set a document's language and direction, but the expanded tree's root (§12.3) carries neither, so no renderer can apply them: an Arabic document renders left to right unless its host sets `dir` itself, and an example (§7.8) whose own frontmatter says `lang: ar` renders in the page's direction. A component's `lang` and `dir` params work, since they are on its box.\n\n## Decide first\nWith the maintainer: the root gets `lang` and `dir` (the document's, `dir` resolved from `lang` when not written), and a renderer sets them on the element it renders into, and on an example's output box. Then a host that renders a document into a page of its own (a blog) sets the page's `<html lang dir>` from them.\n\n## Do\nThe spec (§2.1, §7.8, §12.3, the changelog), the tree schema and conformance; the processor; the renderer (the page's element, an example's box); the hosts that write a page (blog, Vite plugin); browser tests in Chrome and WebKit: an Arabic document and an Arabic example in an English page, laid out right to left. Then the columns demo's right-to-left example can use the frontmatter instead of `dir` on the columns.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "spec/compmd-spec-v1.md",
+        "conformance/",
+        "crates/processor/src/expanded.rs",
+        "npm-packages/render/src/",
+        "npm-packages/blog/",
+        "npm-packages/vite/"
+      ],
+      "created_at": "2026-11-21T16:58:20Z",
+      "updated_at": "2026-11-21T16:58:20Z",
+      "created_by": "claude:79612601",
+      "updated_by": "claude:79612601",
+      "sprint_history": [
+        {
+          "sprint": "Packs 1: the pack tool, no-code components",
+          "from": "2026-11-21T16:58:20Z"
+        }
+      ],
+      "sprint": "Packs 1: the pack tool, no-code components",
+      "number": 371
     }
   ]
 }
