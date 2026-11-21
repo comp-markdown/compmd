@@ -9,6 +9,7 @@ import { CodeBlockView } from "./markdown-views.ts";
 import { nodesMountOf, runnable } from "./nodes.ts";
 import { PaperFallback } from "./paper.ts";
 import { createView, destroyAll, Matcher, patch, shapeOf, type Pass, type Surface, type View } from "./render.ts";
+import { fitImage, isImageBox } from "./image-box.ts";
 import { stretches, stretchFirstLink } from "./stretch-link.ts";
 import { BOX_PARAMS, fills, layoutOf, ownParams, usesBreakpoints, type ParentLayout } from "./styles.ts";
 import { contentOf, isComponent, rendererOf, textOf, type ExpandedCode, type ExpandedComponent, type ExpandedInstance, type ExpandedNode, type MarkdownNode } from "./tree.ts";
@@ -172,6 +173,7 @@ export class BoxView implements View {
     markBox(this.dom, children, layout);
     this.#children = patch(this.#surface, this.dom, this.#children, children, { ...pass, parent: layout });
     stretchFirstLink(this.dom, stretches(box.params));
+    fitImage(this.dom, box.params, box.type !== "componentInline" && isImageBox(children));
   }
 
   destroy(): void {

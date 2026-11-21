@@ -151,6 +151,8 @@ A length is a number with `px`, `rem`, `em` or `%`; `1rem` is the page's text si
 
 A component that draws, a chart or a QR code, fills its box, so its box's params size it: `:: qr-code[Our site] {value="https://compmd.dev/" width=10rem}` is 10rem wide, and with `height=6rem` too it is as large as fits in that box, in its middle, or at its start with `object-position=start`. `object-fit` and `object-position` take no breakpoint.
 
+An image fits its box the same way when the box holds that image and nothing else, so a box crops a photo to a shape: `::: box {aspect-ratio=4/3 object-fit=cover}` around `![Boats at the quay](harbour.jpg)` makes it 4:3 whatever its own shape, cut at its edges, and `object-position="start center"` keeps its top. Without a height, from `height`, `aspect-ratio` or a grid row, the box is as tall as the image and nothing is cut. A box with an image and a caption is no such box: put the image in a box of its own. On any other box, the two params get a warning (`W125`).
+
 The words (`s`, `subtle`, `accent`) follow the look of the app that shows the document, light or dark, so a document written with them fits wherever it is shown. Unless the app changes them, `s`, `m` and `l` are half the text's size, the text's size and twice it (0.5, 1 and 2 rem) for padding, and 4, 8 and 16 pixels for corners; `subtle` and `strong` are faint and stronger tints of the text's own color. A color or a length is the same everywhere: use them when that's what you mean.
 
 Sides are named `start` and `end`, not left and right, so a passage written right to left (`dir=rtl`) gets its padding on the right sides too.

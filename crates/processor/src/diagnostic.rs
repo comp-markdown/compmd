@@ -131,6 +131,8 @@ named! {
         W123 = "W123",
         /// `stretch-link` on a box that holds no link.
         W124 = "W124",
+        /// `object-fit` or `object-position` on a box that is neither a host-language component's nor an image box.
+        W125 = "W125",
     }
 }
 

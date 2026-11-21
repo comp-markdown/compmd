@@ -1,10 +1,12 @@
 //! The layout checks of the expanded tree (spec §9.2, §9.3), at each breakpoint: a box that places all its blocks by
 //! position needs a height (W119), and a box whose blocks use breakpoints needs a width where its width would come
-//! from its content (W114).
+//! from its content (W114). A box with `stretch-link` needs a link (W124), and one with `object-fit` or
+//! `object-position` an image of its own (W125).
 //!
 //! A block's nearest box is the nearest `box` or host-language component around it in the expanded tree; `each`,
 //! `if` and `display=contents` components are gone by then, and list items, quotes and table cells don't count.
 
+use super::image_box::is_image_box;
 use crate::breakpoint::{BREAKPOINTS, rank};
 use crate::diagnostic::{Code, Diagnostic, Location, Stage};
 use crate::expanded::{Content, Node, Param};
@@ -17,6 +19,9 @@ const INSETS: [&str; 4] = [
     "inset-block-start",
     "inset-block-end",
 ];
+
+/// The params that fit a drawing or an image in its box (spec §9.2).
+const FITS: [&str; 2] = ["object-fit", "object-position"];
 
 /// What a block is laid out in.
 #[derive(Clone, Copy)]
@@ -107,6 +112,17 @@ fn visit(block: &Block, around: Around, found: &mut Vec<Diagnostic>) {
             Code::W124,
             block.node,
             "`stretch-link` makes the box's first link cover it, and it holds no link",
+        );
+    }
+    if container.name == "box"
+        && FITS.iter().any(|key| value(block.params, key, 0).is_some())
+        && !is_image_box(&container.children)
+    {
+        report(
+            found,
+            Code::W125,
+            block.node,
+            "`object-fit` and `object-position` fit a component's drawing or a box's one image, and this box holds neither",
         );
     }
     let held_nodes: Vec<&Node> = block.node.content.lists().into_iter().flatten().collect();

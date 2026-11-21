@@ -102,5 +102,6 @@ When something in a document isn't right, CompMD says so with a *diagnostic*: a 
 | `W121` | a component in code can't load: it needs a library or framework the app doesn't have, or its code doesn't compile; it shows its fallback | use the component in an app that has what it needs, or tell the component's author |
 | `W123` | a ` ```compmd ` block that would render is inside an example (chapter 17); it shows its code | leave it as code (drop `render`), or show it in a document of its own |
 | `W124` | `stretch-link` on a box with no link in it (chapter 3) | put the link in the box, its title most often, or drop `stretch-link` |
+| `W125` | `object-fit` or `object-position` on a box with more than one image in it, or anything beside its image (chapter 3) | put the image in a box of its own, and the params on that box |
 
 [Back to the contents](README.md)

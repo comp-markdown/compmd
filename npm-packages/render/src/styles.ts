@@ -3,6 +3,7 @@
 // Every param of a block follows its parent's width (§9.3), so a block's breakpoint params are container queries,
 // answered by the nearest box around it that is a container: a box becomes one when blocks placed in it use
 // breakpoints, and the page always is.
+import { IMAGE_BOX_RULES } from "./image-box.ts";
 import type { ExpandedParam } from "./tree.ts";
 
 /** The breakpoints and the widths they start at (spec §9.3), narrowest first. */
@@ -253,7 +254,7 @@ const BASE_RULES = `
   :where(.compmd-page) :where(.compmd-component, .compmd-box, table, pre, img, figure) { break-inside: avoid; }
   :where(.compmd-page) :where(h1, h2, h3, h4, h5, h6) { break-after: avoid; }
 }
-`;
+${IMAGE_BOX_RULES}`;
 
 const declarationsText = (declarations: Declarations) => Object.entries(declarations).map(([property, value]) => `${property}: ${value};`).join(" ");
 

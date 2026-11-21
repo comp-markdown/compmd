@@ -10,6 +10,7 @@ mod components;
 mod destinations;
 mod env;
 mod flow;
+mod image_box;
 mod layout;
 mod origins;
 mod params;

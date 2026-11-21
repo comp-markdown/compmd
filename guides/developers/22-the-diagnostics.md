@@ -115,8 +115,9 @@ Expanding the tree, for one render context.
 | F034 | error | an expansion larger than the processor allows, past 100,000 nodes | writer | less nesting, or filtering the data |
 | W109 | warning | an interpolated link or image URL with a scheme other than `https:`, `http:` or `mailto:`; shown without the link | writer | the data's URLs |
 | W114 | warning | a box whose blocks use breakpoints, with no `width` where its width would come from its content | writer, pack author | a `width` on the box |
-| W119 | warning | a box that places blocks by position, with no `height`, `aspect-ratio` or `fill` at some width | writer, pack author | one of them on the box |
+| W119 | warning | a box that places all its blocks by position, with no `height`, `aspect-ratio` or `fill` at some width | writer, pack author | one of them on the box |
 | W124 | warning | `stretch-link` on a box that holds no link, so there is nothing to cover the box with | writer, pack author | the link in the box, or `stretch-link` dropped |
+| W125 | warning | `object-fit` or `object-position` on a box that is neither a host-language component's nor an image box (one image and nothing else), so there is nothing to fit | writer, pack author | the image in a box of its own, with the params on that box |
 
 ## When rendering
 

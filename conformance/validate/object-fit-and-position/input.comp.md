@@ -13,7 +13,7 @@ params: {}
 :: photo[Stretched] {object-fit=fill object-position=start}
 
 ::: box {object-fit=cover}
-A box takes it too, though it means nothing there.
+A box with no image of its own takes it too, though it means nothing there: W125.
 ::: /box
 
 :: photo[CSS's none] {object-fit=none}

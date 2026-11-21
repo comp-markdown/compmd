@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 370,
+    "next_number": 371,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -12146,7 +12146,7 @@
       "description": "Item 7 of [the first list](docs/first-components.md#:~:text=A%20note%20pinned%20on%20the%20page): a note pinned on the page, a tinted box, tilted, with a shadow, placed with `inset-*` (spec §9.2) where it should sit; a `compmd` definition.\n\n## Do\nThe definition, a demo, print and the phone width checked, tests of its expanded tree.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68e81c39ce10",
         "01a1fb1a-5845-722a-88c3-17bf2a8c3273",
@@ -12157,7 +12157,7 @@
         "compmd-packs/sticky-note/"
       ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-21T15:29:06Z",
+      "updated_at": "2026-11-21T16:09:46Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 318,
@@ -12169,7 +12169,24 @@
       ],
       "sprint": "Packs 1: the pack tool, no-code components",
       "started_at": "2026-11-21T15:29:06Z",
-      "started_by": "claude:79612601"
+      "started_by": "claude:79612601",
+      "commit": "ecd0b12b3cb51d1698f95e48312d94042413a86a",
+      "code_reviews": [
+        {
+          "id": "01a1fede-f29f-714f-8961-b430063ff324",
+          "ref": "CR-52"
+        }
+      ],
+      "review_requested_at": "2026-11-21T16:09:46Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-21T16:09:46Z",
+          "kind": "review",
+          "text": "CR-52: The sticky-note pack, and W119 for a box with nothing in its flow",
+          "by": "claude:79612601"
+        }
+      ]
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57ce340e98a8",
@@ -14573,7 +14590,7 @@
         "packs",
         "component"
       ],
-      "description": "Once an image can be cropped to its box (the task this depends on), `gallery` makes its items' images one shape, so a grid of photos of different sizes is even, as galleries elsewhere are: a param for the images' ratio (`ratio=4/3`), with `object-fit` and `object-position` for how they fill it. The card's image slot may need the same. Its demo shows it with photos of different shapes, as `render=both` examples (CR-45).",
+      "description": "Once an image can be cropped to its box (the task this depends on), `gallery` makes its items' images one shape, so a grid of photos of different sizes is even, as galleries elsewhere are: a param for the images' ratio (`ratio=4/3`), with `object-fit` and `object-position` for how they fill it. The card's image slot may need the same. Its demo shows it with photos of different shapes, as `render=both` examples (CR-45). With `grid-auto-rows` (CMD-369), every card one height across rows too.\n\n## Tests\nThe expanded tree; a page test in Chrome and WebKit: the images of different shapes cropped to one, the cards one height, and printed cropped (`emulateMedia`), the print check CMD-366's renderer tests couldn't make.\n",
       "requirements": [],
       "use_cases": [],
       "status": "todo",
@@ -14586,7 +14603,7 @@
         "compmd-packs/card/"
       ],
       "created_at": "2026-11-21T14:55:01Z",
-      "updated_at": "2026-11-21T15:36:01Z",
+      "updated_at": "2026-11-21T16:17:17Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -14606,7 +14623,7 @@
       "labels": [
         "packs"
       ],
-      "description": "A pack's demo shows each param and use as a `compmd {render=both}` example, its source then what it draws ([writing a pack](docs/writing-a-pack.md), decision 3, from CR-45). The card, figure, gallery and rating demos and `create-pack`'s templates do; the Mermaid and wireframe packs' don't yet.\n\n## Do\nEach demo as examples, one per param and use (a block, a leaf, a diagram from data, a theme, a size), and their page tests (`test/page.test.ts`) finding each drawing in its example.",
+      "description": "A pack's demo shows each param and use as a `compmd {render=both}` example, its source then what it draws ([writing a pack](docs/writing-a-pack.md), decision 3, from CR-45). From CR-51: each example is a `#` section named for what it shows (no bold lead-ins, no demo title above them), and the examples' own headings are `##` or lower, so the demo's sections and the examples' headings don't mix.\n\n## Do\n- **The Mermaid and wireframe packs' demos** as examples, one per param and use (a block, a leaf, a diagram from data, a theme, a size), and their page tests (`test/page.test.ts`) finding each drawing in its example.\n- **Every other demo** with `#` sections: card, figure, gallery, link-card, rating, sticky-note (the badge's is done in CR-51), and `create-pack`'s templates and the demo it writes for a wrapped package; their tests where they count examples or headings.\n- **The rule** in `docs/writing-a-pack.md`, decision 3.\n",
       "requirements": [],
       "use_cases": [],
       "status": "todo",
@@ -14614,12 +14631,15 @@
       "files": [
         "compmd-packs/mermaid/demo.comp.md",
         "compmd-packs/mermaid/test/page.test.ts",
-        "compmd-packs/wireframe/demo.comp.md"
+        "compmd-packs/wireframe/demo.comp.md",
+        "compmd-packs/",
+        "npm-packages/create-pack/",
+        "docs/writing-a-pack.md"
       ],
       "created_at": "2026-11-21T15:01:30Z",
-      "updated_at": "2026-11-21T15:01:30Z",
+      "updated_at": "2026-11-21T16:25:49Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "sprint_history": [
         {
           "sprint": "Packs 1: the pack tool, no-code components",
@@ -14661,6 +14681,40 @@
       ],
       "sprint": "Packs 1: the pack tool, no-code components",
       "number": 369
+    },
+    {
+      "id": "01a1feeb-aada-7653-96de-3c47766d3f06",
+      "name": "Type in the common params: a box's font, size, weight and text colour",
+      "type": "feature",
+      "priority": "P1",
+      "labels": [
+        "spec",
+        "packs"
+      ],
+      "description": "From CR-51: a project's own badges (`bug`, `feature`, `chore`, defined once in a file) can fix their colours, borders and radius, but not their type. CompMD's common params (spec §9.2, §9.4) have surfaces, borders, radius, shadow and spacing, and nothing for text: no font, size, weight or text colour. A definition can only use Markdown's `**bold**` and `*italic*`, and a box's text is always the page's.\n\n## Decide first\nA design (`docs/`), with the maintainer, tried on real documents (a badge, a callout, a pull quote, a card's title, a newsletter's masthead):\n- **Which params:** for example `font-size` (tokens `s`, `m`, `l`, `xl` and lengths), `font-weight` (`normal`, `bold`), `font-style`, `font-family` (tokens `body`, `heading`, `mono`, not free font names, so a document stays readable wherever it is shown), `color` (tokens built from the text colour, as surfaces are, and CSS colours), `text-align`, `line-height`, `text-transform`?\n- **Tokens and themes:** custom properties with defaults, as §9.4's are, so a host's theme changes them.\n- **Contrast:** a text colour on a surface that doesn't contrast (a warning?).\n- **Inheritance, breakpoints, print, plain readers, components** (does a host-language component's box pass them on?).\n\nThen the spec, its conformance cases, the processor, the renderer, the guides, and the badge demo's `labels.comp.md` using them.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "docs/",
+        "spec/compmd-spec-v1.md",
+        "conformance/",
+        "crates/processor/src/",
+        "npm-packages/render/src/styles.ts"
+      ],
+      "created_at": "2026-11-21T16:23:39Z",
+      "updated_at": "2026-11-21T16:23:39Z",
+      "created_by": "claude:79612601",
+      "updated_by": "claude:79612601",
+      "sprint_history": [
+        {
+          "sprint": "Packs 1: the pack tool, no-code components",
+          "from": "2026-11-21T16:23:39Z"
+        }
+      ],
+      "sprint": "Packs 1: the pack tool, no-code components",
+      "number": 370
     }
   ]
 }

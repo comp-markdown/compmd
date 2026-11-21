@@ -1,6 +1,6 @@
 # An image cropped to its box
 
-**Status: proposed (2026-11-21, CMD-366).** How a document, or a `compmd` definition, gives an image a shape of its own:
+**Status: approved (2026-11-21, CR-49), in the spec (CMD-366).** How a document, or a `compmd` definition, gives an image a shape of its own:
 a gallery whose photos are all 4:3, a card whose image is a banner, a figure that crops a tall photo. Found in CR-45:
 the gallery's cards are as uneven as their images, and CompMD has no way to make them one shape. CMD-367 uses it in
 the gallery.
@@ -26,7 +26,8 @@ nothing else: one paragraph that holds one Markdown image, alone or as a link's 
    `::: box {aspect-ratio=(ratio) object-fit=cover}` around `{{md.slot.image}}` in the card, or around
    `![{{item.alt}}]({{item.image}})` in the gallery. The renderer marks such a box, and its CSS sizes the image.
 3. **`object-fit` and `object-position` on a box that is neither** a host-language component's nor an image box mean
-   nothing still, and are now **W125**, at the param, so an author sees why nothing changed (a box with an image and
+   nothing still, and are now **W125**, at the box (the expanded tree, where an image box is found, keeps no param's
+   place), so an author sees why nothing changed (a box with an image and
    a caption, say: the image needs a box of its own).
 4. **No breakpoint, as now** (§9.2): they stay written without one. The box's `aspect-ratio` takes breakpoints, so a
    gallery can crop to 1:1 on a phone and 4:3 from `md` up.
