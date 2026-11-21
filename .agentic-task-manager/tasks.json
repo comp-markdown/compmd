@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 372,
+    "next_number": 374,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -14780,10 +14780,10 @@
         "spec",
         "packs"
       ],
-      "description": "From CR-51: a project's own badges (`bug`, `feature`, `chore`, defined once in a file) can fix their colours, borders and radius, but not their type. CompMD's common params (spec §9.2, §9.4) have surfaces, borders, radius, shadow and spacing, and nothing for text: no font, size, weight or text colour. A definition can only use Markdown's `**bold**` and `*italic*`, and a box's text is always the page's.\n\n## Decide first\nA design (`docs/`), with the maintainer, tried on real documents (a badge, a callout, a pull quote, a card's title, a newsletter's masthead):\n- **Which params:** for example `font-size` (tokens `s`, `m`, `l`, `xl` and lengths), `font-weight` (`normal`, `bold`), `font-style`, `font-family` (tokens `body`, `heading`, `mono`, not free font names, so a document stays readable wherever it is shown), `color` (tokens built from the text colour, as surfaces are, and CSS colours), `text-align`, `line-height`, `text-transform`?\n- **Tokens and themes:** custom properties with defaults, as §9.4's are, so a host's theme changes them.\n- **Contrast:** a text colour on a surface that doesn't contrast (a warning?).\n- **Inheritance, breakpoints, print, plain readers, components** (does a host-language component's box pass them on?).\n\nThen the spec, its conformance cases, the processor, the renderer, the guides, and the badge demo's `labels.comp.md` using them.",
+      "description": "From CR-51: a box's text had no type of its own. [Type in a box](docs/type-params.md), approved in CR-54, decisions 1 to 4 and 6; decision 5 (a component's type) is CMD-372 and decision 7 (fonts of a document's own) CMD-373.\n\n## Do\n- **The spec:** §9.2, the ten params (`font-size`, `font-weight`, `font-style`, `font-family`, `color`, `text-align`, `line-height`, `letter-spacing`, `text-transform`, `text-decoration`), on every block and an inline box, with breakpoints, inherited; §9.4, their tokens and custom properties with defaults; §10, W126 (a `color` and a `background` both CSS colours on one box, below 4.5:1); the changelog; conformance for each param's grammar (F009 for a font name, a numeric weight), a breakpoint, an inline box, and W126.\n- **The processor:** the params in `Universal` with their kinds, W126 on the expanded tree, `params.json` and `llms.txt`.\n- **The renderer:** the CSS; browser tests in Chrome and WebKit (a badge's size in a heading, inheritance into a nested box, a theme changing a token, print).\n- **The guides:** the Author's Guide's chapter on params, and chapter 20's W126; the Developer's Guide's chapter 22.\n- **The badge demo's `labels.comp.md`** using them (an uppercase, spaced `beta`).\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "docs/",
@@ -14793,9 +14793,9 @@
         "npm-packages/render/src/styles.ts"
       ],
       "created_at": "2026-11-21T16:23:39Z",
-      "updated_at": "2026-11-21T16:58:50Z",
+      "updated_at": "2026-11-21T16:59:51Z",
       "created_by": "claude:79612601",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "sprint_history": [
         {
           "sprint": "Packs 1: the pack tool, no-code components",
@@ -14804,17 +14804,15 @@
       ],
       "sprint": "Packs 1: the pack tool, no-code components",
       "number": 370,
-      "started_at": "2026-11-21T16:33:54Z",
+      "started_at": "2026-11-21T16:59:51Z",
       "started_by": "claude:79612601",
-      "commit": "de316114111d104002d93f87013a732c3f298b21",
+      "commit": "c1e567df73d2160f34cde163a28c84adc5b23c8a",
       "code_reviews": [
         {
           "id": "01a1fef6-07ec-70f6-b314-5a4d04c302ad",
           "ref": "CR-54"
         }
       ],
-      "review_requested_at": "2026-11-21T16:34:59Z",
-      "review_state": "approved",
       "notes": [
         {
           "at": "2026-11-21T16:34:59Z",
@@ -14829,7 +14827,13 @@
           "by": "Hakan Serce"
         }
       ],
-      "reviewed_at": "2026-11-21T16:58:50Z"
+      "reviews": [
+        {
+          "from": "2026-11-21T16:34:59Z",
+          "to": "2026-11-21T16:58:50Z",
+          "outcome": "approved"
+        }
+      ]
     },
     {
       "id": "01a1ff0b-68af-74c9-888b-91ca206022ec",
@@ -14864,6 +14868,78 @@
       ],
       "sprint": "Packs 1: the pack tool, no-code components",
       "number": 371
+    },
+    {
+      "id": "01a1ff0c-ad59-7684-8887-3abb938bc918",
+      "name": "A component's type: its frame's root, and type in the host contract",
+      "type": "feature",
+      "priority": "P1",
+      "labels": [
+        "spec",
+        "packs"
+      ],
+      "description": "[Type in a box](docs/type-params.md), decision 5 (CR-54): a host-language component gets its box's type two ways, both defaults it may ignore. A sandbox gives the box's type, resolved (tokens as the host's fonts and sizes), to the root of the component's frame, so what it draws there inherits it as in the page; and the context carries it as values, `type: { family, size, weight, style, color, lineHeight, letterSpacing }`, the size in pixels and the colour resolved, `update` called when they change, for a component that draws on a canvas.\n\n## Do\nThe spec (§7.4, §7.6, the changelog); the renderer (the values from the box's computed style), the sandbox (the frame's root, the protocol), the React and Svelte bindings; the Mermaid pack's theme inheriting its labels' font; tests in Chrome and WebKit: a framed component's text following its box, a canvas component given its `type`, an update when the box's type changes.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1feeb-aada-7653-96de-3c47766d3f06"
+      ],
+      "files": [
+        "spec/compmd-spec-v1.md",
+        "npm-packages/render/src/",
+        "npm-packages/sandbox/src/",
+        "compmd-packs/mermaid/"
+      ],
+      "created_at": "2026-11-21T16:59:43Z",
+      "updated_at": "2026-11-21T16:59:43Z",
+      "created_by": "claude:79612601",
+      "updated_by": "claude:79612601",
+      "sprint_history": [
+        {
+          "sprint": "Packs 1: the pack tool, no-code components",
+          "from": "2026-11-21T16:59:43Z"
+        }
+      ],
+      "sprint": "Packs 1: the pack tool, no-code components",
+      "number": 372
+    },
+    {
+      "id": "01a1ff0c-ad59-7684-8887-3abcc6f4d034",
+      "name": "Fonts of a document's own, from a pack or its folder",
+      "type": "feature",
+      "priority": "P1",
+      "labels": [
+        "spec",
+        "packs"
+      ],
+      "description": "[Type in a box](docs/type-params.md), decision 7 (CR-54): a font declared once in `md.fonts` with its files by weight and style and a fallback token (`body`, `heading`, `mono`), from a pack (exported and imported as components are, `fonts: [...]`) or next to the document, never from a URL; `font-family` takes its name. Files served as images are (a pack's from its place with its integrity, CMD-362 and CMD-365; the document's from its folder), `woff2` and `woff` only, within the size cap; the fallback while it loads, where fonts don't load, and in plain renderers; printing waits for fonts.\n\n## Do\nThe spec (§2, §6, §8.6, §9.4, §10: F009 for a font not declared, F013 for one declared twice, F026 for a missing file, §12.3: the fonts in the expanded tree), conformance; the processor (declarations, exports, imports, the files as sources); the renderer's `@font-face` with `font-display: swap`; the hosts serving the files and the sandbox loading them in frames; the pack tool checking a font file has a licence beside it (G2); tests in Chrome and WebKit: a pack's font loading, its fallback first, a missing file, print.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1feeb-aada-7653-96de-3c47766d3f06"
+      ],
+      "files": [
+        "spec/compmd-spec-v1.md",
+        "conformance/",
+        "crates/processor/src/",
+        "npm-packages/render/src/",
+        "npm-packages/registry/",
+        "npm-packages/pack/"
+      ],
+      "created_at": "2026-11-21T16:59:43Z",
+      "updated_at": "2026-11-21T16:59:43Z",
+      "created_by": "claude:79612601",
+      "updated_by": "claude:79612601",
+      "sprint_history": [
+        {
+          "sprint": "Packs 1: the pack tool, no-code components",
+          "from": "2026-11-21T16:59:43Z"
+        }
+      ],
+      "sprint": "Packs 1: the pack tool, no-code components",
+      "number": 373
     }
   ]
 }

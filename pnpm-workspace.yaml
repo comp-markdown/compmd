@@ -15,6 +15,7 @@ packages:
   - npm-packages/editor/packs/minimermaid
   - compmd-packs/badge
   - compmd-packs/card
+  - compmd-packs/columns
   - compmd-packs/figure
   - compmd-packs/gallery
   - compmd-packs/link-card
