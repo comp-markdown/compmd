@@ -14529,7 +14529,7 @@
       "description": "A gallery's, a card's or a figure's images come in different shapes, so their cards are uneven. Galleries elsewhere crop each image to one shape: MUI's `ImageList` (`rowHeight`, `object-fit: cover`), react-photo-album's rows, card grids with a fixed image ratio. CompMD can't: `object-fit` and `object-position` style a component's box (spec §7.4, §9.2), and a `compmd` definition can't style the Markdown image in its body. Found in CR-45.\n\n## Decide first\nHow a definition crops an image to a shape: for example, a box whose only content is an image fits that image in it, by the box's `aspect-ratio` (or `height`), `object-fit` and `object-position`, as a component fits its drawing. Write the design with the maintainer, test it on the gallery, the card and the figure, then the spec text (§9.2, §12.3), its conformance cases, the processor and the renderer.\n\n## Tests\nConformance cases; the renderer's CSS; browser tests in Chrome and WebKit of an image cropped to a ratio, covering and contained, and printed.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [],
       "files": [
         "spec/compmd-spec-v1.md",
@@ -14539,7 +14539,7 @@
         "docs/"
       ],
       "created_at": "2026-11-21T14:55:01Z",
-      "updated_at": "2026-11-21T15:41:02Z",
+      "updated_at": "2026-11-21T16:33:19Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -14552,11 +14552,15 @@
       "number": 366,
       "started_at": "2026-11-21T15:41:02Z",
       "started_by": "claude:79612601",
-      "commit": "cd6d02ee766a70aa883cbb31eb801b79abccb31b",
+      "commit": "2ea3157e38fef8f813a99130db0a2c2fb8c8124e",
       "code_reviews": [
         {
           "id": "01a1feaf-a323-755c-8b13-29050643f0b5",
           "ref": "CR-49"
+        },
+        {
+          "id": "01a1fef4-82a6-7350-9a26-636a5d2d2f69",
+          "ref": "CR-53"
         }
       ],
       "notes": [
@@ -14571,6 +14575,12 @@
           "kind": "note",
           "text": "Approved: in CR-49 (round 1)",
           "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-21T16:33:19Z",
+          "kind": "review",
+          "text": "CR-53: An image cropped to its box: the spec, W125, the renderer",
+          "by": "claude:79612601"
         }
       ],
       "reviews": [
@@ -14579,7 +14589,9 @@
           "to": "2026-11-21T15:39:01Z",
           "outcome": "approved"
         }
-      ]
+      ],
+      "review_requested_at": "2026-11-21T16:33:19Z",
+      "review_state": "waiting"
     },
     {
       "id": "01a1fe9a-821c-7292-b5a0-3d4a22b87e04",

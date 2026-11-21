@@ -27,7 +27,7 @@ function processed(text: string) {
   const manifest = JSON.parse(read("package.json")) as { version: string };
   const request: Request = {
     path: "walks.comp.md",
-    files: { "walks.comp.md": text, "stops.yaml": read("stops.yaml") },
+    files: { "walks.comp.md": text, "stops.yaml": read("stops.yaml"), "labels.comp.md": read("labels.comp.md") },
     packs: { "@comp-markdown/badge": [{ version: manifest.version, files: { "package.json": read("package.json"), "index.comp.md": read("index.comp.md") } }] },
     now: "2026-11-20T12:00:00Z",
   };
@@ -89,8 +89,18 @@ describe("a badge", () => {
     const { expanded, diagnostics } = processed(read("demo.comp.md"));
     expect(diagnostics).toEqual([]);
     const examples = (expanded.children as (Node & { render?: string; document?: { children: Node[] } })[]).filter((node) => node.type === "code" && node.document);
-    expect(examples.map((example) => example.render)).toEqual(["both", "both", "both", "both", "both"]);
+    expect(examples.map((example) => example.render)).toEqual(["both", "both", "both", "both", "both", "both"]);
     const tones = JSON.stringify(examples[4]?.document?.children).match(/"value":"(accent|subtle)"/g);
     expect(tones).toEqual(['"value":"accent"', '"value":"subtle"', '"value":"accent"']);
+  });
+
+  it("is a project's own badges when a file defines them once, each with its look, used with nothing to configure", () => {
+    const { expanded, diagnostics } = processed(`---\nmd:\n  import:\n    - from: ./labels.comp.md\n      names: [bug, feature]\n---\n\n:bug[bug] and :feature[new], then :bug[bug] again.\n`);
+    expect(diagnostics).toEqual([]);
+    const [paragraph] = expanded.children as Node[];
+    const badges = (paragraph?.children ?? []).filter((node) => node.type === "componentInline");
+    expect(badges.map((badge) => textOf(badge.fallback))).toEqual(["bug", "new", "bug"]);
+    expect(badges.map((badge) => badge.params?.find((param) => param.key === "border")?.value)).toEqual(["1px solid #cf222e", "1px solid #1a7f37", "1px solid #cf222e"]);
+    expect(badges[0]?.fallback?.[0]?.type).toBe("strong");
   });
 });
