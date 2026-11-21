@@ -14819,7 +14819,7 @@
       "description": "From CR-51: a box's text had no type of its own. [Type in a box](docs/type-params.md), approved in CR-54, decisions 1 to 4 and 6; decision 5 (a component's type) is CMD-372 and decision 7 (fonts of a document's own) CMD-373.\n\n## Do\n- **The spec:** §9.2, the ten params (`font-size`, `font-weight`, `font-style`, `font-family`, `color`, `text-align`, `line-height`, `letter-spacing`, `text-transform`, `text-decoration`), on every block and an inline box, with breakpoints, inherited; §9.4, their tokens and custom properties with defaults; §10, W126 (a `color` and a `background` both CSS colours on one box, below 4.5:1); the changelog; conformance for each param's grammar (F009 for a font name, a numeric weight), a breakpoint, an inline box, and W126.\n- **The processor:** the params in `Universal` with their kinds, W126 on the expanded tree, `params.json` and `llms.txt`.\n- **The renderer:** the CSS; browser tests in Chrome and WebKit (a badge's size in a heading, inheritance into a nested box, a theme changing a token, print).\n- **The guides:** the Author's Guide's chapter on params, and chapter 20's W126; the Developer's Guide's chapter 22.\n- **The badge demo's `labels.comp.md`** using them (an uppercase, spaced `beta`).\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [],
       "files": [
         "docs/",
@@ -14829,7 +14829,7 @@
         "npm-packages/render/src/styles.ts"
       ],
       "created_at": "2026-11-21T16:23:39Z",
-      "updated_at": "2026-11-21T16:59:51Z",
+      "updated_at": "2026-11-21T18:25:30Z",
       "created_by": "claude:79612601",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -14842,11 +14842,15 @@
       "number": 370,
       "started_at": "2026-11-21T16:59:51Z",
       "started_by": "claude:79612601",
-      "commit": "c1e567df73d2160f34cde163a28c84adc5b23c8a",
+      "commit": "0c2679869a2cb241c8b6c066039b177a1dc320e4",
       "code_reviews": [
         {
           "id": "01a1fef6-07ec-70f6-b314-5a4d04c302ad",
           "ref": "CR-54"
+        },
+        {
+          "id": "01a1ff5b-35a0-759a-8a0b-f819ae98d482",
+          "ref": "CR-57"
         }
       ],
       "notes": [
@@ -14861,6 +14865,12 @@
           "kind": "note",
           "text": "Approved: in CR-54 (round 2)",
           "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-21T18:25:30Z",
+          "kind": "review",
+          "text": "CR-57: Type in a box: ten params, their tokens, W126",
+          "by": "claude:79612601"
         }
       ],
       "reviews": [
@@ -14869,7 +14879,9 @@
           "to": "2026-11-21T16:58:50Z",
           "outcome": "approved"
         }
-      ]
+      ],
+      "review_requested_at": "2026-11-21T18:25:30Z",
+      "review_state": "waiting"
     },
     {
       "id": "01a1ff0b-68af-74c9-888b-91ca206022ec",

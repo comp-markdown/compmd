@@ -1,6 +1,6 @@
 # @comp-markdown/timeline
 
-A [CompMD](https://compmd.dev/) pack with one component, `timeline`: dates and what happened, along a line, for a harbour's history in a post, a project's milestones in notes, a trip day by day. It is a `compmd` definition, so it has no code: every CompMD processor renders it, with no sandbox and nothing to load. It is item 8 of [the first components](https://github.com/comp-markdown/compmd/blob/main/docs/first-components.md).
+A [CompMD](https://compmd.dev/) pack with two components, `timeline` and its `event`s: dates and what happened, along a line, for a harbour's history in a post, a project's milestones in notes, a trip day by day. It is a `compmd` definition, so it has no code: every CompMD processor renders it, with no sandbox and nothing to load. It is item 8 of [the first components](https://github.com/comp-markdown/compmd/blob/main/docs/first-components.md).
 
 ## Use it in a document
 
@@ -9,21 +9,27 @@ A [CompMD](https://compmd.dev/) pack with one component, `timeline`: dates and w
 md:
   import:
     - from: "@comp-markdown/timeline@0"
-      names: [timeline]
+      names: [timeline, event]
 ---
 
 ::: timeline
-- **1897**: the harbour wall is built.
-- **1952**: the quay is rebuilt after the storm.
-- **2024**: the lamps along the quay come back.
+::: event {date=1897 title="The harbour wall"}
+Built in a single summer, of granite from the quarry.
+::: /event
+
+::: event {date=2024 title="The lamps come back" tone=accent}
+All forty of them, restored.
+::: /event
 ::: /timeline
 ```
 
-- **The timeline** is the list you write in it, each item a date and what happened, the date as you write it: `**1897**`, `**May 3**`, `**Day 2**`. An item holds what a list item holds: paragraphs, links, a nested list.
-- **From data,** an `each` inside it writes the items, `join=list` making them one list: `::: each {in=(md.data.milestones) as=m join=list}` around `- **{{m.date}}**: {{m.what}}`.
-- **Its box** has a line down its start side and room beside it. A use changes it as any box's: `{border-inline-start=subtle}` for a fainter line, `{padding-inline-start=l}` for more room.
+- **Each `event`** has a dot on the line, its `date` small and muted, its `title` in bold (an event may leave it out), then what you write in it: paragraphs, links, a list. The date is written as you write it: `1897`, `May 3`, `Day 2`.
+- **`tone=accent`** fills an event's dot with the accent colour, for the current or most important one.
+- **From data,** an `each` inside the timeline writes the events: `::: event {date=(m.date) title=(m.title)}` around `{{m.what}}`.
+- **A quick timeline** is a list with no events, `- **1897**: the harbour wall is built.`, the list's markers on the line.
+- **The line** is the timeline's start border: `{border-inline-start=subtle}` for a fainter one. Its room, `padding-inline-start`, is what places the dots, so leave it as it is.
 - **On paper** it prints as it shows.
-- **In a plain Markdown reader,** and on GitHub, a timeline is its list.
+- **In a plain Markdown reader,** and on GitHub, a timeline is its events' text, each date, title and text in order.
 
 ## Try it
 
