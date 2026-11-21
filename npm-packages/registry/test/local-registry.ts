@@ -47,7 +47,9 @@ export const integrityOf = (bytes: Buffer): string => `sha512-${createHash("sha5
  * - `@kit/bars@1.0.0` and `@kit/lines@1.0.0`: a built module each that imports the library pack `@kit/d3`, which they
  *   name in `peerDependencies` at `^7.9` and `~7.9.0`;
  * - `@kit/dashboard@1.0.0`: imports `@kit/lines@1`, so `@kit/lines`'s range for `@kit/d3` is asked a round later;
- * - `@kit/d3@7.9.5` and `7.12.0`: the library pack, `{ "compmd": { "library": "dist/d3.js" } }`.
+ * - `@kit/d3@7.9.5` and `7.12.0`: the library pack, `{ "compmd": { "library": "dist/d3.js" } }`;
+ * - `@kit/icons@1.0.0`: a `compmd` definition, `pin`, that shows the pack's own images, an SVG and a PNG, and links to
+ *   its own page.
  *
  * And packs whose metadata is wrong in one way, each a copy of another's tarball:
  * - `@kit/huge`: 20 MB unpacked, over the default cap; `@kit/unsized`: no unpacked size;
@@ -66,6 +68,7 @@ export const CATALOG: Catalog = {
   "@kit/lines": { "1.0.0": { file: "kit-lines-1.0.0.tgz" } },
   "@kit/dashboard": { "1.0.0": { file: "kit-dashboard-1.0.0.tgz" } },
   "@kit/d3": { "7.9.5": { file: "kit-d3-7.9.5.tgz" }, "7.12.0": { file: "kit-d3-7.12.0.tgz" } },
+  "@kit/icons": { "1.0.0": { file: "kit-icons-1.0.0.tgz" } },
 };
 
 /** A registry serving `catalog` on a free port of 127.0.0.1. */

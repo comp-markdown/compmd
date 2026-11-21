@@ -65,11 +65,15 @@ const origins = {
 /** Where the test serves the packs' files: one pack's icon is there. */
 const PACKS = "/test/fixtures/packs/";
 
+/** A registry pack's image, which the host holds and nothing serves under `PACKS`. */
+const HELD = "@acme/maps@2.0.0/pin.svg";
+const packImages = (place: string) => (place === HELD ? new Blob(['<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"><rect width="4" height="4" fill="crimson"/></svg>'], { type: "image/svg+xml" }) : undefined);
+
 function open(mode: "frame" | "host", components: HostComponent[]) {
   const area = document.body.appendChild(document.createElement("div"));
   area.style.height = "300px";
   areas.push(area);
-  const view = createSandbox({ base: frames, packs: PACKS, page: mode, origins }).open(area, { components });
+  const view = createSandbox({ base: frames, packs: PACKS, packImages, page: mode, origins }).open(area, { components });
   views.push(view);
   const values: unknown[] = [];
   view.on("set", ({ value }) => values.push(JSON.parse(value as string)));
@@ -129,6 +133,18 @@ describe("a document's own images", () => {
     hosted.view.render(tree());
     await expect.poll(() => shown(hosted.area).images.length, { timeout: 5000 }).toBe(1);
     expect(hosted.area.querySelector("a")?.getAttribute("href")).toBe(`${PACKS}@acme/kit@1.0.0/guide.comp.md`);
+  });
+
+  it("shows a registry pack's image the host holds in both modes, which nothing serves", async () => {
+    const tree = (...more: ExpandedNode[]): ExpandedRoot => ({ type: "root", children: [{ type: "paragraph", children: [{ ...image(HELD, "Pin"), pack: true }] }, ...more], inputs: { result: { type: "string", value: "" } } });
+    const lookingForOne: HostComponent = { ...looking, code: probeCode(`async () => { const shown = ${shown.toString()}; for (let tries = 0; tries < 150 && shown(document).images.length < 1; tries++) await new Promise((done) => setTimeout(done, 20)); return shown(document); }`) };
+    const framed = open("frame", [lookingForOne]);
+    framed.view.render(tree(leaf("probe")));
+    await expect.poll(() => framed.values.length, { timeout: 5000 }).toBeGreaterThan(0);
+    expect(framed.values[0]).toEqual({ images: [{ alt: "Pin", blob: true }], alt: [] });
+    const hosted = open("host", []);
+    hosted.view.render(tree());
+    await expect.poll(() => shown(hosted.area).images, { timeout: 5000 }).toEqual([{ alt: "Pin", blob: true }]);
   });
 
   it("keeps the page frame's policy in frame mode: code in it still loads no image itself", async () => {

@@ -5,9 +5,16 @@
 
 import { newestMatching, sources, type HostComponent, type NeededPack, type PackRelease, type Policy, type Request } from "@compmd/processor";
 import { memoryCache, type PackCache } from "./cache.ts";
+import { imageTypeOf } from "./image-types.ts";
 import { integrityOf, isChecked } from "./integrity.ts";
 import { pageHref, type Registry, type VersionInfo, type Versions } from "./registry.ts";
-import { gunzip, textFiles, untar } from "./tar.ts";
+import { binaryFiles, gunzip, textFiles, untar } from "./tar.ts";
+
+/** A version's checked files: its text, which the processor reads, and the rest as bytes, its images among them. */
+interface Checked {
+  text: Record<string, string>;
+  binary: Record<string, Uint8Array>;
+}
 
 /** The size cap when the host sets none: Mermaid 12's module as one file is 7 MB, with its layout engines. */
 export const DEFAULT_MAX_PACK_SIZE = 10_000_000;
@@ -49,6 +56,12 @@ export interface Resolved {
   request: Request;
   /** A built module's checked text, for the sandbox; `undefined` for a module this resolve didn't fetch. */
   modules: (place: ModulePlace) => { code: Blob } | undefined;
+  /**
+   * An image of a pack this resolve fetched, checked, by its place (`@acme/kit@1.4.2/icons/star.svg`), as the expanded
+   * tree names it (spec §12.3), for the sandbox to show; `undefined` for any other file. A pack's other files are never
+   * given: opened from a `blob:` URL, a page or an SVG would run with the host's page's origin.
+   */
+  images: (place: string) => Blob | undefined;
   problems: Problem[];
 }
 
@@ -91,7 +104,7 @@ export async function resolvePacks(request: Request, options: ResolveOptions): P
     const outcomes = await Promise.all(missing.map((needed) => resolver.resolve(needed, current.policy)));
     current = withOutcomes(current, missing, outcomes, resolver.problems);
   }
-  return { request: current, modules: (place) => resolver.module(place), problems: resolver.problems };
+  return { request: current, modules: (place) => resolver.module(place), images: (place) => resolver.image(place), problems: resolver.problems };
 }
 
 /** One import as the processor lists it. */
@@ -127,10 +140,12 @@ class Resolver {
   readonly #origin: string | undefined;
   /** The text of every built module fetched, by its place, `pack@version/path`. */
   readonly #modules = new Map<string, string>();
+  /** Every image fetched, by its place. */
+  readonly #images = new Map<string, Blob>();
   /** Every range asked for each library pack in this resolve, of which the processor takes the version all match. */
   readonly #libraryRanges = new Map<string, string[]>();
   /** The files of each version being got, by integrity. */
-  readonly #fetching = new Map<string, Promise<Record<string, string> | undefined>>();
+  readonly #fetching = new Map<string, Promise<Checked | undefined>>();
 
   constructor({ registries, fetch = "host", cache = memoryCache(), maxPackSize = DEFAULT_MAX_PACK_SIZE, timeout = DEFAULT_TIMEOUT }: ResolveOptions) {
     this.#registries = registries;
@@ -151,6 +166,10 @@ class Resolver {
   module({ pack, version, path }: ModulePlace): { code: Blob } | undefined {
     const text = this.#modules.get(`${pack}@${version}/${path}`);
     return text === undefined ? undefined : { code: new Blob([text], { type: "text/javascript" }) };
+  }
+
+  image(place: string): Blob | undefined {
+    return this.#images.get(place);
   }
 
   /** One missing pack: its release, or why it isn't there, a registry that didn't answer in time among them. */
@@ -176,7 +195,7 @@ class Resolver {
   async #resolveFrom(registry: Registry, { pack, range, integrity: pinned, library }: NeededPack, policy: Policy | undefined): Promise<Outcome> {
     // A pinned import names an exact version, and its files never change.
     if (pinned !== undefined) {
-      const cached = await this.#cache.files(pinned);
+      const cached = await this.#kept(pinned);
       if (cached) return this.#release(pack, { version: range, tarball: "", integrity: pinned }, cached);
     }
     const versions = await this.#versions(registry, pack);
@@ -200,7 +219,7 @@ class Resolver {
    * The checked files of `info`, from the cache or its tarball, fetched once in a resolve however many imports
    * resolve to it at once; `undefined` when the tarball doesn't match `integrity`.
    */
-  #filesOf(registry: Registry, info: VersionInfo, integrity: string): Promise<Record<string, string> | undefined> {
+  #filesOf(registry: Registry, info: VersionInfo, integrity: string): Promise<Checked | undefined> {
     let files = this.#fetching.get(integrity);
     if (!files) {
       files = this.#fetchFiles(registry, info, integrity);
@@ -209,15 +228,29 @@ class Resolver {
     return files;
   }
 
-  async #fetchFiles(registry: Registry, info: VersionInfo, integrity: string): Promise<Record<string, string> | undefined> {
-    const kept = await this.#cache.files(integrity);
+  /**
+   * The files the cache keeps of `integrity`: its text, and its binary files when the cache keeps them. A cache that
+   * keeps them but has none for it kept the text before it did, so the tarball is fetched again.
+   */
+  async #kept(integrity: string): Promise<Checked | undefined> {
+    const text = await this.#cache.files(integrity);
+    if (!text) return undefined;
+    if (!this.#cache.binaryFiles) return { text, binary: {} };
+    const binary = await this.#cache.binaryFiles(integrity);
+    return binary ? { text, binary } : undefined;
+  }
+
+  async #fetchFiles(registry: Registry, info: VersionInfo, integrity: string): Promise<Checked | undefined> {
+    const kept = await this.#kept(integrity);
     if (kept) return kept;
     this.#allow(info.tarball);
     const tarball = await registry.tarball(info);
     if ((await integrityOf(tarball)) !== integrity) return undefined;
-    const files = textFiles(untar(await gunzip(tarball)));
-    await this.#cache.keep(integrity, files);
-    return files;
+    const files = untar(await gunzip(tarball));
+    const checked = { text: textFiles(files), binary: binaryFiles(files) };
+    await this.#cache.keep(integrity, checked.text);
+    await this.#cache.keepBinary?.(integrity, checked.binary);
+    return checked;
   }
 
   /**
@@ -239,12 +272,17 @@ class Resolver {
     return undefined;
   }
 
-  /** The release of `info` with its checked `files`, keeping its built modules. */
-  #release(pack: string, info: VersionInfo, files: Record<string, string>): Outcome {
-    for (const [path, text] of Object.entries(files)) {
-      if (path.endsWith(".js")) this.#modules.set(`${pack}@${info.version}/${path}`, text);
+  /** The release of `info` with its checked files, keeping its built modules and its images. */
+  #release(pack: string, info: VersionInfo, { text, binary }: Checked): Outcome {
+    const placeOf = (path: string) => `${pack}@${info.version}/${path}`;
+    for (const [path, code] of Object.entries(text)) {
+      if (path.endsWith(".js")) this.#modules.set(placeOf(path), code);
     }
-    return { release: { version: info.version, integrity: info.integrity ?? null, files } };
+    for (const [path, content] of [...Object.entries(text), ...Object.entries(binary)]) {
+      const type = imageTypeOf(path);
+      if (type !== undefined) this.#images.set(placeOf(path), new Blob([content as BlobPart], { type }));
+    }
+    return { release: { version: info.version, integrity: info.integrity ?? null, files: text } };
   }
 
   /** A pack's versions: the cache's while fresh, else the registry's, else a stale list when the registry fails. */

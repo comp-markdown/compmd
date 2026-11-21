@@ -4,7 +4,7 @@
 // An image of one of the host's own schemes (spec §15) is the host's to load: its file comes from the host, in both modes.
 
 import { imageSources, urlScheme, type ExpandedRoot, type ImageSource, type Refused, type Splice } from "@compmd/render";
-import type { PackFile } from "./found.ts";
+import { packFileOf } from "./found.ts";
 import { ImageGate } from "./image-gate.ts";
 import { originOf } from "./origins.ts";
 import { SentNodes } from "./sent-nodes.ts";
@@ -25,6 +25,19 @@ const isOwn = (src: string, schemes: readonly string[]): boolean => {
 };
 
 /**
+ * Where the host serves the packs' files (`at`, ending in `/`), and the images it holds of packs fetched from a
+ * registry while the document is open, by their place, which nothing serves at `at` (spec §6.4, §12.3).
+ */
+export interface PackImages {
+  at: string;
+  images?: ((place: string) => Blob | undefined) | undefined;
+}
+
+/** The registry pack's image a pack's image's `src` (its URL under `packs.at`) names, if the host holds it. */
+const heldImage = (src: string, packs: PackImages | undefined): Blob | undefined =>
+  packs?.images && src.startsWith(packs.at) ? packs.images(src.slice(packs.at.length)) : undefined;
+
+/**
  * The images of the trees and splices the host's page sent its page frame, and their files.
  *
  * @example
@@ -37,6 +50,7 @@ export class PageImages {
   readonly #base: string;
   readonly #own: OwnImages;
   readonly #gate: ImageGate;
+  readonly #packs: PackImages | undefined;
   /** The images' `src`, as the frame asks for them. */
   readonly #sources: SentNodes<string>;
   /** When the reader last refused an origin the frame asked about, by origin. */
@@ -44,15 +58,18 @@ export class PageImages {
 
   /**
    * Fetches with `fetch`, a relative `src` against `base`, as an image in the host's page would load, once `gate` lets
-   * it (spec §15); an image of one of the host's own schemes comes from `own.file`, never fetched.
+   * it (spec §15); an image of one of the host's own schemes comes from `own.file`, never fetched; a pack's image, by
+   * its URL under `packs.at`, from `packs.images` when the host holds it (a registry pack's), else fetched.
    */
-  constructor(fetcher: typeof fetch, base: string, own: OwnImages = { schemes: [] }, gate: ImageGate = new ImageGate(), packFile?: PackFile) {
+  constructor(fetcher: typeof fetch, base: string, own: OwnImages = { schemes: [] }, gate: ImageGate = new ImageGate(), packs?: PackImages) {
     // Called on its own: the page's `fetch` throws when called on another object.
     this.#fetch = (input, init) => fetcher(input, init);
     this.#base = base;
     this.#own = own;
     this.#gate = gate;
-    // A pack's image by the URL the frame asks for, which `packFile` gives it there too (spec §12.3).
+    this.#packs = packs;
+    // A pack's image by the URL the frame asks for, which the frame makes from `packs.at` too (spec §12.3).
+    const packFile = packs && packFileOf(packs.at);
     this.#sources = new SentNodes((nodes) => imageSources(nodes, own.schemes, packFile));
   }
 
@@ -75,6 +92,8 @@ export class PageImages {
     if (!this.#sources.has(src)) return undefined;
     try {
       if (isOwn(src, this.#own.schemes)) return imageOnly(await this.#own.file?.(src));
+      const held = heldImage(src, this.#packs);
+      if (held) return imageOnly(held);
       const decision = await this.#gate.decide(src);
       if ("refused" in decision) return decision;
       return imageOnly(await this.#fetched(src));
@@ -106,23 +125,19 @@ const imageOnly = (file: Blob | undefined): Blob | undefined => (file?.type.star
 
 /**
  * Host mode's images: one of the host's own schemes from a `blob:` URL of the file `file` gives, asked for once while
- * it has one, or from its `src` without `file`; any other from its `src`, as the host's page loads it, once `gate`
- * lets it (spec §15).
+ * it has one, or from its `src` without `file`; a registry pack's image the host holds (`packs.images`) from a `blob:`
+ * URL of it; any other from its `src`, as the host's page loads it, once `gate` lets it (spec §15).
  *
  * @example
  * createPage(container, { ownSchemes: ["app"], images: hostImages(["app"], (src) => attachment(src), gate) });
  */
-export function hostImages(schemes: readonly string[], file: ((src: string) => Promise<Blob | undefined>) | undefined, gate: ImageGate): ImageSource {
+export function hostImages(schemes: readonly string[], file: ((src: string) => Promise<Blob | undefined>) | undefined, gate: ImageGate, packs?: PackImages): ImageSource {
   const shown = new Map<string, Promise<string | undefined>>();
-  return async (src) => {
-    if (!isOwn(src, schemes)) {
-      const decision = await gate.decide(src);
-      return "refused" in decision ? decision : src;
-    }
-    if (!file) return src;
+  /** `src` from a `blob:` URL of the file `get` gives, asked for once while it has one. */
+  const fromBlob = (src: string, get: () => Promise<Blob | undefined>): Promise<string | undefined> => {
     let url = shown.get(src);
     if (!url) {
-      url = file(src).then(
+      url = get().then(
         (blob) => {
           if (blob) return URL.createObjectURL(blob);
           shown.delete(src);
@@ -136,5 +151,15 @@ export function hostImages(schemes: readonly string[], file: ((src: string) => P
       shown.set(src, url);
     }
     return url;
+  };
+  return async (src) => {
+    const held = imageOnly(heldImage(src, packs));
+    if (held) return fromBlob(src, () => Promise.resolve(held));
+    if (!isOwn(src, schemes)) {
+      const decision = await gate.decide(src);
+      return "refused" in decision ? decision : src;
+    }
+    if (!file) return src;
+    return fromBlob(src, () => file(src));
   };
 }

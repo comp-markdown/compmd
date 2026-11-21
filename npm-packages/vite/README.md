@@ -158,7 +158,7 @@ import { registry, request, sandbox } from "virtual:compmd";
 const asked = { ...request, path: "notes.comp.md", files, now: new Date().toISOString() };
 const resolved = registry && (await resolvePacks(asked, { ...registry, cache: defaultCache() }));
 const document = new OpenDocument(resolved?.request ?? asked);
-const view = createSandbox({ ...sandbox, page: "host", modules: (place) => resolved?.modules(place) ?? sandbox.modules(place) }).open(container, { components: document.components });
+const view = createSandbox({ ...sandbox, page: "host", modules: (place) => resolved?.modules(place) ?? sandbox.modules(place), packImages: (place) => resolved?.images(place) }).open(container, { components: document.components });
 ```
 
 `registry` holds what `resolvePacks` takes from the configuration: the registries, who fetches, and the size cap.

@@ -19,6 +19,13 @@ describe("memoryCache", () => {
     expect(await cache.files("sha512-b"), "another integrity").toBeUndefined();
   });
 
+  it("keeps a version's binary files by its integrity, beside its text", async () => {
+    const cache = memoryCache();
+    expect(await cache.binaryFiles?.("sha512-a")).toBeUndefined();
+    await cache.keepBinary?.("sha512-a", { "logo.png": new Uint8Array([0x89, 0x50]) });
+    expect(await cache.binaryFiles?.("sha512-a")).toEqual({ "logo.png": new Uint8Array([0x89, 0x50]) });
+  });
+
   it("keeps a versions list fresh for its max-age, then stale, by its key", async () => {
     let now = 0;
     const cache = memoryCache(() => now);
@@ -54,6 +61,21 @@ describe("defaultCache", () => {
     const cache = defaultCache();
     await cache.keep("sha512-a", { "a.json": "[]" });
     expect(await cache.files("sha512-a")).toEqual({ "a.json": "[]" });
+  });
+
+  it("keeps a version's binary files in Cache Storage, so a cache made later, as on another visit, has them", async () => {
+    const stored = new Map<string, string>();
+    const storage = {
+      match: (url: string) => Promise.resolve(stored.has(url) ? new Response(stored.get(url)) : undefined),
+      put: async (url: string, response: Response) => {
+        stored.set(url, await response.text());
+      },
+    };
+    vi.stubGlobal("caches", { open: () => Promise.resolve(storage) });
+    const bytes = new Uint8Array([0x89, 0x50, 0x00, 0xff, 0xfe]);
+    await defaultCache().keepBinary?.("sha512-a", { "icons/logo.png": bytes });
+    expect(await defaultCache().binaryFiles?.("sha512-a")).toEqual({ "icons/logo.png": bytes });
+    expect(await defaultCache().binaryFiles?.("sha512-b")).toBeUndefined();
   });
 
   it("keeps in memory what Cache Storage fails to keep or read, as when it is full", async () => {

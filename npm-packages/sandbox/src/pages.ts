@@ -65,7 +65,7 @@ export function hostPage(container: HTMLElement, runtime: HostRuntime, options: 
     ...(options.packs === undefined ? {} : { packFile: packFileOf(options.packs) }),
     printsFallback: (name) => runtime.printsFallback(name),
     // Images of the host's own schemes from the host's files; remote ones once the reader allows their origin (spec §15).
-    images: hostImages(runtime.schemes, options.ownImages, runtime.gate),
+    images: hostImages(runtime.schemes, options.ownImages, runtime.gate, options.packs === undefined ? undefined : { at: options.packs, images: options.packImages }),
     allowOrigin: (origin) => void runtime.gate.allow(origin),
     // The trusted components in this page get `host` as the runtime gives it; framed ones get theirs from their frame.
     ...(runtime.host ? { host: runtime.host } : {}),
@@ -161,8 +161,8 @@ export function framePage(container: HTMLElement, runtime: HostRuntime, options:
   iframe.style.cssText = "border: 0; width: 100%; height: 100%; display: block;";
   /** The document's inputs, which its page may set, from the last tree or splice. */
   let inputs: Readonly<Record<string, ExpandedInput>> = {};
-  const packFile = options.packs === undefined ? undefined : packFileOf(options.packs);
-  const images = new PageImages(fetch, document.baseURI, { schemes: runtime.schemes, file: options.ownImages }, runtime.gate, packFile);
+  const packs = options.packs === undefined ? undefined : { at: options.packs, images: options.packImages };
+  const images = new PageImages(fetch, document.baseURI, { schemes: runtime.schemes, file: options.ownImages }, runtime.gate, packs);
   /** The code blocks of the trees and splices sent, which alone the frame gets tokens for. */
   const blocks = sentBlocks();
   const { port1, port2 } = new MessageChannel();

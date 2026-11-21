@@ -1,7 +1,7 @@
 import { gzipSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
 import { tarballOf } from "../test/local-registry.ts";
-import { gunzip, textFiles, untar } from "./tar.ts";
+import { binaryFiles, gunzip, textFiles, untar } from "./tar.ts";
 
 /** A tar header for `name`, `size` bytes of type `type`, with `prefix` in the ustar prefix field. */
 function header(name: string, size: number, type: string, prefix = ""): Uint8Array {
@@ -84,9 +84,10 @@ describe("the tarball reader", () => {
     expect([...files.keys()]).toEqual(["kept.js"]);
   });
 
-  it("keeps only text files, and stops at the end of the archive", () => {
+  it("keeps text files as text and the others as bytes, and stops at the end of the archive", () => {
     const tar = archive(["package/logo.png", new Uint8Array([0x89, 0x50, 0xff, 0xfe])], ["package/a.json", "{}"]);
     expect(textFiles(untar(tar))).toEqual({ "a.json": "{}" });
+    expect(binaryFiles(untar(tar))).toEqual({ "logo.png": new Uint8Array([0x89, 0x50, 0xff, 0xfe]) });
     expect(untar(new Uint8Array(100))).toEqual(new Map());
   });
 });

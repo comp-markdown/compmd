@@ -79,7 +79,7 @@ describe("PageImages", () => {
     };
     const place = "@acme/kit@1.4.2/icons/star.svg";
     const star: ExpandedNode = { type: "paragraph", children: [{ type: "image", url: place, alt: "", pack: true }] };
-    const page = new PageImages(fetcher, "https://docs.example.com/notes/", { schemes: [] }, cdnGate(), (at) => `/compmd/packs/${at}`);
+    const page = new PageImages(fetcher, "https://docs.example.com/notes/", { schemes: [] }, cdnGate(), { at: "/compmd/packs/" });
     page.rendered({ type: "root", children: [star] });
     expect(typeOf(await page.file(`/compmd/packs/${place}`))).toBe("image/svg+xml");
     expect(await page.file(place)).toBeUndefined();
@@ -87,6 +87,24 @@ describe("PageImages", () => {
     const unmapped = new PageImages(fetcher, "https://docs.example.com/", { schemes: [] }, cdnGate());
     unmapped.rendered({ type: "root", children: [star] });
     expect(await unmapped.file(place)).toBeUndefined();
+  });
+
+  it("gives a registry pack's image the host holds, fetching nothing, and fetches a bundled pack's", async () => {
+    const requests: string[] = [];
+    const fetcher = (input: RequestInfo | URL) => {
+      requests.push(input instanceof Request ? input.url : input.toString());
+      return Promise.resolve(new Response(new Blob(["x"], { type: "image/png" })));
+    };
+    const held = new Blob(["<svg/>"], { type: "image/svg+xml" });
+    const fetched = "@acme/kit@1.4.2/icons/star.svg";
+    const registry = "@acme/maps@2.0.0/pin.svg";
+    const images = (place: string) => (place === registry ? held : undefined);
+    const tree = { type: "root" as const, children: [registry, fetched].map((url): ExpandedNode => ({ type: "paragraph", children: [{ type: "image", url, alt: "", pack: true }] })) };
+    const page = new PageImages(fetcher, "https://docs.example.com/", { schemes: [] }, cdnGate(), { at: "/packs/", images });
+    page.rendered(tree);
+    expect(await page.file(`/packs/${registry}`)).toBe(held);
+    expect(typeOf(await page.file(`/packs/${fetched}`))).toBe("image/png");
+    expect(requests).toEqual([`https://docs.example.com/packs/${fetched}`]);
   });
 
   it("gives an image of the host's own schemes from the host's files, fetching nothing", async () => {
@@ -136,6 +154,19 @@ describe("hostImages", () => {
     expect(await images("app:file/3")).toBe(first);
     expect(await images("./logo.png")).toBe("./logo.png");
     expect(asked).toEqual(["app:file/3"]);
+  });
+
+  it("shows a registry pack's image the host holds from a blob: URL of it, made once, and a bundled pack's from its src", async () => {
+    const registry = "@acme/maps@2.0.0/pin.svg";
+    const notAnImage = "@acme/maps@2.0.0/guide.html";
+    const held: Record<string, Blob> = { [registry]: new Blob(["<svg/>"], { type: "image/svg+xml" }), [notAnImage]: new Blob(["<p>"], { type: "text/html" }) };
+    const images = hostImages([], undefined, cdnGate(), { at: "/packs/", images: (place) => held[place] });
+    const first = await images(`/packs/${registry}`);
+    expect(typeof first === "string" && first.startsWith("blob:")).toBe(true);
+    expect(await images(`/packs/${registry}`)).toBe(first);
+    expect(await images("/packs/@acme/kit@1.4.2/star.svg")).toBe("/packs/@acme/kit@1.4.2/star.svg");
+    // Only an image is given from a blob: URL, which would give a page the host's page's origin.
+    expect(await images(`/packs/${notAnImage}`)).toBe(`/packs/${notAnImage}`);
   });
 
   it("asks again for an image the host had no file for, or failed to give", async () => {

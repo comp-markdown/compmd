@@ -24,7 +24,7 @@ const resolved = registry && (await resolvePacks(asked, { ...registry, cache: de
 const opened = new OpenDocument(resolved?.request ?? asked);
 const page = document.getElementById("page");
 if (page) {
-  const view = createSandbox({ ...sandbox, page: "host", modules: (place) => resolved?.modules(place) ?? sandbox.modules(place) }).open(page, { components: opened.components });
+  const view = createSandbox({ ...sandbox, page: "host", modules: (place) => resolved?.modules(place) ?? sandbox.modules(place), packImages: (place) => resolved?.images(place) }).open(page, { components: opened.components });
   view.render(opened.expanded);
 }
 document.getElementById("diagnostics")?.replaceChildren(

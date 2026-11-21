@@ -91,6 +91,35 @@ describe("a document's packs", () => {
     expect(modules({ pack: "@kit/charts", version: "1.0.0", path: "dist/chart.js" }), "a version not fetched").toBeUndefined();
   });
 
+  it("give their images, checked, by the place the expanded tree names them by; never a file that isn't an image", async () => {
+    const { request: ready, images } = await resolvePacks(importing("@kit/icons@1"), options());
+    const [svg, png] = [images("@kit/icons@1.0.0/icons/pin.svg"), images("@kit/icons@1.0.0/icons/dot.png")];
+    expect([svg?.type, png?.type]).toEqual(["image/svg+xml", "image/png"]);
+    expect(await svg?.text()).toContain("crimson");
+    expect(new Uint8Array((await png?.arrayBuffer()) ?? new ArrayBuffer(0)).slice(0, 4)).toEqual(new Uint8Array([0x89, 0x50, 0x4e, 0x47]));
+    // A page opened from a blob: URL would run with the host's page's origin.
+    expect(images("@kit/icons@1.0.0/guide.html")).toBeUndefined();
+    expect(images("@kit/icons@1.0.0/index.comp.md")).toBeUndefined();
+    // The tree names them so: the processor writes a pack's file by its place.
+    const used = { ...ready, files: { "a.comp.md": `${ready.files?.["a.comp.md"] ?? ""}\n:: pin[A pin]\n` } };
+    expect(JSON.stringify(process(used).expanded)).toContain('"url":"@kit/icons@1.0.0/icons/pin.svg","title":null,"pack":true');
+  });
+
+  it("give their images again from the cache, and fetch a tarball again whose images a cache kept before it kept any", async () => {
+    const cache = memoryCache();
+    await resolvePacks(importing("@kit/icons@1"), options({ cache }));
+    local.hits.length = 0;
+    const again = await resolvePacks(importing("@kit/icons@1"), options({ cache }));
+    expect(downloaded()).toEqual([]);
+    expect(again.images("@kit/icons@1.0.0/icons/dot.png")?.type).toBe("image/png");
+    const older: PackCache = { ...memoryCache(), binaryFiles: () => Promise.resolve(undefined) };
+    const integrity = integrityOf(tarballOf("kit-icons-1.0.0.tgz"));
+    await older.keep(integrity, { "package.json": "{}" });
+    const fetched = await resolvePacks(importing("@kit/icons@1"), options({ cache: older }));
+    expect(downloaded()).toEqual(["@kit/icons@1.0.0"]);
+    expect(fetched.images("@kit/icons@1.0.0/icons/pin.svg")?.type).toBe("image/svg+xml");
+  });
+
   it("leave the request given as it was", async () => {
     const given = importing("@kit/charts@1");
     await resolvePacks(given, options());

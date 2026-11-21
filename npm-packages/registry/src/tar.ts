@@ -1,6 +1,6 @@
 // A pack's tarball, read (docs/resolving-registry-packs.md, decisions 6 and 11): a gzipped tar of the package under
-// `package/`. Only what the processor can use is kept: regular files, by their path in the package, that are UTF-8
-// text. It is read only after its hash is checked.
+// `package/`. Its regular files are kept, by their path in the package: those that are UTF-8 text for the processor,
+// and the others as bytes, for the host to show. It is read only after its hash is checked.
 
 const BLOCK = 512;
 const PACKAGE = "package/";
@@ -90,4 +90,14 @@ export function textFiles(files: Map<string, Uint8Array>): Record<string, string
     if (decoded !== undefined) text[path] = decoded;
   }
   return text;
+}
+
+/**
+ * The files that aren't UTF-8 text, as bytes: an image or a font, which the processor never reads, but which a link or
+ * an image from the pack's definitions names (spec §12.3), so the host shows it.
+ */
+export function binaryFiles(files: Map<string, Uint8Array>): Record<string, Uint8Array> {
+  const binary: Record<string, Uint8Array> = {};
+  for (const [path, bytes] of files) if (utf8(bytes) === undefined) binary[path] = bytes;
+  return binary;
 }
