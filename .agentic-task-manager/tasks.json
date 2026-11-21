@@ -12170,7 +12170,7 @@
       "description": "Item 9 of [the first list](docs/first-components.md#:~:text=Stars%20from%20a%20value): stars from a value, half stars included, read-only, its own code in the plain binding, strict: a few dozen lines. The website's own pack has one (`website/content/app/`); this is the published one.\n\n## Do\nSignature (`value`, `of`), its label as the text alternative (\"Rated 4 of 5\"), fallback, print, a demo, tests in Chrome and WebKit.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68e81c39ce10",
         "01a1faa3-d27f-73b4-9632-1835b3071707"
@@ -12179,7 +12179,7 @@
         "compmd-packs/rating/"
       ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-21T15:17:34Z",
+      "updated_at": "2026-11-21T15:18:00Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 320,
@@ -12196,10 +12196,25 @@
           "kind": "handoff",
           "text": "Parked for CR-45’s changes and CMD-366. Written, uncommitted in the tree: `compmd-packs/rating/` (src, unit tests passing, demo of `render=both` examples, page test), the workspace and versions.json entries. Left: `test/page.test.ts` finds no frame drawing the stars in either browser; check how examples’ uses frame in host mode first.",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-21T15:18:00Z",
+          "kind": "review",
+          "text": "CR-48: The rating pack: a value as stars",
+          "by": "claude:79612601"
         }
       ],
       "started_at": "2026-11-21T15:17:34Z",
-      "started_by": "claude:79612601"
+      "started_by": "claude:79612601",
+      "commit": "011e2cf1c9f2c1328ffd2812072ee1b90f6acb55",
+      "code_reviews": [
+        {
+          "id": "01a1feaf-8c3d-716d-b4c1-8244f5efa3c4",
+          "ref": "CR-48"
+        }
+      ],
+      "review_requested_at": "2026-11-21T15:18:00Z",
+      "review_state": "waiting"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57d0fdf51265",
