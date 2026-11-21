@@ -51,7 +51,11 @@ export function pageHtml(title: string): string {
 export const PAGE_SCRIPT = `import { init, OpenDocument } from "@compmd/processor";
 import { createSandbox } from "@compmd/sandbox";
 import { request, sandbox } from "virtual:compmd";
-import text from "/${DEMO}?raw";
+// The pack's folder is the demo's root folder: its data files and the documents it imports are there, as a host's
+// files are (spec §8.6). Images load by their URL, as in any page.
+const found = import.meta.glob(["/**/*.{comp.md,md,yaml,yml,json,toml,csv,tsv,txt}", "!/node_modules/**", "!/dist/**"], { query: "?raw", import: "default", eager: true });
+const files = Object.fromEntries(Object.entries(found).map(([path, content]) => [path.slice(1), content]));
+const text = files["${DEMO}"];
 
 const page = document.getElementById("page");
 const list = document.getElementById("diagnostics");
@@ -65,7 +69,7 @@ const show = (line) => {
 };
 
 await init();
-const opened = new OpenDocument({ ...request, path: "${DEMO}", files: { "${DEMO}": text }, now: new Date().toISOString() });
+const opened = new OpenDocument({ ...request, path: "${DEMO}", files, now: new Date().toISOString() });
 // Host mode: each use in a strict frame of its own, sized to what it draws, as an app shows a document.
 const view = createSandbox({ ...sandbox, page: "host" }).open(page, { components: opened.components });
 view.on("error", ({ component, code, reason, message }) => show(\`\${code ?? reason}: \${component}: \${message}\`));

@@ -3,7 +3,7 @@
 import { rm } from "node:fs/promises";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { documentOf, folder, write } from "../test/folders.ts";
-import { pageConfig, pageHtml } from "./dev.ts";
+import { pageConfig, pageHtml, servePack } from "./dev.ts";
 import { readPack } from "./pack.ts";
 
 let dir: string;
@@ -22,6 +22,24 @@ describe("the test page", () => {
     expect(await pageConfig(await readPack(dir))).toEqual({ packs: { "./": {} } });
     await write(dir, { "compmd.config.json": { libraries: ["@kit/three"], packs: { "@kit/three": {} } } });
     expect(await pageConfig(await readPack(dir))).toEqual({ libraries: ["@kit/three"], packs: { "./": {}, "@kit/three": {} } });
+  });
+
+  it("gives the demo the pack's folder as its root folder: its data and documents, not its packages or its build", async () => {
+    await write(dir, {
+      "demo.comp.md": "# Demo\n",
+      "walks.yaml": "- title: A walk\n",
+      "notes/more.comp.md": "# More\n",
+      "node_modules/x/README.md": "# Not the demo's\n",
+      "dist/built.json": "{}",
+    });
+    const server = await servePack(await readPack(dir), { port: 4196 });
+    try {
+      const page = await server.transformRequest("/@compmd-pack/page.ts");
+      const imported = [...(page?.code ?? "").matchAll(/from\s+"([^"?]+)\?[^"]*raw"/g)].map((match) => match[1]);
+      expect(imported.sort()).toEqual(["/demo.comp.md", "/index.comp.md", "/notes/more.comp.md", "/package.json", "/walks.yaml"]);
+    } finally {
+      await server.close();
+    }
   });
 
   it("is titled by the pack, escaped, and follows the reader's scheme until switched", () => {

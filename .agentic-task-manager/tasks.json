@@ -11936,7 +11936,7 @@
       "description": "Item 5 of [the first list](docs/first-components.md#:~:text=Posts%20and%20newsletters%20caption%20their%20images): an image and its caption, the caption its text alternative too, a `compmd` definition. Posts and newsletters caption their images.\n\n## Do\nThe definition, a demo, print, tests of its expanded tree.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68e81c39ce10",
         "01a1fb1a-5845-722a-88c3-17bf2a8c3273",
@@ -11946,7 +11946,7 @@
         "compmd-packs/figure/"
       ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-21T14:22:24Z",
+      "updated_at": "2026-11-21T14:32:35Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 316,
@@ -11970,10 +11970,45 @@
           "kind": "answer",
           "text": "One text as both caption and alt needs the image’s path as a param (`:: figure[Boats at dusk] {src=\"harbour.jpg\"}`), and a caller’s relative path in a param resolves against the pack, as in CMD-314’s second question. Should figure wait for that answer, or take the image as a slot (the caller’s own Markdown image) with the caption written separately? → Wait for it: `src` is the caller’s by decision 1, and the caption is `md.fallback`, its text the image’s alt too (docs/no-code-components.md, decisions 1 and 2, approved in CR-37).",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-21T14:29:56Z",
+          "kind": "review",
+          "text": "CR-46: Component: figure",
+          "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-21T14:32:09Z",
+          "kind": "note",
+          "text": "Approved: in CR-46 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-21T14:32:35Z",
+          "kind": "outcome",
+          "text": "Approved in CR-46: `@comp-markdown/figure`, an image with its caption under it, the caption the use’s fallback and the image’s alt; `src` the caller’s.",
+          "by": "claude:79612601"
         }
       ],
       "started_at": "2026-11-21T14:22:24Z",
-      "started_by": "claude:79612601"
+      "started_by": "claude:79612601",
+      "commit": "13153ac052ba26d4312d7e728712357d4904c638",
+      "code_reviews": [
+        {
+          "id": "01a1fe83-8af0-77e6-9d15-12fa5b05d653",
+          "ref": "CR-46"
+        }
+      ],
+      "review_requested_at": "2026-11-21T14:29:56Z",
+      "reviews": [
+        {
+          "from": "2026-11-21T14:29:56Z",
+          "to": "2026-11-21T14:32:09Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-21T14:32:35Z",
+      "completed_by": "claude:79612601"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57cc97043c32",
@@ -14239,7 +14274,7 @@
       "description": "A pack the host fetches from a registry while a reader views a document (spec §6.4) gives its component modules as blobs; nothing serves its other files, so after CMD-362 a link or image from its definitions has no URL and shows its text or its alt. The spec (§12.3) says a host serves every file of the packs it gives the processor.\n\n## Decide first\nHow such a file reaches the page: a `blob:` URL from the host's store, checked against the pack's integrity, or a route of the host's that serves its store. Settle it with the maintainer.\n\n## Tests\nAn image of a registry pack shows, in host mode and frame mode.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a1fb63-8662-766e-a404-898f1f749430"
       ],
@@ -14248,7 +14283,7 @@
         "npm-packages/registry/src/"
       ],
       "created_at": "2026-11-21T13:23:15Z",
-      "updated_at": "2026-11-21T14:27:18Z",
+      "updated_at": "2026-11-21T14:29:56Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -14273,7 +14308,9 @@
           "text": "How does a registry pack’s own file reach the page? (a) as its modules do: `resolvePacks` also gives `files(place)`, each file checked against the pack’s integrity, and the sandbox shows it from a `blob:` URL, the bundle’s `packs/<place>` for any other pack; or (b) a route of the host’s that serves its store. I’d take (a): it is how the modules come already, and needs no route on any host. → (a) `resolvePacks` also gives `files(place)`, each checked against the pack’s integrity, and the sandbox shows such a file from a `blob:` URL; the bundle’s `packs/<place>` for any other pack.",
           "by": "claude:79612601"
         }
-      ]
+      ],
+      "started_at": "2026-11-21T14:29:56Z",
+      "started_by": "claude:79612601"
     }
   ]
 }
