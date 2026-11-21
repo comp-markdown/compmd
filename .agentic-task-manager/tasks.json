@@ -12240,7 +12240,7 @@
       "description": "Item 8 of [the first list](docs/first-components.md#:~:text=Dates%20and%20what%20happened): dates and what happened, in a post or notes, `compmd` definitions on `box`; a list of items is enough.\n\n## Do\nThe definitions, a demo, tests of their expanded tree.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68e81c39ce10",
         "01a1fb1a-5845-722a-88c3-17bf2a8c3273",
@@ -12251,7 +12251,7 @@
         "compmd-packs/timeline/"
       ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-21T16:35:03Z",
+      "updated_at": "2026-11-21T16:54:15Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 319,
@@ -12268,10 +12268,25 @@
           "kind": "handoff",
           "text": "Needs border’s logical sides for its line (docs/no-code-components.md, decision 6, CR-37); written as a list with the dates in the caller’s text.",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-21T16:54:15Z",
+          "kind": "review",
+          "text": "CR-55: The timeline pack: dates and what happened, along a line",
+          "by": "claude:79612601"
         }
       ],
       "started_at": "2026-11-21T16:35:03Z",
-      "started_by": "claude:79612601"
+      "started_by": "claude:79612601",
+      "commit": "c49dabd66c74856acee702bd22fe204a5f71736f",
+      "code_reviews": [
+        {
+          "id": "01a1ff07-ae06-738b-942c-1293e6d53e06",
+          "ref": "CR-55"
+        }
+      ],
+      "review_requested_at": "2026-11-21T16:54:15Z",
+      "review_state": "waiting"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57cf1d3cd690",
