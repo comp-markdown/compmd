@@ -107,27 +107,27 @@ ${signature}
 `;
 }
 
-/** The demo: one use as it is, then sized, fitted in a short box, and covering its box. */
+/**
+ * The demo, one `render=both` example a use, so a reader sees its source and what it draws (docs/writing-a-pack.md,
+ * decision 3): one use as it is, then sized, fitted in a short box, and covering its box.
+ */
 function demoOf(options: WrappedPackOptions, given: string): string {
-  const use = (label: string, more = "") => `:: ${options.component}[${label}] {${[given, more].filter(Boolean).join(" ")}}`;
-  return `---
-md:
-  import:
-    - from: "${options.name}@0"
-      names: [${options.component}]
----
+  const frontmatter = `---\nmd:\n  import:\n    - from: "${options.name}@0"\n      names: [${options.component}]\n---`;
+  const example = (line: string, label: string, more = "") =>
+    `${line}\n\n\`\`\`\`compmd {render=both}\n${frontmatter}\n\n:: ${options.component}[${label}] {${[given, more].filter(Boolean).join(" ")}}\n\`\`\`\``;
+  return `${frontmatter}
 
 # ${options.component}
 
-${use(`${options.component}, as text`)}
+Each example shows its source, then what it draws. Add one for each param you want a reader to see.
 
-Sized by the document: a width, a short box it is fitted in, and a box it covers.
+${example("**A use:**", `${options.component}, as text`)}
 
-${use(`${options.component}, wider`, "width=20rem")}
+${example("**Wider,** sized by the document:", `${options.component}, wider`, "width=20rem")}
 
-${use(`${options.component}, in a short box`, "width=100% height=6rem")}
+${example("**In a short box,** which it is fitted in:", `${options.component}, in a short box`, "width=100% height=6rem")}
 
-${use(`${options.component}, covering its box`, "width=16rem height=8rem object-fit=cover")}
+${example("**Covering its box,** `object-fit=cover`:", `${options.component}, covering its box`, "width=16rem height=8rem object-fit=cover")}
 `;
 }
 

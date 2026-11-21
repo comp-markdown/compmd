@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 366,
+    "next_number": 369,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -11880,9 +11880,9 @@
         "compmd-packs/gallery/"
       ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-21T14:41:50Z",
+      "updated_at": "2026-11-21T15:05:14Z",
       "created_by": "Hakan Serce",
-      "updated_by": "claude:79612601",
+      "updated_by": "Hakan Serce",
       "number": 315,
       "sprint_history": [
         {
@@ -11910,6 +11910,12 @@
           "kind": "review",
           "text": "CR-45: Component: gallery",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-21T15:05:14Z",
+          "kind": "note",
+          "text": "Approved: in CR-45 (round 3)",
+          "by": "Hakan Serce"
         }
       ],
       "started_at": "2026-11-21T14:12:45Z",
@@ -11922,7 +11928,8 @@
         }
       ],
       "review_requested_at": "2026-11-21T14:22:24Z",
-      "review_state": "waiting"
+      "review_state": "approved",
+      "reviewed_at": "2026-11-21T15:05:14Z"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57cb4e452c2e",
@@ -12159,7 +12166,7 @@
         "compmd-packs/rating/"
       ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T20:26:48Z",
+      "updated_at": "2026-11-21T14:55:11Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 320,
@@ -12169,7 +12176,15 @@
           "from": "2026-11-20T10:26:02Z"
         }
       ],
-      "sprint": "Packs 1: the pack tool, no-code components"
+      "sprint": "Packs 1: the pack tool, no-code components",
+      "notes": [
+        {
+          "at": "2026-11-21T14:55:11Z",
+          "kind": "handoff",
+          "text": "Parked for CR-45’s changes and CMD-366. Written, uncommitted in the tree: `compmd-packs/rating/` (src, unit tests passing, demo of `render=both` examples, page test), the workspace and versions.json entries. Left: `test/page.test.ts` finds no frame drawing the stars in either browser; check how examples’ uses frame in host mode first.",
+          "by": "claude:79612601"
+        }
+      ]
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57d0fdf51265",
@@ -14052,7 +14067,7 @@
       "description": "[What `compmd` definitions need for the no-code components](docs/no-code-components.md), decisions 3, 4 and 6, `@compmd/render`.\n\n## Do\n- An inline `box` (`componentInline`): a `span`, laid out as an inline block, its common params as a block's.\n- `stretch-link`: the box's first link's `::after` over the box; the other links above it.\n- `shadow` from `--compmd-shadow-s|m|l` (with defaults), `rotate`, and `border-inline-start`, `border-inline-end`, `border-block-start` and `border-block-end` from `border`'s values; all of them printed.\n\n## Tests\nUnit tests of each param's CSS; browser tests in Chrome and WebKit of `stretch-link` (a click on the card's text follows the link, one on another link follows that one) and of an inline box in a line of text.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "done",
       "dependencies": [
         "01a1fb25-2be2-70ce-b996-5794d92f0cfb"
       ],
@@ -14060,7 +14075,7 @@
         "npm-packages/render/src/"
       ],
       "created_at": "2026-11-20T22:47:59Z",
-      "updated_at": "2026-11-20T22:47:59Z",
+      "updated_at": "2026-11-21T15:08:15Z",
       "created_by": "claude:79612601",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -14070,7 +14085,39 @@
         }
       ],
       "sprint": "Packs 1: the pack tool, no-code components",
-      "number": 361
+      "number": 361,
+      "started_at": "2026-11-21T14:48:56Z",
+      "started_by": "claude:79612601",
+      "review_requested_at": "2026-11-21T14:48:56Z",
+      "notes": [
+        {
+          "at": "2026-11-21T14:48:56Z",
+          "kind": "review",
+          "text": "Nothing left to do: its scope is in CMD-360’s commit ddb9be5, approved in CR-40, since the renderer’s vocabulary test needed it. `styles.ts`: the inline box (`:where(span).compmd-box`), `stretch-link` (`stretch-link.ts`, the `::after` rules), `--compmd-shadow-s|m|l` with defaults, `rotate`, the four border sides, none removed for print. `test/browser/boxes.test.ts`: the stretched link, its update, the inline box, in Chrome and WebKit. Approve it to close it, or skip it.",
+          "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-21T15:08:10Z",
+          "kind": "note",
+          "text": "Approved: Approved by the maintainer in conversation.",
+          "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-21T15:08:15Z",
+          "kind": "outcome",
+          "text": "Its scope landed in CMD-360’s commit ddb9be5 (CR-40); approved.",
+          "by": "claude:79612601"
+        }
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-21T14:48:56Z",
+          "to": "2026-11-21T15:08:10Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-21T15:08:15Z",
+      "completed_by": "claude:79612601"
     },
     {
       "id": "01a1fb63-8662-766e-a404-898f1f749430",
@@ -14274,7 +14321,7 @@
       "description": "A pack the host fetches from a registry while a reader views a document (spec §6.4) gives its component modules as blobs; nothing serves its other files, so after CMD-362 a link or image from its definitions has no URL and shows its text or its alt. The spec (§12.3) says a host serves every file of the packs it gives the processor.\n\n## Decide first\nHow such a file reaches the page: a `blob:` URL from the host's store, checked against the pack's integrity, or a route of the host's that serves its store. Settle it with the maintainer.\n\n## Tests\nAn image of a registry pack shows, in host mode and frame mode.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [
         "01a1fb63-8662-766e-a404-898f1f749430"
       ],
@@ -14283,7 +14330,7 @@
         "npm-packages/registry/src/"
       ],
       "created_at": "2026-11-21T13:23:15Z",
-      "updated_at": "2026-11-21T14:29:56Z",
+      "updated_at": "2026-11-21T15:07:13Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -14307,10 +14354,145 @@
           "kind": "answer",
           "text": "How does a registry pack’s own file reach the page? (a) as its modules do: `resolvePacks` also gives `files(place)`, each file checked against the pack’s integrity, and the sandbox shows it from a `blob:` URL, the bundle’s `packs/<place>` for any other pack; or (b) a route of the host’s that serves its store. I’d take (a): it is how the modules come already, and needs no route on any host. → (a) `resolvePacks` also gives `files(place)`, each checked against the pack’s integrity, and the sandbox shows such a file from a `blob:` URL; the bundle’s `packs/<place>` for any other pack.",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-21T14:48:27Z",
+          "kind": "review",
+          "text": "CR-47: A registry pack’s images, from blob: URLs",
+          "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-21T15:06:04Z",
+          "kind": "note",
+          "text": "Approved: in CR-47 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-21T15:07:13Z",
+          "kind": "outcome",
+          "text": "A registry pack’s images reach a document as blob: URLs, links never; approved in CR-47.",
+          "by": "claude:79612601"
         }
       ],
       "started_at": "2026-11-21T14:29:56Z",
+      "started_by": "claude:79612601",
+      "commit": "e2f4b983431563c0e2c2405c952c7a4f310591ca",
+      "code_reviews": [
+        {
+          "id": "01a1fe94-8085-74d2-a573-eeb82ca10d0c",
+          "ref": "CR-47"
+        }
+      ],
+      "review_requested_at": "2026-11-21T14:48:27Z",
+      "reviews": [
+        {
+          "from": "2026-11-21T14:48:27Z",
+          "to": "2026-11-21T15:06:04Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-21T15:07:13Z",
+      "completed_by": "claude:79612601"
+    },
+    {
+      "id": "01a1fe9a-821c-7292-b5a0-3d4962820c1a",
+      "name": "An image cropped to its box: object-fit and aspect-ratio for a box's image",
+      "type": "feature",
+      "priority": "P1",
+      "labels": [
+        "spec",
+        "packs"
+      ],
+      "description": "A gallery's, a card's or a figure's images come in different shapes, so their cards are uneven. Galleries elsewhere crop each image to one shape: MUI's `ImageList` (`rowHeight`, `object-fit: cover`), react-photo-album's rows, card grids with a fixed image ratio. CompMD can't: `object-fit` and `object-position` style a component's box (spec §7.4, §9.2), and a `compmd` definition can't style the Markdown image in its body. Found in CR-45.\n\n## Decide first\nHow a definition crops an image to a shape: for example, a box whose only content is an image fits that image in it, by the box's `aspect-ratio` (or `height`), `object-fit` and `object-position`, as a component fits its drawing. Write the design with the maintainer, test it on the gallery, the card and the figure, then the spec text (§9.2, §12.3), its conformance cases, the processor and the renderer.\n\n## Tests\nConformance cases; the renderer's CSS; browser tests in Chrome and WebKit of an image cropped to a ratio, covering and contained, and printed.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "in_progress",
+      "dependencies": [],
+      "files": [
+        "spec/compmd-spec-v1.md",
+        "conformance/",
+        "crates/processor/src/",
+        "npm-packages/render/src/",
+        "docs/"
+      ],
+      "created_at": "2026-11-21T14:55:01Z",
+      "updated_at": "2026-11-21T15:01:52Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
+      "sprint_history": [
+        {
+          "sprint": "Packs 1: the pack tool, no-code components",
+          "from": "2026-11-21T14:55:01Z"
+        }
+      ],
+      "sprint": "Packs 1: the pack tool, no-code components",
+      "number": 366,
+      "started_at": "2026-11-21T15:01:52Z",
       "started_by": "claude:79612601"
+    },
+    {
+      "id": "01a1fe9a-821c-7292-b5a0-3d4a22b87e04",
+      "name": "Gallery: each card's image cropped to one shape",
+      "type": "feature",
+      "priority": "P2",
+      "labels": [
+        "packs",
+        "component"
+      ],
+      "description": "Once an image can be cropped to its box (the task this depends on), `gallery` makes its items' images one shape, so a grid of photos of different sizes is even, as galleries elsewhere are: a param for the images' ratio (`ratio=4/3`), with `object-fit` and `object-position` for how they fill it. The card's image slot may need the same. Its demo shows it with photos of different shapes, as `render=both` examples (CR-45).",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [
+        "01a1fe9a-821c-7292-b5a0-3d4962820c1a"
+      ],
+      "files": [
+        "compmd-packs/gallery/",
+        "compmd-packs/card/"
+      ],
+      "created_at": "2026-11-21T14:55:01Z",
+      "updated_at": "2026-11-21T14:55:01Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Packs 1: the pack tool, no-code components",
+          "from": "2026-11-21T14:55:01Z"
+        }
+      ],
+      "sprint": "Packs 1: the pack tool, no-code components",
+      "number": 367
+    },
+    {
+      "id": "01a1fea0-721a-74ba-a703-6a913b57a6a5",
+      "name": "The Mermaid and wireframe packs' demos as render=both examples",
+      "type": "docs",
+      "priority": "P2",
+      "labels": [
+        "packs"
+      ],
+      "description": "A pack's demo shows each param and use as a `compmd {render=both}` example, its source then what it draws ([writing a pack](docs/writing-a-pack.md), decision 3, from CR-45). The card, figure, gallery and rating demos and `create-pack`'s templates do; the Mermaid and wireframe packs' don't yet.\n\n## Do\nEach demo as examples, one per param and use (a block, a leaf, a diagram from data, a theme, a size), and their page tests (`test/page.test.ts`) finding each drawing in its example.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "compmd-packs/mermaid/demo.comp.md",
+        "compmd-packs/mermaid/test/page.test.ts",
+        "compmd-packs/wireframe/demo.comp.md"
+      ],
+      "created_at": "2026-11-21T15:01:30Z",
+      "updated_at": "2026-11-21T15:01:30Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "Hakan Serce",
+      "sprint_history": [
+        {
+          "sprint": "Packs 1: the pack tool, no-code components",
+          "from": "2026-11-21T15:01:30Z"
+        }
+      ],
+      "sprint": "Packs 1: the pack tool, no-code components",
+      "number": 368
     }
   ]
 }

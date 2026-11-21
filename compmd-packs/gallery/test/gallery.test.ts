@@ -34,7 +34,7 @@ function processed(text: string, path = "walks.comp.md") {
   const folder = path.includes("/") ? path.slice(0, path.lastIndexOf("/") + 1) : "";
   const request: Request = {
     path,
-    files: { [path]: text, [`${folder}walks.yaml`]: read(ROOT, "walks.yaml") },
+    files: { [path]: text, [`${folder}walks.yaml`]: read(ROOT, "walks.yaml"), [`${folder}photos.yaml`]: read(ROOT, "photos.yaml") },
     packs: { "@comp-markdown/gallery": releaseOf(ROOT), "@comp-markdown/card": releaseOf(CARD) },
     now: "2026-11-20T12:00:00Z",
   };
@@ -83,9 +83,33 @@ describe("a gallery", () => {
     expect(plainHtml(USE)).toContain("Three walks around the harbour");
   });
 
-  it("draws the demo's three cards with no diagnostics", () => {
+  it("draws each of the demo's examples, its source shown too, with no diagnostics", () => {
     const { expanded, diagnostics } = processed(read(ROOT, "demo.comp.md"), "demo.comp.md");
     expect(diagnostics).toEqual([]);
-    expect(gridOf(expanded.children as Node[])?.children?.filter((node) => node.name === "box")).toHaveLength(3);
+    const examples = (expanded.children as (Node & { render?: string; document?: { children: Node[] } })[]).filter((node) => node.type === "code" && node.document);
+    expect(examples.map((example) => example.render)).toEqual(["both", "both", "both", "both", "both"]);
+    const cards = examples.map((example) => gridOf(example.document?.children ?? [])?.children?.filter((node) => node.name === "box").length);
+    expect(cards).toEqual([3, 2, 12, 3, 3]);
+  });
+});
+
+/** The grid's params for the use `params` gives, as `key` or `breakpoint:key` and its value. */
+function gridParams(params: string): string[] {
+  const { expanded, diagnostics } = processed(USE.replace("{items=(md.data.walks)}", `{items=(md.data.walks) ${params}}`));
+  expect(diagnostics).toEqual([]);
+  return (gridOf(expanded.children as Node[])?.params ?? []).map(({ key, breakpoint, value }) => `${breakpoint ? `${breakpoint}:` : ""}${key}=${String(value)}`);
+}
+
+describe("a gallery's grid", () => {
+  it("fits as many cards as their narrowest width allows, `min`, with `gap` between them", () => {
+    expect(gridParams("min=10rem gap=s")).toEqual(expect.arrayContaining(["grid-template-columns=repeat(auto-fill, minmax(10rem, 1fr))", "gap=s"]));
+    expect(gridParams("")).toEqual(expect.arrayContaining(["gap=m"]));
+  });
+
+  it("puts exactly `columns` side by side, in place of `min`, at each breakpoint it is given", () => {
+    expect(gridParams("columns=2")).toEqual(expect.arrayContaining(["grid-template-columns=repeat(2, minmax(0, 1fr))"]));
+    const responsive = gridParams("columns=1 md:columns=3");
+    expect(responsive).toEqual(expect.arrayContaining(["grid-template-columns=repeat(1, minmax(0, 1fr))", "md:grid-template-columns=repeat(3, minmax(0, 1fr))"]));
+    expect(responsive.filter((param) => param.includes("auto-fill"))).toEqual([]);
   });
 });

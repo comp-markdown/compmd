@@ -7,18 +7,59 @@ md:
 
 # __component__
 
+Each example shows its source, then what it draws: one for each param and use, so a reader sees what the component offers.
+
+**A code block it renders,** its `alt` the text alternative:
+
+````compmd {render=both}
+---
+md:
+  import:
+    - from: "__pack__@0"
+      names: [__component__]
+---
+
 ```__language__ {alt="Two lines of __language__"}
 first line
 second line
 ```
+````
 
-The same component as a leaf, its code a param:
+**The same component as a leaf,** its code a param:
+
+````compmd {render=both}
+---
+md:
+  import:
+    - from: "__pack__@0"
+      names: [__component__]
+---
 
 :: __component__[One line of __language__] {code="one line"}
+````
 
-Sized by the document: narrower, and a height its lines scroll in.
+**Sized by the document,** narrower:
+
+````compmd {render=both}
+---
+md:
+  import:
+    - from: "__pack__@0"
+      names: [__component__]
+---
 
 :: __component__[One narrow line of __language__] {code="one narrow line" width=16rem}
+````
+
+**A height its lines scroll in,** `height=5rem scroll`:
+
+````compmd {render=both}
+---
+md:
+  import:
+    - from: "__pack__@0"
+      names: [__component__]
+---
 
 ```__language__ {alt="Six lines of __language__, in a box three lines tall" height=5rem scroll}
 one
@@ -28,3 +69,4 @@ four
 five
 six
 ```
+````

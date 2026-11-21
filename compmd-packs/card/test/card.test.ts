@@ -88,10 +88,12 @@ describe("a card", () => {
     expect(at('alt="Boats at the quay"')).toBeLessThan(at("Read the walk"));
   });
 
-  it("draws the demo's three cards with no diagnostics", () => {
+  it("draws each of the demo's examples, its source shown too, with no diagnostics: a card each, then three in a grid", () => {
     const { expanded, diagnostics } = processed(read("demo.comp.md"));
     expect(diagnostics).toEqual([]);
-    const grid = (expanded.children as Node[]).find((node) => node.name === "grid" || node.name === "box");
+    const examples = (expanded.children as (Node & { render?: string; document?: { children: Node[] } })[]).filter((node) => node.type === "code" && node.document);
+    expect(examples.map((example) => example.render)).toEqual(["both", "both", "both", "both"]);
+    const [grid] = examples[3]?.document?.children ?? [];
     expect(grid?.children?.filter((node) => node.name === "box")).toHaveLength(3);
   });
 });

@@ -145,6 +145,25 @@ impl<'r> Expander<'r> {
         boxed(fence, caller)
     }
 
+    /// The expression `written` at the caller's breakpoint `index`, when the caller's params have breakpoint values:
+    /// one of them used in it makes this param take one at that breakpoint too (spec §9.3), `columns` in
+    /// `grid-template-columns=(…columns…)` passed to a `grid`. `None` for a param that isn't an expression.
+    fn at_callers_breakpoint(
+        &mut self,
+        written: Option<&'r Param>,
+        declared: &DeclaredType,
+        env: &Env<'r>,
+        index: usize,
+    ) -> Option<Value> {
+        let param = written.filter(|param| matches!(param.value, ParamValue::Expr(_)))?;
+        let values = env.breakpoints.as_ref()?.get(index)?.clone();
+        let at = Env {
+            values,
+            ..env.clone()
+        };
+        self.param_value(param, Some(declared), &at)
+    }
+
     /// What a `compmd` component's body sees: its document's `md`, the invocation's params or their defaults, by
     /// breakpoint where they have breakpoint values, and its slots. `None` when a required param has no value, so
     /// the component renders its fallback.
@@ -196,14 +215,17 @@ impl<'r> Expander<'r> {
                 bases.insert(variable.clone(), env.base_of(&param.value));
             }
             let mut current = value.clone();
-            for (values, breakpoint) in at_breakpoints.iter_mut().zip(BREAKPOINTS) {
+            for (index, (values, breakpoint)) in
+                at_breakpoints.iter_mut().zip(BREAKPOINTS).enumerate()
+            {
                 let at = mine
                     .iter()
                     .find(|param| param.breakpoint.as_deref() == Some(breakpoint))
-                    .and_then(|param| self.param_value(param, Some(declared), env));
+                    .and_then(|param| self.param_value(param, Some(declared), env))
+                    .or_else(|| self.at_callers_breakpoint(written.copied(), declared, env, index));
                 if let Some(at) = at {
+                    responsive |= at.to_json() != value.to_json();
                     current = at;
-                    responsive = true;
                 }
                 *values = values.clone().with(variable.clone(), current.clone());
             }

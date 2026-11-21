@@ -75,9 +75,11 @@ describe("a figure", () => {
     expect(plainHtml(USE)).toContain("Boats at the quay, the lamps just lit.");
   });
 
-  it("draws the demo's two figures with no diagnostics", () => {
+  it("draws each of the demo's examples, its source shown too, with no diagnostics", () => {
     const { expanded, diagnostics } = processed(read("demo.comp.md"), "demo.comp.md");
     expect(diagnostics).toEqual([]);
-    expect(all(expanded.children as Node[]).filter((node) => node.type === "image")).toHaveLength(2);
+    const examples = (expanded.children as (Node & { render?: string; document?: { children: Node[] } })[]).filter((node) => node.type === "code" && node.document);
+    expect(examples.map((example) => example.render)).toEqual(["both", "both", "both"]);
+    expect(examples.map((example) => all(example.document?.children).filter((node) => node.type === "image").length)).toEqual([1, 1, 1]);
   });
 });

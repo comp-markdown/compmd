@@ -36,15 +36,26 @@ with `walks.yaml`:
   alt: Boats at the quay, the lamps just lit
 ```
 
-Each item has a `title`, an `image` with its `alt` text, and a `description`, which an item may leave out. The images are your document's: `images/harbour.jpg` is next to the document that uses the gallery, wherever the gallery comes from. The cards are at least 14rem wide, as many side by side as the column holds, and wrap. The cards' titles are headings one level below the heading above the gallery.
+Each item has a `title`, an `image` with its `alt` text, and a `description`, which an item may leave out. The images are your document's: `images/harbour.jpg` is next to the document that uses the gallery, wherever the gallery comes from. The cards are at least `min` wide (14rem), as many side by side as the column holds, and wrap; `columns=3` puts exactly three side by side instead, and takes breakpoints, `columns=1 md:columns=3`. `gap` is the space between them (`m`). The cards' titles are headings one level below the heading above the gallery.
 
 In a plain Markdown reader, a gallery is its sentence, `Three walks around the harbour`.
 
 ```compmd component=gallery
 params:
   items: array
+  min:
+    type: length
+    default: 14rem
+    doc: The narrowest a card gets; as many side by side as the column holds
+  columns:
+    type: number?
+    doc: Exactly this many cards side by side, in place of min
+  gap:
+    type: space
+    default: m
+    doc: The space between the cards
 ---
-::: grid {min=14rem gap=m}
+::: grid {min=(columns == null ? min : null) grid-template-columns=(columns == null ? null : "repeat(" + string(int(columns)) + ", minmax(0, 1fr))") gap=(gap)}
 ::: each {in=(items) as=item}
 ::: card
 # {{item.title}}

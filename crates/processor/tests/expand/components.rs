@@ -142,6 +142,30 @@ fn each_if_and_value_fail_to_their_fallbacks() {
     );
 }
 
+/// A param with breakpoint values reaches a `compmd` component's param through an expression too (spec §9.3): the
+/// grid a definition passes `columns` on to gets a `grid-template-columns` at each breakpoint.
+#[test]
+fn breakpoint_values_reach_a_compmd_components_expression_params() {
+    let input = "```compmd component=cards\nparams:\n  columns: number\n---\n::: grid {grid-template-columns=(\"repeat(\" + string(int(columns)) + \", 1fr)\")}\nA card.\n::: /grid\n```\n\n:: cards[Cards] {columns=1 md:columns=3}\n";
+    let rendered = render(input, Setup::default());
+    assert_eq!(rendered.found, []);
+    let grid = &rendered.tree["children"][0]["children"][0];
+    let columns: Vec<_> = grid["params"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter(|param| param["key"] == "grid-template-columns")
+        .map(|param| (param["breakpoint"].clone(), param["value"].clone()))
+        .collect();
+    assert_eq!(
+        columns,
+        [
+            (json!(null), json!("repeat(1, 1fr)")),
+            (json!("md"), json!("repeat(3, 1fr)")),
+        ]
+    );
+}
+
 #[test]
 fn breakpoint_values_reach_expressions_in_templates() {
     let input = "```compmd component=tiles {width=(size == \"x\" ? string(1 / 0) : size)}\nparams:\n  size: string = \"4rem\"\n  items: array\nslots: [default]\n---\n::: each {in=(items) as=i}\n::: box {height=(size)}\n{{i}}\n::: /box\n::: /each\n```\n\n::: tiles {items=([1, 2]) md:size=8rem lg:size=x}\nIgnored.\n::: /tiles\n";

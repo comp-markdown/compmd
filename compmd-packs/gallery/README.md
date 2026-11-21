@@ -32,7 +32,7 @@ with `walks.yaml` beside the document:
 
 - **Each item** has a `title`, an `image` with its `alt` text, and a `description`, which an item may leave out. The items can be written in the document too: `items=([{"title": "…", "image": "…", "alt": "…"}])`.
 - **The images are your document's:** `images/harbour.jpg` is next to the document that uses the gallery, wherever the gallery comes from.
-- **The cards** are at least 14rem wide, as many side by side as the column holds, and wrap. Their titles are headings one level below the heading above the gallery.
+- **The cards** are at least `min` wide (14rem), as many side by side as the column holds, and wrap: `min=10rem` packs a dozen photos. `columns=2` puts exactly two side by side instead, and takes breakpoints like any param: `columns=1 md:columns=3` stacks them on a phone and puts three side by side from `md` up. `gap` is the space between them (`m`). Their titles are headings one level below the heading above the gallery.
 - **In a plain Markdown reader,** and on GitHub, a gallery is its sentence: `Three walks around the harbour`.
 
 A zoom or a lightbox on a card's image waits for components that read the document's files.
@@ -42,7 +42,7 @@ A zoom or a lightbox on a card's image waits for components that read the docume
 From the repository (`pnpm install` at its root first):
 
 ```sh
-pnpm --dir compmd-packs/gallery dev     # the test page: demo.comp.md, three walks from walks.yaml
+pnpm --dir compmd-packs/gallery dev     # the test page: demo.comp.md, an example of each param, its source shown
 pnpm --dir compmd-packs/gallery test    # the publish check, and the gallery's expanded tree
 pnpm --dir compmd-packs/gallery lint    # the type check of the tests
 ```
