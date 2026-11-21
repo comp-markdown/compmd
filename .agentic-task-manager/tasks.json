@@ -12245,13 +12245,14 @@
         "01a1ebb5-4120-7007-85a3-68e81c39ce10",
         "01a1fb1a-5845-722a-88c3-17bf2a8c3273",
         "01a1fb25-2be2-70ce-b996-5794d92f0cfb",
-        "01a1fb25-2be2-70ce-b996-5795d8c8fb48"
+        "01a1fb25-2be2-70ce-b996-5795d8c8fb48",
+        "01a1feeb-aada-7653-96de-3c47766d3f06"
       ],
       "files": [
         "compmd-packs/timeline/"
       ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-21T16:54:15Z",
+      "updated_at": "2026-11-21T17:06:48Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 319,
@@ -13344,7 +13345,7 @@
       "description": "Item 4b of [the first list](docs/first-components.md#:~:text=Two%20or%20three%20columns): a `compmd` definition on `grid` (no code), in its own pack. The first column is the default slot, `:: #middle` and `:: #end` the others, so a column holds any blocks with no `box`; `split=even | wide-start | wide-middle | wide-end` sets the widths (`wide-middle` for three only), and below `md` the columns stack. Slot names are logical (spec §9.2).\n\n## Do\nThe definition with its signature; a demo with two and three columns and each `split`, in a right-to-left document too; plain-renderer reading checked (the columns in order); a conformance-style test of its expanded tree.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68e81c39ce10",
         "01a1fb1a-5845-722a-88c3-17bf2a8c3273",
@@ -13354,7 +13355,7 @@
         "compmd-packs/columns/"
       ],
       "created_at": "2026-11-20T19:03:19Z",
-      "updated_at": "2026-11-21T16:55:15Z",
+      "updated_at": "2026-11-21T17:04:16Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -13378,10 +13379,25 @@
           "kind": "answer",
           "text": "A compmd definition can’t tell whether `:: #middle` was given (no expression or `if` sees a slot), so columns can’t choose two tracks or three, and an empty middle box would still take a track. Should columns take the count as a param (`::: columns {count=3 split=wide-middle}`), or should the spec let a definition test a slot (`md.slots.middle`, true when given)? → The spec gets `md.slots.<name>`, true when the caller gave that slot; no `count` param (docs/no-code-components.md, decision 5, approved in CR-37).",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-21T17:04:16Z",
+          "kind": "review",
+          "text": "CR-56: The columns pack: two or three columns side by side",
+          "by": "claude:79612601"
         }
       ],
       "started_at": "2026-11-21T16:55:15Z",
-      "started_by": "claude:79612601"
+      "started_by": "claude:79612601",
+      "commit": "7d39a9df64407dc1dd6e070a6e3fead17ecac8fa",
+      "code_reviews": [
+        {
+          "id": "01a1ff10-d914-74ed-9166-bf9e0af14ad1",
+          "ref": "CR-56"
+        }
+      ],
+      "review_requested_at": "2026-11-21T17:04:16Z",
+      "review_state": "waiting"
     },
     {
       "id": "01a1fa57-79f1-7065-863a-4b38065cfa68",
