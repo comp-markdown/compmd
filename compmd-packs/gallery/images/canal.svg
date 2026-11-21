@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" role="img" aria-label="A canal under a low stone bridge">
+  <rect width="320" height="180" fill="#dfe8ee"/>
+  <rect y="120" width="320" height="60" fill="#5f8aa6"/>
+  <path d="M0 120h320v-14H0z" fill="#9aa58a"/>
+  <path d="M90 120a70 50 0 0 1 140 0v-30H90z" fill="#b9a68f"/>
+  <path d="M110 120a50 36 0 0 1 100 0z" fill="#5f8aa6"/>
+</svg>

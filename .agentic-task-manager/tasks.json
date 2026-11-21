@@ -11851,7 +11851,7 @@
       "description": "Item 4 of [the first list](docs/first-components.md#:~:text=A%20gallery%20is%20a%20grid%20of%20cards): a grid of cards, each an image, a title and a description, a `compmd` definition, so it needs no code and its images are the document's. A zoom or a lightbox waits for CMD-266.\n\n## Do\nThe definition (over a slot's items or a list in data), a demo, tests of its expanded tree.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a1f870-9ad9-761a-afe5-57c89c4468ad",
         "01a1fb1a-5845-722a-88c3-17bf2a8c3273",
@@ -11861,7 +11861,7 @@
         "compmd-packs/gallery/"
       ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T22:48:42Z",
+      "updated_at": "2026-11-21T14:12:45Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 315,
@@ -11886,7 +11886,9 @@
           "text": "What should gallery add over `::: grid {min=14rem gap=m}` of cards? A definition places a slot’s items all at once, so it can’t make each item a card. (a) a grid with a template slot over data rows, the caller’s template per item; (b) a spec change so a definition wraps each item in a box, and gallery makes the cards; (c) no gallery: the grid of cards in the Author’s Guide. → A leaf over data rows, each a `card` made in the definition with `each`; its images’ paths are the caller’s by decision 1 (docs/no-code-components.md, decision 7, approved in CR-37).",
           "by": "claude:79612601"
         }
-      ]
+      ],
+      "started_at": "2026-11-21T14:12:45Z",
+      "started_by": "claude:79612601"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57cb4e452c2e",
@@ -14129,7 +14131,7 @@
       "description": "CMD-362 gives a link or image from a pack's definition its file's place with `pack: true` (spec §12.3), and the sandbox's host mode gives the renderer `packFile`, from where the bundle serves packs (`<base>packs/<place>`). A page frame (frame mode) renders the page with no network: its images come from the host's page (`PageImages`), only those of the trees it was sent.\n\n## Do\n- The frame gets the mapping, as it gets the host's own schemes with `level`: a protocol change, with its schema and docs.\n- `imageSources` takes the same mapping, so `PageImages` lists a pack image by the URL the frame asks for, and fetches it.\n- A link to a pack's file in the frame has the same `href` as in host mode.\n\n## Tests\nThe sandbox's browser tests in Chrome and WebKit: a pack's image shows in a page frame, and one not in the trees it was sent is refused.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [
         "01a1fb63-8662-766e-a404-898f1f749430"
       ],
@@ -14138,7 +14140,7 @@
         "npm-packages/render/src/images.ts"
       ],
       "created_at": "2026-11-21T13:23:15Z",
-      "updated_at": "2026-11-21T13:59:16Z",
+      "updated_at": "2026-11-21T14:12:16Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -14150,7 +14152,24 @@
       "sprint": "Packs 1: the pack tool, no-code components",
       "number": 364,
       "started_at": "2026-11-21T13:59:16Z",
-      "started_by": "claude:79612601"
+      "started_by": "claude:79612601",
+      "commit": "b838d4fd6ca45f66de3a187168a827729d1dbce6",
+      "code_reviews": [
+        {
+          "id": "01a1fe73-6152-7596-9bee-7a652fe20ebb",
+          "ref": "CR-44"
+        }
+      ],
+      "review_requested_at": "2026-11-21T14:12:16Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-21T14:12:16Z",
+          "kind": "review",
+          "text": "CR-44: A pack’s own files in a page frame (frame mode)",
+          "by": "claude:79612601"
+        }
+      ]
     },
     {
       "id": "01a1fe46-7ec4-7664-a5d9-7a48f23b5fcd",
