@@ -22,7 +22,7 @@ describe("createPack", () => {
     expect(written).toEqual([".gitignore", "README.md", "demo.comp.md", "index.comp.md", "package.json", "src/badge.test.ts", "src/badge.ts", "tsconfig.json"]);
     const document = await readFile(join(folder, "index.comp.md"), "utf8");
     expect(document).toContain('    - from: ./dist/badge.js\n      names: [badge]\n  export:\n    pack: "@kit/badge"');
-    expect(document).toContain("```compmd component=badge signature\nparams:\n  value: string\n```");
+    expect(document).toContain("```compmd component=badge signature {width=12rem max-width=100%}\nparams:\n  value: string\n```");
     expect(await readFile(join(folder, "demo.comp.md"), "utf8")).toContain('- from: "@kit/badge@0"');
     expect(await readFile(join(folder, "tsconfig.json"), "utf8")).toContain('"extends": "@compmd/pack/tsconfig.json"');
     const all = await Promise.all(written.map((path) => readFile(join(folder, path), "utf8")));

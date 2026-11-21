@@ -1,6 +1,8 @@
 // `__component__`: draws a ```__language__ block, its text in `code`, in the page's colour scheme. Replace the drawing
 // with yours, a library's rendering of the language, say: what it imports is bundled in. A library that draws
-// asynchronously is simpler with `draw` from `@compmd/pack/component`.
+// asynchronously is simpler with `draw` from `@compmd/pack/component`. What it draws here is text, which flows in
+// its box. A drawing with an aspect ratio of its own (an SVG, a canvas) fits its box with `fitBox(drawing,
+// context.fit)`, and one sized in script from its box fills it with `fillBox`; `draw` fits an SVG itself.
 import { component } from "@compmd/pack/component";
 
 /** The params, as the signature in `index.comp.md` declares them. */

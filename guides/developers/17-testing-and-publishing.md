@@ -98,7 +98,7 @@ describe("progress", () => {
 });
 ```
 
-`npm test` runs `compmd-pack test`: every `src/**/*.test.ts` in happy-dom, with no test configuration in the pack. A test has the handle's `target`, what the component `set` (`sets`, for the params you name in `inputs`), what it failed with (`failures`), `setScheme` for an update in the other colour scheme, and, for a component that draws asynchronously, `settled()`, which waits for its drawing.
+`npm test` runs `compmd-pack test`: every `src/**/*.test.ts` in happy-dom, with no test configuration in the pack. A test has the handle's `target`, what the component `set` (`sets`, for the params you name in `inputs`), what it failed with (`failures`), `setScheme` for an update in the other colour scheme, `setFit` for one with another `object-fit` or `object-position` (a `fit` option gives the first), and, for a component that draws asynchronously, `settled()`, which waits for its drawing.
 
 Params come from documents, so test what a document may give: here a value past its max stays inside the bar. A signature checks types and the values an enum allows, never that two params agree.
 

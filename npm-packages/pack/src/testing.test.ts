@@ -28,6 +28,20 @@ describe("mountForTest", () => {
     expect(shown.target.isConnected).toBe(false);
   });
 
+  it("gives the box's fit, contain and centred by default, and the new one with an update, the params kept", () => {
+    const seen: string[] = [];
+    const fitted: Mount = (_, context) => {
+      seen.push(JSON.stringify(context.fit));
+      return { update: (params) => seen.push(`${JSON.stringify(context.fit)} ${JSON.stringify(params)}`) };
+    };
+    const plain = mountForTest(fitted);
+    const shown = mountForTest(fitted, { params: { n: 1 }, fit: { mode: "cover", x: 0, y: 1 } });
+    shown.setFit({ mode: "fill", x: 1, y: 0.5 });
+    expect(seen).toEqual([JSON.stringify({ mode: "contain", x: 0.5, y: 0.5 }), JSON.stringify({ mode: "cover", x: 0, y: 1 }), `${JSON.stringify({ mode: "fill", x: 1, y: 0.5 })} {"n":1}`]);
+    plain.destroy();
+    shown.destroy();
+  });
+
   it("records a throw in update as a failure, and shows the fallback until the next update", async () => {
     const fragile: Mount = (target) => ({
       update: (next) => {

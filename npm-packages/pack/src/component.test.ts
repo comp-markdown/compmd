@@ -79,6 +79,33 @@ describe("draw", () => {
     chart.destroy();
   });
 
+  it("fits a drawing that is one SVG in its box by the box's fit, and again when the fit changes", async () => {
+    const fits: string[] = [];
+    const code = mountForTest(
+      draw((_, { fit }) => {
+        fits.push(fit.mode);
+        return `<svg viewBox="0 0 8 8"></svg>`;
+      }),
+      { fit: { mode: "cover", x: 0, y: 1 } },
+    );
+    await code.settled();
+    const holder = code.target.firstElementChild as HTMLElement;
+    expect([holder.style.width, holder.style.height]).toEqual(["100%", "100%"]);
+    expect(code.target.querySelector("svg")?.getAttribute("preserveAspectRatio")).toBe("xMinYMax slice");
+    code.setFit({ mode: "fill", x: 0.5, y: 0.5 });
+    await code.settled();
+    expect(code.target.querySelector("svg")?.getAttribute("preserveAspectRatio")).toBe("none");
+    expect(fits).toEqual(["cover", "fill"]);
+    code.destroy();
+  });
+
+  it("leaves a drawing of several elements, or of text, to flow", async () => {
+    const list = mountForTest(draw(() => `<svg viewBox="0 0 8 8"></svg><p>A caption</p>`));
+    await list.settled();
+    expect(list.target.querySelector("svg")?.hasAttribute("preserveAspectRatio")).toBe(false);
+    list.destroy();
+  });
+
   it("draws one at a time when asked, for a library with one global configuration", async () => {
     const order: string[] = [];
     const first = later<string>();

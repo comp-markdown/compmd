@@ -115,18 +115,19 @@ describe.each(PACKS)("a pack of $variant", ({ folder: name, port, shows, ...opti
     it("renders the component in the strict sandbox, with no diagnostics", async () => {
       const { page, errors } = await testPage();
       const drawn = page.locator("iframe").first().contentFrame().locator(`[aria-label="${shows.label}"]`);
-      expect(await drawn.innerText()).toContain(shows.text);
+      expect(await drawn.textContent()).toContain(shows.text);
       expect(await page.locator("#diagnostics li").allInnerTexts()).toEqual([]);
       expect(errors).toEqual([]);
     });
 
-    it("makes each use's frame as tall as what it shows: neither cut short nor taller", async () => {
+    it("cuts no use short: each frame holds all of what it shows", async () => {
       const { page } = await testPage();
       const frames = page.locator("iframe");
       for (let i = 0; i < (await frames.count()); i += 1) {
         const frame = frames.nth(i);
-        // How many pixels the frame is off its content, once it has reported its size. The body's height, which the
-        // frame reports; the root's is never less than the frame's, so it hides a frame that is too tall.
+        // How many pixels the frame is off its content, once its box has its size. A frame is its box's inside
+        // (docs/sizing-components.md), so its body is never shorter than it: what this finds is content cut short.
+        // That a box is the size its component needs is `@compmd/sandbox`'s own test, against the same use in the page.
         const off = async () => {
           const content = await frame.contentFrame().locator("body").evaluate((body) => body.scrollHeight);
           const height = await frame.evaluate((element) => element.getBoundingClientRect().height);
@@ -134,6 +135,18 @@ describe.each(PACKS)("a pack of $variant", ({ folder: name, port, shows, ...opti
         };
         await expect.poll(off, { timeout: 10_000 }).toBe(0);
       }
+    });
+
+    it("outlines each use's box with Show boxes, and moves nothing", async () => {
+      const { page } = await testPage();
+      const box = page.locator("#page .compmd-component").first();
+      const shown = () => box.evaluate((element) => ({ outline: getComputedStyle(element).outlineStyle, rect: JSON.stringify(element.getBoundingClientRect()) }));
+      const before = await shown();
+      expect(before.outline).toBe("none");
+      await page.check("#boxes");
+      expect(await shown()).toEqual({ outline: "dashed", rect: before.rect });
+      await page.uncheck("#boxes");
+      expect(await shown()).toEqual(before);
     });
 
     it("switches the page between light and dark, and the frame follows", async () => {

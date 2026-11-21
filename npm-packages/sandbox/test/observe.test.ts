@@ -253,7 +253,8 @@ describe("the observer", () => {
       const seen: string[] = [];
       const counted = (data: unknown) => {
         const type = (data as { type?: unknown } | null)?.type;
-        if (typeof type === "string" && !["ping", "pong", "size", "observe", "observed"].includes(type)) seen.push(type);
+        // `size` and `box` come as often as the page lays out, which isn't the same twice.
+        if (typeof type === "string" && !["ping", "pong", "size", "box", "observe", "observed"].includes(type)) seen.push(type);
       };
       const restorePost = patch("postMessage", (post) =>
         function (this: MessagePort, ...args: unknown[]) {

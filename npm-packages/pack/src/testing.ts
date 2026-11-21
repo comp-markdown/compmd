@@ -1,7 +1,7 @@
 // `@compmd/pack/testing` (docs/writing-a-pack.md, decision 7): a component run through the host contract as the
 // renderer runs it, in a DOM (happy-dom, as `compmd-pack test` gives), with no stubs for the frame's document.
 
-import { mountComponent, Stylesheet, type ExpandedComponent, type Mount, type Mounted, type Params, type Scheme, type Slots } from "@compmd/render";
+import { mountComponent, Stylesheet, type ExpandedComponent, type Fit, type Mount, type Mounted, type Params, type Scheme, type Slots } from "@compmd/render";
 import { SETTLED, type DrawMounted } from "./component.ts";
 
 export interface TestOptions {
@@ -10,6 +10,8 @@ export interface TestOptions {
   fallback?: string;
   /** The colour scheme it is shown in; `light` by default. */
   scheme?: Scheme;
+  /** How its drawing sits in its box (`object-fit`, `object-position`), in a left-to-right document; contain, centred, by default. */
+  fit?: Fit;
   /** The params bound to an input, which the component may `set`. */
   inputs?: readonly string[];
   slots?: Slots;
@@ -22,6 +24,8 @@ export interface TestMount {
   update(params: Params): void;
   /** The scheme changed: the component gets it, and an update with the same params. */
   setScheme(scheme: Scheme): void;
+  /** The box's fit changed: the component gets it, and an update with the same params. */
+  setFit(fit: Fit): void;
   /**
    * Resolves once its draws are done (`@compmd/pack/component`'s) and what it gave `busy` has settled, or at once for
    * one that draws synchronously.
@@ -36,12 +40,17 @@ export interface TestMount {
 
 const messageOf = (error: unknown): string => (error instanceof Error ? error.message : String(error));
 
-/** The leaf a test's params make, each bound to an input of its own name when `inputs` names it. */
-function leafOf(params: Params, inputs: readonly string[]): ExpandedComponent {
+const PLACES: Record<number, string> = { 0: "start", 0.5: "center", 1: "end" };
+
+/** `fit` as the box params a document writes: `object-fit`, and `object-position`, the block position then the inline one. */
+const fitParams = (fit: Fit | undefined): Params => (fit ? { "object-fit": fit.mode, "object-position": `${PLACES[fit.y] ?? "center"} ${PLACES[fit.x] ?? "center"}` } : {});
+
+/** The leaf a test's params make, each bound to an input of its own name when `inputs` names it, in a box with `fit`. */
+function leafOf(params: Params, inputs: readonly string[], fit?: Fit): ExpandedComponent {
   return {
     type: "componentLeaf",
     name: "component",
-    params: Object.entries(params).map(([key, value]) => ({ key, breakpoint: null, value, ...(inputs.includes(key) ? { input: key } : {}) })),
+    params: Object.entries({ ...params, ...fitParams(fit) }).map(([key, value]) => ({ key, breakpoint: null, value, ...(inputs.includes(key) ? { input: key } : {}) })),
     fallback: [],
   };
 }
@@ -69,7 +78,9 @@ export function mountForTest(component: Mount, options: TestOptions = {}): TestM
     return mounted;
   };
   const fallback = Object.assign(document.createElement("span"), { textContent: options.fallback ?? "Fallback" });
-  const handle = mountComponent(holder, leafOf(options.params ?? {}, inputs), {
+  let params = options.params ?? {};
+  let fit = options.fit;
+  const handle = mountComponent(holder, leafOf(params, inputs, fit), {
     mount: watched,
     slots,
     fallback: { text: fallback.textContent, element: fallback },
@@ -82,11 +93,16 @@ export function mountForTest(component: Mount, options: TestOptions = {}): TestM
   });
   return {
     target: handle.element,
-    update(params) {
-      handle.update(leafOf(params, inputs), { slots });
+    update(next) {
+      params = next;
+      handle.update(leafOf(params, inputs, fit), { slots });
     },
     setScheme(scheme) {
       handle.scheme(scheme);
+    },
+    setFit(next) {
+      fit = next;
+      handle.update(leafOf(params, inputs, fit), { slots });
     },
     async settled() {
       if (mounted && SETTLED in mounted) await (mounted as DrawMounted)[SETTLED]();

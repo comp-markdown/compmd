@@ -47,6 +47,18 @@ graph LR
   Idea --> Plan
 ```
 
+Sized by the document: fitted in a box 6rem tall, and at the start of its box.
+
+```mermaid {height=6rem alt="Draft, then review, then published, in a short box"}
+graph LR
+  Draft --> Review --> Published
+```
+
+```mermaid {object-position="center start" alt="Idea, then plan, at the start of its box"}
+graph LR
+  Idea --> Plan
+```
+
 One Mermaid can't read:
 
 ```mermaid {alt="A diagram with a mistake"}

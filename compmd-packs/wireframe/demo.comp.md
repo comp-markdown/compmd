@@ -56,6 +56,12 @@ The step tabs come from the plan's list, so the sketch follows when a step is ad
 
 :: wireframe[The checkout's steps as tabs: Basket, Address, Payment] {code=("window \"Checkout\" device=browser:\n  tabs:\n" + md.doc.tabs.map(t, "    tab \"" + t + "\"").join("\n"))}
 
+## In a narrow column
+
+A sketch is laid out in its box as a page is, so a narrower box gives a narrower window:
+
+:: wireframe[A narrow sign-in window: an email field and a button] {code=("window \"Sign in\":\n  input placeholder=\"Email\"\n  button \"Continue\" primary") width=18rem}
+
 ## Every part
 
 What the pack draws, for checking it:

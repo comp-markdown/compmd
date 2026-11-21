@@ -37,7 +37,7 @@ A pack's scripts run it in the pack's folder:
 | Command | What it does |
 |---|---|
 | `compmd-pack build` | Builds each module the pack publishes, then checks the pack as a host would (below). |
-| `compmd-pack dev [--port <n>]` | Serves the test page: `demo.comp.md`, rendered in host mode with the pack as a folder pack, each use in a strict frame of its own that takes the height of what it draws, its diagnostics and failures under it, and a switch between the reader's colour scheme, light and dark. Saving a source builds its module again, and the page reloads. Nothing of the page is written into the pack. |
+| `compmd-pack dev [--port <n>]` | Serves the test page: `demo.comp.md`, rendered in host mode with the pack as a folder pack, each use in a strict frame of its own, laid out as in the page, its diagnostics and failures under it, a switch between the reader's colour scheme, light and dark, and **Show boxes**, which outlines each use's box. Saving a source builds its module again, and the page reloads. Nothing of the page is written into the pack. |
 | `compmd-pack test [filter…]` | Runs `src/**/*.test.ts` in happy-dom, with no Vitest configuration in the pack. |
 
 **What it builds.** The pack's document (`package.json`'s `compmd`) imports each component's built module, `./dist/<name>.js`, which is built from `src/<name>.ts` (or `.tsx`, `.js`, `.jsx`): one ES module, minified, with every library bundled in, but the runtimes the sandbox's frames provide (React, React DOM, Svelte; spec §7.6) and the library packs the pack names in `peerDependencies`, which packs share. Code splitting is off, so a library that loads parts of itself on demand stays in the one file, which a host that loads the module as text needs. The build adds each runtime a module imports to `peerDependencies`, at the version it was built with, and writes the licences of what it bundles to `dist/LICENSES.md`. A library pack (`"compmd": { "library": "dist/index.js" }`) is built from `src/index.ts`, which re-exports its library, and takes the library's version as its own.
@@ -61,6 +61,18 @@ export default component<{ value: string }>((target, { params }) => {
 
 `component<Params>` types a plain component's params as its signature declares them. `context.scheme` is the colour scheme the page shows it in, and a change of scheme comes as an update; `context.fail(message)` is for a drawing that can't be made, found after `mount` returned (spec §7.4).
 
+A component fits its box, and has no size params of its own. `fitBox(drawing, context.fit)` gives a drawing with an aspect ratio of its own (an SVG, an `img`, a `canvas`) the box's size, scaled and placed as the use's `object-fit` and `object-position` say. `fillBox(element)` is for a drawing with no ratio, sized in script from its box (a chart, a map): it fills the box, and what it drew last never counts as its size.
+
+```ts
+import { component, fitBox } from "@compmd/pack/component";
+
+export default component<{ value: string }>((target, context) => {
+  const code = target.appendChild(qrCode(context.params.value));   // an SVG with a viewBox
+  fitBox(code, context.fit);
+  return { update: () => fitBox(code, context.fit) };
+});
+```
+
 A component that draws asynchronously, with a library that renders a diagram, uses `draw`:
 
 ```ts
@@ -77,7 +89,7 @@ export default draw<{ code: string }>(
 );
 ```
 
-`render(params, { scheme, signal })` returns an element, or SVG or HTML as text. The newest params win: a draw a newer one overtakes is dropped (its `signal` aborted), and the last drawing stays until the next is ready. A draw that throws calls `context.fail` with its message, so the host reports W118 and shows the fallback until the next update. `role` gives the drawing a role, with the fallback's text as its label; `oneAtATime` runs one draw at a time per frame, for a library with one global configuration.
+`render(params, { scheme, fit, signal })` returns an element, or SVG or HTML as text. A drawing that is one SVG, `img` or `canvas` is fitted in the component's box, which the document sizes (`width`, `height`, `aspect-ratio`), as its `object-fit` and `object-position` say. The newest params win: a draw a newer one overtakes is dropped (its `signal` aborted), and the last drawing stays until the next is ready. A draw that throws calls `context.fail` with its message, so the host reports W118 and shows the fallback until the next update. `role` gives the drawing a role, with the fallback's text as its label; `oneAtATime` runs one draw at a time per frame, for a library with one global configuration.
 
 ## Testing a component
 
@@ -92,6 +104,7 @@ await chart.settled();
 chart.failures;                 // ["Parse error on line 1: …"]
 chart.target.textContent;       // "A to B": the fallback, until the next update
 chart.setScheme("light");       // an update with the same params
+chart.setFit({ mode: "cover", x: 0.5, y: 0.5 });   // as `object-fit=cover` on the use
 chart.destroy();
 ```
 

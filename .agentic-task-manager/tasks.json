@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 362,
+    "next_number": 363,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -13501,7 +13501,7 @@
       "description": "[Sizing a component in its box](docs/sizing-components.md), decision 2 and *The mechanism*, in `@compmd/sandbox`, as [the prototype](spikes/wrap-npm-package/sizing/page.html) does it. Today a use's box params are applied to the page's box and again inside its frame, so a use with a `width` and a border scrolls.\n\n## Do\n- The sizer, with the frame positioned over it, in place of a frame as tall as its content.\n- In the frame: `target` the frame's size; the part with none of the box's params; no scrolling without `scroll`.\n- The natural size measured height first, then width with `target` laid out anew as a block; reported when mounted, when the content changes size, and when the page says the box did.\n- The protocol, version 3: `size` with the natural width and height, `box` from the page (on load, and when the sizer changes size), `fit` with the part; `docs/sandbox-protocol.md` and the schema.\n- [Running components in the sandbox](docs/running-components-in-the-sandbox.md), Q5, says it.\n\n## Tests\nBrowser tests in Chrome and WebKit: each of the prototype's 28 uses drawn by a trusted component in the page and by the same component framed, compared, and the grid rows after they shrink; with most frames off screen; and the four the prototype doesn't run: `object-position` right to left, `scroll`, an `img` or `canvas` drawing, and a script-sized drawing that doesn't contain its size.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [
         "01a1faa3-d27f-73b4-9632-1833aa21548d"
       ],
@@ -13511,9 +13511,9 @@
         "docs/running-components-in-the-sandbox.md"
       ],
       "created_at": "2026-11-20T20:26:42Z",
-      "updated_at": "2026-11-20T23:53:59Z",
+      "updated_at": "2026-11-20T23:54:25Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "sprint_history": [
         {
           "sprint": "Packs 1: the pack tool, no-code components",
@@ -13524,7 +13524,7 @@
       "number": 355,
       "started_at": "2026-11-20T22:45:38Z",
       "started_by": "claude:79612601",
-      "commit": "b348821345b78a4d1a301ec5233713db876388ca",
+      "commit": "b917bba43a31cd8b90e13c794c37a0ba1ecc5797",
       "code_reviews": [
         {
           "id": "01a1fb58-f859-7639-983d-4dbae78dbcd0",
@@ -13532,7 +13532,6 @@
         }
       ],
       "review_requested_at": "2026-11-20T23:44:34Z",
-      "review_state": "approved",
       "notes": [
         {
           "at": "2026-11-20T23:44:34Z",
@@ -13545,9 +13544,23 @@
           "kind": "note",
           "text": "Approved: in CR-39 (round 1)",
           "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-20T23:54:25Z",
+          "kind": "outcome",
+          "text": "Approved in CR-39: the sizer, the frame over it, protocol 3 (`size` natural, `box {width}`); the design’s mechanism says the frame measures at the page’s width.",
+          "by": "claude:79612601"
         }
       ],
-      "reviewed_at": "2026-11-20T23:53:59Z"
+      "reviews": [
+        {
+          "from": "2026-11-20T23:44:34Z",
+          "to": "2026-11-20T23:53:59Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-20T23:54:25Z",
+      "completed_by": "claude:79612601"
     },
     {
       "id": "01a1faa3-d27f-73b4-9632-1835b3071707",
@@ -13574,7 +13587,7 @@
         "guides/"
       ],
       "created_at": "2026-11-20T20:26:42Z",
-      "updated_at": "2026-11-20T23:44:34Z",
+      "updated_at": "2026-11-21T03:08:20Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -13585,7 +13598,14 @@
       ],
       "sprint": "Packs 1: the pack tool, no-code components",
       "number": 356,
-      "started_at": "2026-11-20T23:44:34Z",
+      "notes": [
+        {
+          "at": "2026-11-21T03:08:00Z",
+          "kind": "failure",
+          "text": "lease expired (claude:79612601)"
+        }
+      ],
+      "started_at": "2026-11-21T03:08:20Z",
       "started_by": "claude:79612601"
     },
     {
@@ -13821,7 +13841,7 @@
         "guides/"
       ],
       "created_at": "2026-11-20T22:47:59Z",
-      "updated_at": "2026-11-20T23:53:59Z",
+      "updated_at": "2026-11-21T03:08:22Z",
       "created_by": "claude:79612601",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -13832,7 +13852,14 @@
       ],
       "sprint": "Packs 1: the pack tool, no-code components",
       "number": 360,
-      "started_at": "2026-11-20T23:53:59Z",
+      "notes": [
+        {
+          "at": "2026-11-21T03:08:00Z",
+          "kind": "failure",
+          "text": "lease expired (claude:79612601)"
+        }
+      ],
+      "started_at": "2026-11-21T03:08:22Z",
       "started_by": "claude:79612601"
     },
     {
@@ -13865,6 +13892,39 @@
       ],
       "sprint": "Packs 1: the pack tool, no-code components",
       "number": 361
+    },
+    {
+      "id": "01a1fb63-8662-766e-a404-898f1f749430",
+      "name": "A pack's own relative links and images reach the pack's files",
+      "type": "bugfix",
+      "priority": "P2",
+      "labels": [
+        "spec",
+        "packs"
+      ],
+      "description": "The spec (§8.6, *Relative paths*) says a destination written in a `compmd` definition's body resolves against the definition's file, and that \"making a pack's files reachable in the output is the processor's job\". Nothing does it yet: the processor writes `![](./icons/star.svg)` from a pack's body into the expanded tree as written, and the host resolves it against the processed document, so it points at a file next to the document that isn't there. Found while checking [the no-code components design](docs/no-code-components.md), *Gaps left*.\n\n## Decide first\nHow the expanded tree says where a pack's file is: the pack's place (`@scope/pack@1.0.0/icons/star.svg`), which a host maps to where it serves the pack's files (the Vite plugin and the bundle serve them at `packs/<place>`), or a URL the request gives the processor. Settle it with the maintainer, then the spec text, a conformance case, the processor and the hosts.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "todo",
+      "dependencies": [],
+      "files": [
+        "spec/compmd-spec-v1.md",
+        "crates/processor/src/",
+        "npm-packages/vite/src/",
+        "npm-packages/host-js/src/"
+      ],
+      "created_at": "2026-11-20T23:56:06Z",
+      "updated_at": "2026-11-20T23:56:06Z",
+      "created_by": "claude:79612601",
+      "updated_by": "claude:79612601",
+      "sprint_history": [
+        {
+          "sprint": "Packs 1: the pack tool, no-code components",
+          "from": "2026-11-20T23:56:06Z"
+        }
+      ],
+      "sprint": "Packs 1: the pack tool, no-code components",
+      "number": 362
     }
   ]
 }

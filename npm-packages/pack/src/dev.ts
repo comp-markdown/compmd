@@ -30,11 +30,14 @@ export function pageHtml(title: string): string {
       :root { color-scheme: light dark; }
       body { font: 16px/1.5 system-ui, sans-serif; margin: 2rem auto; max-width: 48rem; padding: 0 1rem; background: Canvas; color: CanvasText; }
       header { display: flex; justify-content: flex-end; gap: 0.5rem; align-items: center; }
+      header label:first-child { margin-inline-end: auto; }
+      /* Each use's box, outlined: an outline takes no room, so the page is laid out as without it. */
+      #page.show-boxes .compmd-component { outline: 2px dashed #e5007d; outline-offset: -1px; }
       #diagnostics { color: #d1242f; }
     </style>
   </head>
   <body>
-    <header><label for="scheme">Colour scheme</label> <select id="scheme"><option value="light dark">The reader's</option><option value="light">Light</option><option value="dark">Dark</option></select></header>
+    <header><label><input type="checkbox" id="boxes" /> Show boxes</label> <label for="scheme">Colour scheme</label> <select id="scheme"><option value="light dark">The reader's</option><option value="light">Light</option><option value="dark">Dark</option></select></header>
     <div id="page"></div>
     <ul id="diagnostics"></ul>
     <script type="module" src="${PAGE}"></script>
@@ -70,6 +73,10 @@ for (const { code, message } of opened.diagnostics) show(\`\${code}: \${message}
 scheme.addEventListener("change", () => {
   document.documentElement.style.colorScheme = scheme.value;
   view.scheme();
+});
+const boxes = document.getElementById("boxes");
+boxes.addEventListener("change", () => {
+  page.classList.toggle("show-boxes", boxes.checked);
 });
 `;
 

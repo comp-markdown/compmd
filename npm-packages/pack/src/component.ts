@@ -1,10 +1,12 @@
 // `@compmd/pack/component` (docs/writing-a-pack.md, decision 6): what a component that draws asynchronously would
 // otherwise write itself, bundled into its module. A component that draws synchronously writes plain `mount`.
 
-import type { Mount, MountContext, Mounted, Params, Scheme, Slots } from "@compmd/render";
+import type { Fit, Mount, MountContext, Mounted, Params, Scheme, Slots } from "@compmd/render";
+import { CONTAIN, fitBox } from "./fit.ts";
 
 /** The host contract's types (spec §7.4). */
-export type { Fallback, Mount, MountContext, Mounted, Params, Scheme, Slots } from "@compmd/render";
+export type { Fallback, Fit, Mount, MountContext, Mounted, Params, Scheme, Slots } from "@compmd/render";
+export { fillBox, fitBox } from "./fit.ts";
 
 /** The contract's context, its params typed as the component's signature declares them. */
 export interface Context<P> extends Omit<MountContext, "params"> {
@@ -37,6 +39,8 @@ export function component<P = Params>(mount: (target: Element, context: Context<
 export interface DrawContext {
   /** The colour scheme the component is shown in (spec §7.4). */
   scheme: Scheme;
+  /** How the drawing sits in the box (spec §7.4): `draw` fits an SVG, an `img` or a `canvas` by it, so most draws ignore it. */
+  fit: Fit;
   /** Aborted when a newer draw overtakes this one, or the component goes. */
   signal: AbortSignal;
 }
@@ -71,7 +75,8 @@ const messageOf = (error: unknown): string => (error instanceof Error ? error.me
  * A component that draws with `render`, which may take its time: the newest params win, a draw that a newer one
  * overtakes is dropped, the drawing replaces the last one only once it is ready, and a draw that throws calls
  * `context.fail` with its message (spec §7.4), so the fallback shows until the next update. `render` runs again
- * when the scheme changes.
+ * when the scheme or the fit changes. A drawing that is one SVG, `img` or `canvas` is fitted in the box by the box's
+ * `fit` (`fitBox`); anything else flows in it.
  *
  * @example
  * export default draw<{ code: string }>(async ({ code }, { scheme }) => (await library.render(code, { dark: scheme === "dark" })).svg, { role: "img" });
@@ -81,7 +86,11 @@ const messageOf = (error: unknown): string => (error instanceof Error ? error.me
 export function draw<P = Params>(render: (params: P, context: DrawContext) => Drawing | Promise<Drawing>, options: DrawOptions = {}): Mount {
   return (target, context): DrawMounted => {
     const drawing = target.ownerDocument.createElement("div");
+    // The box's size, so a drawing fitted in it has the box's inside to fit.
+    drawing.style.cssText = "width: 100%; height: 100%; min-width: 0;";
     if (options.role !== undefined) drawing.setAttribute("role", options.role);
+    // A renderer before `fit` has none: as large as fits, centred.
+    const fitNow = () => (context as Partial<MountContext>).fit ?? CONTAIN;
     let current: AbortController | undefined;
     let settled: Promise<void> = Promise.resolve();
     const run = (params: Params) => {
@@ -91,11 +100,12 @@ export function draw<P = Params>(render: (params: P, context: DrawContext) => Dr
       const job = async () => {
         // A draw waiting its turn may be overtaken before it starts.
         own.signal.throwIfAborted();
-        const drawn = await render(params as P, { scheme: context.scheme, signal: own.signal });
+        const drawn = await render(params as P, { scheme: context.scheme, fit: fitNow(), signal: own.signal });
         if (own.signal.aborted) return;
         if (options.role !== undefined) drawing.setAttribute("aria-label", context.fallback.text);
         if (typeof drawn === "string") drawing.innerHTML = drawn;
         else drawing.replaceChildren(drawn);
+        if (drawing.children.length === 1 && drawing.firstElementChild) fitBox(drawing.firstElementChild, fitNow());
         // After a failure, the box was the renderer's: the drawing goes back into it.
         if (drawing.parentNode !== target) target.replaceChildren(drawing);
       };

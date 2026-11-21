@@ -86,7 +86,9 @@ md:
 
 `hello`, a leaf: `:: hello[What a reader without it sees] {value="Hello"}`.
 
-```compmd component=hello signature
+It is 12rem wide unless a use says otherwise (`width`, `height`, `aspect-ratio`), and `object-fit` and `object-position` say how it sits in a box of another shape.
+
+```compmd component=hello signature {width=12rem max-width=100%}
 params:
   value: string
 ```
@@ -115,9 +117,17 @@ md:
 # hello
 
 :: hello[Hello, from hello] {value="Hello"}
+
+Sized by the document: wider, a height it is fitted in, and a box it covers.
+
+:: hello[Hello, wider] {value="Wider" width=20rem}
+
+:: hello[Hello, in a short box] {value="Short" width=100% height=3rem}
+
+:: hello[Hello, covering its box] {value="Cover" width=16rem height=8rem object-fit=cover}
 ```
 
-The page renders it as a host renders it: the pack as a folder pack, in host mode, each use in a strict frame of its own that takes the height of what it draws. Under the page are the document's diagnostics and the components' failures, and above it a switch between the reader's colour scheme, light and dark. Saving a file in `src/` (but a test) builds the modules again, and the page reloads. `--port <n>` picks the port: `npm run dev -- --port 4300`.
+The page renders it as a host renders it: the pack as a folder pack, in host mode, each use in a strict frame of its own, laid out as it would be in the page. Under the page are the document's diagnostics and the components' failures, and above it a switch between the reader's colour scheme, light and dark, and **Show boxes**, which outlines each use's box, so you see the box the document sized and how the drawing sits in it. Saving a file in `src/` (but a test) builds the modules again, and the page reloads. `--port <n>` picks the port: `npm run dev -- --port 4300`.
 
 Nothing of the page is written into the pack. Add uses to `demo.comp.md` as you add params, so you see each one, light and dark. The demo isn't published: `files` doesn't list it.
 
@@ -127,27 +137,41 @@ A built module is the plain binding (spec [§7.6](https://compmd.dev/spec/#76-bi
 
 ```ts snippet=first-pack/src/hello.ts
 // `hello`: draws its `value` in its box. Replace the drawing with yours; what it imports is bundled in.
-import { component } from "@compmd/pack/component";
+import { component, fitBox } from "@compmd/pack/component";
 
 /** The params, as the signature in `index.comp.md` declares them. */
 export interface Params {
   value: string;
 }
 
-export default component<Params>((target, { params, fallback }) => {
-  const shown = document.createElement("p");
+const SVG = "http://www.w3.org/2000/svg";
+
+/** An SVG element with `attributes`. */
+function svg(name: string, attributes: Record<string, string>): SVGElement {
+  const element = document.createElementNS(SVG, name);
+  for (const [key, value] of Object.entries(attributes)) element.setAttribute(key, value);
+  return element;
+}
+
+export default component<Params>((target, context) => {
+  // A drawing with an aspect ratio of its own, 3 to 1. Its size is its box's, which the document sizes (`width`,
+  // `height`, `aspect-ratio`): the component has no size params. `index.comp.md` gives the box its default width.
+  const drawing = svg("svg", { viewBox: "0 0 120 40", role: "img" });
   // The fallback is what a reader without the component sees: its text is what you draw, as text.
-  shown.setAttribute("aria-label", fallback.text);
-  shown.style.cssText = "display: inline-block; margin: 0; padding: 0.4em 0.9em; border: 2px solid currentColor; border-radius: 999px; font-weight: 600;";
-  target.append(shown);
+  drawing.setAttribute("aria-label", context.fallback.text);
+  const text = svg("text", { x: "60", y: "20", "text-anchor": "middle", "dominant-baseline": "central", "font-family": "system-ui, sans-serif", "font-size": "16", "font-weight": "600", fill: "currentColor" });
+  drawing.append(svg("rect", { x: "1", y: "1", width: "118", height: "38", rx: "19", fill: "none", stroke: "currentColor", "stroke-width": "2" }), text);
+  target.append(drawing);
   const draw = ({ value }: Params) => {
-    shown.textContent = value;
+    text.textContent = value;
+    // How the drawing sits in a box of another shape (`object-fit`, `object-position`); a change comes as an update.
+    fitBox(drawing, context.fit);
   };
-  draw(params);
+  draw(context.params);
   return {
     update: draw,
     destroy: () => {
-      shown.remove();
+      drawing.remove();
     },
   };
 });
@@ -155,7 +179,7 @@ export default component<Params>((target, { params, fallback }) => {
 
 `component<Params>` from `@compmd/pack/component` only types it: it returns your function as it is, a `Mount`, with `params` and `update`'s params typed as `Params` instead of `Record<string, unknown>`. The interface repeats the signature; the signature is what counts, and the processor has checked every value against it before the component sees it. Nothing generates one from the other yet, so keep them the same.
 
-`target` is the component's box, which the host made: it has already applied the common params a document gives (`width`, `padding`, `border`, …), `class`, `id`, `lang` and `dir`, and the component doesn't receive them. What is inside the box is the component's.
+`target` is the component's box, which the host made: it has already applied the common params a document gives (`width`, `padding`, `border`, …), `class`, `id`, `lang` and `dir`, and the component doesn't receive them. What is inside the box is the component's, and it fits the box: `hello` draws an SVG and gives it the box's size with `fitBox`, so `{width=20rem}` on a use makes it wider with no param of its own for it ([chapter 14](14-signatures-and-params.md) has the rule).
 
 ## The context
 
@@ -169,6 +193,7 @@ The second argument is the host contract's context (spec [§7.4](https://compmd.
 | `fallback` | the use's fallback, `{ text, element }`: as plain text, the component's text alternative, and rendered |
 | `headingLevel` | the level the component's top heading should have, so the page's outline stays right wherever it is used |
 | `scheme` | `"light"` or `"dark"`: the colour scheme the page shows the component in |
+| `fit` | `{ mode, x, y }`: how a drawing with an aspect ratio of its own sits in the box, from the use's `object-fit` and `object-position`; `fitBox` applies it |
 | `fail(message)` | the component can't draw what it was given, found after `mount` or `update` returned |
 | `host` | what the host gives the components of packs it makes permissive; absent otherwise, and always in the strict sandbox |
 
@@ -182,7 +207,7 @@ The second argument is the host contract's context (spec [§7.4](https://compmd.
 
 `mount` runs once per use. It returns an object with two optional functions, or nothing at all when it needs neither:
 
-- **`update(params, slots)`** is called when a param or a slot changes (a reader changed an input, the data changed), and when the scheme changes, with the same params. The component is the same instance, and keeps its state: update what you drew, don't draw it again from nothing. Read the new values from the arguments; `context.params` and `context.slots` are those of the mount, while `context.scheme` is always the current one.
+- **`update(params, slots)`** is called when a param or a slot changes (a reader changed an input, the data changed), and when the scheme or the fit changes, with the same params. The component is the same instance, and keeps its state: update what you drew, don't draw it again from nothing. Read the new values from the arguments; `context.params` and `context.slots` are those of the mount, while `context.scheme` and `context.fit` are always the current ones.
 - **`destroy()`** is called before the box is removed: stop timers, remove listeners, unmount a framework.
 
 A throw in `mount` shows the fallback for good, with W118: the component never mounted, so there is nothing to update. A throw in `update` is the same as `fail`: the fallback shows until the next update.
@@ -205,6 +230,15 @@ describe("hello", () => {
     expect(shown.target.textContent).toBe("Again");
     shown.destroy();
     expect(shown.target.textContent).toBe("");
+  });
+
+  it("fits its box as the document says: contain by default, and the box's object-fit and object-position", () => {
+    const shown = mountForTest(mount, { params: { value: "Hello" } });
+    const drawing = () => shown.target.querySelector("svg");
+    expect(drawing()?.getAttribute("preserveAspectRatio")).toBe("xMidYMid meet");
+    shown.setFit({ mode: "cover", x: 0, y: 0.5 });
+    expect(drawing()?.getAttribute("preserveAspectRatio")).toBe("xMinYMid slice");
+    shown.destroy();
   });
 });
 ```

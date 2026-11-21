@@ -25,6 +25,9 @@ const REPORT = `const report = (target, context) => {
   };
   new ResizeObserver(send).observe(target);
   queueMicrotask(send);
+  // A browser pauses a frame's observers off screen, but not its timers (it slows them): what the component drew is
+  // reported, late, wherever its frame is.
+  setInterval(send, 250);
 };
 const ALIGN = ["Min", "Mid", "Max"];
 const aspect = (fit) => (fit.mode === "fill" ? "none" : "x" + ALIGN[fit.x * 2] + "Y" + ALIGN[fit.y * 2] + (fit.mode === "cover" ? " slice" : " meet"));
@@ -183,7 +186,14 @@ async function expectFramedAsInPage(ids: readonly string[], reports: Map<string,
         const framed = id.replace(/-page$/, "-framed");
         return { id, page: { box: boxOf(id), drawn: compareReports ? reports.get(id) : null }, framed: { box: boxOf(framed), drawn: compareReports ? reports.get(framed) : null } };
       });
-  await expect.poll(() => pairs().filter(({ page, framed }) => page.box === undefined || JSON.stringify(page) !== JSON.stringify(framed)), { timeout: 30_000, interval: 100 }).toEqual([]);
+  const differing = () => {
+    const found = pairs().filter(({ page, framed }) => page.box === undefined || JSON.stringify(page) !== JSON.stringify(framed));
+    // A frame off screen has its own observers paused, so what its component reports waits until it is shown: the
+    // test page is small, and a row wraps below it.
+    if (compareReports) document.getElementById(found[0]?.id.replace(/-page$/, "-framed") ?? "")?.scrollIntoView({ block: "nearest" });
+    return found;
+  };
+  await expect.poll(differing, { timeout: 30_000, interval: 100 }).toEqual([]);
 }
 
 /** Every one of the prototype's uses framed: 28 frames, each loading its runtime, while the other test files run. */
