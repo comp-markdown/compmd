@@ -560,6 +560,7 @@ params:
 | `from`    | data `schema` only; the key in the data, when it differs from the declared name           |
 
 - A param without a default is required, unless its type ends in `?` (optional, no value).
+- **An enum may be optional too:** `level: L | M | H | Q?` takes `L`, `M`, `H` or `Q`, or no value; the `?` applies to the whole enum, not to its last member.
 - A type that isn't in the grammar, such as a misspelt `numbr`, is F037, reported at the type name, inside `input<…>` too. The declaration is kept, but its type is `dyn`: it takes any value and checks none, so the one mistake gives one diagnostic, not one at each use. A single name is never an enum, which has at least two members.
 - `input<enum>` binds an input of any enum type, whose members the component reads as its choices (`select-input`, section 8.7); `input<a | b>` binds only an input of that enum.
 - Enum members are names, written without quotes, so every short form is a valid YAML string. A member with spaces needs the whole declaration quoted (`status: '"to do" | done = done'`).
