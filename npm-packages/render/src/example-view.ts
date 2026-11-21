@@ -3,6 +3,7 @@
 // are the example's own (by its number), and a change of its inputs is the example's.
 import { Blocks } from "./blocks.ts";
 import { applyBox } from "./box.ts";
+import { setLanguage } from "./language.ts";
 import { CodeBlockView } from "./markdown-views.ts";
 import { shapeOf, type Pass, type Surface, type View } from "./render.ts";
 import type { ExpandedCode, ExpandedNode, ExpandedRoot, MarkdownNode } from "./tree.ts";
@@ -52,6 +53,7 @@ export class ExampleView implements View {
     applyBox(this.dom, example.params ?? [], pass.parent, this.#surface.stylesheet);
     this.#code?.update({ type: "code", lang: example.lang, meta: example.meta, value: example.value }, pass);
     const root: ExpandedRoot = example.document ?? { type: "root", children: [] };
+    setLanguage(this.#content, root);
     this.#blocks.apply({ from: 0, to: this.#blocks.length, nodes: root.children, lines: 0, offset: 0, ...(root.inputs ? { inputs: root.inputs } : {}) }, undefined);
     this.#blocks.render([], undefined);
   }

@@ -167,6 +167,21 @@ describe("buildSite", () => {
     }
   });
 
+  it("keeps a post's language and direction on its body, and none on a post that writes neither", async () => {
+    const arabic = await writeBlog({ ...BLOG, "posts/arabic.comp.md": post({ title: "الميناء", date: "2026-11-05", md: { lang: "ar" } }, "الميناء عند الغروب.\n") });
+    try {
+      const built = await buildSite(arabic, { drafts: false, now: NOW });
+      const window = new Window();
+      window.document.write(built.files.get("arabic/index.html") as string);
+      const body = window.document.querySelector(".post-body [dir]");
+      expect([body?.getAttribute("lang"), body?.getAttribute("dir")]).toEqual(["ar", "rtl"]);
+      expect(body?.textContent).toContain("الميناء عند الغروب.");
+      expect(page("first/index.html").querySelector(".post-body [dir]")).toBeNull();
+    } finally {
+      await rm(arabic, { recursive: true, force: true });
+    }
+  });
+
   it("fails on a post with an error, naming it, and on a layout without its content", async () => {
     const broken = await writeBlog({ ...BLOG, "posts/broken.comp.md": post({ title: "Broken", date: "2026-11-02" }, ":: nowhere[Nothing]\n") });
     const noContent = await writeBlog({ ...BLOG, "layout.html": "<html><head></head><body></body></html>" });

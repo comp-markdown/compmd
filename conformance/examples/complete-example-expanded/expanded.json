@@ -1,5 +1,7 @@
 {
   "type": "root",
+  "lang": "en",
+  "dir": "ltr",
   "children": [
     {
       "type": "heading",

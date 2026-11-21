@@ -29,7 +29,7 @@ Peel and slice the apples, then...
 - **`split`** sets the widths: `even` (the default), `wide-start` or `wide-end` (that column twice the others), or `wide-middle` with three.
 - **Side by side from `sm` up,** 480 px of their box, and stacked in order below it, on a phone.
 - **`gap`** is the space between them, `m` unless a use says otherwise: `{gap=l}`.
-- **Start and end** follow the text's direction: in right-to-left text the first column is on the right, `{lang=ar dir=rtl}` on columns in Arabic.
+- **Start and end** follow the text's direction: in an Arabic document (`md.lang: ar`) the first column is on the right, as it is for `{lang=ar dir=rtl}` on columns in Arabic in another language's page.
 - **Their box** is a grid. A use changes it as any box's: `{padding=m border=subtle}`.
 - **In a plain Markdown reader,** and on GitHub, the columns are their text, one after the other.
 

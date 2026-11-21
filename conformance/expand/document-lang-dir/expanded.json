@@ -1,0 +1,86 @@
+{
+  "type": "root",
+  "lang": "ar",
+  "dir": "rtl",
+  "children": [
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "الميناء عند الغروب."
+        }
+      ]
+    },
+    {
+      "type": "code",
+      "lang": "compmd",
+      "meta": "{render=output}",
+      "value": "---\nmd:\n  lang: en\n---\nThe harbour at dusk.",
+      "render": "output",
+      "document": {
+        "type": "root",
+        "lang": "en",
+        "dir": "ltr",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "value": "The harbour at dusk."
+              }
+            ]
+          }
+        ],
+        "example": 1
+      }
+    },
+    {
+      "type": "code",
+      "lang": "compmd",
+      "meta": "{render=output}",
+      "value": "---\nmd:\n  lang: he\n  dir: ltr\n---\nA direction written over its language's.",
+      "render": "output",
+      "document": {
+        "type": "root",
+        "lang": "he",
+        "dir": "ltr",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "value": "A direction written over its language's."
+              }
+            ]
+          }
+        ],
+        "example": 2
+      }
+    },
+    {
+      "type": "code",
+      "lang": "compmd",
+      "meta": "{render=output}",
+      "value": "No language of its own: the page's.",
+      "render": "output",
+      "document": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "value": "No language of its own: the page's."
+              }
+            ]
+          }
+        ],
+        "example": 3
+      }
+    }
+  ]
+}

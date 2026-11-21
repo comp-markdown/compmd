@@ -115,6 +115,10 @@ export interface ExpandedRoot {
   inputs?: Record<string, ExpandedInput>;
   /** An example's number among the document's examples (spec §7.8), which its components are found by. */
   example?: number;
+  /** The document's `md.lang`, when it writes one (spec §2.1, §12.3). */
+  lang?: string;
+  /** The document's direction, when it writes `md.dir` or `md.lang`. */
+  dir?: "ltr" | "rtl" | "auto";
 }
 
 /** An edit in code points (spec §10.5): the text's `start..end` became `text`. */

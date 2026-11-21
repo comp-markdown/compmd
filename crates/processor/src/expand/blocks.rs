@@ -5,6 +5,7 @@ use super::env::Env;
 use super::{Expanded, Expander, Options, Replaced, Report, expand, layout, origins, text};
 use crate::context::RenderContext;
 use crate::diagnostic::Diagnostic;
+use crate::direction;
 use crate::expanded::{self, Content, Root};
 use crate::load::Loaded;
 use crate::parse::Spliced;
@@ -141,13 +142,14 @@ impl<'r> Expander<'r> {
     }
 }
 
-/// The expanded tree of `children`, which `blocks` gave, with `loaded`'s inputs, after an expansion that replaced
-/// `replaced`. Text that two blocks gave next to each other is joined, as a list joins it (spec §8.1); an edit can't
+/// The expanded tree of `children`, which `blocks` gave, with `loaded`'s inputs and the document's `language` (its
+/// `lang` and `dir`), after an expansion that replaced `replaced`. Text that two blocks gave next to each other is joined, as a list joins it (spec §8.1); an edit can't
 /// take the blocks apart after that, so it expands the whole document again.
 pub(super) fn finished(
     mut children: Vec<expanded::Node>,
     blocks: Vec<Block>,
     loaded: &Loaded,
+    language: (Option<String>, Option<String>),
     replaced: Option<Replaced>,
 ) -> Expanded {
     let diagnostics = diagnostics(&blocks);
@@ -155,11 +157,14 @@ pub(super) fn finished(
     if joined {
         children = text::joined(children);
     }
+    let (lang, dir) = language;
     Expanded {
         root: Root {
             children,
             inputs: loaded.inputs.clone(),
             example: None,
+            lang,
+            dir,
         },
         diagnostics,
         blocks: (!joined).then_some(blocks),
@@ -238,7 +243,8 @@ pub(crate) fn splice(
         inserted: end - first,
         by: moved.by,
     };
-    finished(children, blocks, loaded, Some(replaced))
+    let language = direction::of_document(&resolved.document(main).settings);
+    finished(children, blocks, loaded, language, Some(replaced))
 }
 
 /// The diagnostics of stage 4b, from what the blocks gave: what evaluating reported, each once that is reported once,
@@ -308,6 +314,7 @@ mod tests {
             vec![text("a"), text("b")],
             vec![block(1), block(0), block(1)],
             &loaded,
+            (None, None),
             Some(replaced.clone()),
         );
         assert_eq!(joined.root.children.len(), 1);
@@ -324,6 +331,7 @@ mod tests {
             vec![text("a"), paragraph],
             vec![block(1), block(1)],
             &loaded,
+            (None, None),
             Some(replaced.clone()),
         );
         assert_eq!(apart.root.children.len(), 2);

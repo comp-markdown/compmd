@@ -129,17 +129,18 @@ High water is about forty minutes later each day.
 
 # Right to left
 
-Start and end follow the text's direction: in Arabic the first column is on the right. Here the columns are in Arabic in an English page, so they say so with `lang` and `dir`.
+Start and end follow the text's direction: in an Arabic document, `md.lang: ar`, the first column is on the right.
 
 ````compmd {render=both}
 ---
 md:
+  lang: ar
   import:
     - from: "@comp-markdown/columns@0"
       names: [columns]
 ---
 
-::: columns {split=wide-start lang=ar dir=rtl}
+::: columns {split=wide-start}
 **الميناء عند الغروب.** ابدأ من محطة قوارب النجاة وامشِ على طول الرصيف القديم نحو المنارة. تُضاء المصابيح قبل عودة القوارب بساعة.
 
 عندما تصل إلى سوق السمك تكون القوارب الأولى قد رست، وتعرف النوارس ذلك قبل الجميع.

@@ -82,7 +82,9 @@ export async function renderPost(post: Post, now: string, highlight: Highlight, 
     }
     rebase(root, up);
     const refused = [...images.refused].map((origin) => `${POSTS}/${post.path}: its images from ${origin} show their alt text: compmd.config.json's \`origins\` doesn't name ${origin}`);
-    return { html: root.innerHTML, css: page.stylesheet.text, warnings: [...diagnostics.map((diagnostic) => lineOf(post, diagnostic)), ...refused], live };
+    // A post that writes its language or direction (spec §12.3) keeps the element the renderer set them on.
+    const html = root.hasAttribute("lang") || root.hasAttribute("dir") ? root.outerHTML : root.innerHTML;
+    return { html, css: page.stylesheet.text, warnings: [...diagnostics.map((diagnostic) => lineOf(post, diagnostic)), ...refused], live };
   } finally {
     window.close();
   }

@@ -12240,7 +12240,7 @@
       "description": "Item 8 of [the first list](docs/first-components.md#:~:text=Dates%20and%20what%20happened): dates and what happened, in a post or notes, `compmd` definitions on `box`; a list of items is enough.\n\n## Do\nThe definitions, a demo, tests of their expanded tree.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68e81c39ce10",
         "01a1fb1a-5845-722a-88c3-17bf2a8c3273",
@@ -12252,7 +12252,7 @@
         "compmd-packs/timeline/"
       ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-21T17:06:48Z",
+      "updated_at": "2026-11-21T20:00:06Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 319,
@@ -12275,11 +12275,23 @@
           "kind": "review",
           "text": "CR-55: The timeline pack: dates and what happened, along a line",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-21T19:59:49Z",
+          "kind": "note",
+          "text": "Approved: in CR-55 (round 2)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-21T20:00:06Z",
+          "kind": "outcome",
+          "text": "The timeline pack: events with a dot on the line, the date small and muted, a title, tone for the current one, and a quick list form; tested in Chrome and WebKit; approved in CR-55.",
+          "by": "claude:79612601"
         }
       ],
       "started_at": "2026-11-21T16:35:03Z",
       "started_by": "claude:79612601",
-      "commit": "c49dabd66c74856acee702bd22fe204a5f71736f",
+      "commit": "78664498b65e3d4c977c2beeb89e453f95b3db86",
       "code_reviews": [
         {
           "id": "01a1ff07-ae06-738b-942c-1293e6d53e06",
@@ -12287,7 +12299,15 @@
         }
       ],
       "review_requested_at": "2026-11-21T16:54:15Z",
-      "review_state": "waiting"
+      "reviews": [
+        {
+          "from": "2026-11-21T16:54:15Z",
+          "to": "2026-11-21T19:59:49Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-21T20:00:06Z",
+      "completed_by": "claude:79612601"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57cf1d3cd690",
@@ -14819,7 +14839,7 @@
       "description": "From CR-51: a box's text had no type of its own. [Type in a box](docs/type-params.md), approved in CR-54, decisions 1 to 4 and 6; decision 5 (a component's type) is CMD-372 and decision 7 (fonts of a document's own) CMD-373.\n\n## Do\n- **The spec:** §9.2, the ten params (`font-size`, `font-weight`, `font-style`, `font-family`, `color`, `text-align`, `line-height`, `letter-spacing`, `text-transform`, `text-decoration`), on every block and an inline box, with breakpoints, inherited; §9.4, their tokens and custom properties with defaults; §10, W126 (a `color` and a `background` both CSS colours on one box, below 4.5:1); the changelog; conformance for each param's grammar (F009 for a font name, a numeric weight), a breakpoint, an inline box, and W126.\n- **The processor:** the params in `Universal` with their kinds, W126 on the expanded tree, `params.json` and `llms.txt`.\n- **The renderer:** the CSS; browser tests in Chrome and WebKit (a badge's size in a heading, inheritance into a nested box, a theme changing a token, print).\n- **The guides:** the Author's Guide's chapter on params, and chapter 20's W126; the Developer's Guide's chapter 22.\n- **The badge demo's `labels.comp.md`** using them (an uppercase, spaced `beta`).\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [],
       "files": [
         "docs/",
@@ -14829,7 +14849,7 @@
         "npm-packages/render/src/styles.ts"
       ],
       "created_at": "2026-11-21T16:23:39Z",
-      "updated_at": "2026-11-21T18:25:30Z",
+      "updated_at": "2026-11-21T19:57:16Z",
       "created_by": "claude:79612601",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -14871,6 +14891,18 @@
           "kind": "review",
           "text": "CR-57: Type in a box: ten params, their tokens, W126",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-21T19:57:01Z",
+          "kind": "note",
+          "text": "Approved: in CR-57 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-21T19:57:16Z",
+          "kind": "outcome",
+          "text": "Ten type params with tokens, inherited, on inline boxes too, W126 for hex, rgb() and hsl() colours that contrast below 4.5:1; approved in CR-57. A component’s type: CMD-372; fonts: CMD-373.",
+          "by": "claude:79612601"
         }
       ],
       "reviews": [
@@ -14878,10 +14910,16 @@
           "from": "2026-11-21T16:34:59Z",
           "to": "2026-11-21T16:58:50Z",
           "outcome": "approved"
+        },
+        {
+          "from": "2026-11-21T18:25:30Z",
+          "to": "2026-11-21T19:57:01Z",
+          "outcome": "approved"
         }
       ],
       "review_requested_at": "2026-11-21T18:25:30Z",
-      "review_state": "waiting"
+      "completed_at": "2026-11-21T19:57:16Z",
+      "completed_by": "claude:79612601"
     },
     {
       "id": "01a1ff0b-68af-74c9-888b-91ca206022ec",
@@ -14894,7 +14932,7 @@
       "description": "Found in CMD-348 (columns): `md.lang` and `md.dir` (spec §2.1) set a document's language and direction, but the expanded tree's root (§12.3) carries neither, so no renderer can apply them: an Arabic document renders left to right unless its host sets `dir` itself, and an example (§7.8) whose own frontmatter says `lang: ar` renders in the page's direction. A component's `lang` and `dir` params work, since they are on its box.\n\n## Decide first\nWith the maintainer: the root gets `lang` and `dir` (the document's, `dir` resolved from `lang` when not written), and a renderer sets them on the element it renders into, and on an example's output box. Then a host that renders a document into a page of its own (a blog) sets the page's `<html lang dir>` from them.\n\n## Do\nThe spec (§2.1, §7.8, §12.3, the changelog), the tree schema and conformance; the processor; the renderer (the page's element, an example's box); the hosts that write a page (blog, Vite plugin); browser tests in Chrome and WebKit: an Arabic document and an Arabic example in an English page, laid out right to left. Then the columns demo's right-to-left example can use the frontmatter instead of `dir` on the columns.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "spec/compmd-spec-v1.md",
@@ -14905,7 +14943,7 @@
         "npm-packages/vite/"
       ],
       "created_at": "2026-11-21T16:58:20Z",
-      "updated_at": "2026-11-21T16:58:20Z",
+      "updated_at": "2026-11-21T19:50:02Z",
       "created_by": "claude:79612601",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -14915,7 +14953,9 @@
         }
       ],
       "sprint": "Packs 1: the pack tool, no-code components",
-      "number": 371
+      "number": 371,
+      "started_at": "2026-11-21T19:50:02Z",
+      "started_by": "claude:79612601"
     },
     {
       "id": "01a1ff0c-ad59-7684-8887-3abb938bc918",

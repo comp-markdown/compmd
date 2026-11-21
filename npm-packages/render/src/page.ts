@@ -5,6 +5,7 @@
 import { Blocks } from "./blocks.ts";
 import { LineHeights } from "./code-lines.ts";
 import { diff, editOf, type Edit } from "./keys.ts";
+import { setLanguage } from "./language.ts";
 import { Layout } from "./layout.ts";
 import { linesIn, type Line } from "./lines.ts";
 import { surfaceOf, type SurfaceOptions } from "./region.ts";
@@ -172,6 +173,7 @@ export function createPage(root: HTMLElement, options: PageOptions = {}): Page {
     render(tree, change) {
       schemes.read();
       const edit: Edit | undefined = change && text !== undefined && change.text !== text ? diff(text, change.text, change.edit) : undefined;
+      setLanguage(root, tree);
       blocks.apply({ from: 0, to: blocks.length, nodes: tree.children, lines: 0, offset: 0, ...(tree.inputs ? { inputs: tree.inputs } : {}) }, edit);
       show(change);
     },

@@ -287,6 +287,8 @@
             "additionalProperties": false
           }
         },
+        "lang": { "description": "The document's `md.lang`, when it writes one (§2.1, §12.3).", "type": "string" },
+        "dir": { "description": "The document's `md.dir`, or its language's direction when it writes only `md.lang` (§2.1, §12.3).", "enum": ["ltr", "rtl", "auto"] },
         "position": { "$ref": "#/$defs/position" }
       },
       "additionalProperties": false
@@ -403,7 +405,9 @@
             "type": { "const": "root" },
             "children": { "type": "array", "items": { "$ref": "#/$defs/expandedNode" } },
             "inputs": true,
-            "example": { "type": "integer", "minimum": 1 }
+            "example": { "type": "integer", "minimum": 1 },
+            "lang": { "type": "string" },
+            "dir": { "enum": ["ltr", "rtl", "auto"] }
           },
           "additionalProperties": false
         }

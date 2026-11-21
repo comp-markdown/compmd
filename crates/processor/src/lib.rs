@@ -26,6 +26,7 @@ mod cel;
 pub mod components;
 pub mod context;
 pub mod diagnostic;
+mod direction;
 pub mod expand;
 pub mod expanded;
 pub mod frontmatter;

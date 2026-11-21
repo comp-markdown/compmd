@@ -20,6 +20,7 @@ mod text;
 use crate::cel::{Error, Program, Value, Values};
 use crate::context::RenderContext;
 use crate::diagnostic::{Code, Diagnostic, Location, Mode, Stage};
+use crate::direction;
 use crate::expanded::{self, Content, Origin, Root};
 use crate::lines::Lines;
 use crate::load::Loaded;
@@ -108,7 +109,8 @@ pub(crate) fn expand(
         children.extend(nodes);
         blocks.push(given);
     }
-    finished(children, blocks, loaded, None)
+    let language = direction::of_document(&resolved.document(resolved.main).settings);
+    finished(children, blocks, loaded, language, None)
 }
 
 /// Expands one document.

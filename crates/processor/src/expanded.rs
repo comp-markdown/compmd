@@ -29,6 +29,12 @@ pub struct Root {
     /// host-language components are listed under; absent for the processed document.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub example: Option<usize>,
+    /// The document's language, `md.lang`, when it writes one (spec §2.1).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub lang: Option<String>,
+    /// The document's direction, `md.dir`, or its language's when it writes only `md.lang`: `ltr`, `rtl` or `auto`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub dir: Option<String>,
 }
 
 /// A document's inputs, serialized as a map from each name to its state.

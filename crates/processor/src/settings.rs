@@ -100,6 +100,8 @@ pub(crate) struct Settings {
     pub(crate) version: Option<String>,
     /// `md.lang`, a BCP 47 tag.
     pub(crate) lang: Option<String>,
+    /// `md.dir` as written: `ltr`, `rtl` or `auto`.
+    pub(crate) dir: Option<String>,
     /// `md.tz`, a time zone.
     pub(crate) tz: Option<String>,
 }
@@ -128,6 +130,7 @@ impl Settings {
             inputs: reader.inputs(&md),
             version: text("version"),
             lang: text("lang"),
+            dir: text("dir"),
             tz: text("tz"),
             doc,
         }
