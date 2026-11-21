@@ -52,8 +52,9 @@ definition's own file for a destination written in its body, and the caller's fo
    along its start edge; a component can't add them, since a pack ships no CSS.
    - **Rejected:** letting a pack ship a stylesheet for its definitions. CSS from a pack in the host's page can cover
      the page with its own content and load URLs (`url()`), which the sandbox exists to prevent.
-7. **`gallery` needs no change of its own** once decision 1 is in: it is a leaf over data rows, each one a `card`
-   with its image, title and description, made in the definition with `each`. The fallback is the gallery's
+7. **`gallery` needs no change of its own** once decision 1 is in: it is a leaf over a list's items (`items`, not
+   `rows`, which would read as the grid's rows), each one a `card` with its image, title and description, made in the
+   definition with `each`. The fallback is the gallery's
    sentence, and its images' paths are the caller's (decision 1).
 
 ## The components with these decisions
@@ -82,10 +83,10 @@ params:
 <!-- gallery (decisions 1, 7) -->
 ```compmd component=gallery
 params:
-  rows: array
+  items: array
 ---
 ::: grid {min=14rem gap=m}
-::: each {in=(rows) as=walk}
+::: each {in=(items) as=walk}
 ::: card
 ![{{walk.alt}}]({{walk.image}})
 
@@ -97,7 +98,7 @@ params:
 ::: /grid
 ```
 
-:: gallery[Three walks around the harbour] {rows=(md.data.walks)}
+:: gallery[Three walks around the harbour] {items=(md.data.walks)}
 ````
 
 `walk.image` is a field of a param, so `images/quay.jpg` in the caller's data is the caller's.

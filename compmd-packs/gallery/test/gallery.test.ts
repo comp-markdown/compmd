@@ -1,6 +1,6 @@
 // The gallery as a host gets it: its pack's and the card pack's files, as a registry gives them, processed with a
-// document that uses it over a list in its data. Its expanded tree (spec §12.3) is a grid of one card for each row,
-// each with the row's image, title and description; the images' paths are the document's (spec §8.6); and a plain
+// document that uses it over a list in its data. Its expanded tree (spec §12.3) is a grid of one card for each item,
+// each with the item's image, title and description; the images' paths are the document's (spec §8.6); and a plain
 // Markdown reader shows the gallery's sentence (spec §4.5).
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -41,7 +41,7 @@ function processed(text: string, path = "walks.comp.md") {
   return processDocument(request);
 }
 
-const USE = `---\nmd:\n  import:\n    - from: "@comp-markdown/gallery@0"\n      names: [gallery]\n  data:\n    - from: ./walks.yaml\n      as: walks\n---\n\n## Walks\n\n:: gallery[Three walks around the harbour] {rows=(md.data.walks)}\n`;
+const USE = `---\nmd:\n  import:\n    - from: "@comp-markdown/gallery@0"\n      names: [gallery]\n  data:\n    - from: ./walks.yaml\n      as: walks\n---\n\n## Walks\n\n:: gallery[Three walks around the harbour] {items=(md.data.walks)}\n`;
 
 /** The gallery's grid, from the document's expanded tree: the box the gallery is, then the grid's box in it. */
 function gridOf(children: Node[]): Node | undefined {
@@ -58,7 +58,7 @@ function cardOf(card: Node): (string | undefined)[] {
 }
 
 describe("a gallery", () => {
-  it("is a grid of one card for each row, with its image, its title one level below the heading above, and its description", () => {
+  it("is a grid of one card for each item, with its image, its title one level below the heading above, and its description", () => {
     const { expanded, diagnostics } = processed(USE);
     expect(diagnostics).toEqual([]);
     const grid = gridOf(expanded.children as Node[]);

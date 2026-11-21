@@ -10,4 +10,4 @@ md:
 
 # Three walks
 
-:: gallery[Three walks around the harbour] {rows=(md.data.walks)}
+:: gallery[Three walks around the harbour] {items=(md.data.walks)}
