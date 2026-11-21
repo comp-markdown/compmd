@@ -4,6 +4,7 @@
 // An image of one of the host's own schemes (spec §15) is the host's to load: its file comes from the host, in both modes.
 
 import { imageSources, urlScheme, type ExpandedRoot, type ImageSource, type Refused, type Splice } from "@compmd/render";
+import type { PackFile } from "./found.ts";
 import { ImageGate } from "./image-gate.ts";
 import { originOf } from "./origins.ts";
 import { SentNodes } from "./sent-nodes.ts";
@@ -45,13 +46,14 @@ export class PageImages {
    * Fetches with `fetch`, a relative `src` against `base`, as an image in the host's page would load, once `gate` lets
    * it (spec §15); an image of one of the host's own schemes comes from `own.file`, never fetched.
    */
-  constructor(fetcher: typeof fetch, base: string, own: OwnImages = { schemes: [] }, gate: ImageGate = new ImageGate()) {
+  constructor(fetcher: typeof fetch, base: string, own: OwnImages = { schemes: [] }, gate: ImageGate = new ImageGate(), packFile?: PackFile) {
     // Called on its own: the page's `fetch` throws when called on another object.
     this.#fetch = (input, init) => fetcher(input, init);
     this.#base = base;
     this.#own = own;
     this.#gate = gate;
-    this.#sources = new SentNodes((nodes) => imageSources(nodes, own.schemes));
+    // A pack's image by the URL the frame asks for, which `packFile` gives it there too (spec §12.3).
+    this.#sources = new SentNodes((nodes) => imageSources(nodes, own.schemes, packFile));
   }
 
   /** The frame renders `tree`: its images are the frame's now. */

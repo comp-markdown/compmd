@@ -15,7 +15,7 @@ const typesOf = (direction: "toFrame" | "fromFrame"): string[] =>
 
 /** One of each message, as the protocol's ends send them. */
 const MESSAGES: (ToFrame | FromFrame)[] = [
-  { type: "level", level: "permissive", policy: "connect-src https://tiles.example.com", timeout: 5000 },
+  { type: "level", level: "permissive", policy: "connect-src https://tiles.example.com", schemes: ["app"], packs: "/compmd/packs/", timeout: 5000 },
   {
     type: "code",
     components: [

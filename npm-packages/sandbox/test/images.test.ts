@@ -62,11 +62,14 @@ const origins = {
   answers: memoryAnswers(),
 };
 
+/** Where the test serves the packs' files: one pack's icon is there. */
+const PACKS = "/test/fixtures/packs/";
+
 function open(mode: "frame" | "host", components: HostComponent[]) {
   const area = document.body.appendChild(document.createElement("div"));
   area.style.height = "300px";
   areas.push(area);
-  const view = createSandbox({ base: frames, page: mode, origins }).open(area, { components });
+  const view = createSandbox({ base: frames, packs: PACKS, page: mode, origins }).open(area, { components });
   views.push(view);
   const values: unknown[] = [];
   view.on("set", ({ value }) => values.push(JSON.parse(value as string)));
@@ -102,6 +105,30 @@ describe("a document's own images", () => {
       ],
       alt: [],
     });
+  });
+
+  it("shows a pack's image in both modes from where the host serves the pack, and links to its file there", async () => {
+    const pack = (node: ExpandedNode): ExpandedNode => ({ ...node, pack: true });
+    const tree = (...more: ExpandedNode[]): ExpandedRoot => ({
+      type: "root",
+      children: [
+        {
+          type: "paragraph",
+          children: [pack(image("@acme/kit@1.0.0/icons/star.svg", "Star")), pack({ type: "link", url: "@acme/kit@1.0.0/guide.comp.md", title: null, children: [{ type: "text", value: "Guide" }] })],
+        },
+        ...more,
+      ],
+      inputs: { result: { type: "string", value: "" } },
+    });
+    const linking: HostComponent = { ...looking, code: probeCode(`async () => { const shown = ${shown.toString()}; for (let tries = 0; tries < 150 && shown(document).images.length < 1; tries++) await new Promise((done) => setTimeout(done, 20)); return { ...shown(document), href: document.querySelector("a")?.getAttribute("href") }; }`) };
+    const framed = open("frame", [linking]);
+    framed.view.render(tree(leaf("probe")));
+    await expect.poll(() => framed.values.length, { timeout: 5000 }).toBeGreaterThan(0);
+    expect(framed.values[0]).toEqual({ images: [{ alt: "Star", blob: true }], alt: [], href: `${PACKS}@acme/kit@1.0.0/guide.comp.md` });
+    const hosted = open("host", []);
+    hosted.view.render(tree());
+    await expect.poll(() => shown(hosted.area).images.length, { timeout: 5000 }).toBe(1);
+    expect(hosted.area.querySelector("a")?.getAttribute("href")).toBe(`${PACKS}@acme/kit@1.0.0/guide.comp.md`);
   });
 
   it("keeps the page frame's policy in frame mode: code in it still loads no image itself", async () => {

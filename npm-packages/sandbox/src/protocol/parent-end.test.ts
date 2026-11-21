@@ -92,6 +92,14 @@ describe("the parent's end (connectChild)", () => {
     expect(types(got)).toEqual(["level"]);
   });
 
+  it("gives with its level where the host serves the packs' files, which the frame hears", async () => {
+    const { parent, frame, got } = parentChannel();
+    connectChild(parent, { level: "strict", schemes: ["app"], packs: "/compmd/packs/", binds: () => false });
+    frame.postMessage({ type: "ready", sandbox: SANDBOX_VERSION });
+    await settle();
+    expect(got[0]).toEqual({ type: "level", level: "strict", schemes: ["app"], packs: "/compmd/packs/" });
+  });
+
   it("gives a frame of another version nothing, and says it failed", async () => {
     const { parent, frame, got } = parentChannel();
     const child = connectChild(parent, { level: "strict", binds: () => true });

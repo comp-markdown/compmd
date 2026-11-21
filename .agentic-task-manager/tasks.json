@@ -615,9 +615,9 @@
         "npm-packages/create-pack/src/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-21T14:06:46Z",
+      "updated_at": "2026-11-21T14:06:55Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "sprint_history": [
         {
           "sprint": "Rendering optimizations",
@@ -638,7 +638,7 @@
       "sprint": "Packs 1: the pack tool, no-code components",
       "started_at": "2026-11-21T13:27:42Z",
       "started_by": "claude:79612601",
-      "commit": "ef9efb2b52f27f82896125549619b665f3f7c788",
+      "commit": "4507703dae9472238387173f47b209732699d438",
       "code_reviews": [
         {
           "id": "01a1fe67-7944-7232-9b31-9af6149afe05",
@@ -14164,7 +14164,7 @@
       "description": "A pack the host fetches from a registry while a reader views a document (spec §6.4) gives its component modules as blobs; nothing serves its other files, so after CMD-362 a link or image from its definitions has no URL and shows its text or its alt. The spec (§12.3) says a host serves every file of the packs it gives the processor.\n\n## Decide first\nHow such a file reaches the page: a `blob:` URL from the host's store, checked against the pack's integrity, or a route of the host's that serves its store. Settle it with the maintainer.\n\n## Tests\nAn image of a registry pack shows, in host mode and frame mode.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "blocked",
       "dependencies": [
         "01a1fb63-8662-766e-a404-898f1f749430"
       ],
@@ -14173,9 +14173,9 @@
         "npm-packages/registry/src/"
       ],
       "created_at": "2026-11-21T13:23:15Z",
-      "updated_at": "2026-11-21T13:23:15Z",
+      "updated_at": "2026-11-21T14:07:46Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "sprint_history": [
         {
           "sprint": "Packs 1: the pack tool, no-code components",
@@ -14183,7 +14183,14 @@
         }
       ],
       "sprint": "Packs 1: the pack tool, no-code components",
-      "number": 365
+      "number": 365,
+      "started_at": "2026-11-21T14:07:46Z",
+      "started_by": "claude:79612601",
+      "waiting_on": "user",
+      "questions": [
+        "How does a registry pack’s own file reach the page? (a) as its modules do: `resolvePacks` also gives `files(place)`, each file checked against the pack’s integrity, and the sandbox shows it from a `blob:` URL, the bundle’s `packs/<place>` for any other pack; or (b) a route of the host’s that serves its store. I’d take (a): it is how the modules come already, and needs no route on any host."
+      ],
+      "blocked_at": "2026-11-21T14:07:46Z"
     }
   ]
 }

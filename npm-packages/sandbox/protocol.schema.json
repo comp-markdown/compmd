@@ -47,13 +47,14 @@
     "componentLevel": { "description": "A component's trust level.", "enum": ["strict", "permissive", "trusted"] },
     "print": { "description": "Each use of the component prints its fallback (spec §7.3, §14); absent when it prints as drawn.", "const": "fallback" },
     "level": {
-      "description": "The frame's level, first and once; for a permissive frame, the network directives of its second policy (connect-src, img-src, font-src, media-src), which it adds before anything else; the host's own URL schemes, which the links and images it renders may use (spec §15); and how long it waits for an answer to its `highlight`, in ms (5000 without it).",
+      "description": "The frame's level, first and once; for a permissive frame, the network directives of its second policy (connect-src, img-src, font-src, media-src), which it adds before anything else; the host's own URL schemes, which the links and images it renders may use (spec §15); where the host serves the packs' files, ending in `/`, which a link or an image from a pack's definition is under by its place (spec §12.3); and how long it waits for an answer to its `highlight`, in ms (5000 without it).",
       "type": "object",
       "properties": {
         "type": { "const": "level" },
         "level": { "enum": ["strict", "permissive"] },
         "policy": { "type": "string" },
         "schemes": { "type": "array", "items": { "type": "string" } },
+        "packs": { "type": "string" },
         "timeout": { "type": "number", "exclusiveMinimum": 0 }
       },
       "required": ["type", "level"],

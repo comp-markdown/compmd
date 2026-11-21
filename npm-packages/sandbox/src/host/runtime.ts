@@ -6,6 +6,7 @@
 import type { HostComponent, Trust } from "@compmd/processor";
 import { createRegion, ownSchemes, type CodeHighlighter, type ExpandedInput, type ExpandedUse, type Mount } from "@compmd/render";
 import { frameUrl } from "../frame-url.ts";
+import { packFileOf } from "../found.ts";
 import { oneBlockATask, type FrameHighlight } from "../frames-highlight.ts";
 import { framesHighlight } from "../from-frames.ts";
 import { localHost, serveHost, type HostApi, type HostClient } from "../host-api.ts";
@@ -56,6 +57,11 @@ export interface HostRuntimeOptions {
    * loads from its `src` in the host's page.
    */
   ownImages?: (src: string) => Promise<Blob | undefined>;
+  /**
+   * Where the host serves the packs' files, ending in `/` (`/compmd/packs/`): a link or an image from a pack's definition
+   * names one of them by its place (spec §12.3), which is its URL under this, in the host's page and in every frame.
+   */
+  packs?: string;
   /**
    * Highlights the document's code blocks, in the host's page and for every frame, which asks the host's page for each
    * block's tokens (docs/host-highlighter.md): a host whose editor highlights with its own engine gives it here, so
@@ -225,6 +231,7 @@ export class HostRuntime {
         this.#events.recovered?.(component, use);
       },
       ownSchemes: this.schemes,
+      ...(this.#options.packs === undefined ? {} : { packFile: packFileOf(this.#options.packs) }),
       printsFallback: (name) => this.printsFallback(name),
       ...(this.#local ? { host: this.#local.client } : {}),
     });
@@ -401,6 +408,7 @@ export class HostRuntime {
         : {}),
       styles: this.#styles,
       schemes: this.schemes,
+      ...(this.#options.packs === undefined ? {} : { packs: this.#options.packs }),
       highlight: this.framesHighlight,
       ping: { every: 1000, timeout: this.#options.timeout ?? 5000 },
       ...(this.#options.observer ? { observer: this.#options.observer } : {}),

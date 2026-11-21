@@ -18,18 +18,22 @@ export interface Refused {
 /**
  * The `src` of every image `nodes` can show, as the renderer asks an {@link ImageSource} for it: Markdown images, link
  * reference definitions (which images may name), and images in raw HTML; with `schemes`, the host's own schemes, as
- * the renderer has them (`ownSchemes`).
+ * the renderer has them (`ownSchemes`); and a pack's image (`pack`) by the URL `packFile` gives it, as the renderer has
+ * it (spec §12.3), none without it.
  *
  * @example
  * imageSources(tree.children); // ["./logo.png", "https://example.com/photo.png"]
  * imageSources(tree.children, ["app"]); // ["./logo.png", "app:file/7"]
+ * imageSources(tree.children, [], (place) => `/packs/${place}`); // ["/packs/@acme/kit@1.4.2/icons/star.svg"]
  */
-export function imageSources(nodes: readonly ExpandedNode[], schemes: readonly string[] = []): string[] {
+export function imageSources(nodes: readonly ExpandedNode[], schemes: readonly string[] = [], packFile?: (place: string) => string | undefined): string[] {
   const sources: string[] = [];
   walk(nodes, (node) => {
     if (node.type === "html") sources.push(...htmlImageSources(textOf(node.value), schemes));
     if (node.type !== "image" && node.type !== "definition") return;
-    const src = safeUrl(textOf(node.url), schemes);
+    const url = node.pack === true ? packFile?.(textOf(node.url)) : textOf(node.url);
+    if (url === undefined) return;
+    const src = safeUrl(url, schemes);
     if (src !== undefined) sources.push(src);
   });
   return sources;

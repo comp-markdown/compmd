@@ -103,6 +103,7 @@ const sandbox = createSandbox({
   trusted: { stars: react(Stars) },           // the host's own components; host mode only
   host: { rating: (product) => ratings.get(product) },   // what trusted components, and permissive packs given `host`, can call
   modules: (module) => ({ url: `/packs/${module.pack}@${module.version}/${module.path}`, integrity: hashes[module.path] }),
+  packs: "/packs/",                           // where the packs' files are: a pack's own images and links (spec §12.3), in the page and its frames; under the origin, `packs/`, without it
   ownSchemes: ["app"],                        // the app's own links and images, `[Books](app:item/7)`, `![Cover](app:file/3)` (spec §15)
   ownImages: (src) => files.image(src),       // the file of an `app:` image, a Blob; a click on an `app:` link comes as `link`
   origins: { configured: ["https://cdn.example.com"] }, // remote images of other origins are asked about first (spec §15)

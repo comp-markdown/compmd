@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 // Where a sandbox's frames and modules are: the bundle's paths under the origin the host's adapter gives, or a base.
 import { afterEach, describe, expect, it } from "vitest";
-import { found, NO_FRAMES } from "./found.ts";
+import { found, NO_FRAMES, packFileOf } from "./found.ts";
 import { givenOrigin } from "./given-origin.ts";
 import { createSandbox } from "./sandbox.ts";
 
@@ -56,11 +56,11 @@ describe("where the frames and modules are", () => {
     expect(found({ base: "/sandbox/" }).modules, "no modules given").toBeUndefined();
   });
 
-  it("serves a pack's files under the origin, from the root of the page's own, and has none without an origin", () => {
-    const star = "@acme/kit@1.4.2/icons/star.svg";
-    expect(found({ origin: "app://localhost", frames: FRAMES }).packFile?.(star)).toBe(`app://localhost/packs/${star}`);
-    expect(found({ origin: "/compmd", frames: FRAMES }).packFile?.(star), "on the page's origin").toBe(`/compmd/packs/${star}`);
-    expect(found({ base: "/sandbox/" }).packFile).toBeUndefined();
+  it("serves the packs' files under the origin, from the root of the page's own, and has none without an origin", () => {
+    expect(found({ origin: "app://localhost", frames: FRAMES }).packs).toBe("app://localhost/packs/");
+    expect(found({ origin: "/compmd", frames: FRAMES }).packs, "on the page's origin").toBe("/compmd/packs/");
+    expect(found({ base: "/sandbox/" }).packs).toBeUndefined();
+    expect(packFileOf("/compmd/packs/")("@acme/kit@1.4.2/icons/star.svg")).toBe("/compmd/packs/@acme/kit@1.4.2/icons/star.svg");
   });
 
   it("has no URL for a module's path without an origin", () => {

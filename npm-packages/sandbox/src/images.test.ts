@@ -71,6 +71,24 @@ describe("PageImages", () => {
     expect(await throwing.file("./a.png")).toBeUndefined();
   });
 
+  it("fetches a pack's image by the URL the frame asks for, where the host serves the pack, and none by its place", async () => {
+    const requests: string[] = [];
+    const fetcher = (input: RequestInfo | URL) => {
+      requests.push(input instanceof Request ? input.url : input.toString());
+      return Promise.resolve(new Response(new Blob(["x"], { type: "image/svg+xml" })));
+    };
+    const place = "@acme/kit@1.4.2/icons/star.svg";
+    const star: ExpandedNode = { type: "paragraph", children: [{ type: "image", url: place, alt: "", pack: true }] };
+    const page = new PageImages(fetcher, "https://docs.example.com/notes/", { schemes: [] }, cdnGate(), (at) => `/compmd/packs/${at}`);
+    page.rendered({ type: "root", children: [star] });
+    expect(typeOf(await page.file(`/compmd/packs/${place}`))).toBe("image/svg+xml");
+    expect(await page.file(place)).toBeUndefined();
+    expect(requests).toEqual([`https://docs.example.com/compmd/packs/${place}`]);
+    const unmapped = new PageImages(fetcher, "https://docs.example.com/", { schemes: [] }, cdnGate());
+    unmapped.rendered({ type: "root", children: [star] });
+    expect(await unmapped.file(place)).toBeUndefined();
+  });
+
   it("gives an image of the host's own schemes from the host's files, fetching nothing", async () => {
     const asked: string[] = [];
     const file = (src: string) => {

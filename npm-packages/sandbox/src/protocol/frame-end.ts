@@ -10,8 +10,9 @@ export interface FrameHandlers {
   /**
    * The frame's level and, for a permissive frame, its second policy: applied before this returns. `schemes` are the
    * host's own URL schemes, which the links and images it renders may use; the frame checks them again (spec §15).
+   * `packs` is where the host serves the packs' files, which a link or an image from a pack's definition is under.
    */
-  level(level: Level, policy: string | undefined, schemes: readonly string[]): void;
+  level(level: Level, policy: string | undefined, schemes: readonly string[], packs?: string): void;
   /** Loads the components' code; resolves once each is loaded, or shows its fallback. */
   code?(components: ComponentCode[]): Promise<void>;
   part?(part: Part): void;
@@ -103,7 +104,8 @@ export function serveParent(port: Port, handlers: FrameHandlers): FrameEnd {
     if (!isMessage<ToFrame>(data, TO_FRAME)) return;
     if (data.type === "level") {
       if (level !== undefined) return;
-      handlers.level(data.level, data.policy, Array.isArray(data.schemes) ? data.schemes.filter((scheme) => typeof scheme === "string") : []);
+      const schemes = Array.isArray(data.schemes) ? data.schemes.filter((scheme) => typeof scheme === "string") : [];
+      handlers.level(data.level, data.policy, schemes, typeof data.packs === "string" ? data.packs : undefined);
       if (typeof data.timeout === "number" && data.timeout > 0) highlightTimeout = data.timeout;
       level = data.level;
       return;

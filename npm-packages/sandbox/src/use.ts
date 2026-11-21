@@ -28,6 +28,8 @@ export interface UseFrameOptions {
   styles?: readonly string[];
   /** The host's own URL schemes, checked, which the links and images the frame renders may use (spec §15). */
   schemes?: readonly string[];
+  /** Where the host serves the packs' files, ending in `/`, which the frame's links and images to them are under. */
+  packs?: string;
   /** The tokens of a code block in the use's slots, which the frame asks for; asked only for a block of its node. */
   highlight?: FrameHighlight;
   ping?: { every: number; timeout: number };
@@ -103,6 +105,7 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
       level: options.level,
       ...(options.network ? { policy: networkPolicy(options.network) } : {}),
       ...(options.schemes?.length ? { schemes: options.schemes } : {}),
+      ...(options.packs === undefined ? {} : { packs: options.packs }),
       binds: (input) => bound.has(input),
       ...(options.host ? { host: options.host() } : {}),
       ...(options.highlight ? { highlight: forSent(blocks, options.highlight) } : {}),

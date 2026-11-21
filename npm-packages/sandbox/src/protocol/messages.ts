@@ -103,7 +103,7 @@ export interface CompileRequest {
 /** Messages from a parent to its frame, on the frame's port. `host` carries its port in the message's ports. */
 export type ToFrame =
   /** `timeout`: how long the frame waits for an answer to its `highlight`, in ms (`HIGHLIGHT_MS` without it). */
-  | { type: "level"; level: Level; policy?: string; schemes?: readonly string[]; timeout?: number }
+  | { type: "level"; level: Level; policy?: string; schemes?: readonly string[]; packs?: string; timeout?: number }
   | { type: "code"; components: ComponentCode[] }
   | { type: "part"; part: Part }
   | { type: "styles"; urls: string[] }

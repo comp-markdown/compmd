@@ -23,6 +23,8 @@ export interface Where {
   frames?: string;
   /** Where the frame documents are, ending in `/`, in place of `origin` and `frames`: for frames a host built itself. */
   base?: string;
+  /** Where the packs' files are, ending in `/`, in place of the origin's `packs/`: for a host that serves them itself. */
+  packs?: string;
   modules?: BundleModuleSource;
 }
 
@@ -43,18 +45,29 @@ function fromThisPage(href: string | undefined): string | undefined {
 export type PackFile = (place: string) => string | undefined;
 
 /**
- * `given` with the frames' `base`, `modules` with each path under the origin made a URL, and, with an origin,
- * `packFile`: a pack's file under it, at `packs/<place>`, where the bundle and the host's store serve them.
+ * The URL of a pack's file under `packs`, where the host serves the packs' files, ending in `/`: the same in the host's
+ * page and in a frame, which gets `packs` with its level.
+ */
+export const packFileOf =
+  (packs: string): PackFile =>
+  (place) =>
+    `${packs}${place}`;
+
+/**
+ * `given` with the frames' `base`, `modules` with each path under the origin made a URL, and, with an origin, `packs`:
+ * where the bundle and the host's store serve the packs' files, `packs/` under it, from the root of the page's own
+ * origin when it is on it.
  *
  * @throws Error when neither the bundle's frames with an origin nor a `base` say where the frames are.
  */
-export function found<T extends Where>(given: T): Omit<T, "modules"> & { base: string; modules?: ModuleSource; packFile?: PackFile } {
-  const { modules, ...rest } = given;
+export function found<T extends Where>(given: T): Omit<T, "modules" | "packs"> & { base: string; modules?: ModuleSource; packs?: string } {
+  const { modules, packs: packsGiven, ...rest } = given;
   const origin = given.origin ?? givenOrigin();
   const at = (path: string): string | undefined => (origin === undefined ? undefined : new URL(path, new URL(origin.replace(/\/*$/, "/"), location.href)).href);
   const base = given.base ?? (given.frames === undefined ? undefined : at(given.frames));
   if (base === undefined) throw new Error(NO_FRAMES);
-  const packs = origin === undefined ? {} : { packFile: (place: string) => fromThisPage(at(`packs/${place}`)) };
+  const served = packsGiven ?? fromThisPage(at("packs/"));
+  const packs = served === undefined ? {} : { packs: served };
   if (!modules) return { ...rest, base, ...packs };
   return {
     ...rest,

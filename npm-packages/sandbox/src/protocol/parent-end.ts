@@ -11,6 +11,11 @@ export interface ChildOptions {
   policy?: string;
   /** The host's own URL schemes, checked, which the links and images the frame renders may use (spec §15). */
   schemes?: readonly string[];
+  /**
+   * Where the host serves the packs' files, ending in `/`: a link or an image from a pack's definition, which names its
+   * file by its place (spec §12.3), has its URL under it in the frame, as in the host's page.
+   */
+  packs?: string;
   /** Whether a component in the frame may set `input`: one of the frame's uses binds a param to it. */
   binds(input: string): boolean;
   /** The port for `host`, for a permissive frame of a pack given `host`. */
@@ -210,6 +215,7 @@ export function connectChild(port: Port, options: ChildOptions): ChildEnd {
         level: options.level,
         ...(options.policy === undefined ? {} : { policy: options.policy }),
         ...(options.schemes?.length ? { schemes: [...options.schemes] } : {}),
+        ...(options.packs === undefined ? {} : { packs: options.packs }),
         // A frame waits for its blocks' tokens as long as it may take to answer.
         ...(options.ping ? { timeout: options.ping.timeout } : {}),
       } satisfies ToFrame);

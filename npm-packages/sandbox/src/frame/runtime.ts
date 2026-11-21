@@ -6,6 +6,7 @@
 
 import { createRegion, type ImageSource, type Page, type Region } from "@compmd/render";
 import { serveFrame, type Port as RenderPort } from "@compmd/render/frame";
+import { packFileOf, type PackFile } from "../found.ts";
 import { hostClient, type HostClient } from "../host-api.ts";
 import { codeFor, Mounts } from "../mounts.ts";
 import { batches, Observer } from "../observer.ts";
@@ -244,6 +245,7 @@ function start(port: MessagePort): void {
         ...(component.example === undefined ? {} : { example: component.example }),
         styles: stylesheets,
         schemes,
+        ...(packsAt === undefined ? {} : { packs: packsAt }),
         highlight,
         ping: { every: 1000, timeout: 5000 },
         observer,
@@ -296,6 +298,9 @@ function start(port: MessagePort): void {
   let host: HostClient | undefined;
   /** The host's own URL schemes, which the parent gives with the level: the links and images this frame renders may use them. */
   let schemes: readonly string[] = [];
+  /** Where the host serves the packs' files, which the parent gives with the level; and a pack's file under it. */
+  let packsAt: string | undefined;
+  let packs: { packFile: PackFile } | Record<string, never> = {};
   /** What the frame renders: one use (`part`), or the page (frame mode). */
   let region: Region | undefined;
   let page: Page | undefined;
@@ -320,18 +325,21 @@ function start(port: MessagePort): void {
       },
       onLayout: moved,
       ownSchemes: schemes,
+      ...packs,
       ...(host ? { host } : {}),
     });
   const parent: FrameEnd = serveParent(port, {
-    level: (asked, network, given) => {
+    level: (asked, network, given, served) => {
       level = own === "permissive" && asked === "permissive" ? "permissive" : "strict";
       if (own === "permissive") narrow(network ?? networkPolicy([]));
       schemes = given;
+      packsAt = served;
+      packs = served === undefined ? {} : { packFile: packFileOf(served) };
       // A page frame (frame mode) renders the page through `@compmd/render`'s protocol, on the same port.
       const container = document.getElementById("page");
       if (container) page = serveFrame(recordingFallbacks(port, observer), { container, components: mounts.mounts, examples: mounts.examples, math, highlight, images: imagesFrom(parent), allowOrigin: (origin) => {
             parent.allowOrigin(origin);
-          }, onLayout: moved, ownSchemes: schemes, printsFallback }).page;
+          }, onLayout: moved, ownSchemes: schemes, ...packs, printsFallback }).page;
     },
     code: async (next) => {
       components = next;

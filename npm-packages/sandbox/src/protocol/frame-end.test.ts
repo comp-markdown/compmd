@@ -60,6 +60,22 @@ describe("the frame's end (serveParent)", () => {
     expect(calls).toEqual([["level", { level: "strict", policy: undefined }]]);
   });
 
+  it("takes the host's schemes and where it serves the packs' files with its level, and nothing that isn't text", async () => {
+    const { parent, frame } = frameChannel();
+    const given: unknown[] = [];
+    serveParent(frame, { level: (_level, _policy, schemes, packs) => given.push([schemes, packs]) });
+    parent.postMessage({ type: "level", level: "strict", schemes: ["app", 1], packs: "/compmd/packs/" });
+    await settle();
+    const other = frameChannel();
+    serveParent(other.frame, { level: (_level, _policy, schemes, packs) => given.push([schemes, packs]) });
+    other.parent.postMessage({ type: "level", level: "strict", packs: 3 });
+    await settle();
+    expect(given).toEqual([
+      [["app"], "/compmd/packs/"],
+      [[], undefined],
+    ]);
+  });
+
   it("takes code, a part and stylesheets after its level, in the order sent, and says when the code is loaded", async () => {
     const { parent, frame, got } = frameChannel();
     const { calls, handlers } = recording();
