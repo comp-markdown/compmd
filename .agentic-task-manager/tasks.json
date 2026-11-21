@@ -12200,7 +12200,7 @@
       "description": "Item 8 of [the first list](docs/first-components.md#:~:text=Dates%20and%20what%20happened): dates and what happened, in a post or notes, `compmd` definitions on `box`; a list of items is enough.\n\n## Do\nThe definitions, a demo, tests of their expanded tree.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68e81c39ce10",
         "01a1fb1a-5845-722a-88c3-17bf2a8c3273",
@@ -12211,7 +12211,7 @@
         "compmd-packs/timeline/"
       ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-20T22:48:21Z",
+      "updated_at": "2026-11-21T16:35:03Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 319,
@@ -12229,7 +12229,9 @@
           "text": "Needs border’s logical sides for its line (docs/no-code-components.md, decision 6, CR-37); written as a list with the dates in the caller’s text.",
           "by": "claude:79612601"
         }
-      ]
+      ],
+      "started_at": "2026-11-21T16:35:03Z",
+      "started_by": "claude:79612601"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57cf1d3cd690",
@@ -14706,7 +14708,7 @@
       "description": "From CR-51: a project's own badges (`bug`, `feature`, `chore`, defined once in a file) can fix their colours, borders and radius, but not their type. CompMD's common params (spec §9.2, §9.4) have surfaces, borders, radius, shadow and spacing, and nothing for text: no font, size, weight or text colour. A definition can only use Markdown's `**bold**` and `*italic*`, and a box's text is always the page's.\n\n## Decide first\nA design (`docs/`), with the maintainer, tried on real documents (a badge, a callout, a pull quote, a card's title, a newsletter's masthead):\n- **Which params:** for example `font-size` (tokens `s`, `m`, `l`, `xl` and lengths), `font-weight` (`normal`, `bold`), `font-style`, `font-family` (tokens `body`, `heading`, `mono`, not free font names, so a document stays readable wherever it is shown), `color` (tokens built from the text colour, as surfaces are, and CSS colours), `text-align`, `line-height`, `text-transform`?\n- **Tokens and themes:** custom properties with defaults, as §9.4's are, so a host's theme changes them.\n- **Contrast:** a text colour on a surface that doesn't contrast (a warning?).\n- **Inheritance, breakpoints, print, plain readers, components** (does a host-language component's box pass them on?).\n\nThen the spec, its conformance cases, the processor, the renderer, the guides, and the badge demo's `labels.comp.md` using them.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [],
       "files": [
         "docs/",
@@ -14716,7 +14718,7 @@
         "npm-packages/render/src/styles.ts"
       ],
       "created_at": "2026-11-21T16:23:39Z",
-      "updated_at": "2026-11-21T16:33:54Z",
+      "updated_at": "2026-11-21T16:34:59Z",
       "created_by": "claude:79612601",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -14728,7 +14730,24 @@
       "sprint": "Packs 1: the pack tool, no-code components",
       "number": 370,
       "started_at": "2026-11-21T16:33:54Z",
-      "started_by": "claude:79612601"
+      "started_by": "claude:79612601",
+      "commit": "0e39a1ffbefccc899906a408c219bb77ab2b541f",
+      "code_reviews": [
+        {
+          "id": "01a1fef6-07ec-70f6-b314-5a4d04c302ad",
+          "ref": "CR-54"
+        }
+      ],
+      "review_requested_at": "2026-11-21T16:34:59Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-21T16:34:59Z",
+          "kind": "review",
+          "text": "CR-54: The design: type in a box",
+          "by": "claude:79612601"
+        }
+      ]
     }
   ]
 }
