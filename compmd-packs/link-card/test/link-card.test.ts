@@ -65,6 +65,11 @@ describe("a link card", () => {
     expect(card).toMatchObject({ type: "componentContainer", name: "box" });
   });
 
+  it("has its card fill its box, so link cards in a grid row are as tall as the tallest", () => {
+    const { card } = linkCardOf(processed(USE).expanded.children as Node[]);
+    expect(card?.params).toContainEqual({ key: "fill", breakpoint: null, value: true });
+  });
+
   it("has its title as a heading one level below the one above it, the heading's link the use's fallback", () => {
     const { card } = linkCardOf(processed(USE).expanded.children as Node[]);
     const [heading, description] = card?.children ?? [];
@@ -91,12 +96,14 @@ describe("a link card", () => {
     expect(plainHtml(USE)).toContain("<p>:: link-card[The harbour at dusk]");
   });
 
-  it("draws each of the demo's examples, its source shown too, with no diagnostics: a card each, then three in a grid", () => {
+  it("draws each of the demo's examples, its source shown too, with no diagnostics: a card each, three in a grid, then a card with stretch-link", () => {
     const { expanded, diagnostics } = processed(read(ROOT, "demo.comp.md"));
     expect(diagnostics).toEqual([]);
     const examples = (expanded.children as (Node & { render?: string; document?: { children: Node[] } })[]).filter((node) => node.type === "code" && node.document);
-    expect(examples.map((example) => example.render)).toEqual(["both", "both", "both", "both"]);
+    expect(examples.map((example) => example.render)).toEqual(["both", "both", "both", "both", "both"]);
     const grid = examples[3]?.document?.children.find((node) => node.type === "componentContainer");
     expect(grid?.children?.filter((node) => node.name === "box")).toHaveLength(3);
+    const [card] = examples[4]?.document?.children ?? [];
+    expect(card?.params).toContainEqual({ key: "stretch-link", breakpoint: null, value: true });
   });
 });

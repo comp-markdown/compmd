@@ -20,6 +20,7 @@ md:
 - **`description`** is the line under the title; a use may leave it out.
 - **The whole card** takes the click, as its box has `stretch-link`.
 - **Its box** is a card's, a subtle border, rounded corners and some padding. A use changes it as any box's: `{width=20rem}`, `background`. Link cards in a `grid` make a row that wraps.
+- **More than a line,** an image or formatted text: write a `card` with `stretch-link`, which any box takes. `::: card {stretch-link}`, its title written as a link, `### [The harbour at dusk](harbour.comp.md)`, and anything after it; the title takes the clicks, the other links stay links.
 - **In a plain Markdown reader,** and on GitHub, a link card is its line as written, its title in it.
 
 ## Try it

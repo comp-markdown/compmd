@@ -2,6 +2,7 @@
 // takes a click anywhere on it while its other links stay links, and an inline box in a line of text.
 import { afterEach, describe, expect, it } from "vitest";
 import { createPage } from "../../src/page.ts";
+import { stretchFirstLink } from "../../src/stretch-link.ts";
 import type { ExpandedNode } from "../../src/tree.ts";
 
 let root: HTMLElement;
@@ -56,6 +57,19 @@ describe("stretch-link", () => {
     page.render({ type: "root", children: [moved] });
     const marked = [...root.querySelectorAll(".compmd-stretched")];
     expect(marked.map((element) => element.getAttribute("href"))).toEqual(["quay.comp.md"]);
+  });
+
+  it("leaves a link marked by the box around it when a box inside, without the flag, updates after it, as a link card's card", () => {
+    root = document.body.appendChild(document.createElement("main"));
+    const outer = root.appendChild(document.createElement("div"));
+    const inner = outer.appendChild(document.createElement("div"));
+    const first = inner.appendChild(document.createElement("a"));
+    first.href = "harbour.comp.md";
+    stretchFirstLink(outer, true);
+    stretchFirstLink(inner, false);
+    expect(first.classList.contains("compmd-stretched")).toBe(true);
+    stretchFirstLink(outer, false);
+    expect(first.classList.contains("compmd-stretched")).toBe(false);
   });
 });
 

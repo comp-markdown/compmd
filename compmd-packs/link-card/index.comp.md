@@ -28,7 +28,7 @@ params:
     type: string?
     doc: The line under the title
 ---
-::: card
+::: card {fill}
 # [{{md.fallback}}]({{href}})
 
 ::: if {when=(description != null)}

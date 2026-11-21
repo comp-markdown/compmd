@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" role="img" aria-label="Boats at the quay, the lamps just lit">
+  <rect width="320" height="180" fill="#27384f"/>
+  <rect y="120" width="320" height="60" fill="#1b2a3c"/>
+  <path d="M40 130h70l-10 14H50z M150 128h80l-12 16h-56z" fill="#e8c27a"/>
+  <circle cx="260" cy="50" r="14" fill="#f4e3b2"/>
+  <path d="M75 130V96l22 30z M190 128V90l26 34z" fill="#d9dde3"/>
+</svg>

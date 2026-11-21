@@ -12,12 +12,15 @@ export const STRETCHED = "compmd-stretched";
 export const stretches = (params: readonly ExpandedParam[]): boolean => params.some((param) => param.key === "stretch-link" && param.breakpoint === null && param.value === true);
 
 /**
- * Marks `box` and its first link when `on`, and unmarks a link it marked before, which an update may have moved.
+ * Marks `box` and its first link when `on`, and unmarks a link it marked before, which an update may have moved. A box
+ * that never had `stretch-link` leaves the links in it alone: one may be marked by a box around it, a card in a link
+ * card's box.
  *
  * @example
  * stretchFirstLink(card, stretches(node.params));
  */
 export function stretchFirstLink(box: HTMLElement, on: boolean): void {
+  if (!on && !box.classList.contains(STRETCHES)) return;
   box.classList.toggle(STRETCHES, on);
   const first = on ? box.querySelector("a[href]") : null;
   for (const marked of box.querySelectorAll(`.${STRETCHED}`)) if (marked !== first) marked.classList.remove(STRETCHED);
