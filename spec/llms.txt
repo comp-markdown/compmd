@@ -298,7 +298,7 @@ Common params, on any container or leaf (they style its outer box):
 - Each top-level block in a layout container is one item. Wrap several blocks in `::: box` to make one item.
 - Directions are logical only: `inline`/`block`, `start`/`end`. There is no `left`, `top`, `margin`, `color`, `font-size` or `style`. Unknown params are errors (F008); the vocabulary is closed, so raw CSS never passes.
 - Breakpoints follow the width of the block's nearest box (the closest `box`, layout or component box around it; list items and quotes don't count), not the window and not the block's own width. Write the narrow layout first and override up: `::: grid {gap=s md:gap=l md:grid-template-columns="2fr 1fr"}`.
-- A block with an `inset-*` is placed over its nearest box, which needs `height`, `aspect-ratio` or `fill` (W119).
+- A block with an `inset-*` is placed over its nearest box, which needs a height: blocks in its flow, or `height`, `aspect-ratio` or `fill` (W119).
 - A box that holds blocks with breakpoints (`md:…`, `show`, `hide`) needs a `width` wherever its width would come from its content (W114): in a `row`; in a `stack` with `align-self` or `align-items` other than `stretch`, or `justify-self=center|end`; in a `grid` with `justify-self`; or positioned without both inline insets.
 
 ```md
@@ -502,7 +502,7 @@ F codes are errors, W codes warnings. Each line: what it means → how to fix it
 - W116 `::` line inside an HTML block → put a blank line after the HTML tag, or drop the HTML.
 - W117 exported host component without `runtime` → add `runtime=react@19` (or `svelte@5`).
 - W118 host component threw → fix the component; the fallback was shown.
-- W119 box placing blocks by position has no height → give it `height`, `aspect-ratio` or `fill`.
+- W119 box placing all its blocks by position has no height → give it `height`, `aspect-ratio` or `fill`.
 - W120 box param given to a `display=contents` component → remove it; that component has no box.
 - W121 component code can't load (an import that isn't its runtime, a library the processor offers or one its pack names in `peerDependencies`; a relative import in source; a compile error; or a pack needing a runtime or library the processor lacks) → import only those, or bundle the library into a pack's built module.
 

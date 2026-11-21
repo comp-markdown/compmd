@@ -11,7 +11,7 @@
           "children": [
             {
               "type": "text",
-              "value": "Its height comes from this paragraph only."
+              "value": "Its height comes from this paragraph, in its flow: no warning."
             }
           ]
         },
@@ -31,7 +31,7 @@
               "children": [
                 {
                   "type": "text",
-                  "value": "Positioned in a box without a height."
+                  "value": "Positioned in a box whose flow gives it a height."
                 }
               ]
             }

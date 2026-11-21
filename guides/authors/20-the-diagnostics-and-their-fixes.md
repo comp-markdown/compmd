@@ -47,7 +47,7 @@ When something in a document isn't right, CompMD says so with a *diagnostic*: a 
 | `F017` | a param given twice, counting `::: +` lines, or `#name` and `id=` together, or `code` in the braces of a code block a pack draws; the first is used | remove the second |
 | `F006` | a slot line the component doesn't declare, such as `:: #els` in an `if`; its content joins the default slot | *Fix offered*: `els` becomes `else` |
 | `W114` | a box whose blocks change at a breakpoint gets its width from its content, in a row for example, and so has none | give it a `width` (chapter 10) |
-| `W119` | a box that places blocks by position (`inset-*`) has no height to place them in, at some width | give it a `height`, an `aspect-ratio` or `fill` (chapter 11) |
+| `W119` | a box that places all its blocks by position (`inset-*`) has no height to place them in, at some width | give it a `height`, an `aspect-ratio` or `fill` (chapter 11) |
 | `W120` | a param for a box given to a component that has no box of its own (one defined `display=contents`); it is ignored | remove it, or put it on a `box` around the component |
 
 ## Values and expressions

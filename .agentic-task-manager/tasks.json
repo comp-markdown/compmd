@@ -11820,7 +11820,7 @@
       "description": "Item 4 of [the first list](docs/first-components.md#:~:text=8%20of%2011%20frameworks%20ship%20cards): a card that is a link, a `compmd` definition on `card`: a title, a description and where it goes, the whole card the link. Its fallback is the link.\n\n## Do\nThe definition, a demo, tests of its expanded tree.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [
         "01a1f870-9ad9-761a-afe5-57c89c4468ad",
         "01a1fb1a-5845-722a-88c3-17bf2a8c3273",
@@ -11831,9 +11831,9 @@
         "compmd-packs/link-card/"
       ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-21T15:37:56Z",
+      "updated_at": "2026-11-21T15:49:31Z",
       "created_by": "Hakan Serce",
-      "updated_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
       "number": 314,
       "sprint_history": [
         {
@@ -11867,11 +11867,17 @@
           "kind": "note",
           "text": "Approved: in CR-50 (round 1)",
           "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-21T15:49:31Z",
+          "kind": "outcome",
+          "text": "The link-card pack, its card filling its box in a grid row, the renderer’s stretch-link fix for a link in a nested box, and a card with stretch-link for rich content (fee46cc, after CR-50’s approval). Equal rows: CMD-369.",
+          "by": "claude:79612601"
         }
       ],
       "started_at": "2026-11-21T15:18:09Z",
       "started_by": "claude:79612601",
-      "commit": "10a4f02619294604d9e20fe7836cb7fa26d0dad3",
+      "commit": "fee46ccd347d1b465f5369557df8daf34d8a9d0d",
       "code_reviews": [
         {
           "id": "01a1feb8-d4b9-772b-85a6-9850d4116c0b",
@@ -11879,8 +11885,15 @@
         }
       ],
       "review_requested_at": "2026-11-21T15:28:08Z",
-      "review_state": "approved",
-      "reviewed_at": "2026-11-21T15:37:56Z"
+      "reviews": [
+        {
+          "from": "2026-11-21T15:28:08Z",
+          "to": "2026-11-21T15:37:56Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-21T15:49:31Z",
+      "completed_by": "claude:79612601"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57ca797541ca",
@@ -12066,7 +12079,7 @@
       "description": "Item 6 of [the first list](docs/first-components.md#:~:text=6%20of%2011%20frameworks): an inline `compmd` definition, \"new\", \"beta\", a version, its tone from the visual tokens.\n\n## Do\nThe definition (inline), a demo, tests of its expanded tree.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68e81c39ce10",
         "01a1fb1a-5845-722a-88c3-17bf2a8c3273",
@@ -12077,7 +12090,7 @@
         "compmd-packs/badge/"
       ],
       "created_at": "2026-11-20T10:11:31Z",
-      "updated_at": "2026-11-21T15:49:20Z",
+      "updated_at": "2026-11-21T15:49:31Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "number": 317,
@@ -12101,11 +12114,25 @@
           "kind": "answer",
           "text": "An inline invocation of a compmd definition has no box, so its fence’s params don’t apply (spec §7.2), and the spec has no inline `box`: a no-code badge can’t take a tone (background, border, radius) from the visual tokens. Should the spec add an inline box (`:box[beta]{background=accent border-radius=full}`, or an inline invocation’s box styled by its fence), or should badge be a strict component with its own code? → An inline invocation is one inline box styled by its fence (decision 4), and the badge’s text is `md.fallback` (decision 2); no code (docs/no-code-components.md, approved in CR-37).",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-21T15:49:31Z",
+          "kind": "review",
+          "text": "CR-51: The badge pack: a word or two in a tinted box",
+          "by": "claude:79612601"
         }
       ],
       "started_at": "2026-11-21T15:21:02Z",
       "started_by": "claude:79612601",
-      "commit": "2203d18dc8e40553130fce96accbf16dd2c79f9c"
+      "commit": "2203d18dc8e40553130fce96accbf16dd2c79f9c",
+      "code_reviews": [
+        {
+          "id": "01a1fecc-6859-72aa-a393-585a33967eaf",
+          "ref": "CR-51"
+        }
+      ],
+      "review_requested_at": "2026-11-21T15:49:31Z",
+      "review_state": "waiting"
     },
     {
       "id": "01a1f870-9ad9-761a-afe5-57cd298ee930",

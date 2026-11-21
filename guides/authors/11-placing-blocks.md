@@ -195,7 +195,7 @@ The box a block is placed in is the nearest box around it: a `box`, `stack`, `ro
 
 ### The box needs a height
 
-Placed blocks give their box no height, since they are out of the flow. So a box that places blocks needs one: a `height`, an `aspect-ratio`, as the map has, or `fill` (below). Without one it is a diagnostic (`W119`):
+Placed blocks give their box no height, since they are out of the flow. The blocks left in its flow do: an article with a note pinned on it is as tall as its text. A box whose blocks are all placed, as the map's are, needs a height of its own: a `height`, an `aspect-ratio`, as the map has, or `fill` (below). Without one it is a diagnostic (`W119`):
 
 ```text
 ::: box {padding=m}

@@ -1,8 +1,8 @@
 ::: box
-Its height comes from this paragraph only.
+Its height comes from this paragraph, in its flow: no warning.
 
 ::: box {inset-block-start=1rem}
-Positioned in a box without a height.
+Positioned in a box whose flow gives it a height.
 ::: /box
 ::: /box
 

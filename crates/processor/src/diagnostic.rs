@@ -117,7 +117,7 @@ named! {
         W117 = "W117",
         /// A host-language component threw while mounting or updating: a renderer reports it (stage 5).
         W118 = "W118",
-        /// A box that places blocks by position has no `height`, `aspect-ratio` or `fill` at some width.
+        /// A box that places all its blocks by position has no `height`, `aspect-ratio` or `fill` at some width.
         W119 = "W119",
         /// A param for a box given to a `display=contents` component.
         W120 = "W120",

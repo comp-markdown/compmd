@@ -1,4 +1,4 @@
-//! The layout checks of the expanded tree (spec §9.2, §9.3), at each breakpoint: a box that places blocks by
+//! The layout checks of the expanded tree (spec §9.2, §9.3), at each breakpoint: a box that places all its blocks by
 //! position needs a height (W119), and a box whose blocks use breakpoints needs a width where its width would come
 //! from its content (W114).
 //!
@@ -109,16 +109,19 @@ fn visit(block: &Block, around: Around, found: &mut Vec<Diagnostic>) {
             "`stretch-link` makes the box's first link cover it, and it holds no link",
         );
     }
+    let held_nodes: Vec<&Node> = block.node.content.lists().into_iter().flatten().collect();
     if let Around::Box(params) = held
-        && levels
-            .into_iter()
-            .any(|at| !sized(params, at) && inside.iter().any(|inner| positioned(inner.params, at)))
+        && levels.into_iter().any(|at| {
+            !sized(params, at)
+                && !flows(&held_nodes, at)
+                && inside.iter().any(|inner| positioned(inner.params, at))
+        })
     {
         report(
             found,
             Code::W119,
             block.node,
-            "it places blocks by position, so it needs a `height`, an `aspect-ratio` or `fill`",
+            "it places all its blocks by position, so it needs a `height`, an `aspect-ratio` or `fill`",
         );
     }
     for inner in &inside {
@@ -171,6 +174,16 @@ fn positioned(params: &[Param], at: usize) -> bool {
     INSETS
         .iter()
         .any(|inset| value(params, inset, at).is_some_and(|value| value != "auto"))
+}
+
+/// Whether a box holding `nodes` has a block in its flow at `at`, which gives it a height: any block but a component
+/// placed by position there.
+fn flows(nodes: &[&Node], at: usize) -> bool {
+    nodes.iter().any(|node| match &node.content {
+        Content::ComponentContainer(container) => !positioned(&container.params, at),
+        Content::ComponentLeaf(leaf) => !positioned(&leaf.params, at),
+        _ => true,
+    })
 }
 
 /// Whether a box has a height at `at`: from `height`, `aspect-ratio` or `fill`.

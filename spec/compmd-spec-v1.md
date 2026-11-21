@@ -1292,7 +1292,7 @@ Any container or leaf (built-in or not) accepts these params, applied to its out
   - `width` and `height` size it. Without a `width` it fits its content; with both inline insets it stretches between them.
   - The other blocks flow as if it weren't there. It is drawn over them; among positioned blocks, later ones are on top. Reading order stays source order.
   - `order`, `sticky`, `fill`, `grid-area`, `align-self` and `justify-self` don't apply to it.
-  - A box that places blocks needs a height, from `height`, `aspect-ratio` or `fill`; its children don't give it one (W119 otherwise).
+  - A box that places blocks needs a height: from its blocks in the flow, as an article with a note pinned on it has, or from `height`, `aspect-ratio` or `fill`. Placed blocks give it none, so a box whose blocks are all placed needs one of those params (W119 otherwise).
 - **`show=md`** shows a block from `md` up, **`hide=lg`** hides it from `lg` up, and both together give a range (section 9.3). A hidden block is still rendered, so its state survives a resize, but it is hidden from assistive technology too, not only from view.
 
 ### 9.3 Breakpoints
@@ -1412,7 +1412,7 @@ Every diagnostic MUST name its code, the line and column where it was detected, 
 | W116 | Line starting with `::` inside an HTML block, which makes it HTML, not CompMD                                                            | the line                                                             |
 | W117 | Exported host-language component without `runtime`                                                                                        | the definition fence                                                 |
 | W118 | Host-language component threw while mounting or updating, or failed (section 7.4); fallback rendered                                   | the invocation                                                       |
-| W119 | A box that places blocks by position has no `height`, `aspect-ratio` or `fill` at some width (section 9.2)                    | the box's opener; at the top level, the placed block                 |
+| W119 | A box that places all its blocks by position has no `height`, `aspect-ratio` or `fill` at some width (section 9.2)            | the box's opener; at the top level, the placed block                 |
 | W120 | A param for a box given to a `display=contents` component, which has none, on its fence or by an invocation; ignored (section 9.2) | the param                                                            |
 | W121 | Host-language component's code can't load: an import of something it may not import (section 7.6), a compile error, a built module that doesn't match its file, or a runtime or library its pack's `peerDependencies` name that the processor doesn't have in that range (section 6.4); fallback rendered | the invocation, or the import's `from` for `peerDependencies` |
 | W122 | A signature's `print` is neither `drawn` nor `fallback`, or is in a `compmd` definition (section 7.3); the component prints as drawn  | the value                                                            |

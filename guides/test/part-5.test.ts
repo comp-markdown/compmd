@@ -260,7 +260,7 @@ const TRIGGERS: Record<string, Trigger> = {
   W114: { text: '::: row {gap=m}\n::: box\n::: grid {md:grid-template-columns="1fr 1fr"}\nA\n\nB\n::: /grid\n::: /box\n::: /row\n' },
   W116: { text: "<div>\n:: box\n</div>\n" },
   W117: { text: "---\nmd:\n  export:\n    names: [clock]\n---\n\n```jsx component=clock\nexport default function Clock() { return <time />; }\n```\n" },
-  W119: { text: "::: box\nA\n\n::: box {inset-block-start=1rem}\nB\n::: /box\n::: /box\n" },
+  W119: { text: "::: box\n::: box {inset-block-start=1rem}\nB\n::: /box\n::: /box\n" },
   W124: { text: "::: box {stretch-link}\nA card with no link.\n::: /box\n" },
   W120: { text: "```compmd component=tiles {display=contents padding=s}\nslots: [default]\n---\n{{md.slot}}\n```\n\n::: tiles\nText.\n::: /tiles\n" },
   W121: {

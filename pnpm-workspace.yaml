@@ -20,6 +20,7 @@ packages:
   - compmd-packs/link-card
   - compmd-packs/mermaid
   - compmd-packs/rating
+  - compmd-packs/sticky-note
   - compmd-packs/wireframe
   - crates/tauri/examples/tauri-app
   - guides
