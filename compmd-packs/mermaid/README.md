@@ -51,7 +51,6 @@ The build, its checks and the test page are [`@compmd/pack`](https://github.com/
 The pack has its own version, for its component's params and forms; a new Mermaid is a new version of the pack. A tag `mermaid-v<version>` publishes it from CI (`RELEASING.md`).
 
 - **0.1.3:** a diagram's labels are in its box's type, its font and size (`font-family`, `font-size`), which Mermaid measures them in.
-- **0.1.4:** labels are SVG text, and a diagram's styles reach it through the page's stylesheets, so a page that refuses inline styles (`style-src` without `'unsafe-inline'`) shows it styled and sized as any page does.
 - **0.1.2:** the same as 0.1.1; its homepage and links name the website's new address, [compmd.dev](https://compmd.dev/).
 - **0.1.1:** the same as 0.1.0; the first version the release workflow publishes, which proves its trusted publishing.
 - **0.1.0:** the first version, published by hand.

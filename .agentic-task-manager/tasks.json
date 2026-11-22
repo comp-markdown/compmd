@@ -14738,7 +14738,7 @@
       "description": "Once an image can be cropped to its box (the task this depends on), `gallery` makes its items' images one shape, so a grid of photos of different sizes is even, as galleries elsewhere are: a param for the images' ratio (`ratio=4/3`), with `object-fit` and `object-position` for how they fill it. The card's image slot may need the same. Its demo shows it with photos of different shapes, as `render=both` examples (CR-45). With `grid-auto-rows` (CMD-369), every card one height across rows too.\n\n## Tests\nThe expanded tree; a page test in Chrome and WebKit: the images of different shapes cropped to one, the cards one height, and printed cropped (`emulateMedia`), the print check CMD-366's renderer tests couldn't make.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a1fe9a-821c-7292-b5a0-3d4962820c1a",
         "01a1febf-eadb-72cb-bee4-a8a3a2547009"
@@ -14748,7 +14748,7 @@
         "compmd-packs/card/"
       ],
       "created_at": "2026-11-21T14:55:01Z",
-      "updated_at": "2026-11-21T16:17:17Z",
+      "updated_at": "2026-11-22T17:15:41Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -14758,7 +14758,9 @@
         }
       ],
       "sprint": "Packs 1: the pack tool, no-code components",
-      "number": 367
+      "number": 367,
+      "started_at": "2026-11-22T17:15:41Z",
+      "started_by": "claude:79612601"
     },
     {
       "id": "01a1fea0-721a-74ba-a703-6a913b57a6a5",
@@ -14771,7 +14773,7 @@
       "description": "A pack's demo shows each param and use as a `compmd {render=both}` example, its source then what it draws ([writing a pack](docs/writing-a-pack.md), decision 3, from CR-45). From CR-51: each example is a `#` section named for what it shows (no bold lead-ins, no demo title above them), and the examples' own headings are `##` or lower, so the demo's sections and the examples' headings don't mix.\n\n## Do\n- **The Mermaid and wireframe packs' demos** as examples, one per param and use (a block, a leaf, a diagram from data, a theme, a size), and their page tests (`test/page.test.ts`) finding each drawing in its example.\n- **Every other demo** with `#` sections: card, figure, gallery, link-card, rating, sticky-note (the badge's is done in CR-51), and `create-pack`'s templates and the demo it writes for a wrapped package; their tests where they count examples or headings.\n- **The rule** in `docs/writing-a-pack.md`, decision 3.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [],
       "files": [
         "compmd-packs/mermaid/demo.comp.md",
@@ -14782,7 +14784,7 @@
         "docs/writing-a-pack.md"
       ],
       "created_at": "2026-11-21T15:01:30Z",
-      "updated_at": "2026-11-22T16:46:28Z",
+      "updated_at": "2026-11-22T17:18:28Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -14803,15 +14805,35 @@
         }
       ],
       "review_requested_at": "2026-11-22T16:46:28Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-22T16:46:28Z",
           "kind": "review",
           "text": "CR-62: Every pack’s demo as render=both examples in # sections",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-22T17:15:57Z",
+          "kind": "note",
+          "text": "Approved: in CR-62 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-22T17:18:28Z",
+          "kind": "outcome",
+          "text": "Every pack’s demo as `render=both` examples in `#` sections, create-pack’s templates and wrapped demo too, and the rule in docs/writing-a-pack.md. CR-62 approved.",
+          "by": "claude:79612601"
         }
-      ]
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-22T16:46:28Z",
+          "to": "2026-11-22T17:15:57Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-22T17:18:28Z",
+      "completed_by": "claude:79612601"
     },
     {
       "id": "01a1febf-eadb-72cb-bee4-a8a3a2547009",
@@ -14824,7 +14846,7 @@
       "description": "From CR-50: cards in a `grid` are as tall as the tallest in their row, but rows differ, and CompMD's vocabulary can't make them one height. CSS's `grid-auto-rows: 1fr` does; `grid-template-rows=\"repeat(2, 1fr)\"` does only when the author knows how many rows `min` makes at each width.\n\n## Do\n- **The spec:** `grid-auto-rows` on `box` and `grid` (§9.1), type `tracks`, with breakpoints, meaning CSS's; `::: grid {min=14rem grid-auto-rows=1fr}` in §9.1's examples. The changelog, and conformance cases (a value, a breakpoint, a value `tracks` doesn't take: F009).\n- **The processor:** the param on `box` and `grid`, `params.json` and `llms.txt` (the vocabulary tests).\n- **The renderer:** the CSS, and a browser test in Chrome and WebKit: link cards over two rows, every card one height.\n- **The guides:** the Author's Guide's grid section.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [],
       "files": [
         "spec/compmd-spec-v1.md",
@@ -14834,7 +14856,7 @@
         "conformance/"
       ],
       "created_at": "2026-11-21T15:35:52Z",
-      "updated_at": "2026-11-22T16:05:07Z",
+      "updated_at": "2026-11-22T17:15:37Z",
       "created_by": "claude:79612601",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -14855,15 +14877,35 @@
         }
       ],
       "review_requested_at": "2026-11-22T16:05:07Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-22T16:05:07Z",
           "kind": "review",
           "text": "CR-61: grid-auto-rows: every row of a grid as tall as the tallest",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-22T17:15:23Z",
+          "kind": "note",
+          "text": "Approved: in CR-61 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-22T17:15:37Z",
+          "kind": "outcome",
+          "text": "`grid-auto-rows` on `box` and `grid`: every row of a grid as tall as the tallest. CR-61 approved.",
+          "by": "claude:79612601"
         }
-      ]
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-22T16:05:07Z",
+          "to": "2026-11-22T17:15:23Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-22T17:15:37Z",
+      "completed_by": "claude:79612601"
     },
     {
       "id": "01a1feeb-aada-7653-96de-3c47766d3f06",
@@ -15279,14 +15321,14 @@
       "description": "From the same report: CompMD's sandbox frames allow inline styles (`style-src 'self' 'unsafe-inline'`, `npm-packages/sandbox/src/build/policy.ts`), but what the renderer draws in the host's own page may not be allowed there: the renderer's math (MathML), highlighted code (`highlight.ts` sets `style` properties), boxes (constructed sheets, allowed), images and examples, in the sandbox's host page mode and with `@compmd/render` alone.\n\n## Do\nA browser test in Chrome and WebKit of a page with `style-src 'self'` (no `'unsafe-inline'`), rendering math, highlighted code, boxes with params, an example and a component: what the browser refuses (its CSP violation reports) is nothing, or each refusal filed as a task of its own with its fix. Note what a host needs in its policy in the Developer's Guide.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [],
       "files": [
         "npm-packages/render/test/browser/",
         "npm-packages/sandbox/test/"
       ],
       "created_at": "2026-11-21T20:23:49Z",
-      "updated_at": "2026-11-22T16:49:27Z",
+      "updated_at": "2026-11-22T17:18:27Z",
       "created_by": "claude:79612601",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -15307,15 +15349,35 @@
         }
       ],
       "review_requested_at": "2026-11-22T16:49:27Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-22T16:49:27Z",
           "kind": "review",
           "text": "CR-63: What CompMD puts in a page, under a strict style-src",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-22T17:16:17Z",
+          "kind": "note",
+          "text": "Approved: in CR-63 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-22T17:18:27Z",
+          "kind": "outcome",
+          "text": "Under `style-src 'self'`, nothing CompMD puts in a host page is refused (a test in Chrome and WebKit); the Developer’s Guide says what a host’s policy needs. CR-63 approved.",
+          "by": "claude:79612601"
         }
-      ]
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-22T16:49:27Z",
+          "to": "2026-11-22T17:16:17Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-22T17:18:27Z",
+      "completed_by": "claude:79612601"
     },
     {
       "id": "01a20041-48e2-73a5-954d-4290690ac9c7",
@@ -15328,7 +15390,7 @@
       "description": "[Type in a box](docs/type-params.md), decision 7, after CMD-373 (the spec and the processor): the expanded tree's fonts shown.\n\n## Do\n- **The renderer:** each font of the tree's `fonts` (spec §12.3) as an `@font-face` with `font-display: swap`, its fallback token's font after it; a `font-family` param naming one by its `family`; a pack's file by the URL `packFile` gives its place, as for images; printing waits for fonts to load.\n- **The hosts** serving the files: a pack's from its place with its integrity (CMD-362, CMD-365), the document's from its folder, within the pack's size cap.\n- **The sandbox:** a page in a frame without the network gets the files from its host, as it gets images; a component's frame gets the fonts its box's type names (CMD-372).\n- **The pack tool:** a font file a pack declares is there, and a warning for one with no licence beside it (G2).\n- **The Author's Guide:** chapter 3's `font-family` row, and a section on fonts of a document's own and from a pack.\n- **Tests** in Chrome and WebKit: a pack's font loading, its fallback first, a missing file, print.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [
         "01a1ff0c-ad59-7684-8887-3abcc6f4d034"
       ],
@@ -15340,7 +15402,7 @@
         "guides/authors/"
       ],
       "created_at": "2026-11-21T22:36:48Z",
-      "updated_at": "2026-11-22T17:03:00Z",
+      "updated_at": "2026-11-22T17:17:56Z",
       "created_by": "claude:79612601",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -15351,7 +15413,7 @@
       ],
       "sprint": "Packs 1: the pack tool, no-code components",
       "number": 376,
-      "commit": "302aa2a8f37e714408ad069a8faa376c396caeda",
+      "commit": "53819910d010cb9db55922dfd05ea3494bf620d2",
       "blocks": [
         {
           "from": "2026-11-22T16:31:06Z",
@@ -15365,10 +15427,44 @@
           "kind": "answer",
           "text": "Committed in 302aa2a: fonts render in the page, examples, host mode and the pack tool. A page frame gets a font’s file from its host as a blob: URL, but the frames’ policy has `font-src 'self'` only, so it’s refused. Add `blob:` to the strict frame’s `font-src` (as `img-src data: blob:`), and give component frames their box’s font the same way? It changes the sandbox design’s policy table. → Yes: add `blob:` to the frames’ `font-src` (strict, and the permissive second policy’s default), record it in the sandbox design’s Q3 table, and give component frames their box’s font, its files sent with the `type-style` message. Tests in Chrome and WebKit.",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-22T17:14:58Z",
+          "kind": "review",
+          "text": "CR-65: Fonts of a document’s own: rendering, the frames, the pack tool",
+          "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-22T17:15:46Z",
+          "kind": "note",
+          "text": "Approved: in CR-65 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-22T17:17:56Z",
+          "kind": "outcome",
+          "text": "Fonts of a document’s own rendered: `@font-face` in the page and examples, a page frame’s files from its host (`font-src blob:`), a component frame’s with its box’s type, the pack tool’s checks, the Author’s Guide. CR-65 approved.",
+          "by": "claude:79612601"
         }
       ],
       "started_at": "2026-11-22T17:03:00Z",
-      "started_by": "claude:79612601"
+      "started_by": "claude:79612601",
+      "code_reviews": [
+        {
+          "id": "01a20440-ff86-73e3-bea9-62191d1814a3",
+          "ref": "CR-65"
+        }
+      ],
+      "review_requested_at": "2026-11-22T17:14:58Z",
+      "reviews": [
+        {
+          "from": "2026-11-22T17:14:58Z",
+          "to": "2026-11-22T17:15:46Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-22T17:17:56Z",
+      "completed_by": "claude:79612601"
     },
     {
       "id": "01a20437-f2c9-7305-b8c1-fbb7f27d42c1",

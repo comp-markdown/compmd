@@ -30,11 +30,13 @@ The strict frame's policy (`@compmd/sandbox`'s `policy.ts`) allows scripts only 
 
 | Mermaid needs | In the strict frame |
 |---|---|
-| Its own `<style>` in each SVG | allowed: `style-src 'unsafe-inline'` |
+| Its own `<style>` in each SVG, and the `style` attributes and `<style>` it writes while it lays a diagram out | allowed: `style-src 'unsafe-inline'` |
 | No network: fonts, icons | none by default: its fonts are system fonts, and icon packs load only when registered |
 | No `eval` or `new Function` | to check in the browser tests: the policy has no `'unsafe-eval'`, so a diagram type that needs it fails there, and is listed |
 | No workers | none |
 | Measuring text (`getBBox`) | a real layout: works in a frame, not in happy-dom |
+
+Mermaid measures its labels with its styles in place, so the pack relies on the host contract's promise that inline styles apply in its box (spec §7.4, [what a component may assume about its box](component-environment.md), 2026-11-22). It carries no workaround of its own: a page that refuses inline styles keeps it in a frame, as it keeps every registry pack.
 
 ## What building it found
 
