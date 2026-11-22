@@ -1018,7 +1018,7 @@
       "description": "The first post: why CompMD exists, what it gives authors that plain Markdown doesn't, and what it keeps (a document that reads well anywhere). Written as a CompMD document, in plain wording, drafted and reviewed with the user before it is published.\n\nPublishing (the push) needs the user's go.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68ea9d5906c3"
       ],
@@ -1026,7 +1026,7 @@
         "website/blog/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-20T10:26:02Z",
+      "updated_at": "2026-11-22T17:40:52Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -1047,7 +1047,9 @@
       ],
       "with": "user",
       "number": 14,
-      "sprint": "Packs 1: the pack tool, no-code components"
+      "sprint": "Packs 1: the pack tool, no-code components",
+      "started_at": "2026-11-22T17:40:52Z",
+      "started_by": "claude:79612601"
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68ecc9cfcfc3",
@@ -14738,7 +14740,7 @@
       "description": "Once an image can be cropped to its box (the task this depends on), `gallery` makes its items' images one shape, so a grid of photos of different sizes is even, as galleries elsewhere are: a param for the images' ratio (`ratio=4/3`), with `object-fit` and `object-position` for how they fill it. The card's image slot may need the same. Its demo shows it with photos of different shapes, as `render=both` examples (CR-45). With `grid-auto-rows` (CMD-369), every card one height across rows too.\n\n## Tests\nThe expanded tree; a page test in Chrome and WebKit: the images of different shapes cropped to one, the cards one height, and printed cropped (`emulateMedia`), the print check CMD-366's renderer tests couldn't make.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_review",
+      "status": "done",
       "dependencies": [
         "01a1fe9a-821c-7292-b5a0-3d4962820c1a",
         "01a1febf-eadb-72cb-bee4-a8a3a2547009"
@@ -14748,7 +14750,7 @@
         "compmd-packs/card/"
       ],
       "created_at": "2026-11-21T14:55:01Z",
-      "updated_at": "2026-11-22T17:25:44Z",
+      "updated_at": "2026-11-22T17:38:49Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -14769,15 +14771,35 @@
         }
       ],
       "review_requested_at": "2026-11-22T17:25:44Z",
-      "review_state": "waiting",
       "notes": [
         {
           "at": "2026-11-22T17:25:44Z",
           "kind": "review",
           "text": "CR-66: Gallery: each card’s image cropped to one shape, its cards one height",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-22T17:38:31Z",
+          "kind": "note",
+          "text": "Approved: in CR-66 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-22T17:38:49Z",
+          "kind": "outcome",
+          "text": "Gallery 0.2.0: `ratio`, `image-fit` and `image-position` crop every image to one shape; every card one height across rows; a page test in Chrome and WebKit, print included. CR-66 approved.",
+          "by": "claude:79612601"
         }
-      ]
+      ],
+      "reviews": [
+        {
+          "from": "2026-11-22T17:25:44Z",
+          "to": "2026-11-22T17:38:31Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-22T17:38:49Z",
+      "completed_by": "claude:79612601"
     },
     {
       "id": "01a1fea0-721a-74ba-a703-6a913b57a6a5",
@@ -15260,7 +15282,7 @@
       "description": "Reported by an app that runs CompMD's components in its own page: under a policy that refuses inline styles (`style-src` without `'unsafe-inline'`), the Mermaid pack's diagrams lose their styles, and since Mermaid measures while it renders, their sizes. The first commit (652fb24) gave `@compmd/pack/component`'s `draw` a CSSOM transfer for markup; a wider comparison showed that can't fix a library that writes inline styles while it measures. The design, approved in CR-64: [What a component may assume about its box](docs/component-environment.md). This task builds its \"Work needed\".\n\n## Do\n- **Spec** (with the maintainer's go): §7.4, the promise that inline styles apply in the box's document, kept by the processor, a frame preferred in a strict page (decisions 1, 2 and 4); §15, no CSS from a param in trusted code (decision 5), and in the note on browsers, that a sandbox's policy allows inline styles and its closed network makes that safe; `spec/CHANGELOG.md`.\n- **Designs:** [running components in the sandbox](docs/running-components-in-the-sandbox.md), a trusted use in host mode needs the host's page to keep the promise, and decision 6's report; [the Mermaid pack](docs/mermaid-pack.md), it relies on the promise.\n- **`@compmd/sandbox`:** report a refused inline style in a trusted component's box through the host's `error` callback, by name, from `securitypolicyviolation` (decision 6). Browser tests in Chrome and WebKit: such a component reported in a strict page, not in one that allows inline styles; both frames keep the promise under a strict host page.\n- **The Mermaid pack:** revert `htmlLabels: false`; remove `test/strict-style.test.ts` and `test/strict-style/` (and the uncommitted widening of them); the README's 0.1.4 note, the pack's version and `compmd-packs/versions.json`.\n- **`draw`** keeps its CSSOM transfer (decision 8).\n- **The Developer's Guide**, \"Your page's policy\" (`guides/developers/11-the-sandbox-closer.md`): a component's drawing may need inline styles, so a strict page keeps its components in frames, or allows them knowing risks 1 and 2; a trusted component puts no CSS from a param in the page.\n- **Checks:** `cargo make ci`, and `cargo make site`.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [
         "01a20437-f2c9-7305-b8c1-fbb7f27d42c1"
       ],
@@ -15275,7 +15297,7 @@
         "compmd-packs/mermaid/README.md"
       ],
       "created_at": "2026-11-21T20:23:49Z",
-      "updated_at": "2026-11-22T17:22:26Z",
+      "updated_at": "2026-11-22T17:37:38Z",
       "created_by": "claude:79612601",
       "updated_by": "claude:9ea81469",
       "sprint_history": [
@@ -15315,9 +15337,27 @@
           "kind": "answer",
           "text": "Decision 6 (report a refused inline style by the trusted component’s box, through `error`) doesn’t hold: Mermaid measures in a temporary element in `document.body`, so its refusals land outside any box, against the document. And `error` means the use shows its fallback. (a) A new `HostEvents` callback, `refusedStyle`, naming the component only when the element is in its box; (b) by time, while one trusted component draws; (c) drop decision 6. → (a) A new HostEvents callback, refusedStyle: names the component when the refused element is in its box, and otherwise reports it without a name.",
           "by": "claude:9ea81469"
+        },
+        {
+          "at": "2026-11-22T17:35:20Z",
+          "kind": "review",
+          "text": "CR-67: A component's box: inline styles apply, the spec's promise, the sandbox's report and the Mermaid pack",
+          "by": "claude:9ea81469"
+        },
+        {
+          "at": "2026-11-22T17:37:28Z",
+          "kind": "note",
+          "text": "Approved: in CR-67 (round 1)",
+          "by": "Hakan Serce"
+        },
+        {
+          "at": "2026-11-22T17:37:38Z",
+          "kind": "outcome",
+          "text": "Approved in CR-67: the spec’s promise that inline styles apply in a box, refusedStyle in the sandbox, the Mermaid pack without workarounds.",
+          "by": "claude:9ea81469"
         }
       ],
-      "commit": "6623c0f09e9ab1d843fbfccfa1c33171d87c757d",
+      "commit": "069d23cf07d39c12cccff5fc29ee21879a525759",
       "blocks": [
         {
           "from": "2026-11-22T15:49:26Z",
@@ -15336,7 +15376,23 @@
         }
       ],
       "started_at": "2026-11-22T17:22:26Z",
-      "started_by": "claude:9ea81469"
+      "started_by": "claude:9ea81469",
+      "code_reviews": [
+        {
+          "id": "01a20453-a4f8-710f-b9c7-8054fa734120",
+          "ref": "CR-67"
+        }
+      ],
+      "review_requested_at": "2026-11-22T17:35:20Z",
+      "reviews": [
+        {
+          "from": "2026-11-22T17:35:20Z",
+          "to": "2026-11-22T17:37:28Z",
+          "outcome": "approved"
+        }
+      ],
+      "completed_at": "2026-11-22T17:37:38Z",
+      "completed_by": "claude:9ea81469"
     },
     {
       "id": "01a1ffc7-890a-70b7-a3f6-715280c886ae",
