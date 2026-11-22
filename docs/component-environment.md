@@ -1,6 +1,6 @@
 # What a component may assume about its box: inline styles apply
 
-**Status: proposed (2026-11-22), CMD-374.** Whether a component may write inline styles in its box, and whose job it
+**Status: approved (2026-11-22, CR-64), CMD-377; built by CMD-374.** Whether a component may write inline styles in its box, and whose job it
 is that they apply. Found when an app mounted the Mermaid pack's component in its own page, whose content security
 policy refuses inline styles (`style-src 'self'`): the diagram's styles were refused, and since Mermaid measures its
 labels while it renders, its nodes came out the wrong size. The host contract (spec §7.4) says what values a component
