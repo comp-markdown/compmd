@@ -5,11 +5,9 @@ md:
       names: [__component__]
 ---
 
-# __component__
+Each example of `__component__` shows its source, then what it draws: one for each param and use, so a reader sees what the component offers.
 
-Each example shows its source, then what it draws: one for each param and use, so a reader sees what the component offers.
-
-**A use:**
+# A use
 
 ````compmd {render=both}
 ---
@@ -22,7 +20,9 @@ md:
 :: __component__[Hello, from __component__] {value="Hello"}
 ````
 
-**Sized by the document,** wider:
+# Sized by the document
+
+Wider.
 
 ````compmd {render=both}
 ---
@@ -35,7 +35,9 @@ md:
 :: __component__[Hello, wider] {value="Wider" width=20rem}
 ````
 
-**In a short box,** which it is fitted in:
+# In a short box
+
+Which it is fitted in.
 
 ````compmd {render=both}
 ---
@@ -48,7 +50,9 @@ md:
 :: __component__[Hello, in a short box] {value="Short" width=100% height=3rem}
 ````
 
-**Covering its box,** `object-fit=cover`:
+# Covering its box
+
+`object-fit=cover`.
 
 ````compmd {render=both}
 ---

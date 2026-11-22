@@ -3,19 +3,23 @@ md:
   import:
     - from: "@comp-markdown/wireframe@0"
       names: [wireframe]
-tabs: [Basket, Address, Payment]
 ---
 
-# Checkout, the second draft
+Each example of `wireframe` shows its source, then what it draws.
 
-The first draft put everything on one long page, and half the people we watched never scrolled to the button. This
-one splits checkout into three steps, each a screen of its own, with the step you are on at the top.
+# A screen on a phone
 
-## On a phone
+A `wireframe` code block sketches a screen; `device=phone` frames it as one, and an annotation points at a part by its `id`.
 
-The basket first: what you are buying, and a way out at every step.
+````compmd {render=both}
+---
+md:
+  import:
+    - from: "@comp-markdown/wireframe@0"
+      names: [wireframe]
+---
 
-```wireframe {render=both alt="The basket on a phone: two items, step 2 of 3, and a Pay now button that stays disabled until an address is chosen"}
+```wireframe {alt="The basket on a phone: two items, step 2 of 3, and a Pay now button that stays disabled until an address is chosen"}
 window "Order" device=phone:
   header:
     text "Your basket" bold
@@ -26,12 +30,21 @@ window "Order" device=phone:
   button "Pay now" primary id=pay
 annotation "Disabled until an address is chosen" target="pay" position=bottom
 ```
+````
 
-## In the shop's settings
+# A settings window
 
-Shop owners choose which emails go out, and the theme. Everything they change is saved with one button.
+Tabs, sections, toggles, radio buttons, and a footer whose buttons sit at its end.
 
-```wireframe {render=both alt="The settings window: General, Privacy and Advanced tabs; notification toggles; a theme chosen with radio buttons; Cancel and Save"}
+````compmd {render=both}
+---
+md:
+  import:
+    - from: "@comp-markdown/wireframe@0"
+      names: [wireframe]
+---
+
+```wireframe {alt="The settings window: General, Privacy and Advanced tabs; notification toggles; a theme chosen with radio buttons; Cancel and Save"}
 window "Settings":
   tabs:
     tab "General" active
@@ -49,24 +62,52 @@ window "Settings":
       button "Cancel"
       button "Save" primary
 ```
+````
 
-## The steps, from the plan
+# A sketch from the document's data
 
-The step tabs come from the plan's list, so the sketch follows when a step is added:
+As a leaf, its `code` computed: the step tabs come from the document's list, so the sketch follows when a step is added.
+
+````compmd {render=both}
+---
+md:
+  import:
+    - from: "@comp-markdown/wireframe@0"
+      names: [wireframe]
+tabs: [Basket, Address, Payment]
+---
 
 :: wireframe[The checkout's steps as tabs: Basket, Address, Payment] {code=("window \"Checkout\" device=browser:\n  tabs:\n" + md.doc.tabs.map(t, "    tab \"" + t + "\"").join("\n"))}
+````
 
-## In a narrow column
+# In a narrow box
 
-A sketch is laid out in its box as a page is, so a narrower box gives a narrower window:
+A sketch is laid out in its box as a page is, so a narrower box gives a narrower window.
+
+````compmd {render=both}
+---
+md:
+  import:
+    - from: "@comp-markdown/wireframe@0"
+      names: [wireframe]
+---
 
 :: wireframe[A narrow sign-in window: an email field and a button] {code=("window \"Sign in\":\n  input placeholder=\"Email\"\n  button \"Continue\" primary") width=18rem}
+````
 
-## Every part
+# Every part
 
-What the pack draws, for checking it:
+What the pack draws: menus, a tree, a grid, fields, an image, an icon, a chip and notes.
 
-```wireframe {render=both alt="A file manager: a menu bar, a folder tree and a grid of files"}
+````compmd {render=both}
+---
+md:
+  import:
+    - from: "@comp-markdown/wireframe@0"
+      names: [wireframe]
+---
+
+```wireframe {alt="A file manager: a menu bar, a folder tree and a grid of files"}
 window "Files":
   menubar:
     menu "File":
@@ -88,7 +129,7 @@ window "Files":
         cell "photo.png" row=1 col=3
 ```
 
-```wireframe {render=both alt="A sign-up form on a tablet: fields, a country, an avatar placeholder and a note on the email field"}
+```wireframe {alt="A sign-up form on a tablet: fields, a country, an avatar placeholder and a note on the email field"}
 window "Sign up" device=tablet:
   panel:
     text "Create an account" size=large weight=semibold
@@ -108,12 +149,22 @@ window "Sign up" device=tablet:
 annotation "Checked while you type" target="email" position=right
 annotation "Shown before the form is sent" target="email" position=left
 ```
+````
 
-## A source with a mistake
+# A source with a mistake
 
-Its code shows, and the host reports where the mistake is:
+Its code shows instead, and the host reports where the mistake is.
 
-```wireframe {render=both alt="A screen with a mistake"}
+````compmd {render=both}
+---
+md:
+  import:
+    - from: "@comp-markdown/wireframe@0"
+      names: [wireframe]
+---
+
+```wireframe {alt="A screen with a mistake"}
 window "Broken":
   butn "Go"
 ```
+````

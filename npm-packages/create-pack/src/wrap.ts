@@ -117,17 +117,15 @@ function demoOf(options: WrappedPackOptions, given: string): string {
     `${line}\n\n\`\`\`\`compmd {render=both}\n${frontmatter}\n\n:: ${options.component}[${label}] {${[given, more].filter(Boolean).join(" ")}}\n\`\`\`\``;
   return `${frontmatter}
 
-# ${options.component}
+Each example of \`${options.component}\` shows its source, then what it draws. Add one for each param you want a reader to see.
 
-Each example shows its source, then what it draws. Add one for each param you want a reader to see.
+${example("# A use", `${options.component}, as text`)}
 
-${example("**A use:**", `${options.component}, as text`)}
+${example("# Wider\n\nSized by the document.", `${options.component}, wider`, "width=20rem")}
 
-${example("**Wider,** sized by the document:", `${options.component}, wider`, "width=20rem")}
+${example("# In a short box\n\nWhich it is fitted in.", `${options.component}, in a short box`, "width=100% height=6rem")}
 
-${example("**In a short box,** which it is fitted in:", `${options.component}, in a short box`, "width=100% height=6rem")}
-
-${example("**Covering its box,** `object-fit=cover`:", `${options.component}, covering its box`, "width=16rem height=8rem object-fit=cover")}
+${example("# Covering its box\n\n`object-fit=cover`.", `${options.component}, covering its box`, "width=16rem height=8rem object-fit=cover")}
 `;
 }
 

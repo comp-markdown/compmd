@@ -5,11 +5,9 @@ md:
       names: [card]
 ---
 
-# card
+Each example of `card` shows its source, then what it draws.
 
-Each example shows its source, then what it draws.
-
-**A card with an image, its text and a footer:**
+# A card with an image, its text and a footer
 
 ````compmd {render=both}
 ---
@@ -32,7 +30,9 @@ A walk along the old quay, an hour before the boats come in.
 ::: /card
 ````
 
-**No image and no footer:** the card leaves them out.
+# No image and no footer
+
+The card leaves them out.
 
 ````compmd {render=both}
 ---
@@ -49,7 +49,9 @@ Flat, quiet, and twelve bridges. No picture yet.
 ::: /card
 ````
 
-**Its box changed by the use,** as any box's: a tinted background, no border, more padding, a width:
+# Its box changed by the use
+
+As any box's: a tinted background, no border, more padding, a width.
 
 ````compmd {render=both}
 ---
@@ -69,7 +71,9 @@ Apples in October, and a bench at the top of the hill.
 ::: /card
 ````
 
-**Cards in a grid,** as many side by side as fit at 14rem, each as tall as the tallest in its row:
+# Cards in a grid
+
+As many side by side as fit at 14rem, each as tall as the tallest in its row.
 
 ````compmd {render=both}
 ---

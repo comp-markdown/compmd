@@ -14771,7 +14771,7 @@
       "description": "A pack's demo shows each param and use as a `compmd {render=both}` example, its source then what it draws ([writing a pack](docs/writing-a-pack.md), decision 3, from CR-45). From CR-51: each example is a `#` section named for what it shows (no bold lead-ins, no demo title above them), and the examples' own headings are `##` or lower, so the demo's sections and the examples' headings don't mix.\n\n## Do\n- **The Mermaid and wireframe packs' demos** as examples, one per param and use (a block, a leaf, a diagram from data, a theme, a size), and their page tests (`test/page.test.ts`) finding each drawing in its example.\n- **Every other demo** with `#` sections: card, figure, gallery, link-card, rating, sticky-note (the badge's is done in CR-51), and `create-pack`'s templates and the demo it writes for a wrapped package; their tests where they count examples or headings.\n- **The rule** in `docs/writing-a-pack.md`, decision 3.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "compmd-packs/mermaid/demo.comp.md",
@@ -14782,7 +14782,7 @@
         "docs/writing-a-pack.md"
       ],
       "created_at": "2026-11-21T15:01:30Z",
-      "updated_at": "2026-11-21T16:25:49Z",
+      "updated_at": "2026-11-22T16:31:11Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -14792,7 +14792,9 @@
         }
       ],
       "sprint": "Packs 1: the pack tool, no-code components",
-      "number": 368
+      "number": 368,
+      "started_at": "2026-11-22T16:31:11Z",
+      "started_by": "claude:79612601"
     },
     {
       "id": "01a1febf-eadb-72cb-bee4-a8a3a2547009",
@@ -15189,9 +15191,9 @@
         "compmd-packs/mermaid/src/mermaid.ts"
       ],
       "created_at": "2026-11-21T20:23:49Z",
-      "updated_at": "2026-11-22T15:49:26Z",
+      "updated_at": "2026-11-22T16:37:38Z",
       "created_by": "claude:79612601",
-      "updated_by": "claude:79612601",
+      "updated_by": "claude:9ea81469",
       "sprint_history": [
         {
           "sprint": "Packs 1: the pack tool, no-code components",
@@ -15211,16 +15213,29 @@
           "at": "2026-11-22T15:39:02Z",
           "kind": "failure",
           "text": "lease expired (claude:79612601)"
+        },
+        {
+          "at": "2026-11-22T16:35:19Z",
+          "kind": "answer",
+          "text": "Done in 652fb24: under a strict style-src, Mermaid diagrams now look and size exactly as without it (Chrome, WebKit). But Mermaid’s own render still sets inline styles in the page while it measures, so the browser logs refusals, harmless to the drawing. Accept those logs, or hook Mermaid’s render to turn them into CSSOM writes (fragile against Mermaid updates)? → Accept the logs: the drawing is right, and no hook into Mermaid’s render. Say so in the pack’s README, and widen the strict test to other diagram types.",
+          "by": "claude:9ea81469"
         }
       ],
-      "started_at": "2026-11-22T15:41:11Z",
-      "started_by": "claude:79612601",
       "commit": "652fb245ebba4550d46218fb90f561dc7a5a773f",
+      "blocks": [
+        {
+          "from": "2026-11-22T15:49:26Z",
+          "to": "2026-11-22T16:35:19Z",
+          "on": "user"
+        }
+      ],
+      "started_at": "2026-11-22T16:35:20Z",
+      "started_by": "claude:9ea81469",
       "waiting_on": "user",
       "questions": [
-        "Done in 652fb24: under a strict style-src, Mermaid diagrams now look and size exactly as without it (Chrome, WebKit). But Mermaid’s own render still sets inline styles in the page while it measures, so the browser logs refusals, harmless to the drawing. Accept those logs, or hook Mermaid’s render to turn them into CSSOM writes (fragile against Mermaid updates)?"
+        "The wider strict test (uncommitted, `compmd-packs/mermaid/test/strict-style*`) shows the refusals do change the drawing: under a strict style-src a class diagram and a mindmap come out up to 6% smaller and a flowchart’s width differs; only the sequence diagram matches. Tried, not kept: rendering twice, the second with the first’s stylesheet adopted, fixes all but the class diagram (3px narrower). (a) Render twice, (b) hook Mermaid’s style writes, or (c) accept and document the differences?"
       ],
-      "blocked_at": "2026-11-22T15:49:26Z"
+      "blocked_at": "2026-11-22T16:37:38Z"
     },
     {
       "id": "01a1ffc7-890a-70b7-a3f6-715280c886ae",
@@ -15263,7 +15278,7 @@
       "description": "[Type in a box](docs/type-params.md), decision 7, after CMD-373 (the spec and the processor): the expanded tree's fonts shown.\n\n## Do\n- **The renderer:** each font of the tree's `fonts` (spec §12.3) as an `@font-face` with `font-display: swap`, its fallback token's font after it; a `font-family` param naming one by its `family`; a pack's file by the URL `packFile` gives its place, as for images; printing waits for fonts to load.\n- **The hosts** serving the files: a pack's from its place with its integrity (CMD-362, CMD-365), the document's from its folder, within the pack's size cap.\n- **The sandbox:** a page in a frame without the network gets the files from its host, as it gets images; a component's frame gets the fonts its box's type names (CMD-372).\n- **The pack tool:** a font file a pack declares is there, and a warning for one with no licence beside it (G2).\n- **The Author's Guide:** chapter 3's `font-family` row, and a section on fonts of a document's own and from a pack.\n- **Tests** in Chrome and WebKit: a pack's font loading, its fallback first, a missing file, print.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "blocked",
       "dependencies": [
         "01a1ff0c-ad59-7684-8887-3abcc6f4d034"
       ],
@@ -15275,7 +15290,7 @@
         "guides/authors/"
       ],
       "created_at": "2026-11-21T22:36:48Z",
-      "updated_at": "2026-11-22T16:05:07Z",
+      "updated_at": "2026-11-22T16:31:06Z",
       "created_by": "claude:79612601",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -15287,7 +15302,13 @@
       "sprint": "Packs 1: the pack tool, no-code components",
       "number": 376,
       "started_at": "2026-11-22T16:05:07Z",
-      "started_by": "claude:79612601"
+      "started_by": "claude:79612601",
+      "commit": "302aa2a8f37e714408ad069a8faa376c396caeda",
+      "waiting_on": "user",
+      "questions": [
+        "Committed in 302aa2a: fonts render in the page, examples, host mode and the pack tool. A page frame gets a font’s file from its host as a blob: URL, but the frames’ policy has `font-src 'self'` only, so it’s refused. Add `blob:` to the strict frame’s `font-src` (as `img-src data: blob:`), and give component frames their box’s font the same way? It changes the sandbox design’s policy table."
+      ],
+      "blocked_at": "2026-11-22T16:31:06Z"
     }
   ]
 }

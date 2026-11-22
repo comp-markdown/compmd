@@ -5,11 +5,11 @@ md:
       names: [__component__]
 ---
 
-# __component__
+Each example of `__component__` shows its source, then what it draws: one for each param and use, so a reader sees what the component offers.
 
-Each example shows its source, then what it draws: one for each param and use, so a reader sees what the component offers.
+# A code block it renders
 
-**A code block it renders,** its `alt` the text alternative:
+Its `alt` is the text alternative.
 
 ````compmd {render=both}
 ---
@@ -25,7 +25,9 @@ second line
 ```
 ````
 
-**The same component as a leaf,** its code a param:
+# The same component as a leaf
+
+Its code is a param.
 
 ````compmd {render=both}
 ---
@@ -38,7 +40,9 @@ md:
 :: __component__[One line of __language__] {code="one line"}
 ````
 
-**Sized by the document,** narrower:
+# Sized by the document
+
+Narrower.
 
 ````compmd {render=both}
 ---
@@ -51,7 +55,9 @@ md:
 :: __component__[One narrow line of __language__] {code="one narrow line" width=16rem}
 ````
 
-**A height its lines scroll in,** `height=5rem scroll`:
+# A height its lines scroll in
+
+`height=5rem scroll`.
 
 ````compmd {render=both}
 ---

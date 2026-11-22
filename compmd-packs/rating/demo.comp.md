@@ -5,11 +5,9 @@ md:
       names: [rating]
 ---
 
-# rating
+Each example of `rating` shows its source, then what it draws.
 
-Each example shows its source, then what it draws.
-
-**A value of five:**
+# A value of five
 
 ````compmd {render=both}
 ---
@@ -22,7 +20,9 @@ md:
 :: rating[Four of five stars] {value=4}
 ````
 
-**Half stars,** to the nearest half:
+# Half stars
+
+To the nearest half.
 
 ````compmd {render=both}
 ---
@@ -35,7 +35,9 @@ md:
 :: rating[Three and a half of five] {value=3.5}
 ````
 
-**Out of ten,** `of=10`, in a wider box:
+# Out of ten
+
+`of=10`, in a wider box.
 
 ````compmd {render=both}
 ---
@@ -48,7 +50,9 @@ md:
 :: rating[Seven of ten] {value=7 of=10 width=15rem}
 ````
 
-**In a sentence,** as an inline component, sized to the text:
+# In a sentence
+
+As an inline component, sized to the text.
 
 ````compmd {render=both}
 ---

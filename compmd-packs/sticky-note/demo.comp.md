@@ -5,11 +5,11 @@ md:
       names: [sticky-note]
 ---
 
-# sticky-note
+Each example of `sticky-note` shows its source, then what it draws.
 
-Each example shows its source, then what it draws.
+# A note in the flow
 
-**A note in the flow,** where it is written:
+Where it is written.
 
 ````compmd {render=both}
 ---
@@ -24,7 +24,9 @@ Bring the tide table: the quay floods at high water.
 ::: /sticky-note
 ````
 
-**Pinned in its box from `sm` up,** over the box's end, and in the flow on a phone. The box is as tall as its text; the text leaves room for the note:
+# Pinned in its box from `sm` up
+
+Over the box's end, and in the flow on a phone. The box is as tall as its text; the text leaves room for the note.
 
 ````compmd {render=both}
 ---
@@ -49,7 +51,9 @@ Bring the tide table: the quay floods at high water.
 ::: /box
 ````
 
-**Its box changed by the use,** as any box's: tilted the other way, a quieter tint, narrower:
+# Its box changed by the use
+
+As any box's: tilted the other way, a quieter tint, narrower.
 
 ````compmd {render=both}
 ---

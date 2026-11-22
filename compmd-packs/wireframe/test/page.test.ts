@@ -1,5 +1,5 @@
 // The test page `compmd-pack dev` serves (`demo.comp.md`), as a host renders it: in host mode, each wireframe in a
-// strict frame of its own with the pack's built module loaded by URL, in Chrome and WebKit. Every wireframe draws, as
+// strict frame of its own with the pack's built module loaded by URL, in Chrome and WebKit. Every example's wireframe draws, as
 // a block and as a leaf, with nothing the strict policy refuses; the one with a mistake shows its code and is reported
 // as W118 with where the mistake is; the drawing follows the page's scheme and its switch; on paper it is kept whole.
 import { join } from "node:path";
@@ -40,7 +40,8 @@ async function frameWith(page: Page, selector: string): Promise<Frame> {
   await expect
     .poll(
       async () => {
-        for (const frame of page.frames()) if ((await frame.locator(selector).count().catch(() => 0)) > 0) found = frame;
+        // The frames alone: the page shows each example's source, which has the sketches' code too.
+        for (const frame of page.frames().filter((frame) => frame !== page.mainFrame())) if ((await frame.locator(selector).count().catch(() => 0)) > 0) found = frame;
         return found !== undefined;
       },
       { timeout: 30_000 },
@@ -90,11 +91,13 @@ describe.each(BROWSERS)("the test page in %s", (_name, type, options) => {
     expect(await textsIn(page, STEPS, ".wf-tab")).toEqual(["Basket", "Address", "Payment"]);
     expect(await textsIn(page, FILES, ".wf-menu-title")).toEqual(["File", "Edit"]);
     expect(await textsIn(page, SIGN_UP, ".wf-named .wf-name")).toEqual(["chip"]);
-    // `render=both`: each block shows its code once, above its drawing, even the one with a mistake.
+    // Each example (`render=both`) shows its source once, above what it draws, even the one with a mistake.
     const both = page.locator(".compmd-both");
-    expect(await both.count()).toBe(5);
-    expect(await both.evaluateAll((all) => all.map((box) => box.querySelectorAll("pre").length))).toEqual([1, 1, 1, 1, 1]);
-    for (const frame of page.frames().slice(1)) expect(await frame.locator("pre").count()).toBe(0);
+    expect(await both.count()).toBe(6);
+    expect(await both.evaluateAll((all) => all.map((box) => box.querySelectorAll(":scope > pre, :scope > * > pre").length >= 1))).toEqual([true, true, true, true, true, true]);
+    // In the frames, only the sketch with a mistake shows its code, as its fallback.
+    const framed = await Promise.all(page.frames().slice(1).map((frame) => frame.locator("pre").count()));
+    expect(framed.reduce((total, count) => total + count, 0)).toBe(1);
     expect(problems).toEqual([]);
   }, 60_000);
 

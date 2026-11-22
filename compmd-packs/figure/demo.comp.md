@@ -5,11 +5,11 @@ md:
       names: [figure]
 ---
 
-# figure
+Each example of `figure` shows its source, then what it draws.
 
-Each example shows its source, then what it draws.
+# An image and its caption
 
-**An image and its caption,** the caption the image's alt too:
+The caption is the image's alt too.
 
 ````compmd {render=both}
 ---
@@ -22,7 +22,9 @@ md:
 :: figure[Boats at the quay, the lamps just lit.] {src="images/harbour.svg"}
 ````
 
-**A narrower figure,** `width=20rem`, in a post's text:
+# A narrower figure
+
+`width=20rem`, in a post's text.
 
 ````compmd {render=both}
 ---
@@ -39,7 +41,9 @@ From the quay the path climbs to the orchard.
 At the top there is a bench.
 ````
 
-**Its box changed by the use,** as any box's: a border and padding around the image and its caption:
+# Its box changed by the use
+
+As any box's: a border and padding around the image and its caption.
 
 ````compmd {render=both}
 ---

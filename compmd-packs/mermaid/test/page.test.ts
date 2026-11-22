@@ -1,5 +1,5 @@
 // The test page `compmd-pack dev` serves (`demo.comp.md`), as a host renders it: in host mode, each diagram in a strict
-// frame of its own with the pack's built module loaded by URL, in Chrome and WebKit, in light and dark. Every diagram of the demo draws, the one Mermaid
+// frame of its own with the pack's built module loaded by URL, in Chrome and WebKit, in light and dark. Every diagram of the demo's examples draws, the one Mermaid
 // can't read shows its code and is reported as W118 with what Mermaid found, the frame takes the page's colour scheme,
 // and the strict policy refuses nothing Mermaid does.
 import { join } from "node:path";
@@ -44,7 +44,8 @@ async function frameWith(page: Page, selector: string, log: readonly string[] = 
     await expect
       .poll(
         async () => {
-          for (const frame of page.frames()) if ((await frame.locator(selector).count().catch(() => 0)) > 0) found = frame;
+          // The frames alone: the page shows each example's source, which has the diagrams' code too.
+          for (const frame of page.frames().filter((frame) => frame !== page.mainFrame())) if ((await frame.locator(selector).count().catch(() => 0)) > 0) found = frame;
           return found !== undefined;
         },
         { timeout: 30_000 },
