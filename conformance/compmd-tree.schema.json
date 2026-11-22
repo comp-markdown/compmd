@@ -289,9 +289,38 @@
         },
         "lang": { "description": "The document's `md.lang`, when it writes one (§2.1, §12.3).", "type": "string" },
         "dir": { "description": "The document's `md.dir`, or its language's direction when it writes only `md.lang` (§2.1, §12.3).", "enum": ["ltr", "rtl", "auto"] },
+        "fonts": { "$ref": "#/$defs/fonts" },
         "position": { "$ref": "#/$defs/position" }
       },
       "additionalProperties": false
+    },
+    "fonts": {
+      "description": "The fonts of a document's own that its params name (§9.4, §12.3), each with its one name in the tree, its fallback token, and its files resolved as destinations are.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["family", "fallback", "files"],
+        "properties": {
+          "family": { "type": "string" },
+          "fallback": { "enum": ["body", "heading", "mono"] },
+          "files": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["url", "weight", "style"],
+              "properties": {
+                "url": { "type": "string" },
+                "pack": { "const": true },
+                "weight": { "enum": ["normal", "bold"] },
+                "style": { "enum": ["normal", "italic"] }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
     },
     "expandedNode": {
       "type": "object",
@@ -407,7 +436,8 @@
             "inputs": true,
             "example": { "type": "integer", "minimum": 1 },
             "lang": { "type": "string" },
-            "dir": { "enum": ["ltr", "rtl", "auto"] }
+            "dir": { "enum": ["ltr", "rtl", "auto"] },
+            "fonts": { "$ref": "#/$defs/fonts" }
           },
           "additionalProperties": false
         }

@@ -77,13 +77,18 @@ type param takes (`l`, `bold`, `heading`, `muted`), a CSS custom property with a
              - { from: ./fonts/harbour-serif-italic.woff2, style: italic }
      ```
      A use writes `font-family=harbour-serif`. The name is the document's, as a component's is; one a token has, or
-     one declared twice, is F013.
+     one declared twice, is F013. `fallback` is optional, `body` when left out.
    - **A pack's fonts** are exported and imported as its components are: `export: { fonts: [harbour-serif] }`, and
      `import: [{ from: "@acme/harbour-look@1", fonts: [harbour-serif] }]`. A definition in the pack uses its own fonts
-     by name. So a newsletter's look (its fonts and the components set in them) is one pack.
+     by name. So a newsletter's look (its fonts and the components set in them) is one pack. `fonts` takes what
+     `names` takes (a list, `"*"`, `{name, as}` to rename), and an import or export has `names`, `fonts` or both.
+   - **Names are lexical** (§6.3): a font name in a param, written bare or given by an expression, names a token or
+     a font of the document it is written in. A pack's definition writing `font-family=(family)` can't be given its
+     caller's own font; a value that names no font there is F009 at render, the param treated as absent.
    - **The files are served as images are** (§8.6, CMD-362 and CMD-365): a pack's from its place, with its integrity,
      at the pack's trust; the document's from its folder, never leaving its root. `woff2` and `woff` only, within
-     the pack's size cap (§6.4).
+     the pack's size cap (§6.4). A path leaving its root is F026; a file the host can't serve shows the fallback, as
+     a missing image shows its alt, and the pack tool checks a pack's font files are there before it is published.
    - **The fallback** is what shows while the font loads (CSS's `font-display: swap`), where the host doesn't load
      fonts, and in a plain renderer: `body`, `heading` or `mono`, so the text is the right kind of text whatever
      happens.
@@ -158,7 +163,7 @@ Each reads well in a plain reader, which shows the text without the type, as it 
 - **The spec:** §9.2 (the ten params), §9.4 (type tokens, their custom properties and defaults; `font-family` taking
   tokens and declared fonts), §2 and §6 (`md.fonts`, a pack's exported fonts, an import's `fonts`), §7.4 (`type` in
   the context, a frame's root), §8.6 (font files served as images are), §10 (W126; F009 for a font that isn't
-  declared, F013 for one declared twice, F026 for a missing file), §12.3 (the expanded tree's fonts, for the
+  declared, F013 for one declared twice, F026 for a path leaving its root), §12.3 (the expanded tree's fonts, for the
   renderer to load), the changelog; conformance for each param's grammar, a breakpoint, an inline box, the
   declarations and imports, and W126.
 - **The processor:** the params in `Universal`, their kinds, the fonts' declarations, exports and imports, their

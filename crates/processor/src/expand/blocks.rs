@@ -2,7 +2,7 @@
 //! expands again only the blocks it changes, and the blocks after them that then give something else (spec §10.5).
 
 use super::env::Env;
-use super::{Expanded, Expander, Options, Replaced, Report, expand, layout, origins, text};
+use super::{Expanded, Expander, Options, Replaced, Report, expand, fonts, layout, origins, text};
 use crate::context::RenderContext;
 use crate::diagnostic::Diagnostic;
 use crate::direction;
@@ -142,6 +142,21 @@ impl<'r> Expander<'r> {
     }
 }
 
+/// The expanded tree of `resolved`'s processed document, as [`finished`] makes it from `children`, with the document's
+/// language and the fonts its params name.
+pub(super) fn rooted(
+    resolved: &Resolved,
+    children: Vec<expanded::Node>,
+    blocks: Vec<Block>,
+    loaded: &Loaded,
+    replaced: Option<Replaced>,
+) -> Expanded {
+    let language = direction::of_document(&resolved.document(resolved.main).settings);
+    let mut expanded = finished(children, blocks, loaded, language, replaced);
+    expanded.root.fonts = fonts::used(&expanded.root.children, resolved);
+    expanded
+}
+
 /// The expanded tree of `children`, which `blocks` gave, with `loaded`'s inputs and the document's `language` (its
 /// `lang` and `dir`), after an expansion that replaced `replaced`. Text that two blocks gave next to each other is joined, as a list joins it (spec §8.1); an edit can't
 /// take the blocks apart after that, so it expands the whole document again.
@@ -165,6 +180,7 @@ pub(super) fn finished(
             example: None,
             lang,
             dir,
+            fonts: Vec::new(),
         },
         diagnostics,
         blocks: (!joined).then_some(blocks),
@@ -243,8 +259,7 @@ pub(crate) fn splice(
         inserted: end - first,
         by: moved.by,
     };
-    let language = direction::of_document(&resolved.document(main).settings);
-    finished(children, blocks, loaded, language, Some(replaced))
+    rooted(resolved, children, blocks, loaded, Some(replaced))
 }
 
 /// The diagnostics of stage 4b, from what the blocks gave: what evaluating reported, each once that is reported once,

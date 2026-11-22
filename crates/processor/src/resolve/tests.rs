@@ -144,6 +144,60 @@ fn a_component_file_is_bound_with_its_signature_fence() {
 }
 
 #[test]
+fn a_component_file_exports_no_fonts() {
+    let input = "---\nmd:\n  import:\n    - from: ./Chart.jsx\n      fonts: [palette]\n    - from: ./Map.jsx\n      fonts: \"*\"\n---\n";
+    let resolved = resolved(
+        &[
+            ("input.comp.md", input),
+            ("Chart.jsx", "export default () => null;"),
+            ("Map.jsx", "export default () => null;"),
+        ],
+        json!({}),
+        &[],
+    );
+    let found: Vec<_> = resolved
+        .diagnostics()
+        .map(|d| (d.code, d.range.start.line, d.range.start.column))
+        .collect();
+    assert_eq!(found, [(crate::diagnostic::Code::F021, 5, 15)]);
+}
+
+#[test]
+fn fonts_are_exported_by_their_public_names_and_never_as_a_token() {
+    let look = "---\nmd:\n  import:\n    - from: ./base.comp.md\n      fonts: [sans]\n  export:\n    fonts: [{name: sans, as: quay}, {name: serif, as: body}, unknown]\n  fonts:\n    serif:\n      files: [{from: ./serif.woff2}]\n---\n";
+    let base = "---\nmd:\n  export:\n    fonts: \"*\"\n  fonts:\n    sans:\n      files: [{from: ./sans.woff}]\n---\n";
+    let input = "---\nmd:\n  import:\n    - from: ./look.comp.md\n      fonts: \"*\"\n---\n";
+    let resolved = resolved(
+        &[
+            ("input.comp.md", input),
+            ("look.comp.md", look),
+            ("base.comp.md", base),
+        ],
+        json!({}),
+        &[],
+    );
+    let found: Vec<_> = resolved
+        .diagnostics()
+        .map(|d| (d.code, d.range.start.line, d.file.clone()))
+        .collect();
+    assert_eq!(
+        found,
+        [(
+            crate::diagnostic::Code::F013,
+            7,
+            Some("look.comp.md".into())
+        )]
+    );
+    let main = resolved.document(resolved.main);
+    let Some(FontBinding::Font(quay)) = main.fonts.get("quay") else {
+        panic!("`quay` is a font");
+    };
+    let quay = resolved.font(*quay);
+    assert_eq!((quay.name.as_str(), quay.family.as_str()), ("sans", "sans"));
+    assert_eq!(main.fonts.all().collect::<Vec<_>>(), ["quay"]);
+}
+
+#[test]
 fn a_packs_own_file_is_loaded_once() {
     let kit = json!({ "@acme/kit": [{ "version": "2.0.0", "files": {
         "package.json": "{\"name\": \"@acme/kit\", \"version\": \"2.0.0\"}",

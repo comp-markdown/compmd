@@ -35,6 +35,34 @@ pub struct Root {
     /// The document's direction, `md.dir`, or its language's when it writes only `md.lang`: `ltr`, `rtl` or `auto`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dir: Option<String>,
+    /// The fonts its `font-family` params name, in the order they first do (spec §9.4); absent when they name none.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub fonts: Vec<Font>,
+}
+
+/// A font of a document's own that the expanded tree uses (spec §12.3): a `font-family` param names it by `family`.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct Font {
+    /// Its one name in the tree.
+    pub family: String,
+    /// The type token that shows while it loads, or where it can't: `body`, `heading` or `mono`.
+    pub fallback: String,
+    /// Its files.
+    pub files: Vec<FontFile>,
+}
+
+/// A file of a font, resolved as a destination is (spec §8.6).
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct FontFile {
+    /// Its URL: a path relative to the processed document, or, for a pack's file, its place.
+    pub url: String,
+    /// Whether `url` is the place of a pack's file, which the host maps to where it serves it.
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub pack: bool,
+    /// `normal` or `bold`.
+    pub weight: String,
+    /// `normal` or `italic`.
+    pub style: String,
 }
 
 /// A document's inputs, serialized as a map from each name to its state.

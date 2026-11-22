@@ -79,6 +79,16 @@ pub(crate) fn as_variable(name: &str) -> Option<String> {
     }
 }
 
+/// Why `name` can't name a font, or `None` when it can: a type token's name, which `font-family` reads as the token
+/// (spec §9.4).
+pub(crate) fn as_font(name: &str) -> Option<String> {
+    crate::resolve::Fallback::from_name(name).map(|_| {
+        format!(
+            "`{name}` is a type token of `font-family`, so no font may be named or renamed to it"
+        )
+    })
+}
+
 /// Why `name` can't be an `as` name, which binds a variable of the template and may not be a keyword either.
 pub(crate) fn as_binding(name: &str) -> Option<String> {
     as_variable(name).or_else(|| as_component(name))
@@ -99,5 +109,7 @@ mod tests {
         assert!(as_binding("each").is_some());
         assert!(as_binding("int").is_some());
         assert_eq!(as_binding("t"), None);
+        assert!(as_font("mono").is_some());
+        assert_eq!(as_font("harbour-serif"), None);
     }
 }

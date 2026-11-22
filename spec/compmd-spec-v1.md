@@ -92,6 +92,7 @@ The author's `version` is `md.doc.version`; CompMD's is `md.version` inside the 
 | `version`       | `1`, or a string with a minor version (`"1.1"`); defaults to `1`               |
 | `import`        | component imports (section 6.1)                                                   |
 | `export`        | component exports (section 6.2)                                                   |
+| `fonts`         | fonts of the document's own, by name (section 9.4)                              |
 | `data`          | data imports (section 8.6)                                                     |
 | `inputs`        | values the reader can change (section 8.7)                                     |
 | `lang`          | the document's language, a BCP 47 tag; defaults to `en` (`md.lang`)           |
@@ -322,7 +323,7 @@ A processor MUST validate every invocation against the signature: unknown keys (
 
 ## 6. Imports and exports
 
-Every `.comp.md` document can import components and export its own; a **pack** is simply a document (or published package) that exports components. Both are declared under the `md` frontmatter key, as `import` and `export`.
+Every `.comp.md` document can import components and fonts and export its own; a **pack** is simply a document (or published package) that exports components or fonts. Both are declared under the `md` frontmatter key, as `import` and `export`.
 
 ```yaml
 ---
@@ -339,10 +340,13 @@ md:
       names: [chart]
     - from: "@acme/icons"
       names: "*"
+    - from: "@acme/harbour-look@1"
+      fonts: [harbour-serif]
   export:
     pack: "@myorg/release-kit"
     version: "1.2.0"
     names: [callout, { name: chart, as: trend-chart }]
+    fonts: [harbour-serif]
 ---
 ```
 
@@ -353,13 +357,15 @@ md:
 | `md.import`          | list of entries                    | optional; `@compmd/core` is always imported and never listed                                                           |
 | `import[].from`       | string                             | required; `@scope/pack`, `@scope/pack@<version>` with a semver version or range (`@1`, `@^1.4.2`, `@1.4.2`), or a relative path (`.comp.md`, `.js`, `.ts`, `.jsx`, `.tsx`, `.svelte`) |
 | `import[].integrity`  | string                             | optional; a [Subresource Integrity](https://www.w3.org/TR/SRI/) hash of the pack (`sha512-…`); requires an exact version (F009 otherwise) |
-| `import[].names`      | list (at least one entry) or `"*"` | required                                                                                                            |
+| `import[].names`      | list (at least one entry) or `"*"` | the components it takes; an import has `names`, `fonts` or both                                                     |
+| `import[].fonts`      | list (at least one entry) or `"*"` | the fonts it takes (section 9.4), with the entries `names` has                                                      |
 | `names[]` as a string | name                               | imports that export under the same local name                                                                       |
 | `names[].name`        | name                               | the export's name in the source                                                                                     |
 | `names[].as`          | name                               | the local name; defaults to `name`                                                                                  |
 
 - A component file (`.js`, `.ts`, `.jsx`, `.tsx`, `.svelte`) exports exactly one component, its default export, with the binding's default `runtime`, named after the file stem as written (`HabitHeatmap.jsx` exports `HabitHeatmap`). Names are never converted between cases; `as` renames. A stem that isn't a valid name needs `as`.
-- `names: "*"` imports every export of the source under its exported name.
+- `names: "*"` imports every exported component of the source under its exported name, and `fonts: "*"` every exported font.
+- A font is named as a component is, `{name, as}` renaming it, but its names are apart from the components': a font and a component may share a name.
 - Scoped names never appear in the body; `::: @myorg/card` is a malformed component line (F016).
 - **Pinning.** A range takes the newest matching release, so a pack's next release changes what the document renders. A document that must not change pins an exact version with `integrity`; a processor MUST check the hash and refuse a pack that doesn't match (F035). Tools write the hash; it is the one the registry publishes (section 6.4). A pack pins its own imports the same way; a processor MAY warn when a pinned pack imports a range. The spec defines no lock file; a processor MAY keep one.
 
@@ -377,10 +383,11 @@ import:
 | `md.export`     | mapping              | optional; a document without it exports nothing                             |
 | `export.pack`    | string `@scope/name` | optional; the pack's published name. Required only to publish to a registry |
 | `export.version` | semver string        | optional; the pack's version                                                |
-| `export.names`   | list or `"*"`        | required; strings or `{name, as}` mappings, where `as` is the public name   |
+| `export.names`   | list or `"*"`        | the components it exports: strings or `{name, as}` mappings, where `as` is the public name; an export has `names`, `fonts` or both |
+| `export.fonts`   | list or `"*"`        | the fonts it exports (section 9.4), with the entries `names` has            |
 
 - An exported name MAY be a local definition or an imported local name, so packs can re-export.
-- `names: "*"` exports every local definition, but not imports; re-exports are always listed.
+- `names: "*"` exports every local definition, but not imports; re-exports are always listed. `fonts` is the same: `"*"` exports every font `md.fonts` declares, and an imported font is exported by listing it.
 - If the pack is also described by a registry manifest (such as `package.json`), `pack` and `version` MUST match it (F022).
 - Importing a document by path needs no `pack` key; the path identifies it.
 
@@ -399,6 +406,7 @@ Rules:
 - A wildcard name equal to a level 1 or 2 name is silently shadowed, so a pack update can never change the meaning of a name you defined or listed.
 - A name provided by two sources at level 3 (two wildcard imports, or a wildcard import and `@compmd/core`) is not an error until it is used; using it is F023, and listing it explicitly resolves it. So neither a pack update nor a new `@compmd/core` version can silently change what a name means.
 - **Code blocks resolve by language** (section 7.7): a code block's language selects the code renderer, among the components the document can name, whose signature names that language, through the same levels. Two at the same level are F023 when a block of that language is used; listing one explicitly resolves it. Renaming a code renderer on import (`as`) renames it as a leaf only; it still renders its language.
+- **Fonts resolve the same way**, among names of their own (section 9.4): the fonts `md.fonts` declares at level 1, those an import lists at level 2, and those of `fonts: "*"` at level 3. Two equal names at levels 1 and 2 are F013, a name at level 3 is shadowed by one above it, and a name two wildcard imports give is F023 where a param uses it. Importing a font its source doesn't export is F021.
 - **Keywords.** `if`, `each`, `value` and `box` are fixed for a major version: no document may define, import, export or rename to them (F013).
 - A local definition or explicit import with the name of another `@compmd/core` component shadows it, with W112. A name `@compmd/core` adds in a later version therefore never breaks a document that already uses it.
 - Importing a name its source does not export is F021, reported on that `names` entry.
@@ -1072,7 +1080,7 @@ md:
 
 **Scope** is lexical: data imported by a pack is visible to that pack's definitions only, never to documents importing the pack.
 
-**Relative paths** resolve against the file they are written in, as `url()` does in CSS. This applies to data `from` and `fallback` values, imports (section 6.1), and link and image destinations in `compmd` definition bodies: `![](./icons/star.svg)` in a pack's `card` is the pack's file wherever `card` is used. Slot content is written by the caller, so its paths resolve against the caller's document. So do a body's destinations that start with an interpolation of a param, of a field of one, or of an `each` or template slot name over one: the value came from the caller, so `[{{title}}]({{href}})` in a pack's `link-card` called with `href=harbour.comp.md` links the caller's `harbour.comp.md`. A destination that starts with literal text keeps the definition's base, so `![](./icons/{{icon}}.svg)` is the pack's icon. A relative path cannot leave its root, the pack's folder or the document's project folder (which the processor decides): `../` beyond it is F026. Making a pack's files reachable in the output is the processor's job: the expanded tree writes a pack's file by its place, marked as one, and a destination elsewhere in the root folder relative to the processed document (section 12.3).
+**Relative paths** resolve against the file they are written in, as `url()` does in CSS. This applies to data `from` and `fallback` values, imports (section 6.1), a font's files (section 9.4), and link and image destinations in `compmd` definition bodies: `![](./icons/star.svg)` in a pack's `card` is the pack's file wherever `card` is used. Slot content is written by the caller, so its paths resolve against the caller's document. So do a body's destinations that start with an interpolation of a param, of a field of one, or of an `each` or template slot name over one: the value came from the caller, so `[{{title}}]({{href}})` in a pack's `link-card` called with `href=harbour.comp.md` links the caller's `harbour.comp.md`. A destination that starts with literal text keeps the definition's base, so `![](./icons/{{icon}}.svg)` is the pack's icon. A relative path cannot leave its root, the pack's folder or the document's project folder (which the processor decides): `../` beyond it is F026. Making a pack's files reachable in the output is the processor's job: the expanded tree writes a pack's file by its place, marked as one, and a destination or a font's file elsewhere in the root folder relative to the processed document (section 12.3).
 
 Values in data are never paths: a frontmatter value `logo: ./logo.png`, imported from another folder and used as `![]({{md.data.site.logo}})`, resolves where it is used. Data meant to be used elsewhere SHOULD hold absolute or root-relative URLs.
 
@@ -1265,7 +1273,7 @@ Any container or leaf (built-in or not) accepts these params, applied to its out
 | `font-size`                                   | a token (`s`, `m`, `l`, `xl`) or a length                | `font-size=s`            |
 | `font-weight`                                 | `normal` or `bold`                                       | `font-weight=bold`       |
 | `font-style`                                  | `normal` or `italic`                                     | `font-style=italic`      |
-| `font-family`                                 | a token (`body`, `heading`, `mono`)                      | `font-family=heading`    |
+| `font-family`                                 | a token (`body`, `heading`, `mono`) or a declared font   | `font-family=heading`    |
 | `color`                                       | a token (`muted`, `accent`) or a CSS color               | `color=muted`            |
 | `text-align`                                  | `start`, `center` or `end`                               | `text-align=center`      |
 | `line-height`                                 | a token (`tight`, `normal`, `loose`) or a number         | `line-height=tight`      |
@@ -1300,7 +1308,7 @@ Any container or leaf (built-in or not) accepts these params, applied to its out
 - **`fill`** makes a block take the height its parent leaves; at the top level, the height of the area the processor renders into. Nested `fill` and `scroll` blocks scroll instead of growing past their parent. In a document that flows, with no fixed height, `fill` does nothing.
 - **`sticky`** keeps the block at that edge of the nearest area that scrolls it.
 - **`shadow`** gives the box a shadow, from the visual tokens (section 9.4), so it stands out of the page: a note pinned on it. **`rotate`** turns the box by its angle, about its centre, as CSS's `rotate` does: the blocks around it are laid out as if it weren't turned, and it is drawn turned over them. Both print.
-- **Type** (`font-size`, `font-weight`, `font-style`, `font-family`, `color`, `text-align`, `line-height`, `letter-spacing`, `text-transform`, `text-decoration`) sets the type of the box's text, as CSS's properties of those names do, and is inherited as theirs are: it reaches everything the box holds, nested boxes included, until one sets its own. The size tokens are in `em`, so `font-size=s` on a badge in a heading is small for the heading, and a box's headings keep their sizes relative to its text. `font-family` takes the type tokens only (section 9.4), the host's fonts for body text, headings and code, never a font's name, which a reader's device has or hasn't. `text-transform` changes how the text shows, not the text: `:badge[new]{text-transform=uppercase}` shows NEW and is read "new". A link keeps its own decoration. A host-language component's box has them too, so what it draws in the page inherits them. They print as shown; a plain renderer shows the text in its own type.
+- **Type** (`font-size`, `font-weight`, `font-style`, `font-family`, `color`, `text-align`, `line-height`, `letter-spacing`, `text-transform`, `text-decoration`) sets the type of the box's text, as CSS's properties of those names do, and is inherited as theirs are: it reaches everything the box holds, nested boxes included, until one sets its own. The size tokens are in `em`, so `font-size=s` on a badge in a heading is small for the heading, and a box's headings keep their sizes relative to its text. `font-family` takes the type tokens (section 9.4), the host's fonts for body text, headings and code, or a font the document declares or imports, which comes with it (section 9.4); never the name of a font on the reader's device, which it has or hasn't. `text-transform` changes how the text shows, not the text: `:badge[new]{text-transform=uppercase}` shows NEW and is read "new". A link keeps its own decoration. A host-language component's box has them too, so what it draws in the page inherits them. They print as shown; a plain renderer shows the text in its own type.
 - **Contrast.** A box whose `color` and `background` are both CSS colors written in hex, `rgb()` or `hsl()`, opaque, with a contrast ratio below 4.5:1 (WCAG 2's, for text), is W126. Tokens, other colors and colors from a theme are not checked, since the processor doesn't know the page's colors.
 - **`stretch-link`** makes the box's first link cover the whole box: a click anywhere on the box follows it, as a card that is a link is used, while the box's other links stay above it and work as links. Markdown's links are inline, so no link can hold a box's heading and text; the link keeps its own text, which is its accessible name, and a plain renderer shows the link as it is. The box needs a link: without one, the flag is W124. It is written without a breakpoint.
 - **A block with a position** (an `inset-*` param that isn't `auto`) is taken out of the flow and placed in its **nearest box** in the expanded tree (section 12.3): a `box` (a `compmd` component's box among them), a host-language component's outer box, or one item of a host-language component's slot. `each`, `if`, slots of `compmd` components and `display=contents` components don't count, and neither do list items, quotes and table cells. At the top level, it is placed in the area the processor renders into.
@@ -1351,6 +1359,25 @@ A layout or common param MAY carry a breakpoint prefix: `md:gap=l` overrides `ga
   | `letter-spacing=tight`, `wide` | `--compmd-tracking-tight`, `-wide` | `-0.01em`, `0.05em` |
 
   `normal` (`line-height`, `letter-spacing`, `font-weight`, `font-style`) and the other params' words (`bold`, `italic`, `start`, `uppercase`, `underline`, …) are CSS's keywords of the same name and mean what they mean there.
+- **Fonts of a document's own** come with it: declared once under `md.fonts`, each by a name, its files and a fallback, from the document's own folder or a pack's, never from a URL. `font-family` then takes the name besides the tokens:
+
+  ```yaml
+  md:
+    fonts:
+      harbour-serif:
+        fallback: heading
+        files:
+          - { from: ./fonts/harbour-serif.woff2 }
+          - { from: ./fonts/harbour-serif-bold.woff2, weight: bold }
+          - { from: ./fonts/harbour-serif-italic.woff2, style: italic }
+  ```
+
+  - **The name** is a name like a component's, and the document's: a token's name (`body`, `heading`, `mono`), or a name a font has already, declared or imported, is F013.
+  - **`files`** is a list, at least one entry, each a `from`, a relative path (section 8.6) to a `.woff2` or `.woff` file, with its `weight` (`normal` or `bold`, by default `normal`) and `style` (`normal` or `italic`, by default `normal`). Another `from`, another weight or style, or no files is F009; two files of the same weight and style are F013. A path leaving its root is F026.
+  - **`fallback`** is `body`, `heading` or `mono`, by default `body`: what shows while the font loads, where the host doesn't load fonts, and in a plain renderer, so the text is the right kind of text whatever happens. Anything else is F009.
+  - **A pack's fonts** are exported and imported as its components are, by `fonts` beside `names` (sections 6.1, 6.2), so a newsletter's look, its fonts and the components set in them, is one pack. A definition in the pack uses the pack's own fonts by name.
+  - **A name is the document's where it is written** (section 6.3): a bare value names a token or a font of that document, and so does the value of an expression, evaluated at render. So a pack's definition writing `font-family=(family)` can't be given its caller's own font. A name no font has there is F009, at render for an expression, and the param is treated as absent; a font from an import that can't be loaded, or a pending one, is treated as absent without it.
+  - **The files are served as images are** (section 8.6): a pack's from its place, among the pack's checked files and within its size cap (section 6.4), the document's from its folder. A file the host can't serve shows the fallback, as a missing image shows its alt. The expanded tree lists the fonts its params use (section 12.3); an HTML processor declares each as a CSS `@font-face` with `font-display: swap`, its fallback's font after it, and prints a page once its fonts have loaded.
 - **Spaces** (`gap` and the padding params, type `space`) are a token, `none`, `s`, `m` or `l`, or a length. The tokens are the CSS custom properties `--compmd-space-s`, `--compmd-space-m` and `--compmd-space-l`, by default `0.5rem`, `1rem` and `2rem`, which a processor or stylesheet may change. Documents SHOULD use tokens; lengths are for layouts that need exact sizes.
 - **Angles** (`rotate`, type `angle`) are a number of degrees, `deg`, from `-15deg` to `15deg`: enough to tilt a box, and no more, so a box never turns away from the text.
 - **Lengths** are `px`, `rem`, `em` and `%`. **Tracks** (`grid-template-columns`, `grid-template-rows`, type `tracks`) also take `fr`, `auto`, `min-content`, `max-content`, `minmax()` and `repeat()`. **Areas** (`grid-template-areas`, type `areas`) are quoted rows of area names or `.`, all the same length (`"'head head' 'side main'"`). **Colors** and **borders** take CSS syntax.
@@ -1392,11 +1419,11 @@ Every diagnostic MUST name its code, the line and column where it was detected, 
 | F006 | Undeclared slot name                                                                                                                  | the slot line                                                        |
 | F007 | Named slot given twice in one container                                                                                               | the second slot line, naming the first                               |
 | F008 | Unknown param, or a breakpoint the param doesn't take                                                                                 | the param                                                            |
-| F009 | Param value does not match its type or CSS grammar, or a code renderer's signature declares `code` as anything but a required `string` (section 7.3), or a rendered block's `render` isn't `source`, `output` or `both` written bare (section 7.7) | the value, or the declaration                                        |
+| F009 | Param value does not match its type or CSS grammar, or a code renderer's signature declares `code` as anything but a required `string` (section 7.3), or a rendered block's `render` isn't `source`, `output` or `both` written bare (section 7.7); a `font-family` naming no font where it is written, or a font declared with a `fallback`, `weight` or `style` it doesn't take, a file that isn't a relative `.woff2` or `.woff` path, or no files (section 9.4) | the value, or the declaration                                        |
 | F010 | Required param missing                                                                                                                | the opener or leaf                                                   |
 | F011 | Malformed param list (unterminated string, unbalanced bracket, invalid JSON, a character a bare value can't hold, an empty value), or text after a declaration's short-form default (section 7.3) | the `"`, `(`, `[` or `{` that doesn't close, the character a bare value can't hold, the `=` with no value, or where the text after the default starts |
 | F012 | Continuation line not following an opener, leaf, or continuation                                                                      | the line                                                             |
-| F013 | Duplicate local name from definitions or explicit imports, or a keyword (`if`, `each`, `value`, `box`) defined, imported, exported or used as `as`; the name `md` declared; a CEL reserved word or type name as a `compmd` definition's param, an `as` name or an input (section 3.1); two params, or two slots, of one component differing only in `-` and `_`; a signature declaring `class`, `id`, `lang`, `dir` or a common param, or a code renderer's declaring `alt` or `render` (section 5.1) | the second declaration, or the declared param                                               |
+| F013 | Duplicate local name from definitions or explicit imports, or a keyword (`if`, `each`, `value`, `box`) defined, imported, exported or used as `as`; the name `md` declared; a CEL reserved word or type name as a `compmd` definition's param, an `as` name or an input (section 3.1); two params, or two slots, of one component differing only in `-` and `_`; a signature declaring `class`, `id`, `lang`, `dir` or a common param, or a code renderer's declaring `alt` or `render` (section 5.1); a font named as a type token or as another font of the document, or two of its files of the same weight and style (section 9.4) | the second declaration, or the declared param                                               |
 | F014 | Unknown interpolation path                                                                                                            | the path                                                             |
 | F015 | Slot line outside a container                                                                                                         | the line                                                             |
 | F016 | Malformed component line (starts with `::` but matches no form)                                                                             | the line, with the expected form                                     |
@@ -1404,12 +1431,12 @@ Every diagnostic MUST name its code, the line and column where it was detected, 
 | F018 | Body given to a component that declares no slots                                                                                         | the opener                                                           |
 | F019 | Recursive component definition                                                                                                           | the invocation, or the rendered code block's language, that closes the cycle |
 | F020 | Import cycle                                                                                                                          | the `from` that closes the cycle                                     |
-| F021 | Imported name not exported by its source                                                                                              | the `names` entry                                                    |
+| F021 | Imported name, or font, not exported by its source                                                                                    | the `names` or `fonts` entry                                         |
 | F022 | `export.pack` or `export.version` disagrees with the registry manifest                                                                | the `export` key                                                     |
-| F023 | Name provided by two wildcard imports, or by a wildcard import and `@compmd/core`, is used; or a code block's language rendered by two code renderers at the same level (section 6.3) | the use, naming both sources                                         |
+| F023 | Name provided by two wildcard imports, or by a wildcard import and `@compmd/core`, is used; or a code block's language rendered by two code renderers at the same level; or a font two wildcard imports give is used (section 6.3) | the use, naming both sources                                         |
 | F024 | Expression parse, type or evaluation error, or a list or a map without a `name` interpolated into text                               | the column inside the expression, or the interpolation               |
 | F025 | each iteration does not match the shape its join mode requires                                                                        | the each opener, naming the first offending line                     |
-| F026 | Data or import source missing, unreachable, unparseable or not provided (`host:`), a relative path leaving its root, a bad CSV header, or a pack the processor's configuration doesn't allow or that exceeds its size cap (section 6.4); never for a source the host says is pending (sections 6.4, 8.6) | the data entry or the import's `from`, and the position inside the data file when available |
+| F026 | Data or import source missing, unreachable, unparseable or not provided (`host:`), a relative path leaving its root (a font's file's too, section 9.4), a bad CSV header, or a pack the processor's configuration doesn't allow or that exceeds its size cap (section 6.4); never for a source the host says is pending (sections 6.4, 8.6) | the data entry or the import's `from`, and the position inside the data file when available |
 | F027 | Data record violates its schema                                                                                                       | the record and field                                                 |
 | F028 | Remote data origin not allowed by processor configuration                                                                             | the from value                                                       |
 | F029 | Exported host-language component has no signature fence                                                                                  | the export.names entry                                               |
@@ -1525,7 +1552,7 @@ A processor works in stages. Each stage needs only what its row lists, and repor
 | Stage           | Needs                                                  | Produces                                       | Diagnostics                                                    |
 | --------------- | ------------------------------------------------------ | ---------------------------------------------- | -------------------------------------------------------------- |
 | 1. Parse        | the document's text                                    | the document tree (section 12)                 | F001, F003–F005, F007, F011, F012, F015–F017, F032, F033, W101, W106–W108, W110, W111, W115, W116 |
-| 2. Resolve      | the tree, imported documents and packs                 | each name bound to a definition and signature  | F002, F009 (a code renderer's `code`), F013, F019–F023, F026 (imports), F029, F035, F036, W104, W105, W112, W113, W117, W121 (`peerDependencies`) |
+| 2. Resolve      | the tree, imported documents and packs                 | each name bound to a definition and signature  | F002, F009 (a code renderer's `code`, a font's declaration), F013, F019–F023, F026 (imports), F029, F035, F036, W104, W105, W112, W113, W117, W121 (`peerDependencies`) |
 | 3. Validate     | the resolved tree and signatures                       | a checked tree, params typed                   | F006, F008–F010, F011 and F017 (a rendered code block's info string), F014, F018, F023 (a code block's language), F024 (types), F028, F030, F031, W101 (a rendered code block), W102, W103, W120 |
 | 4a. Load        | the checked tree and the input values                  | the loaded data                                | F026, F027, W113 (`host:`)                                     |
 | 4b. Evaluate    | the checked tree, the loaded data, the render context  | the expanded tree (section 12.3)               | F024 (evaluation), F025, F034, W109, W114, W119                |
@@ -1582,6 +1609,7 @@ Stage 4b replaces every `compmd` definition, `if`, `each`, `value` and `interpol
 - **A param bound to an input** (type `input<…>`, section 7.3) has the input's current value as its `value`, and `input`, the input's name: `{"key": "selected", "breakpoint": null, "value": "eu", "input": "region"}`. A renderer gives the component the value, and `set` changes the named input (section 7.4).
 - **The root lists the document's inputs** in `inputs`, when it has any: each one's type, an enum's `members`, and the value the render used: `{"region": {"type": "enum", "members": ["all", "eu", "us"], "value": "eu"}, "since": {"type": "date", "value": "2026-10-15"}}`. Input components read their choices from it, so a renderer needs nothing but the expanded tree.
 - **The root has the document's `lang` and `dir`** when it writes `md.lang` or `md.dir` (section 2.1): `lang` as written, and `dir` as written or, when only `lang` is, the direction of its language's script (`"rtl"` for `ar`). A renderer sets them on the element it renders the document into, and a host that writes the rendered document out as HTML keeps them, on that element or on its page (`<html lang dir>`). A document that writes neither has neither, and keeps the language and direction of where it is shown.
+- **The root lists the fonts its params use** (section 9.4) in `fonts`, when they use any: each one's `family`, its `fallback`, and its `files`, each a `url` resolved as a destination is, `pack: true` for a pack's file, and its `weight` and `style`: `[{"family": "harbour-serif", "fallback": "heading", "files": [{"url": "@acme/harbour-look@1.0.0/fonts/harbour-serif.woff2", "pack": true, "weight": "normal", "style": "normal"}]}]`. A `font-family` param naming a declared font has its `family` as its `value`, so one name stands for one font in the whole tree: a font's name, unless a font of another document has it already, then its name with the first of `-2`, `-3`, … no other font has, the processed document's fonts first. A renderer loads the files as it loads a pack's images, and sets the type tokens, which no `fonts` entry can be named, as section 9.4 says. An example's root lists its own.
 - **Slots** are expanded. A template slot (section 7.5) has `children: []` and `instances`, one `{value, children}` per element, with the slot content expanded for that element.
 - **A block `compmd` component** expands to a `box` holding its expanded body. The box's params are the fence's, evaluated, with the caller's common params, `class` and `id` applied over them: a fence param that a caller's param covers (the same property, or a part of it), at the caller's breakpoint or a wider one, is left out, and a fence shorthand the caller covers only in part is written as its longhands first. A `display=contents` component expands to its body alone. A host-language component's params hold its fence's params the same way: its definition fence's, or its signature fence's when its definition fence has none.
 - **Headings** from `compmd` definition bodies have their computed `depth` (section 7.2).

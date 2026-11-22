@@ -4,6 +4,7 @@
 
 use super::Expander;
 use super::env::Env;
+use super::fonts::FONT_FAMILY;
 use crate::breakpoint::{BREAKPOINTS, rank};
 use crate::cel::{Error, Value};
 use crate::diagnostic::{Code, Location};
@@ -42,9 +43,23 @@ pub(super) fn key_of(param: &Param) -> &str {
 }
 
 impl<'r> Expander<'r> {
-    /// The value of `param`, written in `env`, read as `declared`; `None` when its expression fails (F024), so that
-    /// it is treated as absent.
+    /// The value of `param`, written in `env`, read as `declared`, a `font-family`'s naming its font as the tree does;
+    /// `None` when its expression fails (F024), or it names no font (F009), so that it is treated as absent.
     pub(super) fn param_value(
+        &mut self,
+        param: &Param,
+        declared: Option<&DeclaredType>,
+        env: &Env<'r>,
+    ) -> Option<Value> {
+        let value = self.written_value(param, declared, env)?;
+        if key_of(param) == FONT_FAMILY {
+            return self.font_family(value, param, env);
+        }
+        Some(value)
+    }
+
+    /// The value of `param` as written: its text, or its expression's value.
+    fn written_value(
         &mut self,
         param: &Param,
         declared: Option<&DeclaredType>,

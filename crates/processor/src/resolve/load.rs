@@ -4,15 +4,17 @@
 
 mod definitions;
 mod exports;
+mod fonts;
 mod packs;
 
+use super::fonts::FontNamesBuilder;
 use super::libraries::{self, Ask};
 use super::names::{Binding, Builder, Level, Names, Renderer};
 use super::origin::CORE;
 use super::source::Source;
 use super::{
-    Ambient, Body, Component, ComponentId, Document, DocumentId, Found, Language, Origin, Parses,
-    Resolved, Store, uses,
+    Ambient, Body, Component, ComponentId, Document, DocumentId, Font, FontNames, Found, Language,
+    Origin, Parses, Resolved, Store, uses,
 };
 use crate::diagnostic::{Code, Diagnostic, Fix, Location, Stage};
 use crate::host::NeededPack;
@@ -51,6 +53,7 @@ pub(super) struct Loader<'h, 'p> {
     main: Origin,
     documents: Vec<Document>,
     components: Vec<Component>,
+    fonts: Vec<Font>,
     diagnostics: Vec<Diagnostic>,
     /// The documents being loaded, outermost first: importing one of them closes a cycle (F020).
     loading: Vec<Origin>,
@@ -84,6 +87,7 @@ impl<'h, 'p> Loader<'h, 'p> {
             main,
             documents: Vec::new(),
             components: Vec::new(),
+            fonts: Vec::new(),
             diagnostics: Vec::new(),
             loading: Vec::new(),
             loaded: HashMap::new(),
@@ -120,9 +124,11 @@ impl<'h, 'p> Loader<'h, 'p> {
                 self.missing.push(needed);
             }
         }
+        fonts::name_families(&mut self.fonts, main);
         let mut resolved = Resolved {
             documents: self.documents,
             components: self.components,
+            fonts: self.fonts,
             main,
             cycles: HashSet::new(),
             policy: self.policy.clone(),
@@ -156,25 +162,33 @@ impl<'h, 'p> Loader<'h, 'p> {
             root: parsed.root,
             names: Names::default(),
             exports: BTreeMap::new(),
+            fonts: FontNames::default(),
+            font_exports: BTreeMap::new(),
             renderers: BTreeMap::new(),
             provided,
         });
         self.loaded.insert(origin.clone(), id);
         self.loading.push(origin);
         let mut names = Builder::default();
+        let mut fonts = FontNamesBuilder::default();
         for import in self.document(id).settings.imports.clone() {
-            self.import(id, &import, &mut names);
+            self.import(id, &import, &mut names, &mut fonts);
         }
         self.implicit(id, &mut names);
         self.define(id, &mut names);
+        self.declare_fonts(id, &mut fonts);
         self.check_frontmatter_types(id);
         let names = names.build();
+        let fonts = fonts.build();
         let exports = self.exports(id, &names);
+        let font_exports = self.export_fonts(id, &fonts);
         self.untyped(id, &exports);
         let renderers = renderers(&names, &self.components);
         let document = &mut self.documents[id.0];
         document.names = names;
         document.exports = exports;
+        document.fonts = fonts;
+        document.font_exports = font_exports;
         document.renderers = renderers;
         self.loading.pop();
         id
@@ -206,8 +220,14 @@ impl<'h, 'p> Loader<'h, 'p> {
         );
     }
 
-    /// Loads what `import` names and binds its names; when it loads nothing, its names are dropped.
-    fn import(&mut self, id: DocumentId, import: &Import, names: &mut Builder) {
+    /// Loads what `import` names and binds its names and fonts; when it loads nothing, they are dropped.
+    fn import(
+        &mut self,
+        id: DocumentId,
+        import: &Import,
+        names: &mut Builder,
+        fonts: &mut FontNamesBuilder,
+    ) {
         let from = &import.from;
         let loaded = match Source::parse(&from.value) {
             Err(why) => Err(Refusal::new(Code::F026, from.at, why.to_string())),
@@ -218,6 +238,7 @@ impl<'h, 'p> Loader<'h, 'p> {
                 stem,
             }) => {
                 self.file(id, import, path, language, stem, names);
+                self.no_fonts_in_file(id, import);
                 return;
             }
             Ok(Source::Pack(spec)) if self.pending(&spec) => {
@@ -225,16 +246,21 @@ impl<'h, 'p> Loader<'h, 'p> {
                 if !self.pending.contains(&spec.name) {
                     self.pending.push(spec.name.clone());
                 }
-                pend_names(&import.names, &spec.name, names);
+                pend_names(import.names.as_ref(), &spec.name, names);
+                self.import_fonts(id, import, None, fonts);
                 return;
             }
             Ok(Source::Pack(spec)) => self.pack(id, &spec, import),
         };
         match loaded {
-            Ok(target) => self.bind(id, import, target, names),
+            Ok(target) => {
+                self.bind(id, import, target, names);
+                self.import_fonts(id, import, Some(target), fonts);
+            }
             Err(refusal) => {
                 self.report(id, refusal.code, refusal.at, refusal.message);
-                drop_names(&import.names, names);
+                drop_names(import.names.as_ref(), names);
+                self.import_fonts(id, import, None, fonts);
             }
         }
     }
@@ -301,17 +327,18 @@ impl<'h, 'p> Loader<'h, 'p> {
         let at = import.from.at;
         let Some(origin) = self.document(id).origin.join(path) else {
             self.report(id, Code::F026, at, format!("`{path}` leaves its root"));
-            drop_names(&import.names, names);
+            drop_names(import.names.as_ref(), names);
             return;
         };
         if self.store.read(&origin).is_none() {
             self.report(id, Code::F026, at, format!("`{origin}` can't be loaded"));
-            drop_names(&import.names, names);
+            drop_names(import.names.as_ref(), names);
             return;
         }
         let entries = match &import.names {
-            settings::Names::All(at) => vec![(stem.to_string(), *at)],
-            settings::Names::Listed(entries) => entries
+            None => Vec::new(),
+            Some(settings::Names::All(at)) => vec![(stem.to_string(), *at)],
+            Some(settings::Names::Listed(entries)) => entries
                 .iter()
                 .filter_map(|entry| {
                     if entry.name == stem {
@@ -353,14 +380,15 @@ impl<'h, 'p> Loader<'h, 'p> {
     fn bind(&mut self, id: DocumentId, import: &Import, target: DocumentId, names: &mut Builder) {
         let exports = self.document(target).exports.clone();
         match &import.names {
-            settings::Names::All(_) => {
+            None => {}
+            Some(settings::Names::All(_)) => {
                 for (name, binding) in exports {
                     if let Binding::Component(component, _) = binding {
                         names.share(&name, component, &import.from.value, Level::Wildcard);
                     }
                 }
             }
-            settings::Names::Listed(entries) => {
+            Some(settings::Names::Listed(entries)) => {
                 for entry in entries {
                     let binding = match exports.get(&entry.name) {
                         Some(Binding::Component(component, _)) => {
@@ -441,10 +469,11 @@ impl<'h, 'p> Loader<'h, 'p> {
 
 /// The names of an import that loads nothing: listed ones stand for nothing, without F002; a wildcard import may
 /// have held any name.
-fn drop_names(listed: &settings::Names, names: &mut Builder) {
+fn drop_names(listed: Option<&settings::Names>, names: &mut Builder) {
     match listed {
-        settings::Names::All(_) => names.incomplete(),
-        settings::Names::Listed(entries) => {
+        None => {}
+        Some(settings::Names::All(_)) => names.incomplete(),
+        Some(settings::Names::Listed(entries)) => {
             for entry in entries {
                 if !names.is_declared(&entry.renamed) {
                     names.declare(&entry.renamed, Binding::Dropped);
@@ -456,10 +485,11 @@ fn drop_names(listed: &settings::Names, names: &mut Builder) {
 
 /// The names of an import of `pack`, which is pending: listed ones stand for pending components; a wildcard import
 /// may hold any name.
-fn pend_names(listed: &settings::Names, pack: &PackName, names: &mut Builder) {
+fn pend_names(listed: Option<&settings::Names>, pack: &PackName, names: &mut Builder) {
     match listed {
-        settings::Names::All(_) => names.pending(pack),
-        settings::Names::Listed(entries) => {
+        None => {}
+        Some(settings::Names::All(_)) => names.pending(pack),
+        Some(settings::Names::Listed(entries)) => {
             for entry in entries {
                 if !names.is_declared(&entry.renamed) {
                     names.declare(&entry.renamed, Binding::Pending(pack.clone()));

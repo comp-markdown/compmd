@@ -11,6 +11,7 @@ mod contrast;
 mod destinations;
 mod env;
 mod flow;
+mod fonts;
 mod image_box;
 mod layout;
 mod origins;
@@ -20,7 +21,6 @@ mod text;
 use crate::cel::{Error, Program, Value, Values};
 use crate::context::RenderContext;
 use crate::diagnostic::{Code, Diagnostic, Location, Mode, Stage};
-use crate::direction;
 use crate::expanded::{self, Content, Origin, Root};
 use crate::lines::Lines;
 use crate::load::Loaded;
@@ -31,7 +31,7 @@ use crate::validate::Validated;
 use crate::validate::scope::Scope;
 use crate::validate::universal::Universal;
 pub(crate) use blocks::splice;
-use blocks::{Block, finished};
+use blocks::{Block, rooted};
 use env::Env;
 use std::collections::HashMap;
 use std::ops;
@@ -109,8 +109,7 @@ pub(crate) fn expand(
         children.extend(nodes);
         blocks.push(given);
     }
-    let language = direction::of_document(&resolved.document(resolved.main).settings);
-    finished(children, blocks, loaded, language, None)
+    rooted(resolved, children, blocks, loaded, None)
 }
 
 /// Expands one document.

@@ -11,11 +11,17 @@ use std::collections::{BTreeMap, HashSet};
 impl Loader<'_, '_> {
     /// The document's exports (spec §6.2): F013 for a keyword, F029 and W117 for host-language components.
     pub(super) fn exports(&mut self, id: DocumentId, names: &Names) -> BTreeMap<String, Binding> {
-        let Some(export) = self.document(id).settings.export.clone() else {
+        let Some(listed) = self
+            .document(id)
+            .settings
+            .export
+            .as_ref()
+            .and_then(|export| export.names.clone())
+        else {
             return BTreeMap::new();
         };
         let mut exports = BTreeMap::new();
-        match &export.names {
+        match &listed {
             settings::Names::All(at) => {
                 let defined: Vec<ComponentId> = (0..self.components.len())
                     .map(ComponentId)

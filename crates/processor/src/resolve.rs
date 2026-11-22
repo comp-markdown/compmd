@@ -4,6 +4,7 @@
 //! The processor does no I/O: imported documents and component files come from the host's [`Files`], packs from its
 //! [`Packs`]. A host loads what they serve before it resolves, so resolving needs no waiting.
 
+mod fonts;
 mod language;
 mod libraries;
 mod load;
@@ -13,6 +14,7 @@ mod reached;
 mod source;
 mod uses;
 
+pub(crate) use fonts::{Fallback, Font, FontBinding, FontFile, FontId, FontNames, Style, Weight};
 pub use language::Language;
 use libraries::Libraries;
 pub(crate) use names::{Binding, Names, Renderer};
@@ -109,6 +111,10 @@ pub(crate) struct Document {
     pub(crate) names: Names,
     /// What it exports, by public name.
     pub(crate) exports: BTreeMap<String, Binding>,
+    /// What each font name in it stands for (spec §9.4).
+    pub(crate) fonts: FontNames,
+    /// The fonts it exports, by public name.
+    pub(crate) font_exports: BTreeMap<String, FontBinding>,
     /// The code renderer of each language its names give one to (spec §7.7).
     pub(crate) renderers: BTreeMap<String, Renderer>,
     /// Whether the processor provides it (`@compmd/core`, an ambient pack), so that a signature fence alone in it
@@ -353,6 +359,8 @@ pub(crate) struct Resolved {
     pub(crate) documents: Vec<Document>,
     /// Every component of those documents.
     pub(crate) components: Vec<Component>,
+    /// Every font those documents declare, each with its one name in the expanded tree.
+    pub(crate) fonts: Vec<Font>,
     /// The processed document.
     pub(crate) main: DocumentId,
     /// The invocations that close a cycle of definitions (F019), by their document and where they start.
@@ -389,6 +397,16 @@ impl Resolved {
     /// The component `id` names.
     pub(crate) fn component(&self, id: ComponentId) -> &Component {
         &self.components[id.0]
+    }
+
+    /// The font `id` names.
+    pub(crate) fn font(&self, id: FontId) -> &Font {
+        &self.fonts[id.0]
+    }
+
+    /// The font whose name in the expanded tree is `family`.
+    pub(crate) fn font_of_family(&self, family: &str) -> Option<&Font> {
+        self.fonts.iter().find(|font| font.family == family)
     }
 
     /// Every document, in order.

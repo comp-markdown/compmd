@@ -35,6 +35,8 @@ named! {
         Object = "object",
         /// A CEL identifier, written as is.
         Name = "name",
+        /// A font the document declares or imports (spec §9.4), which only its document can tell.
+        Font = "font",
         /// Any text.
         Text = "text",
         /// Any value at all.
@@ -65,7 +67,7 @@ impl Form {
             Self::Date => parse_date(text).is_some(),
             Self::Name => is_identifier(text),
             Self::Text | Self::Any => true,
-            Self::Array | Self::Object => false,
+            Self::Array | Self::Object | Self::Font => false,
         }
     }
 
@@ -97,6 +99,7 @@ impl Form {
             Self::Array => "an array, as JSON",
             Self::Object => "an object, as JSON",
             Self::Name => "a name, written as is",
+            Self::Font => "a font the document declares",
             Self::Text => "text",
             Self::Any => "any value",
         }

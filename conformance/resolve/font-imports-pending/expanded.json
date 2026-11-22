@@ -1,0 +1,29 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [],
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [{ "type": "text", "value": "A listed font of a pack on its way: the param is absent until it arrives, without a diagnostic." }]
+        }
+      ],
+      "slots": []
+    },
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [],
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [{ "type": "text", "value": "Any other name may be one of the wildcard import's fonts." }]
+        }
+      ],
+      "slots": []
+    }
+  ]
+}

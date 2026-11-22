@@ -1,6 +1,10 @@
 //! A document's settings, the keys under `md` (spec §2.1), read with where each key and value is written, for the
 //! diagnostics of stages 2 and 3. Entries that don't have the shape the spec gives them are left out.
 
+mod fonts;
+
+pub(crate) use fonts::{FontDeclaration, FontFileEntry};
+
 use crate::diagnostic::Location;
 use crate::parse::definitions::{declaration, type_pointer};
 use crate::parse::yaml::{self, Mark};
@@ -35,22 +39,24 @@ pub(crate) struct NameEntry {
     pub(crate) at: Location,
 }
 
-/// A component import (spec §6.1).
+/// An import of components and fonts (spec §6.1): it has `names`, `fonts` or both.
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct Import {
     pub(crate) from: Located<String>,
     pub(crate) integrity: Option<Located<String>>,
-    pub(crate) names: Names,
+    pub(crate) names: Option<Names>,
+    pub(crate) fonts: Option<Names>,
 }
 
-/// The document's exports (spec §6.2).
+/// The document's exports (spec §6.2): `names`, `fonts` or both.
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct Export {
     pub(crate) pack: Option<String>,
     pub(crate) version: Option<String>,
     /// Where the `export` key is.
     pub(crate) at: Location,
-    pub(crate) names: Names,
+    pub(crate) names: Option<Names>,
+    pub(crate) fonts: Option<Names>,
 }
 
 /// A data import (spec §8.6).
@@ -94,6 +100,8 @@ pub(crate) struct Settings {
     pub(crate) doc: Map<String, Value>,
     pub(crate) imports: Vec<Import>,
     pub(crate) export: Option<Export>,
+    /// The fonts `md.fonts` declares, in written order.
+    pub(crate) fonts: Vec<FontDeclaration>,
     pub(crate) data: Vec<DataImport>,
     pub(crate) inputs: Vec<Input>,
     /// `md.version` as written, `1` or `1.2`.
@@ -126,6 +134,7 @@ impl Settings {
         Self {
             imports: reader.list(&md, "import", Reader::import),
             export: md.get("export").and_then(|export| reader.export(export)),
+            fonts: reader.fonts(&md),
             data: reader.list(&md, "data", Reader::data),
             inputs: reader.inputs(&md),
             version: text("version"),
@@ -196,21 +205,42 @@ impl Reader<'_> {
     }
 
     fn import(&self, entry: &Value, pointer: &str) -> Option<Import> {
+        let (names, fonts) = self.names_and_fonts(entry, pointer)?;
         Some(Import {
             from: self.text(entry, pointer, "from")?,
             integrity: self.text(entry, pointer, "integrity"),
-            names: self.names(entry.get("names")?, &format!("{pointer}/names"))?,
+            names,
+            fonts,
         })
     }
 
     fn export(&self, export: &Value) -> Option<Export> {
         let text = |key: &str| export.get(key).and_then(Value::as_str).map(str::to_string);
+        let (names, fonts) = self.names_and_fonts(export, "/md/export")?;
         Some(Export {
             pack: text("pack"),
             version: text("version"),
             at: self.key_at("/md/export"),
-            names: self.names(export.get("names")?, "/md/export/names")?,
+            names,
+            fonts,
         })
+    }
+
+    /// An import's or export's `names` and `fonts`; `None` when it has neither.
+    fn names_and_fonts(
+        &self,
+        entry: &Value,
+        pointer: &str,
+    ) -> Option<(Option<Names>, Option<Names>)> {
+        let read = |key: &str| {
+            entry
+                .get(key)
+                .and_then(|names| self.names(names, &format!("{pointer}/{key}")))
+        };
+        match (read("names"), read("fonts")) {
+            (None, None) => None,
+            both => Some(both),
+        }
     }
 
     /// `"*"`, or a list of names and `{name, as}` mappings.
@@ -327,12 +357,38 @@ mod tests {
         };
         assert_eq!(
             kit.names,
-            Names::Listed(vec![
+            Some(Names::Listed(vec![
                 entry("chip", "chip", Location::new(6, 15)),
                 entry("tag", "label", Location::new(6, 28)),
-            ])
+            ]))
         );
-        assert_eq!(read.imports[1].names, Names::All(Location::new(8, 14)));
+        assert_eq!(kit.fonts, None);
+        assert_eq!(
+            read.imports[1].names,
+            Some(Names::All(Location::new(8, 14)))
+        );
+    }
+
+    #[test]
+    fn an_import_or_export_takes_fonts_beside_names_or_alone() {
+        let read = settings(
+            "---\nmd:\n  import:\n    - from: \"@acme/look@1\"\n      fonts: [serif]\n    - from: ./a.comp.md\n  export:\n    fonts: \"*\"\n---\n",
+        );
+        assert_eq!(read.imports.len(), 1, "an import with neither is left out");
+        assert_eq!(read.imports[0].names, None);
+        assert_eq!(
+            read.imports[0].fonts,
+            Some(Names::Listed(vec![NameEntry {
+                name: "serif".into(),
+                renamed: "serif".into(),
+                at: Location::new(5, 15),
+            }]))
+        );
+        let export = read.export.expect("an export");
+        assert_eq!(
+            (export.names, export.fonts),
+            (None, Some(Names::All(Location::new(8, 12))))
+        );
     }
 
     #[test]

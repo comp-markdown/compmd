@@ -407,7 +407,9 @@
         "heading",
         "mono"
       ],
-      "forms": [],
+      "forms": [
+        "font"
+      ],
       "examples": [],
       "upTo": 1,
       "flag": false,

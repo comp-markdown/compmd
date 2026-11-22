@@ -1,0 +1,67 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [
+        { "key": "font-family", "breakpoint": null, "value": "harbour-serif" }
+      ],
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [{ "type": "text", "value": "Our own serif." }]
+        }
+      ],
+      "slots": []
+    },
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [
+        { "key": "font-family", "breakpoint": null, "value": "harbour-serif-2" },
+        { "key": "font-family", "breakpoint": "md", "value": "mono" }
+      ],
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [{ "type": "text", "value": "The pack's serif, renamed." }]
+        }
+      ],
+      "slots": []
+    },
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [
+        { "key": "font-family", "breakpoint": null, "value": "harbour-serif-2" },
+        { "key": "font-style", "breakpoint": null, "value": "italic" }
+      ],
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [{ "type": "text", "value": "The Harbour" }]
+        }
+      ],
+      "slots": []
+    }
+  ],
+  "fonts": [
+    {
+      "family": "harbour-serif",
+      "fallback": "heading",
+      "files": [
+        { "url": "./fonts/harbour-serif.woff2", "weight": "normal", "style": "normal" },
+        { "url": "./fonts/harbour-serif-bold.woff2", "weight": "bold", "style": "normal" }
+      ]
+    },
+    {
+      "family": "harbour-serif-2",
+      "fallback": "body",
+      "files": [
+        { "url": "@acme/look@1.0.0/fonts/harbour-serif.woff2", "pack": true, "weight": "normal", "style": "normal" },
+        { "url": "@acme/look@1.0.0/fonts/harbour-serif-italic.woff2", "pack": true, "weight": "normal", "style": "italic" }
+      ]
+    }
+  ]
+}

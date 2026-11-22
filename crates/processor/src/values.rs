@@ -110,6 +110,8 @@ impl Kind<'static> {
     pub const COLOR: Self = kind(&[], &[Form::Color], &["#0b7285", "teal"]);
     /// `font-size`: a type size token, in `em`, or a length (spec §9.4).
     pub const FONT_SIZE: Self = kind(&["s", "m", "l", "xl"], &[Form::Length], &["1.125rem"]);
+    /// `font-family`: a type token, or a font the document declares or imports (spec §9.4).
+    pub const FONT_FAMILY: Self = kind(&["body", "heading", "mono"], &[Form::Font], &[]);
     /// `color`: a text color token or a CSS color.
     pub const TEXT_COLOR: Self = kind(&["muted", "accent"], &[Form::Color], &["#a40e26"]);
     /// `line-height`: a leading token or a plain number, times the font's size.
@@ -200,6 +202,7 @@ impl Kind<'static> {
         Self::BORDER,
         Self::COLOR,
         Self::FONT_SIZE,
+        Self::FONT_FAMILY,
         Self::TEXT_COLOR,
         Self::LINE_HEIGHT,
         Self::LETTER_SPACING,
@@ -405,14 +408,14 @@ mod tests {
                     "{described} misses {form:?}"
                 );
             }
-            let anything = kind
+            let unexampled = kind
                 .forms
                 .iter()
-                .any(|form| matches!(form, Form::Text | Form::Any));
+                .any(|form| matches!(form, Form::Text | Form::Any | Form::Font));
             assert_eq!(
                 kind.examples.is_empty(),
-                kind.forms.is_empty() || anything,
-                "{kind:?}: a kind with forms has examples, unless it takes any text"
+                kind.forms.is_empty() || unexampled,
+                "{kind:?}: a kind with forms has examples, unless it takes any text or names only its document knows"
             );
         }
     }

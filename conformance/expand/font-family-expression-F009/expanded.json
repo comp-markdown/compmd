@@ -1,0 +1,38 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [
+        { "key": "font-family", "breakpoint": null, "value": "serif" }
+      ],
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [{ "type": "text", "value": "Named by an expression." }]
+        }
+      ],
+      "slots": []
+    },
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [],
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [{ "type": "text", "value": "No font has it, so the param is treated as absent." }]
+        }
+      ],
+      "slots": []
+    }
+  ],
+  "fonts": [
+    {
+      "family": "serif",
+      "fallback": "body",
+      "files": [{ "url": "./serif.woff2", "weight": "normal", "style": "normal" }]
+    }
+  ]
+}

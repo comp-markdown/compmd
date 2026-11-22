@@ -91,7 +91,7 @@ impl Universal {
             Self::FontSize => Kind::FONT_SIZE,
             Self::FontWeight => Kind::one_of(&["normal", "bold"][..]),
             Self::FontStyle => Kind::one_of(&["normal", "italic"][..]),
-            Self::FontFamily => Kind::one_of(&["body", "heading", "mono"][..]),
+            Self::FontFamily => Kind::FONT_FAMILY,
             Self::Color => Kind::TEXT_COLOR,
             Self::TextAlign | Self::JustifySelf => Kind::one_of(&["start", "center", "end"][..]),
             Self::LineHeight => Kind::LINE_HEIGHT,

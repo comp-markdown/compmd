@@ -40,13 +40,16 @@ pub struct DocumentSettings {
     pub import: Vec<ComponentImport>,
 }
 
-/// A component import (spec §6.1).
+/// An import of components and fonts (spec §6.1).
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct ComponentImport {
     /// Its `from`.
     pub from: String,
-    /// The names it takes, each with the local name it gets when that differs; `*` for all of them.
+    /// The components it takes, each with the local name it gets when that differs; `*` for all of them.
     pub names: Vec<String>,
+    /// The fonts it takes, as `names`.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub fonts: Vec<String>,
 }
 
 /// A data import (spec §8.6), and what was loaded for it.
@@ -88,19 +91,8 @@ pub(crate) fn of(resolved: &Resolved, id: DocumentId, loaded: &load::Loaded) -> 
                 .iter()
                 .map(|import| ComponentImport {
                     from: import.from.value.clone(),
-                    names: match &import.names {
-                        Names::All(_) => vec!["*".into()],
-                        Names::Listed(entries) => entries
-                            .iter()
-                            .map(|entry| {
-                                if entry.name == entry.renamed {
-                                    entry.name.clone()
-                                } else {
-                                    format!("{} as {}", entry.name, entry.renamed)
-                                }
-                            })
-                            .collect(),
-                    },
+                    names: written(import.names.as_ref()),
+                    fonts: written(import.fonts.as_ref()),
                 })
                 .collect(),
         },
@@ -125,6 +117,24 @@ pub(crate) fn of(resolved: &Resolved, id: DocumentId, loaded: &load::Loaded) -> 
             })
             .collect(),
         inputs: loaded.inputs.clone(),
+    }
+}
+
+/// The names an import's `names` or `fonts` takes, each with the local name it gets when that differs; `*` for all.
+fn written(names: Option<&Names>) -> Vec<String> {
+    match names {
+        None => Vec::new(),
+        Some(Names::All(_)) => vec!["*".into()],
+        Some(Names::Listed(entries)) => entries
+            .iter()
+            .map(|entry| {
+                if entry.name == entry.renamed {
+                    entry.name.clone()
+                } else {
+                    format!("{} as {}", entry.name, entry.renamed)
+                }
+            })
+            .collect(),
     }
 }
 

@@ -3,6 +3,7 @@
 //! that can't be bound (F013). Then the invocation's slots (F006, F018), and W102, W103 and W120.
 
 mod fence;
+mod font_family;
 mod slots;
 
 use super::Checker;
@@ -538,6 +539,9 @@ impl<'r> Checker<'r, '_> {
         }
         if let ParamValue::String(parts) = value {
             self.string_paths(parts, at, scope);
+        }
+        if universal == Universal::FontFamily {
+            return self.font_family(param);
         }
         let kind = universal.kind();
         if !kind.accepts(value) {

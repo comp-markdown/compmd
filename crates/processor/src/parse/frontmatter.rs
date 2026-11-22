@@ -14,18 +14,22 @@ const MAJOR: u64 = 1;
 const MINOR: u64 = 0;
 
 /// The keys under `md` (spec §2.1), each with what it holds.
-pub(crate) const MD_KEYS: [(&str, &str); 9] = [
+pub(crate) const MD_KEYS: [(&str, &str); 10] = [
     (
         "version",
         "the CompMD version: `1`, or a string with a minor version such as `\"1.1\"`",
     ),
     (
         "import",
-        "component imports, each a `from` and the `names` it takes",
+        "component and font imports, each a `from` and the `names` and `fonts` it takes",
     ),
     (
         "export",
-        "component exports: the `names` other documents may import",
+        "component and font exports: the `names` and `fonts` other documents may import",
+    ),
+    (
+        "fonts",
+        "fonts of the document's own, each by name with its `files` and a `fallback`",
     ),
     (
         "data",

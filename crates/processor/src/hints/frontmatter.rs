@@ -6,8 +6,8 @@ use super::{Completion, Found, KindHint, Place, Subject};
 use crate::parse::frontmatter::{MD_KEYS, SYNTAX_NAMES};
 use crate::tree::TypeName;
 
-/// The keys of a component import (spec §6.1).
-const IMPORT_KEYS: [(&str, &str); 3] = [
+/// The keys of an import of components and fonts (spec §6.1).
+const IMPORT_KEYS: [(&str, &str); 4] = [
     (
         "from",
         "where the components come from: a relative path, a pack such as `\"@acme/ui@1\"`, or a component file",
@@ -16,6 +16,7 @@ const IMPORT_KEYS: [(&str, &str); 3] = [
         "names",
         "the names it takes: a list, `{name: card, as: promo}` to rename one, or `\"*\"` for all",
     ),
+    ("fonts", "the fonts it takes, as `names` takes components"),
     (
         "integrity",
         "the hash the pack must match, such as `sha512-…`",
@@ -23,7 +24,7 @@ const IMPORT_KEYS: [(&str, &str); 3] = [
 ];
 
 /// The keys of the exports (spec §6.2).
-const EXPORT_KEYS: [(&str, &str); 3] = [
+const EXPORT_KEYS: [(&str, &str); 4] = [
     ("pack", "the pack's name, as its registry manifest has it"),
     (
         "version",
@@ -32,6 +33,10 @@ const EXPORT_KEYS: [(&str, &str); 3] = [
     (
         "names",
         "the names other documents may import: a list, or `\"*\"` for all",
+    ),
+    (
+        "fonts",
+        "the fonts other documents may import: a list, or `\"*\"` for those `md.fonts` declares",
     ),
 ];
 
@@ -424,7 +429,11 @@ mod tests {
         assert_eq!(texts(&item), ["wiki-links"]);
         let dir = yaml(&format!("md:\n  dir: r{CARET}tl"));
         assert_eq!(texts(&dir), ["ltr", "rtl", "auto"]);
-        assert_eq!(dir["subject"]["about"], MD_KEYS[6].1);
+        let about_dir = MD_KEYS
+            .iter()
+            .find(|(key, _)| *key == "dir")
+            .map(|(_, about)| *about);
+        assert_eq!(dir["subject"]["about"].as_str(), about_dir);
         assert_eq!(yaml(&format!("md:\n  lang: e{CARET}n")), Value::Null);
     }
 
