@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 320" role="img" aria-label="The lighthouse at the end of the pier, against the evening sky">
+  <rect width="180" height="320" fill="#3b4f6b"/>
+  <rect y="250" width="180" height="70" fill="#1b2a3c"/>
+  <path d="M78 250l6-150h12l6 150z" fill="#e7e2d6"/>
+  <path d="M80 200h20v12H80z M82 150h16v12H82z" fill="#b5463c"/>
+  <rect x="80" y="86" width="20" height="16" fill="#f4e3b2"/>
+  <path d="M76 86h28l-14-14z" fill="#b5463c"/>
+</svg>

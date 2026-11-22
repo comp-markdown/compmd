@@ -1,6 +1,6 @@
 {
   "name": "@comp-markdown/gallery",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A CompMD pack: gallery, a grid of cards, one for each item of a list, each with its image, title and description. A compmd definition, with no code.",
   "keywords": ["compmd", "compmd-pack", "gallery"],
   "homepage": "https://compmd.dev/",
@@ -29,7 +29,9 @@
     "@compmd/pack": "workspace:*",
     "@compmd/processor": "workspace:*",
     "@types/node": "26.6.5",
+    "playwright": "1.64.1",
     "typescript": "6.0.3",
+    "vite": "8.3.4",
     "vitest": "5.0.5"
   }
 }

@@ -34,7 +34,7 @@ function processed(text: string, path = "walks.comp.md") {
   const folder = path.includes("/") ? path.slice(0, path.lastIndexOf("/") + 1) : "";
   const request: Request = {
     path,
-    files: { [path]: text, [`${folder}walks.yaml`]: read(ROOT, "walks.yaml"), [`${folder}photos.yaml`]: read(ROOT, "photos.yaml") },
+    files: { [path]: text, [`${folder}walks.yaml`]: read(ROOT, "walks.yaml"), [`${folder}photos.yaml`]: read(ROOT, "photos.yaml"), [`${folder}shapes.yaml`]: read(ROOT, "shapes.yaml") },
     packs: { "@comp-markdown/gallery": releaseOf(ROOT), "@comp-markdown/card": releaseOf(CARD) },
     now: "2026-11-20T12:00:00Z",
   };
@@ -87,9 +87,9 @@ describe("a gallery", () => {
     const { expanded, diagnostics } = processed(read(ROOT, "demo.comp.md"), "demo.comp.md");
     expect(diagnostics).toEqual([]);
     const examples = (expanded.children as (Node & { render?: string; document?: { children: Node[] } })[]).filter((node) => node.type === "code" && node.document);
-    expect(examples.map((example) => example.render)).toEqual(["both", "both", "both", "both", "both"]);
+    expect(examples.map((example) => example.render)).toEqual(["both", "both", "both", "both", "both", "both", "both"]);
     const cards = examples.map((example) => gridOf(example.document?.children ?? [])?.children?.filter((node) => node.name === "box").length);
-    expect(cards).toEqual([3, 2, 12, 3, 3]);
+    expect(cards).toEqual([3, 2, 12, 3, 3, 3, 3]);
   });
 });
 
@@ -104,6 +104,22 @@ describe("a gallery's grid", () => {
   it("fits as many cards as their narrowest width allows, `min`, with `gap` between them", () => {
     expect(gridParams("min=10rem gap=s")).toEqual(expect.arrayContaining(["grid-template-columns=repeat(auto-fill, minmax(10rem, 1fr))", "gap=s"]));
     expect(gridParams("")).toEqual(expect.arrayContaining(["gap=m"]));
+  });
+
+  it("makes every row as tall as the tallest", () => {
+    expect(gridParams("")).toEqual(expect.arrayContaining(["grid-auto-rows=1fr"]));
+  });
+
+  it("crops every image to `ratio`, filled as `image-fit` says and placed as `image-position` says, and leaves each its own shape without it", () => {
+    const { expanded, diagnostics } = processed(USE.replace("{items=(md.data.walks)}", "{items=(md.data.walks) ratio=4/3 image-position=start}"));
+    expect(diagnostics).toEqual([]);
+    const cards = gridOf(expanded.children as Node[])?.children?.filter((node) => node.name === "box") ?? [];
+    const [shape] = cards.map((card) => card.children?.[0]);
+    expect(shape?.name).toBe("box");
+    expect(shape?.params?.map(({ key, value }) => `${key}=${String(value)}`)).toEqual(["aspect-ratio=4/3", "object-fit=cover", "object-position=start"]);
+    expect(shape && cardOf({ type: "box", children: shape.children ?? [] })).toEqual(["image images/harbour.svg (Boats at the quay, the lamps just lit)"]);
+    const [plain] = (gridOf(processed(USE).expanded.children as Node[])?.children ?? []).map((card) => card.children?.[0]);
+    expect(plain?.type).toBe("paragraph");
   });
 
   it("puts exactly `columns` side by side, in place of `min`, at each breakpoint it is given", () => {

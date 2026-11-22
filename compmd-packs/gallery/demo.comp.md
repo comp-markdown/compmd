@@ -5,7 +5,7 @@ md:
       names: [gallery]
 ---
 
-Each example of `gallery` shows its source, then what it draws. Their lists are `walks.yaml` and `photos.yaml`, beside this page.
+Each example of `gallery` shows its source, then what it draws. Their lists are `walks.yaml`, `photos.yaml` and `shapes.yaml`, beside this page.
 
 # From a list in data
 
@@ -92,4 +92,40 @@ md:
 ---
 
 :: gallery[Three walks, stacked on a phone] {items=(md.data.walks) columns=1 md:columns=3 gap=l}
+````
+
+# Photos of different shapes, cropped to one
+
+`ratio=4/3`: a tall photo and a wide one take the same shape as the others, covering it.
+
+````compmd {render=both}
+---
+md:
+  import:
+    - from: "@comp-markdown/gallery@0"
+      names: [gallery]
+  data:
+    - from: ./shapes.yaml
+      as: shapes
+---
+
+:: gallery[Three photos of different shapes, each cropped to 4:3] {items=(md.data.shapes) ratio=4/3}
+````
+
+# The whole of each photo
+
+`image-fit=contain`: each photo is as large as fits in the shape, none of it cut, and `image-position="start center"` puts it at the shape's top, in its middle.
+
+````compmd {render=both}
+---
+md:
+  import:
+    - from: "@comp-markdown/gallery@0"
+      names: [gallery]
+  data:
+    - from: ./shapes.yaml
+      as: shapes
+---
+
+:: gallery[Three photos of different shapes, each whole in a 4:3 shape] {items=(md.data.shapes) ratio=4/3 image-fit=contain image-position="start center"}
 ````

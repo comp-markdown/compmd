@@ -15258,7 +15258,7 @@
         "compmd-packs/mermaid/README.md"
       ],
       "created_at": "2026-11-21T20:23:49Z",
-      "updated_at": "2026-11-22T17:13:44Z",
+      "updated_at": "2026-11-22T17:22:26Z",
       "created_by": "claude:79612601",
       "updated_by": "claude:9ea81469",
       "sprint_history": [
@@ -15292,9 +15292,15 @@
           "kind": "answer",
           "text": "The wider strict test (uncommitted, `compmd-packs/mermaid/test/strict-style*`) shows the refusals do change the drawing: under a strict style-src a class diagram and a mindmap come out up to 6% smaller and a flowchart’s width differs; only the sequence diagram matches. Tried, not kept: rendering twice, the second with the first’s stylesheet adopted, fixes all but the class diagram (3px narrower). (a) Render twice, (b) hook Mermaid’s style writes, or (c) accept and document the differences? → Superseded by the design approved in CR-64 (docs/component-environment.md): the host contract promises inline styles apply; no workaround in the pack. Spec changes approved by the maintainer.",
           "by": "claude:9ea81469"
+        },
+        {
+          "at": "2026-11-22T17:22:18Z",
+          "kind": "answer",
+          "text": "Decision 6 (report a refused inline style by the trusted component’s box, through `error`) doesn’t hold: Mermaid measures in a temporary element in `document.body`, so its refusals land outside any box, against the document. And `error` means the use shows its fallback. (a) A new `HostEvents` callback, `refusedStyle`, naming the component only when the element is in its box; (b) by time, while one trusted component draws; (c) drop decision 6. → (a) A new HostEvents callback, refusedStyle: names the component when the refused element is in its box, and otherwise reports it without a name.",
+          "by": "claude:9ea81469"
         }
       ],
-      "commit": "652fb245ebba4550d46218fb90f561dc7a5a773f",
+      "commit": "6623c0f09e9ab1d843fbfccfa1c33171d87c757d",
       "blocks": [
         {
           "from": "2026-11-22T15:49:26Z",
@@ -15305,9 +15311,14 @@
           "from": "2026-11-22T16:37:38Z",
           "to": "2026-11-22T17:13:37Z",
           "on": "user"
+        },
+        {
+          "from": "2026-11-22T17:20:57Z",
+          "to": "2026-11-22T17:22:18Z",
+          "on": "user"
         }
       ],
-      "started_at": "2026-11-22T17:13:44Z",
+      "started_at": "2026-11-22T17:22:26Z",
       "started_by": "claude:9ea81469"
     },
     {

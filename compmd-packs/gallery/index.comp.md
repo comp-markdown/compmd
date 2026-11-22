@@ -5,7 +5,7 @@ md:
       names: [card]
   export:
     pack: "@comp-markdown/gallery"
-    version: "0.1.0"
+    version: "0.2.0"
     names: [gallery]
 ---
 
@@ -36,7 +36,7 @@ with `walks.yaml`:
   alt: Boats at the quay, the lamps just lit
 ```
 
-Each item has a `title`, an `image` with its `alt` text, and a `description`, which an item may leave out. The images are your document's: `images/harbour.jpg` is next to the document that uses the gallery, wherever the gallery comes from. The cards are at least `min` wide (14rem), as many side by side as the column holds, and wrap; `columns=3` puts exactly three side by side instead, and takes breakpoints, `columns=1 md:columns=3`. `gap` is the space between them (`m`). The cards' titles are headings one level below the heading above the gallery.
+Each item has a `title`, an `image` with its `alt` text, and a `description`, which an item may leave out. The images are your document's: `images/harbour.jpg` is next to the document that uses the gallery, wherever the gallery comes from. The cards are at least `min` wide (14rem), as many side by side as the column holds, and wrap; `columns=3` puts exactly three side by side instead, and takes breakpoints, `columns=1 md:columns=3`. `gap` is the space between them (`m`). Every card is as tall as the tallest, across rows too. `ratio=4/3` crops every image to one shape, so photos of different sizes make an even grid: `image-fit` says how an image fills the shape (`cover` by default; `contain` shows all of it) and `image-position` which part shows, one or two of `start`, `center` and `end`, top to bottom first (`center` by default, `"start center"` for its top). The cards' titles are headings one level below the heading above the gallery.
 
 In a plain Markdown reader, a gallery is its sentence, `Three walks around the harbour`.
 
@@ -54,8 +54,19 @@ params:
     type: space
     default: m
     doc: The space between the cards
+  ratio:
+    type: string?
+    doc: The shape every image is cropped to, a width over a height such as 4/3; without it, each image keeps its own
+  image-fit:
+    type: contain | cover | fill
+    default: cover
+    doc: How an image fills its shape, as object-fit does
+  image-position:
+    type: string
+    default: center
+    doc: Where an image sits in its shape, as object-position does, such as "start center" for its top
 ---
-::: grid {min=(columns == null ? min : null) grid-template-columns=(columns == null ? null : "repeat(" + string(int(columns)) + ", minmax(0, 1fr))") gap=(gap)}
+::: grid {min=(columns == null ? min : null) grid-template-columns=(columns == null ? null : "repeat(" + string(int(columns)) + ", minmax(0, 1fr))") grid-auto-rows=1fr gap=(gap)}
 ::: each {in=(items) as=item}
 ::: card
 # {{item.title}}
@@ -65,7 +76,14 @@ params:
 ::: /if
 
 :: #image
+::: if {when=(ratio != null)}
+::: box {aspect-ratio=(ratio) object-fit=(image_fit) object-position=(image_position)}
 ![{{item.alt}}]({{item.image}})
+::: /box
+
+:: #else
+![{{item.alt}}]({{item.image}})
+::: /if
 ::: /card
 ::: /each
 ::: /grid
