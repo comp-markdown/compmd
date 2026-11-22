@@ -14771,7 +14771,7 @@
       "description": "A pack's demo shows each param and use as a `compmd {render=both}` example, its source then what it draws ([writing a pack](docs/writing-a-pack.md), decision 3, from CR-45). From CR-51: each example is a `#` section named for what it shows (no bold lead-ins, no demo title above them), and the examples' own headings are `##` or lower, so the demo's sections and the examples' headings don't mix.\n\n## Do\n- **The Mermaid and wireframe packs' demos** as examples, one per param and use (a block, a leaf, a diagram from data, a theme, a size), and their page tests (`test/page.test.ts`) finding each drawing in its example.\n- **Every other demo** with `#` sections: card, figure, gallery, link-card, rating, sticky-note (the badge's is done in CR-51), and `create-pack`'s templates and the demo it writes for a wrapped package; their tests where they count examples or headings.\n- **The rule** in `docs/writing-a-pack.md`, decision 3.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [],
       "files": [
         "compmd-packs/mermaid/demo.comp.md",
@@ -14782,7 +14782,7 @@
         "docs/writing-a-pack.md"
       ],
       "created_at": "2026-11-21T15:01:30Z",
-      "updated_at": "2026-11-22T16:31:11Z",
+      "updated_at": "2026-11-22T16:46:28Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -14794,7 +14794,24 @@
       "sprint": "Packs 1: the pack tool, no-code components",
       "number": 368,
       "started_at": "2026-11-22T16:31:11Z",
-      "started_by": "claude:79612601"
+      "started_by": "claude:79612601",
+      "commit": "dd00b812e55b6cc47f3189598a1d3ad731a9c42b",
+      "code_reviews": [
+        {
+          "id": "01a20426-e658-70b3-ab68-e89f27eae019",
+          "ref": "CR-62"
+        }
+      ],
+      "review_requested_at": "2026-11-22T16:46:28Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-22T16:46:28Z",
+          "kind": "review",
+          "text": "CR-62: Every pack’s demo as render=both examples in # sections",
+          "by": "claude:79612601"
+        }
+      ]
     },
     {
       "id": "01a1febf-eadb-72cb-bee4-a8a3a2547009",
@@ -15248,14 +15265,14 @@
       "description": "From the same report: CompMD's sandbox frames allow inline styles (`style-src 'self' 'unsafe-inline'`, `npm-packages/sandbox/src/build/policy.ts`), but what the renderer draws in the host's own page may not be allowed there: the renderer's math (MathML), highlighted code (`highlight.ts` sets `style` properties), boxes (constructed sheets, allowed), images and examples, in the sandbox's host page mode and with `@compmd/render` alone.\n\n## Do\nA browser test in Chrome and WebKit of a page with `style-src 'self'` (no `'unsafe-inline'`), rendering math, highlighted code, boxes with params, an example and a component: what the browser refuses (its CSP violation reports) is nothing, or each refusal filed as a task of its own with its fix. Note what a host needs in its policy in the Developer's Guide.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "npm-packages/render/test/browser/",
         "npm-packages/sandbox/test/"
       ],
       "created_at": "2026-11-21T20:23:49Z",
-      "updated_at": "2026-11-21T20:23:49Z",
+      "updated_at": "2026-11-22T16:46:35Z",
       "created_by": "claude:79612601",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -15265,7 +15282,9 @@
         }
       ],
       "sprint": "Packs 1: the pack tool, no-code components",
-      "number": 375
+      "number": 375,
+      "started_at": "2026-11-22T16:46:35Z",
+      "started_by": "claude:79612601"
     },
     {
       "id": "01a20041-48e2-73a5-954d-4290690ac9c7",

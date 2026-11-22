@@ -130,6 +130,8 @@ The cost is a frame, and a copy of its runtime, per use. It is right for an app 
 
 **Many views in one page.** A page may open a view for each of its texts, a diff viewer's runs or a list of comments. The views of a page share what belongs to the page: one stylesheet, with the built-ins' rules once, and one highlighter, whose grammars load once. A view of text and code changes nothing in your page's styles when it opens, renders or goes, so what a view costs is its own content.
 
+**Your page's policy.** What the view renders in your page needs no inline styles: the boxes' rules are constructed stylesheets, highlighted code and math are styled through the CSSOM, so a page with `style-src 'self'`, without `'unsafe-inline'`, refuses nothing of CompMD's. Its `frame-src` must allow where the frames are served (`base`), and its `img-src` and `font-src` where the document's images and fonts, and the packs' files, are. A component's own drawing is its pack's to style: `@compmd/pack/component`'s `draw` brings a drawing's styles in through the CSSOM too.
+
 ## What the frames load
 
 `@compmd/vite` writes the frames' files into your app's `compmd/` folder (`buildFrames` does it for other hosts, [chapter 18](18-other-hosts.md)):
