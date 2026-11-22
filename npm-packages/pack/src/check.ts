@@ -5,7 +5,7 @@ import { existsSync, statSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
 import { join, posix } from "node:path";
 import { DEFAULT_MAX_PACK_SIZE } from "@compmd/registry";
-import { importedFiles, mdOf, type Pack } from "./pack.ts";
+import { fontFiles, importedFiles, mdOf, type Pack } from "./pack.ts";
 
 /** The size of `path` in `dir`, a file or a folder of them. */
 async function sizeOf(dir: string, path: string): Promise<number> {
@@ -30,6 +30,29 @@ function exportedVersion(text: string): unknown {
   return (mdOf(text).export as { version?: unknown } | undefined)?.version;
 }
 
+/** A licence's file name: `LICENSE`, `LICENCE`, `OFL`, `COPYING`, with any extension. */
+const LICENCE = /^(licen[cs]e|ofl|copying)([-._].*)?$/i;
+
+/**
+ * What the author should check before publishing `pack`, which no host would refuse: each font file with no licence
+ * beside it, in its folder, since a font's licence must let a pack ship it (docs/type-params.md, G2).
+ *
+ * @example
+ * await packWarnings(pack); // ["fonts/harbour.woff2 has no licence beside it: put the font's licence (OFL.txt, say) in fonts/"]
+ */
+export async function packWarnings(pack: Pack): Promise<string[]> {
+  if (pack.kind !== "components") return [];
+  const text = await readFile(join(pack.dir, pack.document), "utf8");
+  const warnings: string[] = [];
+  for (const path of fontFiles(pack.document, text)) {
+    const folder = posix.dirname(path);
+    const at = join(pack.dir, ...folder.split("/"));
+    if (!existsSync(at)) continue;
+    if (!(await readdir(at)).some((name) => LICENCE.test(name))) warnings.push(`${path} has no licence beside it: put the font's licence (OFL.txt, say) in ${folder === "." ? "the pack's folder" : `${folder}/`}`);
+  }
+  return [...new Set(warnings)];
+}
+
 /**
  * What would go wrong with `pack` once published, each saying what to fix; none when it can be published.
  *
@@ -45,9 +68,15 @@ export async function checkPack(pack: Pack): Promise<string[]> {
     const version = exportedVersion(text);
     if (version !== manifest.version) problems.push(`${pack.document}'s export.version is ${typeof version === "string" ? version : "missing"}, package.json's version is ${manifest.version}: write the same in both (F022 otherwise)`);
     const published = manifest.files ?? [];
+    const isPublished = (path: string) => published.some((entry) => path === posix.normalize(entry) || path.startsWith(`${posix.normalize(entry).replace(/\/$/, "")}/`));
     for (const path of importedFiles(pack.document, text)) {
       if (!existsSync(join(dir, ...path.split("/")))) problems.push(`${pack.document} imports ./${path}, which isn't there: run the build, or fix the import`);
-      else if (!published.some((entry) => path === posix.normalize(entry) || path.startsWith(`${posix.normalize(entry).replace(/\/$/, "")}/`))) problems.push(`${pack.document} imports ./${path}, which package.json's \`files\` doesn't publish`);
+      else if (!isPublished(path)) problems.push(`${pack.document} imports ./${path}, which package.json's \`files\` doesn't publish`);
+    }
+    // A font file a host can't serve shows the font's fallback (spec §9.4): found here instead.
+    for (const path of fontFiles(pack.document, text)) {
+      if (!existsSync(join(dir, ...path.split("/")))) problems.push(`${pack.document} declares a font file ./${path}, which isn't there`);
+      else if (!isPublished(path)) problems.push(`${pack.document} declares a font file ./${path}, which package.json's \`files\` doesn't publish`);
     }
   } else {
     const library = join(dir, "node_modules", ...pack.library.split("/"), "package.json");

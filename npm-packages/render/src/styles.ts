@@ -3,6 +3,7 @@
 // Every param of a block follows its parent's width (§9.3), so a block's breakpoint params are container queries,
 // answered by the nearest box around it that is a container: a box becomes one when blocks placed in it use
 // breakpoints, and the page always is.
+import { familyCss } from "./fonts.ts";
 import { IMAGE_BOX_RULES } from "./image-box.ts";
 import type { ExpandedParam } from "./tree.ts";
 
@@ -138,8 +139,11 @@ function declarationsOf(key: string, value: unknown, parent: ParentLayout): Decl
       return { "box-shadow": SHADOW[written] ?? "none" };
     case "font-size":
       return { "font-size": FONT_SIZE[written] ?? written };
-    case "font-family":
-      return FONT_FAMILY[written] === undefined ? {} : { "font-family": FONT_FAMILY[written] };
+    case "font-family": {
+      // A token, or a font of the document's own by its family (`fonts.ts`).
+      const family = FONT_FAMILY[written] ?? familyCss(written);
+      return family === undefined ? {} : { "font-family": family };
+    }
     case "color":
       return { color: TEXT_COLOR[written] ?? written };
     case "line-height":

@@ -4,6 +4,7 @@
 // whole tree; keys follow its edit, and invalid text keeps the last good render (`stable.ts`).
 import { Blocks } from "./blocks.ts";
 import { LineHeights } from "./code-lines.ts";
+import { FontFaces } from "./fonts.ts";
 import { diff, editOf, type Edit } from "./keys.ts";
 import { setLanguage } from "./language.ts";
 import { Layout } from "./layout.ts";
@@ -145,6 +146,11 @@ export function createPage(root: HTMLElement, options: PageOptions = {}): Page {
   const schemes = new Schemes(root);
   const surface = surfaceOf(root.ownerDocument, stylesheet, schemes, options);
   const blocks = new Blocks(root, surface);
+  const fonts = new FontFaces(root, surface.packFile, surface.fonts);
+  /** The fonts of the tree, or of the last splice: the page waits for their rules to be written as it waits to draw. */
+  const setFonts = (next: ExpandedRoot["fonts"]) => {
+    surface.busy.add(fonts.set(next ?? []));
+  };
   const heights = new LineHeights(root);
   const onLayout = options.onLayout?.bind(options);
   const layout = onLayout ? new Layout(root, onLayout) : undefined;
@@ -176,12 +182,15 @@ export function createPage(root: HTMLElement, options: PageOptions = {}): Page {
       schemes.read();
       const edit: Edit | undefined = change && text !== undefined && change.text !== text ? diff(text, change.text, change.edit) : undefined;
       setLanguage(root, tree);
+      setFonts(tree.fonts);
       blocks.apply({ from: 0, to: blocks.length, nodes: tree.children, lines: 0, offset: 0, ...(tree.inputs ? { inputs: tree.inputs } : {}) }, edit);
       show(change);
     },
     splice(splices, change) {
       schemes.read();
       for (const splice of splices) blocks.apply(splice, splice.edit ? editOf(splice.edit) : undefined);
+      const last = splices.at(-1);
+      if (last) setFonts(last.fonts);
       show(change);
     },
     theme,
@@ -199,7 +208,8 @@ export function createPage(root: HTMLElement, options: PageOptions = {}): Page {
     },
     // Mounts run in the render itself, so what is left is what the components said they were drawing.
     drawn: () => surface.busy.idle(),
-    print: () => printLight(root, schemes, () => surface.busy.idle()),
+    // Paper shows the document's own fonts, so a print waits for them too (spec §9.4).
+    print: () => printLight(root, schemes, () => surface.busy.idle().then(() => fonts.loaded())),
     imagesAllowed: (origin) => {
       surface.refused.allowed(origin);
     },
@@ -207,6 +217,7 @@ export function createPage(root: HTMLElement, options: PageOptions = {}): Page {
       layout?.destroy();
       schemes.destroy();
       blocks.destroy();
+      fonts.remove();
       stylesheet.remove();
       theme({});
       root.classList.remove("compmd-page", "compmd-container", "compmd-fills");

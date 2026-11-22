@@ -14805,7 +14805,7 @@
       "description": "From CR-50: cards in a `grid` are as tall as the tallest in their row, but rows differ, and CompMD's vocabulary can't make them one height. CSS's `grid-auto-rows: 1fr` does; `grid-template-rows=\"repeat(2, 1fr)\"` does only when the author knows how many rows `min` makes at each width.\n\n## Do\n- **The spec:** `grid-auto-rows` on `box` and `grid` (§9.1), type `tracks`, with breakpoints, meaning CSS's; `::: grid {min=14rem grid-auto-rows=1fr}` in §9.1's examples. The changelog, and conformance cases (a value, a breakpoint, a value `tracks` doesn't take: F009).\n- **The processor:** the param on `box` and `grid`, `params.json` and `llms.txt` (the vocabulary tests).\n- **The renderer:** the CSS, and a browser test in Chrome and WebKit: link cards over two rows, every card one height.\n- **The guides:** the Author's Guide's grid section.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [],
       "files": [
         "spec/compmd-spec-v1.md",
@@ -14815,7 +14815,7 @@
         "conformance/"
       ],
       "created_at": "2026-11-21T15:35:52Z",
-      "updated_at": "2026-11-22T15:49:33Z",
+      "updated_at": "2026-11-22T16:05:07Z",
       "created_by": "claude:79612601",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -14827,7 +14827,24 @@
       "sprint": "Packs 1: the pack tool, no-code components",
       "number": 369,
       "started_at": "2026-11-22T15:49:33Z",
-      "started_by": "claude:79612601"
+      "started_by": "claude:79612601",
+      "commit": "d8c5d4e95f8c6949888d924f0f9cfe023336073b",
+      "code_reviews": [
+        {
+          "id": "01a20401-0b6d-70ff-b2ce-071490c9f7ef",
+          "ref": "CR-61"
+        }
+      ],
+      "review_requested_at": "2026-11-22T16:05:07Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-22T16:05:07Z",
+          "kind": "review",
+          "text": "CR-61: grid-auto-rows: every row of a grid as tall as the tallest",
+          "by": "claude:79612601"
+        }
+      ]
     },
     {
       "id": "01a1feeb-aada-7653-96de-3c47766d3f06",
@@ -15246,7 +15263,7 @@
       "description": "[Type in a box](docs/type-params.md), decision 7, after CMD-373 (the spec and the processor): the expanded tree's fonts shown.\n\n## Do\n- **The renderer:** each font of the tree's `fonts` (spec §12.3) as an `@font-face` with `font-display: swap`, its fallback token's font after it; a `font-family` param naming one by its `family`; a pack's file by the URL `packFile` gives its place, as for images; printing waits for fonts to load.\n- **The hosts** serving the files: a pack's from its place with its integrity (CMD-362, CMD-365), the document's from its folder, within the pack's size cap.\n- **The sandbox:** a page in a frame without the network gets the files from its host, as it gets images; a component's frame gets the fonts its box's type names (CMD-372).\n- **The pack tool:** a font file a pack declares is there, and a warning for one with no licence beside it (G2).\n- **The Author's Guide:** chapter 3's `font-family` row, and a section on fonts of a document's own and from a pack.\n- **Tests** in Chrome and WebKit: a pack's font loading, its fallback first, a missing file, print.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [
         "01a1ff0c-ad59-7684-8887-3abcc6f4d034"
       ],
@@ -15258,7 +15275,7 @@
         "guides/authors/"
       ],
       "created_at": "2026-11-21T22:36:48Z",
-      "updated_at": "2026-11-21T23:03:04Z",
+      "updated_at": "2026-11-22T16:05:07Z",
       "created_by": "claude:79612601",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -15268,7 +15285,9 @@
         }
       ],
       "sprint": "Packs 1: the pack tool, no-code components",
-      "number": 376
+      "number": 376,
+      "started_at": "2026-11-22T16:05:07Z",
+      "started_by": "claude:79612601"
     }
   ]
 }

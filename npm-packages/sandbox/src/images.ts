@@ -2,11 +2,13 @@
 // sent the frame, and gives it as a Blob, which the frame shows from a `blob:` URL. Its policy stays as it is, so code in
 // the frame still loads nothing itself; and since that code could ask too, the host's page gives only those images.
 // An image of one of the host's own schemes (spec §15) is the host's to load: its file comes from the host, in both modes.
+// The files of the document's own fonts (spec §9.4) come the same way, from the host's page's origin only.
 
-import { imageSources, urlScheme, type ExpandedRoot, type ImageSource, type Refused, type Splice } from "@compmd/render";
+import { imageSources, urlScheme, type ExpandedRoot, type FontSource, type ImageSource, type Refused, type Splice } from "@compmd/render";
 import { packFileOf } from "./found.ts";
 import { ImageGate } from "./image-gate.ts";
 import { originOf } from "./origins.ts";
+import { SentFonts } from "./sent-fonts.ts";
 import { SentNodes } from "./sent-nodes.ts";
 
 /** How long a frame may not ask about an origin again after the reader refused it, in ms (docs/remote-images.md, decision 6). */
@@ -53,6 +55,8 @@ export class PageImages {
   readonly #packs: PackImages | undefined;
   /** The images' `src`, as the frame asks for them. */
   readonly #sources: SentNodes<string>;
+  /** The files of the fonts of the document's own, which the frame asks for as it asks for images (spec §9.4). */
+  readonly #fonts: SentFonts;
   /** When the reader last refused an origin the frame asked about, by origin. */
   readonly #refusedAt = new Map<string, number>();
 
@@ -71,16 +75,19 @@ export class PageImages {
     // A pack's image by the URL the frame asks for, which the frame makes from `packs.at` too (spec §12.3).
     const packFile = packs && packFileOf(packs.at);
     this.#sources = new SentNodes((nodes) => imageSources(nodes, own.schemes, packFile));
+    this.#fonts = new SentFonts(packFile);
   }
 
-  /** The frame renders `tree`: its images are the frame's now. */
+  /** The frame renders `tree`: its images and fonts are the frame's now. */
   rendered(tree: ExpandedRoot): void {
     this.#sources.rendered(tree.children);
+    this.#fonts.rendered(tree.fonts ?? []);
   }
 
-  /** The frame applies `splices`: their images are the frame's too. */
+  /** The frame applies `splices`: their images and fonts are the frame's too. */
   spliced(splices: readonly (Splice | string)[]): void {
     this.#sources.spliced(splices);
+    this.#fonts.spliced(splices);
   }
 
   /**
@@ -89,6 +96,7 @@ export class PageImages {
    * schemes comes from the host; any other is fetched without credentials and without a `Referer`.
    */
   async file(src: string): Promise<Blob | Refused | undefined> {
+    if (this.#fonts.has(src)) return this.#fontFile(src);
     if (!this.#sources.has(src)) return undefined;
     try {
       if (isOwn(src, this.#own.schemes)) return imageOnly(await this.#own.file?.(src));
@@ -114,6 +122,21 @@ export class PageImages {
     if (!(await this.#gate.allow(origin))) this.#refusedAt.set(origin, now());
   }
 
+  /**
+   * A font's file: a registry pack's the host holds, or fetched, never from another origin than the host's page, since
+   * a font is never remote (spec §9.4).
+   */
+  async #fontFile(src: string): Promise<Blob | undefined> {
+    const held = heldImage(src, this.#packs);
+    if (held) return held;
+    if (new URL(src, this.#base).origin !== new URL(this.#base).origin) return undefined;
+    try {
+      return await this.#fetched(src);
+    } catch {
+      return undefined;
+    }
+  }
+
   async #fetched(src: string): Promise<Blob | undefined> {
     const response = await this.#fetch(new URL(src, this.#base), { credentials: "omit", referrerPolicy: "no-referrer" });
     return response.ok ? response.blob() : undefined;
@@ -122,6 +145,24 @@ export class PageImages {
 
 /** `file` when it is an image; a file of another type isn't shown. */
 const imageOnly = (file: Blob | undefined): Blob | undefined => (file?.type.startsWith("image/") ? file : undefined);
+
+/**
+ * Host mode's fonts of the document's own: a registry pack's file the host holds (`packs.images`) from a `blob:` URL of
+ * it, made once; any other from its `src`, as the host's page loads it.
+ *
+ * @example
+ * createPage(container, { fonts: hostFonts({ at: "/packs/", images: (place) => held.get(place) }) });
+ */
+export function hostFonts(packs: PackImages | undefined): FontSource {
+  const shown = new Map<string, string>();
+  return (src) => {
+    const held = heldImage(src, packs);
+    if (!held) return Promise.resolve(src);
+    let url = shown.get(src);
+    if (url === undefined) shown.set(src, (url = URL.createObjectURL(held)));
+    return Promise.resolve(url);
+  };
+}
 
 /**
  * Host mode's images: one of the host's own schemes from a `blob:` URL of the file `file` gives, asked for once while

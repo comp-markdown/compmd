@@ -3,6 +3,7 @@
 // are the example's own (by its number), and a change of its inputs is the example's.
 import { Blocks } from "./blocks.ts";
 import { applyBox } from "./box.ts";
+import { FontFaces } from "./fonts.ts";
 import { setLanguage } from "./language.ts";
 import { CodeBlockView } from "./markdown-views.ts";
 import { shapeOf, type Pass, type Surface, type View } from "./render.ts";
@@ -29,6 +30,8 @@ export class ExampleView implements View {
   readonly #code: View | undefined;
   readonly #content: HTMLElement;
   readonly #blocks: Blocks;
+  /** The example's own fonts, which its root lists. */
+  readonly #fonts: FontFaces;
 
   constructor(surface: Surface, node: MarkdownNode, pass: Pass, key: string | undefined) {
     const example = node as ExpandedCode;
@@ -45,6 +48,7 @@ export class ExampleView implements View {
     this.#content = this.dom.appendChild(surface.document.createElement("div"));
     this.#content.classList.add("compmd-example-document");
     this.#blocks = new Blocks(this.#content, exampleSurface(surface, example.document?.example ?? 0));
+    this.#fonts = new FontFaces(this.#content, surface.packFile, surface.fonts);
     this.update(node, pass);
   }
 
@@ -54,6 +58,7 @@ export class ExampleView implements View {
     this.#code?.update({ type: "code", lang: example.lang, meta: example.meta, value: example.value }, pass);
     const root: ExpandedRoot = example.document ?? { type: "root", children: [] };
     setLanguage(this.#content, root);
+    this.#surface.busy.add(this.#fonts.set(root.fonts ?? []));
     this.#blocks.apply({ from: 0, to: this.#blocks.length, nodes: root.children, lines: 0, offset: 0, ...(root.inputs ? { inputs: root.inputs } : {}) }, undefined);
     this.#blocks.render([], undefined);
   }
@@ -61,6 +66,7 @@ export class ExampleView implements View {
   destroy(): void {
     this.#code?.destroy();
     this.#blocks.destroy();
+    this.#fonts.remove();
     this.#surface.stylesheet.forget(this.dom);
     this.dom.remove();
   }

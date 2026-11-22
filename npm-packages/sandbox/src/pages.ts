@@ -8,7 +8,7 @@ import { packFileOf } from "./found.ts";
 import { forSent, sentBlocks } from "./frames-highlight.ts";
 import { framesMath } from "./from-frames.ts";
 import type { HostRuntime } from "./host/runtime.ts";
-import { hostImages, PageImages } from "./images.ts";
+import { hostFonts, hostImages, PageImages } from "./images.ts";
 import { codeFor } from "./mounts.ts";
 import type { Observer } from "./observer.ts";
 import { diagnosticOf, HELLO, SANDBOX_VERSION, type ErrorReason, type Scheme } from "./protocol/messages.ts";
@@ -66,6 +66,8 @@ export function hostPage(container: HTMLElement, runtime: HostRuntime, options: 
     printsFallback: (name) => runtime.printsFallback(name),
     // Images of the host's own schemes from the host's files; remote ones once the reader allows their origin (spec §15).
     images: hostImages(runtime.schemes, options.ownImages, runtime.gate, options.packs === undefined ? undefined : { at: options.packs, images: options.packImages }),
+    // The document's own fonts as the page loads them, a registry pack's the host holds from its file (spec §9.4).
+    fonts: hostFonts(options.packs === undefined ? undefined : { at: options.packs, images: options.packImages }),
     allowOrigin: (origin) => void runtime.gate.allow(origin),
     // The trusted components in this page get `host` as the runtime gives it; framed ones get theirs from their frame.
     ...(runtime.host ? { host: runtime.host } : {}),

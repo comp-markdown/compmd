@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { DEFAULT_MAX_PACK_SIZE } from "@compmd/registry";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { documentOf, folder, write } from "../test/folders.ts";
-import { checkPack } from "./check.ts";
+import { checkPack, packWarnings } from "./check.ts";
 import { readPack } from "./pack.ts";
 
 let dir: string;
@@ -66,5 +66,29 @@ describe("checkPack", () => {
     });
     await rm(join(dir, "dist/line.js"));
     expect(await problems()).toEqual(["package.json's version is 0.0.0, three's is 0.180.0: a library pack's version is its library's, which the build writes", "dist/index.js is missing: run the build"]);
+  });
+});
+
+describe("a pack's fonts", () => {
+  /** The pack's document with a font of two files, `fonts/serif.woff2` and `fonts/serif-bold.woff2`. */
+  const withFont = () => `${documentOf(["dist/line.js"]).replace(/---\n$/, "")}  fonts:\n    serif:\n      files:\n        - { from: ./fonts/serif.woff2 }\n        - { from: ./fonts/serif-bold.woff2, weight: bold }\n---\n`;
+
+  it("finds a font file that isn't there, and one `files` doesn't publish", async () => {
+    await write(dir, { "index.comp.md": withFont(), "fonts/serif.woff2": "wOF2" });
+    expect(await problems()).toEqual([
+      "index.comp.md declares a font file ./fonts/serif.woff2, which package.json's `files` doesn't publish",
+      "index.comp.md declares a font file ./fonts/serif-bold.woff2, which isn't there",
+    ]);
+  });
+
+  it("warns of a font file with no licence beside it, once for its folder's files", async () => {
+    await write(dir, { "index.comp.md": withFont(), "fonts/serif.woff2": "wOF2", "fonts/serif-bold.woff2": "wOF2", "package.json": { ...PACK["package.json"], files: [...PACK["package.json"].files, "fonts"] } });
+    expect(await problems()).toEqual([]);
+    expect(await packWarnings(await readPack(dir))).toEqual([
+      "fonts/serif.woff2 has no licence beside it: put the font's licence (OFL.txt, say) in fonts/",
+      "fonts/serif-bold.woff2 has no licence beside it: put the font's licence (OFL.txt, say) in fonts/",
+    ]);
+    await write(dir, { "fonts/OFL.txt": "SIL Open Font License" });
+    expect(await packWarnings(await readPack(dir))).toEqual([]);
   });
 });

@@ -3,7 +3,7 @@
 
 import { parseArgs } from "node:util";
 import { buildModules } from "./build.ts";
-import { checkPack } from "./check.ts";
+import { checkPack, packWarnings } from "./check.ts";
 import { servePack } from "./dev.ts";
 import { PackError, readPack } from "./pack.ts";
 import { testPack } from "./test.ts";
@@ -25,7 +25,9 @@ try {
   } else if (command === "build") {
     const pack = await readPack(process.cwd());
     for (const note of await buildModules(pack)) process.stdout.write(`${note}\n`);
-    const problems = await checkPack(await readPack(process.cwd()));
+    const built = await readPack(process.cwd());
+    for (const warning of await packWarnings(built)) process.stdout.write(`${warning}\n`);
+    const problems = await checkPack(built);
     for (const problem of problems) process.stderr.write(`${problem}\n`);
     process.exitCode = problems.length > 0 ? 1 : 0;
   } else if (command === "dev") {

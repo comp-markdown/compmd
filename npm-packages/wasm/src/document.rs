@@ -27,7 +27,7 @@ pub(crate) struct Document {
 }
 
 /// The processed document's top-level expanded nodes `from..to` became `nodes`; every node after them moved by
-/// `lines` lines and `offset` code points. With the root's inputs, and the edit that made it.
+/// `lines` lines and `offset` code points. With the root's inputs and fonts, and the edit that made it.
 #[derive(Serialize)]
 struct Splice<'a> {
     from: usize,
@@ -37,6 +37,8 @@ struct Splice<'a> {
     offset: isize,
     #[serde(skip_serializing_if = "expanded::Inputs::is_empty")]
     inputs: &'a expanded::Inputs,
+    #[serde(skip_serializing_if = "<[_]>::is_empty")]
+    fonts: &'a [expanded::Font],
     #[serde(skip_serializing_if = "Option::is_none")]
     edit: Option<Edit<'a>>,
 }
@@ -101,7 +103,7 @@ impl Document {
         })
     }
 
-    /// The last change's splice, `{from, to, nodes, lines, offset, inputs, edit}`; after opening, the whole tree.
+    /// The last change's splice, `{from, to, nodes, lines, offset, inputs, fonts, edit}`; after opening, the whole tree.
     pub(crate) fn splice(&self) -> Result<String, Error> {
         let splice = self.processor.splice();
         Ok(serde_json::to_string(&Splice {
@@ -111,6 +113,7 @@ impl Document {
             lines: splice.lines,
             offset: splice.offset,
             inputs: &self.processor.expanded().inputs,
+            fonts: &self.processor.expanded().fonts,
             edit: self.edit.as_ref().map(Edit::from),
         })?)
     }
@@ -258,6 +261,14 @@ mod tests {
         let inputs: Json =
             serde_json::from_str(&with_inputs.inputs().expect("inputs")).expect("JSON");
         assert_eq!(inputs, json!({ "n": { "type": "number", "value": 1 } }));
+        assert!(splice.get("fonts").is_none());
+        let with_fonts = open(
+            "---\nmd:\n  fonts:\n    serif:\n      files: [{from: ./serif.woff2}]\n---\n\n::: box {font-family=serif}\nA.\n::: /box\n",
+        );
+        assert_eq!(
+            self::changes(&with_fonts)["splice"]["fonts"][0]["family"],
+            "serif"
+        );
     }
 
     #[test]

@@ -7,6 +7,7 @@ import { BoxView, ComponentView, INPUTS, InputView, RenderedCodeView } from "./c
 import type { ComponentError, ComponentRecovered, Mount } from "./contract.ts";
 import type { LinkDefinition } from "./document.ts";
 import { ExampleView } from "./example-view.ts";
+import type { FontSource } from "./fonts.ts";
 import type { CodeHighlighter } from "./highlight.ts";
 import { withHtml } from "./html.ts";
 import type { ImageSource } from "./images.ts";
@@ -83,6 +84,8 @@ export interface Surface {
   printsFallback(name: string): boolean;
   /** Where images come from; without it, each loads from its `src`. */
   images?: ImageSource | undefined;
+  /** Where the files of the document's own fonts come from; without it, each loads from its URL. */
+  fonts?: FontSource | undefined;
   /** The reader asks to see the images of an origin the image source refused (spec §15). */
   allowOrigin?: ((origin: string) => void) | undefined;
   /** The images refused for their origin, asked for again once it is allowed. */

@@ -50,6 +50,20 @@ export function mdOf(text: string): Record<string, unknown> {
   }
 }
 
+/** The files of the fonts a document declares under `md.fonts` (spec §9.4), as paths in the pack. */
+export function fontFiles(document: string, text: string): string[] {
+  const fonts = mdOf(text).fonts;
+  if (typeof fonts !== "object" || fonts === null) return [];
+  return Object.values(fonts).flatMap((font: unknown) => {
+    const files = typeof font === "object" && font !== null ? (font as { files?: unknown }).files : undefined;
+    if (!Array.isArray(files)) return [];
+    return files.flatMap((file: unknown) => {
+      const from = typeof file === "object" && file !== null ? (file as { from?: unknown }).from : undefined;
+      return typeof from === "string" ? [posix.normalize(posix.join(posix.dirname(document), from))] : [];
+    });
+  });
+}
+
 /** The relative `from`s of a document's imports, as paths in the pack. */
 export function importedFiles(document: string, text: string): string[] {
   const imports = mdOf(text).import;

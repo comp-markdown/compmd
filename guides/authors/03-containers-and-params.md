@@ -143,7 +143,7 @@ Every block, whatever its component, has a box around it, and every component ta
 | `rotate` | a tilt, from `-15deg` to `15deg`: a note pinned on the page, `rotate=-2deg`; it moves nothing around it |
 | `font-size` | `s`, `m`, `l`, `xl` (smaller or larger than the text around it), or a length |
 | `font-weight`, `font-style` | `normal` or `bold`; `normal` or `italic` |
-| `font-family` | `body`, `heading` or `mono`: the app's fonts for text, headings and code |
+| `font-family` | `body`, `heading` or `mono`: the app's fonts for text, headings and code; or a font of the document's own (below) |
 | `color` | the text's colour: `muted`, `accent`, or a color such as `#a40e26` |
 | `text-align` | `start`, `center` or `end` |
 | `line-height`, `letter-spacing` | `tight`, `normal` or `loose` (or a number); `tight`, `normal` or `wide` (or a length) |
@@ -159,6 +159,26 @@ A length is a number with `px`, `rem`, `em` or `%`; `1rem` is the page's text si
 A component that draws, a chart or a QR code, fills its box, so its box's params size it: `:: qr-code[Our site] {value="https://compmd.dev/" width=10rem}` is 10rem wide, and with `height=6rem` too it is as large as fits in that box, in its middle, or at its start with `object-position=start`. `object-fit` and `object-position` take no breakpoint.
 
 The type params reach everything in the box, nested boxes too, until one sets its own: `::: box {font-family=heading font-size=l text-align=center}` around a quote sets it larger, centred, in the heading font. `text-transform=uppercase` shows the text in capitals while it stays as you wrote it, so a screen reader reads `:badge[new]{text-transform=uppercase}` as "new". A text colour and a background, both written as colours, that are too close to read get a warning (`W126`); the words `muted` and `subtle` suit light and dark pages.
+
+A document can bring a font of its own, which it names under `md.fonts`, with its files next to the document, and the type word it falls back to (`body` unless it says):
+
+```md
+---
+md:
+  fonts:
+    harbour-serif:
+      fallback: heading
+      files:
+        - { from: ./fonts/harbour-serif.woff2 }
+        - { from: ./fonts/harbour-serif-bold.woff2, weight: bold }
+---
+
+::: box {font-family=harbour-serif font-size=xl}
+The Harbour Weekly
+::: /box
+```
+
+The files are `.woff2` or `.woff`, a `weight` of `normal` or `bold` and a `style` of `normal` or `italic` each, and never from another website. The fallback shows while the font loads, where the app doesn't load fonts, and in a plain Markdown reader. A pack can bring fonts too: its document declares them and exports them, `export: { fonts: [harbour-serif] }`, and a document takes them with `import: [{ from: "@acme/harbour-look@1", fonts: [harbour-serif] }]`, so a newsletter's look, its fonts and the components set in them, is one pack. A font's name is the document's, as a component's is: a pack's components use the pack's fonts.
 
 An image fits its box the same way when the box holds that image and nothing else, so a box crops a photo to a shape: `::: box {aspect-ratio=4/3 object-fit=cover}` around `![Boats at the quay](harbour.jpg)` makes it 4:3 whatever its own shape, cut at its edges, and `object-position="start center"` keeps its top. Without a height, from `height`, `aspect-ratio` or a grid row, the box is as tall as the image and nothing is cut. A box with an image and a caption is no such box: put the image in a box of its own. On any other box, the two params get a warning (`W125`).
 

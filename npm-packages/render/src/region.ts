@@ -3,6 +3,7 @@
 import { Busy } from "./busy.ts";
 import type { ComponentError, ComponentRecovered, Mount, RenderError } from "./contract.ts";
 import type { LinkDefinition } from "./document.ts";
+import type { FontSource } from "./fonts.ts";
 import type { CodeHighlighter } from "./highlight.ts";
 import { ownSchemes } from "./html.ts";
 import { RefusedImages } from "./refused-images.ts";
@@ -69,6 +70,8 @@ export interface SurfaceOptions {
   printsFallback?(name: string): boolean;
   /** Where images come from, for a page that can't load them itself; without it, each loads from its `src`. */
   images?: ImageSource;
+  /** Where the files of the document's own fonts come from (spec §9.4), for a page that can't load them itself; without it, each loads from its URL. */
+  fonts?: FontSource;
   /**
    * The reader asks to see the images of `origin`, which `images` refused (spec §15): the button beside a refused
    * image's alt text calls it. The host asks again, and when the origin is allowed tells the page (`imagesAllowed`).
@@ -154,6 +157,7 @@ export function surfaceOf(document: Document, stylesheet: Stylesheet, schemes: S
     ownSchemes: ownSchemes(options.ownSchemes ?? []),
     printsFallback: options.printsFallback?.bind(options) ?? (() => false),
     images: options.images,
+    fonts: options.fonts?.bind(options),
     allowOrigin: options.allowOrigin?.bind(options),
     refused: new RefusedImages(),
     drawn: new Drawn(),

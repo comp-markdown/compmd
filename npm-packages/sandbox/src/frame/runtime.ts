@@ -4,7 +4,7 @@
 // on the same port) or one use with its slots.
 // A component of a lower level gets a nested strict frame; one of a higher level shows its fallback.
 
-import { createRegion, type ImageSource, type Page, type Region } from "@compmd/render";
+import { createRegion, type FontSource, type ImageSource, type Page, type Region } from "@compmd/render";
 import { serveFrame, type Port as RenderPort } from "@compmd/render/frame";
 import { packFileOf, type PackFile } from "../found.ts";
 import { hostClient, type HostClient } from "../host-api.ts";
@@ -184,6 +184,17 @@ function imagesFrom(parent: FrameEnd): ImageSource {
   };
 }
 
+/**
+ * A page frame's fonts of the document's own (spec §9.4): their files come from the parent as images do, which gives
+ * only the files of the trees it sent; one it can't give shows the font's fallback.
+ */
+function fontsFrom(images: ImageSource): FontSource {
+  return async (src) => {
+    const url = await images(src);
+    return typeof url === "string" ? url : undefined;
+  };
+}
+
 function start(port: MessagePort): void {
   let level: Level = "strict";
   let components: readonly ComponentCode[] = [];
@@ -337,7 +348,8 @@ function start(port: MessagePort): void {
       packs = served === undefined ? {} : { packFile: packFileOf(served) };
       // A page frame (frame mode) renders the page through `@compmd/render`'s protocol, on the same port.
       const container = document.getElementById("page");
-      if (container) page = serveFrame(recordingFallbacks(port, observer), { container, components: mounts.mounts, examples: mounts.examples, math, highlight, images: imagesFrom(parent), allowOrigin: (origin) => {
+      const images = imagesFrom(parent);
+      if (container) page = serveFrame(recordingFallbacks(port, observer), { container, components: mounts.mounts, examples: mounts.examples, math, highlight, images, fonts: fontsFrom(images), allowOrigin: (origin) => {
             parent.allowOrigin(origin);
           }, onLayout: moved, ownSchemes: schemes, ...packs, printsFallback }).page;
     },

@@ -119,6 +119,24 @@ export interface ExpandedRoot {
   lang?: string;
   /** The document's direction, when it writes `md.dir` or `md.lang`. */
   dir?: "ltr" | "rtl" | "auto";
+  /** The fonts of the document's own its params name (spec §9.4, §12.3). */
+  fonts?: ExpandedFont[];
+}
+
+/** A font of a document's own, as the expanded tree's root lists it (spec §12.3): `font-family` names it by `family`. */
+export interface ExpandedFont {
+  family: string;
+  /** The type token that shows while it loads, or where it can't. */
+  fallback: "body" | "heading" | "mono";
+  files: ExpandedFontFile[];
+}
+
+/** A file of a font: a URL relative to the document, or a pack's file by its place (`pack`). */
+export interface ExpandedFontFile {
+  url: string;
+  pack?: boolean;
+  weight: "normal" | "bold";
+  style: "normal" | "italic";
 }
 
 /** An edit in code points (spec §10.5): the text's `start..end` became `text`. */
@@ -142,6 +160,8 @@ export interface Splice {
   offset: number;
   /** The root's inputs after the change. */
   inputs?: Record<string, ExpandedInput>;
+  /** The root's fonts after the change. */
+  fonts?: ExpandedFont[];
   /** The edit that made it; absent when the text didn't change (opening, data loaded again). */
   edit?: TextEdit;
 }

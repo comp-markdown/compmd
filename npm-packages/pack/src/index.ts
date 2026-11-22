@@ -2,6 +2,6 @@
 // that builds or serves packs itself uses these.
 export { readPack, PackError, type Manifest, type Module, type Pack } from "./pack.ts";
 export { buildModules } from "./build.ts";
-export { checkPack } from "./check.ts";
+export { checkPack, packWarnings } from "./check.ts";
 export { servePack, DEMO } from "./dev.ts";
 export { testPack } from "./test.ts";
