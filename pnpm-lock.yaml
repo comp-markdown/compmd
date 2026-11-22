@@ -1400,6 +1400,33 @@ importers:
 
   website/blog:
     dependencies:
+      '@comp-markdown/badge':
+        specifier: workspace:*
+        version: link:../../compmd-packs/badge
+      '@comp-markdown/card':
+        specifier: workspace:*
+        version: link:../../compmd-packs/card
+      '@comp-markdown/columns':
+        specifier: workspace:*
+        version: link:../../compmd-packs/columns
+      '@comp-markdown/figure':
+        specifier: workspace:*
+        version: link:../../compmd-packs/figure
+      '@comp-markdown/gallery':
+        specifier: workspace:*
+        version: link:../../compmd-packs/gallery
+      '@comp-markdown/link-card':
+        specifier: workspace:*
+        version: link:../../compmd-packs/link-card
+      '@comp-markdown/rating':
+        specifier: workspace:*
+        version: link:../../compmd-packs/rating
+      '@comp-markdown/sticky-note':
+        specifier: workspace:*
+        version: link:../../compmd-packs/sticky-note
+      '@comp-markdown/timeline':
+        specifier: workspace:*
+        version: link:../../compmd-packs/timeline
       d3:
         specifier: 7.9.0
         version: 7.9.0

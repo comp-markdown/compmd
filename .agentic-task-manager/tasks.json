@@ -15669,11 +15669,11 @@
       "description": "The second post, after *Why CompMD* (CMD-14), in the same voice (the maintainer's own blog's: first person, a personal hook, plain sentence-style headings, dry asides, a direct \"you\"): a tour of the components this sprint made, written as a CompMD document in `website/blog/posts/`.\n\n## What it shows\n- **The no-code packs**, each with a `compmd {render=both}` example from a newsletter or a post, not a test: `card`, `link-card`, `gallery` (photos of different shapes cropped to one, `ratio`), `figure`, `badge`, `sticky-note`, `timeline`, `rating`, `columns`.\n- **That they are written in CompMD itself**, with no code: what a reader of the pack's `index.comp.md` sees, and that any processor renders them with no sandbox.\n- **Type in a box** (`font-family`, `font-size`, `color`, …) and a font of the document's own, if the packs on npm have it by then.\n- **Mermaid and wireframes** in a line or two, as packs with code, run in the sandbox.\n- **The pack tool:** `npm create @compmd/pack` and `compmd-pack dev`, for a reader who wants to make one.\n\n## Links\nThe playground (`https://compmd.dev/playground/`, a `?doc=` for each example it has, adding those it lacks), each pack's README, the Author's Guide's chapters on boxes and params, and the Developer's Guide's chapter on a first pack.\n\n## Before publishing\nThe packs it imports must be on npm at the versions it uses (gallery 0.2.0, the others' current versions), released with `cargo make release-packs`. Drafted and reviewed with the maintainer (`atm review create --file`); publishing (the push) needs their go.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [],
       "files": [],
       "created_at": "2026-11-22T17:45:53Z",
-      "updated_at": "2026-11-22T19:16:09Z",
+      "updated_at": "2026-11-22T19:22:46Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -15691,10 +15691,25 @@
           "kind": "note",
           "text": "Drafted while CMD-14 is in review: the order is the publishing’s, not the writing’s, so it is published after *Why CompMD*.",
           "by": "claude:79612601"
+        },
+        {
+          "at": "2026-11-22T19:22:46Z",
+          "kind": "review",
+          "text": "CR-69: Blog post draft: the first packs",
+          "by": "claude:79612601"
         }
       ],
       "started_at": "2026-11-22T19:16:09Z",
-      "started_by": "claude:79612601"
+      "started_by": "claude:79612601",
+      "commit": "43115c730573962b1ad57a3b877a9a82a9358152",
+      "code_reviews": [
+        {
+          "id": "01a204b6-00b0-77f7-be6b-5b19166a0381",
+          "ref": "CR-69"
+        }
+      ],
+      "review_requested_at": "2026-11-22T19:22:46Z",
+      "review_state": "waiting"
     }
   ]
 }

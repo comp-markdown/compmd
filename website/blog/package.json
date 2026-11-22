@@ -2,10 +2,19 @@
   "name": "@compmd/website-blog",
   "version": "0.1.0",
   "private": true,
-  "description": "The CompMD website's blog: its posts, built by @compmd/blog in the site's layout. An app of its own, for the libraries its posts' components use.",
+  "description": "The CompMD website's blog: its posts, built by @compmd/blog in the site's layout. An app of its own, for the libraries and packs its posts use: CompMD's own packs from the workspace, as they are before a release.",
   "license": "MIT",
   "type": "module",
   "dependencies": {
+    "@comp-markdown/badge": "workspace:*",
+    "@comp-markdown/card": "workspace:*",
+    "@comp-markdown/columns": "workspace:*",
+    "@comp-markdown/figure": "workspace:*",
+    "@comp-markdown/gallery": "workspace:*",
+    "@comp-markdown/link-card": "workspace:*",
+    "@comp-markdown/rating": "workspace:*",
+    "@comp-markdown/sticky-note": "workspace:*",
+    "@comp-markdown/timeline": "workspace:*",
     "d3": "7.9.0"
   }
 }
