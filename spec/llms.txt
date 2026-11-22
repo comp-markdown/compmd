@@ -278,12 +278,12 @@ md:
 
 | Component | Lays out | Own params |
 | --- | --- | --- |
-| `box` | per `display` (`block`, `flex`, `grid`) | `display`, `flex-direction`, `gap`, `align-items`, `justify-content`, `flex-wrap`, `grid-template-columns`, `grid-template-rows`, `grid-template-areas` |
+| `box` | per `display` (`block`, `flex`, `grid`) | `display`, `flex-direction`, `gap`, `align-items`, `justify-content`, `flex-wrap`, `grid-template-columns`, `grid-template-rows`, `grid-auto-rows`, `grid-template-areas` |
 | `stack` | top to bottom | `gap`, `align-items` |
 | `row` | side by side, wrapping | `gap`, `align-items`, `justify-content`, `flex-wrap` |
-| `grid` | as many per row as fit (`min`), or an exact grid | `min`, `gap`, `align-items`, `grid-template-columns`, `grid-template-rows`, `grid-template-areas` |
+| `grid` | as many per row as fit (`min`), or an exact grid | `min`, `gap`, `align-items`, `grid-template-columns`, `grid-template-rows`, `grid-auto-rows`, `grid-template-areas` |
 
-`box`'s params take: `display=block|flex|grid|contents`, `flex-direction=row|column`, `align-items=start|center|end|stretch`, `justify-content=start|center|end|between|around|space-between|space-around`, `flex-wrap=wrap|nowrap`, `gap` a space (below), `grid-template-columns` and `grid-template-rows` tracks (`1fr 2fr`, `repeat(auto-fill, minmax(12rem, 1fr))`), `grid-template-areas` quoted rows of area names (`"'head head' 'side main'"`).
+`box`'s params take: `display=block|flex|grid|contents`, `flex-direction=row|column`, `align-items=start|center|end|stretch`, `justify-content=start|center|end|between|around|space-between|space-around`, `flex-wrap=wrap|nowrap`, `gap` a space (below), `grid-template-columns`, `grid-template-rows` and `grid-auto-rows` tracks (`1fr 2fr`, `repeat(auto-fill, minmax(12rem, 1fr))`; `grid-auto-rows=1fr` makes every row as tall as the tallest), `grid-template-areas` quoted rows of area names (`"'head head' 'side main'"`).
 
 Common params, on any container or leaf (they style its outer box):
 

@@ -93,7 +93,7 @@ Free for next year. Ask Maya.
 | `box` | one under another, as the page does | `display` and the others below, which the three after it set for you |
 | `stack` | one under another, with a gap between them | `gap`, `align-items` |
 | `row` | side by side, wrapping onto the next line when there isn't room | `gap`, `align-items`, `justify-content`, `flex-wrap` |
-| `grid` | in columns: as many as fit (`min`), or the columns you give | `min`, `gap`, `align-items`, `grid-template-columns`, `grid-template-rows`, `grid-template-areas` |
+| `grid` | in columns: as many as fit (`min`), or the columns you give | `min`, `gap`, `align-items`, `grid-template-columns`, `grid-template-rows`, `grid-auto-rows`, `grid-template-areas` |
 
 Each of them is also a box, with the common params of chapter 3: `padding`, `border`, `background` and the others work on a row or a grid as on a box.
 
@@ -158,6 +158,24 @@ A grid lays its items in columns. There are two ways to say which:
 - **The columns you give.** `grid-template-columns="2fr 1fr"` makes two columns, the first twice as wide as the second. `fr` is a share of the room left; a column can also be a length, `12rem`, or `auto`, as wide as its content. Each item takes the next cell, row by row.
 
 A grid with neither has one column, so its items come one under another; chapter 10 gives it columns from a width up. `gap` is the space between the cells, and `align-items` lines up items in a row of cells as in a `row`. `grid-template-rows` and `grid-template-areas`, which place items in cells of their own, are in chapter 11.
+
+Cards in a row of cells are as tall as the tallest of them, but the next row may be shorter. `grid-auto-rows=1fr` makes every row as tall as the tallest, however many rows the page's width makes:
+
+```md
+::: grid {min=14rem gap=m grid-auto-rows=1fr}
+::: box {border=subtle padding=m}
+[The harbour at dusk](harbour.comp.md)
+::: /box
+
+::: box {border=subtle padding=m}
+[Tides](tides.comp.md)
+::: /box
+
+::: box {border=subtle padding=m}
+[The old quay, and the boats that come in an hour after dusk](quay.comp.md)
+::: /box
+::: /grid
+```
 
 ## Gaps and sizes
 

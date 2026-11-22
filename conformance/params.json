@@ -939,6 +939,21 @@
       "breakpoints": true
     },
     {
+      "name": "grid-auto-rows",
+      "tokens": [],
+      "forms": [
+        "tracks"
+      ],
+      "examples": [
+        "1fr 2fr",
+        "repeat(auto-fill, minmax(12rem, 1fr))"
+      ],
+      "upTo": 1,
+      "flag": false,
+      "quoted": true,
+      "breakpoints": true
+    },
+    {
       "name": "grid-template-areas",
       "tokens": [],
       "forms": [

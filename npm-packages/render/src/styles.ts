@@ -14,7 +14,7 @@ export const BREAKPOINTS: readonly (readonly [string, number])[] = [
 ];
 
 /** `box`'s own layout params (spec §9). */
-export const LAYOUT = ["display", "flex-direction", "gap", "align-items", "justify-content", "flex-wrap", "grid-template-columns", "grid-template-rows", "grid-template-areas"];
+export const LAYOUT = ["display", "flex-direction", "gap", "align-items", "justify-content", "flex-wrap", "grid-template-columns", "grid-template-rows", "grid-auto-rows", "grid-template-areas"];
 
 /** The common params (spec §9.2), and the attributes any component takes. */
 export const COMMON = [

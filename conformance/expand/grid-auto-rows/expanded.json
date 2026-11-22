@@ -1,0 +1,47 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [
+        { "key": "display", "breakpoint": null, "value": "grid" },
+        { "key": "gap", "breakpoint": null, "value": "none" },
+        { "key": "align-items", "breakpoint": null, "value": "stretch" },
+        { "key": "grid-template-columns", "breakpoint": null, "value": "repeat(auto-fill, minmax(14rem, 1fr))" },
+        { "key": "grid-auto-rows", "breakpoint": null, "value": "1fr" },
+        { "key": "grid-auto-rows", "breakpoint": "md", "value": "minmax(8rem, 1fr)" }
+      ],
+      "children": [
+        { "type": "paragraph", "children": [{ "type": "text", "value": "A short card." }] },
+        { "type": "paragraph", "children": [{ "type": "text", "value": "A card whose text runs over more lines than the others, in a row of its own on a phone." }] }
+      ],
+      "slots": []
+    },
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [
+        { "key": "display", "breakpoint": null, "value": "grid" },
+        { "key": "grid-auto-rows", "breakpoint": null, "value": "auto" }
+      ],
+      "children": [
+        { "type": "paragraph", "children": [{ "type": "text", "value": "A box's rows." }] }
+      ],
+      "slots": []
+    },
+    {
+      "type": "componentContainer",
+      "name": "box",
+      "params": [
+        { "key": "display", "breakpoint": null, "value": "grid" },
+        { "key": "gap", "breakpoint": null, "value": "none" },
+        { "key": "align-items", "breakpoint": null, "value": "stretch" }
+      ],
+      "children": [
+        { "type": "paragraph", "children": [{ "type": "text", "value": "Not a track: the param is treated as absent." }] }
+      ],
+      "slots": []
+    }
+  ]
+}

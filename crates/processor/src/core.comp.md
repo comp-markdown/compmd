@@ -22,6 +22,7 @@ params:
   flex-wrap: wrap | nowrap = nowrap
   grid-template-columns: tracks?
   grid-template-rows: tracks?
+  grid-auto-rows: tracks?
   grid-template-areas: areas?
 slots: [default]
 ```
@@ -46,13 +47,14 @@ slots: [default]
 {{md.slot}}
 ```
 
-```compmd component=grid {display=grid gap=(gap) align-items=(align_items) grid-template-columns=(grid_template_columns != null ? grid_template_columns : min != null ? "repeat(auto-fill, minmax(" + min + ", 1fr))" : null) grid-template-rows=(grid_template_rows) grid-template-areas=(grid_template_areas)}
+```compmd component=grid {display=grid gap=(gap) align-items=(align_items) grid-template-columns=(grid_template_columns != null ? grid_template_columns : min != null ? "repeat(auto-fill, minmax(" + min + ", 1fr))" : null) grid-template-rows=(grid_template_rows) grid-auto-rows=(grid_auto_rows) grid-template-areas=(grid_template_areas)}
 params:
   min: length?
   gap: space = none
   align-items: start | center | end | stretch = stretch
   grid-template-columns: tracks?
   grid-template-rows: tracks?
+  grid-auto-rows: tracks?
   grid-template-areas: string?
 slots: [default]
 ---

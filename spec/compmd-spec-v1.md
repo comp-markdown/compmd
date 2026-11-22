@@ -1183,13 +1183,14 @@ Built-ins are an ordinary pack, `@compmd/core`, imported into every document. It
 
 | Component  | Defined as    | Lays out children                                                   | Own params                                                                                                                                  |
 | ------- | ------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `box`   | processor     | per `display`                                                       | `display` (`block`, `flex`, `grid`; `contents` on a definition fence, section 9.2), `flex-direction`, `gap`, `align-items`, `justify-content`, `flex-wrap`, `grid-template-columns`, `grid-template-rows`, `grid-template-areas` |
+| `box`   | processor     | per `display`                                                       | `display` (`block`, `flex`, `grid`; `contents` on a definition fence, section 9.2), `flex-direction`, `gap`, `align-items`, `justify-content`, `flex-wrap`, `grid-template-columns`, `grid-template-rows`, `grid-auto-rows`, `grid-template-areas` |
 | `stack` | CompMD, on `box` | top to bottom                                                       | `gap`, `align-items`                                                                                                                        |
 | `row`   | CompMD, on `box` | side by side, wrapping when there isn't room                        | `gap`, `align-items`, `justify-content`, `flex-wrap` (`wrap` by default, or `nowrap`)                                                       |
-| `grid`  | CompMD, on `box` | as cards, as many per row as fit (`min`), or on an exact grid       | `min`, `gap`, `align-items`, `grid-template-columns`, `grid-template-rows`, `grid-template-areas`                                           |
+| `grid`  | CompMD, on `box` | as cards, as many per row as fit (`min`), or on an exact grid       | `min`, `gap`, `align-items`, `grid-template-columns`, `grid-template-rows`, `grid-auto-rows`, `grid-template-areas`                         |
 
 - **Names.** A param that sets one CSS property is named after that property and takes its values (section 9.4), so people and tools can guess it. CompMD's own names are only for what no single CSS property does: `min`, `scroll`, `fill`, `sticky`, `show` and `hide`. `justify-content` also accepts `between` and `around` for `space-between` and `space-around`.
 - **`grid`** with `min` sets `grid-template-columns` to `repeat(auto-fill, minmax(<min>, 1fr))`: `::: grid {min=14rem gap=m}` shows three cards across a wide page and one per row on a phone. With neither `min` nor a template, a grid has one column, so `::: grid {md:grid-template-columns="3fr 2fr"}` puts two blocks side by side from `md` up and stacks them below it.
+- **Rows of one height.** A grid's cards are as tall as the tallest in their row, but rows differ. `grid-auto-rows` sizes the rows no template gives, as CSS's property does: `::: grid {min=14rem grid-auto-rows=1fr}` makes every row as tall as the tallest, however many rows `min` makes at each width.
 - **Exact grids** place their children with `grid-area` (section 9.2): `::: grid {grid-template-columns="12rem 1fr" grid-template-areas="'head head' 'side main'"}`.
 
 `@compmd/core` also exports `if` and `each` (section 8.3), `value` (section 8.4) and the input components (section 8.7), which the processor implements too.
@@ -1216,6 +1217,7 @@ params:
   flex-wrap: wrap | nowrap = nowrap
   grid-template-columns: tracks?
   grid-template-rows: tracks?
+  grid-auto-rows: tracks?
   grid-template-areas: areas?
 slots: [default]
 ```
@@ -1380,7 +1382,7 @@ A layout or common param MAY carry a breakpoint prefix: `md:gap=l` overrides `ga
   - **The files are served as images are** (section 8.6): a pack's from its place, among the pack's checked files and within its size cap (section 6.4), the document's from its folder. A file the host can't serve shows the fallback, as a missing image shows its alt. The expanded tree lists the fonts its params use (section 12.3); an HTML processor declares each as a CSS `@font-face` with `font-display: swap`, its fallback's font after it, and prints a page once its fonts have loaded.
 - **Spaces** (`gap` and the padding params, type `space`) are a token, `none`, `s`, `m` or `l`, or a length. The tokens are the CSS custom properties `--compmd-space-s`, `--compmd-space-m` and `--compmd-space-l`, by default `0.5rem`, `1rem` and `2rem`, which a processor or stylesheet may change. Documents SHOULD use tokens; lengths are for layouts that need exact sizes.
 - **Angles** (`rotate`, type `angle`) are a number of degrees, `deg`, from `-15deg` to `15deg`: enough to tilt a box, and no more, so a box never turns away from the text.
-- **Lengths** are `px`, `rem`, `em` and `%`. **Tracks** (`grid-template-columns`, `grid-template-rows`, type `tracks`) also take `fr`, `auto`, `min-content`, `max-content`, `minmax()` and `repeat()`. **Areas** (`grid-template-areas`, type `areas`) are quoted rows of area names or `.`, all the same length (`"'head head' 'side main'"`). **Colors** and **borders** take CSS syntax.
+- **Lengths** are `px`, `rem`, `em` and `%`. **Tracks** (`grid-template-columns`, `grid-template-rows`, `grid-auto-rows`, type `tracks`) also take `fr`, `auto`, `min-content`, `max-content`, `minmax()` and `repeat()`. **Areas** (`grid-template-areas`, type `areas`) are quoted rows of area names or `.`, all the same length (`"'head head' 'side main'"`). **Colors** and **borders** take CSS syntax.
 - **The vocabulary is closed.** The params in this section are all the layout and styling a document can write. An unknown param is F008 and a value outside its grammar is F009, so no param can pass raw CSS through.
 - **Directions are logical.** Every param says `start` and `end`, `inline` and `block`, never left, right, top or bottom, so a document laid out for a left-to-right language reads correctly right to left.
 - **Meaning.** Each param means what the CSS property it names means (section 13.1). An HTML processor emits that CSS. A processor for another output (PDF, terminal) implements the same meaning, as far as its output allows.

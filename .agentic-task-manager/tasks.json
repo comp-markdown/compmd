@@ -14805,7 +14805,7 @@
       "description": "From CR-50: cards in a `grid` are as tall as the tallest in their row, but rows differ, and CompMD's vocabulary can't make them one height. CSS's `grid-auto-rows: 1fr` does; `grid-template-rows=\"repeat(2, 1fr)\"` does only when the author knows how many rows `min` makes at each width.\n\n## Do\n- **The spec:** `grid-auto-rows` on `box` and `grid` (§9.1), type `tracks`, with breakpoints, meaning CSS's; `::: grid {min=14rem grid-auto-rows=1fr}` in §9.1's examples. The changelog, and conformance cases (a value, a breakpoint, a value `tracks` doesn't take: F009).\n- **The processor:** the param on `box` and `grid`, `params.json` and `llms.txt` (the vocabulary tests).\n- **The renderer:** the CSS, and a browser test in Chrome and WebKit: link cards over two rows, every card one height.\n- **The guides:** the Author's Guide's grid section.",
       "requirements": [],
       "use_cases": [],
-      "status": "todo",
+      "status": "in_progress",
       "dependencies": [],
       "files": [
         "spec/compmd-spec-v1.md",
@@ -14815,7 +14815,7 @@
         "conformance/"
       ],
       "created_at": "2026-11-21T15:35:52Z",
-      "updated_at": "2026-11-21T15:35:52Z",
+      "updated_at": "2026-11-22T15:49:33Z",
       "created_by": "claude:79612601",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -14825,7 +14825,9 @@
         }
       ],
       "sprint": "Packs 1: the pack tool, no-code components",
-      "number": 369
+      "number": 369,
+      "started_at": "2026-11-22T15:49:33Z",
+      "started_by": "claude:79612601"
     },
     {
       "id": "01a1feeb-aada-7653-96de-3c47766d3f06",
@@ -15163,14 +15165,14 @@
       "description": "Reported by an app that runs CompMD's components in its own page: a component that returns its drawing as markup (`@compmd/pack/component`'s `draw`, `drawing.innerHTML = drawn`, `npm-packages/pack/src/component.ts`) brings its CSS as a `<style>` element and `style` attributes, which a page whose `style-src` doesn't allow `'unsafe-inline'` refuses. The Mermaid pack is one (its SVG has both); CompMD's own sandbox frames allow inline styles, so it shows there, but not in such a page. Mermaid also measures its labels while it renders, so with its styles refused its nodes come out the wrong size.\n\n## Decide first\nWith the maintainer: the host contract has no stylesheet for a component (`MountContext`); should it give one (`adopt(css)`, a spec change, §7.4), or does `draw` do it alone through the CSSOM?\n\n## Do\n- **`draw`:** parses a string drawing inert (`DOMParser`), moves each `<style>` into a constructed stylesheet adopted on the target's document (or shadow root), and each `style` attribute through `element.style`, so nothing is refused under a strict `style-src`.\n- **Mermaid:** renders with its styles in place when it measures (or `htmlLabels: false`), so its labels and nodes have their right sizes.\n- **Tests:** a page with `style-src 'self'` (no `'unsafe-inline'`), in Chrome and WebKit: a Mermaid diagram styled and sized as in a frame, no refusal reported; `draw`'s unit tests.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "blocked",
       "dependencies": [],
       "files": [
         "npm-packages/pack/src/component.ts",
         "compmd-packs/mermaid/src/mermaid.ts"
       ],
       "created_at": "2026-11-21T20:23:49Z",
-      "updated_at": "2026-11-22T15:41:11Z",
+      "updated_at": "2026-11-22T15:49:26Z",
       "created_by": "claude:79612601",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -15195,7 +15197,13 @@
         }
       ],
       "started_at": "2026-11-22T15:41:11Z",
-      "started_by": "claude:79612601"
+      "started_by": "claude:79612601",
+      "commit": "652fb245ebba4550d46218fb90f561dc7a5a773f",
+      "waiting_on": "user",
+      "questions": [
+        "Done in 652fb24: under a strict style-src, Mermaid diagrams now look and size exactly as without it (Chrome, WebKit). But Mermaid’s own render still sets inline styles in the page while it measures, so the browser logs refusals, harmless to the drawing. Accept those logs, or hook Mermaid’s render to turn them into CSSOM writes (fragile against Mermaid updates)?"
+      ],
+      "blocked_at": "2026-11-22T15:49:26Z"
     },
     {
       "id": "01a1ffc7-890a-70b7-a3f6-715280c886ae",
