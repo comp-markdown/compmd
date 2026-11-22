@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 378,
+    "next_number": 379,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -1018,7 +1018,7 @@
       "description": "The first post: why CompMD exists, what it gives authors that plain Markdown doesn't, and what it keeps (a document that reads well anywhere). Written as a CompMD document, in plain wording, drafted and reviewed with the user before it is published.\n\nPublishing (the push) needs the user's go.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [
         "01a1ebb5-4120-7007-85a3-68ea9d5906c3"
       ],
@@ -1026,7 +1026,7 @@
         "website/blog/"
       ],
       "created_at": "2026-11-17T22:51:26Z",
-      "updated_at": "2026-11-22T17:40:52Z",
+      "updated_at": "2026-11-22T17:45:21Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -1049,7 +1049,24 @@
       "number": 14,
       "sprint": "Packs 1: the pack tool, no-code components",
       "started_at": "2026-11-22T17:40:52Z",
-      "started_by": "claude:79612601"
+      "started_by": "claude:79612601",
+      "commit": "6a13dbd39af8df849656e4455a1f9fa0ebccea67",
+      "code_reviews": [
+        {
+          "id": "01a2045c-d056-71ef-929b-e506f8aa26b1",
+          "ref": "CR-68"
+        }
+      ],
+      "review_requested_at": "2026-11-22T17:45:21Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-22T17:45:21Z",
+          "kind": "review",
+          "text": "CR-68: Blog post draft: Why CompMD",
+          "by": "claude:79612601"
+        }
+      ]
     },
     {
       "id": "01a1ebb5-4120-7007-85a3-68ecc9cfcfc3",
@@ -15639,6 +15656,45 @@
       "review_requested_at": "2026-11-22T17:12:14Z",
       "completed_at": "2026-11-22T17:13:37Z",
       "completed_by": "claude:9ea81469"
+    },
+    {
+      "id": "01a2045d-5041-775a-824b-499eeb9ecca5",
+      "name": "Blog: the first packs, a tour of the components",
+      "type": "docs",
+      "priority": "P2",
+      "labels": [
+        "website",
+        "packs"
+      ],
+      "description": "The second post, after *Why CompMD* (CMD-14), in the same voice (the maintainer's own blog's: first person, a personal hook, plain sentence-style headings, dry asides, a direct \"you\"): a tour of the components this sprint made, written as a CompMD document in `website/blog/posts/`.\n\n## What it shows\n- **The no-code packs**, each with a `compmd {render=both}` example from a newsletter or a post, not a test: `card`, `link-card`, `gallery` (photos of different shapes cropped to one, `ratio`), `figure`, `badge`, `sticky-note`, `timeline`, `rating`, `columns`.\n- **That they are written in CompMD itself**, with no code: what a reader of the pack's `index.comp.md` sees, and that any processor renders them with no sandbox.\n- **Type in a box** (`font-family`, `font-size`, `color`, …) and a font of the document's own, if the packs on npm have it by then.\n- **Mermaid and wireframes** in a line or two, as packs with code, run in the sandbox.\n- **The pack tool:** `npm create @compmd/pack` and `compmd-pack dev`, for a reader who wants to make one.\n\n## Links\nThe playground (`https://compmd.dev/playground/`, a `?doc=` for each example it has, adding those it lacks), each pack's README, the Author's Guide's chapters on boxes and params, and the Developer's Guide's chapter on a first pack.\n\n## Before publishing\nThe packs it imports must be on npm at the versions it uses (gallery 0.2.0, the others' current versions), released with `cargo make release-packs`. Drafted and reviewed with the maintainer (`atm review create --file`); publishing (the push) needs their go.",
+      "requirements": [],
+      "use_cases": [],
+      "status": "in_progress",
+      "dependencies": [],
+      "files": [],
+      "created_at": "2026-11-22T17:45:53Z",
+      "updated_at": "2026-11-22T19:16:09Z",
+      "created_by": "Hakan Serce",
+      "updated_by": "claude:79612601",
+      "sprint_history": [
+        {
+          "sprint": "Packs 1: the pack tool, no-code components",
+          "from": "2026-11-22T17:45:53Z"
+        }
+      ],
+      "sprint": "Packs 1: the pack tool, no-code components",
+      "with": "user",
+      "number": 378,
+      "notes": [
+        {
+          "at": "2026-11-22T19:16:08Z",
+          "kind": "note",
+          "text": "Drafted while CMD-14 is in review: the order is the publishing’s, not the writing’s, so it is published after *Why CompMD*.",
+          "by": "claude:79612601"
+        }
+      ],
+      "started_at": "2026-11-22T19:16:09Z",
+      "started_by": "claude:79612601"
     }
   ]
 }

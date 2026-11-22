@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" role="img" aria-label="Rows of apple trees on a slope">
+  <rect width="320" height="180" fill="#cfe6f5"/>
+  <path d="M0 180V110l320-50v120z" fill="#7fb069"/>
+  <g fill="#3f7d3a">
+    <circle cx="60" cy="110" r="16"/><circle cx="120" cy="100" r="16"/><circle cx="180" cy="90" r="16"/><circle cx="240" cy="80" r="16"/>
+  </g>
+  <g fill="#c8423a">
+    <circle cx="56" cy="106" r="3"/><circle cx="124" cy="98" r="3"/><circle cx="176" cy="88" r="3"/><circle cx="244" cy="78" r="3"/>
+  </g>
+</svg>

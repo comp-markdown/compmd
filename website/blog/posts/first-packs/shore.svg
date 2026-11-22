@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 120" role="img" aria-label="The long shore at low tide, the town in the distance">
+  <rect width="480" height="120" fill="#9fb8cf"/>
+  <rect y="70" width="480" height="50" fill="#d8c79f"/>
+  <path d="M300 70v-18h14v18z M318 70v-26h12v26z M334 70v-14h16v14z" fill="#5d6b7a"/>
+  <circle cx="80" cy="34" r="12" fill="#f4e3b2"/>
+</svg>
