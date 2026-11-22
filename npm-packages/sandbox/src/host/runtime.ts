@@ -13,6 +13,7 @@ import { localHost, serveHost, type HostApi, type HostClient } from "../host-api
 import { ImageGate, type ImageGateOptions } from "../image-gate.ts";
 import { MountSet } from "../mount-set.ts";
 import { codeFor, Mounts } from "../mounts.ts";
+import { RefusedStyles, type RefusedStyle } from "../refused-styles.ts";
 import type { Observer } from "../observer.ts";
 import { cacheStorage, compiledWith, type CompiledCache } from "../compiled-cache.ts";
 import { connectCompiler, type Compiler } from "../protocol/compiler.ts";
@@ -103,6 +104,17 @@ export interface HostEvents {
   error(component: string, reason: ErrorReason, message: string, use?: string): void;
   /** The use `use` of `component`, which failed, draws again. */
   recovered?(component: string, use: string): void;
+  /**
+   * The host's page refused an inline style while trusted components were mounted there: its policy breaks the
+   * promise that inline styles apply in a component's box (spec §7.4). Keep such a component in a frame, by giving
+   * its pack a sandbox level, rather than loosening the page. Each refusal comes once, as the browser reports it.
+   */
+  refusedStyle?(refused: RefusedStyle): void;
+}
+
+/** The trusted components, each with its box watched for refused inline styles. */
+function watched(trusted: Readonly<Record<string, Mount>>, refused: RefusedStyles): Record<string, Mount> {
+  return Object.fromEntries(Object.entries(trusted).map(([name, mount]) => [name, refused.watch(name, mount)]));
 }
 
 const messageOf = (error: unknown): string => (error instanceof Error ? error.message : String(error));
@@ -167,7 +179,7 @@ export class HostRuntime {
     this.#local = options.host ? localHost(options.host) : undefined;
     this.#mounts = new Mounts({
       here: "host",
-      inline: MountSet.of(options.trusted ?? {}),
+      inline: MountSet.of(watched(options.trusted ?? {}, new RefusedStyles((refused) => this.#events.refusedStyle?.(refused)))),
       frame: (target, node, inputs, component) => this.#frame(target, node, inputs, component),
       report: (component, reason, message) => {
         this.#fallback(component, reason, message);

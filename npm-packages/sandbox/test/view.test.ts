@@ -54,7 +54,7 @@ function open(mode: "frame" | "host", components: HostComponent[] = [label()], o
   areas.push(area);
   const view = createSandbox({ base: frames, page: mode, ...options }).open(area, { components });
   views.push(view);
-  const events: { [T in keyof ViewEvents]: ViewEvents[T][] } = { set: [], exampleSet: [], link: [], error: [], recovered: [], rendered: [], loaded: [], pointed: [], layout: [], settled: [] };
+  const events: { [T in keyof ViewEvents]: ViewEvents[T][] } = { set: [], exampleSet: [], link: [], error: [], recovered: [], refusedStyle: [], rendered: [], loaded: [], pointed: [], layout: [], settled: [] };
   const waiting: (() => void)[] = [];
   for (const type of ["set", "exampleSet", "link", "error", "recovered", "rendered", "loaded", "layout", "settled"] as const) {
     view.on(type, (event) => {

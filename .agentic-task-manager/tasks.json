@@ -14738,7 +14738,7 @@
       "description": "Once an image can be cropped to its box (the task this depends on), `gallery` makes its items' images one shape, so a grid of photos of different sizes is even, as galleries elsewhere are: a param for the images' ratio (`ratio=4/3`), with `object-fit` and `object-position` for how they fill it. The card's image slot may need the same. Its demo shows it with photos of different shapes, as `render=both` examples (CR-45). With `grid-auto-rows` (CMD-369), every card one height across rows too.\n\n## Tests\nThe expanded tree; a page test in Chrome and WebKit: the images of different shapes cropped to one, the cards one height, and printed cropped (`emulateMedia`), the print check CMD-366's renderer tests couldn't make.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [
         "01a1fe9a-821c-7292-b5a0-3d4962820c1a",
         "01a1febf-eadb-72cb-bee4-a8a3a2547009"
@@ -14748,7 +14748,7 @@
         "compmd-packs/card/"
       ],
       "created_at": "2026-11-21T14:55:01Z",
-      "updated_at": "2026-11-22T17:15:41Z",
+      "updated_at": "2026-11-22T17:25:44Z",
       "created_by": "Hakan Serce",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -14760,7 +14760,24 @@
       "sprint": "Packs 1: the pack tool, no-code components",
       "number": 367,
       "started_at": "2026-11-22T17:15:41Z",
-      "started_by": "claude:79612601"
+      "started_by": "claude:79612601",
+      "commit": "8df8fe80577a74f2f792546a7955c3d0bb9d0ee9",
+      "code_reviews": [
+        {
+          "id": "01a2044a-d9ec-7265-9e20-0f5b2d98a08f",
+          "ref": "CR-66"
+        }
+      ],
+      "review_requested_at": "2026-11-22T17:25:44Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-22T17:25:44Z",
+          "kind": "review",
+          "text": "CR-66: Gallery: each card’s image cropped to one shape, its cards one height",
+          "by": "claude:79612601"
+        }
+      ]
     },
     {
       "id": "01a1fea0-721a-74ba-a703-6a913b57a6a5",

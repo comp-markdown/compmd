@@ -51,9 +51,15 @@ work there, as most libraries that draw in a page do, and nothing said it could 
    `<style>` element of the host's page is a document's author styling the application (risk 2).
 
 6. **The host is told when its page breaks the promise.** `@compmd/sandbox`'s host runtime listens for the browser's
-   `securitypolicyviolation` event while trusted components are mounted, and reports a refused inline style inside a
-   trusted component's box through the host's `error` callback, naming the component. It probes nothing, so a page
-   that keeps the promise logs nothing. It is not a diagnostic of the spec: the document is not at fault.
+   `securitypolicyviolation` event while trusted components are mounted, and reports each refused inline style
+   through a callback of its own, `refusedStyle` (the view's event of that name): the component whose box holds what
+   was refused, when one does, the directive, and the browser's sample. It probes nothing, so a page that keeps the
+   promise reports nothing. It is not a diagnostic of the spec, since the document is not at fault, nor an `error`,
+   which means a use shows its fallback.
+   - *Changed while building it (2026-11-22, CMD-374):* first written as a refusal inside a trusted component's box,
+     through `error`. A library that measures does it in a temporary element in the page's body (Mermaid without a
+     container), which is removed before the browser reports the refusal, against the document; so a refusal outside
+     every box is reported too, naming no component, rather than named by a guess at which component was drawing.
 
 7. **The Mermaid pack carries no workaround.** Its `htmlLabels: false` (0.1.4, not released) is reverted: it gave up
    HTML labels on every page to serve pages that break the promise, and didn't fix them (below). The pack's test of
@@ -96,9 +102,10 @@ Spec changes and every push need the maintainer's go.
    use needs the host's page to keep the promise, and decision 6's report. [The Mermaid pack](mermaid-pack.md): the
    pack relies on the promise.
 3. **`@compmd/sandbox`.** The report of decision 6, with a browser test in Chrome and WebKit: a trusted component
-   that writes an inline style in a strict page is reported by name; one in a page that allows them is not. A test
-   that both frames keep the promise under a strict host page (a `style` attribute and a `<style>` element apply,
-   nothing refused), beside `test/strict-style.test.ts`, which checks what CompMD itself puts in such a page.
+   that writes an inline style in a strict page is reported by name, one written in the page's body with no name,
+   and nothing in a page that allows them. A test
+   that both frames keep the promise under a strict host page (a `style` attribute and a `<style>` element apply),
+   beside `test/strict-style.test.ts`, which checks what CompMD itself puts in such a page.
 4. **The Mermaid pack.** Revert `htmlLabels: false`; remove `test/strict-style.test.ts` and `test/strict-style/`;
    the README's 0.1.4 note, the pack's version and `compmd-packs/versions.json`.
 5. **The guides.** The Developer's Guide, "Your page's policy" (`guides/developers/11-the-sandbox-closer.md`): what

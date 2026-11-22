@@ -199,6 +199,8 @@ The options, in full:
 
 **Both**, and the host chooses (decided when this design was reviewed). The document can't choose, since it must not decide how its own code is isolated, and the sandbox doesn't switch by itself: one edit adding `:: stars` would move the whole page.
 
+**Trusted uses and the host's policy** (2026-11-22, [what a component may assume about its box](component-environment.md)): the host contract promises that inline styles apply in a component's box (spec §7.4). Every frame keeps it by its own policy, so in host mode only the trusted uses inline depend on the host's page: a page whose policy refuses inline styles keeps a component that needs them in a frame, by its pack's level. While trusted components are mounted, the host runtime reports each inline style the page refuses as `refusedStyle`, naming the component whose box holds it, when one does.
+
 ## Q2. Why the tree only goes down, and what that costs
 
 **Why.** A browser frame can tell where a message came from by its window (`event.source`) and its origin. A frame always knows its parent's window, and the frame that made it is its parent. It can't know which ancestor is the host's page: the host's page may be `top` (a site) or a frame several levels down (an application's sandboxed editor), and every frame in between has an opaque origin, as the host's page itself may. So a frame can believe its parent only, and a parent must never be less trusted than its child: otherwise strict code could make a frame and give it the network it chooses.

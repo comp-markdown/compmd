@@ -13,6 +13,7 @@ import { Observer } from "./observer.ts";
 import { errorEvent, framePage, hostPage } from "./pages.ts";
 import { printLight } from "./print.ts";
 import type { ErrorReason, SandboxDiagnostic, Scheme } from "./protocol/messages.ts";
+import type { RefusedStyle } from "./refused-styles.ts";
 import { Settling } from "./settling.ts";
 
 /**
@@ -44,6 +45,12 @@ export interface ViewEvents {
   error: { component: string; reason: ErrorReason; code?: SandboxDiagnostic; message: string; use?: string };
   /** A use that failed draws again: what the host listed for its `error`, with the same `use`, can go. */
   recovered: { component: string; use: string };
+  /**
+   * The host's page refused an inline style while trusted components were mounted there, in host mode: its policy
+   * breaks the promise that inline styles apply in a component's box (spec §7.4). `component` names the one whose box
+   * holds what was refused, when one does; a library that writes elsewhere in the page gets a refusal of no box.
+   */
+  refusedStyle: RefusedStyle;
   /** A render or splice is painted, `ms` after it started. */
   rendered: { ms: number };
   /** The components last given are loaded in the page, or show their fallbacks: a host may show the page from now. */
@@ -212,7 +219,7 @@ export function createSandbox(given: SandboxOptions): Sandbox {
   const options: FoundOptions = found(given);
   return {
     open(container, { components }) {
-      const listeners: Listeners = { set: [], exampleSet: [], link: [], error: [], recovered: [], rendered: [], loaded: [], pointed: [], layout: [], settled: [] };
+      const listeners: Listeners = { set: [], exampleSet: [], link: [], error: [], recovered: [], refusedStyle: [], rendered: [], loaded: [], pointed: [], layout: [], settled: [] };
       /** What the page shows changed or moved: it isn't settled until it settles again. */
       let changed: () => void = () => undefined;
       const emit = <T extends keyof ViewEvents>(type: T, event: ViewEvents[T]) => {
@@ -244,6 +251,9 @@ export function createSandbox(given: SandboxOptions): Sandbox {
           },
           recovered: (component, use) => {
             emit("recovered", { component, use });
+          },
+          refusedStyle: (refused) => {
+            emit("refusedStyle", refused);
           },
         },
       );
