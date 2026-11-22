@@ -6,7 +6,7 @@
     "key": "CMD",
     "review": "async",
     "format": 2,
-    "next_number": 377,
+    "next_number": 378,
     "id": "0bd2033e",
     "repository": "https://github.com/comp-markdown/compmd",
     "workflow": {
@@ -15202,13 +15202,15 @@
       "requirements": [],
       "use_cases": [],
       "status": "blocked",
-      "dependencies": [],
+      "dependencies": [
+        "01a20437-f2c9-7305-b8c1-fbb7f27d42c1"
+      ],
       "files": [
         "npm-packages/pack/src/component.ts",
         "compmd-packs/mermaid/src/mermaid.ts"
       ],
       "created_at": "2026-11-21T20:23:49Z",
-      "updated_at": "2026-11-22T16:37:38Z",
+      "updated_at": "2026-11-22T17:05:09Z",
       "created_by": "claude:79612601",
       "updated_by": "claude:9ea81469",
       "sprint_history": [
@@ -15265,14 +15267,14 @@
       "description": "From the same report: CompMD's sandbox frames allow inline styles (`style-src 'self' 'unsafe-inline'`, `npm-packages/sandbox/src/build/policy.ts`), but what the renderer draws in the host's own page may not be allowed there: the renderer's math (MathML), highlighted code (`highlight.ts` sets `style` properties), boxes (constructed sheets, allowed), images and examples, in the sandbox's host page mode and with `@compmd/render` alone.\n\n## Do\nA browser test in Chrome and WebKit of a page with `style-src 'self'` (no `'unsafe-inline'`), rendering math, highlighted code, boxes with params, an example and a component: what the browser refuses (its CSP violation reports) is nothing, or each refusal filed as a task of its own with its fix. Note what a host needs in its policy in the Developer's Guide.",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [],
       "files": [
         "npm-packages/render/test/browser/",
         "npm-packages/sandbox/test/"
       ],
       "created_at": "2026-11-21T20:23:49Z",
-      "updated_at": "2026-11-22T16:46:35Z",
+      "updated_at": "2026-11-22T16:49:27Z",
       "created_by": "claude:79612601",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -15284,7 +15286,24 @@
       "sprint": "Packs 1: the pack tool, no-code components",
       "number": 375,
       "started_at": "2026-11-22T16:46:35Z",
-      "started_by": "claude:79612601"
+      "started_by": "claude:79612601",
+      "commit": "1bf661be1d867058e7d11103bbf84f67b18cf630",
+      "code_reviews": [
+        {
+          "id": "01a20429-a10c-7780-9e9b-14f2e87543c1",
+          "ref": "CR-63"
+        }
+      ],
+      "review_requested_at": "2026-11-22T16:49:27Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-22T16:49:27Z",
+          "kind": "review",
+          "text": "CR-63: What CompMD puts in a page, under a strict style-src",
+          "by": "claude:79612601"
+        }
+      ]
     },
     {
       "id": "01a20041-48e2-73a5-954d-4290690ac9c7",
@@ -15297,7 +15316,7 @@
       "description": "[Type in a box](docs/type-params.md), decision 7, after CMD-373 (the spec and the processor): the expanded tree's fonts shown.\n\n## Do\n- **The renderer:** each font of the tree's `fonts` (spec §12.3) as an `@font-face` with `font-display: swap`, its fallback token's font after it; a `font-family` param naming one by its `family`; a pack's file by the URL `packFile` gives its place, as for images; printing waits for fonts to load.\n- **The hosts** serving the files: a pack's from its place with its integrity (CMD-362, CMD-365), the document's from its folder, within the pack's size cap.\n- **The sandbox:** a page in a frame without the network gets the files from its host, as it gets images; a component's frame gets the fonts its box's type names (CMD-372).\n- **The pack tool:** a font file a pack declares is there, and a warning for one with no licence beside it (G2).\n- **The Author's Guide:** chapter 3's `font-family` row, and a section on fonts of a document's own and from a pack.\n- **Tests** in Chrome and WebKit: a pack's font loading, its fallback first, a missing file, print.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "blocked",
+      "status": "in_progress",
       "dependencies": [
         "01a1ff0c-ad59-7684-8887-3abcc6f4d034"
       ],
@@ -15309,7 +15328,7 @@
         "guides/authors/"
       ],
       "created_at": "2026-11-21T22:36:48Z",
-      "updated_at": "2026-11-22T16:31:06Z",
+      "updated_at": "2026-11-22T17:03:00Z",
       "created_by": "claude:79612601",
       "updated_by": "claude:79612601",
       "sprint_history": [
@@ -15320,14 +15339,60 @@
       ],
       "sprint": "Packs 1: the pack tool, no-code components",
       "number": 376,
-      "started_at": "2026-11-22T16:05:07Z",
-      "started_by": "claude:79612601",
       "commit": "302aa2a8f37e714408ad069a8faa376c396caeda",
-      "waiting_on": "user",
-      "questions": [
-        "Committed in 302aa2a: fonts render in the page, examples, host mode and the pack tool. A page frame gets a font’s file from its host as a blob: URL, but the frames’ policy has `font-src 'self'` only, so it’s refused. Add `blob:` to the strict frame’s `font-src` (as `img-src data: blob:`), and give component frames their box’s font the same way? It changes the sandbox design’s policy table."
+      "blocks": [
+        {
+          "from": "2026-11-22T16:31:06Z",
+          "to": "2026-11-22T17:03:00Z",
+          "on": "user"
+        }
       ],
-      "blocked_at": "2026-11-22T16:31:06Z"
+      "notes": [
+        {
+          "at": "2026-11-22T17:03:00Z",
+          "kind": "answer",
+          "text": "Committed in 302aa2a: fonts render in the page, examples, host mode and the pack tool. A page frame gets a font’s file from its host as a blob: URL, but the frames’ policy has `font-src 'self'` only, so it’s refused. Add `blob:` to the strict frame’s `font-src` (as `img-src data: blob:`), and give component frames their box’s font the same way? It changes the sandbox design’s policy table. → Yes: add `blob:` to the frames’ `font-src` (strict, and the permissive second policy’s default), record it in the sandbox design’s Q3 table, and give component frames their box’s font, its files sent with the `type-style` message. Tests in Chrome and WebKit.",
+          "by": "claude:79612601"
+        }
+      ],
+      "started_at": "2026-11-22T17:03:00Z",
+      "started_by": "claude:79612601"
+    },
+    {
+      "id": "01a20437-f2c9-7305-b8c1-fbb7f27d42c1",
+      "name": "What a component may assume about its box: the design",
+      "type": "docs",
+      "priority": "P1",
+      "labels": [
+        "packs"
+      ],
+      "description": "The design for what a component may assume about the document its box is in: [docs/component-environment.md](docs/component-environment.md). Found in CMD-374: an app mounted the Mermaid pack's component in its own page, under a policy that refuses inline styles, and a wider comparison showed the CSSOM transfer in `draw` can't fix a library that writes inline styles while it measures.\n\n## Do\n- **The design**, decisions first: the host contract promises that inline styles apply in a box's document (spec §7.4), kept by the frames' policy or the host's page; a frame preferred in a strict page; no CSS from a param in trusted code (§15); the host told when its page breaks the promise; the Mermaid pack without workarounds.\n- **What was found**, the work needed, the risks (security first), and the alternatives rejected, each with why.\n- **Review it** with the maintainer as an atm code review; once approved, CMD-374 is re-scoped to the work the design lists.\n",
+      "requirements": [],
+      "use_cases": [],
+      "status": "in_progress",
+      "dependencies": [],
+      "files": [
+        "docs/component-environment.md",
+        "docs/README.md"
+      ],
+      "created_at": "2026-11-22T17:05:05Z",
+      "updated_at": "2026-11-22T17:05:09Z",
+      "created_by": "claude:9ea81469",
+      "updated_by": "claude:9ea81469",
+      "sprint_history": [
+        {
+          "sprint": "Packs 1: the pack tool, no-code components",
+          "from": "2026-11-22T17:05:05Z"
+        }
+      ],
+      "sprint": "Packs 1: the pack tool, no-code components",
+      "related": [
+        "01a1ffc7-890a-70b7-a3f6-71516a458a4d",
+        "01a1ffc7-890a-70b7-a3f6-715280c886ae"
+      ],
+      "number": 377,
+      "started_at": "2026-11-22T17:05:09Z",
+      "started_by": "claude:9ea81469"
     }
   ]
 }
