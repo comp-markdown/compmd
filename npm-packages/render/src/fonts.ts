@@ -46,6 +46,33 @@ export function fontSources(fonts: readonly ExpandedFont[], packFile?: (place: s
   return fonts.flatMap((font) => font.files.flatMap((file) => (file.pack === true ? packFile?.(file.url) : file.url) ?? []));
 }
 
+/** A file of a face a page declared: the face's name, the URL it loads from, its format, weight and style. */
+export interface FontFaceFile {
+  name: string;
+  url: string;
+  format: string;
+  weight: ExpandedFontFile["weight"];
+  style: ExpandedFontFile["style"];
+}
+
+/** The `@font-face` rule of a face's file. */
+const ruleOf = ({ name, url, format, weight, style }: FontFaceFile): string =>
+  `@font-face { font-family: "${name}"; src: ${urlCss(url)} format("${format}"); font-weight: ${weight === "bold" ? "700" : "400"}; font-style: ${style}; font-display: swap; }`;
+
+/** The faces the pages of this window declared, by name, with their files. */
+const DECLARED = new Map<string, FontFaceFile[]>();
+
+/**
+ * The files of the faces of the document's own fonts that `family`, a computed `font-family`, names: what a frame that
+ * draws in it needs, which the page's `@font-face` rules don't reach (spec §9.4). None for a family of tokens alone.
+ *
+ * @example
+ * fontFacesIn(getComputedStyle(box).fontFamily); // [{ name: "compmd-font-0-serif", url: "/fonts/serif.woff2", … }]
+ */
+export function fontFacesIn(family: string): FontFaceFile[] {
+  return family.split(",").flatMap((part) => DECLARED.get(part.trim().replace(/^["']|["']$/g, "")) ?? []);
+}
+
 /** Every set of fonts so far, which names each one's faces apart from the others'. */
 let made = 0;
 
@@ -71,6 +98,8 @@ export class FontFaces {
   #written = "";
   /** Each file's URL, by its `src`, as the source gave it. */
   readonly #urls = new Map<string, Promise<string | undefined>>();
+  /** The names of the faces this set declared, in `DECLARED`. */
+  #declared: string[] = [];
 
   constructor(element: HTMLElement, packFile?: (place: string) => string | undefined, source?: FontSource) {
     this.#element = element;
@@ -88,7 +117,12 @@ export class FontFaces {
     const faces = await Promise.all(named.map((font) => this.#faces(font)));
     // A newer `set` overtook this one: its rules win.
     if (key !== this.#written) return;
-    this.#write(faces.flat().join("\n"));
+    this.#write(faces.flat().map(ruleOf).join("\n"));
+    this.#forget();
+    for (const [index, font] of named.entries()) {
+      DECLARED.set(this.#name(font), faces[index] ?? []);
+      this.#declared.push(this.#name(font));
+    }
     for (const name of this.#properties) this.#element.style.removeProperty(name);
     this.#properties = named.map((font) => familyProperty(font.family));
     for (const font of named) this.#element.style.setProperty(familyProperty(font.family), `"${this.#name(font)}", ${FALLBACK[font.fallback]}`);
@@ -107,6 +141,7 @@ export class FontFaces {
     if (sheet instanceof HTMLStyleElement) sheet.remove();
     else if (sheet) this.#document.adoptedStyleSheets = this.#document.adoptedStyleSheets.filter((known) => known !== sheet);
     for (const name of this.#properties) this.#element.style.removeProperty(name);
+    this.#forget();
     this.#sheet = undefined;
     this.#properties = [];
     this.#written = "";
@@ -116,17 +151,21 @@ export class FontFaces {
     return `${this.#prefix}-${font.family}`;
   }
 
-  /** The `@font-face` rules of `font`, one per file that can be had. */
-  async #faces(font: ExpandedFont): Promise<string[]> {
+  /** Takes this set's faces out of those {@link fontFacesIn} finds. */
+  #forget(): void {
+    for (const name of this.#declared) DECLARED.delete(name);
+    this.#declared = [];
+  }
+
+  /** The faces of `font`, one per file that can be had. */
+  async #faces(font: ExpandedFont): Promise<FontFaceFile[]> {
     const faces = await Promise.all(
-      font.files.map(async (file) => {
+      font.files.map(async (file): Promise<FontFaceFile | undefined> => {
         const url = await this.#url(file);
-        if (url === undefined) return "";
-        const weight = file.weight === "bold" ? 700 : 400;
-        return `@font-face { font-family: "${this.#name(font)}"; src: ${urlCss(url)} format("${formatOf(file.url)}"); font-weight: ${String(weight)}; font-style: ${file.style}; font-display: swap; }`;
+        return url === undefined ? undefined : { name: this.#name(font), url, format: formatOf(file.url), weight: file.weight, style: file.style };
       }),
     );
-    return faces.filter((face) => face !== "");
+    return faces.filter((face) => face !== undefined);
   }
 
   /** The URL a file loads from: a pack's by `packFile`, then through the source, when there is one. */

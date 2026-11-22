@@ -14,7 +14,8 @@ export function networkPolicy(origins: readonly string[]): string {
   if (wrong !== undefined) throw new Error(`\`${wrong}\` isn't an origin a permissive pack may reach`);
   const listed = origins.join(" ");
   const or = (sources: string) => [sources, listed].filter(Boolean).join(" ") || "'none'";
-  return [`connect-src ${or("")}`, `img-src ${or("data: blob:")}`, `font-src ${or("'self'")}`, `media-src ${or("")}`].join("; ");
+  // Fonts as `blob:` too: a document's own, whose files the host gives, as a strict frame's are.
+  return [`connect-src ${or("")}`, `img-src ${or("data: blob:")}`, `font-src ${or("'self' blob:")}`, `media-src ${or("")}`].join("; ");
 }
 
 /**

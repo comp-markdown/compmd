@@ -178,7 +178,7 @@
       "additionalProperties": false
     },
     "typeStyle": {
-      "description": "The use's box's type in the page (spec §7.4), as CSS computes it, which the frame's root takes, so what the component draws inherits it.",
+      "description": "The use's box's type in the page (spec §7.4), as CSS computes it, which the frame's root takes, so what the component draws inherits it; with the files of the document's own fonts its family names (spec §9.4), which the frame declares.",
       "type": "object",
       "properties": {
         "type": { "const": "type-style" },
@@ -195,6 +195,20 @@
           },
           "required": ["family", "size", "weight", "style", "color", "lineHeight", "letterSpacing"],
           "additionalProperties": false
+        },
+        "fonts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "description": "The face's name, as the page declared it.", "type": "string", "pattern": "^compmd-font-[0-9]+-[A-Za-z0-9_-]+$" },
+              "weight": { "enum": ["normal", "bold"] },
+              "style": { "enum": ["normal", "italic"] },
+              "file": { "description": "The face's file, a Blob, which JSON can't hold." }
+            },
+            "required": ["name", "weight", "style", "file"],
+            "additionalProperties": false
+          }
         }
       },
       "required": ["type", "style"],

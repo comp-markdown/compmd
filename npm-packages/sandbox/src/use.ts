@@ -3,6 +3,7 @@
 // and a permissive frame its strict ones (docs/running-components-in-the-sandbox.md, decision 1).
 
 import { BUSY_MS, sameType, typeStyleOf, type ExpandedInput, type ExpandedUse, type TypeStyle } from "@compmd/render";
+import { fontFilesOf, namesFonts } from "./box-fonts.ts";
 import { framedNode } from "./framed-node.ts";
 import { networkPolicy } from "./frame/narrow.ts";
 import { forSent, sentBlocks, type FrameHighlight } from "./frames-highlight.ts";
@@ -99,12 +100,23 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
   const key = `f${String(nextFrame++)}`;
   /** The box's type as last sent, which the frame's root has. */
   let sentType: TypeStyle | undefined;
+  /**
+   * Sends `style` again with the files of the document's own fonts it names (spec §9.4), once they are had, while it
+   * is still the type sent: the frame declares them, which the page's `@font-face` rules don't reach.
+   */
+  const sendFonts = (style: TypeStyle) => {
+    if (!namesFonts(style.family)) return;
+    void fontFilesOf(style.family).then((fonts) => {
+      if (sentType === style && fonts.length > 0) child?.typeStyle(style, fonts);
+    });
+  };
   /** Sends the box's type when it changed since it was last sent: its params, a theme, the page's styles. */
   const restyle = () => {
     const now = typeStyleOf(target);
     if (sentType && sameType(now, sentType)) return;
     sentType = now;
     child?.typeStyle(now);
+    sendFonts(now);
   };
   const { observer } = options;
   const id = observer?.frame(options.level, { kind: "use", component: iframe.title }, options.network);
@@ -155,6 +167,7 @@ export function frameUse(target: Element, options: UseFrameOptions): UseFrame {
     if (scheme) end.scheme(scheme);
     sentType = typeStyleOf(target);
     end.typeStyle(sentType);
+    sendFonts(sentType);
     end.code([...code]);
     if (tokens) end.send({ type: "theme", tokens: { ...tokens } });
     end.part({ node: framedNode(node, target), inputs: { ...inputs }, ...inExample });

@@ -16,7 +16,7 @@ describe("the frame documents' policies", () => {
       "form-action 'none'",
       "worker-src 'none'",
       "img-src data: blob:",
-      "font-src 'self'",
+      "font-src 'self' blob:",
       "frame-src 'none'",
     ]);
   });
@@ -47,7 +47,7 @@ describe("the frame documents' policies", () => {
       "form-action 'none'",
       "worker-src 'none'",
       "img-src data: blob:",
-      `font-src 'self' ${source}`,
+      `font-src 'self' ${source} blob:`,
       "frame-src 'none'",
     ]);
     expect(permissivePolicy(map, source)).toContain(`script-src 'self' ${source} blob:`);

@@ -17,11 +17,12 @@ function common(importMap: string): string[] {
 
 /**
  * `strict.html`'s policy, with `importMap` allowed by its hash: no requests anywhere, images only as `data:` and
- * `blob:`, fonts from the frames' origin, and no nested frames. With `source`, where the host serves the frames
+ * `blob:`, fonts from the frames' origin and as `blob:` (a document's own, whose files the host gives), and no nested
+ * frames. With `source`, where the host serves the frames
  * and the packs (`frameSource`), each is named beside each `'self'`.
  */
 export function strictPolicy(importMap: string, source?: string | readonly string[]): string {
-  const policy = ["default-src 'none'", ...common(importMap), "img-src data: blob:", "font-src 'self'", "frame-src 'none'"].join("; ");
+  const policy = ["default-src 'none'", ...common(importMap), "img-src data: blob:", "font-src 'self' blob:", "frame-src 'none'"].join("; ");
   return withSource(policy, source);
 }
 

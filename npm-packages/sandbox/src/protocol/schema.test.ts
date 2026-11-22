@@ -35,7 +35,11 @@ const MESSAGES: (ToFrame | FromFrame)[] = [
   { type: "part", part: { node: { type: "componentLeaf", name: "map", params: [] }, inputs: {} } },
   { type: "styles", urls: ["/docs.css"] },
   { type: "scheme", scheme: "dark" },
-  { type: "type-style", style: { family: "Georgia, serif", size: 14, weight: "700", style: "normal", color: "rgb(164, 14, 38)", lineHeight: "normal", letterSpacing: "normal" } },
+  {
+    type: "type-style",
+    style: { family: '"compmd-font-0-harbour-serif", Georgia, serif', size: 14, weight: "700", style: "normal", color: "rgb(164, 14, 38)", lineHeight: "normal", letterSpacing: "normal" },
+    fonts: [{ name: "compmd-font-0-harbour-serif", weight: "bold", style: "normal", file: new Blob(["wOF2"]) }],
+  },
   { type: "host" },
   { type: "ping", n: 1 },
   { type: "compile", name: "chart", language: "jsx", code: "export default () => null" },
@@ -101,6 +105,7 @@ describe("protocol.schema.json", () => {
     ["an observed frame is of a frame's level", { type: "observed", events: [{ type: "frame", frame: "1", level: "trusted", renders: { kind: "page" }, at: 1 }] }],
     ["a token has its text", { type: "highlighted", id: 1, lines: [[{ color: { light: "red", dark: "red" } }]] }],
     ["a block asked for has its language", { type: "highlight", id: 1, code: "let a" }],
+    ["a font's face is one the page declared", { type: "type-style", style: { family: "a", size: 1, weight: "400", style: "normal", color: "red", lineHeight: "normal", letterSpacing: "normal" }, fonts: [{ name: "Georgia; }", weight: "normal", style: "normal", file: new Blob([]) }] }],
     ["an observed event is of a known type", { type: "observed", events: [{ type: "other", frame: "", at: 1 }] }],
   ])("refuses what isn't a message: %s", (_rule, message) => {
     expect(validate(message), JSON.stringify(message)).toBe(false);

@@ -100,6 +100,14 @@ export interface CompileRequest {
   code: string;
 }
 
+/** A file of a face of a document's own font, as a frame gets it: the face's name, its weight and style, and the file. */
+export interface FrameFont {
+  name: string;
+  weight: "normal" | "bold";
+  style: "normal" | "italic";
+  file: Blob;
+}
+
 /** Messages from a parent to its frame, on the frame's port. `host` carries its port in the message's ports. */
 export type ToFrame =
   /** `timeout`: how long the frame waits for an answer to its `highlight`, in ms (`HIGHLIGHT_MS` without it). */
@@ -108,8 +116,11 @@ export type ToFrame =
   | { type: "part"; part: Part }
   | { type: "styles"; urls: string[] }
   | { type: "scheme"; scheme: Scheme }
-  /** The use's box's type in the page (spec §7.4), which the frame's root takes, so what the component draws inherits it. */
-  | { type: "type-style"; style: TypeStyle }
+  /**
+   * The use's box's type in the page (spec §7.4), which the frame's root takes, so what the component draws inherits it;
+   * with the files of the document's own fonts its family names (spec §9.4), which the frame declares.
+   */
+  | { type: "type-style"; style: TypeStyle; fonts?: FrameFont[] }
   | { type: "host" }
   | { type: "ping"; n: number }
   | ({ type: "compile" } & CompileRequest)

@@ -17,6 +17,7 @@ import { Settling } from "../settling.ts";
 import { frameUse } from "../use.ts";
 import { compile } from "./compile.ts";
 import { Components } from "./components.ts";
+import { FrameFonts } from "./frame-fonts.ts";
 import { load } from "./load.ts";
 import { temmlMath } from "../math.ts";
 import { narrowed, networkPolicy } from "./narrow.ts";
@@ -200,6 +201,8 @@ function start(port: MessagePort): void {
   let components: readonly ComponentCode[] = [];
   /** The host's stylesheets, which this frame's nested frames get too. */
   let stylesheets: readonly string[] = [];
+  /** The document's own fonts the box's type names, declared from the files the parent sends. */
+  const frameFonts = new FrameFonts(document);
   // Every callback below runs on a message, after `parent` is set at the end.
   /**
    * Code blocks highlighted by the host's page, which the frame asks for each block's tokens: it loads no highlighter
@@ -380,7 +383,9 @@ function start(port: MessagePort): void {
       page?.scheme();
       mounts.scheme(scheme);
     },
-    typeStyle: (style) => {
+    typeStyle: (style, fonts) => {
+      // The document's own fonts the box's type names (spec §9.4), declared here from their files.
+      void frameFonts.declare(fonts);
       // The use's box's type in the page (spec §7.4), so what the component draws here inherits it as it would there,
       // and its `context.type` is the box's.
       Object.assign(document.documentElement.style, {
