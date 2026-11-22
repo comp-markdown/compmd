@@ -109,6 +109,11 @@ Spec changes and every push need the maintainer's go.
 
 ## Risks
 
+The risks are bounded by trust, which the promise doesn't change: the host's configuration sets each pack's level, a
+document can never raise it, and only a folder pack built with the application may be trusted, never a registry pack
+(§15). Risks 1 and 2 arise only where a host mounts its own trusted components in its own page; sandboxed code gains
+nothing (risk 4).
+
 1. **The promise can push a strict host to loosen its own page.** With inline styles allowed, whoever gets markup
    into the application's page can draw over its interface, and read attribute values out through requests a style
    makes (`url()`), as far as the page's other directives let them go. Allowing only `style` attributes

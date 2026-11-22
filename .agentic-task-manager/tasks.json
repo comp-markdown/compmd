@@ -15369,14 +15369,14 @@
       "description": "The design for what a component may assume about the document its box is in: [docs/component-environment.md](docs/component-environment.md). Found in CMD-374: an app mounted the Mermaid pack's component in its own page, under a policy that refuses inline styles, and a wider comparison showed the CSSOM transfer in `draw` can't fix a library that writes inline styles while it measures.\n\n## Do\n- **The design**, decisions first: the host contract promises that inline styles apply in a box's document (spec §7.4), kept by the frames' policy or the host's page; a frame preferred in a strict page; no CSS from a param in trusted code (§15); the host told when its page breaks the promise; the Mermaid pack without workarounds.\n- **What was found**, the work needed, the risks (security first), and the alternatives rejected, each with why.\n- **Review it** with the maintainer as an atm code review; once approved, CMD-374 is re-scoped to the work the design lists.\n",
       "requirements": [],
       "use_cases": [],
-      "status": "in_progress",
+      "status": "in_review",
       "dependencies": [],
       "files": [
         "docs/component-environment.md",
         "docs/README.md"
       ],
       "created_at": "2026-11-22T17:05:05Z",
-      "updated_at": "2026-11-22T17:05:09Z",
+      "updated_at": "2026-11-22T17:05:32Z",
       "created_by": "claude:9ea81469",
       "updated_by": "claude:9ea81469",
       "sprint_history": [
@@ -15392,7 +15392,24 @@
       ],
       "number": 377,
       "started_at": "2026-11-22T17:05:09Z",
-      "started_by": "claude:9ea81469"
+      "started_by": "claude:9ea81469",
+      "commit": "b25c42410f967c8f41e57a65ae001978e3603c75",
+      "code_reviews": [
+        {
+          "id": "01a20438-5bf2-75b6-83a4-435902a2ed09",
+          "ref": "CR-64"
+        }
+      ],
+      "review_requested_at": "2026-11-22T17:05:32Z",
+      "review_state": "waiting",
+      "notes": [
+        {
+          "at": "2026-11-22T17:05:32Z",
+          "kind": "review",
+          "text": "CR-64: What a component may assume about its box: the design",
+          "by": "claude:9ea81469"
+        }
+      ]
     }
   ]
 }
