@@ -32,7 +32,9 @@ export default draw<Params>(
     drawn += 1;
     // The labels in the box's type (spec §7.4): its font and size, which Mermaid measures them in.
     const themeVariables = type ? { fontFamily: type.family, fontSize: `${String(type.size)}px` } : {};
-    mermaid.initialize({ startOnLoad: false, securityLevel: "strict", suppressErrorRendering: true, theme: themeOf(theme, scheme), themeVariables });
+    // Labels as SVG text, which Mermaid measures without styles of its own, so a page that refuses inline styles
+    // sizes its nodes as any page does.
+    mermaid.initialize({ startOnLoad: false, securityLevel: "strict", suppressErrorRendering: true, htmlLabels: false, flowchart: { htmlLabels: false }, theme: themeOf(theme, scheme), themeVariables });
     try {
       // Mermaid's own markup, sanitized by it (`securityLevel: "strict"`).
       return (await mermaid.render(`compmd-mermaid-${String(drawn)}`, code)).svg;

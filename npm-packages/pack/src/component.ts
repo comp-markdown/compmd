@@ -3,6 +3,7 @@
 
 import type { Fit, Mount, MountContext, Mounted, Params, Scheme, Slots, TypeStyle } from "@compmd/render";
 import { CONTAIN, fitBox } from "./fit.ts";
+import { DrawingSheet, parseMarkup } from "./markup.ts";
 
 /** The host contract's types (spec §7.4). */
 export type { Fallback, Fit, Mount, MountContext, Mounted, Params, Scheme, Slots, TypeStyle } from "@compmd/render";
@@ -95,6 +96,7 @@ export function draw<P = Params>(render: (params: P, context: DrawContext) => Dr
     const fitNow = () => (context as Partial<MountContext>).fit ?? CONTAIN;
     let current: AbortController | undefined;
     let settled: Promise<void> = Promise.resolve();
+    const sheet = new DrawingSheet(target);
     const run = (params: Params) => {
       current?.abort();
       const own = new AbortController();
@@ -106,8 +108,15 @@ export function draw<P = Params>(render: (params: P, context: DrawContext) => Dr
         const drawn = await render(params as P, { scheme: context.scheme, fit: fitNow(), ...(type ? { type } : {}), signal: own.signal });
         if (own.signal.aborted) return;
         if (options.role !== undefined) drawing.setAttribute("aria-label", context.fallback.text);
-        if (typeof drawn === "string") drawing.innerHTML = drawn;
-        else drawing.replaceChildren(drawn);
+        if (typeof drawn === "string") {
+          // Parsed inert, so a page that refuses inline styles still has the drawing's.
+          const { nodes, css } = parseMarkup(drawn, target.ownerDocument);
+          drawing.replaceChildren(nodes);
+          sheet.replace(css, drawing);
+        } else {
+          drawing.replaceChildren(drawn);
+          sheet.drop();
+        }
         if (drawing.children.length === 1 && drawing.firstElementChild) fitBox(drawing.firstElementChild, fitNow());
         // After a failure, the box was the renderer's: the drawing goes back into it.
         if (drawing.parentNode !== target) target.replaceChildren(drawing);
@@ -138,6 +147,7 @@ export function draw<P = Params>(render: (params: P, context: DrawContext) => Dr
       },
       destroy: () => {
         current?.abort();
+        sheet.drop();
         target.replaceChildren();
       },
       [SETTLED]: () => settled,
