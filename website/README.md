@@ -42,6 +42,13 @@ pnpm lint      # eslint, tsc and svelte-check
 pnpm test      # the snapshots, the spec's rendering and highlighting, the versions, the prerender, the books to print, the search index and its snippets, the snippets, the dev server's first paint
 ```
 
+A new post for the blog is started with `cblo new`, run in `blog/`: the workspace's own `@compmd/blog`, linked into this site's `node_modules` and built by `pnpm -r build` (or `pnpm --dir ../npm-packages/blog build` after a change to it), so no install is needed. `pnpm dev` then shows it at `/blog/`, drafts included.
+
+```sh
+cd blog
+../node_modules/.bin/cblo new "Its title"   # blog/posts/its-title.comp.md, a draft
+```
+
 The dev server takes `/playground/` from the playground's own dev server, at http://localhost:5174/playground/, so the playground changes as its source does. The landing page's examples take their stylesheet from it too, so run it beside this one, in a second terminal:
 
 ```sh

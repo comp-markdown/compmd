@@ -6,7 +6,7 @@ The playground's _Learn CompMD_ tour is the five-minute introduction, hands on; 
 
 ## Who it is for
 
-People who write: notes, newsletters, reports, documentation, anything you would write in Markdown and want to do more with. You don't need to program. The book uses a few small formulas, to compute a total or choose a color, and explains each one where it first appears. It covers the syntax, data, inputs, layout, components written in CompMD itself, and the packs a document uses.
+People who write: notes, newsletters, reports, documentation, anything you would write in Markdown and want to do more with. You don't need to program. The book uses a few small formulas, to compute a total or choose a color, and explains each one where it first appears. It covers the syntax, data, inputs, layout, components written in CompMD itself, the packs a document uses, and publishing your documents as a blog.
 
 Components written in code, in React, Svelte or JavaScript, are [the Developer's Guide](../developers/README.md)'s subject. So are applications that show CompMD documents. This book says only what such a component looks like to the document that uses it.
 
@@ -45,10 +45,14 @@ Components written in code, in React, Svelte or JavaScript, are [the Developer's
 17. [Code blocks a pack draws](17-code-blocks-a-pack-draws.md)
 18. [Components in code, in brief](18-components-in-code-in-brief.md)
 
+**Part VI. Publishing**
+
+19. [A blog](19-a-blog.md)
+
 **Appendices**
 
-19. [The syntax at a glance](19-the-syntax-at-a-glance.md)
-20. [The diagnostics and their fixes](20-the-diagnostics-and-their-fixes.md)
+20. [The syntax at a glance](20-the-syntax-at-a-glance.md)
+21. [The diagnostics and their fixes](21-the-diagnostics-and-their-fixes.md)
 
 ## The examples
 

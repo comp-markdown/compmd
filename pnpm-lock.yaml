@@ -469,6 +469,9 @@ importers:
       '@comp-markdown/mermaid':
         specifier: workspace:*
         version: link:../compmd-packs/mermaid
+      '@compmd/blog':
+        specifier: workspace:*
+        version: link:../npm-packages/blog
       '@compmd/devtools':
         specifier: workspace:*
         version: link:../npm-packages/devtools

@@ -1,6 +1,6 @@
 # 22. The diagnostics
 
-Every diagnostic in the spec's [catalogue](https://compmd.dev/spec/#102-catalog), as the packages report it: its code, its severity, the stage that finds it, what causes it, who causes it, and what fixes it. Writers have their own appendix, with an example of each: [the diagnostics and their fixes](../authors/20-the-diagnostics-and-their-fixes.md) in the Author's Guide. This one is for the developer whose app shows them, or whose pack causes them.
+Every diagnostic in the spec's [catalogue](https://compmd.dev/spec/#102-catalog), as the packages report it: its code, its severity, the stage that finds it, what causes it, who causes it, and what fixes it. Writers have their own appendix, with an example of each: [the diagnostics and their fixes](../authors/21-the-diagnostics-and-their-fixes.md) in the Author's Guide. This one is for the developer whose app shows them, or whose pack causes them.
 
 ## Reading a diagnostic
 

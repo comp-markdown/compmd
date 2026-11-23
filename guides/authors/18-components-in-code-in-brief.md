@@ -227,4 +227,4 @@ The code itself is [the Developer's Guide](../developers/README.md)'s: what a co
 - [React, Svelte and libraries](../developers/15-react-svelte-and-libraries.md): the frameworks, and the libraries a component may use.
 - [The sandbox, closer](../developers/11-the-sandbox-closer.md): how the sandbox is built.
 
-Next: the appendices, starting with [the syntax at a glance](19-the-syntax-at-a-glance.md), everything a writer types in one place.
+Next: [a blog](19-a-blog.md), your documents published as one.

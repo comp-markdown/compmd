@@ -100,6 +100,6 @@ F004 12:1  `::: box` isn't closed
 
 Line 12, column 1 is where the box opens, counting the frontmatter's lines too; the playground marks the place in the text, so you needn't count. A mistake gives one diagnostic, not a cascade of them: the box that runs on doesn't add a diagnostic for everything after it.
 
-Whatever goes wrong, CompMD shows your text rather than hide it: a component it can't show is replaced by its fallback (chapter 3), never by a blank. [Chapter 20](20-the-diagnostics-and-their-fixes.md) lists every code with its fix.
+Whatever goes wrong, CompMD shows your text rather than hide it: a component it can't show is replaced by its fallback (chapter 3), never by a blank. [Chapter 21](21-the-diagnostics-and-their-fixes.md) lists every code with its fix.
 
 Next: [the Markdown you know](02-the-markdown-you-know.md), and what CompMD adds to it.

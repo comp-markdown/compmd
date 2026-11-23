@@ -1,4 +1,4 @@
-# 19. The syntax at a glance
+# 20. The syntax at a glance
 
 Everything a writer types in CompMD, on a few pages: the frontmatter, the three forms of a component, params, slots, values and expressions, `if` and `each`, definitions, imports and exports, and code blocks a pack draws. Each table links to the chapter that teaches it, and the [spec](https://compmd.dev/spec/) has every rule.
 
@@ -194,4 +194,4 @@ md:
 
 A code block's text is never filled in from values. Chapter 17 has the rest.
 
-Next: [the diagnostics and their fixes](20-the-diagnostics-and-their-fixes.md).
+Next: [the diagnostics and their fixes](21-the-diagnostics-and-their-fixes.md).
